@@ -1,10 +1,28 @@
 {% extends 'myshop/base.html' %}
 
-{% block title %}SatoShop - 비트코인 라이트닝 결제 플랫폼{% endblock %}
+{% block title %}
+  {% if site_settings and site_settings.site_title and site_settings.site_description %}
+    {{ site_settings.site_title }} - {{ site_settings.site_description }}
+  {% else %}
+    SatoShop - 비트코인 라이트닝 결제 플랫폼
+  {% endif %}
+{% endblock %}
 
 <!-- Open Graph Meta Tags for Home -->
-{% block og_title %}SatoShop - 비트코인 라이트닝 결제 플랫폼{% endblock %}
-{% block og_description %}누구나 쉽게 만드는 비트코인 온라인 스토어. 5분만에 스토어를 구축하고 라이트닝 네트워크로 즉시 결제받으세요.{% endblock %}
+{% block og_title %}
+  {% if site_settings and site_settings.site_title and site_settings.site_description %}
+    {{ site_settings.site_title }} - {{ site_settings.site_description }}
+  {% else %}
+    SatoShop - 비트코인 라이트닝 결제 플랫폼
+  {% endif %}
+{% endblock %}
+{% block og_description %}
+  {% if site_settings and site_settings.hero_description %}
+    {{ site_settings.hero_description }}
+  {% else %}
+    누구나 쉽게 만드는 비트코인 온라인 스토어. 5분만에 스토어를 구축하고 라이트닝 네트워크로 즉시 결제받으세요.
+  {% endif %}
+{% endblock %}
 {% block og_type %}website{% endblock %}
 
 {% block content %}

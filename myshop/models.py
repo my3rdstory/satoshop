@@ -4,6 +4,12 @@ import re
 from django.utils import timezone
 from datetime import timedelta
 
+
+def get_current_year_copyright():
+    """현재 연도로 기본 저작권 문구 생성"""
+    current_year = timezone.now().year
+    return f"© {current_year} SatoShop. All rights reserved."
+
 # Create your models here.
 
 class ExchangeRate(models.Model):
@@ -193,9 +199,9 @@ class SiteSettings(models.Model):
     
     footer_copyright = models.CharField(
         max_length=200,
-        default="© 2024 SatoShop. All rights reserved.",
+        default=get_current_year_copyright,
         verbose_name="저작권 표시",
-        help_text="푸터 하단에 표시될 저작권 문구"
+        help_text="푸터 하단에 표시될 저작권 문구 (자동으로 현재 연도가 설정됩니다)"
     )
     
     footer_address = models.CharField(
@@ -260,10 +266,11 @@ class SiteSettings(models.Model):
     )
     
     # Open Graph 설정
-    og_default_image = models.URLField(
+    og_default_image = models.CharField(
+        max_length=500,
         blank=True,
         verbose_name="기본 Open Graph 이미지",
-        help_text="링크 공유 시 표시될 기본 이미지 URL (1200x630 권장)"
+        help_text="링크 공유 시 표시될 기본 이미지 경로 (1200x630 권장, 예: /static/images/og-image.png 또는 https://example.com/image.png)"
     )
     
     og_site_name = models.CharField(
@@ -271,6 +278,14 @@ class SiteSettings(models.Model):
         default="SatoShop",
         verbose_name="Open Graph 사이트명",
         help_text="소셜 미디어에서 표시될 사이트명"
+    )
+    
+    # 파비콘 설정
+    favicon_url = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="파비콘 경로",
+        help_text="사이트 파비콘 이미지 경로 (16x16, 32x32 권장, PNG 형식, 예: /static/images/favicon.png 또는 https://example.com/favicon.png)"
     )
     
     # 환율 API 설정
@@ -310,6 +325,11 @@ class SiteSettings(models.Model):
             # 기존 설정이 있으면 업데이트
             existing = SiteSettings.objects.first()
             self.pk = existing.pk
+        
+        # 저작권 표시가 비어있거나 © 기호가 없으면 기본값으로 설정
+        if not self.footer_copyright or not self.footer_copyright.startswith('©'):
+            self.footer_copyright = get_current_year_copyright()
+        
         super().save(*args, **kwargs)
     
     def __str__(self):

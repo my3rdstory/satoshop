@@ -9,7 +9,7 @@
           {% if site_settings and site_settings.footer_copyright %}
             {{ site_settings.footer_copyright }}
           {% else %}
-            © 2024 SatoShop. All rights reserved.
+            © {% now "Y" %} SatoShop. All rights reserved.
           {% endif %}
         </p>
         

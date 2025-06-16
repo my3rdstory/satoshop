@@ -30,9 +30,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-  <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-  <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+  <link rel="shortcut icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+  <link rel="apple-touch-icon" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tailwind 설정 -->

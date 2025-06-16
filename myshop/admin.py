@@ -14,11 +14,65 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('기본 설정', {
-            'fields': ('site_title', 'site_description', 'contact_email')
+            'fields': ('site_title', 'site_description', 'meta_keywords', 'admin_site_header')
         }),
-        ('소셜 미디어', {
-            'fields': ('youtube_video_id',),
-            'description': '유튜브 비디오 ID만 입력하세요. 예: dQw4w9WgXcQ'
+        ('홈페이지 히어로 섹션', {
+            'fields': (
+                'hero_title', 
+                'hero_subtitle', 
+                'hero_description',
+                'hero_primary_button_text',
+                'hero_secondary_button_text'
+            ),
+            'description': '홈페이지 메인 섹션의 텍스트를 설정합니다.'
+        }),
+        ('유튜브 비디오 설정', {
+            'fields': (
+                'youtube_video_id',
+                'youtube_autoplay',
+                'youtube_mute', 
+                'youtube_loop',
+                'youtube_controls'
+            ),
+            'description': '홈페이지 배경 비디오 설정. 유튜브 비디오 ID만 입력하세요. 예: dd2RzyPu4ok'
+        }),
+        ('연락처 정보', {
+            'fields': ('contact_email', 'github_url')
+        }),
+        ('푸터 설정', {
+            'fields': (
+                'footer_company_name',
+                'footer_description', 
+                'footer_copyright',
+                'footer_address',
+                'footer_phone',
+                'footer_business_hours'
+            ),
+            'description': '웹사이트 하단 푸터 영역의 정보를 설정합니다.'
+        }),
+        ('소셜 미디어 링크', {
+            'fields': (
+                'footer_twitter_url',
+                'footer_telegram_url', 
+                'footer_discord_url'
+            ),
+            'description': '푸터에 표시될 소셜 미디어 링크들을 설정합니다.'
+        }),
+        ('기능 설정', {
+            'fields': (
+                'enable_user_registration',
+                'enable_store_creation'
+            ),
+            'description': '사이트의 주요 기능들을 활성화/비활성화합니다.'
+        }),
+        ('SEO 및 분석', {
+            'fields': (
+                'google_analytics_id',
+                'og_default_image',
+                'og_site_name',
+                'favicon_url'
+            ),
+            'description': 'Google Analytics, Open Graph 메타태그 및 파비콘 설정'
         }),
         ('환율 설정', {
             'fields': ('exchange_rate_update_interval',),
