@@ -78,10 +78,18 @@ class SiteSettings(models.Model):
         help_text="브라우저 탭에 표시되는 사이트 제목"
     )
     
-    site_description = models.TextField(
+    site_description = models.CharField(
+        max_length=200,
         default="비트코인 라이트닝 결제 플랫폼", 
         verbose_name="사이트 설명",
-        help_text="메타 태그에 사용되는 사이트 설명"
+        help_text="메타 태그에 사용되는 사이트 설명 (최대 200자)"
+    )
+    
+    # SEO 메타 태그
+    meta_keywords = models.TextField(
+        blank=True,
+        verbose_name="메타 키워드",
+        help_text="SEO용 메타 키워드 (쉼표로 구분, 예: 비트코인, 라이트닝, 온라인스토어, 암호화폐)"
     )
     
     admin_site_header = models.CharField(
@@ -241,6 +249,28 @@ class SiteSettings(models.Model):
         default=True, 
         verbose_name="스토어 생성 허용",
         help_text="사용자의 새 스토어 생성 허용"
+    )
+    
+    # Google Analytics 설정
+    google_analytics_id = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Google Analytics ID",
+        help_text="Google Analytics 추적 ID (예: G-XXXXXXXXXX 또는 UA-XXXXXXXXX-X)"
+    )
+    
+    # Open Graph 설정
+    og_default_image = models.URLField(
+        blank=True,
+        verbose_name="기본 Open Graph 이미지",
+        help_text="링크 공유 시 표시될 기본 이미지 URL (1200x630 권장)"
+    )
+    
+    og_site_name = models.CharField(
+        max_length=100,
+        default="SatoShop",
+        verbose_name="Open Graph 사이트명",
+        help_text="소셜 미디어에서 표시될 사이트명"
     )
     
     # 환율 API 설정

@@ -207,6 +207,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('site_title', 'site_description', 'admin_site_header'),
             'description': '사이트의 기본 정보를 설정합니다.'
         }),
+        ('SEO 설정', {
+            'fields': ('meta_keywords',),
+            'description': '검색엔진 최적화를 위한 메타 태그를 설정합니다.'
+        }),
         ('홈페이지 히어로 섹션', {
             'fields': (
                 'hero_title', 
@@ -251,6 +255,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('enable_user_registration', 'enable_store_creation'),
             'classes': ('collapse',),
             'description': '사이트 기능의 활성화/비활성화를 설정합니다.'
+        }),
+        ('Google Analytics 설정', {
+            'fields': ('google_analytics_id',),
+            'classes': ('collapse',),
+            'description': 'Google Analytics 추적 코드를 설정합니다.'
+        }),
+        ('Open Graph 설정', {
+            'fields': ('og_site_name', 'og_default_image'),
+            'classes': ('collapse',),
+            'description': '링크 공유 시 미리보기에 표시될 정보를 설정합니다.'
         }),
     )
     

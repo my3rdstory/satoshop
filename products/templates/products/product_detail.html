@@ -5,6 +5,17 @@
 
 {% block title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
 
+<!-- Open Graph Meta Tags for Product -->
+{% block og_title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+{% block og_description %}{{ product.description|truncatewords:30|default:"SatoShop에서 비트코인으로 구매하세요" }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_image %}{% if product_images %}{{ product_images.0.file_url }}{% else %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% load static %}{{ request.build_absolute_uri }}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endif %}{% endblock %}
+
+<!-- Twitter Card Meta Tags for Product -->
+{% block twitter_title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+{% block twitter_description %}{{ product.description|truncatewords:30|default:"SatoShop에서 비트코인으로 구매하세요" }}{% endblock %}
+{% block twitter_image %}{% if product_images %}{{ product_images.0.file_url }}{% else %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% load static %}{{ request.build_absolute_uri }}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endif %}{% endblock %}
+
 {% block extra_css %}
 <!-- 플로팅 장바구니 스타일 컴포넌트 -->
 {% include 'products/cart.html' %}

@@ -1,9 +1,9 @@
 <!-- 사이트 푸터 -->
 <footer class="bg-gray-900 text-white mt-auto">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div class="text-center">
       <!-- 서비스 정보 -->
-      <div class="lg:col-span-2">
+      <div class="mb-8">
         <h3 class="text-xl font-bold mb-4">
           {% if site_settings and site_settings.footer_company_name %}
             {{ site_settings.footer_company_name }}
@@ -11,7 +11,7 @@
             SatoShop
           {% endif %}
         </h3>
-        <p class="text-gray-300 mb-4 leading-relaxed">
+        <p class="text-gray-300 mb-4 leading-relaxed max-w-2xl mx-auto">
           {% if site_settings and site_settings.footer_description %}
             {{ site_settings.footer_description }}
           {% else %}
@@ -20,7 +20,7 @@
         </p>
         
         <!-- 소셜 미디어 링크 -->
-        <div class="flex space-x-4">
+        <div class="flex justify-center space-x-4">
           {% if site_settings and site_settings.github_url %}
           <a href="{{ site_settings.github_url }}" target="_blank" rel="noopener noreferrer" 
              class="text-gray-400 hover:text-white transition-colors">
@@ -48,83 +48,6 @@
             <i class="fab fa-discord text-xl"></i>
           </a>
           {% endif %}
-        </div>
-      </div>
-
-      <!-- 빠른 링크 -->
-      <div>
-        <h4 class="text-lg font-semibold mb-4">빠른 링크</h4>
-        <ul class="space-y-2">
-          <li>
-            <a href="{% url 'stores:browse_stores' %}" class="text-gray-300 hover:text-white transition-colors">
-              스토어 탐색
-            </a>
-          </li>
-          {% if user.is_authenticated %}
-          <li>
-            <a href="{% url 'accounts:mypage' %}" class="text-gray-300 hover:text-white transition-colors">
-              마이페이지
-            </a>
-          </li>
-          {% if not user_has_active_store %}
-          <li>
-            <a href="{% url 'stores:create_store' %}" class="text-gray-300 hover:text-white transition-colors">
-              스토어 만들기
-            </a>
-          </li>
-          {% endif %}
-          {% else %}
-          <li>
-            <a href="{% url 'accounts:signup' %}" class="text-gray-300 hover:text-white transition-colors">
-              회원가입
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'accounts:login' %}" class="text-gray-300 hover:text-white transition-colors">
-              로그인
-            </a>
-          </li>
-          {% endif %}
-        </ul>
-      </div>
-
-      <!-- 연락처 정보 -->
-      <div>
-        <h4 class="text-lg font-semibold mb-4">연락처</h4>
-        <div class="space-y-2">
-          {% if site_settings and site_settings.contact_email %}
-          <div class="flex items-center text-gray-300">
-            <i class="fas fa-envelope mr-2"></i>
-            <a href="mailto:{{ site_settings.contact_email }}" class="hover:text-white transition-colors">
-              {{ site_settings.contact_email }}
-            </a>
-          </div>
-          {% endif %}
-          
-          {% if site_settings and site_settings.footer_phone %}
-          <div class="flex items-center text-gray-300">
-            <i class="fas fa-phone mr-2"></i>
-            <span>{{ site_settings.footer_phone }}</span>
-          </div>
-          {% endif %}
-          
-          {% if site_settings and site_settings.footer_address %}
-          <div class="flex items-start text-gray-300">
-            <i class="fas fa-map-marker-alt mr-2 mt-1"></i>
-            <span>{{ site_settings.footer_address }}</span>
-          </div>
-          {% endif %}
-          
-          <div class="flex items-center text-gray-300">
-            <i class="fas fa-clock mr-2"></i>
-            <span>
-              {% if site_settings and site_settings.footer_business_hours %}
-                {{ site_settings.footer_business_hours }}
-              {% else %}
-                24시간 온라인 서비스
-              {% endif %}
-            </span>
-          </div>
         </div>
       </div>
     </div>
