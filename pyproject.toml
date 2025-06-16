@@ -19,5 +19,4 @@ dependencies = [
     "gunicorn>=23.0.0",
     "dj-database-url>=3.0.0",
     "whitenoise>=6.9.0",
-    "django-apscheduler==0.6.2",
 ]

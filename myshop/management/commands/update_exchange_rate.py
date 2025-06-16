@@ -8,7 +8,7 @@ import sys
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = '업비트 API에서 BTC/KRW 환율을 가져와 업데이트합니다 (Render.com Cron Jobs 최적화)'
+    help = '업비트 API에서 BTC/KRW 환율을 가져와 업데이트합니다 (GitHub Actions 최적화)'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -30,7 +30,7 @@ class Command(BaseCommand):
             logging.basicConfig(level=logging.DEBUG)
         
         self.stdout.write(
-            self.style.SUCCESS(f'🚀 [{start_time}] 환율 업데이트 시작 (Render.com Cron Job)')
+            self.style.SUCCESS(f'🚀 [{start_time}] 환율 업데이트 시작 (GitHub Actions)')
         )
 
         try:
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(error_msg))
                 logger.error('환율 업데이트 실패: API 응답 없음')
                 
-                # Cron Job에서 실패를 명확히 알 수 있도록 exit code 설정
+                # GitHub Actions에서 실패를 명확히 알 수 있도록 exit code 설정
                 sys.exit(1)
                 
         except Exception as e:
@@ -106,7 +106,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(error_msg))
             logger.error(f'환율 업데이트 오류: {e}', exc_info=True)
             
-            # Cron Job에서 실패를 명확히 알 수 있도록 exit code 설정
+            # GitHub Actions에서 실패를 명확히 알 수 있도록 exit code 설정
             sys.exit(1)
 
         # 실행 시간 계산

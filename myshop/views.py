@@ -4,6 +4,8 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import UpbitExchangeService
 import json
+import os
+from django.utils import timezone
 
 # Create your views here.
 
@@ -90,4 +92,44 @@ def convert_currency(request):
         return JsonResponse({
             'success': False,
             'error': str(e)
+        }, status=500)
+
+@require_http_methods(["POST", "GET"])
+@csrf_exempt
+def update_exchange_rate_webhook(request):
+    """외부 서비스에서 환율 업데이트를 트리거하는 웹훅 엔드포인트"""
+    try:
+        # 간단한 보안 토큰 확인 (옵션)
+        auth_token = request.GET.get('token') or request.POST.get('token')
+        expected_token = os.getenv('WEBHOOK_TOKEN', 'your-secret-token')
+        
+        if auth_token != expected_token:
+            return JsonResponse({
+                'success': False,
+                'error': '인증 실패'
+            }, status=401)
+        
+        # 환율 업데이트 실행
+        exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
+        
+        if exchange_rate:
+            return JsonResponse({
+                'success': True,
+                'message': '환율 업데이트 성공',
+                'btc_krw_rate': float(exchange_rate.btc_krw_rate),
+                'updated_at': exchange_rate.created_at.isoformat(),
+                'timestamp': timezone.now().isoformat()
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': '환율 업데이트 실패',
+                'timestamp': timezone.now().isoformat()
+            }, status=500)
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'서버 오류: {str(e)}',
+            'timestamp': timezone.now().isoformat()
         }, status=500)

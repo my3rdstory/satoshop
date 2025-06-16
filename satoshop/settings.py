@@ -47,7 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # 천단위 콤마 등 humanize 기능
-    'django_apscheduler',  # 백그라운드 스케줄러
     'myshop',
     'accounts',
     'stores',
