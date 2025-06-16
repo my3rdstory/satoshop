@@ -28,3 +28,5 @@ urlpatterns = [
     path('ln_payment/', include('ln_payment.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
 ]
+
+# WhiteNoise가 정적 파일 서빙을 자동으로 처리합니다
