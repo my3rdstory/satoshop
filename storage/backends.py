@@ -142,7 +142,7 @@ class S3Storage(Storage):
                 ContentType=content_type,
                 ContentLength=file_size,
                 Metadata={
-                    'uploaded-by': 'django-workflow',
+                    'uploaded-by': 'satoshop-django',
                     'upload-method': 'put-object'
                 }
             )

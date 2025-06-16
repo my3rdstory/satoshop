@@ -190,7 +190,7 @@ def direct_upload_with_fallback(access_key, secret_key, bucket_name, key, conten
             ContentType=content_type,
             ContentLength=len(content_data),
             Metadata={
-                'uploaded-by': 'django-workflow',
+                'uploaded-by': 'satoshop-django',
                 'upload-timestamp': datetime.utcnow().isoformat(),
             }
         )

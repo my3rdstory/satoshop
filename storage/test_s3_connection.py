@@ -14,10 +14,10 @@ from pathlib import Path
 # Django 설정 로드
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(BASE_DIR))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'workflow.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'satoshop.settings')
 django.setup()
 
-from commons.storage.backends import S3Storage
+from storage.backends import S3Storage
 import logging
 
 # 로깅 설정
@@ -100,7 +100,7 @@ def test_s3_connection():
                     print("   ⚠️  boto3 업로드 실패, 직접 HTTP 업로드로 재시도...")
                     
                     # 직접 HTTP 업로드 시도
-                    from commons.storage.fallback_upload import direct_s3_upload
+                    from storage.fallback_upload import direct_s3_upload
                     
                     result = direct_s3_upload(
                         bucket_name=storage.bucket_name,
