@@ -12,7 +12,7 @@ uv run python scripts/generate_webhook_token.py
 예시 출력:
 ```
 📋 URL-safe 토큰 (권장):
-   RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY
+   <value>
 ```
 
 ### 2️⃣ GitHub Secrets 설정
@@ -22,7 +22,7 @@ uv run python scripts/generate_webhook_token.py
 추가할 시크릿:
 ```
 WEBHOOK_URL=https://your-render-app.onrender.com/webhook/update-exchange-rate/
-WEBHOOK_TOKEN=RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY
+WEBHOOK_TOKEN=<value>
 ```
 
 ### 3️⃣ 서버 환경변수 설정
@@ -31,7 +31,7 @@ WEBHOOK_TOKEN=RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY
 
 추가할 환경변수:
 ```
-WEBHOOK_TOKEN=RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY
+WEBHOOK_TOKEN=<value>
 ```
 
 ### 4️⃣ 웹훅 엔드포인트 테스트
@@ -40,13 +40,13 @@ WEBHOOK_TOKEN=RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY
 # 로컬 테스트
 curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"token": "RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY", "source": "manual_test"}' \
+  -d '{"token": "<value>", "source": "manual_test"}' \
   http://localhost:8000/webhook/update-exchange-rate/
 
 # 실제 서버 테스트
 curl -X POST \
   -H "Content-Type: application/json" \
-  -d '{"token": "RhTiiR28mELTm3c0OIdibgupkDoWg9XKzZtQ0-NdtMY", "source": "manual_test"}' \
+  -d '{"token": "<value>", "source": "manual_test"}' \
   https://your-render-app.onrender.com/webhook/update-exchange-rate/
 ```
 
