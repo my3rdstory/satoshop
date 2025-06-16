@@ -1,0 +1,180 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}회원가입 - SatoShop{% endblock %}
+
+{% block body_class %} auth-page{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 회원가입 페이지 스타일 조정 */
+body.auth-page {
+    min-height: 100vh;
+    /* 라이트 모드: 흐린 회색 그라데이션 */
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+}
+
+body.auth-page main {
+    min-height: calc(100vh - 4rem - 120px); /* 네비게이션과 푸터 높이 제외 */
+}
+
+/* 다크모드: 어두운 그라데이션 */
+body.auth-page.dark,
+body.auth-page[data-theme="dark"] {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-md w-full space-y-8">
+    <!-- 회원가입 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+      <!-- 헤더 -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">회원가입</h1>
+        <p class="text-gray-600 dark:text-gray-400">SatoShop 가족이 되어주세요</p>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% if request.GET.next %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% endif %}
+
+        <!-- 사용자명 입력 -->
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            사용자명
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <input 
+              id="username"
+              name="username" 
+              type="text" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="사용자명을 입력하세요"
+            >
+          </div>
+          {% if form.username.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 비밀번호 입력 -->
+        <div>
+          <label for="password1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            비밀번호
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              id="password1"
+              name="password1" 
+              type="password" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="비밀번호를 입력하세요"
+            >
+          </div>
+          {% if form.password1.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password1.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 비밀번호 확인 입력 -->
+        <div>
+          <label for="password2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            비밀번호 확인
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              id="password2"
+              name="password2" 
+              type="password" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="비밀번호를 다시 입력하세요"
+            >
+          </div>
+          {% if form.password2.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password2.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 전체 에러 메시지 -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+              <div class="text-sm text-red-700 dark:text-red-300">
+                {{ form.non_field_errors }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 회원가입 버튼 -->
+        <div>
+          <button 
+            type="submit"
+            class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-bitcoin hover:bg-bitcoin/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors shadow-lg"
+          >
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <i class="fas fa-user-plus text-bitcoin-light group-hover:text-white"></i>
+            </span>
+            회원가입
+          </button>
+        </div>
+      </form>
+
+      <!-- 구분선 -->
+      <div class="mt-8">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 로그인 링크 -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          이미 계정이 있으신가요?
+        </p>
+        <a 
+          href="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" 
+          class="w-full inline-flex justify-center items-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors"
+        >
+          <i class="fas fa-sign-in-alt mr-2"></i>
+          로그인
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // 회원가입 페이지 추가 스크립트가 필요한 경우 여기에 작성
+</script>
+{% endblock %}

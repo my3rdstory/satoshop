@@ -1,0 +1,23 @@
+[project]
+name = "satoshop-dev"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2.2",
+    "psycopg2-binary>=2.9.0",
+    "python-dotenv>=1.0.0",
+    "cryptography>=3.4.8",
+    "qrcode[pil]>=7.3.1",
+    "requests>=2.32.3",
+    "pillow>=11.2.1",
+    "supabase>=2.9.1",
+    "django-storages[boto3]>=1.14.4",
+    "bleach>=6.2.0",
+    "markdown>=3.8",
+    "gunicorn>=23.0.0",
+    "dj-database-url>=3.0.0",
+    "whitenoise>=6.9.0",
+    "django-apscheduler==0.6.2",
+]

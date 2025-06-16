@@ -1,0 +1,21 @@
+# version: '3.8'
+# 주의: 이 파일은 개발용입니다. 프로덕션에서는 사용하지 마세요!
+services:
+  postgres:
+    image: postgres:15  # 최신 안정 버전 사용
+    container_name: satoshop-main-dev
+    environment:
+      POSTGRES_DB: satoshop-main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "127.0.0.1:5434:5432"  # 로컬 인터페이스만 바인딩
+    volumes:
+      - satoshop-main-postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    # 보안 설정
+    security_opt:
+      - no-new-privileges:true
+    user: postgres
+volumes:
+  satoshop-main-postgres_data:

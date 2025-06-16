@@ -1,0 +1,385 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - 상품 수정{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<style>
+.product-form-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.drag-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+.drag-drop-area:hover {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+.dark .drag-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+.dark .drag-drop-area:hover {
+    border-color: #f59e0b;
+    background: #451a03;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 product-form-avatar rounded-full mr-3">
+        <i class="fas fa-edit text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">상품 수정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ product.title }} 상품을 수정하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'products:product_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="unifiedProductForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보 및 가격</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품의 기본적인 정보와 가격을 입력하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 제목 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="title">
+              제목 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="text" id="title" name="title" required placeholder="상품 제목을 입력하세요"
+                   value="{{ product.title }}">
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="description">
+              상품 설명 <span class="text-red-500">*</span>
+            </label>
+            <textarea id="description" name="description" rows="10"
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent dark:bg-gray-700 dark:text-white"
+                      placeholder="상품에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ product.description }}</textarea>
+          </div>
+
+          <!-- 가격 표시 방식 -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">가격 표시 방식</label>
+            
+            <!-- 안내 메시지 -->
+            <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">가격 표시 방식은 변경할 수 없습니다.</span>
+              </div>
+              <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">현재 설정된 방식으로만 가격을 수정할 수 있습니다.</p>
+            </div>
+            
+            <div class="space-y-2">
+              <label class="flex items-center opacity-60">
+                <input type="radio" name="price_display" value="sats" 
+                       {% if product.price_display == 'sats' %}checked{% endif %}
+                       disabled
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사토시 고정</span>
+                {% if product.price_display == 'sats' %}
+                <span class="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">현재 설정</span>
+                {% endif %}
+              </label>
+              <label class="flex items-center opacity-60">
+                <input type="radio" name="price_display" value="krw" 
+                       {% if product.price_display == 'krw' %}checked{% endif %}
+                       disabled
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">원화 비율 연동</span>
+                {% if product.price_display == 'krw' %}
+                <span class="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">현재 설정</span>
+                {% endif %}
+              </label>
+            </div>
+            
+            <!-- 숨겨진 필드로 현재 값 전송 -->
+            <input type="hidden" name="price_display" value="{{ product.price_display }}">
+            
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격을 사토시 또는 원화 기준으로 설정합니다</p>
+          </div>
+
+          <!-- 가격 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
+              가격 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price" name="price" required min="0" placeholder="상품 가격을 입력하세요"
+                     value="{% if product.price_display == 'krw' and product.price_krw is not None %}{{ product.price_krw }}{% else %}{{ product.price }}{% endif %}"
+                     data-price-krw="{% if product.price_krw is not None %}{{ product.price_krw }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if product.price_display == 'krw' %}원{% else %}sats{% endif %}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">{% if product.price_display == 'krw' %}가격은 원화 단위로 입력하세요{% else %}가격은 사토시 단위로 입력하세요{% endif %}</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info {% if product.price_display == 'sats' %}hidden{% endif %}">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 할인 설정 -->
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="is_discounted" name="is_discounted" 
+                     {% if product.is_discounted %}checked{% endif %}
+                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+              <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">할인 적용</label>
+            </div>
+          </div>
+
+          <!-- 할인가 -->
+          <div class="mb-6 {% if not product.is_discounted %}hidden{% endif %}" id="discountSection">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="discounted_price" name="discounted_price" min="1" placeholder="할인가를 입력하세요"
+                     value="{% if product.price_display == 'krw' and product.discounted_price_krw is not None %}{{ product.discounted_price_krw }}{% elif product.discounted_price is not None %}{{ product.discounted_price }}{% endif %}"
+                     data-discounted-price-krw="{% if product.discounted_price_krw is not None %}{{ product.discounted_price_krw }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if product.price_display == 'krw' %}원{% else %}sats{% endif %}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 discount-help-text">할인가는 정가보다 낮아야 합니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 discount-exchange-info {% if product.price_display == 'sats' %}hidden{% endif %}">
+                <span class="discount-converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 배송비 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="shipping_fee">배송비</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="shipping_fee" name="shipping_fee" min="0"
+                     placeholder="배송비를 입력하세요"
+                     value="{% if product.price_display == 'krw' and product.shipping_fee_krw is not None %}{{ product.shipping_fee_krw }}{% else %}{{ product.shipping_fee }}{% endif %}"
+                     data-shipping-fee-krw="{% if product.shipping_fee_krw is not None %}{{ product.shipping_fee_krw }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if product.price_display == 'krw' %}원{% else %}sats{% endif %}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 shipping-help-text">{% if product.price_display == 'krw' %}배송비는 원화 단위로 입력하세요 (0원인 경우 배송비 무료로 표시됩니다){% else %}배송비는 사토시 단위로 입력하세요 (0sats인 경우 배송비 무료로 표시됩니다){% endif %}</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 shipping-exchange-info {% if product.price_display == 'sats' %}hidden{% endif %}">
+                <span class="shipping-converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 옵션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-list text-yellow-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">색상, 사이즈 등의 옵션을 설정할 수 있습니다</p>
+          </div>
+        </div>
+
+        <div id="optionsContainer" class="space-y-4 mb-6">
+          {% for option in product.options.all %}
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4 option-section">
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       type="text" name="options[{{ forloop.counter0 }}][name]" required
+                       placeholder="옵션명 (예: 색상, 사이즈)" value="{{ option.name }}">
+              </div>
+              <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                      onclick="this.closest('.option-section').remove()">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            
+            <div class="space-y-3">
+              {% for choice in option.choices.all %}
+              <div class="flex items-center gap-3">
+                <div class="flex-1">
+                  <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                         type="text" name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][name]" required
+                         placeholder="옵션 종류 (예: 빨강, 파랑)" value="{{ choice.name }}">
+                </div>
+                <div class="w-32">
+                  <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                         type="number" name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][price]" min="0"
+                         placeholder="추가 가격" value="{% if product.price_display == 'krw' and choice.price_krw is not None %}{{ choice.price_krw }}{% else %}{{ choice.price }}{% endif %}">
+                </div>
+                <div class="relative w-16">
+                  <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">
+                    {% if product.price_display == 'krw' %}원{% else %}sats{% endif %}
+                  </span>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info {% if product.price_display == 'sats' %}hidden{% endif %}">
+                    <span class="option-converted-amount"></span>
+                  </div>
+                </div>
+                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        onclick="this.closest('.flex').remove()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              {% endfor %}
+            </div>
+            
+            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors" 
+                    onclick="addOptionChoice(this)">
+              <i class="fas fa-plus text-sm"></i>
+              <span>옵션 종류 추가</span>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        
+        <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
+          <i class="fas fa-plus text-sm"></i>
+          <span>옵션 추가</span>
+        </button>
+      </div>
+
+      <!-- 결제완료 안내 메시지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-message text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">결제완료 안내 메시지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">결제 완료 후 고객에게 보여줄 메시지를 설정하세요</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="completion_message">안내 메시지</label>
+          <textarea class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                    id="completion_message" name="completion_message" rows="4"
+                    placeholder="결제 완료 후 보여줄 메시지를 입력하세요">{{ product.completion_message }}</textarea>
+        </div>
+      </div>
+
+      <!-- 상품 이미지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-images text-indigo-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 이미지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품 이미지를 업로드하세요 (1:1 비율 권장)</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">상품 이미지 (1:1 비율 권장)</label>
+          <div class="drag-drop-area" id="imageDropArea">
+            <div class="text-center">
+              <i class="fas fa-image text-4xl text-gray-400 mb-4"></i>
+              <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 드래그하거나 클릭하여 업로드</p>
+              <p class="text-sm text-gray-500 dark:text-gray-500">최대 10MB, JPG/PNG 형식</p>
+            </div>
+            <input type="file" id="imageInput" name="images" multiple accept="image/*" class="hidden">
+          </div>
+          
+          <!-- 현재 이미지 목록 -->
+          {% if product.images.exists %}
+          <div id="currentImages" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {% for image in product.images.all %}
+            <div class="relative group" id="image-{{ image.id }}">
+              <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                <img src="{{ image.file_url }}" alt="{{ image.original_name }}" 
+                     class="w-full h-full object-cover">
+                <button onclick="deleteExistingImage({{ image.id }})"
+                        class="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <i class="fas fa-times text-sm"></i>
+                </button>
+              </div>
+              <div class="mt-2 text-center">
+                <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ image.original_name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">{{ image.file_size|filesizeformat }}</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div id="currentImages" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"></div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'products:product_list' store.store_id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          취소
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          상품 수정
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 페이지 데이터 -->
+<div id="page-data" 
+     data-upload-url="{% url 'products:upload_product_image' store.store_id product.id %}"
+     data-store-id="{{ store.store_id }}"
+     data-product-id="{{ product.id }}"
+     style="display: none;"></div>
+
+<!-- 전역 변수 설정 -->
+<script>
+  // 상품 가격 표시 방식 전역 변수
+  window.productPriceDisplay = '{{ product.price_display }}';
+  window.productOptionsCount = {{ product.options.count }};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/product-form.js' %}"></script>
+<script src="{% static 'js/currency-exchange.js' %}"></script>
+<script src="{% static 'js/add-product.js' %}"></script>
+<script src="{% static 'js/edit-product-unified.js' %}"></script>
+{% endblock %} 

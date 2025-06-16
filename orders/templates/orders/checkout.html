@@ -1,0 +1,601 @@
+{% extends 'stores/store_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}주문하기{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .status-pending {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+
+  .status-success {
+    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+
+  .status-error {
+    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+
+  .invoice-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+
+  .invoice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-shopping-cart text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">주문하기</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">주문 내용을 확인하고 결제를 진행해주세요</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <!-- 왼쪽: 주문 상품 목록 (2/3 너비) -->
+      <div class="xl:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-shopping-cart text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">주문 상품 ({{ cart.total_items }}개)</h2>
+            </div>
+          </div>
+
+          <!-- 상품 목록 -->
+          <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for store_data in stores_with_items %}
+            <div class="p-0">
+              <!-- 스토어 헤더 -->
+              <div class="bg-gray-100 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+                <div class="flex items-center">
+                  <i class="fas fa-store text-gray-600 dark:text-gray-400 mr-3"></i>
+                  <span class="font-semibold text-gray-900 dark:text-white">{{ store_data.store.store_name }}</span>
+                </div>
+              </div>
+
+              <!-- 상품들 -->
+              {% for item in store_data.items %}
+              <div class="p-6 flex gap-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <!-- 상품 이미지 -->
+                <div class="flex-shrink-0">
+                  <div class="w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden flex items-center justify-center">
+                    {% if item.product.images.first %}
+                    <img src="{{ item.product.images.first.file_url }}" alt="{{ item.product.title }}" class="w-full h-full object-cover">
+                    {% else %}
+                    <i class="fas fa-image text-2xl text-gray-400"></i>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <!-- 상품 정보 -->
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-semibold text-gray-900 dark:text-white text-lg mb-2">{{ item.product.title }}</h3>
+                  
+                  {% if item.options_display %}
+                  <div class="flex flex-wrap gap-2 mb-3">
+                    {% for option in item.options_display %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                      {{ option.option_name }}: {{ option.choice_name }}{% if option.choice_price > 0 %} (+{{ option.choice_price|floatformat:0|intcomma }}sats){% endif %}
+                    </span>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">수량: {{ item.quantity }}개</span>
+                    <span class="font-bold text-lg text-bitcoin">{{ item.total_price|floatformat:0|intcomma }} sats</span>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+
+              <!-- 스토어 소계 -->
+              <div class="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-t border-gray-200 dark:border-gray-600">
+                <div class="flex justify-between items-center">
+                  <div class="text-gray-700 dark:text-gray-300">
+                    <span class="font-medium">{{ store_data.store.store_name }}</span> - 
+                    상품 소계: <span class="font-semibold">{{ store_data.subtotal|floatformat:0|intcomma }} sats</span> + 
+                    배송비: 
+                    {% if store_data.shipping_fee == 0 %}
+                      <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
+                    {% else %}
+                      <span class="font-semibold">{{ store_data.shipping_fee|floatformat:0|intcomma }} sats</span>
+                    {% endif %}
+                  </div>
+                  <span class="font-bold text-xl text-bitcoin">
+                    {{ store_data.total|floatformat:0|intcomma }} sats
+                  </span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 결제 정보 (1/3 너비) -->
+      <div class="xl:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-8">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-credit-card text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">결제 정보</h2>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- 총액 요약 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+              <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">상품 총액</span>
+                  <span class="font-semibold text-bitcoin">{{ subtotal_amount|floatformat:0|intcomma }} sats</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">배송비</span>
+                  <span class="font-semibold text-bitcoin">
+                    {% if total_shipping_fee == 0 %}
+                      무료
+                    {% else %}
+                      {{ total_shipping_fee|floatformat:0|intcomma }} sats
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                  <div class="flex justify-between">
+                    <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
+                    <span class="font-bold text-xl text-bitcoin">{{ total_amount|floatformat:0|intcomma }} sats</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 배송 정보 -->
+            {% if shipping_data %}
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+              <div class="flex items-center mb-4">
+                <i class="fas fa-truck text-blue-600 dark:text-blue-400 mr-2"></i>
+                <h3 class="font-bold text-blue-900 dark:text-blue-100">배송 정보</h3>
+              </div>
+              
+              <div class="space-y-2 text-sm">
+                <div class="flex">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">주문자:</span>
+                  <span class="text-gray-900 dark:text-white">{{ shipping_data.buyer_name }}</span>
+                </div>
+                <div class="flex">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">연락처:</span>
+                  <span class="text-gray-900 dark:text-white">{{ shipping_data.buyer_phone }}</span>
+                </div>
+                <div class="flex">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">이메일:</span>
+                  <span class="text-gray-900 dark:text-white">{{ shipping_data.buyer_email }}</span>
+                </div>
+                <div class="flex">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">배송지:</span>
+                  <span class="text-gray-900 dark:text-white">
+                    ({{ shipping_data.shipping_postal_code }}) {{ shipping_data.shipping_address }}
+                    {% if shipping_data.shipping_detail_address %}
+                      <br>{{ shipping_data.shipping_detail_address }}
+                    {% endif %}
+                  </span>
+                </div>
+                {% if shipping_data.order_memo %}
+                <div class="flex">
+                  <span class="font-medium text-gray-700 dark:text-gray-300 w-16 flex-shrink-0">요청사항:</span>
+                  <span class="text-gray-900 dark:text-white">{{ shipping_data.order_memo }}</span>
+                </div>
+                {% endif %}
+              </div>
+              
+              <div class="mt-4 pt-3 border-t border-blue-200 dark:border-blue-700">
+                <a href="{% url 'orders:shipping_info' %}" class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 text-sm font-medium transition-colors">
+                  <i class="fas fa-edit mr-2"></i>
+                  배송 정보 수정
+                </a>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 결제 방법 안내 -->
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <i class="fas fa-bolt text-bitcoin mr-2"></i>
+                <h3 class="font-bold text-gray-900 dark:text-white">결제 방법</h3>
+              </div>
+              
+              <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-bolt text-yellow-600 dark:text-yellow-400 mr-2"></i>
+                  <span class="font-semibold text-yellow-800 dark:text-yellow-200">라이트닝 네트워크 결제</span>
+                </div>
+                <p class="text-sm text-yellow-700 dark:text-yellow-300">빠르고 저렴한 비트코인 결제를 지원합니다</p>
+              </div>
+
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <p class="font-medium text-gray-900 dark:text-white">결제 진행 방법:</p>
+                <ol class="list-decimal list-inside space-y-1 ml-2">
+                  <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
+                  <li>생성된 QR 코드를 라이트닝 지갑으로 스캔</li>
+                  <li>결제 완료 후 자동으로 주문이 확정됩니다</li>
+                </ol>
+                
+                <p class="mt-3">
+                  <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> 스트라이크, 월렛 오브 사토시, 피닉스, 스피드, 블링크 등
+                </p>
+              </div>
+            </div>
+
+            <!-- 인보이스 생성 버튼 -->
+            <button 
+              class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
+              onclick="generateInvoice()" 
+              id="generateInvoiceBtn"
+            >
+              <i class="fas fa-qrcode mr-3"></i>
+              결제 인보이스 생성
+            </button>
+
+            <!-- QR 코드 및 인보이스 표시 영역 -->
+            <div id="invoiceContainer" class="hidden space-y-4">
+              <!-- QR 코드 -->
+              <div class="text-center">
+                <div id="qrCodeContainer" class="inline-block p-5 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+                  <img id="qrCodeImage" src="" alt="결제 QR 코드" class="max-w-[250px] hidden">
+                  <div id="loadingSpinner" class="hidden">
+                    <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
+                    <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 인보이스 텍스트 -->
+              <div>
+                <label class="block font-semibold mb-2 text-gray-900 dark:text-white">라이트닝 인보이스</label>
+                <textarea 
+                  id="invoiceTextArea" 
+                  readonly 
+                  class="w-full h-32 font-mono text-sm p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  placeholder="인보이스가 여기에 표시됩니다..."
+                ></textarea>
+                <button 
+                  type="button" 
+                  onclick="copyInvoiceToClipboard()" 
+                  class="mt-2 text-bitcoin hover:text-bitcoin/80 text-sm font-medium transition-colors"
+                >
+                  <i class="fas fa-copy mr-1"></i> 인보이스 복사
+                </button>
+              </div>
+
+              <!-- 결제 상태 -->
+              <div id="paymentStatus" class="hidden p-4 rounded-lg border">
+                <div id="paymentMessage"></div>
+              </div>
+
+              <!-- 취소 버튼 -->
+              <div id="cancelContainer" class="hidden">
+                <button 
+                  type="button" 
+                  onclick="cancelInvoice()" 
+                  id="cancelInvoiceBtn" 
+                  class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                >
+                  <i class="fas fa-times mr-2"></i> 결제 취소
+                </button>
+              </div>
+
+              <!-- 결제 안내 -->
+              <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-sm">
+                <p class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                  <i class="fas fa-bolt mr-1"></i> 결제 방법:
+                </p>
+                <ol class="list-decimal list-inside space-y-1 text-yellow-700 dark:text-yellow-300 ml-2">
+                  <li>QR 코드를 라이트닝 지갑으로 스캔하거나</li>
+                  <li>인보이스 텍스트를 복사하여 지갑에 붙여넣기</li>
+                  <li>결제 완료 후 자동으로 주문이 확정됩니다</li>
+                </ol>
+                <p class="mt-2 text-yellow-700 dark:text-yellow-300">
+                  <span class="font-semibold">지원 지갑:</span> Phoenix, Wallet of Satoshi, Blue Wallet, Muun 등
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/common.js' %}"></script>
+<script>
+let currentPaymentHash = null;
+let currentInvoice = null;
+let paymentCheckInterval = null;
+
+function generateInvoice() {
+  const generateBtn = document.getElementById('generateInvoiceBtn');
+  const invoiceContainer = document.getElementById('invoiceContainer');
+  const loadingSpinner = document.getElementById('loadingSpinner');
+  const qrCodeImage = document.getElementById('qrCodeImage');
+  
+  // 버튼 비활성화 및 로딩 표시
+  generateBtn.disabled = true;
+  generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> 생성 중...';
+  
+  // 취소 버튼 초기화 및 숨기기
+  document.getElementById('cancelContainer').classList.add('hidden');
+  const cancelBtn = document.getElementById('cancelInvoiceBtn');
+  cancelBtn.disabled = false;
+  cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+  
+  // 기존 결제 상태 확인 중지
+  if (paymentCheckInterval) {
+    clearInterval(paymentCheckInterval);
+    paymentCheckInterval = null;
+  }
+  
+  // 인보이스 컨테이너 표시 및 로딩 스피너 표시
+  invoiceContainer.classList.remove('hidden');
+  loadingSpinner.classList.remove('hidden');
+  qrCodeImage.classList.add('hidden');
+  
+  // 인보이스 생성 요청
+  fetch('/orders/checkout/create_invoice/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({})
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // 인보이스 생성 성공
+      currentPaymentHash = data.payment_hash;
+      currentInvoice = data.invoice;
+      
+      // QR 코드 생성
+      generateQRCode(data.invoice);
+      
+      // 인보이스 텍스트 표시
+      document.getElementById('invoiceTextArea').value = data.invoice;
+      
+      // 로딩 숨기고 QR 코드 표시
+      loadingSpinner.classList.add('hidden');
+      qrCodeImage.classList.remove('hidden');
+      
+      // 결제 상태 확인 시작
+      startPaymentStatusCheck();
+      
+      // 상태 메시지 표시
+      showPaymentStatus('결제를 기다리고 있습니다. QR 코드를 스캔하거나 인보이스를 복사하여 결제해주세요.', 'pending');
+      
+      // 버튼 텍스트 변경
+      generateBtn.innerHTML = '<i class="fas fa-check mr-3"></i> 인보이스 생성됨';
+      
+      // 취소 버튼 표시
+      document.getElementById('cancelContainer').classList.remove('hidden');
+      
+    } else {
+      // 인보이스 생성 실패
+      showPaymentStatus('인보이스 생성에 실패했습니다: ' + data.error, 'error');
+      
+      // 버튼 복원
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+      
+      // 로딩 숨기기
+      loadingSpinner.classList.add('hidden');
+      
+      // 취소 버튼 숨기기 및 초기화
+      document.getElementById('cancelContainer').classList.add('hidden');
+      const cancelBtn = document.getElementById('cancelInvoiceBtn');
+      cancelBtn.disabled = false;
+      cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showPaymentStatus('인보이스 생성 중 오류가 발생했습니다.', 'error');
+    
+    // 버튼 복원
+    generateBtn.disabled = false;
+    generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+    
+    // 로딩 숨기기
+    loadingSpinner.classList.add('hidden');
+    
+    // 취소 버튼 숨기기 및 초기화
+    document.getElementById('cancelContainer').classList.add('hidden');
+    const cancelBtn = document.getElementById('cancelInvoiceBtn');
+    cancelBtn.disabled = false;
+    cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+  });
+}
+
+function generateQRCode(invoice) {
+  try {
+    const qr = new QRious({
+      element: document.getElementById('qrCodeImage'),
+      value: invoice,
+      size: 250,
+      level: 'M'
+    });
+  } catch (error) {
+    console.error('QR 코드 생성 오류:', error);
+    // QR 코드 생성 실패 시 대체 텍스트 표시
+    document.getElementById('qrCodeImage').alt = 'QR 코드 생성 실패';
+  }
+}
+
+function copyInvoiceToClipboard() {
+  if (currentInvoice) {
+    const tempInput = document.createElement('input');
+    tempInput.value = currentInvoice;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+    
+    // 복사 완료 메시지
+    showPaymentStatus('인보이스가 클립보드에 복사되었습니다.', 'success');
+    setTimeout(() => {
+      showPaymentStatus('결제를 기다리고 있습니다. QR 코드를 스캔하거나 인보이스를 복사하여 결제해주세요.', 'pending');
+    }, 2000);
+  }
+}
+
+function startPaymentStatusCheck() {
+  if (paymentCheckInterval) {
+    clearInterval(paymentCheckInterval);
+  }
+  
+  paymentCheckInterval = setInterval(checkPaymentStatus, 3000); // 3초마다 확인
+}
+
+function checkPaymentStatus() {
+  if (!currentPaymentHash) return;
+  
+  fetch('/orders/checkout/check_payment/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+      payment_hash: currentPaymentHash
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      if (data.paid) {
+        // 결제 완료
+        clearInterval(paymentCheckInterval);
+        showPaymentStatus('결제가 완료되었습니다! 주문 페이지로 이동합니다...', 'success');
+        
+        // 2초 후 주문 완료 페이지로 이동
+        setTimeout(() => {
+          window.location.href = data.redirect_url;
+        }, 2000);
+      }
+      // 결제 대기 중이면 계속 확인
+    } else {
+      console.error('결제 상태 확인 오류:', data.error);
+    }
+  })
+  .catch(error => {
+    console.error('결제 상태 확인 중 오류:', error);
+  });
+}
+
+function showPaymentStatus(message, type) {
+  const statusDiv = document.getElementById('paymentStatus');
+  const messageDiv = document.getElementById('paymentMessage');
+  
+  statusDiv.className = 'status-' + type + ' p-4 rounded-lg border';
+  statusDiv.classList.remove('hidden');
+  messageDiv.innerHTML = message;
+}
+
+function cancelInvoice() {
+  if (!currentPaymentHash) {
+    showPaymentStatus('취소할 인보이스가 없습니다.', 'error');
+    return;
+  }
+  
+  if (!confirm('정말로 결제를 취소하시겠습니까?')) {
+    return;
+  }
+  
+  const cancelBtn = document.getElementById('cancelInvoiceBtn');
+  cancelBtn.disabled = true;
+  cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+  
+  fetch('/orders/checkout/cancel_invoice/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token }}'
+    },
+    body: JSON.stringify({
+      payment_hash: currentPaymentHash
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // 결제 상태 확인 중지
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+        paymentCheckInterval = null;
+      }
+      
+      // 성공 메시지 표시
+      showPaymentStatus('결제가 취소되었습니다.', 'error');
+      
+      // 취소 버튼 숨기기
+      document.getElementById('cancelContainer').classList.add('hidden');
+      
+      // 인보이스 생성 버튼 복원
+      const generateBtn = document.getElementById('generateInvoiceBtn');
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+      
+      // 인보이스 컨테이너 숨기기
+      document.getElementById('invoiceContainer').classList.add('hidden');
+      
+      // 현재 인보이스 정보 초기화
+      currentPaymentHash = null;
+      currentInvoice = null;
+      
+    } else {
+      // 실패 메시지 표시
+      showPaymentStatus('취소 중 오류가 발생했습니다: ' + data.error, 'error');
+      
+      // 취소 버튼 복원
+      cancelBtn.disabled = false;
+      cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showPaymentStatus('취소 중 오류가 발생했습니다.', 'error');
+    
+    // 취소 버튼 복원
+    cancelBtn.disabled = false;
+    cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+  });
+}
+
+// 페이지 언로드 시 인터벌 정리
+window.addEventListener('beforeunload', function() {
+  if (paymentCheckInterval) {
+    clearInterval(paymentCheckInterval);
+  }
+});
+</script>
+{% endblock %} 

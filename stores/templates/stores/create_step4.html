@@ -1,0 +1,221 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}4단계: 테스트 결제 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/stores.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 진행 상태 표시 -->
+    <div class="mb-8">
+      <div class="flex items-center justify-center space-x-4 mb-6">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">1단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">2단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">3단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-qrcode"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">4단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-gray-500 text-sm">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <span class="ml-2 text-sm text-gray-500">5단계</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 페이지 헤더 -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+        <i class="fas fa-qrcode text-2xl text-green-600 dark:text-green-400"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">테스트 결제</h1>
+      <p class="text-gray-600 dark:text-gray-400">블링크 API 설정이 올바른지 테스트 결제로 확인해보세요.</p>
+    </div>
+
+    <!-- 메인 콘텐츠 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- 테스트 인보이스 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white text-center mb-6">테스트 인보이스</h2>
+
+        <!-- QR 코드 컨테이너 -->
+        <div class="flex flex-col items-center justify-center mb-6" id="qrCodeContainer">
+          <!-- 초기에는 버튼만 표시 -->
+          <button type="button" id="generateInvoiceBtn"
+            class="inline-flex items-center px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors shadow-lg">
+            <i class="fas fa-qrcode mr-2"></i>
+            <span>테스트 인보이스 생성하기</span>
+          </button>
+
+          <!-- QR 코드 이미지 (처음엔 숨김) -->
+          <img src="" alt="테스트 결제 QR 코드" id="qrCodeImage" class="max-w-64 hidden rounded-lg shadow-md">
+
+          <!-- 로딩 상태 -->
+          <div id="loadingSpinner" class="hidden">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          </div>
+        </div>
+
+        <!-- 인보이스 텍스트 박스 -->
+        <div id="invoiceTextContainer" class="hidden space-y-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">라이트닝 인보이스</label>
+          <textarea 
+            id="invoiceTextArea" 
+            readonly 
+            placeholder="인보이스가 여기에 표시됩니다..."
+            class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm h-32 resize-none"
+          ></textarea>
+          <button type="button" id="copyInvoiceBtn"
+            class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors">
+            <i class="fas fa-copy mr-2"></i>
+            <span>인보이스 복사</span>
+          </button>
+        </div>
+
+        <!-- 인보이스 상세 정보 -->
+        <div id="invoiceDetails" class="hidden text-center space-y-2 text-sm text-gray-600 dark:text-gray-400">
+          <p><strong>결제 금액:</strong> 10 사토시</p>
+          <p><strong>스토어:</strong> {{ store.store_name }}</p>
+          <p><strong>설명:</strong> {{ store.store_name }} 테스트 결제</p>
+        </div>
+
+        <p id="qrCodeHelp" class="hidden text-center text-gray-600 dark:text-gray-400 mt-4">
+          QR 코드를 스캔하여 테스트 결제를 진행해주세요.
+        </p>
+      </div>
+
+      <!-- 결제 진행 방법 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">결제 진행 방법</h2>
+        
+        <div id="paymentInstructions" class="space-y-4">
+          <!-- 주의사항 -->
+          <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+              <p class="text-sm text-blue-800 dark:text-blue-200">
+                주의! 테스트 인보이스 결제는 블링크(Blink) 지갑은 사용할 수 없습니다. 다른 라이트닝 지갑을 준비해 주세요.
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400 mr-2"></i>
+              <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                먼저 "테스트 인보이스 생성하기" 버튼을 클릭하여 결제용 QR 코드를 생성하세요.
+              </p>
+            </div>
+          </div>
+
+          <!-- 단계별 안내 -->
+          <div id="qrCodeInstructions" class="hidden space-y-3">
+            <div class="flex items-start">
+              <span class="inline-flex items-center justify-center w-6 h-6 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-full text-xs font-medium mr-3 mt-0.5">1</span>
+              <div class="text-sm text-gray-700 dark:text-gray-300">
+                <strong>QR 코드 스캔:</strong> 블링크 앱이나 호환 가능한 라이트닝 월렛으로 QR 코드를 스캔합니다.
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="inline-flex items-center justify-center w-6 h-6 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-full text-xs font-medium mr-3 mt-0.5">2</span>
+              <div class="text-sm text-gray-700 dark:text-gray-300">
+                <strong>인보이스 복사:</strong> 또는 아래 인보이스 텍스트를 복사하여 월렛 앱에 직접 붙여넣을 수 있습니다.
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="inline-flex items-center justify-center w-6 h-6 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-full text-xs font-medium mr-3 mt-0.5">3</span>
+              <div class="text-sm text-gray-700 dark:text-gray-300">
+                <strong>결제 확인:</strong> 앱에서 결제 정보를 확인하고 결제를 진행합니다.
+              </div>
+            </div>
+            <div class="flex items-start">
+              <span class="inline-flex items-center justify-center w-6 h-6 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-full text-xs font-medium mr-3 mt-0.5">4</span>
+              <div class="text-sm text-gray-700 dark:text-gray-300">
+                <strong>결제 완료:</strong> 결제가 완료되면 자동으로 확인되어 다음 단계로 넘어갑니다.
+              </div>
+            </div>
+          </div>
+
+          <!-- 참고사항 -->
+          <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <div class="flex items-center">
+              <i class="fas fa-info-circle text-gray-600 dark:text-gray-400 mr-2"></i>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                <strong>참고:</strong> 이것은 실제 10 사토시 결제입니다.
+                블링크 API 설정이 올바른지 확인하기 위한 테스트 결제입니다.
+              </p>
+            </div>
+          </div>
+
+          <!-- 결제 상태 -->
+          <div id="paymentStatus" class="hidden">
+            <p id="paymentMessage" class="text-sm"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 폼 및 버튼 -->
+    <form method="post" id="step4Form">
+      {% csrf_token %}
+      <div class="flex justify-center gap-4">
+        <a href="{% url 'stores:create_store_step' step=3 %}" 
+           class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm">
+          <i class="fas fa-arrow-left mr-2"></i>
+          <span>이전 단계</span>
+        </a>
+        <button 
+          type="submit" 
+          name="test_completed" 
+          value="true" 
+          id="nextStepBtn"
+          disabled 
+          title="테스트 결제를 완료해야 다음 단계로 진행할 수 있습니다."
+          class="inline-flex items-center px-8 py-3 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-lg disabled:shadow-none"
+        >
+          <i class="fas fa-arrow-right mr-2"></i>
+          <span>다음 단계</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script>
+  // Django 템플릿 변수를 JavaScript 전역 변수로 설정
+  window.storeId = '{{ store.store_id|default:"" }}';
+  window.storeName = '{{ store.store_name|default:"테스트 스토어" }}';
+  window.csrfToken = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/create-step4.js' %}"></script>
+
+<!-- 중복 스타일 제거됨 -->
+{% endblock %}

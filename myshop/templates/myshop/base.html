@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }} - {{ site_settings.site_description }}{% else %}SatoShop - 비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind 설정 -->
+  <script src="{% static 'js/tailwind-config.js' %}"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Tailwind styles -->
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+  </style>
+
+  <link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white{% block body_class %}{% endblock %}" data-theme="light">
+  <div class="min-h-screen flex flex-col">
+    <!-- 플랫폼 네비게이션 바 -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
+      {% include 'myshop/nav_bar.html' %}
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="flex-1 pt-16">
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <!-- 플랫폼 푸터 -->
+    <footer class="bg-gray-900 dark:bg-gray-950 text-white">
+      <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+        <p class="text-sm">
+          <strong class="text-bitcoin">SatoShop</strong> - 비트코인 라이트닝 결제 플랫폼
+          <br>
+          <span class="text-gray-300">누구나 쉽게 온라인 스토어를 만들고 비트코인으로 결제받을 수 있습니다.</span>
+        </p>
+        <!-- <div class="flex justify-center space-x-4 mt-6">
+          <a href="#" class="inline-flex items-center px-4 py-2 border border-white text-white hover:bg-white hover:text-gray-900 rounded-md transition-colors">
+            <i class="fab fa-github mr-2"></i>
+            GitHub
+          </a>
+          <a href="#" class="inline-flex items-center px-4 py-2 border border-white text-white hover:bg-white hover:text-gray-900 rounded-md transition-colors">
+            <i class="fas fa-book mr-2"></i>
+            문서
+          </a>
+        </div> -->
+      </div>
+    </footer>
+  </div>
+
+
+
+  <!-- 공통 JavaScript -->
+  <script>
+    // Django URL과 CSRF 토큰을 전역 변수로 설정
+    window.csrfToken = '{{ csrf_token }}';
+    window.logoutUrl = "{% url 'accounts:logout' %}";
+    window.loginUrl = "{% url 'accounts:login' %}";
+    window.signupUrl = "{% url 'accounts:signup' %}";
+  </script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

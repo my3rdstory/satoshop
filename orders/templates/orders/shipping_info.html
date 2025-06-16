@@ -1,0 +1,252 @@
+{% extends 'stores/store_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}배송 정보 입력{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 커스텀 그라디언트 */
+.bitcoin-gradient {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center mb-4">
+        <div class="p-3 bg-bitcoin/10 rounded-full mr-3">
+          <i class="fas fa-shipping-fast text-3xl text-bitcoin"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">배송 정보 입력</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-2">주문을 위한 배송 정보를 입력해주세요</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 개인정보 보호 안내 -->
+    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mb-8">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <i class="fas fa-shield-alt text-yellow-600 dark:text-yellow-400 text-xl mt-1"></i>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+            🔒 개인정보 보호 안내
+          </h3>
+          <p class="text-yellow-700 dark:text-yellow-300 text-sm leading-relaxed">
+            입력하신 배송 정보는 주문 처리 목적으로만 사용되며, 사용자 계정에는 저장되지 않습니다. 주문 완료 후 스토어 주인장의 배송 작업을 위해서만 사용됩니다.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주문 요약 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+      <div class="flex items-center mb-4">
+        <div class="p-2 bg-bitcoin/10 rounded-lg mr-3">
+          <i class="fas fa-receipt text-bitcoin"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">주문 요약</h3>
+      </div>
+      
+      <div class="space-y-3">
+        <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+          <span>상품 수량</span>
+          <span class="font-medium">{{ cart.total_items }}개</span>
+        </div>
+        <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+          <span>상품 금액</span>
+          <span class="font-medium">{{ subtotal_amount|floatformat:0 }} sats</span>
+        </div>
+        <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
+          <span>배송비</span>
+          <span class="font-medium">
+            {% if total_shipping_fee == 0 %}
+              <span class="text-green-600 dark:text-green-400">무료</span>
+            {% else %}
+              {{ total_shipping_fee|floatformat:0 }} sats
+            {% endif %}
+          </span>
+        </div>
+        <div class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3">
+          <div class="flex justify-between items-center text-lg font-bold text-gray-900 dark:text-white">
+            <span>총 결제 금액</span>
+            <span class="text-bitcoin">{{ total_amount|floatformat:0 }} sats</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 배송 정보 입력 폼 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+      <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <!-- 주문자 정보 -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-4 border-b border-gray-200 dark:border-gray-600">
+            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+              <i class="fas fa-user text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">주문자 정보</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label for="buyer_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                이름 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="buyer_name" 
+                name="buyer_name" 
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+                value="{{ form_data.buyer_name|default:'' }}" 
+                required
+              >
+            </div>
+            
+            <div>
+              <label for="buyer_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                연락처 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="tel" 
+                id="buyer_phone" 
+                name="buyer_phone" 
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+                value="{{ form_data.buyer_phone|default:'' }}" 
+                placeholder="010-1234-5678" 
+                required
+              >
+            </div>
+          </div>
+          
+          <div>
+            <label for="buyer_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              이메일 <span class="text-red-500">*</span>
+            </label>
+            <input 
+              type="email" 
+              id="buyer_email" 
+              name="buyer_email" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              value="{{ form_data.buyer_email|default:user.email }}" 
+              required
+            >
+          </div>
+        </div>
+
+        <!-- 배송지 정보 -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-4 border-b border-gray-200 dark:border-gray-600">
+            <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg mr-3">
+              <i class="fas fa-map-marker-alt text-green-600 dark:text-green-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">배송지 정보</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label for="shipping_postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                우편번호 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="shipping_postal_code" 
+                name="shipping_postal_code" 
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+                value="{{ form_data.shipping_postal_code|default:'' }}" 
+                placeholder="12345" 
+                required
+              >
+            </div>
+            
+            <div class="md:col-span-2">
+              <label for="shipping_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                주소 <span class="text-red-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="shipping_address" 
+                name="shipping_address" 
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+                value="{{ form_data.shipping_address|default:'' }}" 
+                placeholder="서울특별시 강남구 테헤란로 123" 
+                required
+              >
+            </div>
+          </div>
+          
+          <div>
+            <label for="shipping_detail_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              상세주소
+            </label>
+            <input 
+              type="text" 
+              id="shipping_detail_address" 
+              name="shipping_detail_address" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              value="{{ form_data.shipping_detail_address|default:'' }}" 
+              placeholder="아파트명, 동/호수 등"
+            >
+          </div>
+        </div>
+
+        <!-- 주문 메모 -->
+        <div class="space-y-6">
+          <div class="flex items-center pb-4 border-b border-gray-200 dark:border-gray-600">
+            <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg mr-3">
+              <i class="fas fa-sticky-note text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white">주문 메모</h3>
+          </div>
+          
+          <div>
+            <label for="order_memo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              배송 요청사항
+            </label>
+            <textarea 
+              id="order_memo" 
+              name="order_memo" 
+              rows="4"
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors resize-vertical" 
+              placeholder="배송 시 요청사항이 있으시면 입력해주세요."
+            >{{ form_data.order_memo|default:'' }}</textarea>
+          </div>
+        </div>
+
+                 <!-- 액션 버튼 -->
+         <div class="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-600">
+           <a 
+             href="{% url 'orders:cart_view' %}" 
+             class="inline-flex items-center justify-center px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors shadow-lg sm:w-auto"
+           >
+             <i class="fas fa-arrow-left mr-2"></i>
+             장바구니로 돌아가기
+           </a>
+           <button 
+             type="submit" 
+             id="checkout-btn"
+             class="flex-1 inline-flex items-center justify-center px-8 py-3 bg-bitcoin hover:bg-bitcoin/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-lg disabled:shadow-none"
+             disabled
+           >
+             <i class="fas fa-credit-card mr-2"></i>
+             <span id="checkout-btn-text">필수 정보를 입력해주세요</span>
+           </button>
+         </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/shipping-info.js' %}"></script>
+{% endblock %} 

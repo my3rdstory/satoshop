@@ -1,0 +1,137 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}스토어를 찾을 수 없습니다{% endblock %}
+
+{% block content %}
+<!-- 404 알림 헤더 -->
+<section class="bg-gradient-to-br from-red-500 to-pink-600 py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <div class="w-24 h-24 mx-auto mb-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+        <i class="fas fa-store-slash text-4xl text-white"></i>
+      </div>
+      <h1 class="text-5xl font-bold text-white mb-4">
+        스토어를 찾을 수 없습니다
+      </h1>
+      <h2 class="text-2xl text-white mb-6">
+        요청하신 스토어가 존재하지 않습니다
+      </h2>
+      <div class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 rounded-full text-white">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        404 - 페이지를 찾을 수 없음
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 안내 메시지 -->
+<section class="py-16 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-search text-red-500 mr-3"></i>
+          스토어를 찾을 수 없습니다
+        </h3>
+        <div class="space-y-6">
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            죄송합니다. 요청하신 스토어 ID <strong class="text-gray-900 dark:text-white">{{ store_id }}</strong>에 해당하는 스토어를 찾을 수 없습니다.
+          </p>
+          <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-6">
+            <h4 class="text-lg font-semibold text-yellow-900 dark:text-yellow-200 mb-4">다음과 같은 이유일 수 있습니다:</h4>
+            <ul class="space-y-2 text-yellow-800 dark:text-yellow-300">
+              <li class="flex items-start">
+                <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+                <strong>스토어가 삭제되었습니다</strong> - 주인장이 스토어를 영구 삭제했을 수 있습니다
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+                <strong>잘못된 주소입니다</strong> - 스토어 ID를 다시 확인해 주세요
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+                <strong>일시적인 오류</strong> - 잠시 후 다시 시도해 주세요
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-lightbulb text-yellow-500 mr-3"></i>
+          다른 방법을 시도해보세요
+        </h4>
+        <div class="space-y-4 text-gray-600 dark:text-gray-400">
+          <p>올바른 스토어를 찾고 계신가요? 다음 방법들을 시도해보세요:</p>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              스토어 주인장에게 직접 문의하기
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              스토어 ID 철자를 다시 확인하기
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              SatoShop 홈페이지에서 다른 스토어 둘러보기
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+          스토어 운영자이신가요?
+        </h4>
+        <div class="space-y-4 text-gray-600 dark:text-gray-400">
+          <p>만약 이 스토어의 운영자라면:</p>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              로그인 후 <strong>내 스토어 관리</strong>에서 스토어 상태를 확인해보세요
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              실수로 삭제했다면 새로운 스토어를 생성할 수 있습니다
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-circle text-xs mt-2 mr-3"></i>
+              기술적인 문제가 있다면 고객 지원센터에 문의해주세요
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- 액션 버튼들 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+        <a href="/" class="inline-flex items-center px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-home mr-3"></i>
+          SatoShop 홈으로
+        </a>
+
+        <a href="{% url 'stores:create_store' %}" class="inline-flex items-center px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-plus-circle mr-3"></i>
+          새 스토어 만들기
+        </a>
+
+        <button onclick="history.back()" class="inline-flex items-center px-8 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-arrow-left mr-3"></i>
+          이전 페이지로
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Django 템플릿 변수를 JavaScript 전역 변수로 설정
+  window.storeId = '{{ store_id }}';
+</script>
+<script src="{% static 'js/store-not-found.js' %}"></script>
+{% endblock %}

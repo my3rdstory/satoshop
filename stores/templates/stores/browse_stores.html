@@ -1,0 +1,174 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}스토어 탐색 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 스토어 탐색 페이지 스타일 */
+.browse-hero {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 검색 헤더 -->
+<section class="browse-hero py-16">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold text-white mb-4">
+        <i class="fas fa-search mr-3"></i>스토어 탐색
+      </h1>
+      <p class="text-lg text-gray-300">
+        다양한 스토어를 찾아보고 새로운 상품을 발견해보세요
+      </p>
+    </div>
+
+    <!-- 검색창 -->
+    <div class="max-w-2xl mx-auto">
+      <form method="get" action="{% url 'stores:browse_stores' %}">
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <i class="fas fa-search text-gray-400"></i>
+          </div>
+          <input 
+            type="text" 
+            name="q" 
+            class="block w-full pl-12 pr-32 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-all duration-200 text-lg"
+            placeholder="스토어 이름, 설명, 주인장 이름으로 검색..." 
+            value="{{ search_query }}"
+            autocomplete="off"
+          >
+          <div class="absolute inset-y-0 right-0 flex items-center">
+            <button 
+              type="submit" 
+              class="mr-2 px-6 py-2 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+            >
+              <i class="fas fa-search mr-2"></i>검색
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- 스토어 목록 -->
+<section class="bg-gray-50 dark:bg-gray-900 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if search_query %}
+    <div class="mb-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+      <p class="text-blue-800 dark:text-blue-200">
+        "<strong>{{ search_query }}</strong>" 검색 결과: 
+        <span class="font-semibold">{{ total_count }}개</span> 스토어
+      </p>
+    </div>
+    {% else %}
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <i class="fas fa-fire text-red-500 mr-3"></i>최근 활성화된 스토어
+      </h2>
+    </div>
+    {% endif %}
+
+    {% if stores %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for store in stores %}
+      <a 
+        href="{% url 'stores:store_detail' store.store_id %}" 
+        class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+      >
+        <!-- 스토어 이미지 -->
+        <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
+          {% if store.images.exists %}
+          <img 
+            src="{{ store.images.first.file_url }}" 
+            alt="{{ store.store_name }}"
+            class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          >
+          {% else %}
+          <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center group-hover:from-bitcoin/10 group-hover:to-orange-500/10 transition-all duration-300">
+            <i class="fas fa-store text-4xl text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 스토어 정보 -->
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-bitcoin transition-colors">
+            {{ store.store_name }}
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+            {% if store.store_description %}
+              {{ store.store_description|truncatechars:80 }}
+            {% else %}
+              멋진 상품들을 판매하는 스토어입니다.
+            {% endif %}
+          </p>
+          
+          <!-- 스토어 메타 정보 -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+              <i class="fas fa-user mr-2"></i>
+              <span>{{ store.owner_name }}</span>
+            </div>
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+              <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+              활성화
+            </span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- 검색 결과 없음 -->
+    <div class="text-center py-16">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <i class="fas fa-search text-3xl text-gray-400"></i>
+      </div>
+      <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        {% if search_query %}
+          검색 결과가 없습니다
+        {% else %}
+          활성화된 스토어가 없습니다
+        {% endif %}
+      </h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+        {% if search_query %}
+          다른 검색어로 시도해보시거나 검색어를 확인해주세요.
+        {% else %}
+          아직 등록된 스토어가 없습니다. 첫 번째 스토어를 만들어보세요!
+        {% endif %}
+      </p>
+      {% if not search_query and user.is_authenticated %}
+      <a 
+        href="{% url 'stores:create_store' %}" 
+        class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+      >
+        <i class="fas fa-plus mr-2"></i>
+        스토어 만들기
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if search_query and stores %}
+    <div class="text-center mt-12">
+      <a 
+        href="{% url 'stores:browse_stores' %}" 
+        class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
+      >
+        <i class="fas fa-arrow-left mr-2"></i>
+        전체 스토어 보기
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/browse-stores.js' %}"></script>
+{% endblock %} 

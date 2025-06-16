@@ -1,0 +1,134 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}
+{% if error_type == 'product_inactive' %}
+상품 판매 중단
+{% else %}
+상품을 찾을 수 없습니다 - {{ store.store_name }}
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-16">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+      <!-- 아이콘 -->
+      <div class="mb-8">
+        {% if error_type == 'product_inactive' %}
+        <div class="w-24 h-24 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mx-auto">
+          <i class="fas fa-pause-circle text-yellow-500 text-4xl"></i>
+        </div>
+        {% else %}
+        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">
+          <i class="fas fa-search text-gray-400 text-4xl"></i>
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- 제목 -->
+      {% if error_type == 'product_inactive' %}
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        상품 판매가 중단되었습니다
+      </h1>
+      {% else %}
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        상품을 찾을 수 없습니다
+      </h1>
+      {% endif %}
+      
+      <!-- 비활성화 상품 안내 -->
+      {% if error_type == 'product_inactive' %}
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+        <div class="flex items-center justify-center space-x-3">
+          <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
+          </div>
+          <div class="text-left">
+            <h3 class="font-semibold text-yellow-800 dark:text-yellow-200">판매 중단된 상품</h3>
+            <p class="text-yellow-700 dark:text-yellow-300 text-sm">이 상품은 현재 판매가 중단되어 구매할 수 없습니다.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-gray-600 dark:text-gray-400 mb-8">
+        <p class="text-lg">
+          요청하신 상품의 판매가 일시적으로 중단되었습니다.
+        </p>
+      </div>
+      {% else %}
+      <!-- 일반 404 안내 -->
+      <div class="text-gray-600 dark:text-gray-400 mb-8">
+        <p class="text-lg">
+          요청하신 상품(ID: {{ product_id }})이 존재하지 않습니다.
+        </p>
+      </div>
+      {% endif %}
+      
+      <!-- 안내 메시지 -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8 text-left">
+        {% if error_type == 'product_inactive' %}
+        <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-3">다른 상품을 둘러보세요:</h3>
+        <ul class="space-y-2 text-blue-700 dark:text-blue-300">
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-check-circle text-blue-500 mt-0.5"></i>
+            <span>스토어의 다른 상품들을 확인해보세요</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-check-circle text-blue-500 mt-0.5"></i>
+            <span>비슷한 상품이 있는지 살펴보세요</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-check-circle text-blue-500 mt-0.5"></i>
+            <span>나중에 다시 방문해서 판매 재개를 확인해보세요</span>
+          </li>
+        </ul>
+        {% else %}
+        <h3 class="font-semibold text-blue-800 dark:text-blue-200 mb-3">다음과 같은 경우일 수 있습니다:</h3>
+        <ul class="space-y-2 text-blue-700 dark:text-blue-300">
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+            <span>상품이 삭제되었거나 판매 중단됨</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+            <span>잘못된 링크를 통해 접근함</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+            <span>상품 번호를 잘못 입력함</span>
+          </li>
+        </ul>
+        {% endif %}
+      </div>
+      
+      <!-- 액션 버튼들 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        {% if error_type == 'product_inactive' %}
+        <button onclick="history.back()" 
+                class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          이전 페이지로 돌아가기
+        </button>
+        {% else %}
+        <a href="{% url 'stores:store_detail' store.store_id %}" 
+           class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          {{ store.store_name }} 스토어로 돌아가기
+        </a>
+        {% endif %}
+        
+        <a href="{% url 'myshop:home' %}" 
+           class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <i class="fas fa-home mr-2"></i>
+          홈페이지로
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

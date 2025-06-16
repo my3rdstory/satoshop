@@ -1,0 +1,182 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}로그인 - SatoShop{% endblock %}
+
+{% block body_class %} auth-page{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 로그인 페이지 스타일 조정 */
+body.auth-page {
+    min-height: 100vh;
+    /* 라이트 모드: 흐린 회색 그라데이션 */
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+}
+
+body.auth-page main {
+    min-height: calc(100vh - 4rem - 120px); /* 네비게이션과 푸터 높이 제외 */
+}
+
+/* 다크모드: 어두운 그라데이션 */
+body.auth-page.dark,
+body.auth-page[data-theme="dark"] {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-md w-full space-y-8">
+    <!-- 로그인 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+      <!-- 헤더 -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">로그인</h1>
+        <p class="text-gray-600 dark:text-gray-400">SatoShop에 오신 것을 환영합니다</p>
+      </div>
+
+      <!-- 로그인 폼 -->
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% if request.GET.next %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% endif %}
+
+        <!-- 사용자명 입력 -->
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            사용자명
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <input 
+              id="username"
+              name="username" 
+              type="text" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="사용자명을 입력하세요"
+            >
+          </div>
+        </div>
+
+        <!-- 비밀번호 입력 -->
+        <div>
+          <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            비밀번호
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              id="password"
+              name="password" 
+              type="password" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="비밀번호를 입력하세요"
+            >
+          </div>
+        </div>
+
+        <!-- 에러 메시지 -->
+        {% if form.errors %}
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">
+                오류가 발생했습니다:
+              </h3>
+              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                <ul class="list-disc list-inside space-y-1">
+                  {% for field, errors in form.errors.items %}
+                  {% for error in errors %}
+                  <li>{{ error }}</li>
+                  {% endfor %}
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 로그인 버튼 -->
+        <div>
+          <button 
+            type="submit"
+            class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-bitcoin hover:bg-bitcoin/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors shadow-lg"
+          >
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <i class="fas fa-sign-in-alt text-bitcoin-light group-hover:text-white"></i>
+            </span>
+            로그인
+          </button>
+        </div>
+      </form>
+
+      <!-- 구분선 -->
+      <div class="mt-8">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 회원가입 링크 -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          계정이 없으신가요?
+        </p>
+        <a 
+          href="{% url 'accounts:signup' %}" 
+          class="w-full inline-flex justify-center items-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors"
+        >
+          <i class="fas fa-user-plus mr-2"></i>
+          회원가입
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function goBack() {
+    // URL 파라미터에서 next 값 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const nextUrl = urlParams.get('next');
+
+    // referrer 정보 확인
+    const referrer = document.referrer;
+
+    // 1순위: next 파라미터가 있으면 해당 URL로
+    if (nextUrl) {
+      window.location.href = decodeURIComponent(nextUrl);
+      return;
+    }
+
+    // 2순위: referrer가 있고 우리 사이트 내부이면 돌아가기
+    if (referrer && referrer.includes(window.location.hostname)) {
+      window.history.back();
+      return;
+    }
+
+    // 3순위: 홈으로
+    window.location.href = "{% url 'myshop:home' %}?force_home=1";
+  }
+</script>
+{% endblock %}

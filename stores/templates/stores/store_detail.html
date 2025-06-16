@@ -1,0 +1,162 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load markdown_extras %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<style>
+  .store-header {
+    background: var(--hero-gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
+    color: var(--hero-text-color, white);
+  }
+  .store-header h1,
+  .store-header p {
+    color: var(--hero-text-color, white) !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    .store-header h1,
+    .store-header p {
+      color: var(--hero-text-color, white) !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 스토어 헤더 -->
+<section class="store-header py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-5xl font-bold mb-4 text-white">
+        <i class="fas fa-store mr-4"></i>
+        {{ store.store_name }}
+      </h1>
+      <p class="text-2xl text-white">
+        주인장: {{ store.owner_name }}
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 스토어 소개 및 커버 이미지 -->
+<section class="py-8 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 왼쪽: 스토어 소개 + 커버 이미지 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+            스토어 소개
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 왼쪽: 스토어 설명 -->
+            <div>
+              {% if store.store_description %}
+              <div class="prose max-w-none markdown-content">
+                {{ store.store_description }}
+              </div>
+              {% else %}
+              <div class="text-gray-500 dark:text-gray-400 italic">
+                <p>아직 스토어 설명이 등록되지 않았습니다.</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- 오른쪽: 커버 이미지 -->
+            <div>
+              {% if store.images.exists %}
+              <div class="aspect-video rounded-lg overflow-hidden">
+                {% with store.images.first as store_image %}
+                  <img src="{{ store_image.file_url }}" alt="{{ store_image.original_name }}" loading="lazy"
+                    onclick="openImageModal('{{ store_image.file_url }}', '{{ store_image.original_name }}')"
+                    class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200">
+                {% endwith %}
+              </div>
+              {% else %}
+              <div class="aspect-video rounded-lg bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                <i class="fas fa-image text-4xl mb-2"></i>
+                <p>등록된 이미지가 없습니다</p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 주인장 정보 -->
+      <div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-user text-blue-500 mr-3"></i>
+            주인장 정보
+          </h3>
+
+          <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ store.owner_name }}</h4>
+
+            {% if store.owner_phone %}
+            <div class="flex items-center text-gray-600 dark:text-gray-400">
+              <i class="fas fa-phone text-blue-500 mr-3"></i>
+              <a href="tel:{{ store.owner_phone }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ store.owner_phone }}</a>
+            </div>
+            {% endif %}
+
+            {% if store.owner_email %}
+            <div class="flex items-center text-gray-600 dark:text-gray-400">
+              <i class="fas fa-envelope text-blue-500 mr-3"></i>
+              <a href="mailto:{{ store.owner_email }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ store.owner_email }}</a>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mt-6">
+            <a href="{{ store.chat_channel }}" target="_blank" class="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+              <i class="fas fa-comments mr-2"></i>
+              소통 채널 접속
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 상품 목록 -->
+<section class="py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center">
+      <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>
+      상품 목록
+    </h2>
+
+    {% include 'products/product_grid.html' with is_public_view=True %}
+  </div>
+</section>
+
+<!-- 이미지 모달 -->
+{% if store.images.exists %}
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+  <div class="relative max-w-4xl max-h-full p-4">
+    <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+    <button onclick="closeImageModal()" class="absolute top-2 right-2 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center text-white transition-colors">
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/store-detail.js' %}"></script>
+{% endblock %}

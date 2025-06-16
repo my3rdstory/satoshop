@@ -1,0 +1,1031 @@
+/* Stores CSS - 스토어 관련 공통 스타일 */
+/* themes.css의 CSS 변수를 사용합니다 */
+
+/* ==========================================================================
+   공통 스타일
+   ========================================================================== */
+
+/* 기본 스타일 */
+html, body {
+  background-color: var(--bg-body);
+  transition: background-color 0.3s ease;
+}
+
+/* 유틸리티 클래스들 */
+.store-link {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.back-button {
+  margin-bottom: 1rem;
+}
+
+.loading-container {
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader {
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--bulma-primary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 글로우 효과 */
+.is-glowing {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px rgba(39, 174, 96, 0.6);
+  }
+  to {
+    box-shadow: 0 0 30px rgba(39, 174, 96, 0.8), 0 0 40px rgba(39, 174, 96, 0.6);
+  }
+}
+
+/* 토글 가시성 */
+.toggle-visibility {
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.3s ease;
+}
+
+.toggle-visibility:hover {
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   스토어 탐색 (browse_stores.html)
+   ========================================================================== */
+
+.browse-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white !important;
+  padding: 2rem 0;
+}
+
+.browse-hero .title,
+.browse-hero .subtitle {
+  color: white !important;
+}
+
+.search-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-box {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 1rem 1rem 1rem 3rem;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  color: #333;
+}
+
+.search-input:focus {
+  outline: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 1.2rem;
+}
+
+.search-button {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.7rem 1.5rem;
+  border-radius: 50px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.search-button:hover {
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.stores-section {
+  padding: 3rem 0;
+  background-color: var(--bg-primary);
+  min-height: 60vh;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-primary);
+}
+
+.stores-section .store-card {
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid #c0c0c0 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+  height: 100% !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  display: block !important;
+}
+
+[data-theme="dark"] .stores-section .store-card {
+  border: 4px solid #606060 !important;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+.stores-section .store-card:hover {
+  transform: translateY(-5px) !important;
+  border-color: #a0a0a0 !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+[data-theme="dark"] .stores-section .store-card:hover {
+  border-color: #808080 !important;
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+}
+
+.store-card-image {
+  height: 180px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.store-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.store-card-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: white;
+  font-size: 3rem;
+}
+
+.store-card-content {
+  padding: 1.5rem;
+}
+
+.store-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.store-description {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.store-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.store-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.store-status {
+  background-color: #48c774;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.no-results {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+}
+
+.no-results-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.no-results-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.search-stats {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   스토어 생성 단계 공통 스타일
+   ========================================================================== */
+
+.store-steps {
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+.store-steps ul {
+  justify-content: center;
+}
+
+.store-steps li {
+  pointer-events: none;
+}
+
+.store-steps .is-active {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.store-steps li:not(.is-active) {
+  color: var(--text-muted);
+}
+
+.steps-process {
+  margin: 2rem 0;
+}
+
+.step-icon {
+  margin-bottom: 1rem;
+}
+
+.step-icon .icon {
+  margin: 0 auto;
+}
+
+.step-column {
+  transition: transform 0.3s ease;
+}
+
+.step-column:hover {
+  transform: translateY(-5px);
+}
+
+.step-number {
+  color: var(--text-secondary);
+}
+
+.step-description {
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   스토어 생성 1단계 (create_step1.html)
+   ========================================================================== */
+
+.help-text-success {
+  color: var(--bulma-success) !important;
+}
+
+.help-text-danger {
+  color: var(--bulma-danger) !important;
+}
+
+.help-text-default {
+  color: var(--text-muted);
+}
+
+.preview-url {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   스토어 생성 2단계 (create_step2.html)
+   ========================================================================== */
+
+.contact-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ==========================================================================
+   스토어 생성 4단계 (create_step4.html)
+   ========================================================================== */
+
+.qr-code-container {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 180px;
+}
+
+.qr-code-container img {
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-textarea {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.status-pending {
+  color: var(--bulma-warning) !important;
+}
+
+.status-success {
+  color: var(--bulma-success) !important;
+}
+
+.status-failed {
+  color: var(--bulma-danger) !important;
+}
+
+#invoiceTextArea {
+  word-break: break-all !important;
+  overflow-wrap: break-word !important;
+  font-family: monospace !important;
+  font-size: 0.85em !important;
+}
+
+/* ==========================================================================
+   스토어 생성 5단계 (create_step5.html)
+   ========================================================================== */
+
+.store-summary-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.store-info-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.store-info-item:last-child {
+  border-bottom: none;
+}
+
+.store-url-preview {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.success-message {
+  background: linear-gradient(135deg, var(--bulma-success), #27ae60);
+  color: white;
+}
+
+/* 테이블 열 너비 조정 */
+.table td:first-child {
+  width: 35%;
+  white-space: nowrap;
+}
+
+.table td:last-child {
+  width: 65%;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+/* 스토어 URL 코드 블록 개선 */
+.table code {
+  font-size: 0.85em;
+  padding: 0.25em 0.5em;
+  border-radius: 3px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox input {
+  margin-right: 0.5rem;
+}
+
+/* ==========================================================================
+   API 설정 편집 (edit_api_settings.html)
+   ========================================================================== */
+
+.edit-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.section-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.security-warning {
+  background: var(--bg-secondary);
+  border: 1px solid #ffe08a;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="dark"] .security-warning {
+  background: rgba(255, 224, 138, 0.15);
+  border-color: rgba(255, 224, 138, 0.5);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .security-warning .content {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .security-warning .subtitle {
+  color: #ffc107 !important;
+}
+
+.api-info-section {
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: var(--bg-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.test-section {
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.test-section-title {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   스토어 메뉴 컴포넌트 (store_menu_component.html)
+   ========================================================================== */
+
+.store-menu,
+.edit-menu {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1.5rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.store-menu-header,
+.edit-menu-header {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.edit-menu-header {
+  padding: 1rem;
+  margin-bottom: 0;
+}
+
+.store-menu-item,
+.edit-menu-item {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.edit-menu-item {
+  padding: 0.75rem 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.edit-menu-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.store-menu-item:last-child,
+.edit-menu-item:last-child {
+  border-bottom: none;
+}
+
+.store-menu-item a,
+.edit-menu-item a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.edit-menu-item a {
+  padding: 0;
+}
+
+.store-menu-item a:hover,
+.edit-menu-item a:hover {
+  color: var(--bulma-link);
+}
+
+.edit-menu-item a:hover {
+  color: var(--text-primary);
+}
+
+.store-menu-description,
+.edit-menu-description {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* ==========================================================================
+   스토어 상세 (store_detail.html)
+   ========================================================================== */
+
+.store-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 3rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.store-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.store-hero .container {
+  position: relative;
+  z-index: 2;
+}
+
+.store-hero-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.store-info-section {
+  background-color: var(--bg-primary);
+  padding: 2rem 0;
+}
+
+.store-contact-info {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.contact-item:last-child {
+  margin-bottom: 0;
+}
+
+.contact-icon {
+  width: 40px;
+  height: 40px;
+  background-color: var(--bulma-primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contact-content {
+  flex: 1;
+}
+
+.contact-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.contact-value {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.contact-value a {
+  color: var(--bulma-link);
+  text-decoration: none;
+}
+
+.contact-value a:hover {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   스토어 비활성화 (store_inactive.html)
+   ========================================================================== */
+
+.inactive-hero {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.inactive-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.8;
+}
+
+.inactive-message {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+/* ==========================================================================
+   스토어 관리 (manage_store.html, my_stores.html)
+   ========================================================================== */
+
+.store-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.no-store-section {
+  padding: 3rem;
+}
+
+.no-store-icon {
+  font-size: 4rem;
+  color: var(--text-muted);
+}
+
+.no-store-title {
+  color: var(--text-muted);
+}
+
+.no-store-text {
+  color: var(--text-muted);
+}
+
+.tag.is-custom-light {
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.store-management-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.store-management-card:hover {
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transform: translateY(-2px);
+}
+
+.store-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.stat-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.action-card {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.action-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.action-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.action-description {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+/* ==========================================================================
+   스토어 편집 공통 스타일
+   ========================================================================== */
+
+.form-section {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-section-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-section-description {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.danger-zone {
+  background-color: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 2rem;
+}
+
+[data-theme="dark"] .danger-zone {
+  background-color: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.5);
+}
+
+.danger-zone h4 {
+  color: var(--bulma-danger);
+  margin-bottom: 1rem;
+}
+
+/* 토글 스위치 */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--bulma-success);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--bulma-success);
+}
+
+input:checked + .slider:before {
+  transform: translateX(26px);
+}
+
+/* ==========================================================================
+   반응형 디자인
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .browse-hero {
+    padding: 1.5rem 0;
+  }
+
+  .search-input {
+    padding: 0.8rem 0.8rem 0.8rem 2.5rem;
+    font-size: 1rem;
+  }
+
+  .search-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .stores-section {
+    padding: 2rem 0;
+  }
+
+  .store-card-image {
+    height: 150px;
+  }
+
+  .store-card-content {
+    padding: 1rem;
+  }
+
+  .store-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .store-hero {
+    padding: 2rem 0;
+  }
+
+  .form-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
+    padding: 0 1rem;
+  }
+
+  .store-card-content {
+    padding: 0.75rem;
+  }
+
+  .store-name {
+    font-size: 1rem;
+  }
+
+  .store-description {
+    font-size: 0.8rem;
+  }
+
+  .stat-card,
+  .action-card {
+    padding: 1rem;
+  }
+
+  .stat-icon,
+  .action-icon {
+    font-size: 1.5rem;
+  }
+} 

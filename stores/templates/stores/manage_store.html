@@ -1,0 +1,266 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}스토어 관리: {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 스토어 관리 페이지 스타일 */
+.manage-avatar {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+.status-avatar {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.toggle-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.danger-avatar {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* 커스텀 토글 스위치 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #10b981;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #10b981;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-inactive {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.danger-zone {
+    border: 2px solid #fecaca;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+}
+
+.dark .danger-zone {
+    border: 2px solid #7f1d1d;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-gray-500/10 rounded-full mr-3">
+        <i class="fas fa-cog text-3xl text-gray-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">스토어 관리</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 상태를 관리하고 위험한 작업을 수행할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="space-y-6">
+      <!-- 현재 상태 표시 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 status-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">현재 상태</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 기본 정보와 현재 상태를 확인하세요</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div class="space-y-3">
+                         <div>
+               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">스토어 이름:</span>
+               <span class="ml-2 text-sm text-gray-900 dark:text-white font-semibold" data-store-name="{{ store.store_name }}">{{ store.store_name }}</span>
+             </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">생성일:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ store.created_at|date:"Y년 m월 d일" }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 수정:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ store.updated_at|date:"Y년 m월 d일 H:i" }}</span>
+            </div>
+          </div>
+          <div class="flex justify-center md:justify-end">
+            {% if store.is_active %}
+            <div class="status-indicator status-active">
+              <i class="fas fa-check-circle"></i>
+              <span>활성화됨</span>
+            </div>
+            {% else %}
+            <div class="status-indicator status-inactive">
+              <i class="fas fa-pause-circle"></i>
+              <span>비활성화됨</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 상태 토글 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 toggle-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-toggle-on text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 활성화 상태</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 공개 상태를 변경할 수 있습니다</p>
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'stores:toggle_store_status' store_id=store.store_id %}" id="toggleForm">
+          {% csrf_token %}
+
+          <div class="flex items-center justify-between p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">스토어 활성화/비활성화</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {% if store.is_active %}
+                비활성화하면 고객들이 스토어에 접근할 수 없습니다.
+                {% else %}
+                활성화하면 고객들이 스토어를 방문하고 결제할 수 있습니다.
+                {% endif %}
+              </p>
+            </div>
+            <div class="ml-6">
+                             <label class="toggle-switch">
+                 <input type="checkbox" name="is_active" {% if store.is_active %}checked{% endif %}
+                   data-current-state="{% if store.is_active %}true{% else %}false{% endif %}"
+                   onchange="confirmStatusChange(this)">
+                 <span class="slider"></span>
+               </label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- 위험한 작업들 -->
+      <div class="danger-zone p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 danger-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-red-800 dark:text-red-200">위험 구역</h2>
+            <p class="text-sm text-red-600 dark:text-red-300">아래 작업을 실행하면 되돌릴 수 없습니다</p>
+          </div>
+        </div>
+
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 mr-3"></i>
+            <p class="text-sm text-red-800 dark:text-red-200">
+              <strong>주의:</strong> 아래 작업을 실행하면 되돌릴 수 없습니다.
+            </p>
+          </div>
+        </div>
+
+        <!-- 스토어 삭제 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">스토어 완전 삭제</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                스토어와 관련된 모든 데이터가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+              </p>
+            </div>
+            <div class="ml-6">
+              <form method="post" action="{% url 'stores:delete_store' store_id=store.store_id %}"
+                onsubmit="return confirmDelete()">
+                {% csrf_token %}
+                <button type="submit"
+                  class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl">
+                  <i class="fas fa-trash"></i>
+                  <span>완전 삭제</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 편집 메뉴 -->
+    {% include 'stores/store_menu_component.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 스토어 관리 페이지 스크립트 -->
+<script src="{% static 'js/manage-store.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}스토어를 찾을 수 없습니다{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-16">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+      <!-- 404 아이콘 -->
+      <div class="mb-8">
+        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">
+          <i class="fas fa-store-slash text-gray-400 text-4xl"></i>
+        </div>
+      </div>
+      
+      <!-- 제목 -->
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        스토어를 찾을 수 없습니다
+      </h1>
+      
+      <!-- 설명 -->
+      <div class="text-gray-600 dark:text-gray-400 mb-8">
+        <p class="text-lg">
+          요청하신 스토어({{ store_id }})가 존재하지 않거나<br>
+          현재 운영이 중단된 스토어입니다.
+        </p>
+      </div>
+      
+      <!-- 안내 메시지 -->
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-8 text-left">
+        <h3 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-3">다음과 같은 경우일 수 있습니다:</h3>
+        <ul class="space-y-2 text-yellow-700 dark:text-yellow-300">
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-yellow-500 mt-0.5"></i>
+            <span>스토어가 폐점하거나 운영 중단됨</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-yellow-500 mt-0.5"></i>
+            <span>잘못된 스토어 주소로 접근함</span>
+          </li>
+          <li class="flex items-start space-x-2">
+            <i class="fas fa-info-circle text-yellow-500 mt-0.5"></i>
+            <span>스토어 ID를 잘못 입력함</span>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- 액션 버튼들 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+        <a href="{% url 'myshop:home' %}" 
+           class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+          <i class="fas fa-home mr-2"></i>
+          홈페이지로 돌아가기
+        </a>
+        
+        <button onclick="history.back()" 
+                class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          이전 페이지로
+        </button>
+      </div>
+      
+      <!-- 추천 스토어 또는 문의 링크 -->
+      <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          문제가 지속되면 
+          <a href="mailto:support@satoshop.com" class="text-orange-500 hover:text-orange-600">고객센터</a>로 
+          문의해 주세요.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

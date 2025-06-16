@@ -1,0 +1,80 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}스토어 만들기 - SatoShop{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mr-3">
+        <i class="fas fa-store text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">스토어 만들기</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">나만의 온라인 스토어를 만들어보세요</p>
+      </div>
+    </div>
+
+    <!-- 스토어 생성 단계 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+        <!-- 1단계: 스토어 아이디 설정 -->
+        <div class="text-center group">
+          <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+            <i class="fas fa-id-card text-2xl text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">1단계</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">스토어 아이디 설정</p>
+        </div>
+
+        <!-- 2단계: 스토어 정보 입력 -->
+        <div class="text-center group">
+          <div class="w-16 h-16 mx-auto mb-4 bg-cyan-100 dark:bg-cyan-900/30 rounded-full flex items-center justify-center group-hover:bg-cyan-200 dark:group-hover:bg-cyan-900/50 transition-colors">
+            <i class="fas fa-info-circle text-2xl text-cyan-600 dark:text-cyan-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">2단계</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">스토어 정보 입력</p>
+        </div>
+
+        <!-- 3단계: 블링크 API 설정 -->
+        <div class="text-center group">
+          <div class="w-16 h-16 mx-auto mb-4 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/50 transition-colors">
+            <i class="fas fa-key text-2xl text-yellow-600 dark:text-yellow-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">3단계</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">블링크 API 설정</p>
+        </div>
+
+        <!-- 4단계: 테스트 결제 -->
+        <div class="text-center group">
+          <div class="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+            <i class="fas fa-qrcode text-2xl text-green-600 dark:text-green-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">4단계</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">테스트 결제</p>
+        </div>
+
+        <!-- 5단계: 최종 확인 -->
+        <div class="text-center group">
+          <div class="w-16 h-16 mx-auto mb-4 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+            <i class="fas fa-check-circle text-2xl text-purple-600 dark:text-purple-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">5단계</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400">최종 확인</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 시작 버튼 -->
+    <div class="text-center">
+      <a href="{% url 'stores:create_store_step' step=1 %}" 
+         class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105">
+        <i class="fas fa-rocket mr-3 text-xl"></i>
+        <span class="text-lg">스토어 만들기 시작</span>
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

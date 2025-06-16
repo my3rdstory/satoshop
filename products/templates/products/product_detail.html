@@ -1,0 +1,272 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load product_extras %}
+{% load humanize %}
+
+{% block title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<!-- 플로팅 장바구니 스타일 컴포넌트 -->
+{% include 'products/cart.html' %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<style>
+.product-image-container {
+    aspect-ratio: 1 / 1;
+    background: #f9fafb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.dark .product-image-container {
+    background: #1f2937;
+}
+.thumbnail {
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+.thumbnail.active {
+    ring: 2px solid #f59e0b;
+}
+.option-choice {
+    transition: all 0.2s ease;
+    background-color: white !important;
+}
+.dark .option-choice {
+    background-color: #111827 !important;
+}
+.option-choice:hover {
+    transform: translateY(-1px);
+}
+.option-choice.selected {
+    background: #f59e0b !important;
+    color: white !important;
+    border-color: #f59e0b !important;
+}
+.option-choice.selected .option-title,
+.option-choice.selected .option-price {
+    color: white !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <!-- 상품 이미지 -->
+      <div class="space-y-4">
+        <!-- 메인 이미지 -->
+        <div class="product-image-container">
+          {% if product_images %}
+          <img id="mainImage" src="{{ product_images.0.file_url }}" alt="{{ product.title }}" 
+               class="w-full h-full object-cover">
+          {% else %}
+          <div class="w-full h-full flex items-center justify-center">
+            <div class="text-center text-gray-400">
+              <i class="fas fa-image text-6xl mb-4"></i>
+              <div class="text-lg">이미지 없음</div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        
+        <!-- 썸네일 이미지 -->
+        {% if product_images|length > 1 %}
+        <div class="grid grid-cols-4 gap-3">
+          {% for image in product_images %}
+          <div class="thumbnail {% if forloop.first %}active{% endif %}" 
+               onclick="changeMainImage('{{ image.file_url }}', this)">
+            <img src="{{ image.file_url }}" alt="{{ product.title }}" 
+                 class="w-full h-full object-cover">
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 상품 정보 -->
+      <div class="space-y-4">
+        <!-- 제목 -->
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ product.title }}</h1>
+        </div>
+
+        <!-- 가격 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="space-y-4">
+            <!-- 메인 가격 -->
+            <div>
+              {% if product.is_discounted %}
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-3xl font-bold text-gray-900 dark:text-white">
+                  {{ product.discounted_price|floatformat:0|intcomma }} sats
+                </span>
+                <span class="px-3 py-1 bg-red-500 text-white text-sm font-medium rounded-full">
+                  {{ product.discount_rate }}% 할인
+                </span>
+              </div>
+              <div class="text-lg text-gray-500 line-through">
+                {{ product.price|floatformat:0|intcomma }} sats
+              </div>
+              {% else %}
+              <div class="text-3xl font-bold text-gray-900 dark:text-white">
+                {{ product.price|floatformat:0|intcomma }} sats
+              </div>
+              {% endif %}
+            </div>
+            
+            <!-- 배송비 -->
+            <div class="flex items-center justify-between py-3 border-t border-gray-200 dark:border-gray-600">
+              <div class="flex items-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-truck mr-2"></i>
+                <span>배송비</span>
+              </div>
+              <div class="font-medium text-gray-900 dark:text-white">
+                {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 옵션 선택 -->
+        {% if product_options %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">상품 옵션</h3>
+          <div class="space-y-4">
+            {% for option in product_options %}
+            <div class="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+              <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">{{ option.name }}</div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {% for choice in option.choices.all %}
+                <div class="option-choice p-3 border-3 border-black dark:border-white rounded-lg text-center cursor-pointer hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105" 
+                   data-option-id="{{ option.id }}" 
+                   data-choice-id="{{ choice.id }}"
+                   data-choice-price="{{ choice.price }}"
+                   onclick="selectOption(this)">
+                  <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}</div>
+                  {% if choice.price > 0 %}
+                    <div class="option-price text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">&nbsp;
+                       + {{ choice.price|floatformat:0|intcomma }} sats
+                    </div>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 수량 선택 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">수량</h4>
+          <div class="flex items-center gap-4">
+            <button class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors" 
+                    onclick="changeQuantity(-1)">
+              <i class="fas fa-minus text-gray-600 dark:text-gray-400"></i>
+            </button>
+            <input type="number" id="quantity" value="1" min="1" 
+                   class="w-20 text-center py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                   onchange="validateQuantity()">
+            <button class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors" 
+                    onclick="changeQuantity(1)">
+              <i class="fas fa-plus text-gray-600 dark:text-gray-400"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- 총액 계산 영역 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700" id="totalCalculation">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">주문 요약</h4>
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">상품 금액</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="productTotal">
+                {{ product.final_price|floatformat:0|intcomma }} sats
+              </span>
+            </div>
+            <div class="flex justify-between hidden" id="optionsRow">
+              <span class="text-gray-600 dark:text-gray-400">옵션 추가금액</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="optionsTotal">0 sats</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">수량</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="quantityDisplay">1개</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">배송비</span>
+              <span class="font-medium text-gray-900 dark:text-white">
+                {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
+              </span>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+              <div class="flex justify-between">
+                <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제금액</span>
+                <span class="text-xl font-bold text-bitcoin" id="finalTotal">
+                  {{ product.final_price|floatformat:0|intcomma }} sats
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="space-y-3">
+          <button class="w-full py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                  onclick="addToCart()">
+            <i class="fas fa-shopping-cart"></i>
+            <span>장바구니 담기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상품 설명 -->
+    {% if product.description %}
+    <div class="mt-16">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">상품 설명</h2>
+        <div class="prose max-w-none markdown-content">
+          {{ product.description }}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 플로팅 장바구니 컴포넌트 -->
+{% include 'products/cart.html' %}
+
+<!-- 상품 정보를 JavaScript 변수로 전달 -->
+<script type="application/json" id="product-data">
+{
+  "basePrice": {{ product.final_price }},
+  "shippingFee": {{ product.shipping_fee }},
+  "productId": {{ product.id }},
+  "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
+  "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},
+  "loginUrl": "{% url 'accounts:login' %}",
+  "addToCartUrl": "{% url 'orders:add_to_cart' %}",
+  "cartViewUrl": "{% url 'orders:cart_view' %}",
+  "csrfToken": "{{ csrf_token }}"
+}
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/cart-common.js' %}"></script>
+<script src="{% static 'js/product-detail.js' %}"></script>
+<script src="{% static 'js/cart.js' %}"></script>
+{% endblock %} 

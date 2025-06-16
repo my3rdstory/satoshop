@@ -1,0 +1,424 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ store.store_name }} - SatoShop{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind 설정 -->
+  <script src="{% static 'js/tailwind-config.js' %}"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Tailwind styles -->
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white" data-theme="light"
+  style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
+  <div class="min-h-screen flex flex-col">
+    <!-- 스토어 네비게이션 바 -->
+    <nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <!-- 왼쪽 네비게이션 -->
+          <div class="flex items-center space-x-4">
+            <!-- 네비게이션 드롭다운 (데스크톱) -->
+            <div class="relative group hidden md:block">
+              <button class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <i class="fas fa-compass mr-2"></i>
+                내비게이션
+                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+              </button>
+              <div class="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <a href="{% url 'myshop:home' %}?force_home=1" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-home mr-2"></i>Hub 메인으로
+                </a>
+                <a href="{% url 'stores:browse_stores' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-search mr-2"></i>스토어 탐색
+                </a>
+              </div>
+            </div>
+
+            <!-- 스토어 이름 -->
+            {% if store.store_id %}
+            <div class="flex items-center space-x-6">
+              <a href="{% url 'stores:store_detail' store.store_id %}" class="flex items-center space-x-2 text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <span class="font-bold">{{ store.store_name }}</span>
+                <span class="px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded">Store</span>
+              </a>
+              <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
+              <a href="{% url 'products:public_product_list' store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 text-sm rounded-md transition-colors border border-gray-300 dark:border-gray-600">
+                <i class="fas fa-list mr-2 text-xs"></i>
+                상품 목록
+              </a>
+            </div>
+            {% else %}
+            <div class="flex items-center space-x-2 text-gray-900 dark:text-white">
+              <span class="font-bold">{{ store.store_name }}</span>
+              <span class="px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded">Store</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 오른쪽 네비게이션 -->
+          <div class="flex items-center space-x-4">
+            <!-- 모바일 메뉴 버튼 -->
+            <button id="mobile-menu-button" class="md:hidden flex items-center justify-center w-12 h-12 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-200 dark:active:bg-gray-600" style="min-height: 44px; min-width: 44px;">
+              <i class="fas fa-bars text-lg pointer-events-none"></i>
+            </button>
+
+            <!-- 데스크톱 메뉴 -->
+            <div class="hidden md:flex items-center space-x-4">
+              {% if user.is_authenticated %}
+              <!-- 사용자 드롭다운 -->
+              <div class="relative group">
+                <button class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <i class="fas fa-user mr-2"></i>
+                  {{ user.username }}님
+                  <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <a href="{% url 'accounts:mypage' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-user-cog mr-2"></i>마이페이지
+                  </a>
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+                  </a>
+                </div>
+              </div>
+
+              {% if user_has_active_store and user_active_store.is_active %}
+              <!-- 스토어 관리 드롭다운 -->
+              <div class="relative group">
+                <button class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <i class="fas fa-cog mr-2"></i>
+                  스토어 관리
+                  <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  {% if user_active_store.store_id %}
+                  <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-box mr-2"></i>상품관리
+                  </a>
+                  <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-shopping-cart mr-2"></i>주문관리
+                  </a>
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  {% endif %}
+                  <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-store mr-2"></i>스토어 관리
+                  </a>
+                  {% if user_active_store.store_id %}
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-eye mr-2"></i>내 스토어 보기
+                  </a>
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="theme-toggle-menu-item">
+                      <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                      <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                      <span class="theme-text">다크 모드로</span>
+                    </span>
+                  </a>
+                  {% endif %}
+                </div>
+              </div>
+              {% else %}
+              <!-- 일반 사용자 설정 드롭다운 -->
+              <div class="relative group">
+                <button class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <i class="fas fa-cog mr-2"></i>
+                  설정
+                  <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <a href="{% url 'stores:create_store' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-plus mr-2"></i>스토어 만들기
+                  </a>
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="theme-toggle-menu-item">
+                      <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                      <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                      <span class="theme-text">다크 모드로</span>
+                    </span>
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+
+              {% else %}
+              <!-- 비로그인 사용자 설정 드롭다운 -->
+              <div class="relative group">
+                <button class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+                  <i class="fas fa-cog mr-2"></i>
+                  설정
+                  <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <span class="theme-toggle-menu-item">
+                      <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                      <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                      <span class="theme-text">다크 모드로</span>
+                    </span>
+                  </a>
+                  <div class="border-t border-gray-100 dark:border-gray-600"></div>
+                  <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-user-plus mr-2"></i>회원가입
+                  </a>
+                  <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 모바일 메뉴 -->
+        <div id="mobile-menu" class="md:hidden hidden border-t border-gray-200 dark:border-gray-700 py-4">
+          <!-- 네비게이션 링크 -->
+          <div class="space-y-2 mb-4">
+            <a href="{% url 'myshop:home' %}?force_home=1" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-home mr-3"></i>Hub 메인으로
+            </a>
+            <a href="{% url 'stores:browse_stores' %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-search mr-3"></i>스토어 탐색
+            </a>
+            {% if store.store_id %}
+            <a href="{% url 'products:public_product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-600">
+              <i class="fas fa-list mr-3 text-xs"></i>상품 목록
+            </a>
+            {% endif %}
+          </div>
+
+          {% if user.is_authenticated %}
+          <div class="border-t border-gray-200 dark:border-gray-600 pt-4 space-y-2">
+            <a href="{% url 'accounts:mypage' %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-user-cog mr-3"></i>마이페이지
+            </a>
+            {% if user_has_active_store and user_active_store.is_active %}
+            <a href="{% url 'stores:my_stores' %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-store mr-3"></i>스토어 관리
+            </a>
+            {% else %}
+            <a href="{% url 'stores:create_store' %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-plus mr-3"></i>스토어 만들기
+            </a>
+            {% endif %}
+            <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <span class="theme-toggle-menu-item flex items-center">
+                <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
+                <i class="fas fa-moon theme-moon-icon mr-3"></i>
+                <span class="theme-text">다크 모드로</span>
+              </span>
+            </button>
+            <button onclick="logout()" class="w-full flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-sign-out-alt mr-3"></i>로그아웃
+            </button>
+          </div>
+          {% else %}
+          <div class="border-t border-gray-200 dark:border-gray-600 pt-4 space-y-2">
+            <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <span class="theme-toggle-menu-item flex items-center">
+                <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
+                <i class="fas fa-moon theme-moon-icon mr-3"></i>
+                <span class="theme-text">다크 모드로</span>
+              </span>
+            </button>
+            <button onclick="redirectToSignup()" class="w-full flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-user-plus mr-3"></i>회원가입
+            </button>
+            <button onclick="redirectToLogin()" class="w-full flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-sign-in-alt mr-3"></i>로그인
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="flex-1 pt-16">
+      {% if messages %}
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {% for message in messages %}
+        <div class="bg-{{ message.tags }}-100 dark:bg-{{ message.tags }}-900/30 border border-{{ message.tags }}-400 dark:border-{{ message.tags }}-600 text-{{ message.tags }}-700 dark:text-{{ message.tags }}-300 px-4 py-3 rounded-lg mb-4 relative">
+          <button class="absolute top-0 bottom-0 right-0 px-4 py-3 text-{{ message.tags }}-500 hover:text-{{ message.tags }}-700 dark:hover:text-{{ message.tags }}-300" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+          </button>
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <!-- 스토어 푸터 -->
+    <footer class="bg-gray-900 dark:bg-gray-950 text-white">
+      <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+        <p class="text-lg mb-4">
+          <strong class="text-bitcoin">{{ store.store_name }}</strong> - {{ store.owner_name }}
+          <br>
+          <span class="text-gray-300">
+            {% if store.store_description %}
+            {{ store.store_description|truncatechars:100 }}
+            {% else %}
+            SatoShop 플랫폼으로 구축된 온라인 스토어
+            {% endif %}
+          </span>
+        </p>
+
+        <!-- 연락처 정보 -->
+        <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
+          {% if store.owner_phone %}
+          <span class="flex items-center">
+            <i class="fas fa-phone mr-2"></i>{{ store.owner_phone }}
+          </span>
+          {% endif %}
+          {% if store.owner_email %}
+          <span class="flex items-center">
+            <i class="fas fa-envelope mr-2"></i>{{ store.owner_email }}
+          </span>
+          {% endif %}
+          {% if store.chat_channel %}
+          <span>
+            <a href="{{ store.chat_channel }}" target="_blank" class="text-white hover:text-bitcoin transition-colors flex items-center">
+              <i class="fas fa-comments mr-2"></i>소통채널
+            </a>
+          </span>
+          {% endif %}
+        </div>
+
+        <!-- SatoShop 브랜딩 -->
+        <div class="border-t border-gray-700 pt-4">
+          <p class="text-sm text-gray-400">
+            Powered by <a href="{% url 'myshop:home' %}?force_home=1" class="text-white hover:text-bitcoin transition-colors">
+              <strong>SatoShop</strong>
+            </a> - 비트코인 라이트닝 결제 플랫폼
+          </p>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 공통 JavaScript -->
+  <script>
+    // Django URL과 CSRF 토큰을 전역 변수로 설정
+    window.csrfToken = '{{ csrf_token }}';
+    window.logoutUrl = "{% url 'accounts:logout' %}";
+    window.loginUrl = "{% url 'accounts:login' %}";
+    window.signupUrl = "{% url 'accounts:signup' %}";
+    window.homeUrl = "{% url 'myshop:home' %}";
+    {% if store.store_id %}
+    window.storeId = "{{ store.store_id }}";
+    {% endif %}
+
+    // 모바일 메뉴 토글 (개선된 버전)
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      console.log('Mobile menu elements:', { button: mobileMenuButton, menu: mobileMenu });
+      
+      if (mobileMenuButton && mobileMenu) {
+        // 메뉴 토글 함수
+        function toggleMobileMenu(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          console.log('Mobile menu button activated');
+          
+          // 토글 처리
+          const isHidden = mobileMenu.classList.contains('hidden');
+          if (isHidden) {
+            mobileMenu.classList.remove('hidden');
+          } else {
+            mobileMenu.classList.add('hidden');
+          }
+          
+          // 아이콘 변경
+          const icon = mobileMenuButton.querySelector('i');
+          if (icon) {
+            if (mobileMenu.classList.contains('hidden')) {
+              icon.className = 'fas fa-bars text-lg';
+              console.log('Menu closed');
+            } else {
+              icon.className = 'fas fa-times text-lg';
+              console.log('Menu opened');
+            }
+          }
+        }
+        
+        // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
+        mobileMenuButton.addEventListener('click', toggleMobileMenu);
+        mobileMenuButton.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleMobileMenu();
+        });
+        
+        // 메뉴 외부 클릭 시 닫기
+        document.addEventListener('click', function(e) {
+          if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+            if (!mobileMenu.classList.contains('hidden')) {
+              mobileMenu.classList.add('hidden');
+              const icon = mobileMenuButton.querySelector('i');
+              if (icon) {
+                icon.className = 'fas fa-bars text-lg';
+              }
+              console.log('Menu closed by outside click');
+            }
+          }
+        });
+        
+        // ESC 키로 메뉴 닫기
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+            mobileMenu.classList.add('hidden');
+            const icon = mobileMenuButton.querySelector('i');
+            if (icon) {
+              icon.className = 'fas fa-bars text-lg';
+            }
+            console.log('Menu closed by ESC key');
+          }
+        });
+      } else {
+        console.error('Mobile menu elements not found');
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/store-common.js' %}"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

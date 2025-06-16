@@ -1,0 +1,241 @@
+<!-- 상품 폼 관련 통합 컴포넌트 -->
+
+<!-- 가격 표시 방식 라디오 버튼 -->
+<div class="mb-6">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">가격 표시 방식</label>
+  <div class="space-y-2">
+    <label class="flex items-center">
+      <input type="radio" name="price_display" value="sats" 
+             class="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+             {% if current_price_display == 'sats' %} checked{% endif %}>
+      <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사토시</span>
+    </label>
+    <!-- 원화 옵션 임시 주석처리 - 사토시만 사용
+    <label class="flex items-center">
+      <input type="radio" name="price_display" value="krw" 
+             class="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+             {% if current_price_display == 'krw' %} checked{% endif %}>
+      <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">원화</span>
+    </label>
+    -->
+  </div>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격을 사토시로 표시합니다</p>
+</div>
+
+<!-- 할인 설정 -->
+<div class="mb-6">
+  <div class="flex items-center">
+    <input type="checkbox" id="is_discounted" name="is_discounted" 
+           class="w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+           {% if is_discounted %} checked{% endif %}>
+    <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">할인 적용</label>
+  </div>
+</div>
+
+<!-- 할인가 -->
+<div class="mb-6{% if not is_discounted %} hidden{% endif %}" id="discountSection">
+  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+  <div class="relative">
+    <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white" 
+           type="number" id="discounted_price" name="discounted_price" min="1" placeholder="할인가를 입력하세요"
+           value="{{ discounted_price|default:'' }}">
+    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+  </div>
+  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">할인가는 정가보다 낮아야 합니다</p>
+</div>
+
+<!-- 상품 폼 JavaScript -->
+<script>
+  window.initProductForm = function (isEditMode, initialOptionCount) {
+    // 할인 관련
+    const isDiscounted = document.getElementById('is_discounted');
+    const discountSection = document.getElementById('discountSection');
+
+    if (isDiscounted && discountSection) {
+      isDiscounted.addEventListener('change', function () {
+        discountSection.classList.toggle('hidden', !this.checked);
+      });
+    }
+
+    // 가격 표시 방식 변경에 따른 단위 업데이트
+    const priceDisplayRadios = document.querySelectorAll('input[name="price_display"]');
+    const priceUnits = document.querySelectorAll('.price-unit');
+
+    function updatePriceUnits(selectedValue) {
+      const unit = selectedValue === 'sats' ? 'sats' : '원';
+      priceUnits.forEach(unitElement => {
+        unitElement.textContent = unit;
+      });
+      
+      // 배송비 도움말 텍스트도 업데이트
+      const shippingHelp = document.querySelector('#shipping_fee').closest('.field').querySelector('.help');
+      if (shippingHelp) {
+        if (selectedValue === 'sats') {
+          shippingHelp.textContent = '배송비는 사토시 단위로 입력하세요 (0sats인 경우 배송비 무료로 표시됩니다)';
+        } else {
+          shippingHelp.textContent = '배송비는 원 단위로 입력하세요 (0원인 경우 배송비 무료로 표시됩니다)';
+        }
+      }
+    }
+
+    // 초기 단위 설정
+    const checkedRadio = document.querySelector('input[name="price_display"]:checked');
+    if (checkedRadio) {
+      updatePriceUnits(checkedRadio.value);
+    }
+
+    // 라디오 버튼 변경 이벤트 리스너
+    priceDisplayRadios.forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (this.checked) {
+          updatePriceUnits(this.value);
+        }
+      });
+    });
+
+    // 옵션 관련
+    const optionsContainer = document.getElementById('optionsContainer');
+    const addOptionBtn = document.getElementById('addOptionBtn');
+    let optionCount = isEditMode ? initialOptionCount : 0;
+
+    if (addOptionBtn && !addOptionBtn.hasAttribute('data-initialized')) {
+      // 중복 초기화 방지를 위한 플래그 설정
+      addOptionBtn.setAttribute('data-initialized', 'true');
+      
+      addOptionBtn.addEventListener('click', function () {
+        if (optionCount >= 20) {
+          alert('옵션은 최대 20개까지만 추가할 수 있습니다.');
+          return;
+        }
+
+        const optionSection = document.createElement('div');
+        optionSection.className = 'option-section bg-gray-50 dark:bg-gray-700 rounded-lg p-4';
+        optionSection.innerHTML = `
+        <div class="option-header flex items-center space-x-3 mb-4">
+          <div class="flex-1">
+            <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-600 dark:text-white" 
+                   type="text" name="options[${optionCount}][name]" required
+                   placeholder="옵션명 (예: 색상, 사이즈)">
+          </div>
+          <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" onclick="this.closest('.option-section').remove()">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        <div class="option-choices space-y-3">
+          <div class="option-choice flex items-center space-x-3">
+            <div class="flex-1">
+              <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-600 dark:text-white" 
+                     type="text" name="options[${optionCount}][choices][0][name]" required
+                     placeholder="옵션 종류 (예: 빨강, 파랑)">
+            </div>
+            <div class="w-32">
+              <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-600 dark:text-white" 
+                     type="number" name="options[${optionCount}][choices][0][price]" min="0"
+                     placeholder="추가 가격">
+            </div>
+            <span class="text-gray-500 dark:text-gray-400 text-sm">sats</span>
+            <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" onclick="this.closest('.option-choice').remove()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="mt-3 inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors" onclick="addOptionChoice(this)">
+          <i class="fas fa-plus mr-2"></i>
+          옵션 종류 추가
+        </button>
+      `;
+        optionsContainer.appendChild(optionSection);
+        optionCount++;
+      });
+    }
+
+    // addOptionChoice 함수를 전역으로 정의 (이미 정의되어 있다면 덮어쓰지 않음)
+    if (!window.addOptionChoice) {
+      window.addOptionChoice = function (button) {
+        const optionSection = button.closest('.option-section');
+        const optionIndex = Array.from(optionsContainer.children).indexOf(optionSection);
+        const choicesContainer = optionSection.querySelector('.option-choices');
+        const choiceCount = choicesContainer.children.length;
+
+        if (choiceCount >= 20) {
+          alert('옵션 종류는 최대 20개까지만 추가할 수 있습니다.');
+          return;
+        }
+
+        const choiceDiv = document.createElement('div');
+        choiceDiv.className = 'option-choice flex items-center space-x-3';
+        choiceDiv.innerHTML = `
+        <div class="flex-1">
+          <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-600 dark:text-white" 
+                 type="text" name="options[${optionIndex}][choices][${choiceCount}][name]" required
+                 placeholder="옵션 종류 (예: 빨강, 파랑)">
+        </div>
+        <div class="w-32">
+          <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-600 dark:text-white" 
+                 type="number" name="options[${optionIndex}][choices][${choiceCount}][price]" min="0"
+                 placeholder="추가 가격">
+        </div>
+        <span class="text-gray-500 dark:text-gray-400 text-sm">sats</span>
+        <button type="button" class="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors" onclick="this.closest('.option-choice').remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      `;
+        choicesContainer.appendChild(choiceDiv);
+      }
+    }
+
+    // 폼 제출 시 옵션 데이터 수집
+    const productForm = document.getElementById('productForm') || document.getElementById('optionsForm');
+    if (productForm && !productForm.hasAttribute('data-options-initialized')) {
+      // 중복 초기화 방지를 위한 플래그 설정
+      productForm.setAttribute('data-options-initialized', 'true');
+      
+      productForm.addEventListener('submit', function(e) {
+        // 옵션 데이터 수집 및 검증
+        const optionSections = document.querySelectorAll('.option-section');
+        const optionsData = [];
+        
+        optionSections.forEach((section, optionIndex) => {
+          const optionName = section.querySelector(`input[name*="[${optionIndex}][name]"]`);
+          const choices = section.querySelectorAll('.option-choice');
+          
+          if (optionName && optionName.value.trim()) {
+            const optionData = {
+              name: optionName.value.trim(),
+              choices: []
+            };
+            
+            choices.forEach((choice, choiceIndex) => {
+              const choiceName = choice.querySelector(`input[name*="[${optionIndex}][choices][${choiceIndex}][name]"]`);
+              const choicePrice = choice.querySelector(`input[name*="[${optionIndex}][choices][${choiceIndex}][price]"]`);
+              
+              if (choiceName && choiceName.value.trim()) {
+                optionData.choices.push({
+                  name: choiceName.value.trim(),
+                  price: choicePrice ? (parseInt(choicePrice.value) || 0) : 0
+                });
+              }
+            });
+            
+            if (optionData.choices.length > 0) {
+              optionsData.push(optionData);
+            }
+          }
+        });
+        
+        // 옵션 데이터를 hidden input으로 추가
+        const existingOptionsInput = document.getElementById('options-data');
+        if (existingOptionsInput) {
+          existingOptionsInput.remove();
+        }
+        
+        const optionsInput = document.createElement('input');
+        optionsInput.type = 'hidden';
+        optionsInput.id = 'options-data';
+        optionsInput.name = 'options_data';
+        optionsInput.value = JSON.stringify(optionsData);
+        productForm.appendChild(optionsInput);
+      });
+    }
+  };
+</script> 

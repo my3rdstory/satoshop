@@ -1,0 +1,214 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 기본 정보 편집{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<style>
+.edit-avatar {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 edit-avatar rounded-full mr-3">
+        <i class="fas fa-info-circle text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">기본 정보 편집</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">상품의 기본적인 정보를 수정할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'products:manage_product' store.store_id product.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>상품 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" id="basicInfoForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-tag text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품의 기본적인 정보를 수정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 제목 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="title">
+              제목 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="text" id="title" name="title" required placeholder="상품 제목을 입력하세요"
+                   value="{{ product.title }}">
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="description">
+              상품 설명 <span class="text-red-500">*</span>
+            </label>
+            <textarea id="description" name="description" rows="10" 
+                      placeholder="상품에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ product.description }}</textarea>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Markdown 형식을 사용할 수 있습니다. 이미지, 링크, 유튜브 영상 등을 삽입할 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-won-sign text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">가격 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품의 가격과 할인 정보를 설정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 가격 표시 방식 -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">가격 표시 방식</label>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="radio" name="price_display" value="sats" 
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if product.price_display == 'sats' or not product.price_display %} checked{% endif %}>
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사토시 고정</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="price_display" value="krw" 
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if product.price_display == 'krw' %} checked{% endif %}>
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">원화 비율 연동</span>
+              </label>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격을 사토시 또는 원화 기준으로 설정합니다</p>
+          </div>
+
+          <!-- 가격 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
+              가격 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price" name="price" required min="0" placeholder="상품 가격을 입력하세요"
+                     value="{% if product.price_display == 'krw' and product.price_krw %}{{ product.price_krw }}{% else %}{{ product.price }}{% endif %}"
+                     data-price-krw="{{ product.price_krw|default:'' }}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">가격은 사토시 단위로 입력하세요</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 할인 설정 -->
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="is_discounted" name="is_discounted" 
+                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                     {% if product.is_discounted %} checked{% endif %}>
+              <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">할인 적용</label>
+            </div>
+          </div>
+
+          <!-- 할인가 -->
+          <div class="mb-6{% if not product.is_discounted %} hidden{% endif %}" id="discountSection">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="discounted_price" name="discounted_price" min="1" placeholder="할인가를 입력하세요"
+                     value="{% if product.price_display == 'krw' and product.discounted_price_krw %}{{ product.discounted_price_krw }}{% elif product.discounted_price %}{{ product.discounted_price }}{% endif %}"
+                     data-discounted-price-krw="{{ product.discounted_price_krw|default:'' }}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 discount-help-text">할인가는 정가보다 낮아야 합니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 discount-exchange-info hidden">
+                <span class="discount-converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 배송비 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="shipping_fee">배송비</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="shipping_fee" name="shipping_fee" min="0"
+                     placeholder="배송비를 입력하세요" 
+                     value="{% if product.price_display == 'krw' and product.shipping_fee_krw %}{{ product.shipping_fee_krw }}{% else %}{{ product.shipping_fee }}{% endif %}"
+                     data-shipping-fee-krw="{{ product.shipping_fee_krw|default:'' }}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 shipping-help-text">배송비는 사토시 단위로 입력하세요 (0sats인 경우 배송비 무료로 표시됩니다)</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 shipping-exchange-info hidden">
+                <span class="shipping-converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'products:manage_product' store.store_id product.id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          <i class="fas fa-times mr-2"></i>
+          <span>취소</span>
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg" id="submitBtn">
+          <i class="fas fa-save mr-2"></i>
+          <span>저장</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 편집 메뉴 -->
+    <div class="mt-8">
+      {% include 'products/product_menu.html' %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/product-form.js' %}"></script>
+<script src="{% static 'js/product-edit-basic-info.js' %}"></script>
+<script src="{% static 'js/currency-exchange.js' %}"></script>
+{% endblock %} 

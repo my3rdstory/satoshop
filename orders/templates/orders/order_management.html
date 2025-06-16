@@ -1,0 +1,153 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 주문 관리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<style>
+  .product-card-inactive {
+    opacity: 0.7;
+  }
+  
+  .stats-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  }
+  
+  .dark .stats-card {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-shopping-cart text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">주문 관리</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">{{ store.store_name }}의 주문을 관리하세요</p>
+      </div>
+    </div>
+
+    <!-- 판매 현황 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="stats-card rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+          {{ current_year }}년 {{ current_month }}월 주문 수
+        </div>
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{{ monthly_orders_count }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">* 월별 주문 수</div>
+      </div>
+      
+      <div class="stats-card rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+          {{ current_year }}년 {{ current_month }}월 매출
+        </div>
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">{{ monthly_revenue|floatformat:0 }} sats</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">* 배송비 제외 상품 판매 금액</div>
+      </div>
+      
+      <div class="stats-card rounded-2xl p-6 text-center shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">등록된 상품 수</div>
+        <div class="text-3xl font-bold text-bitcoin mb-2">{{ products_with_orders|length }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500">* 스토어에 등록된 전체 상품 수</div>
+      </div>
+    </div>
+
+    <!-- 상품별 판매 현황 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- 헤더 -->
+      <div class="bg-gradient-to-r from-bitcoin to-orange-500 text-white p-6">
+        <div class="flex items-center">
+          <i class="fas fa-chart-bar text-xl mr-3"></i>
+          <div>
+            <h2 class="text-xl font-bold">상품별 판매 현황</h2>
+            <p class="text-orange-100 text-sm mt-1">상품을 클릭하면 해당 상품의 주문 목록을 볼 수 있습니다</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6">
+        {% if products_with_orders %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for product in products_with_orders %}
+          <a 
+            href="{% url 'orders:product_orders' store.store_id product.id %}" 
+            class="block bg-gray-50 dark:bg-gray-700 rounded-xl p-4 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:shadow-lg{% if not product.is_active %} product-card-inactive{% endif %}"
+          >
+            <div class="flex items-start space-x-4">
+              <!-- 상품 이미지 -->
+              <div class="flex-shrink-0">
+                {% if product.images.first %}
+                <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" class="w-16 h-16 rounded-full object-cover">
+                {% else %}
+                <div class="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                  <i class="fas fa-image text-gray-400 text-xl"></i>
+                </div>
+                {% endif %}
+              </div>
+              
+              <!-- 상품 정보 -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center mb-2">
+                  <h3 class="font-semibold text-gray-900 dark:text-white truncate">{{ product.title }}</h3>
+                  {% if not product.is_active %}
+                  <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-500 text-white">
+                    비활성화
+                  </span>
+                  {% endif %}
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">등록일: {{ product.created_at|date:"Y년 m월 d일" }}</p>
+                
+                <!-- 통계 -->
+                <div class="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ product.total_orders }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">주문 건수</div>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-bitcoin">{{ product.total_quantity }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">판매 개수</div>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-green-600 dark:text-green-400">{{ product.total_revenue|floatformat:0 }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">총 매출 (sats)</div>
+                    <div class="text-xs text-gray-400 dark:text-gray-500">* 배송비 제외</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <!-- 빈 상태 -->
+        <div class="text-center py-12">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+            <i class="fas fa-clipboard-list text-3xl text-gray-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">아직 주문이 없습니다</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">첫 번째 주문을 기다리고 있어요!</p>
+          <a 
+            href="{% url 'stores:product_list' store.store_id %}" 
+            class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-box mr-2"></i>
+            상품 관리하기
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/common.js' %}"></script>
+{% endblock %}

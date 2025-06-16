@@ -1,0 +1,169 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 완료 메시지 설정{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<style>
+.message-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 message-avatar rounded-full mr-3">
+        <i class="fas fa-message text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">완료 메시지 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">결제 완료 후 고객에게 보여줄 안내 메시지를 설정할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'products:manage_product' store.store_id product.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>상품 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" id="completionMessageForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 완료 메시지 설정 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-comment-dots text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">결제완료 안내메시지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">결제 완료 후 고객에게 보여줄 메시지를 작성하세요</p>
+          </div>
+        </div>
+        
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="completion_message">안내메시지</label>
+            <textarea class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                      id="completion_message" name="completion_message" rows="6"
+                      placeholder="결제 완료 후 고객에게 보여줄 메시지를 입력하세요">{{ product.completion_message }}</textarea>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">배송 정보, 연락처, 주의사항 등을 안내할 수 있습니다</p>
+          </div>
+
+          <!-- 미리보기 -->
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6">
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
+              <i class="fas fa-eye mr-2 text-blue-500"></i>
+              미리보기
+            </h3>
+            <div id="messagePreview" class="prose prose-sm max-w-none dark:prose-invert">
+              {% if product.completion_message %}
+                {{ product.completion_message|linebreaks }}
+              {% else %}
+                <em class="text-gray-500 dark:text-gray-400">메시지를 입력하면 여기에 미리보기가 표시됩니다.</em>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 메시지 작성 팁 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-lightbulb text-yellow-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">메시지 작성 팁</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">효과적인 완료 메시지 작성을 위한 가이드</p>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <ul class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+            <li class="flex items-start">
+              <i class="fas fa-truck text-blue-500 mr-3 mt-0.5"></i>
+              <div>
+                <strong>배송 정보:</strong> 배송 예상 기간, 배송 방법 등을 안내하세요
+              </div>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-phone text-green-500 mr-3 mt-0.5"></i>
+              <div>
+                <strong>연락처:</strong> 문의사항이 있을 때 연락할 수 있는 방법을 제공하세요
+              </div>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-exclamation-triangle text-yellow-500 mr-3 mt-0.5"></i>
+              <div>
+                <strong>주의사항:</strong> 상품 사용 시 주의할 점이나 보관 방법을 안내하세요
+              </div>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-heart text-red-500 mr-3 mt-0.5"></i>
+              <div>
+                <strong>감사 인사:</strong> 구매에 대한 감사 인사를 포함하면 좋습니다
+              </div>
+            </li>
+            <li class="flex items-start">
+              <i class="fas fa-tools text-purple-500 mr-3 mt-0.5"></i>
+              <div>
+                <strong>추가 서비스:</strong> A/S 정보나 추가 구매 혜택 등을 안내할 수 있습니다
+              </div>
+            </li>
+          </ul>
+          
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mt-6">
+            <h3 class="text-lg font-medium text-blue-900 dark:text-blue-200 mb-4 flex items-center">
+              <i class="fas fa-info-circle mr-2"></i>
+              예시 메시지
+            </h3>
+            <div class="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+              <p>안녕하세요! {{ store.store_name }}입니다.</p>
+              <p>{{ product.title }} 상품을 구매해 주셔서 감사합니다.</p>
+              <p><strong>배송 안내:</strong><br>
+              - 결제 확인 후 1-2일 내 발송됩니다<br>
+              - 배송 완료까지 2-3일 소요됩니다</p>
+              <p><strong>문의사항:</strong><br>
+              카카오톡: @{{ store.store_id }}<br>
+              이메일: contact@example.com</p>
+              <p>좋은 하루 되세요! 😊</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'products:manage_product' store.store_id product.id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          <i class="fas fa-times mr-2"></i>
+          <span>취소</span>
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg" id="submitBtn">
+          <i class="fas fa-save mr-2"></i>
+          <span>저장</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 편집 메뉴 -->
+    <div class="mt-8">
+      {% include 'products/product_menu.html' %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/edit-completion-message.js' %}"></script>
+{% endblock %} 

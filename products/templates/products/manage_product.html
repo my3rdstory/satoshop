@@ -1,0 +1,320 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - 상품 관리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<style>
+.manage-avatar {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+.status-avatar {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.toggle-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.danger-avatar {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* 커스텀 토글 스위치 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #10b981;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #10b981;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-inactive {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.danger-zone {
+    border: 2px solid #fecaca;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+}
+
+.dark .danger-zone {
+    border: 2px solid #7f1d1d;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 manage-avatar rounded-full mr-3">
+        <i class="fas fa-cog text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">상품 관리</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">상품의 정보를 관리하고 편집할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'products:product_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>상품 목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="space-y-8">
+      <!-- 현재 상품 정보 표시 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 status-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">현재 상품 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품의 기본 정보와 현재 상태를 확인하세요</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <!-- 상품 이미지 -->
+          <div class="flex justify-center lg:justify-start">
+            {% if product.images.exists %}
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" 
+                   class="w-full h-full object-cover">
+            </div>
+            {% else %}
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <i class="fas fa-image text-gray-400 text-2xl"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 상품 정보 -->
+          <div class="lg:col-span-1 space-y-3">
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">상품명:</span>
+              <span class="ml-2 text-sm text-gray-900 dark:text-white font-semibold">{{ product.title }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">가격:</span>
+              <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ product.price|floatformat:0|intcomma }} sats</span>
+            </div>
+            {% if product.is_discounted %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">할인가:</span>
+              <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ product.discounted_price|floatformat:0|intcomma }} sats</span>
+            </div>
+            {% endif %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">생성일:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ product.created_at|date:"Y년 m월 d일" }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 수정:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ product.updated_at|date:"Y년 m월 d일 H:i" }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">이미지 개수:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ product.images.count }}개</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">옵션 개수:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ product.options.count }}개</span>
+            </div>
+          </div>
+
+          <!-- 상태 표시 -->
+          <div class="flex justify-center lg:justify-end">
+            {% if product.is_active %}
+            <div class="status-indicator status-active">
+              <i class="fas fa-check-circle"></i>
+              <span>활성화됨</span>
+            </div>
+            {% else %}
+            <div class="status-indicator status-inactive">
+              <i class="fas fa-pause-circle"></i>
+              <span>비활성화됨</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 상품 활성화 상태 토글 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 toggle-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-toggle-on text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 활성화 상태</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품의 공개 상태를 변경할 수 있습니다</p>
+          </div>
+        </div>
+
+        <form method="post" action="{% url 'products:toggle_product_status' store.store_id product.id %}" id="toggleForm">
+          {% csrf_token %}
+
+          <div class="flex items-center justify-between p-6 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">상품 활성화/비활성화</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {% if product.is_active %}
+                비활성화하면 고객들이 이 상품을 구매할 수 없습니다.
+                {% else %}
+                활성화하면 고객들이 이 상품을 구매할 수 있습니다.
+                {% endif %}
+              </p>
+            </div>
+            <div class="ml-6">
+              <label class="toggle-switch">
+                <input type="checkbox" name="is_active" {% if product.is_active %}checked{% endif %}
+                       onchange="confirmStatusChange(this)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- 빠른 액션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-bolt text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">빠른 액션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">상품 보기 및 관리 기능</p>
+          </div>
+        </div>
+
+        <div class="flex justify-center">
+          <a href="{% url 'products:product_detail' store.store_id product.id %}" target="_blank"
+             class="inline-flex items-center justify-center px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-lg text-lg">
+            <i class="fas fa-eye mr-3"></i>
+            <span>상품 보기</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 위험한 작업들 -->
+      <div class="danger-zone p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 danger-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-red-800 dark:text-red-200">위험한 작업</h2>
+            <p class="text-sm text-red-600 dark:text-red-300">아래 작업을 실행하면 되돌릴 수 없습니다</p>
+          </div>
+        </div>
+
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 mr-3"></i>
+            <p class="text-sm text-red-800 dark:text-red-200">
+              <strong>주의:</strong> 상품을 삭제하면 모든 관련 데이터(이미지, 옵션, 주문 내역 등)가 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">상품 삭제</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                상품과 관련된 모든 데이터가 영구적으로 삭제됩니다.
+              </p>
+            </div>
+            <div class="ml-6">
+              <button class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl" 
+                      onclick="confirmDelete()">
+                <i class="fas fa-trash"></i>
+                <span>상품 삭제</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // URL 및 CSRF 토큰 설정
+  window.deleteProductUrl = '{% url "products:delete_product" store.store_id product.id %}';
+  window.csrfToken = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/manage-product.js' %}"></script>
+{% endblock %} 

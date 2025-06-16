@@ -1,0 +1,297 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}기본 정보 편집: {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<style>
+/* 기본정보 편집 페이지 스타일 */
+.store-avatar {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
+.owner-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.image-avatar {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-blue-500/10 rounded-full mr-3">
+        <i class="fas fa-edit text-3xl text-blue-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">기본 정보 편집</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 기본적인 정보를 수정할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리</span>
+      </a>
+    </div>
+
+    <div class="space-y-8">
+      <form method="post" id="basicInfoForm">
+        {% csrf_token %}
+
+        <!-- 스토어 기본 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 store-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-store text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 기본 정보를 설정하세요</p>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어 아이디</label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-id-badge text-gray-400"></i>
+                </div>
+                <input type="text" value="{{ store.store_id }}" readonly
+                  class="w-full pl-10 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400 cursor-not-allowed">
+              </div>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">스토어 아이디는 변경할 수 없습니다.</p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                스토어 이름 <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-store text-gray-400"></i>
+                </div>
+                <input type="text" name="store_name" id="store_name" placeholder="예: 홍길동의 마법상점"
+                  value="{{ store.store_name }}" required
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어 설명</label>
+              <textarea name="store_description" id="store_description"
+                placeholder="스토어에 대한 설명을 Markdown 형식으로 작성해주세요."
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 min-h-[200px] transition-colors">{{ store.store_description }}</textarea>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Markdown 형식을 사용할 수 있습니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 주인장 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 owner-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-user text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">주인장 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어 운영자의 정보를 입력하세요</p>
+            </div>
+          </div>
+
+          <div class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                주인장 이름 <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+                <input type="text" name="owner_name" id="owner_name" placeholder="예: 홍길동"
+                  value="{{ store.owner_name }}" required
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  연락처 정보 <span class="text-red-500">*</span>
+                </h3>
+                <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-blue-800 dark:text-blue-200">휴대전화 또는 이메일 중 최소 하나는 입력해야 합니다.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">휴대전화</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-phone text-gray-400"></i>
+                      </div>
+                      <input type="tel" name="owner_phone" id="owner_phone" placeholder="010-1234-5678"
+                        value="{{ store.owner_phone }}"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">이메일</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-envelope text-gray-400"></i>
+                      </div>
+                      <input type="email" name="owner_email" id="owner_email" placeholder="example@email.com"
+                        value="{{ store.owner_email }}"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+                    </div>
+                  </div>
+                </div>
+                <p class="mt-2 text-sm" id="contactHelp"></p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                대화채널 <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-comments text-gray-400"></i>
+                </div>
+                <input type="url" name="chat_channel" id="chat_channel"
+                  placeholder="예: https://open.kakao.com/o/abcd1234" value="{{ store.chat_channel }}" required
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+              </div>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">오픈카톡, 텔레그램, 라인, 엑스 계정 등의 URL을 입력해주세요.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 폼 버튼 -->
+        <div class="flex justify-center gap-4">
+          <a href="{% url 'stores:my_stores' %}"
+            class="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-times"></i>
+            <span>취소</span>
+          </a>
+          <button type="submit" id="submitBtn"
+            class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+            <i class="fas fa-save"></i>
+            <span>저장</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- 스토어 사진 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 image-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-images text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 사진</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">스토어를 대표하는 이미지를 업로드하세요</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            스토어 대표 이미지 1장을 업로드할 수 있습니다. 이미지는 자동으로 1000px × 563px (16:9 비율)로 조정되며 webp 포맷으로 변환됩니다. 새 이미지를 업로드하면 기존 이미지가 교체됩니다.
+          </p>
+        </div>
+
+        <!-- 현재 이미지 목록 -->
+        <div id="currentImages" class="mb-6">
+          {% if store.images.all %}
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">현재 업로드된 이미지</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for image in store.images.all %}
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-600" id="image-{{ image.id }}">
+              <div class="aspect-video">
+                <img src="{{ image.file_url }}" alt="{{ image.original_name }}" loading="lazy"
+                  class="w-full h-full object-cover">
+              </div>
+              <div class="p-3">
+                <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ image.original_name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500 mb-2">{{ image.get_file_size_display }}</p>
+                <button type="button" data-image-id="{{ image.id }}"
+                  class="delete-image-btn w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <i class="fas fa-trash text-xs"></i>
+                  <span>삭제</span>
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600" id="noImagesMessage">
+            <i class="fas fa-images text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <p class="text-gray-500 dark:text-gray-400">아직 업로드된 이미지가 없습니다.</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 이미지 업로드 영역 -->
+        <div class="space-y-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">새 이미지 업로드</label>
+          <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-500 transition-colors cursor-pointer" id="imageUploadArea">
+            <input type="file" name="store_images" id="store_images" accept="image/*" class="hidden">
+            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-4"></i>
+            <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 선택하거나 드래그 앤 드롭하세요</p>
+            <p class="text-sm text-gray-500 dark:text-gray-500" id="fileName">파일을 선택하지 않았습니다</p>
+          </div>
+
+          <!-- 업로드 진행률 -->
+          <div id="uploadProgress" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">업로드 진행률</label>
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%" id="progressBar"></div>
+            </div>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400" id="progressText">업로드 준비 중...</p>
+          </div>
+
+          <!-- 업로드된 이미지 미리보기 -->
+          <div id="imagePreview" class="hidden space-y-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">업로드할 이미지 미리보기</label>
+            <div id="previewContainer" class="grid grid-cols-1 gap-4"></div>
+            <div class="flex gap-3">
+              <button type="button" id="uploadBtn"
+                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <span>이미지 업로드</span>
+              </button>
+              <button type="button" id="cancelUploadBtn"
+                class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                <i class="fas fa-times"></i>
+                <span>취소</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 편집 메뉴 -->
+    {% include 'stores/store_menu_component.html' %}
+  </div>
+</div>
+
+<!-- 데이터 속성으로 URL 정보 전달 -->
+<div id="page-data" 
+     data-upload-url="{% url 'stores:upload_image' store.store_id %}"
+     data-store-id="{{ store.store_id }}"
+     style="display: none;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/edit-basic-info.js' %}"></script>
+{% endblock %}

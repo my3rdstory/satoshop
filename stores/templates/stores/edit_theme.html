@@ -1,0 +1,222 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}테마 설정: {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 테마 설정 페이지 스타일 */
+.theme-avatar {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.preview-avatar {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.preset-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.gradient-preview {
+    min-height: 120px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+.preset-color {
+    min-height: 80px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+.preset-color:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+.preset-color.is-active {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-purple-500/10 rounded-full mr-3">
+        <i class="fas fa-palette text-3xl text-purple-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">스토어 테마 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 색상과 디자인을 커스터마이징하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="space-y-6">
+      <form method="post" id="themeForm">
+        {% csrf_token %}
+
+        <!-- 미리보기 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 preview-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-eye text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">미리보기</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">실시간으로 변경사항을 확인하세요</p>
+            </div>
+          </div>
+
+          <div class="gradient-preview" id="gradient_preview" style="background: {{ store.hero_gradient_css }};">
+            <h3 class="text-2xl font-bold" style="color: {{ store.hero_text_color }};">{{ store.store_name }}</h3>
+          </div>
+        </div>
+
+        <!-- 색상 설정 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 theme-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-palette text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">색상 설정</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">그라디언트와 텍스트 색상을 조정하세요</p>
+            </div>
+          </div>
+
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">시작 색상</label>
+               <div class="flex items-center gap-3">
+                 <input type="color" name="hero_color1" id="hero_color1" value="{{ store.hero_color1 }}"
+                   class="w-32 h-12 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer transition-colors">
+                 <span class="text-sm font-mono text-gray-700 dark:text-gray-300">{{ store.hero_color1 }}</span>
+               </div>
+             </div>
+
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">끝 색상</label>
+               <div class="flex items-center gap-3">
+                 <input type="color" name="hero_color2" id="hero_color2" value="{{ store.hero_color2 }}"
+                   class="w-32 h-12 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer transition-colors">
+                 <span class="text-sm font-mono text-gray-700 dark:text-gray-300">{{ store.hero_color2 }}</span>
+               </div>
+             </div>
+
+             <div>
+               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">텍스트 색상</label>
+               <div class="flex items-center gap-3">
+                 <input type="color" name="hero_text_color" id="hero_text_color" value="{{ store.hero_text_color }}"
+                   class="w-32 h-12 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer transition-colors">
+                 <span class="text-sm font-mono text-gray-700 dark:text-gray-300">{{ store.hero_text_color }}</span>
+               </div>
+             </div>
+           </div>
+        </div>
+
+        <!-- 프리셋 테마 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 preset-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-swatchbook text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">프리셋 테마</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">미리 준비된 테마 중에서 선택하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="preset-color" data-color1="#FF6B6B" data-color2="#4ECDC4" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #FF6B6B, #4ECDC4); color: #FFFFFF;">
+              <strong class="text-sm">산호초 바다</strong>
+            </div>
+            <div class="preset-color" data-color1="#667eea" data-color2="#764ba2" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #667eea, #764ba2); color: #FFFFFF;">
+              <strong class="text-sm">보라빛 꿈</strong>
+            </div>
+            <div class="preset-color" data-color1="#f093fb" data-color2="#f5576c" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #f093fb, #f5576c); color: #FFFFFF;">
+              <strong class="text-sm">핑크 선셋</strong>
+            </div>
+            <div class="preset-color" data-color1="#4facfe" data-color2="#00f2fe" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #4facfe, #00f2fe); color: #FFFFFF;">
+              <strong class="text-sm">청량한 바다</strong>
+            </div>
+            <div class="preset-color" data-color1="#ff9a56" data-color2="#ff6b35" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #ff9a56, #ff6b35); color: #FFFFFF;">
+              <strong class="text-sm">따뜻한 노을</strong>
+            </div>
+            <div class="preset-color" data-color1="#56ab2f" data-color2="#a8e6cf" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #56ab2f, #a8e6cf); color: #FFFFFF;">
+              <strong class="text-sm">초록 숲</strong>
+            </div>
+            <div class="preset-color" data-color1="#232526" data-color2="#414345" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #232526, #414345); color: #FFFFFF;">
+              <strong class="text-sm">어두운 밤</strong>
+            </div>
+            <div class="preset-color" data-color1="#f7971e" data-color2="#ffd200" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #f7971e, #ffd200); color: #FFFFFF;">
+              <strong class="text-sm">황금빛</strong>
+            </div>
+            <div class="preset-color" data-color1="#e8198b" data-color2="#c7a17a" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #e8198b, #c7a17a); color: #FFFFFF;">
+              <strong class="text-sm">로즈골드</strong>
+            </div>
+            <div class="preset-color" data-color1="#00c9ff" data-color2="#92fe9d" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #00c9ff, #92fe9d); color: #FFFFFF;">
+              <strong class="text-sm">민트 초콜릿</strong>
+            </div>
+            <div class="preset-color" data-color1="#e0c3fc" data-color2="#9bb5ff" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #e0c3fc, #9bb5ff); color: #FFFFFF;">
+              <strong class="text-sm">라벤더 필드</strong>
+            </div>
+            <div class="preset-color" data-color1="#0f0c29" data-color2="#24243e" data-text="#FFFFFF"
+              style="background: linear-gradient(135deg, #0f0c29, #24243e); color: #FFFFFF;">
+              <strong class="text-sm">우주 별빛</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="flex justify-center gap-4">
+          <a href="{% url 'stores:my_stores' %}"
+            class="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-times"></i>
+            <span>취소</span>
+          </a>
+          <button type="submit" id="submitBtn"
+            class="px-8 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+            <i class="fas fa-save"></i>
+            <span>저장</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 편집 메뉴 -->
+    {% include 'stores/store_menu_component.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 테마 설정 페이지 스크립트 -->
+<script src="{% static 'js/edit-theme.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,256 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}5단계: 최종 확인 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 진행 상태 표시 -->
+    <div class="mb-8">
+      <div class="flex items-center justify-center space-x-4 mb-6">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">1단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">2단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">3단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-green-600 dark:text-green-400">4단계</span>
+        </div>
+        <div class="w-8 h-0.5 bg-green-500"></div>
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <span class="ml-2 text-sm font-medium text-purple-600 dark:text-purple-400">5단계</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메인 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+      <!-- 페이지 헤더 -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
+          <i class="fas fa-check-circle text-2xl text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">최종 확인</h1>
+        <p class="text-gray-600 dark:text-gray-400">입력하신 정보를 최종 확인하고 스토어를 생성해주세요.</p>
+      </div>
+
+      <!-- 성공 메시지 -->
+      <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-6 mb-8">
+        <div class="flex items-center">
+          <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-3 text-xl"></i>
+          <div>
+            <p class="text-green-800 dark:text-green-200 font-medium">
+              <strong>축하합니다!</strong> 모든 설정이 완료되었습니다.
+              아래 정보를 확인하고 스토어를 최종 생성해주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 스토어 정보 요약 -->
+      <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 mb-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-4">
+            <i class="fas fa-store text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 정보 요약</h2>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 기본 정보 -->
+          <div class="space-y-4">
+            <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300">스토어 아이디</span>
+              <span class="text-gray-900 dark:text-white">{{ store.store_id }}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300">스토어 이름</span>
+              <span class="text-gray-900 dark:text-white">{{ store.store_name }}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300">주인장 이름</span>
+              <span class="text-gray-900 dark:text-white">{{ store.owner_name }}</span>
+            </div>
+            <div class="py-2">
+              <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">스토어 URL</span>
+              <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                <code class="text-sm text-gray-800 dark:text-gray-200">{{ request.scheme }}://{{ request.get_host }}/{{ store.store_url }}</code>
+                <span class="inline-flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs rounded-full ml-2">
+                  <i class="fas fa-clock mr-1"></i>
+                  생성 후 접근 가능
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 연락처 및 상태 정보 -->
+          <div class="space-y-4">
+            <div class="py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">연락처</span>
+              <div class="space-y-1">
+                {% if store.owner_phone %}
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-phone mr-2"></i>
+                  <span>{{ store.owner_phone }}</span>
+                </div>
+                {% endif %}
+                {% if store.owner_email %}
+                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-envelope mr-2"></i>
+                  <span>{{ store.owner_email }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">소통채널</span>
+              <a href="{{ store.chat_channel }}" target="_blank" 
+                 class="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                <i class="fas fa-comments mr-2"></i>
+                <span>소통채널 바로가기</span>
+              </a>
+            </div>
+            <div class="py-2 border-b border-gray-200 dark:border-gray-600">
+              <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">블링크 설정</span>
+              <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm rounded-full">
+                <i class="fas fa-check mr-1"></i>
+                설정 완료
+              </span>
+            </div>
+            <div class="py-2">
+              <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">테스트 결제</span>
+              <span class="inline-flex items-center px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm rounded-full">
+                <i class="fas fa-check mr-1"></i>
+                테스트 통과
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {% if store.store_description %}
+        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+          <h3 class="font-medium text-gray-700 dark:text-gray-300 mb-3">스토어 설명</h3>
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+            <div id="storeDescription" class="text-gray-600 dark:text-gray-400 prose prose-sm max-w-none dark:prose-invert">
+              <div class="markdown-content">{{ store.store_description }}</div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 다음 단계 안내 -->
+      <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-6 mb-8">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-lightbulb text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">스토어 생성 후 다음 단계</h3>
+        </div>
+        <div class="space-y-3 text-sm text-blue-800 dark:text-blue-200">
+          <div class="flex items-start">
+            <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium mr-3 mt-0.5">1</span>
+            <div><strong>디자인 커스터마이징:</strong> 스토어의 커버 이미지 등록, 테마 선택 등으로 스토어 홈을 설정하세요.</div>
+          </div>
+          <div class="flex items-start">
+            <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium mr-3 mt-0.5">2</span>
+            <div><strong>상품 등록:</strong> 스토어에 판매할 상품들을 등록하세요.</div>
+          </div>
+          <div class="flex items-start">
+            <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium mr-3 mt-0.5">3</span>
+            <div><strong>결제 테스트:</strong> 실제 고객이 결제하기 전에 다시 한번 테스트해보세요.</div>
+          </div>
+          <div class="flex items-start">
+            <span class="inline-flex items-center justify-center w-6 h-6 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium mr-3 mt-0.5">4</span>
+            <div><strong>홍보:</strong> SNS나 다른 채널을 통해 스토어를 홍보하세요.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 중요 주의사항 -->
+      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-8">
+        <div class="flex items-center mb-4">
+          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/50 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400"></i>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">중요 주의사항</h3>
+        </div>
+        <div class="space-y-2 text-sm text-yellow-800 dark:text-yellow-200">
+          <p>• 스토어 생성 후에도 대부분의 정보는 수정할 수 있습니다.</p>
+          <p>• 단, <strong>스토어 아이디는 생성 후 변경할 수 없습니다.</strong></p>
+          <p>• 라이트닝 결제 API 정보는 언제든지 보안상 이유로 업데이트할 수 있습니다.</p>
+          <p>• 스토어 운영에 문제가 있을 경우 <a href="https://open.kakao.com/me/orangepill" target="_blank" class="text-yellow-600 dark:text-yellow-400 hover:underline font-medium">오픈카톡</a>으로 문의해주세요.</p>
+        </div>
+      </div>
+
+      <!-- 폼 -->
+      <form method="post" id="step5Form">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="true" id="confirmInput">
+
+        <!-- 동의 체크박스 -->
+        <div class="mb-6">
+          <label class="flex items-start cursor-pointer">
+            <input type="checkbox" id="agreeTerms" required class="mt-1 mr-3 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
+            <span class="text-gray-700 dark:text-gray-300">
+              위 정보가 모두 정확하며, 주의사항도 확인했습니다.
+            </span>
+          </label>
+        </div>
+
+        <!-- 버튼 -->
+        <div class="flex justify-center gap-4">
+          <a href="{% url 'stores:create_store_step' step=4 %}" 
+             class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors shadow-sm">
+            <i class="fas fa-arrow-left mr-2"></i>
+            <span>이전 단계</span>
+          </a>
+          <button 
+            type="submit" 
+            id="createStoreBtn" 
+            disabled
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all duration-200 shadow-lg disabled:shadow-none text-lg"
+          >
+            <i class="fas fa-rocket mr-3"></i>
+            <span>스토어 만들기 완료!</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Marked.js for Markdown rendering (optional) -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/create-step5.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}API 설정 편집: {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* API 설정 페이지 스타일 */
+.api-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.test-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-yellow-500/10 rounded-full mr-3">
+        <i class="fas fa-key text-3xl text-yellow-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">블링크 API 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">결제 처리를 위한 블링크 API 정보를 관리하고 테스트해보세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="space-y-6">
+      <!-- 보안 경고 -->
+      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-shield-alt text-yellow-600 dark:text-yellow-400"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-3">보안 주의사항</h3>
+            <ul class="space-y-2 text-sm text-yellow-700 dark:text-yellow-300">
+              <li class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-2 flex-shrink-0"></i>
+                <span><strong>API 정보는 절대 다른 사람과 공유하지 마세요.</strong></span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-lock text-yellow-500 mt-0.5 mr-2 flex-shrink-0"></i>
+                <span>정보는 암호화되어 저장되며, 스토어 주인장만 접근할 수 있습니다.</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-sync-alt text-yellow-500 mt-0.5 mr-2 flex-shrink-0"></i>
+                <span>API 키가 유출된 경우 즉시 블링크에서 새로운 키를 발급받으세요.</span>
+              </li>
+              <li class="flex items-start">
+                <i class="fas fa-clock text-yellow-500 mt-0.5 mr-2 flex-shrink-0"></i>
+                <span>정기적으로 API 키를 변경하는 것을 권장합니다.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- API 정보 얻는 방법 -->
+      <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3">블링크 API 정보 얻는 방법</h3>
+            <ol class="space-y-2 text-sm text-blue-700 dark:text-blue-300 list-decimal list-inside">
+              <li><strong>Blink 앱 설치:</strong> <a href="https://www.blink.sv/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">https://www.blink.sv/</a> 사이트에 접속한 후 앱 설치</li>
+              <li><strong>Blink 계정 생성:</strong> Blink 회원가입 방식으로 계정 생성</li>
+              <li><strong>Blink 대시보드 접속:</strong> <a href="https://dashboard.blink.sv/" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">https://dashboard.blink.sv/</a> 대시보드 사이트에 접속한 후 블링크 계정으로 로그인</li>
+              <li><strong>BTC Wallet ID 확인:</strong> 대시보드 화면의 BTC Wallet ID 준비</li>
+              <li><strong>API Key 발급:</strong> API Keys 메뉴에서 키 생성. Scopes는 모두 선택. 생성된 API 키 복사해서 준비</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- 메인 콘텐츠 -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 왼쪽: API 정보 입력 -->
+        <div class="lg:col-span-2">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+            <div class="flex items-center mb-6">
+              <div class="w-12 h-12 api-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+                <i class="fas fa-cog text-white text-lg"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">API 설정</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">블링크 API 정보를 입력하세요</p>
+              </div>
+            </div>
+
+            <form method="post" id="apiSettingsForm" class="space-y-6">
+              {% csrf_token %}
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  블링크 API Key
+                  {% if not has_existing_api_info %}<span class="text-red-500">*</span>{% endif %}
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-key text-gray-400"></i>
+                  </div>
+                  <input type="password" name="blink_api_info" id="blink_api_info"
+                    placeholder="{% if has_existing_api_info %}변경하려면 새 API Key 입력 (비워두면 기존 값 유지){% else %}블링크 API Key를 입력하세요{% endif %}"
+                    {% if not has_existing_api_info %}required{% endif %}
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:focus:ring-yellow-400 dark:focus:border-yellow-400 transition-colors">
+                </div>
+                {% if has_existing_api_info %}
+                <div class="mt-2 space-y-1">
+                  <div class="text-green-600 dark:text-green-400 text-xs">
+                    <i class="fas fa-check-circle"></i>
+                    현재 설정: {{ masked_api_info }}
+                  </div>
+                  <div class="text-blue-600 dark:text-blue-400 text-xs">변경하려면 새로운 값을 입력하고, 유지하려면 비워두세요.</div>
+                </div>
+                {% endif %}
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  블링크 Wallet ID
+                  {% if not has_existing_wallet_id %}<span class="text-red-500">*</span>{% endif %}
+                </label>
+                <div class="relative">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-wallet text-gray-400"></i>
+                  </div>
+                  <input type="password" name="blink_wallet_id" id="blink_wallet_id"
+                    placeholder="{% if has_existing_wallet_id %}변경하려면 새 Wallet ID 입력 (비워두면 기존 값 유지){% else %}Wallet ID를 입력하세요{% endif %}"
+                    {% if not has_existing_wallet_id %}required{% endif %}
+                    class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 dark:focus:ring-yellow-400 dark:focus:border-yellow-400 transition-colors">
+                </div>
+                {% if has_existing_wallet_id %}
+                <div class="mt-2 space-y-1">
+                  <div class="text-green-600 dark:text-green-400 text-xs">
+                    <i class="fas fa-check-circle"></i>
+                    현재 설정: {{ masked_wallet_id }}
+                  </div>
+                  <div class="text-blue-600 dark:text-blue-400 text-xs">변경하려면 새로운 값을 입력하고, 유지하려면 비워두세요.</div>
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- 상태 알림 -->
+              {% if has_existing_api_info and has_existing_wallet_id %}
+              <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div class="flex items-start">
+                  <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3"></i>
+                  <div class="text-sm">
+                    <p class="font-medium text-green-800 dark:text-green-200">기존 설정 확인됨</p>
+                    <p class="text-green-700 dark:text-green-300 mt-1">스토어 생성 시 입력한 블링크 API 정보가 안전하게 저장되어 있습니다. 변경이 필요한 경우에만 새로운 값을 입력하고, 기존 값을 유지하려면 해당 필드를 비워두세요.</p>
+                  </div>
+                </div>
+              </div>
+              {% elif has_existing_api_info or has_existing_wallet_id %}
+              <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div class="flex items-start">
+                  <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-3"></i>
+                  <div class="text-sm">
+                    <p class="font-medium text-yellow-800 dark:text-yellow-200">부분 설정 확인됨</p>
+                    <p class="text-yellow-700 dark:text-yellow-300 mt-1">일부 정보만 저장되어 있습니다. 누락된 정보를 입력해주세요.</p>
+                  </div>
+                </div>
+              </div>
+              {% else %}
+              <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div class="flex items-start">
+                  <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-3"></i>
+                  <div class="text-sm">
+                    <p class="font-medium text-blue-800 dark:text-blue-200">새로운 설정</p>
+                    <p class="text-blue-700 dark:text-blue-300 mt-1">블링크 API 정보를 처음 설정합니다. 모든 필드를 입력해주세요.</p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              <!-- 버튼 -->
+              <div class="flex justify-center gap-4 pt-6">
+                <a href="{% url 'stores:my_stores' %}"
+                  class="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+                  <i class="fas fa-times"></i>
+                  <span>취소</span>
+                </a>
+                <button type="submit" id="submitBtn"
+                  class="px-8 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                  <i class="fas fa-save"></i>
+                  <span>저장</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 테스트 인보이스 -->
+        <div class="lg:col-span-1">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div class="flex items-center mb-6">
+              <div class="w-10 h-10 test-avatar rounded-lg flex items-center justify-center shadow-lg mr-3">
+                <i class="fas fa-flask text-white"></i>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">테스트 인보이스</h3>
+                <p class="text-xs text-gray-600 dark:text-gray-400">API 연동 테스트</p>
+              </div>
+            </div>
+
+            {% if has_existing_api_info and has_existing_wallet_id %}
+            <!-- 테스트 인보이스 섹션 -->
+            <div class="space-y-4">
+              <div class="text-center" id="qrCodeContainer">
+                <!-- 초기에는 버튼만 표시 -->
+                <button type="button" id="generateInvoiceBtn"
+                  class="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2">
+                  <i class="fas fa-qrcode"></i>
+                  <span>테스트 생성</span>
+                </button>
+
+                <!-- QR 코드 이미지 (처음엔 숨김) -->
+                <img src="" alt="테스트 결제 QR 코드" class="mx-auto max-w-[160px] hidden" id="qrCodeImage">
+
+                <!-- 로딩 상태 -->
+                <div class="hidden" id="loadingSpinner">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">생성 중...</p>
+                </div>
+              </div>
+
+              <!-- 인보이스 텍스트 박스 (QR 코드 아래에 표시) -->
+              <div class="hidden" id="invoiceTextContainer">
+                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">라이트닝 인보이스</label>
+                <textarea id="invoiceTextArea" readonly placeholder="인보이스가 여기에 표시됩니다..."
+                  class="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 resize-none h-20"></textarea>
+                <button type="button" id="copyInvoiceBtn"
+                  class="mt-2 w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-2 text-sm">
+                  <i class="fas fa-copy"></i>
+                  <span>복사</span>
+                </button>
+              </div>
+
+              <div class="hidden text-xs text-gray-600 dark:text-gray-400 space-y-1" id="invoiceDetails">
+                <p><strong>금액:</strong> 10 사토시</p>
+                <p><strong>스토어:</strong> {{ store.store_name }}</p>
+              </div>
+
+              <div id="paymentStatus" class="hidden rounded-lg p-3">
+                <p id="paymentMessage" class="text-sm"></p>
+              </div>
+
+              <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3" id="testInstructions">
+                <p class="text-xs text-blue-800 dark:text-blue-200">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  실제 10 사토시 결제. 블링크가 아닌 다른 라이트닝 지갑 사용.
+                </p>
+              </div>
+            </div>
+            {% elif has_existing_api_info or has_existing_wallet_id %}
+            <!-- 부분 설정된 경우 -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-2"></i>
+                <p class="text-xs text-yellow-800 dark:text-yellow-200">
+                  API 정보가 완전하지 않습니다. 누락된 정보를 입력한 후 테스트할 수 있습니다.
+                </p>
+              </div>
+            </div>
+            {% else %}
+            <!-- API 정보가 없을 때 -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-500 mt-0.5 mr-2"></i>
+                <p class="text-xs text-yellow-800 dark:text-yellow-200">
+                  먼저 API 정보를 저장하면 테스트할 수 있습니다.
+                </p>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 편집 메뉴 -->
+    {% include 'stores/store_menu_component.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- QRious 라이브러리 (QR 코드 생성) -->
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+
+<!-- Django 템플릿 변수를 JavaScript 전역 변수로 설정 -->
+<script>
+  window.STORE_ID = '{{ store.store_id|default:"" }}';
+  window.STORE_NAME = '{{ store.store_name|default:"테스트 스토어" }}';
+  window.CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+
+<!-- API 설정 페이지 스크립트 -->
+<script src="{% static 'js/edit-api-settings.js' %}"></script>
+{% endblock %}

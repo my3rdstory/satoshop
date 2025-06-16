@@ -1,0 +1,177 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}마이페이지 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 마이페이지 스타일 */
+.profile-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-user-cog text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">마이페이지</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">계정 정보 및 설정을 관리하세요</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- 계정 정보 카드 -->
+      <div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-start space-x-6">
+            <!-- 프로필 아바타 -->
+            <div class="flex-shrink-0">
+              <div class="w-20 h-20 profile-avatar rounded-full flex items-center justify-center shadow-lg">
+                <i class="fas fa-user text-2xl text-white"></i>
+              </div>
+            </div>
+            
+            <!-- 사용자 정보 -->
+            <div class="flex-1 min-w-0">
+              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                {{ user.username }}
+              </h2>
+              {% if user.email %}
+              <p class="text-gray-600 dark:text-gray-400 mb-4">{{ user.email }}</p>
+              {% endif %}
+              
+              <!-- 사용자 태그들 -->
+              <div class="flex flex-wrap gap-2">
+                {% if user.first_name or user.last_name %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                  <i class="fas fa-user mr-2 text-xs"></i>
+                  {{ user.first_name }} {{ user.last_name }}
+                </span>
+                {% endif %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                  <i class="fas fa-calendar mr-2 text-xs"></i>
+                  {{ user.date_joined|date:"Y.m.d" }} 가입
+                </span>
+                {% if user.last_login %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                  <i class="fas fa-clock mr-2 text-xs"></i>
+                  {{ user.last_login|date:"m.d H:i" }} 접속
+                </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 계정 관리 메뉴 -->
+      <div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div class="flex items-center mb-6">
+            <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg mr-3">
+              <i class="fas fa-cog text-gray-600 dark:text-gray-400"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">계정 관리</h3>
+          </div>
+
+          <div class="space-y-3">
+            <!-- 비밀번호 변경 -->
+            <a 
+              href="{% url 'accounts:change_password' %}" 
+              class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 transition-all duration-200"
+            >
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center group-hover:bg-bitcoin/20 transition-colors">
+                  <i class="fas fa-key text-yellow-600 dark:text-yellow-400 group-hover:text-bitcoin"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-bitcoin transition-colors">
+                  비밀번호 변경
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  계정 보안을 위해 비밀번호를 변경하세요
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+              </div>
+            </a>
+
+            <!-- 구매 내역 -->
+            <a 
+              href="{% url 'accounts:my_purchases' %}" 
+              class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 transition-all duration-200"
+            >
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-bitcoin/20 transition-colors">
+                  <i class="fas fa-shopping-bag text-blue-600 dark:text-blue-400 group-hover:text-bitcoin"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-bitcoin transition-colors">
+                  구매 내역
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  결제한 상품 구매 내역을 확인하세요
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추가 정보 섹션 (필요시 확장 가능) -->
+    <div class="mt-8">
+      <div class="bg-gradient-to-r from-bitcoin/10 to-orange-500/10 dark:from-bitcoin/20 dark:to-orange-500/20 rounded-2xl p-8 border border-bitcoin/20">
+        <div class="text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-bitcoin/20 rounded-full mb-4">
+            <i class="fas fa-bolt text-2xl text-bitcoin"></i>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            SatoShop과 함께하는 비트코인 여정
+          </h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            라이트닝 네트워크를 통한 빠르고 안전한 비트코인 결제를 경험해보세요
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a 
+              href="{% url 'stores:browse_stores' %}" 
+              class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+            >
+              <i class="fas fa-store mr-2"></i>
+              스토어 둘러보기
+            </a>
+            {% if not user_has_active_store %}
+            <a 
+              href="{% url 'stores:create_store' %}" 
+              class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-bitcoin text-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              내 스토어 만들기
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // 마이페이지 관련 JavaScript가 필요한 경우 여기에 추가
+</script>
+{% endblock %}

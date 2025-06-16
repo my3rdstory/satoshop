@@ -1,0 +1,211 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}주문 상세 - {{ order.order_number }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 주문 상세 페이지 스타일 */
+.order-detail-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a 
+        href="{% url 'accounts:my_purchases' %}" 
+        class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-bitcoin transition-colors"
+      >
+        <i class="fas fa-arrow-left mr-2"></i>
+        구매 내역으로 돌아가기
+      </a>
+    </div>
+
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 order-detail-icon rounded-full mr-3">
+        <i class="fas fa-receipt text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">주문 상세 정보</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">주문번호: {{ order.order_number }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- 주문 정보 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center">
+            <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+              <i class="fas fa-receipt text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 정보</h2>
+          </div>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">주문번호</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.order_number }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">주문일시</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.created_at|date:'Y년 m월 d일 H:i' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">결제일시</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {% if order.paid_at %}{{ order.paid_at|date:'Y년 m월 d일 H:i' }}{% else %}-{% endif %}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">주문 상태</label>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+              <i class="fas fa-check-circle mr-2"></i>
+              결제 완료
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 스토어 정보 카드 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex items-center">
+            <div class="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg mr-3">
+              <i class="fas fa-store text-yellow-600 dark:text-yellow-400"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">스토어 정보</h2>
+          </div>
+        </div>
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어명</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.store.store_name }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">판매자</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.store.owner_name }}
+            </div>
+          </div>
+          {% if order.store.owner_phone %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">연락처</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.store.owner_phone }}
+            </div>
+          </div>
+          {% endif %}
+          {% if order.store.chat_channel %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">소통 채널</label>
+            <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
+              {{ order.store.chat_channel }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 주문 상품 목록 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+          <div class="p-2 bg-bitcoin/10 rounded-lg mr-3">
+            <i class="fas fa-shopping-bag text-bitcoin"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 상품 ({{ order.items.count }}개)</h2>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="space-y-6">
+          {% for item in order.items.all %}
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 {% if not forloop.last %}mb-6{% endif %}">
+            <div class="flex items-start space-x-6">
+              <!-- 상품 이미지 -->
+              <div class="flex-shrink-0">
+                {% if item.product and item.product.images.first %}
+                <img 
+                  src="{{ item.product.images.first.file_url }}" 
+                  alt="{{ item.product_title }}" 
+                  class="w-24 h-24 rounded-lg object-cover"
+                >
+                {% else %}
+                <div class="w-24 h-24 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-image text-2xl text-gray-400"></i>
+                </div>
+                {% endif %}
+              </div>
+
+              <!-- 상품 정보 -->
+              <div class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">{{ item.product_title }}</h3>
+                
+                {% if item.selected_options %}
+                <div class="flex flex-wrap gap-2 mb-4">
+                  {% for option_name, choice_name in item.selected_options.items %}
+                  <div class="flex items-center">
+                    <span class="px-2 py-1 bg-gray-800 dark:bg-gray-600 text-white text-xs font-medium rounded-l">{{ option_name }}</span>
+                    <span class="px-2 py-1 bg-gray-200 dark:bg-gray-500 text-gray-800 dark:text-gray-200 text-xs font-medium rounded-r">{{ choice_name }}</span>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">수량</label>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                      {{ item.quantity }}개
+                    </span>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">단가</label>
+                    <div class="text-sm text-gray-900 dark:text-white">
+                      {{ item.product_price|floatformat:0|intcomma }} sats
+                      {% if item.options_price > 0 %}
+                        <br><span class="text-xs text-gray-500 dark:text-gray-400">+ 옵션: {{ item.options_price|floatformat:0|intcomma }} sats</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 총액 -->
+              <div class="text-right">
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">총액</p>
+                <p class="text-xl font-bold text-bitcoin">{{ item.total_price|floatformat:0|intcomma }} sats</p>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- 총 결제 금액 -->
+        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+          <div class="bg-gradient-to-r from-bitcoin/10 to-orange-500/10 dark:from-bitcoin/20 dark:to-orange-500/20 rounded-xl p-6 border border-bitcoin/20">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white">총 결제 금액</h3>
+              <p class="text-3xl font-bold text-bitcoin">{{ order.total_amount|floatformat:0|intcomma }} sats</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

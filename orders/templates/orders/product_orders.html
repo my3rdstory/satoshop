@@ -1,0 +1,256 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ product.title }} - 주문 목록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<style>
+  .inactive-product-notice {
+    background-color: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #92400e;
+  }
+
+  .dark .inactive-product-notice {
+    background-color: rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.4);
+    color: #fbbf24;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+      <div class="flex items-center mb-4 lg:mb-0">
+        <div class="p-3 bg-bitcoin/10 rounded-full mr-4">
+          <i class="fas fa-list text-3xl text-bitcoin"></i>
+        </div>
+        <div>
+          <div class="flex items-center">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ product.title }} 주문 목록</h1>
+            {% if not product.is_active %}
+            <span class="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-600 text-white">
+              비활성화
+            </span>
+            {% endif %}
+          </div>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">{{ store.store_name }}의 상품별 주문 내역</p>
+        </div>
+      </div>
+      <div>
+        <a 
+          href="{% url 'orders:order_management' store.store_id %}" 
+          class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-lg border border-gray-300 dark:border-gray-600 transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>
+          주문 관리로 돌아가기
+        </a>
+      </div>
+    </div>
+
+    <!-- 비활성화 상품 안내 -->
+    {% if not product.is_active %}
+    <div class="inactive-product-notice rounded-xl p-4 mb-8 border">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-xl mt-1"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="font-semibold mb-1">비활성화된 상품입니다</h3>
+          <p class="text-sm">이 상품은 현재 비활성화되어 있어 고객이 구매할 수 없습니다. 아래는 과거 주문 내역입니다.</p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 상품 정보 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+      <div class="flex items-center mb-6">
+        <div class="p-2 bg-bitcoin/10 rounded-lg mr-3">
+          <i class="fas fa-box text-bitcoin"></i>
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 정보</h2>
+      </div>
+      
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-center space-x-6 mb-6 lg:mb-0">
+          <!-- 상품 이미지 -->
+          <div class="flex-shrink-0">
+            {% if product.images.first %}
+            <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" class="w-32 h-32 rounded-xl object-cover">
+            {% else %}
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">
+              <i class="fas fa-image text-4xl text-gray-400"></i>
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- 상품 상세 -->
+          <div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">{{ product.title }}</h3>
+            <div class="space-y-2 text-sm">
+              <p><span class="font-medium text-gray-700 dark:text-gray-300">가격:</span> <span class="text-bitcoin font-semibold">{{ product.price|floatformat:0 }} sats</span></p>
+              <p><span class="font-medium text-gray-700 dark:text-gray-300">등록일:</span> <span class="text-gray-900 dark:text-white">{{ product.created_at|date:"Y년 m월 d일" }}</span></p>
+              <p><span class="font-medium text-gray-700 dark:text-gray-300">상태:</span> 
+                {% if product.is_active %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                  활성화
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                  비활성화
+                </span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- CSV 다운로드 버튼 -->
+        <div class="flex-shrink-0">
+          <a 
+            href="{% url 'orders:export_product_orders_csv' store.store_id product.id %}" 
+            class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-download mr-2"></i>
+            배송정보 포함 CSV 다운로드
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 주문 내역 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- 헤더 -->
+      <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
+        <div class="flex items-center">
+          <i class="fas fa-clipboard-list text-xl mr-3"></i>
+          <h2 class="text-xl font-bold">주문 내역</h2>
+        </div>
+      </div>
+
+      <div class="p-6">
+        {% if page_obj %}
+        <!-- 테이블 -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문번호</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문자</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">수량</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">단가</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">총액</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문일시</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">상태</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {% for item in page_obj %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number }}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.buyer_name }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.quantity }}개</td>
+                <td class="px-6 py-4 whitespace-nowrap text-bitcoin font-semibold">{{ item.product_price|floatformat:0 }} sats</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="text-green-600 dark:text-green-400 font-semibold">
+                    {{ item.total_price|floatformat:0 }} sats
+                  </span>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">배송비 제외</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y.m.d H:i" }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {% if item.order.status == 'paid' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                    {{ item.order.get_status_display }}
+                  </span>
+                  {% elif item.order.status == 'pending' %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+                    {{ item.order.get_status_display }}
+                  </span>
+                  {% else %}
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    {{ item.order.get_status_display }}
+                  </span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 페이지네이션 -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex items-center justify-between mt-6">
+          <div class="flex items-center space-x-2">
+            {% if page_obj.has_previous %}
+            <a 
+              href="?page={{ page_obj.previous_page_number }}" 
+              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              이전
+            </a>
+            {% else %}
+            <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+              이전
+            </span>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+            <a 
+              href="?page={{ page_obj.next_page_number }}" 
+              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              다음
+            </a>
+            {% else %}
+            <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+              다음
+            </span>
+            {% endif %}
+          </div>
+
+          <div class="flex items-center space-x-1">
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="inline-flex items-center px-3 py-2 border border-bitcoin bg-bitcoin text-white rounded-md text-sm font-medium">
+              {{ num }}
+            </span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a 
+              href="?page={{ num }}" 
+              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              {{ num }}
+            </a>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- 빈 상태 -->
+        <div class="text-center py-12">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+            <i class="fas fa-clipboard-list text-3xl text-gray-400"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">주문 내역이 없습니다</h3>
+          <p class="text-gray-600 dark:text-gray-400">아직 이 상품에 대한 주문이 없어요.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/common.js' %}"></script>
+{% endblock %}

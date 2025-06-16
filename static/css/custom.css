@@ -1,0 +1,600 @@
+/* ==========================================================================
+   페이지 단위 커스텀 스타일 - 블랙&화이트 톤
+   ========================================================================== */
+
+/* 노토산스 폰트 전체 적용 */
+* {
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 기본 배경과 텍스트 적용 */
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* Sticky Footer 레이아웃 */
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding-top: 3.25rem;
+}
+
+.main-content {
+    flex: 1;
+}
+
+/* 네비게이션 바 */
+.navbar.is-white {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+}
+
+/* 폼 도움말 텍스트 크기 조정 */
+.help ul {
+    font-size: 0.75rem;
+    margin: 0;
+    padding-left: 1rem;
+}
+
+.help ul li {
+    margin-bottom: 0.25rem;
+}
+
+/* 푸터 */
+.footer.has-background-dark {
+    background-color: var(--footer-bg) !important;
+    padding: 2rem 1.5rem 1.5rem;
+    margin: 0;
+}
+
+.footer .has-text-white {
+    color: #ffffff !important;
+}
+
+.footer .has-text-grey-light {
+    color: #bdbdbd !important;
+}
+
+/* 주요 요소들에 노토산스 폰트 적용 */
+.button, .input, .textarea, .select, .label, 
+.navbar-item, .card, .notification, .help,
+h1, h2, h3, h4, h5, h6, p, span, div {
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+/* 히어로 섹션의 텍스트는 흰색 유지 */
+.hero .title.has-text-white,
+.hero .subtitle.has-text-white {
+    color: #ffffff !important;
+}
+
+/* 플로팅 테마 전환 버튼 */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    color: var(--bg-primary);
+    font-size: 1.5rem;
+}
+
+/* 모바일에서 플로팅 테마 버튼 숨김 */
+@media (max-width: 768px) {
+    .theme-toggle {
+        display: none;
+    }
+}
+
+.theme-toggle:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+/* 다크 모드일 때 버튼 스타일 */
+[data-theme="dark"] .theme-toggle {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    color: var(--text-primary);
+}
+
+.theme-toggle:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+/* 아이콘 전환 애니메이션 */
+.theme-toggle .icon {
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle .sun-icon {
+    display: inline-block;
+}
+
+.theme-toggle .moon-icon {
+    display: none;
+}
+
+[data-theme="dark"] .theme-toggle .sun-icon {
+    display: none;
+}
+
+[data-theme="dark"] .theme-toggle .moon-icon {
+    display: inline-block;
+}
+
+/* 히어로 섹션 스타일 */
+.hero.is-primary {
+    background: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+/* 커스텀 그라디언트 클래스 제거 - 단색으로 변경 */
+.gradient-primary {
+    background: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+.gradient-info {
+    background: var(--bulma-info);
+    color: white;
+}
+
+/* 계정 페이지 특화 스타일 */
+.auth-container .title {
+    color: var(--text-primary) !important;
+}
+
+.auth-container .subtitle {
+    color: var(--text-secondary) !important;
+}
+
+/* 입력 필드 스타일 개선 */
+.input[readonly] {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+/* 폼 아이콘 스타일 개선 */
+.control.has-icons-left .icon.is-left {
+    color: var(--text-muted) !important;
+    pointer-events: none;
+    z-index: 4;
+}
+
+.control.has-icons-left .icon.is-left.has-text-grey-dark {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .control.has-icons-left .icon.is-left.has-text-grey-dark {
+    color: var(--text-muted) !important;
+}
+
+/* 입력 필드와 아이콘 정렬 */
+.control.has-icons-left .input {
+    padding-left: 2.5em;
+}
+
+.control.has-icons-left .icon.is-left {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2.5em;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 카드 헤더 스타일 */
+.card-header-title {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* 레벨 컴포넌트 반응형 */
+@media (max-width: 768px) {
+    .level {
+        display: block !important;
+    }
+    
+    .level-left,
+    .level-right {
+        margin-bottom: 1rem;
+    }
+    
+    .level-item {
+        justify-content: flex-start !important;
+    }
+}
+
+/* 미디어 객체 반응형 */
+@media (max-width: 768px) {
+    .media {
+        display: block;
+    }
+    
+    .media-left {
+        margin-bottom: 1rem;
+        margin-right: 0;
+    }
+    
+    .media-right {
+        margin-top: 1rem;
+        text-align: left;
+    }
+}
+
+/* 컬럼 간격 조정 */
+.columns.is-multiline > .column {
+    margin-bottom: 1.5rem;
+}
+
+/* 박스 내부 여백 조정 */
+.box.has-background-light {
+    background-color: var(--bg-tertiary) !important;
+}
+
+.box.has-background-primary-light {
+    background-color: rgba(33, 33, 33, 0.05) !important;
+}
+
+[data-theme="dark"] .box.has-background-primary-light {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* 태그 스타일 개선 */
+.tags.has-addons .tag:not(:first-child):not(:last-child) {
+    border-radius: 0;
+}
+
+.tags.has-addons .tag:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.tags.has-addons .tag:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* 헤딩 스타일 */
+.heading {
+    color: var(--text-muted) !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px;
+}
+
+/* 링크 스타일 개선 */
+.has-text-link {
+    color: var(--bulma-link) !important;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.has-text-link:hover {
+    color: var(--bulma-primary-dark) !important;
+    text-decoration: underline;
+}
+
+/* 이미지 스타일 */
+.image img.is-rounded {
+    border-radius: 6px;
+}
+
+/* 구분선 스타일 */
+hr.my-3 {
+    margin: 1rem 0;
+    background-color: var(--border-light);
+    height: 1px;
+    border: none;
+}
+
+/* 빈 상태 아이콘 크기 조정 */
+.empty-state .icon.is-size-1 {
+    font-size: 4rem !important;
+}
+
+/* ==========================================================================
+   계정 페이지 특화 스타일
+   ========================================================================== */
+
+/* 비밀번호 변경 페이지 */
+.password-change-section {
+    background-color: var(--bg-primary);
+    min-height: calc(100vh - 3.25rem - 120px);
+    padding: 2rem 0;
+}
+
+.password-change-section .section {
+    background-color: transparent;
+    padding: 2rem 0;
+}
+
+.password-change-section .card {
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.password-change-section .card-header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.password-change-section .card-header-title {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+}
+
+.password-change-section .card-header-title .icon.has-text-warning {
+    color: var(--bulma-warning) !important;
+}
+
+.password-change-section .field .control.has-icons-left .input {
+    padding-left: 2.5rem;
+}
+
+.password-change-section .field .control.has-icons-left .icon.is-left {
+    left: 0;
+    width: 2.5rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted) !important;
+}
+
+.password-change-section .field .control.has-icons-left .icon.is-left.has-text-grey-dark {
+    color: var(--text-secondary) !important;
+}
+
+.password-change-section .help.is-danger {
+    color: var(--bulma-danger) !important;
+    font-weight: 500;
+}
+
+.password-change-section .help {
+    color: var(--text-muted) !important;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+/* 구매 내역 페이지 */
+.purchases-section {
+    background-color: var(--bg-primary);
+    min-height: calc(100vh - 3.25rem - 120px);
+    padding: 2rem 0;
+}
+
+.purchases-section .section {
+    background-color: transparent;
+    padding: 2rem 0;
+}
+
+.purchases-section .empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.purchases-section .empty-state-icon {
+    font-size: 5rem;
+    margin-bottom: 2rem;
+    opacity: 0.3;
+    color: var(--text-muted);
+}
+
+.purchases-section .empty-state .title.is-4 {
+    color: var(--text-primary) !important;
+    margin-bottom: 1rem;
+}
+
+.purchases-section .empty-state .subtitle.is-6 {
+    color: var(--text-muted) !important;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.purchases-section .empty-state .button.is-primary {
+    padding: 1rem 2rem;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+/* 마이페이지 */
+.mypage-section {
+    background-color: var(--bg-primary);
+    min-height: calc(100vh - 3.25rem - 120px);
+    padding: 2rem 0;
+}
+
+.mypage-section .section {
+    background-color: transparent;
+    padding: 2rem 0;
+}
+
+.mypage-section .has-text-centered .title.is-3 {
+    color: var(--text-primary) !important;
+    margin-bottom: 1rem;
+}
+
+.mypage-section .has-text-centered .subtitle.is-5 {
+    color: var(--text-muted) !important;
+    margin-bottom: 3rem;
+}
+
+.mypage-section .has-text-centered .icon.is-large.has-text-primary {
+    color: var(--bulma-primary) !important;
+    margin-bottom: 1rem;
+}
+
+/* 주문 상세 페이지 */
+.order-detail-section {
+    background-color: var(--bg-primary);
+    min-height: calc(100vh - 3.25rem - 120px);
+    padding: 2rem 0;
+}
+
+.order-detail-section .section {
+    background-color: transparent;
+    padding: 2rem 0;
+}
+
+.order-detail-section .has-text-centered .title.is-3 {
+    color: var(--text-primary) !important;
+    margin-bottom: 0.5rem;
+}
+
+.order-detail-section .has-text-centered .subtitle.is-5 {
+    color: var(--text-muted) !important;
+    margin-bottom: 3rem;
+}
+
+.order-detail-section .has-text-centered .icon.is-large.has-text-info {
+    color: var(--bulma-info) !important;
+    margin-bottom: 1rem;
+}
+
+/* 뒤로가기 버튼 공통 스타일 */
+.back-button-container {
+    margin-bottom: 2rem;
+}
+
+.back-button-container .button.is-light {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    padding: 0.75rem 1.5rem;
+}
+
+.back-button-container .button.is-light:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--text-muted);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.back-button-container .button.is-light .icon {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+}
+
+/* 페이지 헤더 공통 스타일 */
+.page-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.page-header .title.is-3 {
+    color: var(--text-primary) !important;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.page-header .subtitle.is-5 {
+    color: var(--text-muted) !important;
+    line-height: 1.6;
+}
+
+.page-header .icon.is-large {
+    margin-bottom: 0;
+}
+
+.page-header .icon.is-large.has-text-warning {
+    color: var(--bulma-warning) !important;
+}
+
+.page-header .icon.is-large.has-text-info {
+    color: var(--bulma-info) !important;
+}
+
+.page-header .icon.is-large.has-text-primary {
+    color: var(--bulma-primary) !important;
+}
+
+/* 반응형 조정 */
+@media (max-width: 768px) {
+    .password-change-section,
+    .purchases-section,
+    .mypage-section,
+    .order-detail-section {
+        padding: 1rem 0;
+    }
+    
+    .password-change-section .section,
+    .purchases-section .section,
+    .mypage-section .section,
+    .order-detail-section .section {
+        padding: 1rem 0;
+    }
+    
+    .back-button-container {
+        margin-bottom: 1.5rem;
+    }
+    
+    .back-button-container .button.is-light {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    .page-header {
+        margin-bottom: 2rem;
+    }
+    
+    .page-header .title.is-3 {
+        font-size: 1.75rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .page-header .subtitle.is-5 {
+        font-size: 1rem;
+        padding: 0 1rem;
+    }
+    
+    .purchases-section .empty-state {
+        padding: 3rem 1rem;
+    }
+    
+    .purchases-section .empty-state-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .purchases-section .empty-state .subtitle.is-6 {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .purchases-section .empty-state .button.is-primary {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.9rem;
+        width: 100%;
+        max-width: 280px;
+    }
+}

@@ -1,0 +1,106 @@
+<!-- 상품 편집 메뉴 -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+  <div class="bg-gradient-to-r from-orange-500 to-yellow-500 px-6 py-4">
+    <h3 class="text-white font-semibold flex items-center">
+      <i class="fas fa-cog mr-2"></i>
+      상품 편집 메뉴
+    </h3>
+  </div>
+
+  <div class="divide-y divide-gray-200 dark:divide-gray-700">
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <a href="{% url 'products:edit_basic_info' store.store_id product.id %}" class="flex items-center justify-between group">
+        <div class="flex items-start space-x-3">
+          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              기본 정보 편집
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              제목, 설명, 가격 정보 수정
+            </p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+      </a>
+    </div>
+
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <a href="{% url 'products:edit_options' store.store_id product.id %}" class="flex items-center justify-between group">
+        <div class="flex items-start space-x-3">
+          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
+            <i class="fas fa-list text-yellow-600 dark:text-yellow-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              옵션 관리
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              색상, 사이즈 등 상품 옵션 설정
+            </p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+      </a>
+    </div>
+
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <a href="{% url 'products:edit_images' store.store_id product.id %}" class="flex items-center justify-between group">
+        <div class="flex items-start space-x-3">
+          <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+            <i class="fas fa-images text-purple-600 dark:text-purple-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              이미지 관리
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              상품 이미지 업로드, 삭제, 순서 변경
+            </p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+      </a>
+    </div>
+
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <a href="{% url 'products:edit_completion_message' store.store_id product.id %}" class="flex items-center justify-between group">
+        <div class="flex items-start space-x-3">
+          <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+            <i class="fas fa-message text-green-600 dark:text-green-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              완료 메시지 설정
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              결제 완료 후 고객에게 보여줄 안내 메시지
+            </p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+      </a>
+    </div>
+
+    <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+      <a href="{% url 'products:manage_product' store.store_id product.id %}" class="flex items-center justify-between group">
+        <div class="flex items-start space-x-3">
+          <div class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+            <i class="fas fa-cog text-gray-600 dark:text-gray-400"></i>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
+              상품 관리
+            </h4>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              상품 삭제 등 관리 기능
+            </p>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+      </a>
+    </div>
+  </div>
+</div> 

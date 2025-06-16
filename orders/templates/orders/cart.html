@@ -1,0 +1,157 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}장바구니{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center mb-4">
+        <div class="p-3 bg-bitcoin/10 rounded-full mr-3">
+          <i class="fas fa-shopping-cart text-3xl text-bitcoin"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">장바구니</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-2">선택한 상품들을 확인하고 주문하세요</p>
+        </div>
+      </div>
+    </div>
+
+    {% if cart_items %}
+    <!-- 장바구니 아이템들 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 mb-8">
+      {% for item in cart_items %}
+      <div class="flex items-center p-6 {% if not forloop.last %}border-b border-gray-200 dark:border-gray-600{% endif %}">
+        <!-- 상품 이미지 -->
+        <div class="flex-shrink-0">
+          {% if item.product.images.first %}
+          <img src="{{ item.product.images.first.file_url }}" alt="{{ item.product.title }}"
+            class="w-20 h-20 object-cover rounded-lg shadow-sm">
+          {% else %}
+          <div class="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+            <i class="fas fa-image text-gray-400 text-xl"></i>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 상품 정보 -->
+        <div class="flex-1 ml-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">{{ item.product.title }}</h3>
+          <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <i class="fas fa-store mr-2"></i>
+            <span>{{ item.product.store.store_name }}</span>
+          </div>
+
+          {% if item.selected_options %}
+          <div class="flex flex-wrap gap-2 mt-2">
+            {% for option_id, choice_id in item.selected_options.items %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+              <i class="fas fa-cog mr-1 text-xs"></i>
+              옵션 선택됨
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 가격 및 수량 정보 -->
+        <div class="text-right">
+          <div class="text-xl font-bold text-bitcoin mb-1">{{ item.total_price|floatformat:0 }} sats</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">수량: {{ item.quantity }}개</div>
+
+                     <button 
+             onclick="removeFromCart({{ item.id }})" 
+             class="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg transition-colors"
+           >
+             <i class="fas fa-trash mr-1 text-xs"></i>
+             삭제
+           </button>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- 총 금액 및 액션 버튼 -->
+      <div class="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-b-2xl">
+        <div class="flex justify-between items-center text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          <span>총 금액:</span>
+          <span class="text-bitcoin">{{ cart.total_amount|floatformat:0 }} sats</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a 
+            href="{% url 'stores:browse_stores' %}"
+            class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-arrow-left mr-2"></i>
+            쇼핑 계속하기
+          </a>
+          <a 
+            href="{% url 'orders:shipping_info' %}"
+            class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-credit-card mr-2"></i>
+            주문하기
+          </a>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- 빈 장바구니 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mb-6">
+          <i class="fas fa-shopping-cart text-4xl text-gray-400"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">장바구니가 비어있습니다</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-8">마음에 드는 상품을 장바구니에 담아보세요!</p>
+        <a 
+          href="{% url 'stores:browse_stores' %}"
+          class="inline-flex items-center px-8 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+        >
+          <i class="fas fa-store mr-2"></i>
+          쇼핑하러 가기
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 추가 정보 섹션 -->
+    {% if cart_items %}
+    <div class="bg-gradient-to-r from-bitcoin/10 to-orange-500/10 dark:from-bitcoin/20 dark:to-orange-500/20 rounded-2xl p-6 border border-bitcoin/20">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <div class="w-12 h-12 bg-bitcoin/20 rounded-full flex items-center justify-center">
+            <i class="fas fa-info-circle text-bitcoin"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            주문 안내
+          </h3>
+          <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2 text-xs"></i>
+              라이트닝 네트워크를 통한 빠른 비트코인 결제
+            </li>
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2 text-xs"></i>
+              안전하고 투명한 거래 시스템
+            </li>
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2 text-xs"></i>
+              실시간 주문 상태 확인 가능
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/cart-common.js' %}"></script>
+{% endblock %}

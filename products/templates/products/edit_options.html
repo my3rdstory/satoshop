@@ -1,0 +1,192 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 옵션 관리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<style>
+.options-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 options-avatar rounded-full mr-3">
+        <i class="fas fa-list text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">옵션 관리</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">상품의 색상, 사이즈 등 옵션을 설정할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'products:manage_product' store.store_id product.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>상품 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" id="optionsForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 옵션 설정 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-cogs text-yellow-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 옵션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">색상, 사이즈 등의 옵션을 설정할 수 있습니다</p>
+          </div>
+        </div>
+
+        <div id="optionsContainer" class="space-y-6 mb-6">
+          {% for option in product.options.all %}
+          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4">
+            <!-- 옵션 헤더 -->
+            <div class="flex items-center gap-4">
+              <div class="flex-1">
+                <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       type="text" name="options[{{ forloop.counter0 }}][name]" required
+                       placeholder="옵션명 (예: 색상, 사이즈)" value="{{ option.name }}">
+              </div>
+              <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                      onclick="this.closest('.bg-gray-50, .dark\\:bg-gray-700\\/50').remove()">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+            
+            <!-- 옵션 선택지들 -->
+            <div class="space-y-3">
+              {% for choice in option.choices.all %}
+              <div class="flex items-center gap-3">
+                <div class="flex-1">
+                  <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                         type="text"
+                         name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][name]"
+                         required placeholder="옵션 종류 (예: 빨강, 파랑)" value="{{ choice.name }}">
+                </div>
+                <div class="w-32">
+                  <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                         type="number"
+                         name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][price]"
+                         min="0" placeholder="추가 가격" value="{{ choice.display_price }}">
+                </div>
+                <div class="relative w-16">
+                  <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">{{ product.price_unit }}</span>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info hidden">
+                    <span class="option-converted-amount"></span>                    
+                  </div>
+                </div>
+                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        onclick="this.closest('.flex').remove()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              {% endfor %}
+            </div>
+            
+            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors" 
+                    onclick="addOptionChoice(this)">
+              <i class="fas fa-plus text-sm"></i>
+              <span>옵션 종류 추가</span>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+
+        <button type="button" class="inline-flex items-center gap-2 px-6 py-3 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors" id="addOptionBtn">
+          <i class="fas fa-plus"></i>
+          <span>옵션 추가</span>
+        </button>
+      </div>
+
+      <!-- 옵션 관리 팁 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-lightbulb text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션 관리 팁</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">효과적인 옵션 설정을 위한 가이드</p>
+          </div>
+        </div>
+        
+        <ul class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+          <li class="flex items-start">
+            <i class="fas fa-tag text-blue-500 mr-3 mt-0.5"></i>
+            <div>
+              <strong>옵션명:</strong> "색상", "사이즈", "용량" 등 옵션의 카테고리를 입력하세요.
+            </div>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-list-ul text-green-500 mr-3 mt-0.5"></i>
+            <div>
+              <strong>옵션 종류:</strong> "빨강", "파랑", "S", "M", "L" 등 구체적인 선택지를 입력하세요.
+            </div>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-coins text-yellow-500 mr-3 mt-0.5"></i>
+            <div>
+              <strong>추가 가격:</strong> 해당 옵션 선택 시 기본 가격에 추가될 금액입니다. 
+            </div>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-trash text-red-500 mr-3 mt-0.5"></i>
+            <div>
+              <strong>옵션 삭제:</strong> 옵션이나 옵션 종류를 삭제하려면 휴지통 아이콘을 클릭하세요.
+            </div>
+          </li>
+          <li class="flex items-start">
+            <i class="fas fa-shopping-cart text-purple-500 mr-3 mt-0.5"></i>
+            <div>
+              <strong>주문 시:</strong> 고객이 상품 주문 시 설정된 옵션을 선택할 수 있습니다.
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'products:manage_product' store.store_id product.id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          <i class="fas fa-times mr-2"></i>
+          <span>취소</span>
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg" id="submitBtn">
+          <i class="fas fa-save mr-2"></i>
+          <span>저장</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- 편집 메뉴 -->
+    <div class="mt-8">
+      {% include 'products/product_menu.html' %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // 옵션 개수 설정
+  window.productOptionsCount = {{ product.options.count }};
+  // 상품의 가격 표시 방식 설정
+  window.productPriceDisplay = '{{ product.price_display }}';
+</script>
+<script src="{% static 'js/product-form.js' %}"></script>
+<script src="{% static 'js/edit-options.js' %}"></script>
+<script src="{% static 'js/currency-exchange.js' %}"></script>
+{% endblock %} 

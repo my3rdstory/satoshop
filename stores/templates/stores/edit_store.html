@@ -1,0 +1,542 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}스토어 편집: {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+<style>
+/* 스토어 편집 페이지 스타일 */
+.edit-avatar {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+.basic-info-avatar {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.owner-info-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.security-avatar {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+.theme-avatar {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.settings-avatar {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+/* 커스텀 컬러팔레트 스타일 */
+.custom-color-palette {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    display: none;
+    min-width: 280px;
+}
+
+.custom-color-palette.is-active {
+    display: block;
+}
+
+.color-wheel-container {
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.1s ease;
+}
+
+.color-swatch:hover {
+    transform: scale(1.1);
+    border-color: #3b82f6;
+}
+
+.color-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-input-row input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.color-picker-btn {
+    position: relative;
+}
+
+.gradient-preview {
+    min-height: 80px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 1px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.preset-color.is-active,
+.text-preset-color.is-active {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-blue-500/10 rounded-full mr-3">
+        <i class="fas fa-edit text-3xl text-blue-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">스토어 편집</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어 정보를 수정할 수 있습니다. <small>(스토어 아이디는 변경 불가)</small></p>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <form method="post" id="editStoreForm">
+        {% csrf_token %}
+
+        <!-- 기본 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 basic-info-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-store text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어의 기본적인 정보를 설정하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어 아이디</label>
+              <div class="relative">
+                <input type="text" value="{{ store.store_id }}" readonly
+                  class="w-full px-4 py-3 pl-10 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-500 dark:text-gray-400">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-store text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어 이름 <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="text" name="store_name" id="store_name" placeholder="예: 홍길동의 마법상점" value="{{ store.store_name }}" required
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-store text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">스토어 설명</label>
+            <textarea name="store_description" id="store_description" rows="4" placeholder="스토어에 대한 설명을 Markdown 형식으로 작성해주세요."
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">{{ store.store_description }}</textarea>
+          </div>
+        </div>
+
+        <!-- 주인장 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 owner-info-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-user text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">주인장 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어 운영자의 연락처 정보를 입력하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">주인장 이름 <span class="text-red-500">*</span></label>
+              <div class="relative">
+                <input type="text" name="owner_name" id="owner_name" placeholder="예: 홍길동" value="{{ store.owner_name }}" required
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">휴대전화</label>
+              <div class="relative">
+                <input type="tel" name="owner_phone" id="owner_phone" placeholder="010-1234-5678" value="{{ store.owner_phone }}"
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-phone text-gray-400"></i>
+                </div>
+              </div>
+              <p class="mt-1 text-xs text-blue-600 dark:text-blue-400" id="contactHelp">휴대전화 또는 이메일 중 최소 하나는 입력해야 합니다.</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">이메일</label>
+              <div class="relative">
+                <input type="email" name="owner_email" id="owner_email" placeholder="example@email.com" value="{{ store.owner_email }}"
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대화채널 <span class="text-red-500">*</span></label>
+            <div class="relative">
+              <input type="url" name="chat_channel" id="chat_channel" placeholder="예: https://open.kakao.com/o/abcd1234" value="{{ store.chat_channel }}" required
+                class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-comments text-gray-400"></i>
+              </div>
+            </div>
+            <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">대화채널은 고객과 원활한 소통을 할 수 있도록 오픈카톡, 텔레그램, 라인, 엑스 계정 등의 URL을 입력해주세요.</p>
+          </div>
+        </div>
+
+        <!-- 블링크 API 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 security-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-key text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">블링크 API 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">결제 처리를 위한 API 정보를 설정하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">블링크 API 키</label>
+              <div class="flex">
+                <div class="relative flex-1">
+                  <input type="password" name="blink_api_info" id="blink_api_info" placeholder="변경하려면 새 API 키 입력"
+                    class="w-full px-4 py-3 pl-10 pr-12 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-key text-gray-400"></i>
+                  </div>
+                </div>
+                <button type="button" id="toggleApi"
+                  class="px-4 py-3 bg-gray-100 dark:bg-gray-600 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors">
+                  <i class="fas fa-eye text-gray-600 dark:text-gray-300"></i>
+                </button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">블링크 월렛 ID</label>
+              <div class="flex">
+                <div class="relative flex-1">
+                  <input type="password" name="blink_wallet_id" id="blink_wallet_id" placeholder="변경하려면 새 월렛 ID 입력"
+                    class="w-full px-4 py-3 pl-10 pr-12 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-wallet text-gray-400"></i>
+                  </div>
+                </div>
+                <button type="button" id="toggleWallet"
+                  class="px-4 py-3 bg-gray-100 dark:bg-gray-600 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors">
+                  <i class="fas fa-eye text-gray-600 dark:text-gray-300"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex items-start">
+              <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3"></i>
+              <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                보안상 이유로 현재 값은 표시되지 않습니다. 변경이 필요한 경우에만 새 값을 입력하세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스토어 테마 설정 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 theme-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-palette text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 테마 설정</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어 페이지의 색상과 디자인을 설정하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">히어로 그라데이션 시작 색상</label>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <button type="button" class="color-picker-btn px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" id="color1_picker_btn"
+                    style="background-color: {{ store.hero_color1 }}; color: white;">
+                    <i class="fas fa-palette"></i>
+                  </button>
+                  <input type="color" name="hero_color1" id="hero_color1" value="{{ store.hero_color1 }}" style="display: none;">
+                  <!-- 커스텀 컬러팔레트 -->
+                  <div class="custom-color-palette" id="color1_palette">
+                    <div class="color-wheel-container">
+                      <div id="color1_wheel"></div>
+                    </div>
+                    <div class="color-grid" id="color1_grid"></div>
+                    <div class="color-input-row">
+                      <span style="font-size: 12px; color: #666;">직접 입력:</span>
+                      <input type="text" id="color1_custom_input" placeholder="#ff0000" maxlength="7">
+                    </div>
+                  </div>
+                </div>
+                <input type="text" id="hero_color1_text" value="{{ store.hero_color1 }}" placeholder="#667eea"
+                  class="flex-1 px-4 py-3 pl-8 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+                  <i class="fas fa-hashtag text-gray-400 text-sm"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">히어로 그라데이션 끝 색상</label>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <button type="button" class="color-picker-btn px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" id="color2_picker_btn"
+                    style="background-color: {{ store.hero_color2 }}; color: white;">
+                    <i class="fas fa-palette"></i>
+                  </button>
+                  <input type="color" name="hero_color2" id="hero_color2" value="{{ store.hero_color2 }}" style="display: none;">
+                  <!-- 커스텀 컬러팔레트 -->
+                  <div class="custom-color-palette" id="color2_palette">
+                    <div class="color-wheel-container">
+                      <div id="color2_wheel"></div>
+                    </div>
+                    <div class="color-grid" id="color2_grid"></div>
+                    <div class="color-input-row">
+                      <span style="font-size: 12px; color: #666;">직접 입력:</span>
+                      <input type="text" id="color2_custom_input" placeholder="#ff0000" maxlength="7">
+                    </div>
+                  </div>
+                </div>
+                <input type="text" id="hero_color2_text" value="{{ store.hero_color2 }}" placeholder="#764ba2"
+                  class="flex-1 px-4 py-3 pl-8 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+                  <i class="fas fa-hashtag text-gray-400 text-sm"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">텍스트 색상</label>
+              <div class="flex items-center gap-3">
+                <div class="relative">
+                  <button type="button" class="color-picker-btn px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" id="text_color_picker_btn"
+                    style="background-color: {{ store.hero_text_color }}; color: white;">
+                    <i class="fas fa-font"></i>
+                  </button>
+                  <input type="color" name="hero_text_color" id="hero_text_color" value="{{ store.hero_text_color }}" style="display: none;">
+                  <!-- 커스텀 컬러팔레트 -->
+                  <div class="custom-color-palette" id="text_color_palette">
+                    <div class="color-wheel-container">
+                      <div id="text_color_wheel"></div>
+                    </div>
+                    <div class="color-grid" id="text_color_grid"></div>
+                    <div class="color-input-row">
+                      <span style="font-size: 12px; color: #666;">직접 입력:</span>
+                      <input type="text" id="text_color_custom_input" placeholder="#ff0000" maxlength="7">
+                    </div>
+                  </div>
+                </div>
+                <input type="text" id="hero_text_color_text" value="{{ store.hero_text_color }}" placeholder="#ffffff"
+                  class="flex-1 px-4 py-3 pl-8 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-2 flex items-center pointer-events-none">
+                  <i class="fas fa-hashtag text-gray-400 text-sm"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">추천 텍스트 색상</label>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="text-preset-color px-3 py-2 rounded-lg text-xs font-medium transition-all" data-color="#ffffff"
+                  style="background-color: #ffffff; color: #333; border: 1px solid #ddd;">
+                  흰색
+                </button>
+                <button type="button" class="text-preset-color px-3 py-2 rounded-lg text-xs font-medium transition-all" data-color="#000000"
+                  style="background-color: #000000; color: white;">
+                  검은색
+                </button>
+                <button type="button" class="text-preset-color px-3 py-2 rounded-lg text-xs font-medium transition-all" data-color="#333333"
+                  style="background-color: #333333; color: white;">
+                  진한 회색
+                </button>
+                <button type="button" class="text-preset-color px-3 py-2 rounded-lg text-xs font-medium transition-all" data-color="#666666"
+                  style="background-color: #666666; color: white;">
+                  회색
+                </button>
+                <button type="button" class="text-preset-color px-3 py-2 rounded-lg text-xs font-medium transition-all" data-color="#f5f5f5"
+                  style="background-color: #f5f5f5; color: #333; border: 1px solid #ddd;">
+                  연한 회색
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">미리보기</label>
+            <div class="gradient-preview" id="gradient_preview">
+              {{ store.store_name }} 히어로 섹션 미리보기
+            </div>
+          </div>
+
+          <!-- 추천 색상 팔레트 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">추천 색상 조합</label>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-white transition-all" data-color1="#667eea" data-color2="#764ba2"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                기본
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-white transition-all" data-color1="#f093fb" data-color2="#f5576c"
+                style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                핑크
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-white transition-all" data-color1="#4facfe" data-color2="#00f2fe"
+                style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                블루
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-white transition-all" data-color1="#43e97b" data-color2="#38f9d7"
+                style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                그린
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-white transition-all" data-color1="#fa709a" data-color2="#fee140"
+                style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                선셋
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-gray-800 transition-all" data-color1="#a8edea" data-color2="#fed6e3"
+                style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                파스텔
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-gray-800 transition-all" data-color1="#ff9a9e" data-color2="#fecfef"
+                style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                로즈
+              </button>
+              <button type="button" class="preset-color px-4 py-2 rounded-lg text-xs font-medium text-gray-800 transition-all" data-color1="#ffecd2" data-color2="#fcb69f"
+                style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                오렌지
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5 mr-3"></i>
+              <p class="text-sm text-blue-800 dark:text-blue-200">
+                스토어 페이지 상단 히어로 섹션의 배경 그라데이션 색상을 설정합니다. 팔레트 아이콘을 클릭하거나 추천 색상을 선택해보세요.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 스토어 설정 & 정보 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 settings-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-cog text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">스토어 설정 & 정보</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">스토어 상태와 기본 정보를 확인하세요</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">스토어 상태</label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" name="is_active" {% if store.is_active %}checked{% endif %}
+                  class="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">스토어 활성화</span>
+              </label>
+            </div>
+            <div>
+              <div class="space-y-3">
+                <div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">스토어 URL:</span>
+                  <code class="ml-2 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded text-xs">{{ request.scheme }}://{{ request.get_host }}/{{ store.store_url }}</code>
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">생성일:</span>
+                  <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ store.created_at|date:"Y.m.d H:i" }}</span>
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">상태:</span>
+                  {% if store.is_active %}
+                  <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">활성화</span>
+                  {% else %}
+                  <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">비활성화</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 버튼 그룹 -->
+        <div class="flex justify-center gap-4">
+          <a href="{% url 'stores:my_stores' %}"
+            class="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-arrow-left"></i>
+            <span>돌아가기</span>
+          </a>
+          <button type="submit" id="saveBtn"
+            class="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+            <i class="fas fa-save"></i>
+            <span>저장</span>
+          </button>
+          <a href="{% url 'stores:store_detail' store_id=store.store_id %}"
+            class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+            <i class="fas fa-external-link-alt"></i>
+            <span>스토어 보기</span>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 스토어 편집 페이지 스크립트 -->
+<script src="{% static 'js/edit-store.js' %}"></script>
+{% endblock %}
