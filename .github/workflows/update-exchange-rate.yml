@@ -11,35 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 코드 체크아웃
-      uses: actions/checkout@v4
-    
-    - name: Python 3.13 설정
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.13'
-    
-    - name: uv 설치
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
-    - name: 의존성 설치
-      run: uv sync
-    
-    - name: 환율 업데이트 실행
+    - name: 환율 업데이트 웹훅 호출
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-        ENABLE_DJANGO_SCHEDULER: false
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
       run: |
-        echo "🚀 GitHub Actions에서 환율 업데이트 시작"
-        uv run python manage.py update_exchange_rate --verbose
-        echo "✅ 환율 업데이트 완료"
+        echo "🚀 GitHub Actions에서 환율 업데이트 웹훅 호출 시작"
+        echo "📡 서버 URL: ${WEBHOOK_URL}"
+        
+        response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d "{\"token\": \"${WEBHOOK_TOKEN}\", \"source\": \"github_actions\"}" \
+          "${WEBHOOK_URL}")
+        
+        body=$(echo "$response" | sed -E 's/HTTPSTATUS\:[0-9]{3}$//')
+        code=$(echo "$response" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+        
+        echo "📊 응답 코드: $code"
+        echo "📄 응답 내용: $body"
+        
+        if [ "$code" -eq 200 ]; then
+          echo "✅ 환율 업데이트 웹훅 호출 성공"
+        else
+          echo "❌ 환율 업데이트 웹훅 호출 실패 (HTTP $code)"
+          exit 1
+        fi
     
     - name: 실행 결과 알림 (실패 시)
       if: failure()
       run: |
-        echo "❌ 환율 업데이트 실패"
-        echo "GitHub Actions 로그를 확인하세요: https://github.com/${{ github.repository }}/actions" 
+        echo "❌ 환율 업데이트 웹훅 호출 실패"
+        echo "GitHub Actions 로그를 확인하세요: https://github.com/${{ github.repository }}/actions"
+        echo "서버 상태를 확인하고 WEBHOOK_URL과 WEBHOOK_TOKEN 시크릿이 올바른지 확인하세요." 

@@ -1,41 +1,42 @@
-# GitHub Actions를 사용한 환율조회 자동화 가이드
+# GitHub Actions를 사용한 환율조회 자동화 가이드 (웹훅 방식)
 
 SatoShop에서 GitHub Actions를 활용하여 업비트 BTC/KRW 환율을 자동으로 업데이트하는 시스템 구축 가이드입니다.
 
 ## 🎯 개요
 
-GitHub Actions를 사용하여 주기적으로 업비트 API에서 BTC/KRW 환율을 가져와 데이터베이스에 자동 업데이트하는 시스템입니다.
+GitHub Actions를 사용하여 주기적으로 실제 서버의 웹훅 엔드포인트를 호출하여 환율을 업데이트하는 시스템입니다. 이 방식은 데이터베이스 연결 문제를 해결하고 실제 프로덕션 환경과 완전히 연동됩니다.
 
 ### 핵심 특징
 - ✅ **완전 자동화**: 5분마다 자동 실행
-- ✅ **클라우드 기반**: GitHub 인프라 활용으로 안정성 보장
+- ✅ **안정적 연결**: 실제 서버의 웹훅을 통한 환율 업데이트
 - ✅ **실시간 환율**: 업비트 API 연동으로 정확한 환율 제공
-- ✅ **오류 처리**: 실패 시 자동 알림 및 로깅
+- ✅ **오류 처리**: 실패 시 자동 알림 및 상세 로깅
+- ✅ **보안**: 토큰 기반 인증으로 무단 접근 방지
 - ✅ **비용 효율**: GitHub Actions 무료 사용량 내에서 운영
 
-## 🏗️ 시스템 아키텍처
+## 🏗️ 시스템 아키텍처 (웹훅 방식)
 
 ```mermaid
 graph TD
-    A[GitHub Actions<br/>Scheduler] -->|5분마다 실행| B[Ubuntu Runner]
-    B --> C[Python 환경 설정]
-    C --> D[의존성 설치<br/>uv sync]
-    D --> E[Django 명령어 실행<br/>update_exchange_rate]
-    E --> F[업비트 API 호출]
-    F --> G[환율 데이터 수신]
-    G --> H[PostgreSQL DB 저장]
-    H --> I[환율 업데이트 완료]
+    A[GitHub Actions<br/>Scheduler] -->|5분마다 실행| B[curl 웹훅 호출]
+    B -->|HTTPS POST| C[Render.com<br/>Django 서버]
+    C --> D[웹훅 인증 확인]
+    D -->|인증 성공| E[환율 업데이트 로직]
+    D -->|인증 실패| F[401 Unauthorized]
+    E --> G[업비트 API 호출]
+    G --> H[환율 데이터 수신]
+    H --> I[PostgreSQL DB 저장]
+    I --> J[성공 응답]
+    J --> K[GitHub Actions 완료]
     
-    F -->|API 실패| J[오류 로깅]
-    J --> K[GitHub Actions 실패 알림]
-    
-    E --> L[시간 간격 체크]
-    L -->|아직 시간 안됨| M[스킵 처리]
+    G -->|API 실패| L[오류 로깅]
+    L --> M[500 오류 응답]
+    M --> N[GitHub Actions 실패]
 ```
 
 ## 📁 주요 구성 요소
 
-### 1. GitHub Actions 워크플로우
+### 1. GitHub Actions 워크플로우 (웹훅 방식)
 **파일**: `.github/workflows/update-exchange-rate.yml`
 
 ```yaml
@@ -52,74 +53,96 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - name: 코드 체크아웃
-      uses: actions/checkout@v4
-    
-    - name: Python 3.13 설정
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.13'
-    
-    - name: uv 설치
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
-    - name: 의존성 설치
-      run: uv sync
-    
-    - name: 환율 업데이트 실행
+    - name: 환율 업데이트 웹훅 호출
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-        ENABLE_DJANGO_SCHEDULER: false
+        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
       run: |
-        echo "🚀 GitHub Actions에서 환율 업데이트 시작"
-        uv run python manage.py update_exchange_rate --verbose
-        echo "✅ 환율 업데이트 완료"
+        echo "🚀 GitHub Actions에서 환율 업데이트 웹훅 호출 시작"
+        echo "📡 서버 URL: ${WEBHOOK_URL}"
+        
+        response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d "{\"token\": \"${WEBHOOK_TOKEN}\", \"source\": \"github_actions\"}" \
+          "${WEBHOOK_URL}")
+        
+        body=$(echo "$response" | sed -E 's/HTTPSTATUS\:[0-9]{3}$//')
+        code=$(echo "$response" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+        
+        echo "📊 응답 코드: $code"
+        echo "📄 응답 내용: $body"
+        
+        if [ "$code" -eq 200 ]; then
+          echo "✅ 환율 업데이트 웹훅 호출 성공"
+        else
+          echo "❌ 환율 업데이트 웹훅 호출 실패 (HTTP $code)"
+          exit 1
+        fi
     
     - name: 실행 결과 알림 (실패 시)
       if: failure()
       run: |
-        echo "❌ 환율 업데이트 실패"
+        echo "❌ 환율 업데이트 웹훅 호출 실패"
         echo "GitHub Actions 로그를 확인하세요: https://github.com/${{ github.repository }}/actions"
+        echo "서버 상태를 확인하고 WEBHOOK_URL과 WEBHOOK_TOKEN 시크릿이 올바른지 확인하세요."
 ```
 
-### 2. Django 관리 명령어
-**파일**: `myshop/management/commands/update_exchange_rate.py`
+### 2. Django 웹훅 엔드포인트
+**파일**: `myshop/views.py`
 
-핵심 기능:
-- 업비트 API 호출 및 환율 데이터 수집
-- 데이터베이스 저장 및 중복 방지
-- 상세한 로깅 및 오류 처리
-- GitHub Actions 최적화된 출력
+```python
+@require_http_methods(["POST"])
+@csrf_exempt
+def update_exchange_rate_webhook(request):
+    """외부 서비스에서 환율 업데이트를 트리거하는 웹훅 엔드포인트"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # JSON 데이터 파싱 및 인증
+        if request.content_type == 'application/json':
+            data = json.loads(request.body)
+            auth_token = data.get('token')
+            source = data.get('source', 'unknown')
+        
+        # 보안 토큰 확인
+        expected_token = os.getenv('WEBHOOK_TOKEN')
+        if not auth_token or auth_token != expected_token:
+            return JsonResponse({
+                'success': False,
+                'error': '인증 실패'
+            }, status=401)
+        
+        # 환율 업데이트 실행
+        exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
+        
+        if exchange_rate:
+            return JsonResponse({
+                'success': True,
+                'message': '환율 업데이트 성공',
+                'btc_krw_rate': float(exchange_rate.btc_krw_rate),
+                'updated_at': exchange_rate.created_at.isoformat()
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': '환율 업데이트 실패'
+            }, status=500)
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'서버 오류: {str(e)}'
+        }, status=500)
+```
+
+**URL 패턴**: `/webhook/update-exchange-rate/`
 
 ### 3. 환율 서비스 모듈
 **파일**: `myshop/services.py`
 
-```python
-class UpbitExchangeService:
-    """업비트 환율 서비스"""
-    
-    UPBIT_API_URL = "https://api.upbit.com/v1/ticker"
-    
-    @classmethod
-    def fetch_btc_krw_rate(cls):
-        """업비트 API에서 BTC/KRW 환율 가져오기"""
-        # API 호출 및 데이터 처리 로직
-```
-
-### 4. 데이터 모델
-**파일**: `myshop/models.py`
-
-```python
-class ExchangeRate(models.Model):
-    """업비트 BTC/KRW 환율 데이터"""
-    btc_krw_rate = models.DecimalField(max_digits=15, decimal_places=2)
-    api_response_data = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)
-```
+환율 업데이트 로직은 기존과 동일하게 작동하며, 웹훅을 통해 트리거됩니다.
 
 ## 🚀 설정 방법
 
@@ -128,26 +151,63 @@ class ExchangeRate(models.Model):
 GitHub 리포지토리의 Settings > Secrets and variables > Actions에서 다음 시크릿을 추가:
 
 ```env
-DATABASE_URL=postgresql://username:password@hostname:port/database
-SECRET_KEY=your-django-secret-key
-ALLOWED_HOSTS=your-domain.com,www.your-domain.com
+# 웹훅 URL (예: https://your-domain.com/webhook/update-exchange-rate/)
+WEBHOOK_URL=https://your-render-app.onrender.com/webhook/update-exchange-rate/
+
+# 웹훅 인증 토큰 (강력한 비밀번호 생성)
+WEBHOOK_TOKEN=your-secure-webhook-token-here
 ```
 
-### 2. 워크플로우 파일 생성
+**보안 토큰 생성 예시**:
+```bash
+# Python으로 안전한 토큰 생성
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
-`.github/workflows/update-exchange-rate.yml` 파일을 위의 내용으로 생성합니다.
+### 2. 서버 환경 변수 설정
 
-### 3. Django 설정 확인
+Render.com 또는 실제 서버에서 다음 환경 변수를 설정:
 
-환율 업데이트 간격을 Django 어드민에서 설정:
-- **경로**: `/admin/myshop/sitesettings/`
-- **설정값**: `exchange_rate_update_interval` (기본: 10분)
+```env
+# GitHub Actions와 동일한 토큰
+WEBHOOK_TOKEN=your-secure-webhook-token-here
+```
 
-### 4. 워크플로우 활성화
+### 3. 웹훅 엔드포인트 테스트
 
-- 파일 커밋 후 GitHub에 푸시
+로컬 또는 서버에서 웹훅이 정상 작동하는지 테스트:
+
+```bash
+# 웹훅 테스트
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"token": "your-token", "source": "debug"}' \
+  http://localhost:8000/webhook/update-exchange-rate/
+
+# 실제 서버에서 테스트
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"token": "your-token", "source": "debug"}' \
+  https://your-domain.com/webhook/update-exchange-rate/
+```
+
+**성공 응답 예시**:
+```json
+{
+  "success": true,
+  "message": "환율 업데이트 성공",
+  "btc_krw_rate": 145615000.0,
+  "updated_at": "2025-06-16T12:15:56.378530+00:00",
+  "source": "manual_test",
+  "timestamp": "2025-06-16T12:15:56.378530+00:00"
+}
+```
+
+### 4. GitHub Actions 활성화
+
+- 워크플로우 파일 커밋 후 GitHub에 푸시
 - Actions 탭에서 워크플로우 확인
-- "Run workflow" 버튼으로 수동 테스트 가능
+- "Run workflow" 버튼으로 수동 테스트
 
 ## 📊 모니터링 및 관리
 
@@ -156,184 +216,157 @@ ALLOWED_HOSTS=your-domain.com,www.your-domain.com
 **위치**: `https://github.com/your-username/your-repo/actions`
 
 확인 가능한 정보:
-- ✅ 실행 상태 (성공/실패)
-- 📊 실행 시간 및 로그
+- ✅ 웹훅 호출 상태 (성공/실패)
+- 📊 응답 시간 및 상세 로그
 - 📈 성공률 통계
 - 🔄 재실행 기능
 
 ### 2. 실행 로그 예시
 
-#### 성공적인 실행
+#### 성공적인 웹훅 호출
 ```
-🚀 [2025-06-15 10:05:00] 환율 업데이트 시작 (GitHub Actions)
-⚙️ 환율 업데이트 간격: 10분
-📊 현재 환율: 1 BTC = 145,602,000 KRW
-🌐 업비트 API에서 환율 데이터 가져오는 중...
-✅ 환율 업데이트 성공!
-   새로운 환율: 1 BTC = 145,615,000 KRW
-   업데이트 시간: 2025-06-15 10:05:02
-📈 환율 상승: +13,000 KRW (+0.01%)
-💾 저장된 환율 데이터: 15개
-🎉 [2025-06-15 10:05:02] 환율 업데이트 완료
-   실행 시간: 1.23초
+🚀 GitHub Actions에서 환율 업데이트 웹훅 호출 시작
+📡 서버 URL: https://your-app.onrender.com/webhook/update-exchange-rate/
+📊 응답 코드: 200
+📄 응답 내용: {"success":true,"message":"환율 업데이트 성공","btc_krw_rate":145615000.0}
+✅ 환율 업데이트 웹훅 호출 성공
 ```
 
-#### 시간 간격으로 인한 스킵
+#### 실패한 웹훅 호출
 ```
-🚀 [2025-06-15 10:03:00] 환율 업데이트 시작 (GitHub Actions)
-⚙️ 환율 업데이트 간격: 10분
-⏰ 아직 업데이트 시간이 되지 않았습니다.
-   마지막 업데이트: 2025-06-15 10:00:15
-   경과 시간: 0:02:45
-   업데이트 간격: 10분
-```
-
-### 3. Django 어드민 모니터링
-
-**환율 데이터 관리**: `/admin/myshop/exchangerate/`
-- 최신 환율 확인
-- 환율 변화 추이 분석
-- 수동 환율 업데이트 버튼
-
-## 🔧 고급 설정
-
-### 1. 스케줄 커스터마이징
-
-다양한 크론 표현식 옵션:
-
-```yaml
-# 5분마다 (현재 설정)
-- cron: '*/5 * * * *'
-
-# 10분마다
-- cron: '*/10 * * * *'
-
-# 30분마다
-- cron: '*/30 * * * *'
-
-# 1시간마다
-- cron: '0 * * * *'
-
-# 평일 업무시간에만 (9-18시)
-- cron: '0 9-18 * * 1-5'
+🚀 GitHub Actions에서 환율 업데이트 웹훅 호출 시작
+📡 서버 URL: https://your-app.onrender.com/webhook/update-exchange-rate/
+📊 응답 코드: 401
+📄 응답 내용: {"success":false,"error":"인증 실패"}
+❌ 환율 업데이트 웹훅 호출 실패 (HTTP 401)
 ```
 
-### 2. 다중 환경 지원
+### 3. 서버 로그 모니터링
 
-브랜치별 다른 설정:
+Render.com 또는 서버 로그에서 확인할 수 있는 정보:
 
-```yaml
-on:
-  schedule:
-    - cron: '*/5 * * * *'  # 프로덕션용
-  push:
-    branches: [ dev ]       # 개발용 즉시 실행
 ```
-
-### 3. 알림 확장
-
-Slack, Discord 등 외부 알림 서비스 연동:
-
-```yaml
-- name: Slack 알림
-  if: failure()
-  uses: 8398a7/action-slack@v3
-  with:
-    status: ${{ job.status }}
-    webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+INFO: 웹훅 인증 성공 - 소스: github_actions
+INFO: 환율 업데이트 시작
+INFO: 환율 업데이트 성공: 1 BTC = 145,615,000 KRW
 ```
 
 ## 🛠️ 문제 해결
 
 ### 1. 일반적인 문제들
 
-#### API 호출 실패
+#### 웹훅 인증 실패 (401 오류)
 ```bash
-# 수동 테스트
-curl "https://api.upbit.com/v1/ticker?markets=KRW-BTC"
+# WEBHOOK_TOKEN 확인
+echo "GitHub: $GITHUB_SECRET_WEBHOOK_TOKEN"
+echo "Server: $SERVER_WEBHOOK_TOKEN"
+
+# 토큰이 일치하는지 확인
 ```
 
-#### 데이터베이스 연결 오류
-- `DATABASE_URL` 시크릿 확인
-- PostgreSQL 서비스 상태 점검
+#### 서버 응답 없음 (타임아웃)
+- 서버 상태 확인
+- URL 경로 확인 (`/webhook/update-exchange-rate/`)
+- 네트워크 연결 확인
 
-#### 권한 오류
-- GitHub Secrets 설정 확인
-- Actions 권한 검증
+#### API 호출 실패
+- 업비트 API 상태 확인: https://upbit.com/
+- 서버 인터넷 연결 확인
 
 ### 2. 디버깅 방법
 
-#### 로컬 테스트
+#### 수동 웹훅 테스트
 ```bash
-# 환경 변수 설정 후
-uv run python manage.py update_exchange_rate --verbose --force
+# 로컬에서 테스트
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"token": "your-token", "source": "debug"}' \
+  http://localhost:8000/webhook/update-exchange-rate/
+
+# 실제 서버에서 테스트
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"token": "your-token", "source": "debug"}' \
+  https://your-domain.com/webhook/update-exchange-rate/
 ```
 
-#### 워크플로우 재실행
+#### GitHub Actions 재실행
 1. GitHub Actions 탭 이동
 2. 실패한 워크플로우 선택
 3. "Re-run jobs" 클릭
 
-## 📈 성능 최적화
+### 3. 로그 레벨 설정
 
-### 1. API 호출 최적화
-- 타임아웃 설정: 10초
-- 재시도 로직 구현
-- 응답 캐싱 활용
+Django 설정에서 상세한 로그 확인:
 
-### 2. 데이터 정리
-- 오래된 환율 데이터 자동 삭제 (최근 5개만 유지)
-- 인덱스 최적화로 조회 성능 향상
-
-### 3. 리소스 사용량
-- GitHub Actions 무료 사용량: 월 2,000분
-- 예상 사용량: 월 약 50분 (5분마다 실행 시)
+```python
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'myshop.views': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
+```
 
 ## 🔒 보안 고려사항
 
-### 1. 시크릿 관리
-- 모든 민감한 정보는 GitHub Secrets 사용
-- 환경 변수 최소 권한 원칙 적용
+### 1. 웹훅 토큰 보안
+- **강력한 토큰 생성**: 최소 32자 이상의 랜덤 문자열
+- **정기적 갱신**: 3-6개월마다 토큰 변경
+- **시크릿 관리**: GitHub Secrets와 서버 환경 변수에만 저장
 
-### 2. API 보안
-- 업비트 API는 공개 엔드포인트 (인증 불필요)
-- Rate Limiting 고려하여 호출 간격 조정
+### 2. 네트워크 보안
+- **HTTPS 필수**: 웹훅 URL은 반드시 HTTPS 사용
+- **IP 제한**: 필요시 GitHub Actions IP 범위로 제한
+- **Rate Limiting**: 과도한 요청 방지
 
 ### 3. 로그 보안
-- 민감한 정보 로그 출력 금지
-- 성공/실패 여부만 기록
+- **토큰 노출 방지**: 로그에 토큰 정보 출력 금지
+- **최소 정보 원칙**: 필요한 정보만 로깅
 
 ## 📋 배포 체크리스트
 
 - [ ] GitHub Secrets 설정 완료
-  - [ ] `DATABASE_URL`
-  - [ ] `SECRET_KEY`
-  - [ ] `ALLOWED_HOSTS`
-- [ ] 워크플로우 파일 생성 및 커밋
-- [ ] Django 관리 명령어 테스트
-- [ ] 수동 워크플로우 실행 테스트
+  - [ ] `WEBHOOK_URL` (예: https://your-app.onrender.com/webhook/update-exchange-rate/)
+  - [ ] `WEBHOOK_TOKEN` (32자 이상 안전한 토큰)
+- [ ] 서버 환경 변수 설정 완료
+  - [ ] `WEBHOOK_TOKEN` (GitHub과 동일한 토큰)
+- [ ] 웹훅 엔드포인트 수동 테스트 완료
+- [ ] GitHub Actions 워크플로우 테스트 완료
 - [ ] 환율 데이터 확인 (Django 어드민)
 - [ ] 스케줄 실행 모니터링 (첫 24시간)
-- [ ] 알림 설정 확인 (실패 시)
+- [ ] 실패 알림 설정 확인
 
 ## 🆚 다른 방법과의 비교
 
-| 방법 | GitHub Actions | Render Cron | Django Scheduler |
-|------|----------------|-------------|------------------|
-| **비용** | 무료 (2,000분/월) | 유료 | 무료 |
-| **안정성** | 높음 | 높음 | 중간 |
-| **설정 복잡도** | 중간 | 낮음 | 높음 |
-| **확장성** | 높음 | 중간 | 낮음 |
-| **모니터링** | 우수 | 우수 | 기본 |
+| 방법 | 웹훅 방식 | Direct DB | Render Cron |
+|------|-----------|-----------|-------------|
+| **설정 복잡도** | 낮음 | 높음 | 중간 |
+| **안정성** | 높음 | 낮음 | 높음 |
+| **DB 연결 문제** | 없음 | 있음 | 없음 |
+| **실시간 반영** | 즉시 | 즉시 | 즉시 |
+| **비용** | 무료 | 무료 | 유료 |
+| **모니터링** | 우수 | 어려움 | 우수 |
 
 ## 🎉 마무리
 
-GitHub Actions를 활용한 환율조회 자동화 시스템은 다음과 같은 이점을 제공합니다:
+웹훅 방식의 GitHub Actions 환율 자동화 시스템은 다음과 같은 이점을 제공합니다:
 
-1. **완전한 자동화**: 수동 개입 없이 지속적인 환율 업데이트
-2. **높은 안정성**: GitHub 인프라의 안정성과 신뢰성
-3. **투명한 모니터링**: 모든 실행 과정을 실시간으로 추적 가능
-4. **비용 효율성**: GitHub Actions 무료 사용량 내에서 운영
-5. **확장 가능성**: 다양한 추가 기능과 알림 서비스 통합 가능
+1. **데이터베이스 연결 문제 해결**: GitHub Actions에서 직접 DB 연결 불필요
+2. **실제 환경과 완전 연동**: 프로덕션 서버를 통한 안정적인 업데이트
+3. **강력한 보안**: 토큰 기반 인증으로 무단 접근 방지
+4. **간단한 설정**: 복잡한 데이터베이스 설정 없이 간단한 웹훅 호출
+5. **투명한 모니터링**: GitHub Actions와 서버 양쪽에서 로그 확인 가능
+6. **높은 안정성**: 서버가 살아있는 한 정상 작동 보장
 
-이 시스템을 통해 SatoShop은 항상 최신의 BTC/KRW 환율을 제공하며, 사용자에게 정확한 가격 정보를 보장할 수 있습니다. 
+이 시스템을 통해 SatoShop은 안정적이고 확실한 환율 자동 업데이트를 구현할 수 있습니다. 
