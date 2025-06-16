@@ -27,22 +27,6 @@ python manage.py makemigrations
 echo "📊 데이터베이스 마이그레이션 실행 중..."
 python manage.py migrate --run-syncdb
 
-echo "🔧 Django APScheduler 테이블 확인 및 생성..."
-python manage.py shell -c "
-from django.db import connection
-from django_apscheduler.models import DjangoJob, DjangoJobExecution
-
-# 테이블 존재 확인
-cursor = connection.cursor()
-try:
-    cursor.execute('SELECT COUNT(*) FROM django_apscheduler_djangojob')
-    job_count = cursor.fetchone()[0]
-    print(f'✅ Django APScheduler 테이블 확인: {job_count}개 작업 존재')
-except Exception as e:
-    print(f'⚠️ Django APScheduler 테이블 접근 실패: {e}')
-    print('📊 마이그레이션으로 테이블이 생성되어야 합니다.')
-"
-
 echo "🔧 데이터베이스 무결성 확인..."
 python manage.py check --database default
 
