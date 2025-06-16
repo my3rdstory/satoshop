@@ -1,59 +1,9 @@
 <!-- 사이트 푸터 -->
 <footer class="bg-gray-900 text-white mt-auto">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <div class="text-center">
-      <!-- 서비스 정보 -->
-      <div class="mb-8">
-        <h3 class="text-xl font-bold mb-4">
-          {% if site_settings and site_settings.footer_company_name %}
-            {{ site_settings.footer_company_name }}
-          {% else %}
-            SatoShop
-          {% endif %}
-        </h3>
-        <p class="text-gray-300 mb-4 leading-relaxed max-w-2xl mx-auto">
-          {% if site_settings and site_settings.footer_description %}
-            {{ site_settings.footer_description }}
-          {% else %}
-            비트코인 라이트닝으로 누구나 쉽게 사용하는 온라인 스토어 플랫폼
-          {% endif %}
-        </p>
-        
-        <!-- 소셜 미디어 링크 -->
-        <div class="flex justify-center space-x-4">
-          {% if site_settings and site_settings.github_url %}
-          <a href="{{ site_settings.github_url }}" target="_blank" rel="noopener noreferrer" 
-             class="text-gray-400 hover:text-white transition-colors">
-            <i class="fab fa-github text-xl"></i>
-          </a>
-          {% endif %}
-          
-          {% if site_settings and site_settings.footer_twitter_url %}
-          <a href="{{ site_settings.footer_twitter_url }}" target="_blank" rel="noopener noreferrer" 
-             class="text-gray-400 hover:text-white transition-colors">
-            <i class="fab fa-twitter text-xl"></i>
-          </a>
-          {% endif %}
-          
-          {% if site_settings and site_settings.footer_telegram_url %}
-          <a href="{{ site_settings.footer_telegram_url }}" target="_blank" rel="noopener noreferrer" 
-             class="text-gray-400 hover:text-white transition-colors">
-            <i class="fab fa-telegram text-xl"></i>
-          </a>
-          {% endif %}
-          
-          {% if site_settings and site_settings.footer_discord_url %}
-          <a href="{{ site_settings.footer_discord_url }}" target="_blank" rel="noopener noreferrer" 
-             class="text-gray-400 hover:text-white transition-colors">
-            <i class="fab fa-discord text-xl"></i>
-          </a>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">    
 
     <!-- 구분선 -->
-    <div class="border-t border-gray-700 mt-8 pt-8">
+    <div class="border-t border-gray-700 mt-4 pt-4">
       <div class="flex flex-col md:flex-row justify-between items-center">
         <p class="text-gray-400 text-sm">
           {% if site_settings and site_settings.footer_copyright %}

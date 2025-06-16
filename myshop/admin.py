@@ -242,14 +242,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             ),
             'description': '사이트 푸터에 표시될 정보를 설정합니다.'
         }),
-        ('연락처 및 소셜 미디어', {
-            'fields': (
-                'contact_email', 
-                ('github_url', 'footer_twitter_url'),
-                ('footer_telegram_url', 'footer_discord_url')
-            ),
+        ('연락처 정보', {
+            'fields': ('contact_email',),
             'classes': ('collapse',),
-            'description': '연락처 정보와 소셜 미디어 링크를 설정합니다.'
+            'description': '연락처 정보를 설정합니다.'
         }),
         ('기능 설정', {
             'fields': ('enable_user_registration', 'enable_store_creation'),
@@ -271,6 +267,16 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     
     list_display = ('site_title', 'exchange_rate_update_interval', 'youtube_video_id', 'updated_at')
+    
+    def save_model(self, request, obj, form, change):
+        """사이트 설정 저장 시 admin 헤더 업데이트"""
+        super().save_model(request, obj, form, change)
+        
+        # Admin 사이트 헤더 동적 업데이트
+        if obj.admin_site_header:
+            admin.site.site_header = obj.admin_site_header
+            admin.site.site_title = f"{obj.site_title} Admin"
+            admin.site.index_title = '사이트 관리 대시보드'
     
     def has_add_permission(self, request):
         # 설정은 하나만 존재해야 하므로 추가 권한 제한

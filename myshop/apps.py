@@ -56,20 +56,7 @@ class MyshopConfig(AppConfig):
         except Exception:
             pass  # 앱이 없으면 무시
 
-        # 순환 import 방지를 위해 여기서 import
-        try:
-            from .models import SiteSettings
-            
-            # 사이트 설정에서 admin 사이트 헤더 업데이트
-            try:
-                site_settings = SiteSettings.get_settings()
-                if site_settings and site_settings.admin_site_header:
-                    admin.site.site_header = site_settings.admin_site_header
-                    admin.site.site_title = f"{site_settings.site_title} Admin"
-                    admin.site.index_title = '사이트 관리 대시보드'
-            except Exception:
-                # 마이그레이션 전이나 DB 오류 시에는 기본값 사용
-                pass
-        except ImportError:
-            # 앱이 완전히 로드되지 않은 경우
-            pass
+        # 기본 admin 사이트 설정 (데이터베이스 쿼리 없이)
+        admin.site.site_header = "SatoShop 관리자"
+        admin.site.site_title = "SatoShop Admin"
+        admin.site.index_title = '사이트 관리 대시보드'
