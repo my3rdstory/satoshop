@@ -31,17 +31,20 @@ except admin.sites.NotRegistered:
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
     extra = 0
-    readonly_fields = ('uploaded_at', 'get_preview')
-    fields = ('original_name', 'get_preview', 'order', 'uploaded_at')
+    readonly_fields = ('uploaded_at', 'get_view_button')
+    fields = ('original_name', 'get_view_button', 'order', 'uploaded_at')
     
-    def get_preview(self, obj):
-        if obj.file_url:
+    def get_view_button(self, obj):
+        if obj and obj.file_url:
             return format_html(
-                '<img src="{}" style="max-width: 100px; max-height: 100px;" />',
-                obj.file_url
+                '<button type="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">'
+                '<i class="fas fa-eye"></i> 보기'
+                '</button>',
+                obj.file_url,
+                obj.original_name
             )
         return "이미지 없음"
-    get_preview.short_description = "미리보기"
+    get_view_button.short_description = "이미지 보기"
 
 
 class ProductOptionChoiceInline(admin.TabularInline):
@@ -105,6 +108,12 @@ class ProductAdmin(admin.ModelAdmin):
     )
     
     inlines = [ProductImageInline, ProductOptionInline]
+    
+    class Media:
+        js = ('admin/js/product_image_modal.js',)
+        css = {
+            'all': ('admin/css/product_image_modal.css',)
+        }
     
     def get_price_display_korean(self, obj):
         """가격 표시 방식을 한국어로 표시"""
@@ -192,12 +201,12 @@ class ProductOptionChoiceAdmin(admin.ModelAdmin):
 @admin.register(ProductImage)
 class ProductImageAdmin(admin.ModelAdmin):
     """상품 이미지 어드민"""
-    list_display = ('product', 'original_name', 'image_preview', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
+    list_display = ('product', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
     list_filter = ('uploaded_at', 'product__store')
     search_fields = ('product__title', 'product__store__store_name', 'original_name')
     readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
     ordering = ('product', 'order', 'uploaded_at')
-    list_per_page = 20
+    list_per_page = 10
     
     fieldsets = (
         ('기본 정보', {
@@ -216,8 +225,21 @@ class ProductImageAdmin(admin.ModelAdmin):
         }),
     )
     
+    def view_image_button(self, obj):
+        """이미지 보기 버튼 (모달 방식)"""
+        if obj and obj.file_url:
+            return format_html(
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
+                '<i class="fas fa-eye"></i> 이미지 보기'
+                '</button>',
+                obj.file_url,
+                obj.original_name
+            )
+        return "이미지 없음"
+    view_image_button.short_description = '이미지 보기'
+    
     def image_preview(self, obj):
-        """이미지 미리보기 (큰 크기)"""
+        """이미지 미리보기 (상세 페이지에서만 사용)"""
         if obj and obj.file_url:
             return format_html(
                 '<img src="{}" style="max-width: 300px; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd;" />',
@@ -232,6 +254,12 @@ class ProductImageAdmin(admin.ModelAdmin):
             return obj.get_file_size_display()
         return ""
     file_size_display.short_description = '파일 크기'
+    
+    class Media:
+        js = ('admin/js/product_image_modal.js',)
+        css = {
+            'all': ('admin/css/product_image_modal.css',)
+        }
 
 
 # Admin 사이트 커스터마이징
