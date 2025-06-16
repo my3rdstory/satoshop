@@ -97,25 +97,44 @@ class ExchangeRateAdmin(admin.ModelAdmin):
         # 환율 데이터 수정 방지
         return False
 
-# Django APScheduler가 사용 가능한 경우에만 등록
+# Django APScheduler 어드민 등록 (모델이 존재하면 항상 표시)
 if APSCHEDULER_AVAILABLE and DjangoJob:
     @admin.register(DjangoJob)
     class DjangoJobAdmin(admin.ModelAdmin):
         """스케줄 작업 어드민"""
         
-        list_display = ('id', 'next_run_time', 'job_state_display')
+        list_display = ('id', 'next_run_time', 'job_state_display', 'scheduler_status')
         list_filter = ('next_run_time', 'job_state')
         readonly_fields = ('id', 'job_state', 'next_run_time')
         
         def job_state_display(self, obj):
             """작업 상태 표시"""
-            if obj.job_state == 1:
-                return "활성"
-            elif obj.job_state == 0:
-                return "비활성"
+            # 실제 job_state 값을 기반으로 상태 표시
+            state_map = {
+                0: "비활성",
+                1: "활성", 
+                2: "일시정지",
+                3: "대기중"
+            }
+            
+            state = state_map.get(obj.job_state, f"알 수 없음 ({obj.job_state})")
+            
+            # 다음 실행 시간이 있으면 활성으로 간주
+            if obj.next_run_time:
+                return format_html('<span style="color: #28a745;">🟢 {}</span>', state)
             else:
-                return "알 수 없음"
-        job_state_display.short_description = '상태'
+                return format_html('<span style="color: #dc3545;">🔴 {}</span>', state)
+        job_state_display.short_description = '작업 상태'
+        
+        def scheduler_status(self, obj):
+            """스케줄러 활성화 상태 표시"""
+            import os
+            scheduler_enabled = os.environ.get('ENABLE_DJANGO_SCHEDULER', 'false').lower() == 'true'
+            if scheduler_enabled:
+                return format_html('<span style="color: #28a745;">✅ Django 스케줄러 활성</span>')
+            else:
+                return format_html('<span style="color: #dc3545;">⚠️ Render.com Cron Jobs 사용</span>')
+        scheduler_status.short_description = '스케줄러 상태'
         
         def has_add_permission(self, request):
             # 스케줄 작업은 자동으로 생성되므로 수동 추가 방지
