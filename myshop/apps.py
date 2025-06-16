@@ -1,10 +1,11 @@
 from django.apps import AppConfig
+from django.contrib import admin
 
 
 class MyshopConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'myshop'
-    verbose_name = '1. 사이트 관리'
+    verbose_name = '1. 사이트 설정'
     
     def ready(self):
         # Render.com Cron Jobs를 사용하므로 Django 앱 내부 스케줄러는 비활성화
@@ -51,6 +52,24 @@ class MyshopConfig(AppConfig):
         try:
             from django.apps import apps
             apscheduler_app = apps.get_app_config('django_apscheduler')
-            apscheduler_app.verbose_name = '6. 스케줄 작업 관리'
+            apscheduler_app.verbose_name = '스케줄 작업 관리'
         except Exception:
             pass  # 앱이 없으면 무시
+
+        # 순환 import 방지를 위해 여기서 import
+        try:
+            from .models import SiteSettings
+            
+            # 사이트 설정에서 admin 사이트 헤더 업데이트
+            try:
+                site_settings = SiteSettings.get_settings()
+                if site_settings and site_settings.admin_site_header:
+                    admin.site.site_header = site_settings.admin_site_header
+                    admin.site.site_title = f"{site_settings.site_title} Admin"
+                    admin.site.index_title = '사이트 관리 대시보드'
+            except Exception:
+                # 마이그레이션 전이나 DB 오류 시에는 기본값 사용
+                pass
+        except ImportError:
+            # 앱이 완전히 로드되지 않은 경우
+            pass

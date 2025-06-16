@@ -4,7 +4,13 @@
     <!-- 브랜드 로고 -->
     <div class="flex items-center">
       <a class="flex items-center space-x-2 text-gray-900 dark:text-white hover:text-bitcoin transition-colors" href="{% url 'myshop:home' %}?force_home=1">
-        <strong class="text-xl">SatoShop</strong>
+        <strong class="text-xl">
+          {% if site_settings and site_settings.site_title %}
+            {{ site_settings.site_title }}
+          {% else %}
+            SatoShop
+          {% endif %}
+        </strong>
         <span class="bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs px-2 py-1 rounded">Hub</span>
       </a>
     </div>

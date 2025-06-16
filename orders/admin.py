@@ -446,10 +446,7 @@ class InvoiceAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('user', 'store', 'order')
 
 
-# Admin 사이트 커스터마이징
-admin.site.site_header = 'SatoShop 주문 관리'
-admin.site.site_title = 'SatoShop Orders'
-admin.site.index_title = '주문 관리 대시보드'
+# Admin 사이트 커스터마이징은 settings.py에서 통합 관리
 
 # 모델의 Meta 클래스에서 verbose_name 설정
 Cart._meta.verbose_name = '장바구니'

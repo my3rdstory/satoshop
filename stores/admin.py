@@ -184,10 +184,7 @@ class ReservedStoreIdAdmin(admin.ModelAdmin):
     search_fields = ['keyword', 'description']
 
 
-# Admin 사이트 커스터마이징
-admin.site.site_header = 'SatoShop 스토어 관리'
-admin.site.site_title = 'SatoShop Stores'
-admin.site.index_title = '스토어 관리 대시보드'
+# Admin 사이트 커스터마이징은 settings.py에서 통합 관리
 
 # 주의: Product, Order 관련 모델들은 각각 products, orders 앱에서 별도로 관리됩니다.
 
@@ -205,9 +202,9 @@ ReservedStoreId._meta.verbose_name_plural = '예약된 스토어 ID들'
 from django.contrib.auth.models import User, Group
 from django.apps import apps
 
-# Auth 앱의 verbose_name을 변경하여 맨 아래로 이동
+# Auth 앱의 verbose_name을 기본 스타일로 변경
 auth_app = apps.get_app_config('auth')
-auth_app.verbose_name = '5. 인증 및 권한'
+auth_app.verbose_name = '인증 및 권한'
 
 # Auth 모델들의 verbose_name도 한국어로 변경
 User._meta.verbose_name = '사용자'

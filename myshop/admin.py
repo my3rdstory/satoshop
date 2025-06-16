@@ -204,12 +204,17 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('기본 설정', {
-            'fields': ('site_title', 'site_description'),
+            'fields': ('site_title', 'site_description', 'admin_site_header'),
             'description': '사이트의 기본 정보를 설정합니다.'
         }),
         ('홈페이지 히어로 섹션', {
-            'fields': ('hero_title', 'hero_subtitle'),
-            'description': '홈페이지 메인 섹션의 제목과 부제목을 설정합니다.'
+            'fields': (
+                'hero_title', 
+                'hero_subtitle',
+                'hero_description',
+                ('hero_primary_button_text', 'hero_secondary_button_text')
+            ),
+            'description': '홈페이지 메인 섹션의 텍스트와 버튼을 설정합니다.'
         }),
         ('유튜브 비디오 설정', {
             'fields': (
@@ -223,8 +228,22 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('exchange_rate_update_interval',),
             'description': '업비트 API에서 BTC/KRW 환율을 가져오는 설정입니다.'
         }),
+        ('푸터 설정', {
+            'fields': (
+                'footer_company_name',
+                'footer_description', 
+                'footer_copyright',
+                ('footer_address', 'footer_phone'),
+                'footer_business_hours'
+            ),
+            'description': '사이트 푸터에 표시될 정보를 설정합니다.'
+        }),
         ('연락처 및 소셜 미디어', {
-            'fields': ('contact_email', 'github_url'),
+            'fields': (
+                'contact_email', 
+                ('github_url', 'footer_twitter_url'),
+                ('footer_telegram_url', 'footer_discord_url')
+            ),
             'classes': ('collapse',),
             'description': '연락처 정보와 소셜 미디어 링크를 설정합니다.'
         }),
@@ -269,7 +288,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 from django.apps import apps
 try:
     apscheduler_app = apps.get_app_config('django_apscheduler')
-    apscheduler_app.verbose_name = '6. 스케줄 작업 관리'
+    apscheduler_app.verbose_name = '스케줄 작업 관리'
 except:
     pass
 

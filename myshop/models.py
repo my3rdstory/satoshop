@@ -84,6 +84,13 @@ class SiteSettings(models.Model):
         help_text="메타 태그에 사용되는 사이트 설명"
     )
     
+    admin_site_header = models.CharField(
+        max_length=100,
+        default="SatoShop 관리자",
+        verbose_name="관리자 사이트 제목",
+        help_text="Django 관리자 페이지 상단에 표시되는 제목"
+    )
+    
     # 홈페이지 히어로 섹션
     hero_title = models.CharField(
         max_length=200, 
@@ -94,6 +101,26 @@ class SiteSettings(models.Model):
     hero_subtitle = models.TextField(
         default="복잡한 설정 없이 5분만에 온라인 스토어를 만들고 비트코인으로 결제받으세요", 
         verbose_name="히어로 부제목"
+    )
+    
+    hero_description = models.TextField(
+        default="코딩 없이 5분 만에 스토어 구축 • 즉석 비트코인 결제 • 전세계 고객 접근",
+        verbose_name="히어로 설명",
+        help_text="히어로 섹션 하단에 표시될 추가 설명"
+    )
+    
+    hero_primary_button_text = models.CharField(
+        max_length=50,
+        default="지금 시작하기",
+        verbose_name="주요 버튼 텍스트",
+        help_text="히어로 섹션의 주요 액션 버튼 텍스트"
+    )
+    
+    hero_secondary_button_text = models.CharField(
+        max_length=50,
+        default="스토어 둘러보기",
+        verbose_name="보조 버튼 텍스트", 
+        help_text="히어로 섹션의 보조 액션 버튼 텍스트"
     )
     
     # 유튜브 비디오 설정
@@ -140,6 +167,67 @@ class SiteSettings(models.Model):
         blank=True, 
         verbose_name="GitHub URL",
         help_text="GitHub 프로젝트 링크"
+    )
+    
+    # 푸터 설정
+    footer_company_name = models.CharField(
+        max_length=100,
+        default="SatoShop",
+        verbose_name="회사명/서비스명",
+        help_text="푸터에 표시될 회사명 또는 서비스명"
+    )
+    
+    footer_description = models.TextField(
+        default="비트코인 라이트닝으로 누구나 쉽게 사용하는 온라인 스토어 플랫폼",
+        verbose_name="푸터 설명",
+        help_text="푸터에 표시될 간단한 서비스 설명"
+    )
+    
+    footer_copyright = models.CharField(
+        max_length=200,
+        default="© 2024 SatoShop. All rights reserved.",
+        verbose_name="저작권 표시",
+        help_text="푸터 하단에 표시될 저작권 문구"
+    )
+    
+    footer_address = models.CharField(
+        max_length=300,
+        blank=True,
+        verbose_name="주소",
+        help_text="회사 주소 (선택사항)"
+    )
+    
+    footer_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="전화번호",
+        help_text="고객 문의 전화번호 (선택사항)"
+    )
+    
+    footer_business_hours = models.CharField(
+        max_length=100,
+        default="24시간 온라인 서비스",
+        verbose_name="운영시간",
+        help_text="서비스 운영시간 안내"
+    )
+    
+    # 소셜 미디어 링크 (기존 github_url 확장)
+    footer_twitter_url = models.URLField(
+        blank=True,
+        verbose_name="트위터 URL",
+        help_text="트위터 프로필 링크"
+    )
+    
+    footer_telegram_url = models.URLField(
+        blank=True,
+        verbose_name="텔레그램 URL", 
+        help_text="텔레그램 채널/그룹 링크"
+    )
+    
+    footer_discord_url = models.URLField(
+        blank=True,
+        verbose_name="디스코드 URL",
+        help_text="디스코드 서버 링크"
     )
     
     # 기능 활성화/비활성화

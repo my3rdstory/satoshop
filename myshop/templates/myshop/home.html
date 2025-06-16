@@ -62,7 +62,11 @@
       {% endif %}
     </h2>
     <p class="text-base md:text-lg text-gray-200 mb-8 max-w-3xl mx-auto">
-      코딩 없이 5분 만에 스토어 구축 • 즉석 비트코인 결제 • 전세계 고객 접근
+      {% if site_settings and site_settings.hero_description %}
+        {{ site_settings.hero_description }}
+      {% else %}
+        코딩 없이 5분 만에 스토어 구축 • 즉석 비트코인 결제 • 전세계 고객 접근
+      {% endif %}
     </p>
     <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
       {% if user.is_authenticated %}
@@ -81,12 +85,20 @@
       {% else %}
       <a class="inline-flex items-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-bold rounded-lg transition-colors shadow-lg" href="{% url 'accounts:signup' %}">
         <i class="fas fa-rocket mr-3"></i>
-        지금 시작하기
+        {% if site_settings and site_settings.hero_primary_button_text %}
+          {{ site_settings.hero_primary_button_text }}
+        {% else %}
+          지금 시작하기
+        {% endif %}
       </a>
       {% endif %}
       <a class="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 border-2 border-white text-white hover:bg-white hover:text-gray-900 font-bold rounded-lg transition-colors backdrop-blur-sm" href="{% url 'stores:browse_stores' %}">
         <i class="fas fa-search mr-3"></i>
-        스토어 둘러보기
+        {% if site_settings and site_settings.hero_secondary_button_text %}
+          {{ site_settings.hero_secondary_button_text }}
+        {% else %}
+          스토어 둘러보기
+        {% endif %}
       </a>
     </div>
   </div>

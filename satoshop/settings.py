@@ -15,6 +15,7 @@ import os
 import time
 from dotenv import load_dotenv
 
+
 # .env 파일 로드
 load_dotenv()
 
@@ -212,3 +213,5 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# Django Admin 사이트 설정은 myshop.apps.MyshopConfig.ready()에서 동적으로 관리

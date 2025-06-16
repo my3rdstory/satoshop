@@ -241,9 +241,8 @@ class ProductsAdminConfig(AdminConfig):
     default_site = 'products.admin.ProductsAdminSite'
 
 class ProductsAdminSite(admin.AdminSite):
-    site_header = 'SatoShop 상품 관리'
-    site_title = 'SatoShop Products'
-    index_title = '상품 관리 대시보드'
+    # Admin 사이트 커스터마이징은 settings.py에서 통합 관리
+    pass
 
 # 모델의 Meta 클래스에서 verbose_name 설정
 Product._meta.verbose_name = '상품'
