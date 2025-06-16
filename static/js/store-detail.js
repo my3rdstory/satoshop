@@ -2,7 +2,6 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   // 페이지 로드 완료
-  console.log('Store page loaded');
 });
 
 function startLightningPayment() {

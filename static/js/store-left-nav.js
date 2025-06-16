@@ -15,6 +15,6 @@ function scrollToProducts() {
     productsSection.scrollIntoView({ behavior: 'smooth' });
   } else {
     // 상품 섹션이 없으면 아무것도 하지 않음
-    console.log('상품 섹션을 찾을 수 없습니다.');
+            // 상품 섹션을 찾을 수 없음
   }
 } 

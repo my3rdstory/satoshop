@@ -343,7 +343,7 @@
       const mobileMenuButton = document.getElementById('mobile-menu-button');
       const mobileMenu = document.getElementById('mobile-menu');
       
-      console.log('Mobile menu elements:', { button: mobileMenuButton, menu: mobileMenu });
+      // 모바일 메뉴 요소 확인
       
       if (mobileMenuButton && mobileMenu) {
         // 메뉴 토글 함수
@@ -352,7 +352,7 @@
             e.preventDefault();
             e.stopPropagation();
           }
-          console.log('Mobile menu button activated');
+          // 모바일 메뉴 버튼 활성화
           
           // 토글 처리
           const isHidden = mobileMenu.classList.contains('hidden');
@@ -367,10 +367,10 @@
           if (icon) {
             if (mobileMenu.classList.contains('hidden')) {
               icon.className = 'fas fa-bars text-lg';
-              console.log('Menu closed');
+              // 메뉴 닫힘
             } else {
               icon.className = 'fas fa-times text-lg';
-              console.log('Menu opened');
+                              // 메뉴 열림
             }
           }
         }
@@ -392,7 +392,7 @@
               if (icon) {
                 icon.className = 'fas fa-bars text-lg';
               }
-              console.log('Menu closed by outside click');
+              // 외부 클릭으로 메뉴 닫힘
             }
           }
         });
@@ -405,7 +405,7 @@
             if (icon) {
               icon.className = 'fas fa-bars text-lg';
             }
-            console.log('Menu closed by ESC key');
+                            // ESC 키로 메뉴 닫힘
           }
         });
       } else {

@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const data = await response.json();
 
       // 백엔드 응답 구조 로깅 (디버깅용)
-      console.log('결제 상태 확인 응답:', data);
+              // 결제 상태 확인 완료
 
       // API 응답 성공/실패 먼저 확인
       if (!data.success) {

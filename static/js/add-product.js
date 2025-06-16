@@ -36,7 +36,7 @@ function initEasyMDE() {
   if (descriptionElement) {
     // 이미 초기화되었는지 확인 (중복 초기화 방지)
     if (descriptionElement.hasAttribute('data-easymde-initialized')) {
-      console.log('EasyMDE 이미 초기화됨, 건너뜀');
+      // EasyMDE 이미 초기화됨
       return;
     }
     
@@ -59,7 +59,7 @@ function initEasyMDE() {
     window.productFormUtils.easyMDE = easyMDE;
     window.productDescriptionMDE = easyMDE; // 하위 호환성
     
-    console.log('EasyMDE 초기화 완료');
+          // EasyMDE 초기화 완료
   }
 }
 

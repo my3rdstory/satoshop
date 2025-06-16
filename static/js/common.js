@@ -104,7 +104,116 @@ function initNotifications() {
 initDropdownMenus();
 initNotifications();
 
-// 플랫폼 네비게이션 로드 완료 로그
+// 플랫폼 네비게이션 초기화
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('Platform navigation loaded');
+  // 플랫폼 네비게이션 로드 완료
+});
+
+// 전역 공통 JavaScript 기능
+
+// CSRF 토큰 가져오기 함수
+function getCsrfToken() {
+  const cookieValue = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrftoken='))
+    ?.split('=')[1];
+  
+  return cookieValue || window.csrfToken || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+}
+
+// 전역 변수로 설정
+window.getCsrfToken = getCsrfToken;
+
+// 공통 AJAX 설정
+function setupAjaxDefaults() {
+  // jQuery가 있는 경우
+  if (typeof $ !== 'undefined') {
+    $.ajaxSetup({
+      beforeSend: function(xhr, settings) {
+        if (!this.crossDomain) {
+          xhr.setRequestHeader("X-CSRFToken", getCsrfToken());
+        }
+      }
+    });
+  }
+  
+  // Fetch API 래퍼
+  window.fetchWithCsrf = function(url, options = {}) {
+    return fetch(url, {
+      ...options,
+      headers: {
+        'X-CSRFToken': getCsrfToken(),
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+  };
+}
+
+// 사용자 테마 설정 감지 및 적용
+function setupThemeDetection() {
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+  
+  function updateTheme(e) {
+    if (e.matches) {
+      document.body.classList.add('dark-theme');
+      document.body.classList.remove('light-theme');
+    } else {
+      document.body.classList.add('light-theme');
+      document.body.classList.remove('dark-theme');
+    }
+  }
+  
+  // 초기 테마 설정
+  updateTheme(prefersDark);
+  
+  // 테마 변경 감지
+  prefersDark.addListener(updateTheme);
+}
+
+// 반응형 네비게이션 토글
+function setupResponsiveNavigation() {
+  const mobileMenuButtons = document.querySelectorAll('[data-mobile-menu-toggle]');
+  
+  mobileMenuButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const targetId = this.getAttribute('data-target');
+      const targetMenu = document.getElementById(targetId);
+      
+      if (targetMenu) {
+        targetMenu.classList.toggle('hidden');
+        
+        // 아이콘 변경
+        const icon = this.querySelector('i');
+        if (icon) {
+          if (targetMenu.classList.contains('hidden')) {
+            icon.className = 'fas fa-bars';
+          } else {
+            icon.className = 'fas fa-times';
+          }
+        }
+      }
+    });
+  });
+}
+
+// 외부 링크 처리
+function setupExternalLinks() {
+  const externalLinks = document.querySelectorAll('a[href^="http"]:not([href*="' + window.location.hostname + '"])');
+  
+  externalLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      // 외부 링크는 새 탭에서 열기
+      this.target = '_blank';
+      this.rel = 'noopener noreferrer';
+    });
+  });
+}
+
+// DOMContentLoaded 이벤트에서 초기화
+document.addEventListener('DOMContentLoaded', function() {
+  setupAjaxDefaults();
+  setupThemeDetection();
+  setupResponsiveNavigation();
+  setupExternalLinks();
 }); 

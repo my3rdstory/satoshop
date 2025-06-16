@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       choicesContainer.appendChild(choiceDiv);
       
-      console.log('옵션 종류 추가됨, 가격 표시:', window.productPriceDisplay, '단위:', priceUnit);
+      // 옵션 종류 추가됨
       
       // 새로 추가된 옵션 가격 입력 필드에 이벤트 리스너 추가 (currency-exchange.js에서 처리)
       const newPriceInput = choiceDiv.querySelector('.option-price-input');
@@ -146,10 +146,10 @@ document.addEventListener('DOMContentLoaded', function () {
         newPriceInput.addEventListener('input', handlePriceInput);
       }
       
-      console.log('새 옵션 추가됨, 가격 표시:', window.productPriceDisplay, '단위:', priceUnit);
+      // 새 옵션 추가됨
     });
   }
   
   // add-product.js의 공통 기능이 이미 초기화되므로 추가 설정만 수행
-  console.log('상품 수정 모드 초기화 완료');
+      // 상품 수정 모드 초기화 완료
 }); 

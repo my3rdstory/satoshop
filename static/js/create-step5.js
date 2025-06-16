@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 폼 제출 시 최종 확인
   document.getElementById('step5Form').addEventListener('submit', function (e) {
-    console.log('폼 제출 시도됨');
+            // 폼 제출 시도
 
     if (!agreeTerms.checked) {
       e.preventDefault();
@@ -32,11 +32,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // 최종 확인 대화상자
     if (!confirm('정말로 스토어를 생성하시겠습니까?\n생성 후 스토어 아이디는 변경할 수 없습니다.')) {
       e.preventDefault();
-      console.log('사용자가 취소함');
+              // 사용자가 취소함
       return false;
     }
 
-    console.log('폼 제출 진행됨');
+          // 폼 제출 진행
     // 버튼 로딩 상태로 변경
     createStoreBtn.innerHTML = `
       <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>

@@ -35,33 +35,6 @@ class BlinkAPIService:
             logger.debug(f"BlinkAPIService 초기화: API URL={self.api_url}, 월렛 ID={self.wallet_id}")
             if settings.DEBUG:
                 logger.debug(f"API 키 길이: {len(self.api_key)}, 시작: {self.api_key[:8]}...")
-                print(f"DEBUG: BlinkAPIService 초기화")  # 임시 print
-                print(f"DEBUG: API URL={self.api_url}")
-                print(f"DEBUG: 월렛 ID={self.wallet_id}")
-                print(f"DEBUG: API 키 길이={len(self.api_key)}")
-                print(f"DEBUG: API 키 시작={self.api_key[:8]}...")
-                # API 키 전체 로깅 제거 - 보안 위험
-                
-                # API 키 형식 분석
-                if self.api_key.startswith('blink_'):
-                    print(f"DEBUG: ✓ API 키가 'blink_' 접두사로 시작함")
-                else:
-                    print(f"DEBUG: ⚠️ API 키가 'blink_' 접두사로 시작하지 않음")
-                
-                # JWT 토큰인지 확인
-                parts = self.api_key.split('.')
-                if len(parts) == 3:
-                    print(f"DEBUG: ⚠️ API 키가 JWT 토큰 형식일 수 있음 (3개 부분)")
-                else:
-                    print(f"DEBUG: ✓ API 키가 일반 키 형식")
-                    
-                # 월렛 ID UUID 형식 확인
-                try:
-                    import uuid
-                    uuid.UUID(self.wallet_id)
-                    print(f"DEBUG: ✓ 월렛 ID가 올바른 UUID 형식")
-                except:
-                    print(f"DEBUG: ⚠️ 월렛 ID가 UUID 형식이 아님")
     
     def _make_request(self, query, variables=None):
         """GraphQL 요청 실행"""
@@ -85,10 +58,6 @@ class BlinkAPIService:
             'https://api.staging.blink.sv/graphql',  # Staging (문서에서 명시)
         ]
         
-        if settings.DEBUG:
-            print(f"DEBUG: 여러 인증 방식으로 API 키 테스트")
-            print(f"DEBUG: API 키: {self.api_key[:20]}...")
-        
         # 각 엔드포인트와 인증 방식 조합 시도
         for endpoint in endpoints:
             for auth_method in auth_methods:
@@ -98,11 +67,6 @@ class BlinkAPIService:
                     'Accept': 'application/json',
                     **auth_method  # 인증 헤더 병합
                 }
-                
-                if settings.DEBUG:
-                    auth_header_display = str(auth_method)
-                    print(f"DEBUG: 시도 - {endpoint}")
-                    print(f"DEBUG: 인증 헤더: {auth_header_display}")
                 
                 try:
                     # 먼저 authorization 쿼리로 API 키 유효성 확인
@@ -117,18 +81,10 @@ class BlinkAPIService:
                         timeout=30
                     )
                     
-                    if settings.DEBUG:
-                        print(f"DEBUG: 인증 테스트 응답 상태: {auth_response.status_code}")
-                        
                     if auth_response.status_code == 200:
                         # authorization 성공시 응답 확인
                         try:
                             auth_data = auth_response.json()
-                            if settings.DEBUG:
-                                print(f"DEBUG: ✅ 인증 성공!")
-                                print(f"DEBUG: 엔드포인트: {endpoint}")
-                                print(f"DEBUG: 인증 방식: {auth_method}")
-                                print(f"DEBUG: 인증 응답: {auth_data}")
                             
                             # 인증이 성공했으면 실제 쿼리 실행
                             response = requests.post(
@@ -137,10 +93,6 @@ class BlinkAPIService:
                                 json=payload,
                                 timeout=30
                             )
-                            
-                            if settings.DEBUG:
-                                print(f"DEBUG: 실제 쿼리 응답 상태: {response.status_code}")
-                                print(f"DEBUG: 실제 쿼리 응답: {response.text}")
                             
                             if not response.ok:
                                 return {
@@ -163,31 +115,18 @@ class BlinkAPIService:
                             }
                             
                         except json.JSONDecodeError as e:
-                            if settings.DEBUG:
-                                print(f"DEBUG: 인증 테스트 JSON 파싱 오류: {str(e)}")
                             continue
                             
                     elif auth_response.status_code == 401:
-                        if settings.DEBUG:
-                            print(f"DEBUG: 401 인증 실패")
-                            print(f"DEBUG: 응답 내용: {auth_response.text[:200]}...")
                         continue
                     else:
-                        if settings.DEBUG:
-                            print(f"DEBUG: 예상치 못한 응답 {auth_response.status_code}: {auth_response.text[:200]}...")
                         continue
                         
                 except requests.exceptions.Timeout:
-                    if settings.DEBUG:
-                        print(f"DEBUG: 타임아웃")
                     continue
                 except requests.exceptions.ConnectionError:
-                    if settings.DEBUG:
-                        print(f"DEBUG: 연결 오류")
                     continue
                 except Exception as e:
-                    if settings.DEBUG:
-                        print(f"DEBUG: 예외 발생: {str(e)}")
                     continue
         
         # 모든 조합에서 실패
@@ -242,10 +181,6 @@ class BlinkAPIService:
             }
         }
         
-        # 디버깅: 요청 변수 로깅
-        if settings.DEBUG:
-            print(f"DEBUG: 인보이스 생성 요청 변수: {variables}")
-        
         result = self._make_request(query, variables)
         
         if not result['success']:
@@ -276,11 +211,6 @@ class BlinkAPIService:
             }
         
         expires_at = timezone.now() + timedelta(minutes=expires_in_minutes)
-        
-        # 디버깅: 생성된 인보이스 정보 로깅
-        if settings.DEBUG:
-            print(f"DEBUG: 생성된 인보이스 데이터: {invoice_data}")
-            print(f"DEBUG: 인보이스 문자열: {invoice_data['paymentRequest']}")
         
         return {
             'success': True,
@@ -327,9 +257,6 @@ class BlinkAPIService:
         
         data = result['data']
         
-        if settings.DEBUG:
-            print(f"DEBUG: 결제 상태 확인 전체 응답: {data}")
-        
         if 'lnInvoicePaymentStatusByHash' not in data:
             return {
                 'success': False,
@@ -338,13 +265,7 @@ class BlinkAPIService:
         
         status_data = data['lnInvoicePaymentStatusByHash']
         
-        if settings.DEBUG:
-            print(f"DEBUG: 결제 상태 데이터: {status_data}")
-        
         raw_status = status_data.get('status', '').upper()
-        
-        if settings.DEBUG:
-            print(f"DEBUG: 원본 상태값: '{raw_status}'")
         
         # Blink API 상태값을 우리 시스템에 맞게 변환
         # 다양한 가능한 상태값들을 모두 처리
@@ -355,13 +276,8 @@ class BlinkAPIService:
         elif raw_status in ['EXPIRED', 'FAILED', 'CANCELLED']:
             status = 'expired'
         else:
-            # 알 수 없는 상태값이면 로깅하고 pending으로 처리
-            if settings.DEBUG:
-                print(f"DEBUG: ⚠️ 알 수 없는 상태값: '{raw_status}' - pending으로 처리")
+            # 알 수 없는 상태값이면 pending으로 처리
             status = 'pending'
-        
-        if settings.DEBUG:
-            print(f"DEBUG: 변환된 상태: '{status}'")
         
         return {
             'success': True,

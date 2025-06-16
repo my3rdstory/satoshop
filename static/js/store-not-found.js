@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // 콘솔에 404 로그 기록
-  console.log(`404 페이지 접속: 스토어 ID '${window.storeId}' - ${timeString}`);
+  // 404 페이지 접속 기록
 
   // 페이지 타이틀에 접속 시간 정보 추가
   document.title = `스토어를 찾을 수 없습니다 - ${window.storeId} (${timeString} 접속)`;

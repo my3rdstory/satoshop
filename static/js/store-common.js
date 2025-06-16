@@ -19,7 +19,7 @@ function scrollToProducts() {
 function initStoreTheme() {
   document.addEventListener('DOMContentLoaded', () => {
     // theme-toggle.js에서 이미 테마가 초기화되므로 여기서는 추가 작업만 수행
-    console.log('Store theme integration loaded');
+    // 스토어 테마 통합 로드 완료
   });
 }
 
@@ -30,7 +30,7 @@ initStoreTheme();
 
 document.addEventListener('DOMContentLoaded', function() {
   // 스토어 공통 초기화
-  console.log('Store common JavaScript loaded');
+  // 스토어 공통 JavaScript 로드 완료
   
   // 스토어 관련 공통 기능들을 여기에 추가할 수 있습니다
   
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
   storeLinks.forEach(link => {
     link.addEventListener('click', function() {
       // 스토어 방문 추적 로직을 여기에 추가할 수 있습니다
-      console.log('Store link clicked:', this.href);
+      // 스토어 링크 클릭됨
     });
   });
 }); 

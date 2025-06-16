@@ -68,7 +68,7 @@ window.initProductForm = function (isEditMode, initialOptionCount) {
     // 상품 수정 페이지(unifiedProductForm)에서는 edit-product-unified.js에서 처리하므로 건너뜀
     const isProductEditPage = document.getElementById('unifiedProductForm');
     if (isProductEditPage) {
-      console.log('상품 수정 페이지에서는 product-form.js의 옵션 기능을 비활성화');
+      // 상품 수정 페이지에서는 옵션 기능 비활성화
       return;
     }
     
@@ -150,7 +150,7 @@ window.initProductForm = function (isEditMode, initialOptionCount) {
     // 상품 수정 페이지(unifiedProductForm)에서는 edit-product-unified.js에서 처리하므로 건너뜀
     const isProductEditPage = document.getElementById('unifiedProductForm');
     if (isProductEditPage) {
-      console.log('상품 수정 페이지에서는 product-form.js의 addOptionChoice 함수를 비활성화');
+      // 상품 수정 페이지에서는 addOptionChoice 함수 비활성화
       return;
     }
     

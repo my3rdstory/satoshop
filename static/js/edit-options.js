@@ -6,9 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     window.initProductForm(true, optionCount);
   }
   
-  // 디버깅: 가격 표시 방식 확인
-  console.log('Product price display:', window.productPriceDisplay);
-  
   // 기존 옵션들의 단위와 환율 정보 초기화
   initializeExistingOptions();
   
@@ -20,205 +17,215 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function initializeExistingOptions() {
-  const allUnitSpans = document.querySelectorAll('.option-price-unit');
-  const allExchangeInfos = document.querySelectorAll('.option-exchange-info');
+  const optionSections = document.querySelectorAll('.option-section');
   
-  console.log('Initializing existing options, price display:', window.productPriceDisplay);
-  
-  if (window.productPriceDisplay === 'krw') {
-    // 원화일 때
-    allUnitSpans.forEach(span => {
-      span.textContent = '원';
+  optionSections.forEach(function(section, index) {
+    // 기존 옵션들의 가격 표시 방식 설정
+    const priceInputs = section.querySelectorAll('input[name$="[price]"]');
+    priceInputs.forEach(function(input) {
+      // 가격 표시 방식에 따른 단위 설정
+      let priceUnit = 'sats';
+      if (window.productPriceDisplay === 'krw') {
+        priceUnit = '원';
+      }
+      
+      // 입력 필드 옆에 단위 표시
+      if (!input.parentElement.querySelector('.price-unit')) {
+        const unitSpan = document.createElement('span');
+        unitSpan.className = 'price-unit ml-2 text-sm text-gray-500';
+        unitSpan.textContent = priceUnit;
+        input.parentElement.appendChild(unitSpan);
+      }
     });
-    allExchangeInfos.forEach(info => {
-      info.classList.remove('hidden');
-    });
-  } else {
-    // 사토시일 때
-    allUnitSpans.forEach(span => {
-      span.textContent = 'sats';
-    });
-    allExchangeInfos.forEach(info => {
-      info.classList.add('hidden');
-    });
-  }
-}
-
-function setupPriceConversionListeners() {
-  // 기존 옵션 가격 입력 필드에 이벤트 리스너 추가
-  document.querySelectorAll('.option-price-input').forEach(input => {
-    input.addEventListener('input', handlePriceInput);
   });
 }
 
-function handlePriceInput(event) {
-  if (window.productPriceDisplay !== 'krw') return;
-  
-  const input = event.target;
-  const value = parseFloat(input.value);
-  const exchangeInfo = input.closest('.flex').querySelector('.option-converted-amount');
-  
-  if (exchangeInfo && !isNaN(value) && value > 0) {
-    // 환율 정보가 있다면 변환 계산
-    if (window.btcKrwRate && window.btcKrwRate > 0) {
-      const satsValue = Math.round((value / window.btcKrwRate) * 100000000);
-      exchangeInfo.textContent = `${satsValue.toLocaleString()} sats`;
-    } else {
-      exchangeInfo.textContent = '환율 정보 로딩 중...';
+// 동적으로 추가된 옵션에 대한 이벤트 리스너
+function setupPriceConversionListeners() {
+  document.addEventListener('input', function(e) {
+    if (e.target && e.target.name && e.target.name.includes('[price]')) {
+      // 가격 입력 시 환율 변환 로직
+      convertPriceOnInput(e.target);
     }
-  } else if (exchangeInfo) {
-    exchangeInfo.textContent = '';
+  });
+}
+
+function convertPriceOnInput(input) {
+  const value = parseFloat(input.value);
+  if (isNaN(value) || value <= 0) return;
+  
+  // 환율 변환 로직 (필요에 따라 구현)
+  // 현재는 단순히 단위만 표시
+  const unitSpan = input.parentElement.querySelector('.price-unit');
+  if (unitSpan) {
+    if (window.productPriceDisplay === 'krw') {
+      unitSpan.textContent = '원';
+    } else {
+      unitSpan.textContent = 'sats';
+    }
   }
 }
 
 function setupAddOptionButton() {
-  const addOptionBtn = document.getElementById('addOptionBtn');
-  if (addOptionBtn && !addOptionBtn.hasAttribute('data-edit-options-initialized')) {
-    // 중복 초기화 방지를 위한 플래그 설정
-    addOptionBtn.setAttribute('data-edit-options-initialized', 'true');
-    
-    addOptionBtn.addEventListener('click', function() {
-      addNewOption();
+  const addOptionBtn = document.getElementById('add-option-btn');
+  if (!addOptionBtn) return;
+  
+  addOptionBtn.addEventListener('click', function() {
+    addNewOption();
+  });
+}
+
+function addNewOption() {
+  const optionsContainer = document.getElementById('options-container');
+  if (!optionsContainer) return;
+  
+  const optionIndex = document.querySelectorAll('.option-section').length;
+  
+  // 새 옵션 HTML 생성
+  const newOptionHtml = createNewOptionHtml(optionIndex);
+  
+  // 옵션 추가
+  optionsContainer.insertAdjacentHTML('beforeend', newOptionHtml);
+  
+  // 새로 추가된 옵션에 이벤트 리스너 추가
+  setupNewOptionEvents(optionIndex);
+}
+
+function createNewOptionHtml(index) {
+  let priceUnit = 'sats';
+  if (window.productPriceDisplay === 'krw') {
+    priceUnit = '원';
+  }
+  
+  return `
+    <div class="option-section border border-gray-300 rounded-lg p-4 mb-4" data-option-index="${index}">
+      <div class="flex justify-between items-center mb-3">
+        <h4 class="text-lg font-medium">옵션 ${index + 1}</h4>
+        <button type="button" class="remove-option-btn text-red-600 hover:text-red-800">
+          <i class="fas fa-trash"></i> 삭제
+        </button>
+      </div>
+      
+      <div class="mb-3">
+        <label class="block text-sm font-medium mb-2">옵션명</label>
+        <input type="text" name="options[${index}][name]" class="w-full p-2 border border-gray-300 rounded" placeholder="예: 색상, 크기 등">
+      </div>
+      
+      <div class="option-choices">
+        <label class="block text-sm font-medium mb-2">선택지</label>
+        <div class="choice-item flex items-center mb-2">
+          <input type="text" name="options[${index}][choices][0][name]" class="flex-1 p-2 border border-gray-300 rounded mr-2" placeholder="선택지명">
+          <input type="number" name="options[${index}][choices][0][price]" class="w-24 p-2 border border-gray-300 rounded mr-2" placeholder="0" min="0" step="1">
+          <span class="price-unit text-sm text-gray-500 mr-2">${priceUnit}</span>
+          <button type="button" class="remove-choice-btn text-red-600 hover:text-red-800">
+            <i class="fas fa-minus-circle"></i>
+          </button>
+        </div>
+      </div>
+      
+      <button type="button" class="add-choice-btn mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+        <i class="fas fa-plus"></i> 선택지 추가
+      </button>
+    </div>
+  `;
+}
+
+function setupNewOptionEvents(optionIndex) {
+  const optionSection = document.querySelector(`[data-option-index="${optionIndex}"]`);
+  if (!optionSection) return;
+  
+  // 옵션 삭제 버튼
+  const removeBtn = optionSection.querySelector('.remove-option-btn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      optionSection.remove();
+      updateOptionIndexes();
+    });
+  }
+  
+  // 선택지 추가 버튼
+  const addChoiceBtn = optionSection.querySelector('.add-choice-btn');
+  if (addChoiceBtn) {
+    addChoiceBtn.addEventListener('click', function() {
+      addOptionChoice(optionSection, optionIndex);
+    });
+  }
+  
+  // 선택지 삭제 버튼
+  const removeChoiceBtns = optionSection.querySelectorAll('.remove-choice-btn');
+  removeChoiceBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      const choiceItem = btn.closest('.choice-item');
+      if (choiceItem) {
+        choiceItem.remove();
+        updateChoiceIndexes(optionSection, optionIndex);
+      }
+    });
+  });
+}
+
+function addOptionChoice(optionSection, optionIndex) {
+  const choicesContainer = optionSection.querySelector('.option-choices');
+  const choiceCount = choicesContainer.querySelectorAll('.choice-item').length;
+  
+  let priceUnit = 'sats';
+  if (window.productPriceDisplay === 'krw') {
+    priceUnit = '원';
+  }
+  
+  const newChoiceHtml = `
+    <div class="choice-item flex items-center mb-2">
+      <input type="text" name="options[${optionIndex}][choices][${choiceCount}][name]" class="flex-1 p-2 border border-gray-300 rounded mr-2" placeholder="선택지명">
+      <input type="number" name="options[${optionIndex}][choices][${choiceCount}][price]" class="w-24 p-2 border border-gray-300 rounded mr-2" placeholder="0" min="0" step="1">
+      <span class="price-unit text-sm text-gray-500 mr-2">${priceUnit}</span>
+      <button type="button" class="remove-choice-btn text-red-600 hover:text-red-800">
+        <i class="fas fa-minus-circle"></i>
+      </button>
+    </div>
+  `;
+  
+  choicesContainer.insertAdjacentHTML('beforeend', newChoiceHtml);
+  
+  // 새로 추가된 선택지의 삭제 버튼에 이벤트 리스너 추가
+  const newChoiceItem = choicesContainer.lastElementChild;
+  const removeBtn = newChoiceItem.querySelector('.remove-choice-btn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() {
+      newChoiceItem.remove();
+      updateChoiceIndexes(optionSection, optionIndex);
     });
   }
 }
 
-function addNewOption() {
-  const optionsContainer = document.getElementById('optionsContainer');
-  if (!optionsContainer) {
-    console.error('옵션 컨테이너를 찾을 수 없습니다.');
-    return;
-  }
-  
-  const currentOptionCount = optionsContainer.children.length;
-  if (currentOptionCount >= 20) {
-    alert('옵션은 최대 20개까지만 추가할 수 있습니다.');
-    return;
-  }
-  
-  // 현재 상품의 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
-  const isKrwMode = window.productPriceDisplay === 'krw';
-  const priceUnit = isKrwMode ? '원' : 'sats';
-  const exchangeInfoClass = isKrwMode ? '' : 'hidden';
-  
-  const optionDiv = document.createElement('div');
-  optionDiv.className = 'bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4';
-  optionDiv.innerHTML = `
-    <!-- 옵션 헤더 -->
-    <div class="flex items-center gap-4">
-      <div class="flex-1">
-        <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-               type="text" name="options[${currentOptionCount}][name]" required
-               placeholder="옵션명 (예: 색상, 사이즈)">
-      </div>
-      <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-              onclick="this.closest('.bg-gray-50, .dark\\\\:bg-gray-700\\\\/50').remove()">
-        <i class="fas fa-trash"></i>
-      </button>
-    </div>
+function updateOptionIndexes() {
+  const optionSections = document.querySelectorAll('.option-section');
+  optionSections.forEach((section, index) => {
+    section.setAttribute('data-option-index', index);
     
-    <!-- 옵션 선택지들 -->
-    <div class="space-y-3">
-      <div class="flex items-center gap-3">
-        <div class="flex-1">
-          <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                 type="text"
-                 name="options[${currentOptionCount}][choices][0][name]"
-                 required placeholder="옵션 종류 (예: 빨강, 파랑)">
-        </div>
-        <div class="w-32">
-          <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
-                 type="number"
-                 name="options[${currentOptionCount}][choices][0][price]"
-                 min="0" placeholder="추가 가격">
-        </div>
-        <div class="relative w-16">
-          <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
-          <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
-            <span class="option-converted-amount"></span>
-          </div>
-        </div>
-        <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                onclick="this.closest('.flex').remove()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
+    // 옵션 제목 업데이트
+    const title = section.querySelector('h4');
+    if (title) {
+      title.textContent = `옵션 ${index + 1}`;
+    }
     
-    <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors" 
-            onclick="addOptionChoice(this)">
-      <i class="fas fa-plus text-sm"></i>
-      <span>옵션 종류 추가</span>
-    </button>
-  `;
-  
-  optionsContainer.appendChild(optionDiv);
-  
-  // 새로 추가된 옵션 가격 입력 필드에 이벤트 리스너 추가
-  const newPriceInput = optionDiv.querySelector('.option-price-input');
-  if (newPriceInput) {
-    newPriceInput.addEventListener('input', handlePriceInput);
-  }
-  
-  console.log('Added new option, price display:', window.productPriceDisplay, 'unit:', priceUnit);
+    // input name 속성 업데이트
+    const inputs = section.querySelectorAll('input');
+    inputs.forEach(input => {
+      if (input.name) {
+        input.name = input.name.replace(/options\[\d+\]/, `options[${index}]`);
+      }
+    });
+  });
 }
 
-function addOptionChoice(button) {
-  const optionSection = button.closest('.bg-gray-50, .dark\\:bg-gray-700\\/50');
-  if (!optionSection) {
-    console.error('옵션 섹션을 찾을 수 없습니다.');
-    return;
-  }
-  
-  const optionIndex = Array.from(optionSection.parentNode.children).indexOf(optionSection);
-  const choicesContainer = optionSection.querySelector('.space-y-3');
-  if (!choicesContainer) {
-    console.error('선택지 컨테이너를 찾을 수 없습니다.');
-    return;
-  }
-  
-  const choiceIndex = choicesContainer.children.length;
-
-  // 현재 상품의 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
-  const isKrwMode = window.productPriceDisplay === 'krw';
-  const priceUnit = isKrwMode ? '원' : 'sats';
-  const exchangeInfoClass = isKrwMode ? '' : 'hidden';
-
-  const choiceDiv = document.createElement('div');
-  choiceDiv.className = 'flex items-center gap-3';
-  choiceDiv.innerHTML = `
-    <div class="flex-1">
-      <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-             type="text" name="options[${optionIndex}][choices][${choiceIndex}][name]" required
-             placeholder="옵션 종류 (예: 빨강, 파랑)">
-    </div>
-    <div class="w-32">
-      <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
-             type="number" name="options[${optionIndex}][choices][${choiceIndex}][price]" min="0"
-             placeholder="추가 가격">
-    </div>
-    <div class="relative w-16">
-      <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
-      <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
-        <span class="option-converted-amount"></span>        
-      </div>
-    </div>
-    <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-            onclick="this.closest('.flex').remove()">
-      <i class="fas fa-times"></i>
-    </button>
-  `;
-
-  choicesContainer.appendChild(choiceDiv);
-  
-  console.log('Adding option choice, price display:', window.productPriceDisplay, 'unit:', priceUnit);
-  
-  // 새로 추가된 옵션 가격 입력 필드에 이벤트 리스너 추가
-  const newPriceInput = choiceDiv.querySelector('.option-price-input');
-  if (newPriceInput) {
-    newPriceInput.addEventListener('input', handlePriceInput);
-  }
-}
-
-// 전역 함수로 등록
-window.addOptionChoice = addOptionChoice; 
+function updateChoiceIndexes(optionSection, optionIndex) {
+  const choiceItems = optionSection.querySelectorAll('.choice-item');
+  choiceItems.forEach((item, index) => {
+    const inputs = item.querySelectorAll('input');
+    inputs.forEach(input => {
+      if (input.name) {
+        input.name = input.name.replace(/\[choices\]\[\d+\]/, `[choices][${index}]`);
+      }
+    });
+  });
+} 

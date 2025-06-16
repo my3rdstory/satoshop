@@ -2,7 +2,7 @@
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Product list page loaded');
+    // 상품 리스트 페이지 초기화
     
     // 상품 카드 호버 효과 초기화
     initProductCardEffects();

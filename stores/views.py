@@ -211,18 +211,6 @@ def handle_step3(request, store):
     store.set_blink_wallet_id(blink_wallet_id)
     store.save()
     
-    if settings.DEBUG:
-        print(f"DEBUG: 3단계 완료 - API 키와 월렛 ID가 암호화되어 저장됨")
-        print(f"DEBUG: 저장된 암호화 API 키 길이: {len(store.blink_api_info_encrypted)}")
-        print(f"DEBUG: 저장된 암호화 월렛 ID 길이: {len(store.blink_wallet_id_encrypted)}")
-        # 복호화 테스트
-        try:
-            decrypted_api = store.get_blink_api_info()
-            decrypted_wallet = store.get_blink_wallet_id()
-            print(f"DEBUG: 복호화 테스트 성공 - API 키: {decrypted_api[:20]}..., 월렛 ID: {decrypted_wallet}")
-        except Exception as e:
-            print(f"DEBUG: 복호화 테스트 실패: {e}")
-    
     store.creation_step.step3_completed = True
     store.creation_step.current_step = 4
     store.creation_step.save()
@@ -243,32 +231,16 @@ def handle_step4(request, store):
 
 def handle_step5(request, store):
     """5단계: 최종 확인 및 스토어 활성화"""
-    if settings.DEBUG:
-        print(f"DEBUG: handle_step5 호출됨")
-        print(f"DEBUG: POST 데이터: {dict(request.POST)}")
-    
     confirm = request.POST.get('confirm')
     
-    if settings.DEBUG:
-        print(f"DEBUG: confirm 값: {confirm}")
-    
     if confirm:
-        if settings.DEBUG:
-            print(f"DEBUG: 스토어 활성화 시작 - {store.store_id}")
-        
         store.is_active = True
         store.save()
         
         store.creation_step.step5_completed = True
         store.creation_step.save()
         
-        if settings.DEBUG:
-            print(f"DEBUG: 스토어 활성화 완료 - {store.store_id}, is_active: {store.is_active}")
-        
         return redirect('stores:store_detail', store_id=store.store_id)
-    
-    if settings.DEBUG:
-        print(f"DEBUG: confirm이 없음, 스텝5로 다시 리다이렉트")
     
     return redirect('stores:create_store_step', step=5)
 
@@ -379,13 +351,9 @@ def edit_store(request, store_id):
             
             if blink_api_info:
                 store.set_blink_api_info(blink_api_info)
-                if settings.DEBUG:
-                    print(f"DEBUG: 블링크 API 정보 업데이트됨")
             
             if blink_wallet_id:
                 store.set_blink_wallet_id(blink_wallet_id)
-                if settings.DEBUG:
-                    print(f"DEBUG: 블링크 월렛 ID 업데이트됨")
             
             # 히어로 섹션 색상 업데이트
             hero_color1 = request.POST.get('hero_color1', '').strip()
@@ -407,8 +375,6 @@ def edit_store(request, store_id):
             messages.error(request, str(e))
         except Exception as e:
             messages.error(request, f'스토어 정보 업데이트 중 오류가 발생했습니다: {str(e)}')
-            if settings.DEBUG:
-                print(f"DEBUG: 스토어 편집 오류: {e}")
     
     return render(request, 'stores/edit_store.html', {'store': store})
 
