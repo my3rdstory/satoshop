@@ -101,23 +101,39 @@ def update_exchange_rate_webhook(request):
     import logging
     logger = logging.getLogger(__name__)
     
+    start_time = timezone.now()
+    client_ip = request.META.get('REMOTE_ADDR', 'unknown')
+    user_agent = request.META.get('HTTP_USER_AGENT', 'unknown')
+    
     try:
+        logger.info(f'웹훅 요청 수신 - IP: {client_ip}, User-Agent: {user_agent}')
+        
         # JSON 데이터 파싱
+        auth_token = None
+        source = 'unknown'
+        timestamp = None
+        
         if request.content_type == 'application/json':
             try:
                 data = json.loads(request.body)
                 auth_token = data.get('token')
                 source = data.get('source', 'unknown')
-            except json.JSONDecodeError:
+                timestamp = data.get('timestamp')
+            except json.JSONDecodeError as e:
+                logger.error(f'JSON 파싱 오류: {e}')
                 return JsonResponse({
                     'success': False,
                     'error': '잘못된 JSON 형식입니다.',
+                    'details': str(e),
                     'timestamp': timezone.now().isoformat()
                 }, status=400)
         else:
-            # Form 데이터에서 가져오기
+            # Form 데이터에서 가져오기 (호환성)
             auth_token = request.POST.get('token')
             source = request.POST.get('source', 'unknown')
+            timestamp = request.POST.get('timestamp')
+        
+        logger.info(f'웹훅 요청 상세 - 소스: {source}, 타임스탬프: {timestamp}')
         
         # 보안 토큰 확인
         expected_token = os.getenv('WEBHOOK_TOKEN')
@@ -127,46 +143,86 @@ def update_exchange_rate_webhook(request):
             return JsonResponse({
                 'success': False,
                 'error': '서버 설정 오류',
+                'details': 'WEBHOOK_TOKEN 환경 변수가 설정되지 않았습니다.',
                 'timestamp': timezone.now().isoformat()
             }, status=500)
         
-        if not auth_token or auth_token != expected_token:
-            logger.warning(f'웹훅 인증 실패 - 소스: {source}, IP: {request.META.get("REMOTE_ADDR")}')
+        if not auth_token:
+            logger.warning(f'토큰 없는 웹훅 시도 - 소스: {source}, IP: {client_ip}')
             return JsonResponse({
                 'success': False,
-                'error': '인증 실패',
+                'error': '인증 토큰이 필요합니다.',
+                'details': 'token 필드에 유효한 웹훅 토큰을 제공하세요.',
                 'timestamp': timezone.now().isoformat()
             }, status=401)
         
-        logger.info(f'웹훅 인증 성공 - 소스: {source}')
+        if auth_token != expected_token:
+            logger.warning(f'웹훅 인증 실패 - 소스: {source}, IP: {client_ip}, 토큰 길이: {len(auth_token)}')
+            return JsonResponse({
+                'success': False,
+                'error': '인증 실패',
+                'details': '제공된 토큰이 유효하지 않습니다.',
+                'timestamp': timezone.now().isoformat()
+            }, status=401)
+        
+        logger.info(f'웹훅 인증 성공 - 소스: {source}, IP: {client_ip}')
         
         # 환율 업데이트 실행
         logger.info('환율 업데이트 시작')
-        exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
+        update_start_time = timezone.now()
         
-        if exchange_rate:
-            logger.info(f'환율 업데이트 성공: 1 BTC = {exchange_rate.btc_krw_rate:,} KRW')
-            return JsonResponse({
-                'success': True,
-                'message': '환율 업데이트 성공',
-                'btc_krw_rate': float(exchange_rate.btc_krw_rate),
-                'updated_at': exchange_rate.created_at.isoformat(),
-                'source': source,
-                'timestamp': timezone.now().isoformat()
-            })
-        else:
-            logger.error('환율 업데이트 실패: API에서 데이터를 가져올 수 없음')
+        try:
+            exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
+            update_duration = (timezone.now() - update_start_time).total_seconds()
+            
+            if exchange_rate:
+                logger.info(f'환율 업데이트 성공: 1 BTC = {exchange_rate.btc_krw_rate:,} KRW (소요시간: {update_duration:.2f}초)')
+                
+                # 성공 응답
+                response_data = {
+                    'success': True,
+                    'message': '환율 업데이트 성공',
+                    'btc_krw_rate': float(exchange_rate.btc_krw_rate),
+                    'updated_at': exchange_rate.created_at.isoformat(),
+                    'source': source,
+                    'timestamp': timezone.now().isoformat(),
+                    'processing_time': {
+                        'update_duration': f'{update_duration:.2f}s',
+                        'total_duration': f'{(timezone.now() - start_time).total_seconds():.2f}s'
+                    }
+                }
+                
+                return JsonResponse(response_data)
+            else:
+                logger.error('환율 업데이트 실패: API에서 데이터를 가져올 수 없음')
+                return JsonResponse({
+                    'success': False,
+                    'error': '환율 업데이트 실패',
+                    'details': 'API에서 데이터를 가져올 수 없습니다. 업비트 API 상태를 확인하세요.',
+                    'source': source,
+                    'timestamp': timezone.now().isoformat(),
+                    'processing_time': f'{update_duration:.2f}s'
+                }, status=500)
+                
+        except Exception as api_error:
+            update_duration = (timezone.now() - update_start_time).total_seconds()
+            logger.error(f'환율 업데이트 API 오류: {api_error}', exc_info=True)
             return JsonResponse({
                 'success': False,
-                'error': '환율 업데이트 실패',
-                'details': 'API에서 데이터를 가져올 수 없습니다.',
-                'timestamp': timezone.now().isoformat()
+                'error': '환율 업데이트 중 오류 발생',
+                'details': str(api_error),
+                'source': source,
+                'timestamp': timezone.now().isoformat(),
+                'processing_time': f'{update_duration:.2f}s'
             }, status=500)
             
     except Exception as e:
-        logger.error(f'웹훅 처리 중 오류: {e}', exc_info=True)
+        total_duration = (timezone.now() - start_time).total_seconds()
+        logger.error(f'웹훅 처리 중 예상치 못한 오류: {e}', exc_info=True)
         return JsonResponse({
             'success': False,
             'error': f'서버 오류: {str(e)}',
-            'timestamp': timezone.now().isoformat()
+            'details': '예상치 못한 오류가 발생했습니다. 서버 로그를 확인하세요.',
+            'timestamp': timezone.now().isoformat(),
+            'processing_time': f'{total_duration:.2f}s'
         }, status=500)
