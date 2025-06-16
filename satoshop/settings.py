@@ -144,11 +144,19 @@ STATICFILES_DIRS = [
 ]
 
 # 정적 파일 저장소 설정 - 해시 기반 캐시 무효화
-# DEBUG 모드에서는 기본 스토리지 사용, 프로덕션에서는 ManifestStaticFilesStorage 사용
-if DEBUG:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-else:
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
+# Django 5.x에서는 STORAGES 설정 사용 (STATICFILES_STORAGE는 deprecated)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"
+        ),
+    },
+}
 
 # 정적 파일 버전 관리 (브라우저 캐시 무효화) - 백업용
 STATIC_VERSION = str(int(time.time()))
