@@ -6,14 +6,25 @@ from django.utils.html import format_html
 from .models import SiteSettings, ExchangeRate
 from .services import UpbitExchangeService
 
-# Django APScheduler 모델들 import
-from django_apscheduler.models import DjangoJob, DjangoJobExecution
+# Django APScheduler 모델들 import (안전하게)
+try:
+    from django_apscheduler.models import DjangoJob, DjangoJobExecution
+    APSCHEDULER_AVAILABLE = True
+except ImportError:
+    APSCHEDULER_AVAILABLE = False
+    DjangoJob = None
+    DjangoJobExecution = None
 
 # Register your models here.
 
-# 기존 Django APScheduler 어드민 등록 해제
-admin.site.unregister(DjangoJob)
-admin.site.unregister(DjangoJobExecution)
+# 기존 Django APScheduler 어드민 등록 해제 (안전하게)
+if APSCHEDULER_AVAILABLE:
+    try:
+        admin.site.unregister(DjangoJob)
+        admin.site.unregister(DjangoJobExecution)
+    except admin.sites.NotRegistered:
+        # 이미 등록되지 않은 경우 무시
+        pass
 
 @admin.register(ExchangeRate)
 class ExchangeRateAdmin(admin.ModelAdmin):
@@ -86,117 +97,120 @@ class ExchangeRateAdmin(admin.ModelAdmin):
         # 환율 데이터 수정 방지
         return False
 
-@admin.register(DjangoJob)
-class DjangoJobAdmin(admin.ModelAdmin):
-    """스케줄 작업 어드민"""
-    
-    list_display = ('id', 'next_run_time', 'job_state_display')
-    list_filter = ('next_run_time', 'job_state')
-    readonly_fields = ('id', 'job_state', 'next_run_time')
-    
-    def job_state_display(self, obj):
-        """작업 상태 표시"""
-        if obj.job_state == 1:
-            return "활성"
-        elif obj.job_state == 0:
-            return "비활성"
-        else:
-            return "알 수 없음"
-    job_state_display.short_description = '상태'
-    
-    def has_add_permission(self, request):
-        # 스케줄 작업은 자동으로 생성되므로 수동 추가 방지
-        return False
-    
-    def has_change_permission(self, request, obj=None):
-        # 스케줄 작업 수정 방지
-        return False
-
-@admin.register(DjangoJobExecution)
-class DjangoJobExecutionAdmin(admin.ModelAdmin):
-    """스케줄 작업 실행 기록 어드민"""
-    
-    list_display = ('job', 'status_display', 'run_time', 'duration_display', 'finished')
-    list_filter = ('status', 'run_time', 'finished')
-    readonly_fields = ('job', 'status', 'run_time', 'duration', 'finished', 'exception', 'traceback')
-    ordering = ('-run_time',)
-    actions = ['cleanup_old_executions']
-    
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('cleanup/', self.admin_site.admin_view(self.cleanup_old_executions_view), name='myshop_djangojobexecution_cleanup'),
-        ]
-        return custom_urls + urls
-    
-    def cleanup_old_executions_view(self, request):
-        """오래된 실행 기록 정리"""
-        try:
-            # 최근 5개를 제외하고 모든 기록 삭제
-            all_executions = DjangoJobExecution.objects.all().order_by('-run_time')
-            if all_executions.count() > 5:
-                old_executions = all_executions[5:]
-                deleted_count = len(old_executions)
-                DjangoJobExecution.objects.filter(
-                    id__in=[exec.id for exec in old_executions]
-                ).delete()
-                messages.success(request, f'{deleted_count}개의 오래된 실행 기록을 삭제했습니다.')
+# Django APScheduler가 사용 가능한 경우에만 등록
+if APSCHEDULER_AVAILABLE and DjangoJob:
+    @admin.register(DjangoJob)
+    class DjangoJobAdmin(admin.ModelAdmin):
+        """스케줄 작업 어드민"""
+        
+        list_display = ('id', 'next_run_time', 'job_state_display')
+        list_filter = ('next_run_time', 'job_state')
+        readonly_fields = ('id', 'job_state', 'next_run_time')
+        
+        def job_state_display(self, obj):
+            """작업 상태 표시"""
+            if obj.job_state == 1:
+                return "활성"
+            elif obj.job_state == 0:
+                return "비활성"
             else:
-                messages.info(request, '삭제할 오래된 실행 기록이 없습니다. (최근 5개 유지)')
-        except Exception as e:
-            messages.error(request, f'실행 기록 정리 중 오류 발생: {str(e)}')
+                return "알 수 없음"
+        job_state_display.short_description = '상태'
         
-        return HttpResponseRedirect(reverse('admin:myshop_djangojobexecution_changelist'))
-    
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['cleanup_url'] = reverse('admin:myshop_djangojobexecution_cleanup')
-        return super().changelist_view(request, extra_context=extra_context)
-    
-    def cleanup_old_executions(self, request, queryset):
-        """선택된 실행 기록들을 삭제하는 액션"""
-        deleted_count = queryset.count()
-        queryset.delete()
-        self.message_user(request, f'{deleted_count}개의 실행 기록을 삭제했습니다.')
-    
-    cleanup_old_executions.short_description = '선택된 실행 기록 삭제'
-    
-    def status_display(self, obj):
-        """실행 상태 표시"""
-        status_map = {
-            'Started': '시작됨',
-            'Executed': '실행됨',
-            'Error': '오류',
-            'Missed': '누락됨',
-        }
-        status = status_map.get(obj.status, obj.status)
+        def has_add_permission(self, request):
+            # 스케줄 작업은 자동으로 생성되므로 수동 추가 방지
+            return False
         
-        # 상태에 따른 색상 적용
-        if obj.status == 'Executed':
-            return format_html('<span style="color: #28a745;">{}</span>', status)
-        elif obj.status == 'Error':
-            return format_html('<span style="color: #dc3545;">{}</span>', status)
-        elif obj.status == 'Started':
-            return format_html('<span style="color: #007bff;">{}</span>', status)
-        else:
-            return format_html('<span style="color: #6c757d;">{}</span>', status)
-    
-    status_display.short_description = '실행 상태'
-    
-    def duration_display(self, obj):
-        """실행 시간 표시"""
-        if obj.duration:
-            return f"{obj.duration:.2f}초"
-        return "-"
-    duration_display.short_description = '실행 시간'
-    
-    def has_add_permission(self, request):
-        # 실행 기록은 자동으로 생성되므로 수동 추가 방지
-        return False
-    
-    def has_change_permission(self, request, obj=None):
-        # 실행 기록 수정 방지
-        return False
+        def has_change_permission(self, request, obj=None):
+            # 스케줄 작업 수정 방지
+            return False
+
+if APSCHEDULER_AVAILABLE and DjangoJobExecution:
+    @admin.register(DjangoJobExecution)
+    class DjangoJobExecutionAdmin(admin.ModelAdmin):
+        """스케줄 작업 실행 기록 어드민"""
+        
+        list_display = ('job', 'status_display', 'run_time', 'duration_display', 'finished')
+        list_filter = ('status', 'run_time', 'finished')
+        readonly_fields = ('job', 'status', 'run_time', 'duration', 'finished', 'exception', 'traceback')
+        ordering = ('-run_time',)
+        actions = ['cleanup_old_executions']
+        
+        def get_urls(self):
+            urls = super().get_urls()
+            custom_urls = [
+                path('cleanup/', self.admin_site.admin_view(self.cleanup_old_executions_view), name='myshop_djangojobexecution_cleanup'),
+            ]
+            return custom_urls + urls
+        
+        def cleanup_old_executions_view(self, request):
+            """오래된 실행 기록 정리"""
+            try:
+                # 최근 5개를 제외하고 모든 기록 삭제
+                all_executions = DjangoJobExecution.objects.all().order_by('-run_time')
+                if all_executions.count() > 5:
+                    old_executions = all_executions[5:]
+                    deleted_count = len(old_executions)
+                    DjangoJobExecution.objects.filter(
+                        id__in=[exec.id for exec in old_executions]
+                    ).delete()
+                    messages.success(request, f'{deleted_count}개의 오래된 실행 기록을 삭제했습니다.')
+                else:
+                    messages.info(request, '삭제할 오래된 실행 기록이 없습니다. (최근 5개 유지)')
+            except Exception as e:
+                messages.error(request, f'실행 기록 정리 중 오류 발생: {str(e)}')
+            
+            return HttpResponseRedirect(reverse('admin:myshop_djangojobexecution_changelist'))
+        
+        def changelist_view(self, request, extra_context=None):
+            extra_context = extra_context or {}
+            extra_context['cleanup_url'] = reverse('admin:myshop_djangojobexecution_cleanup')
+            return super().changelist_view(request, extra_context=extra_context)
+        
+        def cleanup_old_executions(self, request, queryset):
+            """선택된 실행 기록들을 삭제하는 액션"""
+            deleted_count = queryset.count()
+            queryset.delete()
+            self.message_user(request, f'{deleted_count}개의 실행 기록을 삭제했습니다.')
+        
+        cleanup_old_executions.short_description = '선택된 실행 기록 삭제'
+        
+        def status_display(self, obj):
+            """실행 상태 표시"""
+            status_map = {
+                'Started': '시작됨',
+                'Executed': '실행됨',
+                'Error': '오류',
+                'Missed': '누락됨',
+            }
+            status = status_map.get(obj.status, obj.status)
+            
+            # 상태에 따른 색상 적용
+            if obj.status == 'Executed':
+                return format_html('<span style="color: #28a745;">{}</span>', status)
+            elif obj.status == 'Error':
+                return format_html('<span style="color: #dc3545;">{}</span>', status)
+            elif obj.status == 'Started':
+                return format_html('<span style="color: #007bff;">{}</span>', status)
+            else:
+                return format_html('<span style="color: #6c757d;">{}</span>', status)
+        
+        status_display.short_description = '실행 상태'
+        
+        def duration_display(self, obj):
+            """실행 시간 표시"""
+            if obj.duration:
+                return f"{obj.duration:.2f}초"
+            return "-"
+        duration_display.short_description = '실행 시간'
+        
+        def has_add_permission(self, request):
+            # 실행 기록은 자동으로 생성되므로 수동 추가 방지
+            return False
+        
+        def has_change_permission(self, request, obj=None):
+            # 실행 기록 수정 방지
+            return False
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -313,7 +327,10 @@ except:
     pass
 
 # Django APScheduler 모델들의 verbose_name 한글화
-DjangoJob._meta.verbose_name = '스케줄 작업'
-DjangoJob._meta.verbose_name_plural = '스케줄 작업들'
-DjangoJobExecution._meta.verbose_name = '작업 실행 기록'
-DjangoJobExecution._meta.verbose_name_plural = '작업 실행 기록들'
+if APSCHEDULER_AVAILABLE:
+    if DjangoJob:
+        DjangoJob._meta.verbose_name = '스케줄 작업'
+        DjangoJob._meta.verbose_name_plural = '스케줄 작업들'
+    if DjangoJobExecution:
+        DjangoJobExecution._meta.verbose_name = '작업 실행 기록'
+        DjangoJobExecution._meta.verbose_name_plural = '작업 실행 기록들'

@@ -4,7 +4,7 @@
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from commons.storage.models import TemporaryUpload
+from storage.models import TemporaryUpload
 
 
 class Command(BaseCommand):
@@ -58,7 +58,7 @@ class Command(BaseCommand):
             
             for temp_file in expired_files:
                 try:
-                    from commons.storage.utils import delete_file_from_s3
+                    from storage.utils import delete_file_from_s3
                     
                     # S3에서 파일 삭제
                     result = delete_file_from_s3(temp_file.file_path)
