@@ -419,4 +419,12 @@
         font-size: 14px;
         padding: 10px 8px;
     }
+}
+
+/* 토글 네비게이션 사이드바 버튼 숨기기 */
+.toggle-nav-sidebar,
+#toggle-nav-sidebar,
+button.toggle-nav-sidebar,
+.sticky.toggle-nav-sidebar {
+    display: none !important;
 } 
