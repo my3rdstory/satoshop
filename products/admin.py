@@ -86,6 +86,8 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'is_discounted', 'price_display', 'store', 'created_at']
     search_fields = ['title', 'description', 'store__store_name']
     readonly_fields = ['created_at', 'updated_at', 'final_price', 'discount_rate', 'get_options_display']
+    list_per_page = 25  # 페이지당 항목 수 제한으로 성능 개선
+    list_select_related = ['store']  # 스토어 정보 미리 로드
     
     fieldsets = (
         ('기본 정보', {
@@ -114,6 +116,10 @@ class ProductAdmin(admin.ModelAdmin):
         css = {
             'all': ('admin/css/product_image_modal.css',)
         }
+    
+    def get_queryset(self, request):
+        """관리자 쿼리셋 최적화"""
+        return super().get_queryset(request).select_related('store').prefetch_related('options__choices')
     
     def get_price_display_korean(self, obj):
         """가격 표시 방식을 한국어로 표시"""

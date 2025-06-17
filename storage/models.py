@@ -204,10 +204,13 @@ class TemporaryUpload(models.Model):
         verbose_name_plural = '임시 업로드들'
         ordering = ['-uploaded_at']
         indexes = [
-            models.Index(fields=['uploaded_by']),
-            models.Index(fields=['session_key']),
+            models.Index(fields=['uploaded_at']),
             models.Index(fields=['expires_at']),
             models.Index(fields=['is_used']),
+            # 추가 성능 최적화 인덱스
+            models.Index(fields=['uploaded_by']),     # 사용자별 임시 업로드 조회용
+            models.Index(fields=['session_key']),     # 세션별 임시 업로드 조회용
+            models.Index(fields=['expires_at', 'is_used']), # 만료 파일 정리용
         ]
     
     def __str__(self):
@@ -275,6 +278,16 @@ class UploadSession(models.Model):
         verbose_name = '업로드 세션'
         verbose_name_plural = '업로드 세션들'
         ordering = ['-created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['session_id']),     # 세션 ID 조회용 (unique이지만 최적화)
+            models.Index(fields=['user']),           # 사용자별 세션 조회용
+            models.Index(fields=['session_key']),    # 세션키별 조회용
+            models.Index(fields=['status']),         # 상태별 조회용
+            models.Index(fields=['created_at']),     # 정렬용
+            models.Index(fields=['updated_at']),     # 수정일 기반 조회용
+            models.Index(fields=['completed_at']),   # 완료일 기반 조회용
+        ]
     
     def __str__(self):
         return f"세션 {self.session_id} ({self.get_status_display()})"

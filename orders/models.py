@@ -11,6 +11,12 @@ class Cart(models.Model):
     class Meta:
         verbose_name = '장바구니'
         verbose_name_plural = '장바구니들'
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['user']),         # OneToOne 필드 최적화
+            models.Index(fields=['created_at']),   # 관리자 필터링용
+            models.Index(fields=['updated_at']),   # 관리자 필터링 및 정렬용
+        ]
     
     def __str__(self):
         return f"{self.user.username}의 장바구니"
@@ -47,6 +53,15 @@ class CartItem(models.Model):
         verbose_name = '장바구니 아이템'
         verbose_name_plural = '장바구니 아이템들'
         ordering = ['-added_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['cart']),         # 장바구니별 아이템 조회용
+            models.Index(fields=['product']),      # 상품별 장바구니 조회용
+            models.Index(fields=['added_at']),     # 정렬용
+            models.Index(fields=['updated_at']),   # 관리자 정렬용
+            models.Index(fields=['cart', 'added_at']), # 장바구니 아이템 목록용
+            models.Index(fields=['cart', 'product']),  # 중복 체크용
+        ]
     
     def __str__(self):
         return f"{self.cart.user.username} - {self.product.title} x{self.quantity}"
@@ -198,6 +213,13 @@ class OrderItem(models.Model):
         verbose_name = '주문 아이템'
         verbose_name_plural = '주문 아이템들'
         ordering = ['created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['order']),        # 주문별 아이템 조회용
+            models.Index(fields=['product']),      # 상품별 주문 조회용
+            models.Index(fields=['created_at']),   # 정렬용
+            models.Index(fields=['order', 'created_at']), # 주문 아이템 목록용
+        ]
     
     def __str__(self):
         return f"{self.order.order_number} - {self.product_title} x{self.quantity}"
@@ -239,6 +261,9 @@ class PurchaseHistory(models.Model):
         indexes = [
             models.Index(fields=['user', 'purchase_date']),
             models.Index(fields=['auto_delete_at']),
+            models.Index(fields=['user']),           # 사용자별 구매내역 조회용
+            models.Index(fields=['purchase_date']),  # 관리자 필터링용
+            models.Index(fields=['order']),          # OneToOne 필드 최적화
         ]
     
     def __str__(self):

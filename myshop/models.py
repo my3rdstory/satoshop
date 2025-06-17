@@ -302,6 +302,13 @@ class SiteSettings(models.Model):
     class Meta:
         verbose_name = "사이트 설정"
         verbose_name_plural = "사이트 설정"
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['updated_at']),
+            models.Index(fields=['enable_user_registration']),  # 기능 설정 조회용
+            models.Index(fields=['enable_store_creation']),     # 기능 설정 조회용
+        ]
     
     def clean(self):
         """유튜브 비디오 ID 유효성 검사"""

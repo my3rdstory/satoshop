@@ -103,6 +103,8 @@ class StoreAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'created_at', 'deleted_at']
     search_fields = ['store_name', 'store_id', 'owner_name', 'owner__username']
     readonly_fields = ['created_at', 'updated_at', 'get_store_link', 'hero_gradient_css']
+    list_per_page = 25  # 페이지당 항목 수 제한으로 성능 개선
+    list_select_related = ['owner']  # 사용자 정보 미리 로드
     
     fieldsets = (
         ('기본 정보', {
@@ -128,6 +130,10 @@ class StoreAdmin(admin.ModelAdmin):
     )
     
     inlines = [StoreImageInline]
+    
+    def get_queryset(self, request):
+        """관리자 쿼리셋 최적화"""
+        return super().get_queryset(request).select_related('owner')
     
     def get_store_link(self, obj):
         if obj.store_id:

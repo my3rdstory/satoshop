@@ -57,6 +57,14 @@ class Product(models.Model):
         indexes = [
             models.Index(fields=['store', 'is_active']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['store']),          # 스토어별 상품 조회용
+            models.Index(fields=['is_active']),      # 관리자 필터링용
+            models.Index(fields=['is_discounted']),  # 관리자 필터링용
+            models.Index(fields=['price_display']),  # 관리자 필터링용
+            models.Index(fields=['updated_at']),     # 관리자 정렬용
+            models.Index(fields=['store', 'is_active', 'created_at']),  # 스토어 상품 목록용
+            models.Index(fields=['is_active', 'created_at']),           # 전체 활성 상품 목록용
+            models.Index(fields=['store', 'created_at']),               # 관리자용 스토어별 상품
         ]
     
     def __str__(self):
@@ -239,10 +247,17 @@ class ProductOption(models.Model):
         verbose_name = '상품 옵션'
         verbose_name_plural = '상품 옵션들'
         ordering = ['order', 'created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['product']),        # 상품별 옵션 조회용
+            models.Index(fields=['order']),          # 정렬용
+            models.Index(fields=['created_at']),     # 관리자 필터링용
+            models.Index(fields=['product', 'order']), # 상품 옵션 정렬 조회용
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['product', 'name'],
-                name='products_unique_product_option_name'
+                name='unique_option_per_product'
             )
         ]
     
@@ -267,10 +282,18 @@ class ProductOptionChoice(models.Model):
         verbose_name = '상품 옵션 선택지'
         verbose_name_plural = '상품 옵션 선택지들'
         ordering = ['order', 'created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['option']),         # 옵션별 선택지 조회용
+            models.Index(fields=['order']),          # 정렬용
+            models.Index(fields=['created_at']),     # 관리자 필터링용
+            models.Index(fields=['option', 'order']), # 옵션 선택지 정렬 조회용
+            models.Index(fields=['price']),          # 가격 기반 조회용
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['option', 'name'],
-                name='products_unique_option_choice_name'
+                name='unique_choice_per_option'
             )
         ]
     

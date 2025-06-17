@@ -50,6 +50,22 @@ class Store(models.Model):
         verbose_name = "스토어"
         verbose_name_plural = "스토어들"
         ordering = ['-created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            # Django 관리자 필터링용
+            models.Index(fields=['is_active']),
+            models.Index(fields=['deleted_at']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['updated_at']),
+            
+            # 스토어 조회 최적화
+            models.Index(fields=['store_id', 'deleted_at']),  # store_detail 뷰용
+            models.Index(fields=['owner', 'deleted_at']),     # 사용자별 스토어 조회용
+            models.Index(fields=['is_active', 'deleted_at']), # 활성 스토어 조회용
+            
+            # 복합 인덱스
+            models.Index(fields=['is_active', 'deleted_at', 'created_at']),  # 홈페이지 스토어 목록용
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=['owner'],
@@ -220,6 +236,13 @@ class StoreCreationStep(models.Model):
     class Meta:
         verbose_name = "스토어 생성 단계"
         verbose_name_plural = "스토어 생성 단계들"
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['store']),      # OneToOne 필드 최적화
+            models.Index(fields=['current_step']), # 관리자 필터링용
+            models.Index(fields=['created_at']),
+            models.Index(fields=['updated_at']),
+        ]
     
     def __str__(self):
         return f"{self.store.store_name} - 단계 {self.current_step}"
@@ -247,6 +270,14 @@ class ReservedStoreId(models.Model):
         verbose_name = "스토어 아이디 예약어"
         verbose_name_plural = "스토어 아이디 예약어들"
         ordering = ['keyword']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['keyword']),    # 이미 unique이지만 조회 최적화용
+            models.Index(fields=['is_active']),  # 관리자 필터링용
+            models.Index(fields=['created_at']), # 관리자 필터링용
+            models.Index(fields=['created_by']), # 관리자별 예약어 조회용
+            models.Index(fields=['is_active', 'keyword']), # is_reserved 메서드 최적화용
+        ]
     
     def __str__(self):
         return self.keyword

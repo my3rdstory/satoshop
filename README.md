@@ -663,3 +663,30 @@ SOFTWARE.
 ---
 
 **⚡ 비트코인 라이트닝 네트워크로 더 빠르고 저렴한 전자상거래를 경험해보세요!**
+
+## 성능 최적화
+
+### 데이터베이스 인덱스 최적화
+프로젝트의 모든 모델에 성능 최적화를 위한 인덱스가 설정되어 있습니다:
+
+- **stores 앱**: Store, StoreCreationStep, ReservedStoreId 모델 최적화
+- **products 앱**: Product, ProductOption, ProductOptionChoice 모델 최적화  
+- **orders 앱**: Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice 모델 최적화
+- **myshop 앱**: SiteSettings, ExchangeRate 모델 최적화
+- **storage 앱**: Attachment, TemporaryUpload, UploadSession 모델 최적화
+
+### Django 관리자 최적화
+- `list_select_related` 및 `prefetch_related` 사용으로 N+1 쿼리 문제 해결
+- 페이지당 항목 수 제한으로 성능 개선
+- 인덱스 기반 필터링 및 검색 성능 향상
+
+### 모니터링 권장사항
+```bash
+# 느린 쿼리 모니터링 (Django Debug Toolbar 사용 권장)
+pip install django-debug-toolbar
+
+# 데이터베이스 쿼리 분석
+python manage.py shell
+>>> from django.db import connection
+>>> print(connection.queries)
+```
