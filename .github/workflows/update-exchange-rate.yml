@@ -2,8 +2,8 @@ name: 환율 자동 업데이트 (웹훅 방식)
 
 on:
   schedule:
-    # 5분마다 실행 (UTC 기준)
-    - cron: '*/5 * * * *'
+    # 10분마다 실행 (UTC 기준)
+    - cron: '*/10 * * * *'
   workflow_dispatch: # 수동 실행 버튼
     inputs:
       force_run:
