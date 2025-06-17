@@ -25,9 +25,13 @@
 <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
 <!-- 어드민 커스텀 CSS -->
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/admin_toggle.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'admin/css/product_image_modal.css' %}">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% endblock %}
 
 {% block footer %}
 {{ block.super }}
 <script src="{% static 'admin/js/admin_toggle.js' %}"></script>
+<script src="{% static 'admin/js/product_image_modal.js' %}"></script>
 {% endblock %} 

@@ -163,7 +163,7 @@
 .sidebar ul li a,
 #navigation ul li a,
 .navigation ul li a {
-    padding: 4px 16px 4px 12px !important;
+    padding: 4px 16px 4px 16px !important;
     margin: 0 !important;
     line-height: 1.1 !important;
     font-size: 13px !important;
@@ -193,7 +193,7 @@
     margin: 0 !important;
     margin-bottom: 0 !important;
     margin-top: 0 !important;
-    padding: 6px 12px !important;
+    padding: 6px 16px !important;
     line-height: 1.2 !important;
 }
 
@@ -233,7 +233,7 @@
 .sidebar th,
 #navigation th,
 .navigation th {
-    padding: 3px 12px !important;
+    padding: 3px 16px !important;
     margin: 0 !important;
     line-height: 1.1 !important;
     font-size: 13px !important;

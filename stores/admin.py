@@ -11,19 +11,22 @@ class StoreImageInline(admin.TabularInline):
     """스토어 이미지 인라인 어드민"""
     model = StoreImage
     extra = 0  # 빈 폼 0개
-    readonly_fields = ('image_preview', 'file_size_display', 'uploaded_at', 'uploaded_by')
-    fields = ('image_preview', 'original_name', 'file_size_display', 'width', 'height', 'order', 'uploaded_at', 'uploaded_by')
+    readonly_fields = ('view_image_button', 'file_size_display', 'uploaded_at', 'uploaded_by')
+    fields = ('view_image_button', 'original_name', 'file_size_display', 'width', 'height', 'order', 'uploaded_at', 'uploaded_by')
     ordering = ('order', 'uploaded_at')
     
-    def image_preview(self, obj):
-        """이미지 미리보기"""
+    def view_image_button(self, obj):
+        """이미지 보기 버튼 (모달 방식)"""
         if obj and obj.file_url:
             return format_html(
-                '<img src="{}" style="width: 100px; height: 56px; object-fit: cover; border-radius: 4px;" />',
-                obj.file_url
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
+                '<i class="fas fa-eye"></i> 이미지 보기'
+                '</button>',
+                obj.file_url,
+                obj.original_name
             )
         return "이미지 없음"
-    image_preview.short_description = '미리보기'
+    view_image_button.short_description = '이미지 보기'
     
     def file_size_display(self, obj):
         """파일 크기 표시"""
@@ -36,7 +39,7 @@ class StoreImageInline(admin.TabularInline):
 @admin.register(StoreImage)
 class StoreImageAdmin(admin.ModelAdmin):
     """스토어 이미지 어드민"""
-    list_display = ('store', 'original_name', 'image_preview', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
+    list_display = ('store', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
     list_filter = ('uploaded_at', 'store')
     search_fields = ('store__store_name', 'store__store_id', 'original_name')
     readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
@@ -60,8 +63,21 @@ class StoreImageAdmin(admin.ModelAdmin):
         }),
     )
     
+    def view_image_button(self, obj):
+        """이미지 보기 버튼 (모달 방식)"""
+        if obj and obj.file_url:
+            return format_html(
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
+                '<i class="fas fa-eye"></i> 이미지 보기'
+                '</button>',
+                obj.file_url,
+                obj.original_name
+            )
+        return "이미지 없음"
+    view_image_button.short_description = '이미지 보기'
+    
     def image_preview(self, obj):
-        """이미지 미리보기 (큰 크기)"""
+        """이미지 미리보기 (상세 페이지에서만 사용)"""
         if obj and obj.file_url:
             return format_html(
                 '<img src="{}" style="max-width: 300px; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd;" />',

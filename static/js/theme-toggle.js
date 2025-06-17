@@ -1,35 +1,78 @@
-// 테마 전환 기능
-(function() {
-    'use strict';
-    
-    // DOM 요소
-    const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = document.getElementById('theme-icon');
-    const html = document.documentElement;
-    
-    // 현재 테마 확인
-    function getCurrentTheme() {
-        return localStorage.getItem('theme') || 'light';
+// 완전히 새로운 테마 전환 시스템
+class ThemeManager {
+    constructor() {
+        this.currentTheme = this.getStoredTheme() || this.getSystemTheme();
+        this.isInitialized = false;
+        this.init();
     }
-    
+
+    // 저장된 테마 가져오기
+    getStoredTheme() {
+        try {
+            return localStorage.getItem('theme');
+        } catch (e) {
+            console.warn('localStorage 접근 실패:', e);
+            return null;
+        }
+    }
+
+    // 시스템 테마 감지
+    getSystemTheme() {
+        try {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        } catch (e) {
+            return 'light';
+        }
+    }
+
+    // 테마 저장
+    saveTheme(theme) {
+        try {
+            localStorage.setItem('theme', theme);
+        } catch (e) {
+            console.warn('localStorage 저장 실패:', e);
+        }
+    }
+
     // 테마 적용
-    function applyTheme(theme) {
-        // Tailwind CSS 다크모드 클래스 적용
+    applyTheme(theme) {
+        const html = document.documentElement;
+        const body = document.body;
+
+        // 클래스 제거
+        html.classList.remove('dark', 'light');
+        body.classList.remove('dark', 'light');
+
+        // 새 클래스 추가
         if (theme === 'dark') {
             html.classList.add('dark');
-            document.body.classList.add('dark');
+            body.classList.add('dark');
         } else {
-            html.classList.remove('dark');
-            document.body.classList.remove('dark');
+            html.classList.add('light');
+            body.classList.add('light');
         }
-        
-        // 기존 data-theme 속성도 유지 (호환성)
+
+        // data-theme 속성 설정 (호환성)
         html.setAttribute('data-theme', theme);
-        document.body.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        
-        // 아이콘 업데이트 (플로팅 버튼)
-        if (themeIcon) {
+        body.setAttribute('data-theme', theme);
+
+        // 테마 저장
+        this.saveTheme(theme);
+        this.currentTheme = theme;
+
+        // 플로팅 버튼 업데이트
+        this.updateFloatingButton(theme);
+
+        // 메뉴 아이템 업데이트
+        this.updateMenuItems(theme);
+    }
+
+    // 플로팅 버튼 업데이트
+    updateFloatingButton(theme) {
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+
+        if (themeToggle && themeIcon) {
             if (theme === 'dark') {
                 themeIcon.className = 'fas fa-sun';
                 themeToggle.title = '라이트 모드로 전환';
@@ -38,115 +81,102 @@
                 themeToggle.title = '다크 모드로 전환';
             }
         }
-        
-        // 기존 네비게이션 메뉴 아이템들 업데이트
-        updateThemeMenuItems(theme);
     }
-    
-    // 테마 메뉴 아이템들 업데이트 (기존 코드와 호환)
-    function updateThemeMenuItems(theme) {
-        const themeMenuItems = document.querySelectorAll('.theme-toggle-menu-item');
-        themeMenuItems.forEach(menuItem => {
-            const sunIcon = menuItem.querySelector('.theme-sun-icon');
-            const moonIcon = menuItem.querySelector('.theme-moon-icon');
-            const themeText = menuItem.querySelector('.theme-text');
+
+    // 메뉴 아이템들 업데이트
+    updateMenuItems(theme) {
+        const menuItems = document.querySelectorAll('.theme-toggle-menu-item');
+        
+        menuItems.forEach(item => {
+            const sunIcon = item.querySelector('.theme-sun-icon');
+            const moonIcon = item.querySelector('.theme-moon-icon');
+            const text = item.querySelector('.theme-text');
 
             if (theme === 'dark') {
-                // 현재 다크모드이므로 라이트모드로 전환 가능함을 표시
+                // 다크 모드 → 라이트 모드로 변경 가능
                 if (sunIcon) sunIcon.style.display = 'inline-block';
                 if (moonIcon) moonIcon.style.display = 'none';
-                if (themeText) themeText.textContent = '라이트 모드로';
+                if (text) text.textContent = '라이트 모드로';
             } else {
-                // 현재 라이트모드이므로 다크모드로 전환 가능함을 표시
+                // 라이트 모드 → 다크 모드로 변경 가능
                 if (sunIcon) sunIcon.style.display = 'none';
                 if (moonIcon) moonIcon.style.display = 'inline-block';
-                if (themeText) themeText.textContent = '다크 모드로';
+                if (text) text.textContent = '다크 모드로';
             }
         });
     }
-    
-    // 테마 전환 (디바운싱 추가)
-    let isToggling = false;
-    function toggleTheme() {
-        if (isToggling) return; // 이미 처리 중이면 무시
-        isToggling = true;
-        
-        const currentTheme = getCurrentTheme();
-        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        applyTheme(newTheme);
-        
-        // 500ms 후 다시 클릭 가능하도록 설정
-        setTimeout(() => {
-            isToggling = false;
-        }, 500);
+
+    // 테마 토글
+    toggle() {
+        const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        this.applyTheme(newTheme);
     }
-    
-    // 초기 테마 설정
-    function initTheme() {
-        const savedTheme = getCurrentTheme();
+
+    // 초기화
+    init() {
+        if (this.isInitialized) return;
         
-        // 시스템 다크 모드 감지 (저장된 설정이 없는 경우)
-        if (!localStorage.getItem('theme')) {
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const systemTheme = prefersDark ? 'dark' : 'light';
-            applyTheme(systemTheme);
-        } else {
-            applyTheme(savedTheme);
-        }
+        // 초기 테마 적용
+        this.applyTheme(this.currentTheme);
         
-        // 초기화 후 메뉴 아이템들을 한 번 더 업데이트
-        setTimeout(() => {
-            updateThemeMenuItems(getCurrentTheme());
-        }, 100);
+        // 시스템 테마 변경 감지
+        this.watchSystemTheme();
+        
+        this.isInitialized = true;
     }
-    
+
     // 시스템 테마 변경 감지
-    function watchSystemTheme() {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        
-        mediaQuery.addEventListener('change', (e) => {
-            // 사용자가 수동으로 설정한 테마가 없는 경우에만 시스템 테마 따라감
-            if (!localStorage.getItem('theme')) {
-                const systemTheme = e.matches ? 'dark' : 'light';
-                applyTheme(systemTheme);
-            }
-        });
-    }
-    
-    // 이벤트 리스너 등록
-    function initEventListeners() {
-        if (themeToggle) {
-            themeToggle.addEventListener('click', toggleTheme);
-            
-            // 키보드 접근성
-            themeToggle.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleTheme();
+    watchSystemTheme() {
+        try {
+            const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            mediaQuery.addEventListener('change', (e) => {
+                // 사용자가 수동으로 설정하지 않은 경우에만 시스템 테마 따라감
+                if (!this.getStoredTheme()) {
+                    const systemTheme = e.matches ? 'dark' : 'light';
+                    this.applyTheme(systemTheme);
                 }
             });
+        } catch (e) {
+            console.warn('시스템 테마 감지 실패:', e);
         }
     }
-    
-    // 초기화
-    function init() {
-        initTheme();
-        initEventListeners();
-        watchSystemTheme();
+}
+
+// 전역 인스턴스 생성
+let themeManager;
+
+// DOM 로드 완료 후 초기화
+function initThemeSystem() {
+    if (!themeManager) {
+        themeManager = new ThemeManager();
     }
-    
-    // DOM 로드 완료 후 실행
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+}
+
+// 전역 함수 (하위 호환성)
+window.toggleTheme = function() {
+    if (!themeManager) {
+        initThemeSystem();
     }
-    
-    // 전역 함수로 노출 (기존 코드와 호환)
-    window.toggleTheme = toggleTheme;
-    window.themeToggle = {
-        getCurrentTheme,
-        applyTheme,
-        toggleTheme
-    };
-})(); 
+    themeManager.toggle();
+};
+
+// 다양한 초기화 시점 지원
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initThemeSystem);
+} else {
+    initThemeSystem();
+}
+
+// 추가 안전장치
+window.addEventListener('load', function() {
+    if (!themeManager) {
+        initThemeSystem();
+    }
+});
+
+// 전역 접근용 (디버깅/테스트용)
+window.themeManager = {
+    get current() { return themeManager?.currentTheme || 'light'; },
+    toggle: () => window.toggleTheme(),
+    apply: (theme) => themeManager?.applyTheme(theme)
+}; 
