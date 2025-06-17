@@ -256,7 +256,7 @@
 .sidebar,
 #navigation,
 .navigation {
-    padding: 4px 0 !important;
+    padding: 8px 8px 4px 8px !important;
 }
 
 /* Django 기본 여백 완전 제거 */
