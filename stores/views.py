@@ -100,7 +100,11 @@ def create_store_step(request, step):
         'store': store,
     }
     
-
+    # 3단계에서 블링크 API 문서 링크 추가
+    if step == 3:
+        from myshop.models import SiteSettings
+        site_settings = SiteSettings.get_settings()
+        context['blink_api_doc_url'] = site_settings.blink_api_doc_url
     
     return render(request, f'stores/create_step{step}.html', context)
 
@@ -457,6 +461,10 @@ def edit_api_settings(request, store_id):
     """블링크 API 설정 편집"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     
+    # 사이트 설정에서 블링크 API 문서 링크 가져오기
+    from myshop.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+    
     # 기존 API 정보 확인
     has_existing_api_info = bool(store.blink_api_info_encrypted)
     has_existing_wallet_id = bool(store.blink_wallet_id_encrypted)
@@ -508,6 +516,7 @@ def edit_api_settings(request, store_id):
                 'has_existing_wallet_id': has_existing_wallet_id,
                 'masked_api_info': masked_api_info,
                 'masked_wallet_id': masked_wallet_id,
+                'blink_api_doc_url': site_settings.blink_api_doc_url,
             })
         
         if has_existing_wallet_id and not blink_wallet_id:
@@ -526,6 +535,7 @@ def edit_api_settings(request, store_id):
                 'has_existing_wallet_id': has_existing_wallet_id,
                 'masked_api_info': masked_api_info,
                 'masked_wallet_id': masked_wallet_id,
+                'blink_api_doc_url': site_settings.blink_api_doc_url,
             })
         
         # 저장
@@ -551,6 +561,7 @@ def edit_api_settings(request, store_id):
         'has_existing_wallet_id': has_existing_wallet_id,
         'masked_api_info': masked_api_info,
         'masked_wallet_id': masked_wallet_id,
+        'blink_api_doc_url': site_settings.blink_api_doc_url,
     })
 
 @login_required

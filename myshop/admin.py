@@ -74,6 +74,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             ),
             'description': 'Google Analytics, Open Graph 메타태그 및 파비콘 설정'
         }),
+        ('블링크 API 설정', {
+            'fields': ('blink_api_doc_url',),
+            'description': '스토어 생성 시 사용자에게 제공되는 블링크 API 관련 문서 링크'
+        }),
         ('환율 설정', {
             'fields': ('exchange_rate_update_interval',),
             'description': 'GitHub Actions에서 환율을 자동 업데이트하는 간격을 설정합니다.'

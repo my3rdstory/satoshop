@@ -288,6 +288,13 @@ class SiteSettings(models.Model):
         help_text="사이트 파비콘 이미지 경로 (16x16, 32x32 권장, PNG 형식, 예: /static/images/favicon.png 또는 https://example.com/favicon.png)"
     )
     
+    # 블링크 API 설정
+    blink_api_doc_url = models.URLField(
+        default="#",
+        verbose_name="블링크 API 문서 링크",
+        help_text="스토어 생성 시 블링크 API 정보 얻는 방법 문서 링크"
+    )
+    
     # 환율 API 설정
     exchange_rate_update_interval = models.PositiveIntegerField(
         default=10,
