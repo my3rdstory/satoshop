@@ -344,47 +344,85 @@
     font-weight: bold;
 }
 
-/* 현재 활성 메뉴 스타일 */
-#nav-sidebar a.active,
-#nav-sidebar a.current,
-.sidebar a.active,
-.sidebar a.current {
-    background-color: #007cba !important;
-    color: white !important;
-    font-weight: bold;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 124, 186, 0.3);
-}
-
-/* 활성 메뉴의 부모 li 스타일 */
+/* 활성 메뉴의 부모 요소 스타일 (li 기반 메뉴용) */
+li.active,
+li.current,
+.model.active,
+.model.current,
 #nav-sidebar li.active,
 #nav-sidebar li.current,
 .sidebar li.active,
-.sidebar li.current {
-    background-color: rgba(0, 123, 186, 0.1);
-    border-radius: 4px;
+.sidebar li.current,
+.app li.active,
+.app li.current,
+.module li.active,
+.module li.current,
+.app-list li.active,
+.app-list li.current,
+.model-list li.active,
+.model-list li.current {
+    background-color: rgba(0, 124, 186, 0.2) !important;
+    border-radius: 4px !important;
+    margin: 1px 0 !important;
 }
 
-/* 활성 메뉴 호버 효과 */
-#nav-sidebar a.active:hover,
-#nav-sidebar a.current:hover,
-.sidebar a.active:hover,
-.sidebar a.current:hover {
-    background-color: #005a87 !important;
+/* 테이블 기반 메뉴의 tr 활성 스타일 */
+#nav-sidebar tr.current-model,
+.sidebar tr.current-model,
+#navigation tr.current-model,
+.navigation tr.current-model,
+#nav-sidebar tr.active,
+.sidebar tr.active,
+#navigation tr.active,
+.navigation tr.active,
+tr.current-model,
+tr.active {
+    background-color: rgba(0, 124, 186, 0.2) !important;
+    border-radius: 4px !important;
+    margin: 1px 0 !important;
 }
 
-/* 메뉴 링크 일반 스타일 개선 */
-#nav-sidebar a,
-.sidebar a {
-    transition: all 0.2s ease;
-    border-radius: 3px;
-    margin: 1px 0;
+/* 활성 tr 내부의 th, td 요소는 배경색 제거하여 tr 배경이 보이도록 */
+#nav-sidebar tr.current-model th,
+#nav-sidebar tr.current-model td,
+.sidebar tr.current-model th,
+.sidebar tr.current-model td,
+#navigation tr.current-model th,
+#navigation tr.current-model td,
+#nav-sidebar tr.active th,
+#nav-sidebar tr.active td,
+.sidebar tr.active th,
+.sidebar tr.active td,
+#navigation tr.active th,
+#navigation tr.active td,
+tr.current-model th,
+tr.current-model td,
+tr.active th,
+tr.active td {
+    background-color: transparent !important;
+    border-radius: 0 !important;
 }
 
-#nav-sidebar a:hover,
-.sidebar a:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    transform: translateX(2px);
+/* 현재 활성 메뉴 링크 스타일 (텍스트만 강조) */
+a.active,
+a.current,
+#nav-sidebar a.active,
+#nav-sidebar a.current,
+.sidebar a.active,
+.sidebar a.current,
+.app a.active,
+.app a.current,
+.module a.active,
+.module a.current,
+.app-list a.active,
+.app-list a.current,
+.model-list a.active,
+.model-list a.current {
+    background-color: transparent !important;
+    color: #51719e !important;
+    font-weight: bold !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 /* 로딩 애니메이션 */
@@ -426,5 +464,33 @@
 #toggle-nav-sidebar,
 button.toggle-nav-sidebar,
 .sticky.toggle-nav-sidebar {
+    display: none !important;
+}
+
+/* 현재 활성 메뉴 스타일 (배경색 제거, 텍스트만 강조) */
+#nav-sidebar a.active:hover,
+#nav-sidebar a.current:hover,
+.sidebar a.active:hover,
+.sidebar a.current:hover,
+a.active:hover,
+
+/* 메뉴 링크 일반 스타일 개선 */
+#nav-sidebar a,
+.sidebar a {
+    transition: all 0.2s ease;
+    border-radius: 3px;
+    margin: 1px 0;
+}
+
+#nav-sidebar a:hover,
+.sidebar a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+/* 기존 Django 어드민 테마 토글 버튼 숨기기 */
+#user-tools .theme-toggle,
+.theme-toggle,
+button.theme-toggle {
     display: none !important;
 } 

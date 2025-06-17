@@ -3,20 +3,6 @@
 
 {% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
 
-{% block branding %}
-<h1 id="site-name">
-  <a href="{% url 'admin:index' %}">
-    {% if site_settings and site_settings.admin_site_header %}
-      {{ site_settings.admin_site_header }}
-    {% else %}
-      SatoShop 관리자
-    {% endif %}
-  </a>
-</h1>
-{% endblock %}
-
-{% block nav-global %}{% endblock %}
-
 {% block extrahead %}
 {{ block.super }}
 <!-- 파비콘 -->
@@ -28,10 +14,56 @@
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/product_image_modal.css' %}">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* 테마 토글 버튼 스타일 */
+    #theme-toggle {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: #417690;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        color: white;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    #theme-toggle:hover {
+        background: #2b5266;
+        transform: scale(1.1);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    }
+    
+    #theme-toggle i {
+        font-size: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a>
+</h1>
+{% endblock %}
+
+{% block usertools %}
+{{ block.super }}
+<!-- 테마 토글 버튼 -->
+<button id="theme-toggle" onclick="toggleTheme()" title="테마 전환">
+    <i id="theme-icon" class="fas fa-moon"></i>
+</button>
 {% endblock %}
 
 {% block footer %}
 {{ block.super }}
+<script src="{% static 'js/theme-toggle.js' %}"></script>
 <script src="{% static 'admin/js/admin_toggle.js' %}"></script>
 <script src="{% static 'admin/js/product_image_modal.js' %}"></script>
 {% endblock %} 

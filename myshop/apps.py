@@ -5,7 +5,7 @@ from django.contrib import admin
 class MyshopConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'myshop'
-    verbose_name = '1. 사이트 설정'
+    verbose_name = '사이트 설정'
     
     def ready(self):
         # 어드민 사이트 설정을 동적으로 로드
