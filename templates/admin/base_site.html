@@ -6,9 +6,9 @@
 {% block extrahead %}
 {{ block.super }}
 <!-- 파비콘 -->
-<link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-<link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-<link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+<link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+<link rel="shortcut icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+<link rel="apple-touch-icon" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
 <!-- 어드민 커스텀 CSS -->
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/admin_toggle.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/product_image_modal.css' %}">

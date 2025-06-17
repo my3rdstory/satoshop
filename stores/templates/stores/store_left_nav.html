@@ -3,12 +3,12 @@
 <div class="flex items-center space-x-4">
   {% if user.is_authenticated and user == store.owner %}
   <!-- 스토어 소유자만 상품 관리 링크 표시 -->
-  <a href="{% url 'stores:product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+  <a href="{% url 'stores:product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
     <i class="fas fa-shopping-cart mr-2"></i> 상품관리
   </a>
   {% else %}
   <!-- 일반 고객에게는 상품 보기 링크 표시 -->
-  <a href="{% url 'products:public_product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+  <a href="{% url 'products:public_product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
     <i class="fas fa-shopping-cart mr-2"></i> 상품보기
   </a>
   {% endif %}

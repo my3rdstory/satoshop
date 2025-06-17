@@ -3,7 +3,7 @@
   <div class="flex justify-between items-center h-16">
     <!-- 브랜드 로고 -->
     <div class="flex items-center">
-      <a class="flex items-center space-x-2 text-gray-900 dark:text-white hover:text-bitcoin transition-colors" href="{% url 'myshop:home' %}?force_home=1">
+      <a class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors" href="{% url 'myshop:home' %}?force_home=1">
         {% if site_settings and site_settings.site_logo_url %}
           <img src="{{ site_settings.site_logo_url }}" alt="{% if site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}" class="h-8 w-auto">
         {% else %}
@@ -15,14 +15,14 @@
             {% endif %}
           </strong>
         {% endif %}
-        <span class="bg-gray-800 dark:bg-gray-200 text-white dark:text-gray-800 text-xs px-2 py-1 rounded">Hub</span>
+        <span class="bg-gray-700 text-white text-xs px-2 py-1 rounded">Hub</span>
       </a>
     </div>
 
     <!-- 데스크톱 네비게이션 -->
     <div class="hidden md:flex items-center space-x-8">
       <!-- Left Navigation - 플랫폼 탐색 -->
-      <a class="text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'stores:browse_stores' %}">
+      <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'stores:browse_stores' %}">
         <i class="fas fa-search mr-2"></i>스토어 탐색
       </a>
 
@@ -31,16 +31,16 @@
         {% if user.is_authenticated %}
         <!-- 사용자 드롭다운 -->
         <div class="relative group">
-          <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors">
+          <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
             <i class="fas fa-user mr-2"></i>{{ user.username }}님
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'accounts:mypage' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="{% url 'accounts:mypage' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-user-cog mr-2"></i>마이페이지
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
             </a>
           </div>
@@ -49,27 +49,27 @@
         {% if user_has_active_store and user_active_store.is_active %}
         <!-- 스토어 관리 드롭다운 -->
         <div class="relative group">
-          <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors">
+          <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
             <i class="fas fa-cog mr-2"></i>스토어 관리
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-box mr-2"></i>상품관리
             </a>
-            <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-shopping-cart mr-2"></i>주문관리
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-store mr-2"></i>스토어 관리
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-eye mr-2"></i>내 스토어 보기
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
@@ -81,16 +81,16 @@
         {% else %}
         <!-- 설정 드롭다운 -->
         <div class="relative group">
-          <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors">
+          <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
             <i class="fas fa-cog mr-2"></i>설정
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'stores:create_store' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="{% url 'stores:create_store' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-plus mr-2"></i>스토어 만들기
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
@@ -104,23 +104,23 @@
         {% else %}
         <!-- 비로그인 사용자 메뉴 -->
         <div class="relative group">
-          <button class="flex items-center text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors">
+          <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
             <i class="fas fa-cog mr-2"></i>설정
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
                 <span class="theme-text">다크 모드로</span>
               </span>
             </a>
-            <div class="border-t border-gray-100 dark:border-gray-600"></div>
-            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-user-plus mr-2"></i>회원가입
             </a>
-            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
               <i class="fas fa-sign-in-alt mr-2"></i>로그인
             </a>
           </div>
@@ -131,53 +131,53 @@
 
     <!-- 모바일 메뉴 버튼 -->
     <div class="md:hidden">
-      <button id="mobile-menu-button" class="flex items-center justify-center w-12 h-12 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-200 dark:active:bg-gray-600 touch-manipulation">
+      <button id="mobile-menu-button" class="flex items-center justify-center w-12 h-12 text-gray-300 hover:text-bitcoin hover:bg-gray-800 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700 touch-manipulation">
         <i class="fas fa-bars text-xl pointer-events-none"></i>
       </button>
     </div>
   </div>
 
   <!-- 모바일 메뉴 -->
-  <div id="mobile-menu" class="md:hidden hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+  <div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
     <div class="px-2 pt-2 pb-3 space-y-1">
-      <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-search mr-2"></i>스토어 탐색
       </a>
       
       {% if user.is_authenticated %}
-      <a href="{% url 'accounts:mypage' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'accounts:mypage' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-user-cog mr-2"></i>마이페이지
       </a>
       
       {% if user_has_active_store and user_active_store.is_active %}
-      <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-box mr-2"></i>상품관리
       </a>
-      <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-shopping-cart mr-2"></i>주문관리
       </a>
-      <a href="{% url 'stores:my_stores' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'stores:my_stores' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-store mr-2"></i>스토어 관리
       </a>
       {% else %}
-      <a href="{% url 'stores:create_store' %}" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="{% url 'stores:create_store' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-plus mr-2"></i>스토어 만들기
       </a>
       {% endif %}
       
-      <a href="#" onclick="logout()" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="#" onclick="logout()" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
       </a>
       {% else %}
-      <a href="#" onclick="redirectToSignup()" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="#" onclick="redirectToSignup()" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-user-plus mr-2"></i>회원가입
       </a>
-      <a href="#" onclick="redirectToLogin()" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="#" onclick="redirectToLogin()" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-sign-in-alt mr-2"></i>로그인
       </a>
       {% endif %}
       
-      <a href="#" onclick="toggleTheme(); return false;" class="block px-3 py-2 text-gray-700 dark:text-gray-300 hover:text-bitcoin hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md">
+      <a href="#" onclick="toggleTheme(); return false;" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <span class="theme-toggle-menu-item">
           <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
           <i class="fas fa-moon theme-moon-icon mr-2"></i>
