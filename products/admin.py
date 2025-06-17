@@ -86,7 +86,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'is_discounted', 'price_display', 'store', 'created_at']
     search_fields = ['title', 'description', 'store__store_name']
     readonly_fields = ['created_at', 'updated_at', 'final_price', 'discount_rate', 'get_options_display']
-    list_per_page = 25  # 페이지당 항목 수 제한으로 성능 개선
+    list_per_page = 10  # 페이지당 항목 수 제한으로 성능 개선
     list_select_related = ['store']  # 스토어 정보 미리 로드
     
     fieldsets = (
@@ -178,6 +178,7 @@ class ProductOptionAdmin(admin.ModelAdmin):
     list_display = ['product', 'name', 'get_choices_count', 'order', 'created_at']
     list_filter = ['product__store', 'created_at']
     search_fields = ['name', 'product__title']
+    list_per_page = 10
     
     inlines = [ProductOptionChoiceInline]
     
@@ -192,6 +193,7 @@ class ProductOptionChoiceAdmin(admin.ModelAdmin):
     list_display = ['get_product', 'get_option_name', 'name', 'price', 'order', 'created_at']
     list_filter = ['option__product__store', 'created_at', 'option__name']
     search_fields = ['name', 'option__name', 'option__product__title']
+    list_per_page = 10
     
     def get_product(self, obj):
         """상품명 표시"""
@@ -232,17 +234,17 @@ class ProductImageAdmin(admin.ModelAdmin):
     )
     
     def view_image_button(self, obj):
-        """이미지 보기 버튼 (모달 방식)"""
+        """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
         if obj and obj.file_url:
             return format_html(
-                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
-                '<i class="fas fa-eye"></i> 이미지 보기'
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
+                '<i class="fas fa-eye"></i>'
                 '</button>',
                 obj.file_url,
                 obj.original_name
             )
         return "이미지 없음"
-    view_image_button.short_description = '이미지 보기'
+    view_image_button.short_description = '이미지'
     
     def image_preview(self, obj):
         """이미지 미리보기 (상세 페이지에서만 사용)"""

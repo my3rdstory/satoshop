@@ -85,6 +85,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ('created_at', 'updated_at')
+    list_per_page = 10
     
     def has_add_permission(self, request):
         # 사이트 설정은 하나만 존재해야 하므로 추가 방지
@@ -94,71 +95,75 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         # 사이트 설정 삭제 방지
         return False
 
-@admin.register(ExchangeRate)
-class ExchangeRateAdmin(admin.ModelAdmin):
-    """환율 데이터 어드민"""
-    
-    list_display = ('btc_krw_rate', 'created_at', 'rate_change_display')
-    list_filter = ('created_at',)
-    readonly_fields = ('created_at', 'api_response_data')
-    ordering = ('-created_at',)
-    
     def get_urls(self):
+        """커스텀 URL 추가"""
         urls = super().get_urls()
         custom_urls = [
-            path('update-rate/', self.admin_site.admin_view(self.update_exchange_rate), name='myshop_exchangerate_update'),
+            path('update-exchange-rate/', self.admin_site.admin_view(self.update_exchange_rate), name='update_exchange_rate'),
         ]
         return custom_urls + urls
-    
+
     def update_exchange_rate(self, request):
-        """수동으로 환율 업데이트"""
+        """환율 업데이트 액션"""
         try:
-            exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
-            if exchange_rate:
-                messages.success(request, f'환율 업데이트 성공: 1 BTC = {exchange_rate.btc_krw_rate:,} KRW')
-            else:
-                messages.error(request, '환율 업데이트 실패: API에서 데이터를 가져올 수 없습니다.')
-        except Exception as e:
-            messages.error(request, f'환율 업데이트 중 오류 발생: {str(e)}')
-        
-        return HttpResponseRedirect(reverse('admin:myshop_exchangerate_changelist'))
-    
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['update_rate_url'] = reverse('admin:myshop_exchangerate_update')
-        return super().changelist_view(request, extra_context=extra_context)
-    
-    def rate_change_display(self, obj):
-        """환율 변화 표시"""
-        try:
-            previous_rate = ExchangeRate.objects.filter(
-                created_at__lt=obj.created_at
-            ).first()
+            service = UpbitExchangeService()
+            rate_info = service.get_current_rate()
             
-            if previous_rate:
-                change = obj.btc_krw_rate - previous_rate.btc_krw_rate
-                change_percent = (change / previous_rate.btc_krw_rate) * 100
+            if rate_info:
+                rate, created = ExchangeRate.objects.get_or_create(
+                    currency='KRW',
+                    defaults={'rate': rate_info['rate']}
+                )
+                if not created:
+                    rate.rate = rate_info['rate']
+                    rate.save()
                 
-                if change > 0:
-                    return format_html(
-                        '<span style="color: #28a745;">▲ +{:,.0f} KRW ({:+.2f}%)</span>',
-                        change, change_percent
-                    )
-                elif change < 0:
-                    return format_html(
-                        '<span style="color: #dc3545;">▼ {:,.0f} KRW ({:+.2f}%)</span>',
-                        change, change_percent
-                    )
-                else:
-                    return format_html('<span style="color: #6c757d;">변화 없음</span>')
-            return '-'
-        except:
-            return '-'
+                messages.success(request, f"환율이 성공적으로 업데이트되었습니다. (1 USD = {rate_info['rate']:,.2f} KRW)")
+            else:
+                messages.error(request, "환율 정보를 가져올 수 없습니다.")
+        
+        except Exception as e:
+            messages.error(request, f"환율 업데이트 중 오류가 발생했습니다: {str(e)}")
+        
+        return HttpResponseRedirect(reverse('admin:myshop_sitesettings_changelist'))
+
+    def changelist_view(self, request, extra_context=None):
+        """변경 목록에 커스텀 버튼 추가"""
+        extra_context = extra_context or {}
+        extra_context['update_exchange_rate_url'] = reverse('admin:update_exchange_rate')
+        return super().changelist_view(request, extra_context)
+
+
+@admin.register(ExchangeRate)
+class ExchangeRateAdmin(admin.ModelAdmin):
+    """환율 관리 어드민"""
+    list_display = ['btc_krw_rate_formatted', 'created_at', 'is_recent']
+    list_filter = ['created_at']
+    search_fields = []
+    readonly_fields = ['created_at']
+    list_per_page = 10
     
-    rate_change_display.short_description = '변화량'
+    def btc_krw_rate_formatted(self, obj):
+        """환율을 포맷팅하여 표시"""
+        return f"{obj.btc_krw_rate:,.0f} KRW"
+    btc_krw_rate_formatted.short_description = 'BTC/KRW 환율'
+    btc_krw_rate_formatted.admin_order_field = 'btc_krw_rate'
+    
+    def is_recent(self, obj):
+        """최근 업데이트 여부 표시"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        if timezone.now() - obj.created_at < timedelta(hours=1):
+            return format_html('<span style="color: green;">최신</span>')
+        elif timezone.now() - obj.created_at < timedelta(hours=24):
+            return format_html('<span style="color: orange;">1일 이내</span>')
+        else:
+            return format_html('<span style="color: red;">오래됨</span>')
+    is_recent.short_description = '상태'
     
     def has_add_permission(self, request):
-        # 환율 데이터는 자동으로 생성되므로 수동 추가 방지
+        # 관리자 페이지에서 직접 추가하지 못하도록 제한
         return False
     
     def has_change_permission(self, request, obj=None):

@@ -16,17 +16,17 @@ class StoreImageInline(admin.TabularInline):
     ordering = ('order', 'uploaded_at')
     
     def view_image_button(self, obj):
-        """이미지 보기 버튼 (모달 방식)"""
+        """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
         if obj and obj.file_url:
             return format_html(
-                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
-                '<i class="fas fa-eye"></i> 이미지 보기'
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
+                '<i class="fas fa-eye"></i>'
                 '</button>',
                 obj.file_url,
                 obj.original_name
             )
         return "이미지 없음"
-    view_image_button.short_description = '이미지 보기'
+    view_image_button.short_description = '이미지'
     
     def file_size_display(self, obj):
         """파일 크기 표시"""
@@ -44,7 +44,7 @@ class StoreImageAdmin(admin.ModelAdmin):
     search_fields = ('store__store_name', 'store__store_id', 'original_name')
     readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
     ordering = ('store', 'order', 'uploaded_at')
-    list_per_page = 20
+    list_per_page = 10
     
     fieldsets = (
         ('기본 정보', {
@@ -64,17 +64,17 @@ class StoreImageAdmin(admin.ModelAdmin):
     )
     
     def view_image_button(self, obj):
-        """이미지 보기 버튼 (모달 방식)"""
+        """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
         if obj and obj.file_url:
             return format_html(
-                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">'
-                '<i class="fas fa-eye"></i> 이미지 보기'
+                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
+                '<i class="fas fa-eye"></i>'
                 '</button>',
                 obj.file_url,
                 obj.original_name
             )
         return "이미지 없음"
-    view_image_button.short_description = '이미지 보기'
+    view_image_button.short_description = '이미지'
     
     def image_preview(self, obj):
         """이미지 미리보기 (상세 페이지에서만 사용)"""
@@ -103,7 +103,7 @@ class StoreAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'created_at', 'deleted_at']
     search_fields = ['store_name', 'store_id', 'owner_name', 'owner__username']
     readonly_fields = ['created_at', 'updated_at', 'get_store_link', 'hero_gradient_css']
-    list_per_page = 25  # 페이지당 항목 수 제한으로 성능 개선
+    list_per_page = 10  # 페이지당 항목 수 제한으로 성능 개선
     list_select_related = ['owner']  # 사용자 정보 미리 로드
     
     fieldsets = (
@@ -152,6 +152,7 @@ class DeletedStoreAdmin(admin.ModelAdmin):
                       'owner_phone', 'owner_email', 'chat_channel', 'owner', 
                       'is_active', 'created_at', 'updated_at', 'deleted_at',
                       'blink_api_info_encrypted', 'blink_wallet_id_encrypted')
+    list_per_page = 10
     
     def get_queryset(self, request):
         """삭제된 스토어만 표시"""
@@ -198,12 +199,14 @@ class StoreCreationStepAdmin(admin.ModelAdmin):
     list_display = ['store', 'current_step', 'step1_completed', 'step2_completed', 'step3_completed', 'step4_completed', 'step5_completed']
     list_filter = ['current_step', 'step1_completed', 'step2_completed', 'step3_completed', 'step4_completed', 'step5_completed']
     search_fields = ['store__store_name', 'store__store_id']
+    list_per_page = 10
 
 @admin.register(ReservedStoreId)
 class ReservedStoreIdAdmin(admin.ModelAdmin):
     list_display = ['keyword', 'description', 'is_active', 'created_at', 'created_by']
     list_filter = ['is_active', 'created_at']
     search_fields = ['keyword', 'description']
+    list_per_page = 10
 
 
 # Admin 사이트 커스터마이징은 settings.py에서 통합 관리

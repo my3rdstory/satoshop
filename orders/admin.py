@@ -59,6 +59,7 @@ class CartAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'updated_at']
     search_fields = ['user__username', 'user__email']
     readonly_fields = ['created_at', 'updated_at', 'total_amount', 'total_items', 'stores_list']
+    list_per_page = 10
     
     fieldsets = (
         ('장바구니 정보', {
@@ -158,6 +159,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ['status', 'store', 'created_at', 'paid_at']
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'buyer_phone']
     readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary']
+    list_per_page = 10
     
     fieldsets = (
         ('주문 정보', {
@@ -248,9 +250,9 @@ class OrderAdmin(admin.ModelAdmin):
             if item.product:
                 try:
                     product_url = reverse('admin:products_product_change', args=[item.product.pk])
-                    product_link = f'<a href="{product_url}" target="_blank">{item.product_title}</a>'
+                    product_link = f'<a href="{product_url}" target="_blank">{item.product.title}</a>'
                 except:
-                    product_link = item.product_title
+                    product_link = item.product.title
             else:
                 product_link = item.product_title
             
@@ -287,6 +289,7 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_filter = ['order__store', 'created_at']
     search_fields = ['order__order_number', 'product_title']
     readonly_fields = ['unit_price', 'total_price', 'created_at']
+    list_per_page = 10
 
 
 @admin.register(PurchaseHistory)
@@ -295,6 +298,7 @@ class PurchaseHistoryAdmin(admin.ModelAdmin):
     list_filter = ['purchase_date', 'auto_delete_at']
     search_fields = ['user__username', 'store_name', 'order__order_number']
     readonly_fields = ['purchase_date', 'auto_delete_at', 'order_link', 'order_items_display']
+    list_per_page = 10
     
     fieldsets = (
         ('구매 정보', {
@@ -391,6 +395,7 @@ class InvoiceAdmin(admin.ModelAdmin):
         'payment_hash', 'invoice_string_display', 'created_at', 'updated_at', 
         'is_expired', 'status_display_color'
     ]
+    list_per_page = 10
     
     fieldsets = (
         ('기본 정보', {
