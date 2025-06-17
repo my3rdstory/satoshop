@@ -87,6 +87,8 @@ function initImageUpload() {
   imageDropArea.addEventListener('click', () => imageInput.click());
   imageInput.addEventListener('change', function () {
     handleFiles(this.files);
+    // 파일 선택 후 input 값 초기화 (같은 파일을 다시 선택할 수 있도록)
+    this.value = '';
   });
 }
 
@@ -120,7 +122,9 @@ function handleDrop(e) {
 }
 
 function handleFiles(files) {
+  console.log('handleFiles 호출됨, 파일 개수:', files.length);
   const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+  console.log('이미지 파일 개수:', imageFiles.length);
 
   if (imageFiles.length === 0) {
     alert('이미지 파일만 업로드할 수 있습니다.');
@@ -135,6 +139,8 @@ function handleFiles(files) {
     }
   }
 
+  console.log('편집 모드:', window.productFormUtils.isEditMode);
+  
   if (window.productFormUtils.isEditMode) {
     // 편집 모드: 서버에 즉시 업로드
     const currentImages = document.getElementById('currentImages');
@@ -149,7 +155,9 @@ function handleFiles(files) {
     });
   } else {
     // 추가 모드: 미리보기만 표시
+    console.log('추가 모드에서 미리보기 생성');
     imageFiles.forEach(file => {
+      console.log('미리보기 추가:', file.name);
       addImagePreview(file);
     });
   }
@@ -236,7 +244,13 @@ function addImageToCurrentList(imageData) {
 }
 
 // === 추가 모드: 미리보기 ===
+// 전역 변수로 선택된 파일들 저장
+window.selectedFiles = window.selectedFiles || [];
+
 function addImagePreview(file) {
+  // 선택된 파일 목록에 추가
+  window.selectedFiles.push(file);
+  
   const reader = new FileReader();
   reader.onload = function(e) {
     let previewContainer = document.getElementById('imagePreviewContainer');
@@ -253,13 +267,15 @@ function addImagePreview(file) {
       previewContainer = document.getElementById('imagePreviewContainer');
     }
 
+    const fileIndex = window.selectedFiles.length - 1;
     const previewDiv = document.createElement('div');
     previewDiv.className = 'relative group';
+    previewDiv.setAttribute('data-file-index', fileIndex);
     previewDiv.innerHTML = `
       <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
         <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
         <button type="button" class="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                onclick="this.closest('.relative').remove()">
+                onclick="removeImagePreview(${fileIndex})">
           <i class="fas fa-times text-sm"></i>
         </button>
       </div>
@@ -271,6 +287,17 @@ function addImagePreview(file) {
     previewContainer.appendChild(previewDiv);
   };
   reader.readAsDataURL(file);
+}
+
+function removeImagePreview(fileIndex) {
+  // 파일 목록에서 제거
+  window.selectedFiles[fileIndex] = null;
+  
+  // 미리보기에서 제거
+  const previewDiv = document.querySelector(`[data-file-index="${fileIndex}"]`);
+  if (previewDiv) {
+    previewDiv.remove();
+  }
 }
 
 // === 할인 설정 토글 ===
@@ -325,9 +352,53 @@ function initFormValidation() {
             return false;
           }
         }
+        
+        // 추가 모드에서 선택된 이미지 파일들을 폼에 추가
+        if (!window.productFormUtils.isEditMode && window.selectedFiles && window.selectedFiles.length > 0) {
+          addSelectedFilesToForm(form);
+        }
       });
     }
   });
+}
+
+// 선택된 파일들을 폼에 추가
+function addSelectedFilesToForm(form) {
+  console.log('addSelectedFilesToForm 호출됨');
+  console.log('window.selectedFiles:', window.selectedFiles);
+  
+  // 기존 이미지 입력 필드 제거
+  const existingImageInputs = form.querySelectorAll('input[name="images"]');
+  existingImageInputs.forEach(input => input.remove());
+  
+  // 새로운 파일들을 폼에 추가
+  const validFiles = window.selectedFiles.filter(file => file !== null);
+  console.log('유효한 파일 개수:', validFiles.length);
+  
+  if (validFiles.length > 0) {
+    // 각 파일에 대해 새로운 input 요소 생성
+    validFiles.forEach((file, index) => {
+      console.log(`파일 ${index}:`, file.name, file.size);
+      
+      // 새로운 input 요소 생성
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.name = 'images';
+      fileInput.style.display = 'none';
+      
+      // DataTransfer를 사용하여 파일 설정
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      fileInput.files = dataTransfer.files;
+      
+      // 폼에 추가
+      form.appendChild(fileInput);
+    });
+    
+    console.log('새로운 파일 input 요소들이 폼에 추가됨');
+  } else {
+    console.log('선택된 파일이 없음');
+  }
 }
 
 // === 편집 모드 전용 기능 ===

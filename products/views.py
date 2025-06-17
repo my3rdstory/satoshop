@@ -152,6 +152,9 @@ def add_product(request, store_id):
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     
     if request.method == 'POST':
+        logger.info(f"상품 추가 POST 요청 받음")
+        logger.info(f"POST 데이터: {dict(request.POST)}")
+        logger.info(f"FILES 데이터: {list(request.FILES.keys())}")
         try:
             with transaction.atomic():
                 # 가격 처리 - 새로운 규칙에 따라 처리
@@ -202,11 +205,18 @@ def add_product(request, store_id):
                 
                 # 이미지 처리
                 images = request.FILES.getlist('images')
+                logger.info(f"받은 이미지 파일 개수: {len(images)}")
                 for i, image_file in enumerate(images):
                     try:
-                        processed_image = process_product_image(image_file, product, request.user, i)
-                        if not processed_image:
-                            logger.warning(f"이미지 처리 실패: {image_file.name}")
+                        logger.info(f"이미지 처리 시작: {image_file.name}, 크기: {image_file.size}")
+                        # storage.utils의 함수 사용 (편집 모드와 동일한 방식)
+                        from storage.utils import upload_product_image
+                        result = upload_product_image(image_file, product, request.user)
+                        
+                        if result['success']:
+                            logger.info(f"이미지 처리 성공: {image_file.name}")
+                        else:
+                            logger.warning(f"이미지 처리 실패: {image_file.name}, 오류: {result['error']}")
                     except Exception as e:
                         logger.error(f"이미지 처리 오류: {e}", exc_info=True)
                 
@@ -242,64 +252,7 @@ def add_product(request, store_id):
     return render(request, 'products/add_product.html', context)
 
 
-def process_product_image(image_file, product, user, order=0):
-    """상품 이미지 처리 및 저장"""
-    try:
-        # 파일 크기 검증 (10MB)
-        if image_file.size > 10 * 1024 * 1024:
-            return None
-        
-        # 이미지 열기
-        img = Image.open(image_file)
-        
-        # RGBA 모드로 변환 (투명도 지원)
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        
-        # 1:1 비율로 크롭 (중앙 기준)
-        width, height = img.size
-        size = min(width, height)
-        left = (width - size) // 2
-        top = (height - size) // 2
-        right = left + size
-        bottom = top + size
-        img = img.crop((left, top, right, bottom))
-        
-        # 500x500으로 리사이즈
-        img = img.resize((500, 500), Image.Resampling.LANCZOS)
-        
-        # 파일명 생성
-        file_extension = 'avif'
-        unique_filename = f"products/{product.store.store_id}/{product.id}/{uuid.uuid4().hex}.{file_extension}"
-        
-        # AVIF 형식으로 저장
-        from io import BytesIO
-        output = BytesIO()
-        img.save(output, format='AVIF', quality=85, optimize=True)
-        output.seek(0)
-        
-        # 파일 저장
-        file_path = default_storage.save(unique_filename, ContentFile(output.read()))
-        file_url = default_storage.url(file_path)
-        
-        # 데이터베이스에 저장
-        product_image = ProductImage.objects.create(
-            product=product,
-            original_name=image_file.name,
-            file_path=file_path,
-            file_url=file_url,
-            file_size=len(output.getvalue()),
-            width=500,
-            height=500,
-            order=order,
-            uploaded_by=user
-        )
-        
-        return product_image
-        
-    except Exception as e:
-        logger.error(f"이미지 처리 오류: {e}", exc_info=True)
-        return None
+# process_product_image 함수는 storage.utils.upload_product_image로 대체됨
 
 
 @login_required
@@ -330,10 +283,14 @@ def edit_product(request, store_id, product_id):
                 images = request.FILES.getlist('images')
                 for i, image_file in enumerate(images):
                     try:
-                        current_count = product.images.count()
-                        processed_image = process_product_image(image_file, product, request.user, current_count + i)
-                        if not processed_image:
-                            logger.warning(f"이미지 처리 실패: {image_file.name}")
+                        # storage.utils의 함수 사용 (편집 모드와 동일한 방식)
+                        from storage.utils import upload_product_image
+                        result = upload_product_image(image_file, product, request.user)
+                        
+                        if result['success']:
+                            logger.info(f"이미지 처리 성공: {image_file.name}")
+                        else:
+                            logger.warning(f"이미지 처리 실패: {image_file.name}, 오류: {result['error']}")
                     except Exception as e:
                         logger.error(f"이미지 처리 오류: {e}", exc_info=True)
                 
