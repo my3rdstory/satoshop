@@ -65,11 +65,20 @@
         });
     }
     
-    // 테마 전환
+    // 테마 전환 (디바운싱 추가)
+    let isToggling = false;
     function toggleTheme() {
+        if (isToggling) return; // 이미 처리 중이면 무시
+        isToggling = true;
+        
         const currentTheme = getCurrentTheme();
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         applyTheme(newTheme);
+        
+        // 500ms 후 다시 클릭 가능하도록 설정
+        setTimeout(() => {
+            isToggling = false;
+        }, 500);
     }
     
     // 초기 테마 설정
@@ -84,6 +93,11 @@
         } else {
             applyTheme(savedTheme);
         }
+        
+        // 초기화 후 메뉴 아이템들을 한 번 더 업데이트
+        setTimeout(() => {
+            updateThemeMenuItems(getCurrentTheme());
+        }, 100);
     }
     
     // 시스템 테마 변경 감지

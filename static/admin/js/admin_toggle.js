@@ -15,26 +15,57 @@ function setupAppToggle(headerElement, index, appContainer = null) {
 
 // 현재 페이지 메뉴 하이라이트 개선
 function highlightCurrentMenu() {
-    const currentPath = window.location.pathname;
-    const menuLinks = document.querySelectorAll('#nav-sidebar a, .sidebar a');
-    
-    menuLinks.forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.style.backgroundColor = '#79aec8';
-            link.style.color = 'white';
-            link.style.fontWeight = 'bold';
+    try {
+        const currentPath = window.location.pathname;
+        const menuLinks = document.querySelectorAll('#nav-sidebar a, .sidebar a, #navigation a, .navigation a');
+        
+        // 이전 하이라이트 제거
+        menuLinks.forEach(link => {
+            link.style.backgroundColor = '';
+            link.style.color = '';
+            link.style.fontWeight = '';
+        });
+        
+        // 현재 페이지와 일치하는 링크 찾기
+        let exactMatch = null;
+        let partialMatch = null;
+        
+        menuLinks.forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            
+            // 정확한 일치
+            if (href === currentPath) {
+                exactMatch = link;
+            }
+            // 부분 일치 (더 긴 URL에서 현재 경로를 포함하는 경우)
+            else if (currentPath.startsWith(href) && href.length > 1) {
+                if (!partialMatch || href.length > partialMatch.getAttribute('href').length) {
+                    partialMatch = link;
+                }
+            }
+        });
+        
+        // 매칭된 링크 하이라이트
+        const targetLink = exactMatch || partialMatch;
+        if (targetLink) {
+            targetLink.style.backgroundColor = '#79aec8';
+            targetLink.style.color = 'white';
+            targetLink.style.fontWeight = 'bold';
             
             // 상위 앱도 펼치기
-            const parentApp = link.closest('.app-sidebar, .module');
+            const parentApp = targetLink.closest('.app, .module');
             if (parentApp) {
                 parentApp.classList.remove('app-collapsed');
-                const appList = parentApp.querySelector('ul, .app-list');
+                const appList = parentApp.querySelector('ul, .app-list, tbody');
                 if (appList) {
                     appList.style.display = 'block';
                 }
             }
         }
-    });
+    } catch (error) {
+        console.warn('메뉴 하이라이트 중 오류 발생:', error);
+    }
 }
 
 // 비동기 콘텐츠 로딩 개선
