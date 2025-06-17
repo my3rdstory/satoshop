@@ -14,7 +14,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('기본 설정', {
-            'fields': ('site_title', 'site_description', 'meta_keywords', 'admin_site_header')
+            'fields': ('site_title', 'site_description', 'meta_keywords', 'admin_site_header', 'site_logo_url')
         }),
         ('홈페이지 히어로 섹션', {
             'fields': (
@@ -135,7 +135,20 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         """변경 목록에 커스텀 버튼 추가"""
         extra_context = extra_context or {}
         extra_context['update_exchange_rate_url'] = reverse('admin:update_exchange_rate')
+        extra_context['site_settings'] = SiteSettings.get_settings()
         return super().changelist_view(request, extra_context)
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """변경 페이지에 site_settings 추가"""
+        extra_context = extra_context or {}
+        extra_context['site_settings'] = SiteSettings.get_settings()
+        return super().change_view(request, object_id, form_url, extra_context)
+    
+    def add_view(self, request, form_url='', extra_context=None):
+        """추가 페이지에 site_settings 추가"""
+        extra_context = extra_context or {}
+        extra_context['site_settings'] = SiteSettings.get_settings()
+        return super().add_view(request, form_url, extra_context)
 
 
 @admin.register(ExchangeRate)

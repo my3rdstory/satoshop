@@ -15,15 +15,39 @@ class MyshopConfig(AppConfig):
         """어드민 사이트 설정을 지연 로드로 처리"""
         # 런타임에 데이터베이스 접근이 필요할 때만 실행되도록 AdminSite에 동적 속성 추가
         original_index = admin.site.index
+        original_each_context = admin.site.each_context
         
         def dynamic_index(request, extra_context=None):
-            # 첫 번째 관리자 페이지 접근 시에만 설정 로드
-            if not hasattr(admin.site, '_satoshop_configured'):
-                self._apply_admin_settings()
-                admin.site._satoshop_configured = True
+            # 매번 설정 로드 (설정 변경 반영을 위해)
+            self._apply_admin_settings()
+            
+            # site_settings를 컨텍스트에 추가
+            if extra_context is None:
+                extra_context = {}
+            
+            try:
+                from .models import SiteSettings
+                extra_context['site_settings'] = SiteSettings.get_settings()
+            except Exception:
+                extra_context['site_settings'] = None
+                
             return original_index(request, extra_context)
         
+        def enhanced_each_context(request):
+            """모든 admin 페이지에 site_settings 추가 및 설정 업데이트"""
+            # 매번 설정 로드
+            self._apply_admin_settings()
+            
+            context = original_each_context(request)
+            try:
+                from .models import SiteSettings
+                context['site_settings'] = SiteSettings.get_settings()
+            except Exception:
+                context['site_settings'] = None
+            return context
+        
         admin.site.index = dynamic_index
+        admin.site.each_context = enhanced_each_context
     
     def _apply_admin_settings(self):
         """실제 어드민 사이트 설정을 SiteSettings에서 가져와서 적용"""

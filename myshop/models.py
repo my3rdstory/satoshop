@@ -105,6 +105,13 @@ class SiteSettings(models.Model):
         help_text="Django 관리자 페이지 상단에 표시되는 제목"
     )
     
+    site_logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="사이트 로고 이미지 경로",
+        help_text="메인 사이트에 표시될 로고 이미지 경로 (예: /static/images/logo.png 또는 https://example.com/logo.png). 비어있으면 'SatoShop' 텍스트로 표시됩니다."
+    )
+    
     # 홈페이지 히어로 섹션
     hero_title = models.CharField(
         max_length=200, 
