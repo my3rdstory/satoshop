@@ -228,7 +228,7 @@ function addImageToCurrentList(imageData) {
       <div class="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
         <img src="${imageData.file_url}" alt="${imageData.original_name}" 
              class="w-full h-full object-cover">
-        <button onclick="deleteExistingImage(${imageData.id})"
+        <button type="button" onclick="deleteExistingImage(${imageData.id})"
                 class="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
           <i class="fas fa-times text-sm"></i>
         </button>

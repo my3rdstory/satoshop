@@ -209,7 +209,7 @@
               <div class="image-preview relative">
                 <img src="{{ image.file_url }}" alt="{{ image.original_name }}" 
                      class="w-full h-32 object-cover rounded-lg">
-                <div class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-red-600 transition-colors remove-image" 
+                <button type="button" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer hover:bg-red-600 transition-colors remove-image" 
                      onclick="deleteExistingImage({{ image.id }})">
                   <i class="fas fa-times text-xs"></i>
                 </div>
