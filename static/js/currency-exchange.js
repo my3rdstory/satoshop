@@ -384,7 +384,7 @@ class CurrencyExchange {
         const selectedDisplay = selectedDisplayRadio ? selectedDisplayRadio.value : window.productPriceDisplay;
         
         // 숨겨진 필드들을 추가하여 원화/사토시 값을 모두 전송
-        const form = document.querySelector('#productForm, #basicInfoForm, #optionsForm');
+        const form = document.querySelector('#productForm, #basicInfoForm, #optionsForm, #unifiedProductForm');
         if (!form) return;
 
         // 기존 숨겨진 필드들 제거
@@ -512,7 +512,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const currencyExchange = new CurrencyExchange();
     
     // 폼 제출 시 데이터 준비
-    const forms = document.querySelectorAll('#productForm, #basicInfoForm, #optionsForm');
+    const forms = document.querySelectorAll('#productForm, #basicInfoForm, #optionsForm, #unifiedProductForm');
     forms.forEach(form => {
         if (form) {
             form.addEventListener('submit', function(e) {

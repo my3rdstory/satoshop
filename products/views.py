@@ -353,14 +353,17 @@ def edit_product_unified(request, store_id, product_id):
                         product.shipping_fee_krw = None  # 사토시 모드에서는 원화 배송비 초기화
                 else:
                     if product.price_display == 'krw':
-                        product.price_krw = int(request.POST.get('price', 0))
-                        # 사토시 값은 JavaScript에서 계산되어 전송되어야 하지만, 현재는 같은 값으로 임시 처리
+                        # 원화 비율 연동: 원화 값을 저장하고 사토시는 JavaScript에서 계산된 값 사용
+                        product.price_krw = int(request.POST.get('price_krw', 0))
+                        product.price = int(request.POST.get('price_sats', 0))
                         
-                        discounted_price = request.POST.get('discounted_price')
-                        if discounted_price:
-                            product.discounted_price_krw = int(discounted_price)
+                        discounted_price_krw = request.POST.get('discounted_price_krw')
+                        if discounted_price_krw:
+                            product.discounted_price_krw = int(discounted_price_krw)
+                            product.discounted_price = int(request.POST.get('discounted_price_sats', 0))
                         
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee', 0))
+                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
+                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
                     else:
                         product.price = int(request.POST.get('price', 0))
                         
@@ -384,7 +387,6 @@ def edit_product_unified(request, store_id, product_id):
                 # 상품 옵션 처리
                 _process_product_options_form(request, product)
                 
-                messages.success(request, '상품이 성공적으로 수정되었습니다.')
                 return redirect('products:product_list', store_id=store_id)
                 
         except Exception as e:
