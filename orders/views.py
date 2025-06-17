@@ -1306,6 +1306,14 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             
             # 주문 아이템 생성
             for item in store_items:
+                # 재고 확인 및 감소
+                if not item.product.can_purchase(item.quantity):
+                    raise Exception(f'"{item.product.title}" 상품의 재고가 부족합니다. (요청: {item.quantity}개, 재고: {item.product.stock_quantity}개)')
+                
+                # 재고 감소
+                if not item.product.decrease_stock(item.quantity):
+                    raise Exception(f'"{item.product.title}" 상품의 재고 감소에 실패했습니다.')
+                
                 # 옵션 정보를 문자열 형태로 변환
                 options_display = {}
                 for option_id, choice_id in item.selected_options.items():
@@ -1328,7 +1336,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                 )
                 
                 if settings.DEBUG:
-                    logger.debug(f"[ORDER_CREATE]   - 상품: {item.product.title}, 수량: {item.quantity}, 총가격: {order_item.total_price} sats")
+                    logger.debug(f"[ORDER_CREATE]   - 상품: {item.product.title}, 수량: {item.quantity}, 총가격: {order_item.total_price} sats, 남은재고: {item.product.stock_quantity}개")
         
         # 각 주문의 총액 계산
         for order in stores_orders.values():
@@ -1348,7 +1356,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                 purchase_date=order.paid_at
             )
         
-                # 장바구니 비우기
+        # 장바구니 비우기
         cart.items.all().delete()
         
         # 모든 주문 정보 반환

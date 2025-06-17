@@ -168,6 +168,7 @@ def add_product(request, store_id):
                     'price_display': price_display,
                     'is_discounted': request.POST.get('is_discounted') == 'on',
                     'completion_message': request.POST.get('completion_message', '').strip(),
+                    'stock_quantity': int(request.POST.get('stock_quantity', 0)),
                 }
                 
                 if price_display == 'krw':
@@ -274,6 +275,7 @@ def edit_product(request, store_id, product_id):
                 product.discounted_price = int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None
                 product.shipping_fee = int(request.POST.get('shipping_fee', 0))
                 product.completion_message = request.POST.get('completion_message', '').strip()
+                product.stock_quantity = int(request.POST.get('stock_quantity', 0))
                 product.save()
                 
                 # 상품 옵션 처리 (기존 옵션 삭제 후 새로 추가)
@@ -381,6 +383,9 @@ def edit_product_unified(request, store_id, product_id):
                 
                 # 완료 메시지
                 product.completion_message = request.POST.get('completion_message', '').strip()
+                
+                # 재고 수량
+                product.stock_quantity = int(request.POST.get('stock_quantity', 0))
                 
                 product.save()
                 
@@ -699,6 +704,9 @@ def edit_basic_info(request, store_id, product_id):
                 if not product.is_discounted:
                     product.discounted_price = None
                     product.discounted_price_krw = None
+                
+                # 재고 수량
+                product.stock_quantity = int(request.POST.get('stock_quantity', 0))
                 
                 product.save()
                 

@@ -9,16 +9,40 @@
   <div class="bg-white dark:bg-gray-800 {% if product.is_discounted %}border-2 border-red-500 rounded-none{% elif not product.is_active %}border-2 border-gray-500 rounded-none opacity-70{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
     <!-- 상품 이미지 -->
     <div class="relative aspect-square">
-      <!-- 할인 태그 또는 비활성화 태그 -->
-      {% if not product.is_active %}
-      <div class="absolute top-3 left-3 z-10 bg-gray-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
-        비활성화
+      <!-- 태그들 (할인, 비활성화, 재고 상태) -->
+      <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+        {% if not product.is_active %}
+        <div class="bg-gray-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          비활성화
+        </div>
+        {% elif product.is_discounted %}
+        <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {{ product.public_discount_rate }}% 할인
+        </div>
+        {% endif %}
+        
+        <!-- 재고 상태 태그 -->
+        {% if not is_public_view %}
+        <!-- 관리자 뷰: 모든 재고 상태 표시 -->
+        <div class="{% if product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if product.stock_quantity == 0 %}
+            품절
+          {% else %}
+            재고 {{ product.stock_quantity|intcomma }}개
+          {% endif %}
+        </div>
+        {% else %}
+        <!-- 공개 뷰: 모든 재고 상태 표시 -->
+        <div class="{% if product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if product.stock_quantity == 0 %}
+            품절
+          {% else %}
+            재고 {{ product.stock_quantity|intcomma }}개
+          {% endif %}
+        </div>
+        {% endif %}
       </div>
-      {% elif product.is_discounted %}
-      <div class="absolute top-3 left-3 z-10 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
-        {{ product.public_discount_rate }}% 할인
-      </div>
-      {% endif %}
+      
       {% if is_public_view %}
       <a href="{% url 'stores:product_detail' store.store_id product.id %}">
       {% else %}
@@ -79,6 +103,18 @@
           </p>
         </div>
 
+        <!-- 재고 상태 정보 -->
+        <div class="mb-3 flex items-center gap-2">
+          <i class="fas fa-box text-sm text-gray-500"></i>
+          <span class="text-sm font-medium {% if product.stock_quantity == 0 %}text-red-500{% elif product.stock_quantity <= 5 %}text-orange-500{% else %}text-green-500{% endif %}">
+            {% if product.stock_quantity == 0 %}
+              품절
+            {% else %}
+              재고: {{ product.stock_quantity|intcomma }}개
+            {% endif %}
+          </span>
+        </div>
+
         <!-- 액션 버튼 -->
         <div class="flex flex-wrap gap-2">
           {% if not is_public_view %}
@@ -97,12 +133,17 @@
           
           <!-- 상품보기 버튼 -->
           {% if is_public_view %}
-            {% if product.is_active %}
+            {% if product.is_active and product.stock_quantity > 0 %}
             <a href="{% url 'stores:product_detail' store.store_id product.id %}" 
                class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
               <i class="fas fa-eye mr-1"></i>
               상품보기
             </a>
+            {% elif product.stock_quantity == 0 %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-times mr-1"></i>
+              품절
+            </button>
             {% else %}
             <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm" disabled>
               <i class="fas fa-pause mr-1"></i>

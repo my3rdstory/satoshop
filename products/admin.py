@@ -81,9 +81,9 @@ class ProductOptionInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
         'title', 'store', 'get_price_display_korean', 'price', 'is_discounted', 'discounted_price', 
-        'shipping_fee', 'is_active', 'get_options_summary', 'created_at'
+        'shipping_fee', 'stock_quantity', 'get_stock_status', 'is_active', 'get_options_summary', 'created_at'
     ]
-    list_filter = ['is_active', 'is_discounted', 'price_display', 'store', 'created_at']
+    list_filter = ['is_active', 'is_discounted', 'price_display', 'store', 'created_at', 'stock_quantity']
     search_fields = ['title', 'description', 'store__store_name']
     readonly_fields = ['created_at', 'updated_at', 'final_price', 'discount_rate', 'get_options_display']
     list_per_page = 10  # 페이지당 항목 수 제한으로 성능 개선
@@ -95,6 +95,9 @@ class ProductAdmin(admin.ModelAdmin):
         }),
         ('가격 정보', {
             'fields': ('price_display', 'price', 'price_krw', 'is_discounted', 'discounted_price', 'discounted_price_krw', 'final_price', 'discount_rate', 'shipping_fee', 'shipping_fee_krw')
+        }),
+        ('재고 관리', {
+            'fields': ('stock_quantity',)
         }),
         ('추가 설정', {
             'fields': ('completion_message', 'is_active')
@@ -132,18 +135,22 @@ class ProductAdmin(admin.ModelAdmin):
     get_price_display_korean.admin_order_field = 'price_display'  # 정렬 가능하게 설정
     
     def get_options_summary(self, obj):
-        """상품 목록에서 옵션 요약 표시"""
-        options = obj.options.all()
-        if not options:
+        """옵션 요약 표시"""
+        options_count = obj.options.count()
+        if options_count == 0:
             return "옵션 없음"
-        
-        summary = []
-        for option in options:
-            choice_count = option.choices.count()
-            summary.append(f"{option.name}({choice_count}개)")
-        
-        return ", ".join(summary)
-    get_options_summary.short_description = '옵션 요약'
+        return f"{options_count}개 옵션"
+    get_options_summary.short_description = '옵션'
+    
+    def get_stock_status(self, obj):
+        """재고 상태 표시"""
+        if obj.stock_quantity == 0:
+            return format_html('<span style="color: red; font-weight: bold;">품절</span>')
+        elif obj.stock_quantity <= 5:
+            return format_html('<span style="color: orange; font-weight: bold;">재고 부족 ({}개)</span>', obj.stock_quantity)
+        else:
+            return format_html('<span style="color: green;">재고 있음 ({}개)</span>', obj.stock_quantity)
+    get_stock_status.short_description = '재고 상태'
     
     def get_options_display(self, obj):
         """상품 상세에서 옵션과 선택지 전체 표시"""

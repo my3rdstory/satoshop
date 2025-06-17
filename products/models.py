@@ -47,6 +47,8 @@ class Product(models.Model):
     
     # 상태
     is_active = models.BooleanField(default=True, verbose_name='판매 중')
+    # 재고 관리
+    stock_quantity = models.PositiveIntegerField(default=0, verbose_name='재고 수량')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -185,6 +187,38 @@ class Product(models.Model):
             return f"{self.shipping_fee:,}원"
         else:
             return f"{self.shipping_fee:,} sats"
+
+    @property
+    def is_in_stock(self):
+        """재고가 있는지 확인"""
+        return self.stock_quantity > 0
+
+    @property
+    def stock_status(self):
+        """재고 상태 텍스트"""
+        if self.stock_quantity == 0:
+            return '품절'
+        elif self.stock_quantity <= 5:
+            return f'재고 {self.stock_quantity}개'
+        else:
+            return '재고 있음'
+
+    def decrease_stock(self, quantity):
+        """재고 감소"""
+        if self.stock_quantity >= quantity:
+            self.stock_quantity -= quantity
+            self.save()
+            return True
+        return False
+
+    def increase_stock(self, quantity):
+        """재고 증가"""
+        self.stock_quantity += quantity
+        self.save()
+
+    def can_purchase(self, quantity):
+        """구매 가능 여부 확인"""
+        return self.is_active and self.stock_quantity >= quantity
 
 
 class ProductImage(models.Model):
