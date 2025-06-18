@@ -1,0 +1,163 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}공지사항 작성{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
+<style>
+/* 다크모드 대응 인라인 스타일 */
+.back-button {
+    margin-bottom: 20px;
+}
+
+.notice-form {
+    padding: 30px;
+}
+
+.char-counter {
+    margin-top: 5px; 
+    font-size: 0.9rem; 
+    color: var(--text-muted);
+}
+
+.guide-section {
+    margin-top: 30px; 
+    padding: 20px; 
+    background-color: var(--bg-tertiary); 
+    border-radius: 8px; 
+    border-left: 4px solid #007bff;
+}
+
+.guide-section h4 {
+    margin-bottom: 15px; 
+    color: var(--text-primary);
+}
+
+.guide-section ul {
+    margin: 0; 
+    padding-left: 20px; 
+    color: var(--text-secondary); 
+    line-height: 1.6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 -->
+    <div class="back-button">
+        <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
+            ← 목록으로
+        </a>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="notice-header">
+        <h1 class="notice-title">공지사항 작성</h1>
+        <p class="notice-subtitle">새로운 공지사항을 작성하세요</p>
+    </div>
+
+    <!-- 작성 폼 -->
+    <div class="notice-detail">
+        <form method="post" id="notice-form" class="notice-form">
+            {% csrf_token %}
+            
+            <!-- 제목 -->
+            <div class="form-group">
+                <label for="id_title" class="form-label">제목 *</label>
+                <input type="text" 
+                       id="id_title" 
+                       name="title" 
+                       value="{{ title|default:'' }}" 
+                       class="form-input" 
+                       maxlength="200" 
+                       required>
+                <div class="char-counter">
+                    <span id="title-counter">0</span>/200자
+                </div>
+            </div>
+
+            <!-- 내용 -->
+            <div class="form-group">
+                <label for="id_content" class="form-label">내용 *</label>
+                <textarea id="id_content" 
+                         name="content" 
+                         class="form-textarea" 
+                         placeholder="공지사항 내용을 입력하세요..." 
+                         required>{{ content|default:'' }}</textarea>
+                <div class="char-counter">
+                    <span id="content-counter">0</span>자
+                </div>
+            </div>
+
+            <!-- 옵션 -->
+            <div class="form-group">
+                <label class="form-checkbox-label">
+                    <input type="checkbox" 
+                           name="is_pinned" 
+                           class="form-checkbox"
+                           {% if is_pinned %}checked{% endif %}>
+                    상단 고정 (중요한 공지사항인 경우 체크하세요)
+                </label>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-primary">작성 완료</button>
+                <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">취소</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 작성 가이드 -->
+    <div class="guide-section">
+        <h4>✍️ 작성 가이드</h4>
+        <ul>
+            <li>제목은 명확하고 간결하게 작성해주세요 (최대 200자)</li>
+            <li>내용은 사용자가 이해하기 쉽게 작성해주세요</li>
+            <li>중요한 공지사항은 '상단 고정' 옵션을 사용하세요</li>
+            <li>작성한 공지사항은 모든 회원이 볼 수 있습니다</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/boards.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 글자수 카운터
+    const titleInput = document.getElementById('id_title');
+    const contentTextarea = document.getElementById('id_content');
+    const titleCounter = document.getElementById('title-counter');
+    const contentCounter = document.getElementById('content-counter');
+    
+    function updateTitleCounter() {
+        const length = titleInput.value.length;
+        titleCounter.textContent = length;
+        titleCounter.style.color = length > 180 ? '#dc3545' : '';
+    }
+    
+    function updateContentCounter() {
+        const length = contentTextarea.value.length;
+        contentCounter.textContent = length;
+    }
+    
+    titleInput.addEventListener('input', updateTitleCounter);
+    contentTextarea.addEventListener('input', updateContentCounter);
+    
+    // 초기 카운터 설정
+    updateTitleCounter();
+    updateContentCounter();
+    
+    // 폼 제출 시 확인
+    document.getElementById('notice-form').addEventListener('submit', function(e) {
+        if (!confirm('공지사항을 작성하시겠습니까?')) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

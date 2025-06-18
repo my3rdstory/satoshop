@@ -1,0 +1,312 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}댓글 수정 - {{ comment.notice.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
+<style>
+/* 다크모드 대응 인라인 스타일 */
+.back-button {
+    margin-bottom: 20px;
+}
+
+.original-notice-info {
+    margin-bottom: 25px; 
+    padding: 15px; 
+    background-color: var(--bg-tertiary); 
+    border-radius: 8px; 
+    border-left: 4px solid #007bff;
+}
+
+.original-notice-info h4 {
+    margin-bottom: 10px; 
+    color: var(--text-primary);
+}
+
+.original-notice-info div {
+    color: var(--text-secondary);
+}
+
+.comment-form {
+    padding: 30px;
+}
+
+.comment-textarea {
+    min-height: 150px;
+}
+
+.char-counter {
+    margin-top: 5px; 
+    font-size: 0.9rem; 
+    color: var(--text-muted);
+}
+
+.original-comment-info {
+    margin-bottom: 20px; 
+    padding: 15px; 
+    background-color: var(--bg-tertiary); 
+    border-radius: 6px; 
+    font-size: 0.9rem; 
+    color: var(--text-secondary);
+}
+
+.guide-section {
+    margin-top: 30px; 
+    padding: 20px; 
+    background-color: rgba(255, 193, 7, 0.15); 
+    border-radius: 8px; 
+    border-left: 4px solid #ffc107;
+}
+
+.guide-section h4 {
+    margin-bottom: 15px; 
+    color: #856404;
+}
+
+[data-theme="dark"] .guide-section h4 {
+    color: #ffc107;
+}
+
+.guide-section ul {
+    margin: 0; 
+    padding-left: 20px; 
+    color: #856404; 
+    line-height: 1.6;
+}
+
+[data-theme="dark"] .guide-section ul {
+    color: var(--text-secondary);
+}
+
+.parent-comment-section {
+    margin-top: 30px; 
+    padding: 20px; 
+    background-color: var(--bg-secondary); 
+    border-radius: 8px; 
+    border-left: 4px solid var(--text-muted);
+}
+
+.parent-comment-section h4 {
+    margin-bottom: 15px; 
+    color: var(--text-secondary);
+}
+
+.parent-comment-content {
+    background-color: var(--bg-primary); 
+    padding: 15px; 
+    border-radius: 6px;
+}
+
+.parent-comment-author {
+    font-weight: 600; 
+    margin-bottom: 8px; 
+    color: var(--text-primary);
+}
+
+.parent-comment-text {
+    color: var(--text-primary); 
+    line-height: 1.6;
+}
+
+.parent-comment-date {
+    margin-top: 10px; 
+    font-size: 0.85rem; 
+    color: var(--text-muted);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 -->
+    <div class="back-button">
+        <a href="{% url 'boards:notice_detail' pk=comment.notice.pk %}" class="btn-notice btn-secondary">
+            ← 공지사항으로 돌아가기
+        </a>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="notice-header">
+        <h1 class="notice-title">댓글 수정</h1>
+        <p class="notice-subtitle">댓글 내용을 수정하세요</p>
+    </div>
+
+    <!-- 원본 공지사항 정보 -->
+    <div class="original-notice-info">
+        <h4>📋 원본 공지사항</h4>
+        <div>
+            <strong>{{ comment.notice.title }}</strong><br>
+            작성자: {{ comment.notice.author.username }} | 
+            작성일: {{ comment.notice.created_at|date:"Y.m.d H:i" }}
+        </div>
+    </div>
+
+    <!-- 댓글 수정 폼 -->
+    <div class="notice-detail">
+        <form method="post" id="comment-form" class="comment-form">
+            {% csrf_token %}
+            
+            <!-- 댓글 내용 -->
+            <div class="form-group">
+                <label for="id_content" class="form-label">
+                    {% if comment.parent %}
+                        답글 내용 *
+                    {% else %}
+                        댓글 내용 *
+                    {% endif %}
+                </label>
+                <textarea id="id_content" 
+                         name="content" 
+                         class="form-textarea comment-textarea" 
+                         placeholder="댓글 내용을 입력하세요..." 
+                         required>{{ comment.content }}</textarea>
+                <div class="char-counter">
+                    <span id="content-counter">0</span>자
+                </div>
+            </div>
+
+            <!-- 원본 댓글 정보 -->
+            <div class="original-comment-info">
+                <strong>원본 댓글 정보:</strong><br>
+                작성일: {{ comment.created_at|date:"Y년 m월 d일 H:i" }}<br>
+                {% if comment.updated_at != comment.created_at %}
+                    최종 수정: {{ comment.updated_at|date:"Y년 m월 d일 H:i" }}<br>
+                {% endif %}
+                {% if comment.parent %}
+                    답글 대상: {{ comment.parent.author.username }}님의 댓글
+                {% endif %}
+            </div>
+
+            <!-- 버튼 -->
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-primary">수정 완료</button>
+                <a href="{% url 'boards:notice_detail' pk=comment.notice.pk %}" class="btn-notice btn-secondary">취소</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 수정 가이드 -->
+    <div class="guide-section">
+        <h4>✏️ 댓글 수정 안내</h4>
+        <ul>
+            <li>수정한 댓글은 즉시 다른 사용자에게 반영됩니다</li>
+            <li>수정 시각이 자동으로 기록됩니다</li>
+            <li>예의를 지켜 건전한 댓글 문화를 만들어주세요</li>
+            <li>스팸이나 부적절한 내용은 삭제될 수 있습니다</li>
+        </ul>
+    </div>
+
+    <!-- 원본 댓글 미리보기 -->
+    {% if comment.parent %}
+        <div class="parent-comment-section">
+            <h4>💬 답글 대상 댓글</h4>
+            <div class="parent-comment-content">
+                <div class="parent-comment-author">
+                    {{ comment.parent.author.username }}
+                </div>
+                <div class="parent-comment-text">
+                    {{ comment.parent.content|linebreaks }}
+                </div>
+                <div class="parent-comment-date">
+                    {{ comment.parent.created_at|date:"Y.m.d H:i" }}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/boards.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const contentTextarea = document.getElementById('id_content');
+    const contentCounter = document.getElementById('content-counter');
+    
+    function updateContentCounter() {
+        const length = contentTextarea.value.length;
+        contentCounter.textContent = length;
+        
+        // 글자수에 따른 색상 변경
+        if (length > 1000) {
+            contentCounter.style.color = '#dc3545';
+        } else if (length > 500) {
+            contentCounter.style.color = '#ffc107';
+        } else {
+            contentCounter.style.color = '';
+        }
+    }
+    
+    contentTextarea.addEventListener('input', updateContentCounter);
+    
+    // 초기 카운터 설정
+    updateContentCounter();
+    
+    // 폼 제출 시 확인
+    document.getElementById('comment-form').addEventListener('submit', function(e) {
+        const content = contentTextarea.value.trim();
+        
+        if (!content) {
+            e.preventDefault();
+            alert('댓글 내용을 입력해주세요.');
+            contentTextarea.focus();
+            return;
+        }
+        
+        if (!confirm('댓글을 수정하시겠습니까?')) {
+            e.preventDefault();
+        }
+    });
+    
+    // 변경사항 감지
+    const originalContent = contentTextarea.value;
+    
+    function hasChanges() {
+        return contentTextarea.value !== originalContent;
+    }
+    
+    // 페이지 이탈 시 경고
+    window.addEventListener('beforeunload', function(e) {
+        if (hasChanges()) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    // 취소 버튼 클릭 시 확인
+    document.querySelector('a[href*="notice"]').addEventListener('click', function(e) {
+        if (hasChanges()) {
+            if (!confirm('변경사항이 저장되지 않습니다. 정말 나가시겠습니까?')) {
+                e.preventDefault();
+            }
+        }
+    });
+    
+    // 자동 저장 기능 (선택사항)
+    let autoSaveTimer;
+    contentTextarea.addEventListener('input', function() {
+        clearTimeout(autoSaveTimer);
+        autoSaveTimer = setTimeout(() => {
+            // 로컬 스토리지에 임시 저장
+            localStorage.setItem('comment_edit_{{ comment.pk }}', this.value);
+        }, 1000);
+    });
+    
+    // 페이지 로드 시 임시 저장된 내용 복원
+    const savedContent = localStorage.getItem('comment_edit_{{ comment.pk }}');
+    if (savedContent && savedContent !== originalContent) {
+        if (confirm('작성 중이던 내용이 있습니다. 복원하시겠습니까?')) {
+            contentTextarea.value = savedContent;
+            updateContentCounter();
+        }
+    }
+    
+    // 폼 제출 성공 시 임시 저장 데이터 삭제
+    document.getElementById('comment-form').addEventListener('submit', function() {
+        localStorage.removeItem('comment_edit_{{ comment.pk }}');
+    });
+});
+</script>
+{% endblock %} 

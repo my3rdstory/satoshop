@@ -1,0 +1,217 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}공지사항 수정 - {{ notice.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
+<style>
+/* 다크모드 대응 인라인 스타일 */
+.back-button {
+    margin-bottom: 20px;
+}
+
+.notice-form {
+    padding: 30px;
+}
+
+.char-counter {
+    margin-top: 5px; 
+    font-size: 0.9rem; 
+    color: var(--text-muted);
+}
+
+.original-info {
+    margin-bottom: 20px; 
+    padding: 15px; 
+    background-color: var(--bg-tertiary); 
+    border-radius: 6px; 
+    font-size: 0.9rem; 
+    color: var(--text-secondary);
+}
+
+.guide-section {
+    margin-top: 30px; 
+    padding: 20px; 
+    background-color: rgba(255, 193, 7, 0.15); 
+    border-radius: 8px; 
+    border-left: 4px solid #ffc107;
+}
+
+.guide-section h4 {
+    margin-bottom: 15px; 
+    color: #856404;
+}
+
+[data-theme="dark"] .guide-section h4 {
+    color: #ffc107;
+}
+
+.guide-section ul {
+    margin: 0; 
+    padding-left: 20px; 
+    color: #856404; 
+    line-height: 1.6;
+}
+
+[data-theme="dark"] .guide-section ul {
+    color: var(--text-secondary);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 -->
+    <div class="back-button">
+        <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">
+            ← 돌아가기
+        </a>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="notice-header">
+        <h1 class="notice-title">공지사항 수정</h1>
+        <p class="notice-subtitle">공지사항 내용을 수정하세요</p>
+    </div>
+
+    <!-- 수정 폼 -->
+    <div class="notice-detail">
+        <form method="post" id="notice-form" class="notice-form">
+            {% csrf_token %}
+            
+            <!-- 제목 -->
+            <div class="form-group">
+                <label for="id_title" class="form-label">제목 *</label>
+                <input type="text" 
+                       id="id_title" 
+                       name="title" 
+                       value="{{ title|default:notice.title }}" 
+                       class="form-input" 
+                       maxlength="200" 
+                       required>
+                <div class="char-counter">
+                    <span id="title-counter">0</span>/200자
+                </div>
+            </div>
+
+            <!-- 내용 -->
+            <div class="form-group">
+                <label for="id_content" class="form-label">내용 *</label>
+                <textarea id="id_content" 
+                         name="content" 
+                         class="form-textarea" 
+                         placeholder="공지사항 내용을 입력하세요..." 
+                         required>{{ content|default:notice.content }}</textarea>
+                <div class="char-counter">
+                    <span id="content-counter">0</span>자
+                </div>
+            </div>
+
+            <!-- 옵션 -->
+            <div class="form-group">
+                <label class="form-checkbox-label">
+                    <input type="checkbox" 
+                           name="is_pinned" 
+                           class="form-checkbox"
+                           {% if is_pinned|default:notice.is_pinned %}checked{% endif %}>
+                    상단 고정 (중요한 공지사항인 경우 체크하세요)
+                </label>
+            </div>
+
+            <!-- 수정 정보 -->
+            <div class="original-info">
+                <strong>원본 정보:</strong><br>
+                작성일: {{ notice.created_at|date:"Y년 m월 d일 H:i" }}<br>
+                {% if notice.updated_at != notice.created_at %}
+                    최종 수정: {{ notice.updated_at|date:"Y년 m월 d일 H:i" }}<br>
+                {% endif %}
+                조회수: {{ notice.views }}회
+            </div>
+
+            <!-- 버튼 -->
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-primary">수정 완료</button>
+                <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">취소</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 수정 가이드 -->
+    <div class="guide-section">
+        <h4>⚠️ 수정 안내</h4>
+        <ul>
+            <li>수정한 내용은 즉시 모든 사용자에게 반영됩니다</li>
+            <li>수정 시각이 자동으로 기록됩니다</li>
+            <li>중요한 변경사항은 별도 공지를 고려해주세요</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/boards.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 글자수 카운터
+    const titleInput = document.getElementById('id_title');
+    const contentTextarea = document.getElementById('id_content');
+    const titleCounter = document.getElementById('title-counter');
+    const contentCounter = document.getElementById('content-counter');
+    
+    function updateTitleCounter() {
+        const length = titleInput.value.length;
+        titleCounter.textContent = length;
+        titleCounter.style.color = length > 180 ? '#dc3545' : '';
+    }
+    
+    function updateContentCounter() {
+        const length = contentTextarea.value.length;
+        contentCounter.textContent = length;
+    }
+    
+    titleInput.addEventListener('input', updateTitleCounter);
+    contentTextarea.addEventListener('input', updateContentCounter);
+    
+    // 초기 카운터 설정
+    updateTitleCounter();
+    updateContentCounter();
+    
+    // 폼 제출 시 확인
+    document.getElementById('notice-form').addEventListener('submit', function(e) {
+        if (!confirm('공지사항을 수정하시겠습니까?')) {
+            e.preventDefault();
+        }
+    });
+    
+    // 변경사항 감지
+    let originalTitle = titleInput.value;
+    let originalContent = contentTextarea.value;
+    let originalPinned = document.querySelector('input[name="is_pinned"]').checked;
+    
+    function hasChanges() {
+        return titleInput.value !== originalTitle || 
+               contentTextarea.value !== originalContent ||
+               document.querySelector('input[name="is_pinned"]').checked !== originalPinned;
+    }
+    
+    // 페이지 이탈 시 경고
+    window.addEventListener('beforeunload', function(e) {
+        if (hasChanges()) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    // 취소 버튼 클릭 시 확인
+    document.querySelector('a[href*="notice"]').addEventListener('click', function(e) {
+        if (hasChanges()) {
+            if (!confirm('변경사항이 저장되지 않습니다. 정말 나가시겠습니까?')) {
+                e.preventDefault();
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

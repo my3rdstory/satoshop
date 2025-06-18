@@ -1,0 +1,244 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}공지사항 삭제 - {{ notice.title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
+<style>
+/* 다크모드 대응 인라인 스타일 */
+.back-button {
+    margin-bottom: 20px;
+}
+
+.delete-warning {
+    background-color: rgba(248, 215, 218, 0.8);
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+    color: #721c24;
+}
+
+[data-theme="dark"] .delete-warning {
+    background-color: rgba(248, 215, 218, 0.15);
+    border-color: rgba(248, 215, 218, 0.3);
+    color: #f8d7da;
+}
+
+.delete-warning-icon {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.notice-preview {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.notice-preview-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+}
+
+.notice-preview-meta {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+}
+
+.notice-preview-content {
+    color: var(--text-primary);
+    line-height: 1.6;
+    max-height: 200px;
+    overflow: hidden;
+    position: relative;
+}
+
+.notice-preview-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+    background: linear-gradient(transparent, var(--bg-tertiary));
+}
+
+.delete-form-container {
+    padding: 30px; 
+    text-align: center;
+}
+
+.delete-form-title {
+    margin-bottom: 20px; 
+    color: #dc3545;
+}
+
+.delete-form-description {
+    margin-bottom: 30px; 
+    color: var(--text-secondary); 
+    line-height: 1.6;
+}
+
+.delete-form-buttons {
+    display: inline-block; 
+    margin-right: 10px;
+}
+
+.guide-section {
+    margin-top: 30px; 
+    padding: 20px; 
+    background-color: var(--bg-secondary); 
+    border-radius: 8px; 
+    border-left: 4px solid var(--text-muted);
+}
+
+.guide-section h4 {
+    margin-bottom: 15px; 
+    color: var(--text-secondary);
+}
+
+.guide-section ul {
+    margin: 0; 
+    padding-left: 20px; 
+    color: var(--text-secondary); 
+    line-height: 1.6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 -->
+    <div class="back-button">
+        <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">
+            ← 돌아가기
+        </a>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="notice-header">
+        <h1 class="notice-title">공지사항 삭제</h1>
+        <p class="notice-subtitle">정말로 이 공지사항을 삭제하시겠습니까?</p>
+    </div>
+
+    <!-- 삭제 경고 -->
+    <div class="delete-warning">
+        <span class="delete-warning-icon">⚠️</span>
+        <h4 style="margin-bottom: 15px; font-size: 1.1rem;">삭제 전 확인사항</h4>
+        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
+            <li><strong>삭제된 공지사항은 복구할 수 없습니다</strong></li>
+            <li>모든 댓글과 답글도 함께 삭제됩니다</li>
+            <li>사용자들이 더 이상 이 공지사항을 볼 수 없게 됩니다</li>
+            <li>검색 결과에서도 제외됩니다</li>
+        </ul>
+    </div>
+
+    <!-- 공지사항 미리보기 -->
+    <div class="notice-preview">
+        <div class="notice-preview-title">
+            {% if notice.is_pinned %}
+                <span class="notice-badge pinned">고정</span>
+            {% endif %}
+            {{ notice.title }}
+        </div>
+        <div class="notice-preview-meta">
+            작성자: {{ notice.author.username }} | 
+            작성일: {{ notice.created_at|date:"Y년 m월 d일 H:i" }} | 
+            조회수: {{ notice.views }}회 | 
+            댓글: {{ notice.comments.count }}개
+        </div>
+        <div class="notice-preview-content">
+            {{ notice.content|linebreaks }}
+        </div>
+    </div>
+
+    <!-- 삭제 확인 폼 -->
+    <div class="notice-detail">
+        <div class="delete-form-container">
+            <h3 class="delete-form-title">정말로 삭제하시겠습니까?</h3>
+            <p class="delete-form-description">
+                이 작업은 되돌릴 수 없습니다.<br>
+                신중하게 결정해주세요.
+            </p>
+            
+            <form method="post" class="delete-form-buttons">
+                {% csrf_token %}
+                <button type="submit" class="btn-notice btn-danger" id="delete-confirm-btn">
+                    🗑️ 삭제 확인
+                </button>
+            </form>
+            
+            <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">
+                취소
+            </a>
+        </div>
+    </div>
+
+    <!-- 삭제 안내 -->
+    <div class="guide-section">
+        <h4>💡 삭제 대안</h4>
+        <ul>
+            <li>내용을 수정하여 업데이트하는 것을 고려해보세요</li>
+            <li>임시로 비활성화가 필요한 경우 관리자에게 문의하세요</li>
+            <li>중요한 공지사항은 아카이브 보관을 권장합니다</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/boards.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('delete-confirm-btn');
+    const form = deleteBtn.closest('form');
+    
+    // 더블 확인 삭제
+    let confirmCount = 0;
+    
+    deleteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (confirmCount === 0) {
+            // 첫 번째 클릭
+            confirmCount++;
+            this.innerHTML = '⚠️ 정말 삭제하시겠습니까?';
+            this.style.backgroundColor = '#c82333';
+            
+            // 3초 후 리셋
+            setTimeout(() => {
+                confirmCount = 0;
+                this.innerHTML = '🗑️ 삭제 확인';
+                this.style.backgroundColor = '#dc3545';
+            }, 3000);
+            
+        } else {
+            // 두 번째 클릭 - 실제 삭제
+            if (confirm('⚠️ 최종 확인\n\n공지사항 "' + '{{ notice.title }}' + '"을(를) 영구적으로 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n정말로 삭제하시겠습니까?')) {
+                form.submit();
+            } else {
+                confirmCount = 0;
+                this.innerHTML = '🗑️ 삭제 확인';
+                this.style.backgroundColor = '#dc3545';
+            }
+        }
+    });
+    
+    // 키보드 단축키 방지 (실수 방지)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 
