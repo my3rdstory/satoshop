@@ -49,6 +49,7 @@ class Product(models.Model):
     is_active = models.BooleanField(default=True, verbose_name='판매 중')
     # 재고 관리
     stock_quantity = models.PositiveIntegerField(default=0, verbose_name='재고 수량')
+    is_temporarily_out_of_stock = models.BooleanField(default=False, verbose_name='일시품절')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -190,13 +191,17 @@ class Product(models.Model):
 
     @property
     def is_in_stock(self):
-        """재고가 있는지 확인"""
+        """재고가 있는지 확인 (일시품절 고려)"""
+        if self.is_temporarily_out_of_stock:
+            return False
         return self.stock_quantity > 0
 
     @property
     def stock_status(self):
-        """재고 상태 텍스트"""
-        if self.stock_quantity == 0:
+        """재고 상태 텍스트 (일시품절 고려)"""
+        if self.is_temporarily_out_of_stock:
+            return '일시 품절'
+        elif self.stock_quantity == 0:
             return '품절'
         elif self.stock_quantity <= 5:
             return f'재고 {self.stock_quantity}개'
@@ -217,7 +222,9 @@ class Product(models.Model):
         self.save()
 
     def can_purchase(self, quantity):
-        """구매 가능 여부 확인"""
+        """구매 가능 여부 확인 (일시품절 고려)"""
+        if self.is_temporarily_out_of_stock:
+            return False
         return self.is_active and self.stock_quantity >= quantity
 
 

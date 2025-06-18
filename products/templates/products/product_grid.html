@@ -24,8 +24,10 @@
         <!-- 재고 상태 태그 -->
         {% if not is_public_view %}
         <!-- 관리자 뷰: 모든 재고 상태 표시 -->
-        <div class="{% if product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
-          {% if product.stock_quantity == 0 %}
+        <div class="{% if product.is_temporarily_out_of_stock %}bg-purple-500{% elif product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if product.is_temporarily_out_of_stock %}
+            일시품절
+          {% elif product.stock_quantity == 0 %}
             품절
           {% else %}
             재고 {{ product.stock_quantity|intcomma }}개
@@ -33,8 +35,10 @@
         </div>
         {% else %}
         <!-- 공개 뷰: 모든 재고 상태 표시 -->
-        <div class="{% if product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
-          {% if product.stock_quantity == 0 %}
+        <div class="{% if product.is_temporarily_out_of_stock %}bg-purple-500{% elif product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if product.is_temporarily_out_of_stock %}
+            일시품절
+          {% elif product.stock_quantity == 0 %}
             품절
           {% else %}
             재고 {{ product.stock_quantity|intcomma }}개
@@ -106,8 +110,10 @@
         <!-- 재고 상태 정보 -->
         <div class="mb-3 flex items-center gap-2">
           <i class="fas fa-box text-sm text-gray-500"></i>
-          <span class="text-sm font-medium {% if product.stock_quantity == 0 %}text-red-500{% elif product.stock_quantity <= 5 %}text-orange-500{% else %}text-green-500{% endif %}">
-            {% if product.stock_quantity == 0 %}
+          <span class="text-sm font-medium {% if product.is_temporarily_out_of_stock %}text-purple-500{% elif product.stock_quantity == 0 %}text-red-500{% elif product.stock_quantity <= 5 %}text-orange-500{% else %}text-green-500{% endif %}">
+            {% if product.is_temporarily_out_of_stock %}
+              일시 품절
+            {% elif product.stock_quantity == 0 %}
               품절
             {% else %}
               재고: {{ product.stock_quantity|intcomma }}개
@@ -129,16 +135,28 @@
             <i class="fas fa-cog mr-1"></i>
             관리
           </a>
+          
+          <!-- 일시품절 버튼 -->
+          <button onclick="toggleTemporaryOutOfStock({{ product.id }}, '{{ product.title|escapejs }}')" 
+                  class="w-full inline-flex items-center justify-center px-3 py-2 {% if product.is_temporarily_out_of_stock %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} rounded-lg transition-colors text-sm">
+            <i class="fas {% if product.is_temporarily_out_of_stock %}fa-play{% else %}fa-pause{% endif %} mr-1"></i>
+            <span>{% if product.is_temporarily_out_of_stock %}일시품절 해제{% else %}일시품절{% endif %}</span>
+          </button>
           {% endif %}
           
           <!-- 상품보기 버튼 -->
           {% if is_public_view %}
-            {% if product.is_active and product.stock_quantity > 0 %}
+            {% if product.is_active and product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
             <a href="{% url 'stores:product_detail' store.store_id product.id %}" 
                class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
               <i class="fas fa-eye mr-1"></i>
               상품보기
             </a>
+            {% elif product.is_temporarily_out_of_stock %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-pause mr-1"></i>
+              일시품절
+            </button>
             {% elif product.stock_quantity == 0 %}
             <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
               <i class="fas fa-times mr-1"></i>

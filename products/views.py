@@ -539,75 +539,23 @@ def _process_product_options(request, product):
     
     # 새 옵션 추가
     options_data = json.loads(request.POST.get('options', '[]'))
-    for option_index, option_data in enumerate(options_data):
+    for option_data in options_data:
         if option_data.get('name'):
             option = ProductOption.objects.create(
                 product=product,
                 name=option_data['name'],
-                order=option_index
+                order=option_data.get('order', 0)
             )
             
             # 옵션 선택지 추가
-            choice_index = 0
-            while f'options[{option_index}][choices][{choice_index}][name]' in request.POST:
-                choice_name = request.POST.get(f'options[{option_index}][choices][{choice_index}][name]', '').strip()
-                choice_price = request.POST.get(f'options[{option_index}][choices][{choice_index}][price]', 0)
-                
-                # 숨겨진 필드에서 변환된 가격 값들 가져오기
-                choice_price_krw = request.POST.get(f'options[{option_index}][choices][{choice_index}][price_krw]', None)
-                choice_price_sats = request.POST.get(f'options[{option_index}][choices][{choice_index}][price_sats]', None)
-                
-                if choice_name:
-                    # 가격 표시 방식에 따라 적절한 필드에 저장
-                    choice_data = {
-                        'option': option,
-                        'name': choice_name,
-                        'order': choice_index
-                    }
-                    
-                    if choice_price:
-                        price_value = int(choice_price)
-                        if product.price_display == 'krw':
-                            # 원화연동: 입력된 값을 원화 필드에 저장
-                            choice_data['price_krw'] = price_value
-                            # 사토시 값은 숨겨진 필드에서 가져오거나 원화를 사토시로 변환
-                            if choice_price_sats:
-                                choice_data['price'] = int(choice_price_sats)
-                            else:
-                                # 원화를 사토시로 변환
-                                try:
-                                    from decimal import Decimal
-                                    import requests
-                                    
-                                    # 업비트 API에서 현재 환율 가져오기
-                                    response = requests.get('https://api.upbit.com/v1/ticker?markets=KRW-BTC', timeout=5)
-                                    if response.status_code == 200:
-                                        data = response.json()[0]
-                                        btc_krw_rate = Decimal(str(data['trade_price']))
-                                        # 1 BTC = 100,000,000 사토시
-                                        sats_per_krw = Decimal('100000000') / btc_krw_rate
-                                        choice_data['price'] = int(price_value * sats_per_krw)
-                                    else:
-                                        choice_data['price'] = 0
-                                except Exception:
-                                    choice_data['price'] = 0
-                        else:
-                            # 사토시 고정: 입력된 값을 사토시 필드에 저장
-                            choice_data['price'] = price_value
-                            # 원화 값은 숨겨진 필드에서 가져오거나 None으로 설정
-                            if choice_price_krw:
-                                choice_data['price_krw'] = int(choice_price_krw)
-                            else:
-                                choice_data['price_krw'] = None
-                    else:
-                        choice_data['price'] = 0
-                        choice_data['price_krw'] = None
-                    
-                    ProductOptionChoice.objects.create(**choice_data)
-                
-                choice_index += 1
-        
-        option_index += 1
+            for choice_data in option_data.get('choices', []):
+                if choice_data.get('name'):
+                    ProductOptionChoice.objects.create(
+                        option=option,
+                        name=choice_data['name'],
+                        price=choice_data.get('price', 0),
+                        order=choice_data.get('order', 0)
+                    )
         
 
 # 섹션별 상품 편집 뷰들
@@ -879,13 +827,46 @@ def toggle_product_status(request, store_id, product_id):
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     product = get_object_or_404(Product, id=product_id, store=store)
     
-    is_active = request.POST.get('is_active') == 'on'
-    product.is_active = is_active
-    product.save()
+    try:
+        product.is_active = not product.is_active
+        product.save()
+        
+        status = "활성화" if product.is_active else "비활성화"
+        return JsonResponse({
+            'success': True,
+            'message': f'상품이 {status}되었습니다.',
+            'is_active': product.is_active
+        })
+    except Exception as e:
+        logger.error(f"상품 상태 변경 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '상품 상태 변경 중 오류가 발생했습니다.'
+        })
+
+
+@login_required
+@store_owner_required
+@require_POST
+def toggle_temporary_out_of_stock(request, store_id, product_id):
+    """상품 일시품절 토글"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    product = get_object_or_404(Product, id=product_id, store=store)
     
-    if is_active:
-        messages.success(request, f'"{product.title}" 상품이 활성화되었습니다.')
-    else:
-        messages.success(request, f'"{product.title}" 상품이 비활성화되었습니다.')
-    
-    return redirect('products:manage_product', store_id=store_id, product_id=product_id)
+    try:
+        product.is_temporarily_out_of_stock = not product.is_temporarily_out_of_stock
+        product.save()
+        
+        status = "일시품절" if product.is_temporarily_out_of_stock else "일시품절 해제"
+        return JsonResponse({
+            'success': True,
+            'message': f'상품이 {status}되었습니다.',
+            'is_temporarily_out_of_stock': product.is_temporarily_out_of_stock,
+            'stock_status': product.stock_status
+        })
+    except Exception as e:
+        logger.error(f"일시품절 상태 변경 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '일시품절 상태 변경 중 오류가 발생했습니다.'
+        })

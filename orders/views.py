@@ -1307,7 +1307,9 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             # 주문 아이템 생성
             for item in store_items:
                 # 재고 확인 및 감소
-                if not item.product.can_purchase(item.quantity):
+                if item.product.is_temporarily_out_of_stock:
+                    raise Exception(f'"{item.product.title}" 상품이 일시품절 상태입니다.')
+                elif not item.product.can_purchase(item.quantity):
                     raise Exception(f'"{item.product.title}" 상품의 재고가 부족합니다. (요청: {item.quantity}개, 재고: {item.product.stock_quantity}개)')
                 
                 # 재고 감소

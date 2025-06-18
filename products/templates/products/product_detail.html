@@ -182,8 +182,10 @@
             <h4 class="text-lg font-semibold text-gray-900 dark:text-white">수량</h4>
             <div class="flex items-center gap-2">
               <i class="fas fa-box text-sm text-gray-500"></i>
-              <span class="text-sm font-medium {% if product.stock_quantity == 0 %}text-red-500{% elif product.stock_quantity <= 5 %}text-orange-500{% else %}text-green-500{% endif %}">
-                {% if product.stock_quantity == 0 %}
+              <span class="text-sm font-medium {% if product.is_temporarily_out_of_stock %}text-purple-500{% elif product.stock_quantity == 0 %}text-red-500{% elif product.stock_quantity <= 5 %}text-orange-500{% else %}text-green-500{% endif %}">
+                {% if product.is_temporarily_out_of_stock %}
+                  일시 품절
+                {% elif product.stock_quantity == 0 %}
                   품절
                 {% else %}
                   재고: {{ product.stock_quantity|intcomma }}개
@@ -191,7 +193,7 @@
               </span>
             </div>
           </div>
-          {% if product.stock_quantity > 0 %}
+          {% if product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
           <div class="flex items-center gap-4">
             <button class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors" 
                     onclick="changeQuantity(-1)">
@@ -207,8 +209,13 @@
           </div>
           {% else %}
           <div class="text-center py-4">
+            {% if product.is_temporarily_out_of_stock %}
+            <div class="text-purple-500 font-medium">현재 일시품절된 상품입니다</div>
+            <div class="text-sm text-gray-500 mt-1">곧 판매를 재개할 예정입니다</div>
+            {% else %}
             <div class="text-red-500 font-medium">현재 품절된 상품입니다</div>
             <div class="text-sm text-gray-500 mt-1">재입고 시 구매 가능합니다</div>
+            {% endif %}
           </div>
           {% endif %}
         </div>
@@ -250,11 +257,17 @@
 
         <!-- 액션 버튼 -->
         <div class="space-y-3">
-          {% if product.stock_quantity > 0 %}
+          {% if product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
           <button class="w-full py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
                   onclick="addToCart()">
             <i class="fas fa-shopping-cart"></i>
             <span>장바구니 담기</span>
+          </button>
+          {% elif product.is_temporarily_out_of_stock %}
+          <button class="w-full py-4 bg-purple-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 
+                  disabled>
+            <i class="fas fa-pause"></i>
+            <span>일시품절</span>
           </button>
           {% else %}
           <button class="w-full py-4 bg-gray-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 

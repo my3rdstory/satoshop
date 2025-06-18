@@ -64,4 +64,37 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product-list.js' %}"></script>
+{% if not is_public_view %}
+<script>
+// 일시품절 토글 함수
+function toggleTemporaryOutOfStock(productId, productTitle) {
+    const action = document.querySelector(`button[onclick*="${productId}"] span`).textContent.includes('해제') ? '해제' : '설정';
+    
+    if (confirm(`"${productTitle}" 상품을 일시품절 ${action}하시겠습니까?`)) {
+        const url = `/products/{{ store.store_id }}/${productId}/toggle-temporary-out-of-stock/`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // 페이지 새로고침으로 상태 반영
+            } else {
+                alert('오류가 발생했습니다: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('네트워크 오류가 발생했습니다.');
+        });
+    }
+}
+</script>
+{% endif %}
 {% endblock %}

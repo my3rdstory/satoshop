@@ -22,6 +22,7 @@ urlpatterns = [
     
     # 상품 상태 관리
     path('<str:store_id>/<int:product_id>/toggle-status/', views.toggle_product_status, name='toggle_product_status'),
+    path('<str:store_id>/<int:product_id>/toggle-temporary-out-of-stock/', views.toggle_temporary_out_of_stock, name='toggle_temporary_out_of_stock'),
     
     # 상품 이미지 관리
     path('<str:store_id>/<int:product_id>/upload-image/', views.upload_product_image, name='upload_product_image'),
