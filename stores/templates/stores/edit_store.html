@@ -215,6 +215,30 @@
             </div>
           </div>
 
+          <!-- 사업자 정보 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">사업자등록번호 <span class="text-sm text-gray-500">(선택)</span></label>
+              <div class="relative">
+                <input type="text" name="business_license_number" id="business_license_number" placeholder="123-45-67890" value="{{ store.business_license_number }}"
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-building text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">통신판매업번호 <span class="text-sm text-gray-500">(선택)</span></label>
+              <div class="relative">
+                <input type="text" name="telecommunication_sales_number" id="telecommunication_sales_number" placeholder="2023-서울강남-1234" value="{{ store.telecommunication_sales_number }}"
+                  class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-certificate text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">대화채널 <span class="text-red-500">*</span></label>
             <div class="relative">

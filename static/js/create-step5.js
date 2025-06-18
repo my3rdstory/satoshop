@@ -1,31 +1,55 @@
 // create-step5.js - 스토어 생성 5단계 JavaScript
 
 document.addEventListener('DOMContentLoaded', function () {
+  const agreeInfo = document.getElementById('agreeInfo');
   const agreeTerms = document.getElementById('agreeTerms');
   const createStoreBtn = document.getElementById('createStoreBtn');
 
   // 마크다운 렌더링은 MarkdownRenderer가 자동으로 처리
 
-  // 약관 동의 체크박스 상태에 따라 버튼 활성화/비활성화
-  agreeTerms.addEventListener('change', function () {
-    createStoreBtn.disabled = !this.checked;
+  // 체크박스 상태 확인 함수
+  function checkAllAgreements() {
+    if (!agreeInfo || !agreeTerms || !createStoreBtn) {
+      console.error('필요한 요소들을 찾을 수 없습니다');
+      return;
+    }
 
-    if (this.checked) {
+    const allChecked = agreeInfo.checked && agreeTerms.checked;
+    createStoreBtn.disabled = !allChecked;
+
+    if (allChecked) {
       createStoreBtn.classList.remove('from-gray-300', 'to-gray-300');
       createStoreBtn.classList.add('from-purple-500', 'to-pink-600', 'hover:from-purple-600', 'hover:to-pink-700');
     } else {
       createStoreBtn.classList.remove('from-purple-500', 'to-pink-600', 'hover:from-purple-600', 'hover:to-pink-700');
       createStoreBtn.classList.add('from-gray-300', 'to-gray-300');
     }
-  });
+  }
+
+  // 동의 체크박스들에 이벤트 리스너 추가
+  if (agreeInfo) {
+    agreeInfo.addEventListener('change', checkAllAgreements);
+  }
+  if (agreeTerms) {
+    agreeTerms.addEventListener('change', checkAllAgreements);
+  }
+
+  // 초기 상태 설정 (페이지 로드시 두 체크박스 모두 비활성화 상태)
+  checkAllAgreements();
 
   // 폼 제출 시 최종 확인
   document.getElementById('step5Form').addEventListener('submit', function (e) {
-            // 폼 제출 시도
+    // 폼 제출 시도
+
+    if (!agreeInfo.checked) {
+      e.preventDefault();
+      alert('스토어 정보와 주의사항 확인에 동의해주세요.');
+      return false;
+    }
 
     if (!agreeTerms.checked) {
       e.preventDefault();
-      alert('약관에 동의해주세요.');
+      alert('이용약관, 개인정보처리방침, 환불 및 반품 정책에 동의해주세요.');
       return false;
     }
 

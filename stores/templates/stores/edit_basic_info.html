@@ -158,6 +158,43 @@
               </div>
             </div>
 
+            <!-- 사업자 정보 (선택사항) -->
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  사업자 정보 <span class="text-sm text-gray-500 dark:text-gray-400">(선택사항)</span>
+                </h3>
+                <div class="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                  <p class="text-sm text-green-800 dark:text-green-200">사업자등록번호와 통신판매업번호는 선택적으로 입력할 수 있습니다. 입력하지 않으면 '-'로 표시됩니다.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">사업자등록번호</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-building text-gray-400"></i>
+                      </div>
+                      <input type="text" name="business_license_number" id="business_license_number" placeholder="123-45-67890"
+                        value="{{ store.business_license_number }}"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">통신판매업번호</label>
+                    <div class="relative">
+                      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-certificate text-gray-400"></i>
+                      </div>
+                      <input type="text" name="telecommunication_sales_number" id="telecommunication_sales_number" placeholder="2023-서울강남-1234"
+                        value="{{ store.telecommunication_sales_number }}"
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-colors">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 대화채널 <span class="text-red-500">*</span>
