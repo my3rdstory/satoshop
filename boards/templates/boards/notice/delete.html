@@ -2,243 +2,167 @@
 {% load static %}
 {% load static_versioned %}
 
-{% block title %}공지사항 삭제 - {{ notice.title }}{% endblock %}
+{% block title %}{{ notice.title }} 삭제 - 공지사항{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
-<style>
-/* 다크모드 대응 인라인 스타일 */
-.back-button {
-    margin-bottom: 20px;
-}
-
-.delete-warning {
-    background-color: rgba(248, 215, 218, 0.8);
-    border: 1px solid #f5c6cb;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 25px;
-    color: #721c24;
-}
-
-[data-theme="dark"] .delete-warning {
-    background-color: rgba(248, 215, 218, 0.15);
-    border-color: rgba(248, 215, 218, 0.3);
-    color: #f8d7da;
-}
-
-.delete-warning-icon {
-    font-size: 2rem;
-    margin-bottom: 15px;
-    display: block;
-}
-
-.notice-preview {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 25px;
-}
-
-.notice-preview-title {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: var(--text-primary);
-}
-
-.notice-preview-meta {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 15px;
-}
-
-.notice-preview-content {
-    color: var(--text-primary);
-    line-height: 1.6;
-    max-height: 200px;
-    overflow: hidden;
-    position: relative;
-}
-
-.notice-preview-content::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 30px;
-    background: linear-gradient(transparent, var(--bg-tertiary));
-}
-
-.delete-form-container {
-    padding: 30px; 
-    text-align: center;
-}
-
-.delete-form-title {
-    margin-bottom: 20px; 
-    color: #dc3545;
-}
-
-.delete-form-description {
-    margin-bottom: 30px; 
-    color: var(--text-secondary); 
-    line-height: 1.6;
-}
-
-.delete-form-buttons {
-    display: inline-block; 
-    margin-right: 10px;
-}
-
-.guide-section {
-    margin-top: 30px; 
-    padding: 20px; 
-    background-color: var(--bg-secondary); 
-    border-radius: 8px; 
-    border-left: 4px solid var(--text-muted);
-}
-
-.guide-section h4 {
-    margin-bottom: 15px; 
-    color: var(--text-secondary);
-}
-
-.guide-section ul {
-    margin: 0; 
-    padding-left: 20px; 
-    color: var(--text-secondary); 
-    line-height: 1.6;
-}
-</style>
+<link rel="stylesheet" href="{% static_v 'css/board-notice.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="notice-container">
-    <!-- 뒤로가기 -->
+    <!-- 뒤로가기 버튼 -->
     <div class="back-button">
-        <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">
-            ← 돌아가기
+        <a href="{% url 'boards:notice_detail' notice.id %}" class="btn-notice btn-secondary">
+            <!-- Heroicon: arrow-left -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            공지사항으로 돌아가기
         </a>
     </div>
 
-    <!-- 헤더 -->
-    <div class="notice-header">
-        <h1 class="notice-title">공지사항 삭제</h1>
-        <p class="notice-subtitle">정말로 이 공지사항을 삭제하시겠습니까?</p>
+    <!-- 헤더 섹션 -->
+    <div class="notice-header delete">
+        <div class="notice-header-content">
+            <h1 class="notice-title">
+                <!-- Heroicon: exclamation-triangle -->
+                <svg class="notice-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                </svg>
+                공지사항 삭제
+            </h1>
+            <p class="notice-subtitle">이 작업은 되돌릴 수 없습니다. 신중하게 결정해주세요</p>
+        </div>
     </div>
 
-    <!-- 삭제 경고 -->
-    <div class="delete-warning">
-        <span class="delete-warning-icon">⚠️</span>
-        <h4 style="margin-bottom: 15px; font-size: 1.1rem;">삭제 전 확인사항</h4>
-        <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-            <li><strong>삭제된 공지사항은 복구할 수 없습니다</strong></li>
-            <li>모든 댓글과 답글도 함께 삭제됩니다</li>
-            <li>사용자들이 더 이상 이 공지사항을 볼 수 없게 됩니다</li>
-            <li>검색 결과에서도 제외됩니다</li>
+    <!-- 경고 섹션 -->
+    <div class="warning-section">
+        <div class="warning-icon">
+            <!-- Heroicon: exclamation-circle -->
+            <svg fill="currentColor" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <h2 class="warning-title">삭제 주의사항</h2>
+        <p class="warning-message">
+            공지사항을 삭제하면 관련된 모든 데이터가 영구적으로 제거됩니다.
+        </p>
+        <div class="warning-details">
+            <h4>다음 항목들이 함께 삭제됩니다:</h4>
+            <ul>
+                <li>공지사항 본문 내용</li>
+                <li>등록된 모든 댓글 ({{ notice.comments.count }}개)</li>
+                <li>작성 및 수정 기록</li>
+                <li>조회수 및 통계 정보</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 대안 제안 -->
+    <div class="delete-alternative">
+        <h3 class="alternative-title">삭제 대신 이런 방법은 어떠세요?</h3>
+        <ul class="alternative-list">
+            <li>공지사항 내용을 수정하여 업데이트하기</li>
+            <li>임시로 숨김 처리하고 나중에 재활용하기</li>
+            <li>중요한 내용은 백업 후 새 공지사항 작성하기</li>
         </ul>
     </div>
 
-    <!-- 공지사항 미리보기 -->
-    <div class="notice-preview">
-        <div class="notice-preview-title">
+    <!-- 삭제할 공지사항 미리보기 -->
+    <div class="preview-section">
+        <div class="preview-header">
+            <!-- Heroicon: document-text -->
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            삭제될 공지사항
+        </div>
+        <div class="preview-content">
             {% if notice.is_pinned %}
-                <span class="notice-badge pinned">고정</span>
+            <span class="notice-badge">
+                <!-- Heroicon: bookmark -->
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clip-rule="evenodd"/>
+                </svg>
+                고정됨
+            </span>
             {% endif %}
-            {{ notice.title }}
-        </div>
-        <div class="notice-preview-meta">
-            작성자: {{ notice.author.username }} | 
-            작성일: {{ notice.created_at|date:"Y년 m월 d일 H:i" }} | 
-            조회수: {{ notice.views }}회 | 
-            댓글: {{ notice.comments.count }}개
-        </div>
-        <div class="notice-preview-content">
-            {{ notice.content|linebreaks }}
+            
+            <h2 class="preview-title">{{ notice.title }}</h2>
+            
+            <div class="preview-meta">
+                <span>
+                    <!-- Heroicon: user -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    {{ notice.author.username }}
+                </span>
+                <span>
+                    <!-- Heroicon: calendar -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    {{ notice.created_at|date:"Y.m.d" }}
+                </span>
+                <span>
+                    <!-- Heroicon: eye -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    조회 {{ notice.views }}
+                </span>
+                <span>
+                    <!-- Heroicon: chat-bubble-left -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                    댓글 {{ notice.comments.count }}
+                </span>
+            </div>
+            
+            <div class="preview-text">
+                {{ notice.content|truncatewords:30|linebreaks }}
+                {% if notice.content|wordcount > 30 %}
+                <p><em>... (내용이 더 있습니다)</em></p>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- 삭제 확인 폼 -->
     <div class="notice-detail">
-        <div class="delete-form-container">
-            <h3 class="delete-form-title">정말로 삭제하시겠습니까?</h3>
-            <p class="delete-form-description">
-                이 작업은 되돌릴 수 없습니다.<br>
-                신중하게 결정해주세요.
-            </p>
-            
-            <form method="post" class="delete-form-buttons">
-                {% csrf_token %}
-                <button type="submit" class="btn-notice btn-danger" id="delete-confirm-btn">
-                    🗑️ 삭제 확인
+        <form method="post" class="delete-form">
+            {% csrf_token %}
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-danger">
+                    <!-- Heroicon: trash -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                    </svg>
+                    영구 삭제하기
                 </button>
-            </form>
-            
-            <a href="{{ notice.get_absolute_url }}" class="btn-notice btn-secondary">
-                취소
-            </a>
-        </div>
-    </div>
-
-    <!-- 삭제 안내 -->
-    <div class="guide-section">
-        <h4>💡 삭제 대안</h4>
-        <ul>
-            <li>내용을 수정하여 업데이트하는 것을 고려해보세요</li>
-            <li>임시로 비활성화가 필요한 경우 관리자에게 문의하세요</li>
-            <li>중요한 공지사항은 아카이브 보관을 권장합니다</li>
-        </ul>
+                <a href="{% url 'boards:notice_detail' notice.id %}" class="btn-notice btn-secondary">
+                    <!-- Heroicon: x-mark -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    취소
+                </a>
+                <a href="{% url 'boards:notice_edit' notice.id %}" class="btn-notice btn-primary">
+                    <!-- Heroicon: pencil -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    대신 수정하기
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static_v 'js/boards.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const deleteBtn = document.getElementById('delete-confirm-btn');
-    const form = deleteBtn.closest('form');
-    
-    // 더블 확인 삭제
-    let confirmCount = 0;
-    
-    deleteBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        if (confirmCount === 0) {
-            // 첫 번째 클릭
-            confirmCount++;
-            this.innerHTML = '⚠️ 정말 삭제하시겠습니까?';
-            this.style.backgroundColor = '#c82333';
-            
-            // 3초 후 리셋
-            setTimeout(() => {
-                confirmCount = 0;
-                this.innerHTML = '🗑️ 삭제 확인';
-                this.style.backgroundColor = '#dc3545';
-            }, 3000);
-            
-        } else {
-            // 두 번째 클릭 - 실제 삭제
-            if (confirm('⚠️ 최종 확인\n\n공지사항 "' + '{{ notice.title }}' + '"을(를) 영구적으로 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n정말로 삭제하시겠습니까?')) {
-                form.submit();
-            } else {
-                confirmCount = 0;
-                this.innerHTML = '🗑️ 삭제 확인';
-                this.style.backgroundColor = '#dc3545';
-            }
-        }
-    });
-    
-    // 키보드 단축키 방지 (실수 방지)
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-            e.preventDefault();
-        }
-    });
-});
-</script>
+<script src="{% static_v 'js/board-notice.js' %}"></script>
 {% endblock %} 

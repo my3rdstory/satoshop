@@ -5,159 +5,110 @@
 {% block title %}공지사항 작성{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static_v 'css/boards.css' %}">
-<style>
-/* 다크모드 대응 인라인 스타일 */
-.back-button {
-    margin-bottom: 20px;
-}
-
-.notice-form {
-    padding: 30px;
-}
-
-.char-counter {
-    margin-top: 5px; 
-    font-size: 0.9rem; 
-    color: var(--text-muted);
-}
-
-.guide-section {
-    margin-top: 30px; 
-    padding: 20px; 
-    background-color: var(--bg-tertiary); 
-    border-radius: 8px; 
-    border-left: 4px solid #007bff;
-}
-
-.guide-section h4 {
-    margin-bottom: 15px; 
-    color: var(--text-primary);
-}
-
-.guide-section ul {
-    margin: 0; 
-    padding-left: 20px; 
-    color: var(--text-secondary); 
-    line-height: 1.6;
-}
-</style>
+<link rel="stylesheet" href="{% static_v 'css/board-notice.css' %}">
 {% endblock %}
 
 {% block content %}
 <div class="notice-container">
-    <!-- 뒤로가기 -->
+    <!-- 뒤로가기 버튼 -->
     <div class="back-button">
         <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
-            ← 목록으로
+            <!-- Heroicon: arrow-left -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            목록으로 돌아가기
         </a>
     </div>
 
-    <!-- 헤더 -->
-    <div class="notice-header">
-        <h1 class="notice-title">공지사항 작성</h1>
-        <p class="notice-subtitle">새로운 공지사항을 작성하세요</p>
+    <!-- 헤더 섹션 -->
+    <div class="notice-header create">
+        <div class="notice-header-content">
+            <h1 class="notice-title">
+                <!-- Heroicon: plus-circle -->
+                <svg class="notice-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                공지사항 작성
+            </h1>
+            <p class="notice-subtitle">새로운 공지사항을 작성하여 사용자들에게 알려보세요</p>
+        </div>
     </div>
 
-    <!-- 작성 폼 -->
+    <!-- 공지사항 작성 폼 -->
     <div class="notice-detail">
-        <form method="post" id="notice-form" class="notice-form">
+        <form method="post" class="notice-form">
             {% csrf_token %}
             
             <!-- 제목 -->
             <div class="form-group">
-                <label for="id_title" class="form-label">제목 *</label>
-                <input type="text" 
-                       id="id_title" 
-                       name="title" 
-                       value="{{ title|default:'' }}" 
-                       class="form-input" 
-                       maxlength="200" 
-                       required>
+                <label for="id_title" class="form-label">
+                    <!-- Heroicon: document-text -->
+                    <svg class="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    제목 *
+                </label>
+                {{ form.title }}
                 <div class="char-counter">
-                    <span id="title-counter">0</span>/200자
+                    <span id="title-counter">0</span>/100자
                 </div>
             </div>
 
             <!-- 내용 -->
             <div class="form-group">
-                <label for="id_content" class="form-label">내용 *</label>
-                <textarea id="id_content" 
-                         name="content" 
-                         class="form-textarea" 
-                         placeholder="공지사항 내용을 입력하세요..." 
-                         required>{{ content|default:'' }}</textarea>
+                <label for="id_content" class="form-label">
+                    <!-- Heroicon: pencil -->
+                    <svg class="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    내용 *
+                </label>
+                {{ form.content }}
                 <div class="char-counter">
-                    <span id="content-counter">0</span>자
+                    <span id="content-counter">0</span>/5000자
                 </div>
             </div>
 
-            <!-- 옵션 -->
+            <!-- 고정 여부 -->
+            {% if user.is_staff %}
             <div class="form-group">
                 <label class="form-checkbox-label">
-                    <input type="checkbox" 
-                           name="is_pinned" 
-                           class="form-checkbox"
-                           {% if is_pinned %}checked{% endif %}>
-                    상단 고정 (중요한 공지사항인 경우 체크하세요)
+                    {{ form.is_pinned }}
+                    <!-- Heroicon: bookmark -->
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                    이 공지사항을 상단에 고정하기
+                    <small style="color: var(--text-muted); font-weight: normal; margin-left: 8px;">
+                        (중요한 공지사항은 목록 최상단에 고정됩니다)
+                    </small>
                 </label>
             </div>
+            {% endif %}
 
             <!-- 버튼 -->
             <div class="form-actions">
-                <button type="submit" class="btn-notice btn-primary">작성 완료</button>
-                <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">취소</a>
+                <button type="submit" class="btn-notice btn-primary">
+                    <!-- Heroicon: check -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    작성 완료
+                </button>
+                <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
+                    <!-- Heroicon: x-mark -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    취소
+                </a>
             </div>
         </form>
-    </div>
-
-    <!-- 작성 가이드 -->
-    <div class="guide-section">
-        <h4>✍️ 작성 가이드</h4>
-        <ul>
-            <li>제목은 명확하고 간결하게 작성해주세요 (최대 200자)</li>
-            <li>내용은 사용자가 이해하기 쉽게 작성해주세요</li>
-            <li>중요한 공지사항은 '상단 고정' 옵션을 사용하세요</li>
-            <li>작성한 공지사항은 모든 회원이 볼 수 있습니다</li>
-        </ul>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static_v 'js/boards.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 글자수 카운터
-    const titleInput = document.getElementById('id_title');
-    const contentTextarea = document.getElementById('id_content');
-    const titleCounter = document.getElementById('title-counter');
-    const contentCounter = document.getElementById('content-counter');
-    
-    function updateTitleCounter() {
-        const length = titleInput.value.length;
-        titleCounter.textContent = length;
-        titleCounter.style.color = length > 180 ? '#dc3545' : '';
-    }
-    
-    function updateContentCounter() {
-        const length = contentTextarea.value.length;
-        contentCounter.textContent = length;
-    }
-    
-    titleInput.addEventListener('input', updateTitleCounter);
-    contentTextarea.addEventListener('input', updateContentCounter);
-    
-    // 초기 카운터 설정
-    updateTitleCounter();
-    updateContentCounter();
-    
-    // 폼 제출 시 확인
-    document.getElementById('notice-form').addEventListener('submit', function(e) {
-        if (!confirm('공지사항을 작성하시겠습니까?')) {
-            e.preventDefault();
-        }
-    });
-});
-</script>
+<script src="{% static_v 'js/board-notice.js' %}"></script>
 {% endblock %} 

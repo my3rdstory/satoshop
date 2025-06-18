@@ -10,6 +10,7 @@ from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from .models import Notice, NoticeComment
+from .forms import NoticeForm, NoticeCommentForm
 import json
 
 
@@ -68,6 +69,7 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
         ).select_related('author').prefetch_related('replies__author')
         
         context['comments'] = comments
+        context['comment_form'] = NoticeCommentForm()
         context['can_edit'] = (
             self.request.user == notice.author or 
             is_staff_or_superuser(self.request.user)
@@ -81,29 +83,18 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
 def notice_create(request):
     """공지사항 작성"""
     if request.method == 'POST':
-        title = request.POST.get('title', '').strip()
-        content = request.POST.get('content', '').strip()
-        is_pinned = request.POST.get('is_pinned') == 'on'
-        
-        if not title or not content:
-            messages.error(request, '제목과 내용을 모두 입력해주세요.')
-            return render(request, 'boards/notice/create.html', {
-                'title': title,
-                'content': content,
-                'is_pinned': is_pinned
-            })
-        
-        notice = Notice.objects.create(
-            title=title,
-            content=content,
-            author=request.user,
-            is_pinned=is_pinned
-        )
-        
-        messages.success(request, '공지사항이 성공적으로 작성되었습니다.')
-        return redirect('boards:notice_detail', pk=notice.pk)
+        form = NoticeForm(request.POST)
+        if form.is_valid():
+            notice = form.save(commit=False)
+            notice.author = request.user
+            notice.save()
+            
+            messages.success(request, '공지사항이 성공적으로 작성되었습니다.')
+            return redirect('boards:notice_detail', pk=notice.pk)
+    else:
+        form = NoticeForm()
     
-    return render(request, 'boards/notice/create.html')
+    return render(request, 'boards/notice/create.html', {'form': form})
 
 
 @login_required
@@ -118,28 +109,15 @@ def notice_edit(request, pk):
         return redirect('boards:notice_detail', pk=pk)
     
     if request.method == 'POST':
-        title = request.POST.get('title', '').strip()
-        content = request.POST.get('content', '').strip()
-        is_pinned = request.POST.get('is_pinned') == 'on'
-        
-        if not title or not content:
-            messages.error(request, '제목과 내용을 모두 입력해주세요.')
-            return render(request, 'boards/notice/edit.html', {
-                'notice': notice,
-                'title': title,
-                'content': content,
-                'is_pinned': is_pinned
-            })
-        
-        notice.title = title
-        notice.content = content
-        notice.is_pinned = is_pinned
-        notice.save()
-        
-        messages.success(request, '공지사항이 성공적으로 수정되었습니다.')
-        return redirect('boards:notice_detail', pk=notice.pk)
+        form = NoticeForm(request.POST, instance=notice)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '공지사항이 성공적으로 수정되었습니다.')
+            return redirect('boards:notice_detail', pk=notice.pk)
+    else:
+        form = NoticeForm(instance=notice)
     
-    return render(request, 'boards/notice/edit.html', {'notice': notice})
+    return render(request, 'boards/notice/edit.html', {'form': form, 'notice': notice})
 
 
 @login_required
@@ -167,26 +145,25 @@ def notice_delete(request, pk):
 def comment_create(request, notice_pk):
     """댓글 작성"""
     notice = get_object_or_404(Notice, pk=notice_pk, is_active=True)
-    content = request.POST.get('content', '').strip()
+    form = NoticeCommentForm(request.POST)
     parent_id = request.POST.get('parent_id')
     
-    if not content:
+    if form.is_valid():
+        # 부모 댓글 확인 (대댓글인 경우)
+        parent = None
+        if parent_id:
+            parent = get_object_or_404(NoticeComment, pk=parent_id, is_active=True)
+        
+        comment = form.save(commit=False)
+        comment.notice = notice
+        comment.author = request.user
+        comment.parent = parent
+        comment.save()
+        
+        messages.success(request, '댓글이 성공적으로 작성되었습니다.')
+    else:
         messages.error(request, '댓글 내용을 입력해주세요.')
-        return redirect('boards:notice_detail', pk=notice_pk)
     
-    # 부모 댓글 확인 (대댓글인 경우)
-    parent = None
-    if parent_id:
-        parent = get_object_or_404(NoticeComment, pk=parent_id, is_active=True)
-    
-    comment = NoticeComment.objects.create(
-        notice=notice,
-        author=request.user,
-        content=content,
-        parent=parent
-    )
-    
-    messages.success(request, '댓글이 성공적으로 작성되었습니다.')
     return redirect('boards:notice_detail', pk=notice_pk)
 
 
@@ -201,19 +178,18 @@ def comment_edit(request, comment_pk):
         return redirect('boards:notice_detail', pk=comment.notice.pk)
     
     if request.method == 'POST':
-        content = request.POST.get('content', '').strip()
-        
-        if not content:
-            messages.error(request, '댓글 내용을 입력해주세요.')
+        form = NoticeCommentForm(request.POST, instance=comment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '댓글이 성공적으로 수정되었습니다.')
             return redirect('boards:notice_detail', pk=comment.notice.pk)
-        
-        comment.content = content
-        comment.save()
-        
-        messages.success(request, '댓글이 수정되었습니다.')
-        return redirect('boards:notice_detail', pk=comment.notice.pk)
+    else:
+        form = NoticeCommentForm(instance=comment)
     
-    return render(request, 'boards/notice/comment_edit.html', {'comment': comment})
+    return render(request, 'boards/notice/comment_edit.html', {
+        'form': form, 
+        'comment': comment
+    })
 
 
 @login_required
