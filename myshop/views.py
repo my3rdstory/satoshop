@@ -6,6 +6,7 @@ from .services import UpbitExchangeService
 import json
 import os
 from django.utils import timezone
+from django.http import Http404
 
 # Create your views here.
 
@@ -226,3 +227,23 @@ def update_exchange_rate_webhook(request):
             'timestamp': timezone.now().isoformat(),
             'processing_time': f'{total_duration:.2f}s'
         }, status=500)
+
+def document_view(request, doc_type):
+    """문서 보기 페이지"""
+    from .models import DocumentContent
+    
+    # 유효한 문서 타입인지 확인
+    valid_doc_types = ['terms', 'privacy', 'refund']
+    if doc_type not in valid_doc_types:
+        raise Http404("존재하지 않는 문서입니다.")
+    
+    try:
+        document = DocumentContent.objects.get(document_type=doc_type, is_active=True)
+    except DocumentContent.DoesNotExist:
+        raise Http404("문서를 찾을 수 없습니다.")
+    
+    context = {
+        'document': document,
+    }
+    
+    return render(request, 'myshop/document.html', context)

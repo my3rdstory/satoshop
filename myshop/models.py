@@ -409,3 +409,109 @@ class SiteSettings(models.Model):
         
         param_string = "&".join(params)
         return f"https://www.youtube.com/embed/{self.youtube_video_id}?{param_string}"
+
+class DocumentContent(models.Model):
+    """사이트 문서 관리 (이용약관, 개인정보처리방침, 환불정책 등)"""
+    
+    DOCUMENT_TYPES = [
+        ('terms', '이용약관'),
+        ('privacy', '개인정보처리방침'),
+        ('refund', '환불 및 반품 정책'),
+    ]
+    
+    document_type = models.CharField(
+        max_length=20,
+        choices=DOCUMENT_TYPES,
+        unique=True,
+        verbose_name="문서 유형",
+        help_text="관리할 문서의 유형을 선택하세요"
+    )
+    
+    title = models.CharField(
+        max_length=100,
+        verbose_name="문서 제목",
+        help_text="사이트에 표시될 문서 제목"
+    )
+    
+    content = models.TextField(
+        verbose_name="문서 내용",
+        help_text="마크다운 형식으로 작성하세요. HTML 태그도 사용 가능합니다."
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name="활성화",
+        help_text="체크 해제 시 사이트에서 숨겨집니다"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
+    
+    class Meta:
+        verbose_name = "문서 관리"
+        verbose_name_plural = "문서 관리"
+        ordering = ['document_type']
+        indexes = [
+            models.Index(fields=['document_type']),
+            models.Index(fields=['is_active']),
+        ]
+    
+    def __str__(self):
+        return f"{self.get_document_type_display()}"
+    
+    @classmethod
+    def get_active_documents(cls):
+        """활성화된 문서들을 가져오기"""
+        return cls.objects.filter(is_active=True)
+    
+    @classmethod
+    def get_document(cls, document_type):
+        """특정 유형의 문서 가져오기"""
+        try:
+            return cls.objects.get(document_type=document_type, is_active=True)
+        except cls.DoesNotExist:
+            return None
+    
+    def get_rendered_content(self):
+        """마크다운을 HTML로 변환 (기존의 마크다운 렌더링 기능 활용)"""
+        if not self.content:
+            return ''
+        
+        # 기존의 마크다운 렌더링 로직 사용 (products.templatetags.product_extras와 동일)
+        import markdown
+        from markdown.extensions import codehilite, fenced_code, tables
+        
+        # Markdown 확장 기능 설정
+        extensions = [
+            'markdown.extensions.fenced_code',
+            'markdown.extensions.tables',
+            'markdown.extensions.nl2br',
+            'markdown.extensions.codehilite',
+            'markdown.extensions.sane_lists',
+        ]
+        
+        extension_configs = {
+            'markdown.extensions.codehilite': {
+                'css_class': 'highlight',
+                'use_pygments': False,  # 간단한 코드 하이라이팅
+            }
+        }
+        
+        # Markdown을 HTML로 변환
+        md = markdown.Markdown(
+            extensions=extensions,
+            extension_configs=extension_configs,
+            safe_mode=False
+        )
+        
+        html = md.convert(self.content)
+        
+        # 기본적인 링크에 target="_blank" 추가
+        import re
+        html = re.sub(
+            r'<a\s+([^>]*href="https?://[^"]*"[^>]*)>',
+            r'<a \1 target="_blank" rel="noopener noreferrer">',
+            html
+        )
+        
+        return html

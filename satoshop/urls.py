@@ -26,6 +26,7 @@ urlpatterns = [
     path('products/', include('products.urls')),
     path('orders/', include('orders.urls')),
     path('ln_payment/', include('ln_payment.urls')),
+    path('boards/', include('boards.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
 ]
 

@@ -1,0 +1,154 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+{% load url_filters %}
+
+{% block title %}댓글 수정 - 공지사항{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/board-notice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 버튼 -->
+    <div class="back-button">
+        <a href="{% url 'boards:notice_detail' comment.notice.id %}" class="btn-notice btn-secondary">
+            <!-- Heroicon: arrow-left -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            공지사항으로 돌아가기
+        </a>
+    </div>
+
+    <!-- 헤더 섹션 -->
+    <div class="notice-header comment-edit">
+        <div class="notice-header-content">
+            <h1 class="notice-title">
+                <!-- Heroicon: chat-bubble-left-ellipsis -->
+                <svg class="notice-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                댓글 수정
+            </h1>
+            <p class="notice-subtitle">작성한 댓글을 수정하여 더 나은 소통을 해보세요</p>
+        </div>
+    </div>
+
+    <!-- 관련 공지사항 정보 -->
+    <div class="comment-notice-info">
+        <div class="info-header">
+            <!-- Heroicon: information-circle -->
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
+            </svg>
+            댓글이 작성된 공지사항
+        </div>
+        <div class="notice-reference">
+            <h3 class="reference-title">{{ comment.notice.title }}</h3>
+            <div class="reference-meta">
+                <span>
+                    <!-- Heroicon: user -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    {{ comment.notice.author.username }}
+                </span>
+                <span>
+                    <!-- Heroicon: calendar -->
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    {{ comment.notice.created_at|date:"Y.m.d" }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 원본 댓글 정보 -->
+    <div class="original-comment">
+        <div class="original-header">
+            <!-- Heroicon: clock -->
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            원본 댓글 정보
+        </div>
+        <div class="original-content">
+            <div class="original-meta">
+                <span>작성자: {{ comment.author.username }}</span>
+                <span>작성일: {{ comment.created_at|date:"Y년 m월 d일 H:i" }}</span>
+                {% if comment.parent %}
+                <span>답글 대상: {{ comment.parent.author.username }}님의 댓글</span>
+                {% endif %}
+            </div>
+            <div class="original-text">
+                {{ comment.content|urlize_target_blank|linebreaks }}
+            </div>
+        </div>
+    </div>
+
+    <!-- 댓글 수정 폼 -->
+    <div class="notice-detail">
+        <form method="post" class="comment-edit-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_content" class="form-label">
+                    <!-- Heroicon: pencil -->
+                    <svg class="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    댓글 내용 *
+                </label>
+                {{ form.content }}
+                <div class="char-counter">
+                    <span id="content-counter">0</span>/1000자
+                </div>
+                <div class="form-help">
+                    <small>예의를 지켜 댓글을 작성해주세요. 부적절한 내용은 삭제될 수 있습니다.</small>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-primary">
+                    <!-- Heroicon: check -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    수정 완료
+                </button>
+                <a href="{% url 'boards:notice_detail' comment.notice.id %}" class="btn-notice btn-secondary">
+                    <!-- Heroicon: x-mark -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    취소
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- 수정 가이드 -->
+    <div class="edit-guide">
+        <div class="guide-title">
+            <!-- Heroicon: light-bulb -->
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
+            </svg>
+            댓글 수정 가이드
+        </div>
+        <ul class="guide-list">
+            <li>수정된 댓글은 다른 사용자들에게 즉시 반영됩니다</li>
+            <li>수정 시간이 기록되어 표시됩니다</li>
+            <li>예의를 지키고 건설적인 내용으로 작성해주세요</li>
+            <li>욕설이나 부적절한 내용은 삭제될 수 있습니다</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/board-notice.js' %}"></script>
+{% endblock %} 

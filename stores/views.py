@@ -175,6 +175,8 @@ def handle_step2(request, store):
     owner_name = request.POST.get('owner_name', '').strip()
     owner_phone = request.POST.get('owner_phone', '').strip()
     owner_email = request.POST.get('owner_email', '').strip()
+    business_license_number = request.POST.get('business_license_number', '').strip()
+    telecommunication_sales_number = request.POST.get('telecommunication_sales_number', '').strip()
     chat_channel = request.POST.get('chat_channel', '').strip()
     
     if not store_name:
@@ -191,6 +193,8 @@ def handle_step2(request, store):
     store.owner_name = owner_name
     store.owner_phone = owner_phone
     store.owner_email = owner_email
+    store.business_license_number = business_license_number
+    store.telecommunication_sales_number = telecommunication_sales_number
     store.chat_channel = chat_channel
     store.save()
     
@@ -327,6 +331,8 @@ def edit_store(request, store_id):
             owner_name = request.POST.get('owner_name', '').strip()
             owner_phone = request.POST.get('owner_phone', '').strip()
             owner_email = request.POST.get('owner_email', '').strip()
+            business_license_number = request.POST.get('business_license_number', '').strip()
+            telecommunication_sales_number = request.POST.get('telecommunication_sales_number', '').strip()
             chat_channel = request.POST.get('chat_channel', '').strip()
             is_active = request.POST.get('is_active') == 'on'
             
@@ -346,6 +352,8 @@ def edit_store(request, store_id):
             store.owner_name = owner_name
             store.owner_phone = owner_phone
             store.owner_email = owner_email
+            store.business_license_number = business_license_number
+            store.telecommunication_sales_number = telecommunication_sales_number
             store.chat_channel = chat_channel
             store.is_active = is_active
             
@@ -422,6 +430,8 @@ def edit_basic_info(request, store_id):
         owner_name = request.POST.get('owner_name', '').strip()
         owner_phone = request.POST.get('owner_phone', '').strip()
         owner_email = request.POST.get('owner_email', '').strip()
+        business_license_number = request.POST.get('business_license_number', '').strip()
+        telecommunication_sales_number = request.POST.get('telecommunication_sales_number', '').strip()
         chat_channel = request.POST.get('chat_channel', '').strip()
         
         # 유효성 검증
@@ -447,6 +457,8 @@ def edit_basic_info(request, store_id):
         store.owner_name = owner_name
         store.owner_phone = owner_phone
         store.owner_email = owner_email
+        store.business_license_number = business_license_number
+        store.telecommunication_sales_number = telecommunication_sales_number
         store.chat_channel = chat_channel
         store.save()
         

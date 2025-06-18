@@ -28,6 +28,10 @@ class Store(models.Model):
     owner_phone = models.CharField(max_length=20, blank=True, help_text="주인장 휴대전화")
     owner_email = models.EmailField(blank=True, help_text="주인장 이메일")
     
+    # 사업자 정보 (선택사항)
+    business_license_number = models.CharField(max_length=50, blank=True, help_text="사업자등록번호")
+    telecommunication_sales_number = models.CharField(max_length=50, blank=True, help_text="통신판매업번호")
+    
     chat_channel = models.URLField(help_text="대화채널 (오픈카톡, 텔레그램, 라인, 엑스 등)")
     
     # 3단계 - 블링크 API 정보 (암호화 저장)

@@ -1,0 +1,217 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}공지사항{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/board-notice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 헤더 섹션 -->
+    <div class="notice-header">
+        <div class="notice-header-content">
+            <h1 class="notice-title">
+                <!-- Heroicon: megaphone -->
+                <svg class="notice-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                </svg>
+                공지사항
+            </h1>
+            <p class="notice-subtitle">중요한 소식과 업데이트를 확인하세요</p>
+        </div>
+    </div>
+
+    <!-- 검색 및 컨트롤 섹션 -->
+    <div class="notice-controls">
+        <form method="get" class="search-form">
+            <div class="search-wrapper">
+                <!-- Heroicon: search -->
+                <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input 
+                    type="text" 
+                    name="search" 
+                    value="{{ search_query|default:'' }}" 
+                    placeholder="공지사항 검색..." 
+                    class="search-input"
+                >
+            </div>
+            <button type="submit" class="btn-notice btn-outline">
+                <!-- Heroicon: search -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                검색
+            </button>
+        </form>
+
+        {% if user.is_staff %}
+        <a href="{% url 'boards:notice_create' %}" class="btn-notice btn-primary">
+            <!-- Heroicon: plus -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            새 공지사항
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- 검색 결과 정보 -->
+    {% if search_query %}
+    <div class="search-result-info">
+        <!-- Heroicon: information-circle -->
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
+        </svg>
+        <strong>"{{ search_query }}"</strong> 검색 결과: {{ notices|length }}개의 공지사항을 찾았습니다.
+    </div>
+    {% endif %}
+
+    <!-- 공지사항 목록 -->
+    {% if notices %}
+    <div class="notice-list">
+        {% for notice in notices %}
+        <div class="notice-item {% if notice.is_pinned %}pinned{% endif %}" onclick="location.href='{% url 'boards:notice_detail' notice.id %}'">
+            <div class="notice-item-number">
+                {{ notice.sequence_number }}
+            </div>
+            <div class="notice-item-content">
+                <div class="notice-item-header">
+                    <div class="notice-item-left">
+                        <span class="notice-item-title">
+                            {{ notice.title }}
+                        </span>
+                        {% if notice.is_pinned %}
+                        <span class="notice-badge">
+                            <!-- Heroicon: bookmark -->
+                            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                                <path fill-rule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clip-rule="evenodd"/>
+                            </svg>
+                            고정
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="notice-item-meta">
+                        <span>
+                            <!-- Heroicon: user -->
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            {{ notice.author.username }}
+                        </span>
+                        <span>
+                            <!-- Heroicon: calendar -->
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            {{ notice.created_at|date:"Y.m.d" }}
+                        </span>
+                        <span>
+                            <!-- Heroicon: eye -->
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            조회 {{ notice.views }}
+                        </span>
+                        <span>
+                            <!-- Heroicon: chat-bubble-left -->
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            댓글 {{ notice.comments.count }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}">
+                <!-- Heroicon: chevron-double-left -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+                </svg>
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <!-- Heroicon: chevron-left -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <!-- Heroicon: chevron-right -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}">
+                <!-- Heroicon: chevron-double-right -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+                </svg>
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 빈 상태 -->
+    <div class="notice-list">
+        <div class="empty-state">
+            <!-- Heroicon: document-text -->
+            <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="empty-state-title">
+                {% if search_query %}
+                    검색 결과가 없습니다
+                {% else %}
+                    아직 공지사항이 없습니다
+                {% endif %}
+            </h3>
+            <p class="empty-state-description">
+                {% if search_query %}
+                    다른 검색어로 다시 시도해보세요.
+                {% else %}
+                    새로운 공지사항이 등록되면 여기에 표시됩니다.
+                {% endif %}
+            </p>
+            {% if search_query %}
+            <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
+                <!-- Heroicon: arrow-left -->
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                전체 공지사항 보기
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/board-notice.js' %}"></script>
+{% endblock %} 

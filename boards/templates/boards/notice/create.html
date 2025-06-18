@@ -1,0 +1,114 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}공지사항 작성{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/board-notice.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="notice-container">
+    <!-- 뒤로가기 버튼 -->
+    <div class="back-button">
+        <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
+            <!-- Heroicon: arrow-left -->
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            목록으로 돌아가기
+        </a>
+    </div>
+
+    <!-- 헤더 섹션 -->
+    <div class="notice-header create">
+        <div class="notice-header-content">
+            <h1 class="notice-title">
+                <!-- Heroicon: plus-circle -->
+                <svg class="notice-title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                공지사항 작성
+            </h1>
+            <p class="notice-subtitle">새로운 공지사항을 작성하여 사용자들에게 알려보세요</p>
+        </div>
+    </div>
+
+    <!-- 공지사항 작성 폼 -->
+    <div class="notice-detail">
+        <form method="post" class="notice-form">
+            {% csrf_token %}
+            
+            <!-- 제목 -->
+            <div class="form-group">
+                <label for="id_title" class="form-label">
+                    <!-- Heroicon: document-text -->
+                    <svg class="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    제목 *
+                </label>
+                {{ form.title }}
+                <div class="char-counter">
+                    <span id="title-counter">0</span>/100자
+                </div>
+            </div>
+
+            <!-- 내용 -->
+            <div class="form-group">
+                <label for="id_content" class="form-label">
+                    <!-- Heroicon: pencil -->
+                    <svg class="form-label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    내용 *
+                </label>
+                {{ form.content }}
+                <div class="char-counter">
+                    <span id="content-counter">0</span>/5000자
+                </div>
+            </div>
+
+            <!-- 고정 여부 -->
+            {% if user.is_staff %}
+            <div class="form-group">
+                <label class="form-checkbox-label">
+                    {{ form.is_pinned }}
+                    <!-- Heroicon: bookmark -->
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                    이 공지사항을 상단에 고정하기
+                    <small style="color: var(--text-muted); font-weight: normal; margin-left: 8px;">
+                        (중요한 공지사항은 목록 최상단에 고정됩니다)
+                    </small>
+                </label>
+            </div>
+            {% endif %}
+
+            <!-- 버튼 -->
+            <div class="form-actions">
+                <button type="submit" class="btn-notice btn-primary">
+                    <!-- Heroicon: check -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    작성 완료
+                </button>
+                <a href="{% url 'boards:notice_list' %}" class="btn-notice btn-secondary">
+                    <!-- Heroicon: x-mark -->
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    취소
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/board-notice.js' %}"></script>
+{% endblock %} 

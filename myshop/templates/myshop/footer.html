@@ -1,10 +1,11 @@
 <!-- 사이트 푸터 -->
 <footer class="bg-gray-900 text-white mt-auto">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">    
-
+    
     <!-- 구분선 -->
-    <div class="border-t border-gray-700 mt-4 pt-4">
+    <div class="border-t border-gray-700 pt-4">
       <div class="flex flex-col md:flex-row justify-between items-center">
+        <!-- 카피라이트 -->
         <p class="text-gray-400 text-sm">
           {% if site_settings and site_settings.footer_copyright %}
             {{ site_settings.footer_copyright }}
@@ -13,7 +14,32 @@
           {% endif %}
         </p>
         
-        <!-- 비트코인 아이콘 -->
+        <!-- 법적 문서 링크 (가운데) -->
+        {% if documents %}
+        <div class="mt-4 md:mt-0">
+          <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+            {% if documents.terms %}
+              <a href="{% url 'myshop:document' 'terms' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                {{ documents.terms.title }}
+              </a>
+            {% endif %}
+            
+            {% if documents.privacy %}
+              <a href="{% url 'myshop:document' 'privacy' %}" class="text-red-400 font-bold hover:text-red-300 text-sm transition-colors duration-200">
+                {{ documents.privacy.title }}
+              </a>
+            {% endif %}
+            
+            {% if documents.refund %}
+              <a href="{% url 'myshop:document' 'refund' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                {{ documents.refund.title }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- 비트코인 아이콘 (오른쪽) -->
         <div class="flex items-center mt-4 md:mt-0">
           <span class="text-gray-400 text-sm mr-2">Powered by</span>
           <i class="fab fa-bitcoin text-bitcoin text-lg"></i>

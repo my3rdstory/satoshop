@@ -111,7 +111,7 @@ class StoreAdmin(admin.ModelAdmin):
             'fields': ('store_id', 'store_name', 'store_description', 'owner')
         }),
         ('주인장 정보', {
-            'fields': ('owner_name', 'owner_phone', 'owner_email', 'chat_channel')
+            'fields': ('owner_name', 'owner_phone', 'owner_email', 'business_license_number', 'telecommunication_sales_number', 'chat_channel')
         }),
         ('API 설정', {
             'fields': ('blink_api_info_encrypted', 'blink_wallet_id_encrypted'),
@@ -149,7 +149,7 @@ class DeletedStoreAdmin(admin.ModelAdmin):
     list_filter = ('deleted_at', 'is_active', 'created_at')
     search_fields = ('store_name', 'store_id', 'owner__username')
     readonly_fields = ('store_id', 'store_name', 'store_description', 'owner_name', 
-                      'owner_phone', 'owner_email', 'chat_channel', 'owner', 
+                      'owner_phone', 'owner_email', 'business_license_number', 'telecommunication_sales_number', 'chat_channel', 'owner', 
                       'is_active', 'created_at', 'updated_at', 'deleted_at',
                       'blink_api_info_encrypted', 'blink_wallet_id_encrypted')
     list_per_page = 10
@@ -171,7 +171,7 @@ class DeletedStoreAdmin(admin.ModelAdmin):
             'fields': ('store_id', 'store_name', 'store_description', 'owner', 'is_active')
         }),
         ('주인장 정보', {
-            'fields': ('owner_name', 'owner_phone', 'owner_email', 'chat_channel')
+            'fields': ('owner_name', 'owner_phone', 'owner_email', 'business_license_number', 'telecommunication_sales_number', 'chat_channel')
         }),
         ('블링크 정보', {
             'fields': ('blink_api_info_encrypted', 'blink_wallet_id_encrypted'),
