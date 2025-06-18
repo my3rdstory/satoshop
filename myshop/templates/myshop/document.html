@@ -1,0 +1,69 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}{{ document.title }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<link rel="stylesheet" href="{% static 'css/document.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 문서 컨테이너 -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden {% if document.document_type == 'privacy' %}privacy-document{% endif %}">
+            <!-- 문서 헤더 -->
+            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                <h1 class="document-title text-2xl font-bold text-gray-900 {% if document.document_type == 'privacy' %}text-red-600{% endif %}">
+                    {{ document.title }}
+                </h1>
+                <p class="text-sm text-gray-500 mt-2">
+                    최종 수정: {{ document.updated_at|date:"Y년 m월 d일" }}
+                </p>
+            </div>
+
+            <!-- 문서 내용 -->
+            <div class="px-6 py-8">
+                <div class="document-content prose prose-lg max-w-none">
+                    {{ document.get_rendered_content|safe }}
+                </div>
+            </div>
+
+            <!-- 문서 하단 -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-between items-center text-sm text-gray-500">
+                    <span>문서 유형: {{ document.get_document_type_display }}</span>
+                    <span>생성일: {{ document.created_at|date:"Y년 m월 d일" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 기타 문서 링크 -->
+        <div class="mt-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">기타 문서</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for doc_key, doc in documents.items %}
+                    {% if doc_key != document.document_type %}
+                        <a href="{% url 'myshop:document' doc_key %}" 
+                           class="block p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200 
+                                  {% if doc_key == 'privacy' %}border-l-4 border-red-500{% else %}border-l-4 border-blue-500{% endif %}">
+                            <h4 class="font-semibold {% if doc_key == 'privacy' %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {{ doc.title }}
+                            </h4>
+                            <p class="text-sm text-gray-500 mt-1">
+                                최근 업데이트: {{ doc.updated_at|date:"m/d" }}
+                            </p>
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/document.js' %}"></script>
+{% endblock %} 

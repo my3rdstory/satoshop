@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.urls import path, reverse
 from django.utils.html import format_html
-from .models import SiteSettings, ExchangeRate
+from .models import SiteSettings, ExchangeRate, DocumentContent
 from .services import UpbitExchangeService
 
 # Register your models here.
@@ -186,3 +186,132 @@ class ExchangeRateAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None):
         # 환율 데이터 수정 방지
         return False
+
+
+@admin.register(DocumentContent)
+class DocumentContentAdmin(admin.ModelAdmin):
+    """문서 관리 어드민"""
+    
+    list_display = ['document_type_display', 'title', 'is_active', 'updated_at']
+    list_filter = ['document_type', 'is_active', 'created_at']
+    search_fields = ['title', 'content']
+    readonly_fields = ['created_at', 'updated_at']
+    list_per_page = 10
+    
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('document_type', 'title', 'is_active'),
+            'description': '문서의 기본 정보를 설정합니다.'
+        }),
+        ('문서 내용', {
+            'fields': ('content',),
+            'description': '''
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <h4 style="margin-top: 0;">📝 마크다운 작성 가이드</h4>
+                <p><strong>기본 문법:</strong></p>
+                <ul>
+                    <li><code># 제목1</code>, <code>## 제목2</code>, <code>### 제목3</code></li>
+                    <li><code>**굵은글씨**</code>, <code>*기울임*</code></li>
+                    <li><code>- 목록 항목</code> 또는 <code>1. 번호 목록</code></li>
+                    <li><code>[링크 텍스트](URL)</code></li>
+                    <li><code>> 인용문</code></li>
+                </ul>
+                <p><strong>표 만들기:</strong></p>
+                <pre>| 헤더1 | 헤더2 |
+|-------|-------|
+| 내용1 | 내용2 |</pre>
+                <p><strong>코드 블록:</strong></p>
+                <pre>```
+코드 내용
+```</pre>
+            </div>
+            '''
+        }),
+        ('메타 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+            'description': '문서 생성 및 수정 이력 정보입니다.'
+        }),
+    )
+    
+    class Media:
+        css = {
+            'all': ('admin/css/product_image_modal.css',)
+        }
+        js = ('admin/js/product_image_modal.js',)
+    
+    def document_type_display(self, obj):
+        """문서 유형을 한글로 표시"""
+        type_icons = {
+            'terms': '📄',
+            'privacy': '🔒',
+            'refund': '💰'
+        }
+        icon = type_icons.get(obj.document_type, '📄')
+        return f"{icon} {obj.get_document_type_display()}"
+    document_type_display.short_description = '문서 유형'
+    document_type_display.admin_order_field = 'document_type'
+    
+    def get_form(self, request, obj=None, **kwargs):
+        """텍스트 영역을 크게 설정하고 마크다운 에디터 스타일 적용"""
+        form = super().get_form(request, obj, **kwargs)
+        if 'content' in form.base_fields:
+            form.base_fields['content'].widget.attrs.update({
+                'rows': 25,
+                'cols': 120,
+                'style': '''
+                    width: 100%; 
+                    font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace; 
+                    font-size: 14px;
+                    line-height: 1.5;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    padding: 15px;
+                    background-color: #f8f9fa;
+                ''',
+                'placeholder': '''# 문서 제목
+
+## 주요 내용
+
+### 세부 사항
+
+여기에 **마크다운** 형식으로 문서 내용을 작성하세요.
+
+- 목록 항목 1
+- 목록 항목 2
+
+> 중요한 내용은 인용문으로 작성할 수 있습니다.
+
+**굵은 텍스트**와 *기울임 텍스트*를 사용할 수 있습니다.
+
+[링크 텍스트](https://example.com)
+
+```
+코드 블록도 사용 가능합니다
+```
+
+| 항목 | 설명 |
+|------|------|
+| 내용1 | 설명1 |
+| 내용2 | 설명2 |'''
+            })
+        return form
+    
+    def save_model(self, request, obj, form, change):
+        """저장 시 추가 처리"""
+        # 기본 제목 설정
+        if not obj.title:
+            obj.title = obj.get_document_type_display()
+        super().save_model(request, obj, form, change)
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """변경 페이지에 추가 컨텍스트 제공"""
+        extra_context = extra_context or {}
+        if object_id:
+            try:
+                obj = self.get_object(request, object_id)
+                if obj:
+                    extra_context['document_url'] = f"/document/{obj.document_type}/"
+            except:
+                pass
+        return super().change_view(request, object_id, form_url, extra_context)
