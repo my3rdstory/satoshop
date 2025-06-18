@@ -6,6 +6,7 @@ from django.utils import timezone
 
 class Notice(models.Model):
     """공지사항 게시글 모델"""
+    sequence_number = models.PositiveIntegerField('순서번호', unique=True, null=True, blank=True)
     title = models.CharField('제목', max_length=200)
     content = models.TextField('내용')
     author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='작성자')
@@ -34,6 +35,17 @@ class Notice(models.Model):
         """조회수 증가"""
         self.views += 1
         self.save(update_fields=['views'])
+
+    def save(self, *args, **kwargs):
+        """저장 시 순서 번호 자동 할당"""
+        if not self.sequence_number:
+            # 가장 큰 순서 번호를 찾아서 +1
+            last_notice = Notice.objects.filter(sequence_number__isnull=False).order_by('-sequence_number').first()
+            if last_notice:
+                self.sequence_number = last_notice.sequence_number + 1
+            else:
+                self.sequence_number = 1
+        super().save(*args, **kwargs)
 
 
 class NoticeComment(models.Model):

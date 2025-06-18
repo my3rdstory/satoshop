@@ -95,14 +95,22 @@ function initCommentEdit() {
     
     // 변경사항 감지
     const originalContent = contentTextarea.value;
+    let isFormSubmitting = false;
     
     function hasChanges() {
         return contentTextarea.value !== originalContent;
     }
     
-    // 페이지 이탈 시 경고
+    // 폼 제출 시 플래그 설정
+    if (commentForm) {
+        commentForm.addEventListener('submit', function() {
+            isFormSubmitting = true;
+        });
+    }
+    
+    // 페이지 이탈 시 경고 (폼 제출 시 제외)
     window.addEventListener('beforeunload', function(e) {
-        if (hasChanges()) {
+        if (!isFormSubmitting && hasChanges()) {
             e.preventDefault();
             e.returnValue = '';
         }
@@ -223,6 +231,7 @@ function initChangeDetection(titleInput, contentTextarea) {
     
     const originalTitle = titleInput ? titleInput.value : '';
     const originalContent = contentTextarea ? contentTextarea.value : '';
+    let isFormSubmitting = false;
     
     function hasChanges() {
         const currentTitle = titleInput ? titleInput.value : '';
@@ -230,9 +239,17 @@ function initChangeDetection(titleInput, contentTextarea) {
         return currentTitle !== originalTitle || currentContent !== originalContent;
     }
     
-    // 페이지 이탈 시 경고
+    // 폼 제출 시 플래그 설정
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            isFormSubmitting = true;
+        });
+    }
+    
+    // 페이지 이탈 시 경고 (폼 제출 시 제외)
     window.addEventListener('beforeunload', function(e) {
-        if (hasChanges()) {
+        if (!isFormSubmitting && hasChanges()) {
             e.preventDefault();
             e.returnValue = '';
         }
@@ -253,129 +270,7 @@ function initChangeDetection(titleInput, contentTextarea) {
 
 
 
-/**
- * URL 자동 링크 기능 초기화
- */
-function initAutoLinkFeature(textarea) {
-    if (!textarea) return;
-    
-    let isProcessing = false;
-    
-    // URL 패턴 정규식
-    const urlPattern = /(https?:\/\/[^\s<>"']+)/gi;
-    
-    // 텍스트에서 URL을 찾아 링크로 변환
-    function convertUrlsToLinks(text) {
-        return text.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-    }
-    
-    // 실시간 미리보기 영역 생성
-    function createPreviewArea() {
-        const previewContainer = document.createElement('div');
-        previewContainer.className = 'url-preview-container';
-        previewContainer.style.cssText = `
-            margin-top: 10px;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background-color: #f9fafb;
-            font-size: 0.9rem;
-            line-height: 1.5;
-            display: none;
-        `;
-        
-        const previewLabel = document.createElement('div');
-        previewLabel.textContent = '미리보기 (URL이 자동으로 링크됩니다):';
-        previewLabel.style.cssText = `
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-        `;
-        
-        const previewContent = document.createElement('div');
-        previewContent.className = 'url-preview-content';
-        previewContent.style.cssText = `
-            color: #4b5563;
-            white-space: pre-wrap;
-            word-break: break-word;
-        `;
-        
-        previewContainer.appendChild(previewLabel);
-        previewContainer.appendChild(previewContent);
-        
-        // textarea 다음에 미리보기 영역 삽입
-        textarea.parentNode.insertBefore(previewContainer, textarea.nextSibling);
-        
-        return { container: previewContainer, content: previewContent };
-    }
-    
-    const preview = createPreviewArea();
-    let previewTimer;
-    
-    // 미리보기 업데이트
-    function updatePreview() {
-        const text = textarea.value;
-        const hasUrls = urlPattern.test(text);
-        
-        if (hasUrls && text.trim()) {
-            const convertedText = convertUrlsToLinks(text);
-            preview.content.innerHTML = convertedText;
-            preview.container.style.display = 'block';
-        } else {
-            preview.container.style.display = 'none';
-        }
-        
-        // 정규식 상태 초기화
-        urlPattern.lastIndex = 0;
-    }
-    
-    // 입력 이벤트 리스너
-    textarea.addEventListener('input', function() {
-        if (isProcessing) return;
-        
-        clearTimeout(previewTimer);
-        previewTimer = setTimeout(updatePreview, 300);
-    });
-    
-    // 포커스 이벤트
-    textarea.addEventListener('focus', function() {
-        if (textarea.value.trim()) {
-            updatePreview();
-        }
-    });
-    
-    // 초기 미리보기 업데이트
-    if (textarea.value.trim()) {
-        updatePreview();
-    }
-    
-    // 폼 제출 시 실제 링크 변환 (선택사항)
-    const form = textarea.closest('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            const text = textarea.value;
-            const hasUrls = urlPattern.test(text);
-            
-            if (hasUrls) {
-                // 사용자에게 링크 변환 확인
-                const shouldConvert = confirm('텍스트에 URL이 포함되어 있습니다. 자동으로 링크로 변환하시겠습니까?');
-                
-                if (shouldConvert) {
-                    isProcessing = true;
-                    textarea.value = convertUrlsToLinks(text);
-                    
-                    // 글자수 카운터 업데이트
-                    const event = new Event('input', { bubbles: true });
-                    textarea.dispatchEvent(event);
-                }
-            }
-            
-            // 정규식 상태 초기화
-            urlPattern.lastIndex = 0;
-        });
-    }
-}
+
 
 // ===== 검색 관련 기능 =====
 

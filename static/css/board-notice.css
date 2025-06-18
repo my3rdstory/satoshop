@@ -226,6 +226,9 @@
     border-bottom: 1px solid var(--border-color);
     transition: all 0.3s ease;
     position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
 }
 
 .notice-item:last-child {
@@ -302,6 +305,32 @@
     width: 14px;
     height: 14px;
     flex-shrink: 0;
+}
+
+/* 공지사항 번호 */
+.notice-item-number {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.notice-item.pinned .notice-item-number {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+}
+
+.notice-item-content {
+    flex: 1;
+    min-width: 0;
 }
 
 /* 빈 상태 */
@@ -1301,6 +1330,16 @@
         max-width: none;
     }
     
+    .notice-item {
+        gap: 12px;
+    }
+    
+    .notice-item-number {
+        width: 40px;
+        height: 40px;
+        font-size: 0.9rem;
+    }
+    
     .notice-item-header {
         flex-direction: column;
         align-items: flex-start;
@@ -1389,6 +1428,13 @@
     
     .notice-item {
         padding: 12px;
+        gap: 10px;
+    }
+    
+    .notice-item-number {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
     }
     
     .notice-detail-header,

@@ -1,6 +1,7 @@
 {% extends 'myshop/base.html' %}
 {% load static %}
 {% load static_versioned %}
+{% load url_filters %}
 
 {% block title %}댓글 수정 - 공지사항{% endblock %}
 
@@ -83,7 +84,7 @@
                 {% endif %}
             </div>
             <div class="original-text">
-                {{ comment.content|linebreaks }}
+                {{ comment.content|urlize_target_blank|linebreaks }}
             </div>
         </div>
     </div>

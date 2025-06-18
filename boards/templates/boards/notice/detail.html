@@ -1,6 +1,7 @@
 {% extends 'myshop/base.html' %}
 {% load static %}
 {% load static_versioned %}
+{% load url_filters %}
 
 {% block title %}{{ notice.title }} - 공지사항{% endblock %}
 
@@ -70,7 +71,7 @@
         </div>
 
         <div class="notice-detail-content">
-            {{ notice.content|linebreaks }}
+            {{ notice.content|urlize_target_blank|linebreaks }}
         </div>
 
         {% if user.is_staff or user == notice.author %}
@@ -155,7 +156,7 @@
                 </div>
                 
                 <div class="comment-content">
-                    {{ comment.content|linebreaks }}
+                    {{ comment.content|urlize_target_blank|linebreaks }}
                 </div>
 
                 <div class="comment-actions">
