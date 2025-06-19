@@ -1,7 +1,9 @@
 // 완전히 새로운 테마 전환 시스템
 class ThemeManager {
     constructor() {
-        this.currentTheme = this.getStoredTheme() || this.getSystemTheme();
+        // HTML에 이미 설정된 테마가 있으면 그것을 사용
+        const presetTheme = document.documentElement.getAttribute('data-theme');
+        this.currentTheme = presetTheme || this.getStoredTheme() || this.getSystemTheme();
         this.isInitialized = false;
         this.init();
     }
@@ -116,8 +118,15 @@ class ThemeManager {
     init() {
         if (this.isInitialized) return;
         
-        // 초기 테마 적용
-        this.applyTheme(this.currentTheme);
+        // 현재 설정된 테마와 원하는 테마가 다를 때만 적용
+        const currentDataTheme = document.documentElement.getAttribute('data-theme');
+        if (currentDataTheme !== this.currentTheme) {
+            this.applyTheme(this.currentTheme);
+        } else {
+            // 이미 올바른 테마가 설정되어 있으므로 UI만 업데이트
+            this.updateFloatingButton(this.currentTheme);
+            this.updateMenuItems(this.currentTheme);
+        }
         
         // 시스템 테마 변경 감지
         this.watchSystemTheme();
