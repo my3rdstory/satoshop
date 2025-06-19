@@ -131,6 +131,9 @@
                   <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
                     <i class="fas fa-eye mr-2"></i>내 스토어 보기
                   </a>
+                  <a href="{% url 'boards:notice_list' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                    <i class="fas fa-bullhorn mr-2"></i>사이트 공지사항 확인
+                  </a>
                   <div class="border-t border-gray-600"></div>
                   <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
                     <span class="theme-toggle-menu-item">
@@ -221,6 +224,9 @@
             {% if user_has_active_store and user_active_store.is_active %}
             <a href="{% url 'stores:my_stores' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
               <i class="fas fa-store mr-3"></i>스토어 관리
+            </a>
+            <a href="{% url 'boards:notice_list' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-bullhorn mr-3"></i>사이트 공지사항 확인
             </a>
             {% else %}
             <a href="{% url 'stores:create_store' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
