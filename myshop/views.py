@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from .services import UpbitExchangeService
@@ -7,6 +7,7 @@ import json
 import os
 from django.utils import timezone
 from django.http import Http404
+from django.conf import settings
 
 # Create your views here.
 
@@ -247,3 +248,32 @@ def document_view(request, doc_type):
     }
     
     return render(request, 'myshop/document.html', context)
+
+def offline_view(request):
+    """PWA 오프라인 페이지"""
+    return render(request, 'myshop/offline.html')
+
+def manifest_view(request):
+    """Web App Manifest 파일 서빙"""
+    try:
+        manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return HttpResponse(content, content_type='application/manifest+json')
+    except FileNotFoundError:
+        return HttpResponse('Manifest not found', status=404)
+
+def service_worker_view(request):
+    """Service Worker 파일 서빙"""
+    try:
+        sw_path = os.path.join(settings.BASE_DIR, 'static', 'js', 'sw.js')
+        with open(sw_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        response = HttpResponse(content, content_type='application/javascript')
+        # Service Worker는 캐시되면 안 되므로 no-cache 헤더 추가
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
+    except FileNotFoundError:
+        return HttpResponse('Service Worker not found', status=404)

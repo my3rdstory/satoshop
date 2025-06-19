@@ -31,6 +31,12 @@
 
       <!-- Right Navigation - 사용자별 메뉴 -->
       <div class="flex items-center space-x-4">
+        <!-- PWA 설치 버튼 -->
+        <button id="pwa-install-button" style="display: none;" 
+                class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
+          <i class="fas fa-download mr-2"></i>앱 설치
+        </button>
+        
         {% if user.is_authenticated %}
         <!-- 사용자 드롭다운 -->
         <div class="relative group">
@@ -143,6 +149,12 @@
   <!-- 모바일 메뉴 -->
   <div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
     <div class="px-2 pt-2 pb-3 space-y-1">
+      <!-- PWA 설치 버튼 (모바일) -->
+      <button id="pwa-install-button-mobile" style="display: none;" 
+              class="block w-full text-left px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-download mr-2"></i>앱 설치
+      </button>
+      
       <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-search mr-2"></i>스토어 탐색
       </a>

@@ -1,0 +1,68 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}오프라인 - SatoShop{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+  <div class="max-w-md w-full text-center">
+    <div class="mb-8">
+      <img src="{% static 'images/satoshop-logo-1x1-favicon.png' %}" 
+           alt="SatoShop" 
+           class="mx-auto w-24 h-24 mb-6">
+      
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+        오프라인 상태
+      </h1>
+      
+      <p class="text-gray-600 dark:text-gray-300 mb-8">
+        인터넷 연결을 확인해주세요.<br>
+        연결이 복구되면 자동으로 페이지가 새로고침됩니다.
+      </p>
+    </div>
+    
+    <div class="space-y-4">
+      <button onclick="window.location.reload()" 
+              class="w-full bg-amber-500 hover:bg-amber-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200">
+        <i class="fas fa-sync-alt mr-2"></i>
+        다시 시도
+      </button>
+      
+      <button onclick="history.back()" 
+              class="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200">
+        <i class="fas fa-arrow-left mr-2"></i>
+        이전 페이지로
+      </button>
+    </div>
+    
+    <div class="mt-8 text-sm text-gray-500 dark:text-gray-400">
+      <p>
+        <i class="fas fa-wifi mr-1"></i>
+        네트워크 연결 상태를 확인 중...
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 온라인 상태 감지 및 자동 새로고침
+  function checkOnlineStatus() {
+    if (navigator.onLine) {
+      window.location.reload();
+    }
+  }
+  
+  // 온라인 상태 변화 감지
+  window.addEventListener('online', checkOnlineStatus);
+  
+  // 주기적으로 연결 상태 확인 (5초마다)
+  setInterval(checkOnlineStatus, 5000);
+  
+  // 페이지 가시성 변화 시 연결 상태 확인
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      checkOnlineStatus();
+    }
+  });
+</script>
+{% endblock %} 

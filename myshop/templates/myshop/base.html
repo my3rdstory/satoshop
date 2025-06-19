@@ -33,6 +33,24 @@
   <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
   <link rel="shortcut icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
   <link rel="apple-touch-icon" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SatoShop">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="SatoShop">
+  <meta name="msapplication-TileColor" content="#f59e0b">
+  <meta name="msapplication-tap-highlight" content="no">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="{% static 'manifest.json' %}">
+  
+  <!-- PWA Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icons/icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512.png' %}">
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tailwind 설정 -->
@@ -128,6 +146,77 @@
   </script>
   <script src="{% static 'js/common.js' %}"></script>
   <script src="{% static 'js/theme-toggle.js' %}"></script>
+  
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/static/js/sw.js', {
+          scope: '/'
+        })
+        .then(function(registration) {
+          console.log('Service Worker registered successfully:', registration);
+          
+          // 설치 프롬프트 처리
+          let deferredPrompt;
+          window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // PWA 설치 버튼 표시 (필요시)
+            const installButton = document.getElementById('pwa-install-button');
+            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+            
+            function showInstallButtons() {
+              if (installButton) installButton.style.display = 'flex';
+              if (installButtonMobile) installButtonMobile.style.display = 'block';
+            }
+            
+            function hideInstallButtons() {
+              if (installButton) installButton.style.display = 'none';
+              if (installButtonMobile) installButtonMobile.style.display = 'none';
+            }
+            
+            function handleInstallClick() {
+              if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                  if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the PWA install prompt');
+                  } else {
+                    console.log('User dismissed the PWA install prompt');
+                  }
+                  deferredPrompt = null;
+                  hideInstallButtons();
+                });
+              }
+            }
+            
+            showInstallButtons();
+            
+            if (installButton) {
+              installButton.addEventListener('click', handleInstallClick);
+            }
+            if (installButtonMobile) {
+              installButtonMobile.addEventListener('click', handleInstallClick);
+            }
+          });
+          
+          // 앱이 설치되면 설치 버튼 숨기기
+          window.addEventListener('appinstalled', (evt) => {
+            console.log('PWA was installed');
+            const installButton = document.getElementById('pwa-install-button');
+            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+            if (installButton) installButton.style.display = 'none';
+            if (installButtonMobile) installButtonMobile.style.display = 'none';
+          });
+        })
+        .catch(function(error) {
+          console.log('Service Worker registration failed:', error);
+        });
+      });
+    }
+  </script>
   
   {% block extra_js %}{% endblock %}
 </body>
