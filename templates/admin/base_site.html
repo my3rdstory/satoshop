@@ -14,6 +14,44 @@
 <link rel="stylesheet" type="text/css" href="{% static 'admin/css/product_image_modal.css' %}">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- FOUC 방지를 위한 테마 초기화 스크립트 -->
+<script>
+  (function() {
+    // localStorage에서 테마 읽기
+    let theme = 'light'; // 기본값
+    try {
+      const stored = localStorage.getItem('theme');
+      if (stored) {
+        theme = stored;
+      } else {
+        // 저장된 값이 없으면 시스템 설정 확인
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      }
+    } catch (e) {
+      // localStorage 접근 실패 시 시스템 설정으로 fallback
+      try {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e2) {
+        // 최종 fallback은 light
+        theme = 'light';
+      }
+    }
+    
+    // 즉시 적용 (DOM 요소가 생성되기 전에)
+    document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.add('light');
+    }
+  })();
+</script>
+
 <style>
     /* 테마 토글 버튼 스타일 */
     #theme-toggle {

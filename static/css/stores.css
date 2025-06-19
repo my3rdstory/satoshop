@@ -1028,4 +1028,67 @@ input:checked + .slider:before {
   .action-icon {
     font-size: 1.5rem;
   }
+}
+
+/* 모바일에서 스토어 소개 텍스트 가독성 강화 */
+@media (max-width: 768px) {
+  /* 스토어 소개 영역의 markdown-content 텍스트 색상 강화 */
+  .markdown-content,
+  .markdown-content p,
+  .markdown-content li,
+  .markdown-content td,
+  .markdown-content span,
+  .markdown-content div {
+    color: #1f2937 !important; /* 라이트 모드에서 진한 회색 */
+  }
+  
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3,
+  .markdown-content h4,
+  .markdown-content h5,
+  .markdown-content h6 {
+    color: #111827 !important; /* 라이트 모드 헤더 더 진하게 */
+  }
+  
+  [data-theme="dark"] .markdown-content,
+  [data-theme="dark"] .markdown-content p,
+  [data-theme="dark"] .markdown-content li,
+  [data-theme="dark"] .markdown-content td,
+  [data-theme="dark"] .markdown-content span,
+  [data-theme="dark"] .markdown-content div {
+    color: #e5e7eb !important; /* 다크 모드에서 밝은 회색 */
+  }
+  
+  [data-theme="dark"] .markdown-content h1,
+  [data-theme="dark"] .markdown-content h2,
+  [data-theme="dark"] .markdown-content h3,
+  [data-theme="dark"] .markdown-content h4,
+  [data-theme="dark"] .markdown-content h5,
+  [data-theme="dark"] .markdown-content h6 {
+    color: #f9fafb !important; /* 다크 모드 헤더 */
+  }
+  
+  /* URL 링크의 경우 색상 유지하되 줄바꿈 처리 */
+  .markdown-content a {
+    color: #3b82f6 !important; /* 라이트 모드 링크 */
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+  }
+  
+  [data-theme="dark"] .markdown-content a {
+    color: #60a5fa !important; /* 다크 모드 링크 */
+  }
+  
+  /* 스토어 설명 텍스트 영역 강화 */
+  .store-description,
+  .store-description p {
+    color: #1f2937 !important; /* 라이트 모드 */
+  }
+  
+  [data-theme="dark"] .store-description,
+  [data-theme="dark"] .store-description p {
+    color: #e5e7eb !important; /* 다크 모드 */
+  }
 } 
