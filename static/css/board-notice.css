@@ -529,6 +529,46 @@
     margin-top: 12px;
 }
 
+/* 로그인 안내 메시지 */
+.login-notice {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #0ea5e9;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(14, 165, 233, 0.1);
+}
+
+[data-theme="dark"] .login-notice {
+    background: linear-gradient(135deg, rgba(7, 89, 133, 0.2), rgba(3, 105, 161, 0.2));
+    border-color: #0284c7;
+}
+
+.login-notice-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.login-notice-content svg {
+    color: #0ea5e9;
+    flex-shrink: 0;
+}
+
+.login-link {
+    color: #0ea5e9;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.login-link:hover {
+    color: #0284c7;
+    text-decoration: underline;
+}
+
 .comments-list {
     padding: 0;
 }

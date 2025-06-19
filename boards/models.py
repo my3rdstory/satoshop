@@ -62,9 +62,9 @@ class NoticeComment(models.Model):
     class Meta:
         verbose_name = '공지사항 댓글'
         verbose_name_plural = '공지사항 댓글'
-        ordering = ['created_at']
+        ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['notice', 'is_active', 'created_at']),
+            models.Index(fields=['notice', 'is_active', '-created_at']),
         ]
 
     def __str__(self):
