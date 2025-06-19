@@ -243,14 +243,18 @@
   <script>
     // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
     const isDebugMode = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1' || 
+                       PW 
                        window.location.hostname.includes('dev') ||
                        window.location.hostname === 'satoshop-dev.onrender.com';
     
     // 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
     const isProduction = window.location.hostname === 'store.btcmap.kr' || 
-                        window.location.hostname === 'satoshop.onrender.com';
+                        window.location.hostname === 'satoshop.onrender.com' ||
+                        window.location.hostname.endsWith('.onrender.com');
     const shouldDebug = isDebugMode && !isProduction;
+    
+    // PWA 기능 설정 - 운영 환경에서는 브라우저 기본 배너 사용
+    const enableCustomPWA = !isProduction;
     
     function debugLog(...args) {
       if (shouldDebug) {
@@ -262,6 +266,15 @@
       if (shouldDebug) {
         console.error(...args);
       }
+    }
+    
+    // 운영 환경에서는 모든 콘솔 로그 비활성화
+    if (isProduction) {
+      console.log = function() {};
+      console.error = function() {};
+      console.warn = function() {};
+      console.info = function() {};
+      console.debug = function() {};
     }
     
     if ('serviceWorker' in navigator) {
@@ -308,51 +321,83 @@
             }
           }
           
-          // 설치 프롬프트 처리
+                    // 설치 프롬프트 처리
           let deferredPrompt;
+          let installButtonsInitialized = false;
+          
           window.addEventListener('beforeinstallprompt', (e) => {
             debugLog('PWA 설치 프롬프트 준비됨');
-            e.preventDefault();
-            deferredPrompt = e;
             
-            if (checkPWAInstallability()) {
-              // PWA 설치 버튼 표시
+            if (isProduction) {
+              // 운영 환경에서는 PWA 설치 배너 완전히 차단
+              e.preventDefault();
+              debugLog('운영 환경에서 PWA 설치 배너 차단됨');
+              return;
+            }
+            
+            if (enableCustomPWA && checkPWAInstallability() && !installButtonsInitialized) {
+              // 조건이 모두 충족될 때만 preventDefault 호출
               const installButton = document.getElementById('pwa-install-button');
               const installButtonMobile = document.getElementById('pwa-install-button-mobile');
               
-              function showInstallButtons() {
-                if (installButton) {
-                  installButton.style.display = 'flex';
-                  debugLog('데스크톱 설치 버튼 표시됨');
-                }
-                if (installButtonMobile) {
-                  installButtonMobile.style.display = 'block';
-                  debugLog('모바일 설치 버튼 표시됨');
-                }
+              if (installButton || installButtonMobile) {
+                // 설치 버튼이 존재하는 경우에만 preventDefault 호출
+                e.preventDefault();
+                deferredPrompt = e;
+                setupInstallButtons();
+                debugLog('커스텀 PWA 설치 기능 활성화됨');
+              } else {
+                debugLog('PWA 설치 버튼이 없어 기본 브라우저 동작을 허용합니다');
               }
-              
-              function hideInstallButtons() {
-                if (installButton) installButton.style.display = 'none';
-                if (installButtonMobile) installButtonMobile.style.display = 'none';
+            } else {
+              // 조건이 충족되지 않으면 기본 브라우저 동작 허용
+              debugLog('브라우저 기본 설치 배너를 표시합니다');
+            }
+          });
+          
+          function setupInstallButtons() {
+            // PWA 설치 버튼 표시
+            const installButton = document.getElementById('pwa-install-button');
+            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+            
+            function showInstallButtons() {
+              if (installButton) {
+                installButton.style.display = 'flex';
+                debugLog('데스크톱 설치 버튼 표시됨');
               }
-              
-              function handleInstallClick() {
-                if (deferredPrompt) {
-                  debugLog('PWA 설치 프롬프트 표시');
-                  deferredPrompt.prompt();
-                  deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                      debugLog('사용자가 PWA 설치를 수락했습니다');
-                    } else {
-                      debugLog('사용자가 PWA 설치를 거부했습니다');
-                    }
-                    deferredPrompt = null;
-                    hideInstallButtons();
-                  });
-                }
+              if (installButtonMobile) {
+                installButtonMobile.style.display = 'block';
+                debugLog('모바일 설치 버튼 표시됨');
               }
-              
+            }
+            
+            function hideInstallButtons() {
+              if (installButton) installButton.style.display = 'none';
+              if (installButtonMobile) installButtonMobile.style.display = 'none';
+            }
+            
+            function handleInstallClick() {
+              if (deferredPrompt) {
+                debugLog('PWA 설치 프롬프트 표시');
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                  if (choiceResult.outcome === 'accepted') {
+                    debugLog('사용자가 PWA 설치를 수락했습니다');
+                  } else {
+                    debugLog('사용자가 PWA 설치를 거부했습니다');
+                  }
+                  deferredPrompt = null;
+                  hideInstallButtons();
+                });
+              } else {
+                debugLog('설치 프롬프트가 없습니다. 브라우저 기본 설치 방법을 사용하세요.');
+              }
+            }
+            
+            // 버튼이 존재하는 경우에만 이벤트 리스너 추가
+            if (installButton || installButtonMobile) {
               showInstallButtons();
+              installButtonsInitialized = true;
               
               if (installButton) {
                 installButton.addEventListener('click', handleInstallClick);
@@ -360,8 +405,10 @@
               if (installButtonMobile) {
                 installButtonMobile.addEventListener('click', handleInstallClick);
               }
+            } else {
+              debugLog('PWA 설치 버튼을 찾을 수 없습니다');
             }
-          });
+          }
           
           // 앱이 설치되면 설치 버튼 숨기기
           window.addEventListener('appinstalled', (evt) => {

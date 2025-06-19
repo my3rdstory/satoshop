@@ -2,6 +2,39 @@ const CACHE_NAME = 'satoshop-v1.0.0';
 const STATIC_CACHE_NAME = 'satoshop-static-v1.0.0';
 const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.0.0';
 
+// 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
+const isDebugMode = self.location.hostname === 'localhost' || 
+                   self.location.hostname === '127.0.0.1' || 
+                   self.location.hostname.includes('dev') ||
+                   self.location.hostname === 'satoshop-dev.onrender.com';
+
+// 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
+const isProduction = self.location.hostname === 'store.btcmap.kr' || 
+                    self.location.hostname === 'satoshop.onrender.com' ||
+                    self.location.hostname.endsWith('.onrender.com');
+const shouldDebug = isDebugMode && !isProduction;
+
+function debugLog(...args) {
+  if (shouldDebug) {
+    console.log(...args);
+  }
+}
+
+function debugError(...args) {
+  if (shouldDebug) {
+    console.error(...args);
+  }
+}
+
+// 운영 환경에서는 모든 콘솔 로그 비활성화
+if (isProduction) {
+  console.log = function() {};
+  console.error = function() {};
+  console.warn = function() {};
+  console.info = function() {};
+  console.debug = function() {};
+}
+
 // 캐시할 정적 리소스
 const STATIC_ASSETS = [
   '/',
@@ -25,27 +58,27 @@ const OFFLINE_PAGE = '/offline/';
 
 // Service Worker 설치
 self.addEventListener('install', event => {
-  console.log('Service Worker: Installing...');
+  debugLog('Service Worker: Installing...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Caching static assets');
+        debugLog('Service Worker: Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('Service Worker: Static assets cached');
+        debugLog('Service Worker: Static assets cached');
         return self.skipWaiting();
       })
       .catch(err => {
-        console.error('Service Worker: Error caching static assets', err);
+        debugError('Service Worker: Error caching static assets', err);
       })
   );
 });
 
 // Service Worker 활성화
 self.addEventListener('activate', event => {
-  console.log('Service Worker: Activating...');
+  debugLog('Service Worker: Activating...');
   
   event.waitUntil(
     caches.keys()
@@ -54,14 +87,14 @@ self.addEventListener('activate', event => {
           cacheNames.map(cacheName => {
             // 이전 버전의 캐시 삭제
             if (cacheName !== STATIC_CACHE_NAME && cacheName !== DYNAMIC_CACHE_NAME) {
-              console.log('Service Worker: Deleting old cache', cacheName);
+              debugLog('Service Worker: Deleting old cache', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('Service Worker: Activated');
+        debugLog('Service Worker: Activated');
         return self.clients.claim();
       })
   );
@@ -104,7 +137,7 @@ async function handleRequest(request) {
     return await networkFirst(request, DYNAMIC_CACHE_NAME);
     
   } catch (error) {
-    console.error('Service Worker: Error handling request', error);
+    debugError('Service Worker: Error handling request', error);
     
     // HTML 요청에 대해서는 오프라인 페이지 반환
     if (request.headers.get('accept')?.includes('text/html')) {
@@ -180,7 +213,7 @@ async function networkFirst(request, cacheName) {
 // 백그라운드 동기화 (향후 사용)
 self.addEventListener('sync', event => {
   if (event.tag === 'background-sync') {
-    console.log('Service Worker: Background sync triggered');
+    debugLog('Service Worker: Background sync triggered');
     // 백그라운드에서 처리할 작업들
   }
 });
@@ -189,7 +222,7 @@ self.addEventListener('sync', event => {
 self.addEventListener('push', event => {
   if (event.data) {
     const data = event.data.json();
-    console.log('Service Worker: Push notification received', data);
+    debugLog('Service Worker: Push notification received', data);
     
     const options = {
       body: data.body,
