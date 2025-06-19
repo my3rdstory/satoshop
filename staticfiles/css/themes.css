@@ -1,0 +1,719 @@
+/* ==========================================================================
+   테마 시스템 (라이트/다크 모드) - 블랙&화이트 톤
+   ========================================================================== */
+
+/* CSS 변수 정의 */
+:root {
+    /* 라이트 모드 기본 색상 - 블랙&화이트 톤 */
+    --bg-primary: #ffffff;
+    --bg-secondary: #fafafa;
+    --bg-tertiary: #f5f5f5;
+    --bg-body: #ffffff;
+    --text-primary: #212121;
+    --text-secondary: #424242;
+    --text-muted: #757575;
+    --border-color: #e0e0e0;
+    --border-light: #eeeeee;
+    --card-bg: #ffffff;
+    --navbar-bg: #ffffff;
+    --footer-bg: #212121;
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --shadow-light: rgba(0, 0, 0, 0.04);
+    --input-bg: #ffffff;
+    --hover-bg: #f5f5f5;
+    --code-bg: #f8f8f8;
+    --pre-bg: #2d2d2d;
+    --pre-text: #f5f5f5;
+    --table-header-bg: #fafafa;
+    --blockquote-bg: #f8f8f8;
+    --blockquote-border: #e0e0e0;
+    
+    /* Bulma 색상 오버라이드 - 절제된 색상 */
+    --bulma-primary: #212121;
+    --bulma-primary-invert: #ffffff;
+    --bulma-primary-dark: #000000;
+    --bulma-primary-light: #424242;
+    --bulma-link: #212121;
+    --bulma-success: #4caf50;
+    --bulma-info: #2196f3;
+    --bulma-warning: #ff9800;
+    --bulma-danger: #f44336;
+    --bulma-dark: #212121;
+    --bulma-light: #f5f5f5;
+    --bulma-white: #ffffff;
+    --bulma-black: #212121;
+    --bulma-grey-darker: #212121;
+    --bulma-grey-dark: #424242;
+    --bulma-grey: #757575;
+    --bulma-grey-light: #bdbdbd;
+    --bulma-grey-lighter: #e0e0e0;
+}
+
+/* 다크 모드 색상 */
+[data-theme="dark"] {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --bg-tertiary: #2d2d2d;
+    --bg-body: #0a0a0a;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #bdbdbd;
+    --border-color: #2d2d2d;
+    --border-light: #424242;
+    --card-bg: #1e1e1e;
+    --navbar-bg: #121212;
+    --footer-bg: #000000;
+    --shadow-color: rgba(0, 0, 0, 0.4);
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --input-bg: #2d2d2d;
+    --hover-bg: #424242;
+    --code-bg: #2d2d2d;
+    --pre-bg: #0a0a0a;
+    --pre-text: #f5f5f5;
+    --table-header-bg: #2d2d2d;
+    --blockquote-bg: #2d2d2d;
+    --blockquote-border: #424242;
+    
+    /* Bulma 색상 다크모드 오버라이드 */
+    --bulma-primary: #ffffff;
+    --bulma-primary-invert: #212121;
+    --bulma-primary-dark: #e0e0e0;
+    --bulma-primary-light: #f5f5f5;
+    --bulma-link: #ffffff;
+    --bulma-success: #4caf50;
+    --bulma-info: #2196f3;
+    --bulma-warning: #ff9800;
+    --bulma-danger: #f44336;
+    --bulma-white: #1e1e1e;
+    --bulma-light: #2d2d2d;
+    --bulma-grey-lighter: #2d2d2d;
+    --bulma-grey-light: #424242;
+    --bulma-grey: #bdbdbd;
+    --bulma-grey-dark: #e0e0e0;
+    --bulma-grey-darker: #ffffff;
+    --bulma-black: #ffffff;
+    --bulma-dark: #e0e0e0;
+}
+
+/* 기본 요소 테마 적용 */
+html, body {
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 텍스트 요소 */
+.title, .subtitle {
+    color: var(--text-primary) !important;
+}
+
+.has-text-primary {
+    color: var(--bulma-primary) !important;
+}
+
+.has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+.has-text-grey {
+    color: var(--text-muted) !important;
+}
+
+.has-text-grey-dark {
+    color: var(--text-secondary) !important;
+}
+
+/* 다크모드 텍스트 색상 오버라이드 */
+[data-theme="dark"] .has-text-black {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .has-text-grey {
+    color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .has-text-grey-dark {
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+/* 배경 색상 */
+.has-background-white {
+    background-color: var(--bg-primary) !important;
+}
+
+.has-background-white-ter {
+    background-color: var(--bg-secondary) !important;
+}
+
+.has-background-light {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* 섹션 배경 */
+.section {
+    background-color: var(--bg-primary);
+    transition: background-color 0.3s ease;
+}
+
+/* 카드 요소 */
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.3s ease;
+}
+
+.card-content {
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+}
+
+/* 박스 요소 */
+.box {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.3s ease;
+}
+
+/* 네비게이션 바 */
+.navbar.is-white {
+    background-color: var(--bg-primary) !important;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px var(--shadow-light);
+}
+
+.navbar-item {
+    color: var(--text-primary) !important;
+}
+
+.navbar-item:hover {
+    background-color: var(--hover-bg) !important;
+    color: var(--bulma-primary) !important;
+}
+
+.navbar-burger {
+    color: var(--text-primary) !important;
+}
+
+/* 다크모드에서 navbar 요소들의 가시성 개선 */
+[data-theme="dark"] .navbar-link.has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar-link.has-text-dark:hover {
+    color: var(--text-primary) !important;
+    background-color: var(--hover-bg) !important;
+}
+
+[data-theme="dark"] .navbar-item.has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar-item.has-text-dark:hover {
+    color: var(--text-primary) !important;
+    background-color: var(--hover-bg) !important;
+}
+
+[data-theme="dark"] .navbar-burger.has-text-dark {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar-burger.has-text-dark:hover {
+    color: var(--text-primary) !important;
+}
+
+/* navbar 드롭다운 스타일 개선 */
+[data-theme="dark"] .navbar-dropdown {
+    background-color: var(--bg-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 4px 8px var(--shadow-color) !important;
+}
+
+[data-theme="dark"] .navbar-dropdown .navbar-item {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar-dropdown .navbar-item:hover {
+    background-color: var(--hover-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* 버튼 */
+.button {
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+
+.button.is-white {
+    background-color: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.button.is-white:hover {
+    border-color: var(--border-light) !important;
+    background-color: var(--hover-bg) !important;
+}
+
+/* 통일된 버튼 스타일 - 라이트/다크 모드에서 일관된 가시성 */
+
+/* Primary 버튼 - 강조 버튼 (로그인, 회원가입 등) */
+.button.is-primary {
+    background-color: #2196f3 !important;
+    color: #ffffff !important;
+    border: 2px solid #2196f3 !important;
+    font-weight: 600;
+}
+
+.button.is-primary:hover {
+    background-color: #1976d2 !important;
+    border-color: #1976d2 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.button.is-primary .icon {
+    color: #ffffff !important;
+}
+
+/* Light 버튼 - 보조 버튼 (회원가입 링크, 취소 등) */
+.button.is-light {
+    background-color: transparent !important;
+    border: 2px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+.button.is-light:hover {
+    background-color: var(--hover-bg) !important;
+    border-color: var(--text-secondary) !important;
+    color: var(--text-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.button.is-light .icon {
+    color: var(--text-primary) !important;
+}
+
+/* Success 버튼 */
+.button.is-success {
+    background-color: #4caf50 !important;
+    color: #ffffff !important;
+    border: 2px solid #4caf50 !important;
+    font-weight: 600;
+}
+
+.button.is-success:hover {
+    background-color: #45a049 !important;
+    border-color: #45a049 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* Info 버튼 */
+.button.is-info {
+    background-color: #2196f3 !important;
+    color: #ffffff !important;
+    border: 2px solid #2196f3 !important;
+    font-weight: 600;
+}
+
+.button.is-info:hover {
+    background-color: #1976d2 !important;
+    border-color: #1976d2 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+/* Warning 버튼 */
+.button.is-warning {
+    background-color: #ff9800 !important;
+    color: #ffffff !important;
+    border: 2px solid #ff9800 !important;
+    font-weight: 600;
+}
+
+.button.is-warning:hover {
+    background-color: #f57c00 !important;
+    border-color: #f57c00 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+}
+
+/* Danger 버튼 */
+.button.is-danger {
+    background-color: #f44336 !important;
+    color: #ffffff !important;
+    border: 2px solid #f44336 !important;
+    font-weight: 600;
+}
+
+.button.is-danger:hover {
+    background-color: #d32f2f !important;
+    border-color: #d32f2f !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+}
+
+/* 다크모드에서도 동일한 스타일 유지 - 색상 버튼들은 변경 없음 */
+/* Light 버튼만 다크모드에서 약간 조정 */
+[data-theme="dark"] .button.is-light {
+    border-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .button.is-light:hover {
+    border-color: var(--text-muted) !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+/* 폼 요소 */
+.input, .textarea, .select select {
+    background-color: var(--input-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+}
+
+.input:focus, .textarea:focus, .select select:focus {
+    border-color: var(--bulma-primary);
+    box-shadow: 0 0 0 0.125em rgba(33, 33, 33, 0.25);
+}
+
+[data-theme="dark"] .input:focus, 
+[data-theme="dark"] .textarea:focus, 
+[data-theme="dark"] .select select:focus {
+    box-shadow: 0 0 0 0.125em rgba(255, 255, 255, 0.25);
+}
+
+.label {
+    color: var(--text-primary) !important;
+}
+
+.help {
+    color: var(--text-muted) !important;
+}
+
+/* 테이블 */
+.table {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.table th {
+    background-color: var(--table-header-bg);
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
+}
+
+.table td {
+    border-bottom-color: var(--border-color);
+}
+
+.table tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* 태그 */
+.tag {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.tag.is-light {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.tag.is-info {
+    background-color: var(--bulma-info);
+    color: white;
+}
+
+.tag.is-success {
+    background-color: var(--bulma-success);
+    color: white;
+}
+
+.tag.is-warning {
+    background-color: var(--bulma-warning);
+    color: white;
+}
+
+.tag.is-danger {
+    background-color: var(--bulma-danger);
+    color: white;
+}
+
+/* 알림 */
+.notification {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.notification.is-info {
+    background-color: rgba(33, 150, 243, 0.1);
+    border-color: var(--bulma-info);
+    color: var(--bulma-info);
+}
+
+.notification.is-success {
+    background-color: rgba(76, 175, 80, 0.1);
+    border-color: var(--bulma-success);
+    color: var(--bulma-success);
+}
+
+.notification.is-warning {
+    background-color: rgba(255, 152, 0, 0.1);
+    border-color: var(--bulma-warning);
+    color: var(--bulma-warning);
+}
+
+.notification.is-danger {
+    background-color: rgba(244, 67, 54, 0.1);
+    border-color: var(--bulma-danger);
+    color: var(--bulma-danger);
+}
+
+/* 모달 */
+.modal-card {
+    background-color: var(--bg-primary);
+}
+
+.modal-card-head {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+.modal-card-title {
+    color: var(--text-primary);
+}
+
+.modal-card-body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.modal-card-foot {
+    background-color: var(--bg-secondary);
+    border-top-color: var(--border-color);
+}
+
+/* 드롭다운 */
+.dropdown-content {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.dropdown-item {
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover {
+    background-color: var(--hover-bg);
+}
+
+/* 메뉴 */
+.menu-list a {
+    color: var(--text-primary);
+}
+
+.menu-list a:hover {
+    background-color: var(--hover-bg);
+    color: var(--bulma-primary);
+}
+
+.menu-list a.is-active {
+    background-color: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+.menu-label {
+    color: var(--text-secondary);
+}
+
+/* 패널 */
+.panel {
+    border: 1px solid var(--border-color);
+}
+
+.panel-heading {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
+}
+
+.panel-block {
+    border-bottom-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.panel-block:hover {
+    background-color: var(--hover-bg);
+}
+
+/* 탭 */
+.tabs a {
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+.tabs a:hover {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-light);
+}
+
+.tabs li.is-active a {
+    color: var(--bulma-primary);
+    border-bottom-color: var(--bulma-primary);
+}
+
+/* 브레드크럼 */
+.breadcrumb a {
+    color: var(--text-secondary);
+}
+
+.breadcrumb .is-active a {
+    color: var(--text-primary);
+}
+
+/* 페이지네이션 */
+.pagination-previous,
+.pagination-next,
+.pagination-link {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.pagination-previous:hover,
+.pagination-next:hover,
+.pagination-link:hover {
+    background-color: var(--hover-bg);
+    border-color: var(--border-light);
+}
+
+.pagination-link.is-current {
+    background-color: var(--bulma-primary);
+    border-color: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+/* 메시지 */
+.message {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.message-header {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.message-body {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* 진행률 바 */
+.progress {
+    background-color: var(--bg-tertiary);
+}
+
+.progress::-webkit-progress-bar {
+    background-color: var(--bg-tertiary);
+}
+
+.progress.is-primary::-webkit-progress-value {
+    background-color: var(--bulma-primary);
+}
+
+/* 링크 */
+a {
+    color: var(--bulma-link);
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: var(--bulma-primary-dark);
+}
+
+/* 코드 */
+code {
+    background-color: var(--code-bg);
+    color: var(--text-primary);
+}
+
+pre {
+    background-color: var(--pre-bg);
+    color: var(--pre-text);
+}
+
+/* 인용구 */
+blockquote {
+    background-color: var(--blockquote-bg);
+    border-left: 4px solid var(--blockquote-border);
+    color: var(--text-secondary);
+}
+
+/* 구분선 */
+hr {
+    background-color: var(--border-color);
+}
+
+/* 스크롤바 (Webkit 기반 브라우저) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* 선택 영역 */
+::selection {
+    background-color: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+::-moz-selection {
+    background-color: var(--bulma-primary);
+    color: var(--bulma-primary-invert);
+}
+
+/* 포커스 아웃라인 */
+:focus {
+    outline: 2px solid var(--bulma-primary);
+    outline-offset: 2px;
+}
+
+/* 테마 전환 애니메이션 */
+* {
+    transition: background-color 0.3s ease, 
+                color 0.3s ease, 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
+} 

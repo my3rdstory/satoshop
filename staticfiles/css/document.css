@@ -1,0 +1,117 @@
+/* Document Page Styles */
+
+.document-content {
+    line-height: 1.8;
+}
+
+.document-content h1,
+.document-content h2,
+.document-content h3,
+.document-content h4,
+.document-content h5,
+.document-content h6 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.document-content h1 {
+    font-size: 2rem;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+}
+
+.document-content h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.3rem;
+}
+
+.document-content p {
+    margin-bottom: 1rem;
+}
+
+.document-content ul,
+.document-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.document-content li {
+    margin-bottom: 0.5rem;
+}
+
+.document-content blockquote {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+}
+
+.document-content code {
+    background-color: #f1f5f9;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}
+
+.document-content pre {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.document-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.document-content th,
+.document-content td {
+    border: 1px solid #e5e7eb;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.document-content th {
+    background-color: #f8fafc;
+    font-weight: 600;
+}
+
+/* 개인정보처리방침 특별 스타일 */
+.privacy-document .document-title {
+    color: #dc2626 !important;
+    font-weight: bold;
+}
+
+/* 다크 모드 지원 */
+.dark .document-content blockquote {
+    background-color: #1e293b;
+    border-left-color: #60a5fa;
+}
+
+.dark .document-content code {
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+.dark .document-content th {
+    background-color: #374151;
+    color: #f3f4f6;
+}
+
+.dark .document-content th,
+.dark .document-content td {
+    border-color: #4b5563;
+}
+
+.dark .document-content h1,
+.dark .document-content h2 {
+    border-color: #4b5563;
+} 

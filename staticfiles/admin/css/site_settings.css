@@ -1,0 +1,171 @@
+/* 사이트 설정 어드민 스타일 */
+
+.field-youtube_video_id {
+    position: relative;
+}
+
+.field-youtube_video_id input {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    padding-right: 100px;
+}
+
+.youtube-preview {
+    margin-top: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    display: none;
+}
+
+.youtube-preview.show {
+    display: block;
+}
+
+.youtube-preview iframe {
+    width: 100%;
+    height: 200px;
+    border: none;
+    border-radius: 4px;
+}
+
+.youtube-help {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.youtube-help a {
+    color: #007cba;
+    text-decoration: none;
+}
+
+.youtube-help a:hover {
+    text-decoration: underline;
+}
+
+.fieldset h2 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    margin: 0 0 20px 0;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.fieldset .description {
+    background: #e3f2fd;
+    padding: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid #2196f3;
+    border-radius: 0 4px 4px 0;
+    font-size: 14px;
+    color: #1565c0;
+}
+
+.form-row {
+    margin-bottom: 20px;
+}
+
+.form-row .field-box {
+    background: white;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.form-row label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.form-row input[type="text"],
+.form-row input[type="email"],
+.form-row input[type="url"],
+.form-row textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e1e5e9;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.form-row input:focus,
+.form-row textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-row .help {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* 체크박스 스타일 개선 */
+.form-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    accent-color: #667eea;
+}
+
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.checkbox-row label {
+    margin-bottom: 0;
+    cursor: pointer;
+}
+
+/* 저장 버튼 스타일 */
+.submit-row {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px 20px;
+    margin: 30px 0 0 0;
+    border-radius: 6px;
+}
+
+.submit-row input[type="submit"] {
+    background: white;
+    color: #667eea;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-row input[type="submit"]:hover {
+    background: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .fieldset h2 {
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+    
+    .form-row .field-box {
+        padding: 12px;
+    }
+    
+    .youtube-preview iframe {
+        height: 150px;
+    }
+} 

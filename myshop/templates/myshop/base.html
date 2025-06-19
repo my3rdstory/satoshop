@@ -136,6 +136,63 @@
     {% include 'myshop/footer.html' %}
   </div>
 
+  <!-- iOS PWA 설치 안내 모달 -->
+  <div id="ios-install-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">앱 설치하기</h3>
+        <button onclick="hideIOSInstallModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <p class="text-gray-600 dark:text-gray-300">
+          BTCmap을 홈 화면에 추가하여 앱처럼 사용하세요!
+        </p>
+        
+        <div class="space-y-3">
+          <div class="flex items-center space-x-3">
+            <div class="bg-blue-100 dark:bg-blue-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-share text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">1. 공유 버튼 탭</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">Safari 하단의 공유 아이콘을 탭하세요</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <div class="bg-green-100 dark:bg-green-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-plus-square text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">2. 홈 화면에 추가</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">"홈 화면에 추가" 옵션을 선택하세요</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <div class="bg-purple-100 dark:bg-purple-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-check text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">3. 추가 완료</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">우측 상단의 "추가" 버튼을 탭하세요</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+          <button onclick="hideIOSInstallModal()" 
+                  class="px-4 py-2 bg-bitcoin hover:bg-bitcoin-dark text-white rounded-md transition-colors">
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 공통 JavaScript -->
   <script>
     // Django URL과 CSRF 토큰을 전역 변수로 설정
@@ -147,6 +204,40 @@
   <script src="{% static 'js/common.js' %}"></script>
   <script src="{% static 'js/theme-toggle.js' %}"></script>
   
+  <!-- iOS PWA 설치 모달 제어 스크립트 -->
+  <script>
+    function showIOSInstallModal() {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        console.log('iOS 설치 안내 모달 표시됨');
+      }
+    }
+    
+    function hideIOSInstallModal() {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        console.log('iOS 설치 안내 모달 숨김');
+      }
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal && event.target === modal) {
+        hideIOSInstallModal();
+      }
+    });
+    
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        hideIOSInstallModal();
+      }
+    });
+  </script>
+  
   <!-- PWA Service Worker Registration -->
   <script>
     if ('serviceWorker' in navigator) {
@@ -157,64 +248,135 @@
         .then(function(registration) {
           console.log('Service Worker registered successfully:', registration);
           
+          // PWA 설치 가능성 확인
+          function checkPWAInstallability() {
+            // 이미 설치된 경우 확인
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+              console.log('PWA가 이미 설치되어 있습니다.');
+              return false;
+            }
+            
+            // iOS Safari 확인
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone;
+            
+            if (isIOS && !isStandalone) {
+              console.log('iOS에서 PWA 설치 가능합니다. Safari 공유 메뉴에서 "홈 화면에 추가"를 찾아보세요.');
+              showIOSInstallInstructions();
+              return false;
+            }
+            
+            return true;
+          }
+          
+          function showIOSInstallInstructions() {
+            // iOS 설치 안내 표시
+            const iosInstructionDiv = document.getElementById('ios-install-instructions');
+            const iosInstructionMobileDiv = document.getElementById('ios-install-instructions-mobile');
+            
+            if (iosInstructionDiv) {
+              iosInstructionDiv.style.display = 'flex';
+              console.log('iOS 데스크톱 설치 안내 표시됨');
+            }
+            if (iosInstructionMobileDiv) {
+              iosInstructionMobileDiv.style.display = 'block';
+              console.log('iOS 모바일 설치 안내 표시됨');
+            }
+          }
+          
           // 설치 프롬프트 처리
           let deferredPrompt;
           window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA 설치 프롬프트 준비됨');
             e.preventDefault();
             deferredPrompt = e;
             
-            // PWA 설치 버튼 표시 (필요시)
-            const installButton = document.getElementById('pwa-install-button');
-            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
-            
-            function showInstallButtons() {
-              if (installButton) installButton.style.display = 'flex';
-              if (installButtonMobile) installButtonMobile.style.display = 'block';
-            }
-            
-            function hideInstallButtons() {
-              if (installButton) installButton.style.display = 'none';
-              if (installButtonMobile) installButtonMobile.style.display = 'none';
-            }
-            
-            function handleInstallClick() {
-              if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                  if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the PWA install prompt');
-                  } else {
-                    console.log('User dismissed the PWA install prompt');
-                  }
-                  deferredPrompt = null;
-                  hideInstallButtons();
-                });
+            if (checkPWAInstallability()) {
+              // PWA 설치 버튼 표시
+              const installButton = document.getElementById('pwa-install-button');
+              const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+              
+              function showInstallButtons() {
+                if (installButton) {
+                  installButton.style.display = 'flex';
+                  console.log('데스크톱 설치 버튼 표시됨');
+                }
+                if (installButtonMobile) {
+                  installButtonMobile.style.display = 'block';
+                  console.log('모바일 설치 버튼 표시됨');
+                }
               }
-            }
-            
-            showInstallButtons();
-            
-            if (installButton) {
-              installButton.addEventListener('click', handleInstallClick);
-            }
-            if (installButtonMobile) {
-              installButtonMobile.addEventListener('click', handleInstallClick);
+              
+              function hideInstallButtons() {
+                if (installButton) installButton.style.display = 'none';
+                if (installButtonMobile) installButtonMobile.style.display = 'none';
+              }
+              
+              function handleInstallClick() {
+                if (deferredPrompt) {
+                  console.log('PWA 설치 프롬프트 표시');
+                  deferredPrompt.prompt();
+                  deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                      console.log('사용자가 PWA 설치를 수락했습니다');
+                    } else {
+                      console.log('사용자가 PWA 설치를 거부했습니다');
+                    }
+                    deferredPrompt = null;
+                    hideInstallButtons();
+                  });
+                }
+              }
+              
+              showInstallButtons();
+              
+              if (installButton) {
+                installButton.addEventListener('click', handleInstallClick);
+              }
+              if (installButtonMobile) {
+                installButtonMobile.addEventListener('click', handleInstallClick);
+              }
             }
           });
           
           // 앱이 설치되면 설치 버튼 숨기기
           window.addEventListener('appinstalled', (evt) => {
-            console.log('PWA was installed');
+            console.log('PWA가 설치되었습니다');
             const installButton = document.getElementById('pwa-install-button');
             const installButtonMobile = document.getElementById('pwa-install-button-mobile');
             if (installButton) installButton.style.display = 'none';
             if (installButtonMobile) installButtonMobile.style.display = 'none';
           });
+          
+          // PWA 설치 가능성 초기 확인
+          setTimeout(() => {
+            if (!deferredPrompt) {
+              console.log('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
+              console.log('다음을 확인해주세요:');
+              console.log('1. HTTPS 연결인지 확인');
+              console.log('2. manifest.json이 올바르게 로드되는지 확인');
+              console.log('3. Service Worker가 등록되었는지 확인');
+              console.log('4. 앱이 이미 설치되어 있지 않은지 확인');
+              
+              // 브라우저별 안내
+              const userAgent = navigator.userAgent;
+              if (userAgent.includes('Chrome')) {
+                console.log('Chrome: 주소창 우측의 설치 아이콘을 찾아보세요.');
+              } else if (userAgent.includes('Firefox')) {
+                console.log('Firefox: 주소창의 설치 아이콘을 찾아보세요.');
+              } else if (userAgent.includes('Edge')) {
+                console.log('Edge: 주소창의 앱 아이콘을 찾아보세요.');
+              }
+            }
+          }, 3000);
+          
         })
         .catch(function(error) {
           console.log('Service Worker registration failed:', error);
         });
       });
+    } else {
+      console.log('이 브라우저는 Service Worker를 지원하지 않습니다.');
     }
   </script>
   

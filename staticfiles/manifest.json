@@ -9,43 +9,25 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "ko",
-  "categories": ["bitcoin", "lightning", "shopping", "business", "finance"],
+  "categories": ["shopping", "business", "finance"],
   "icons": [
     {
       "src": "/static/images/icons/icon-100x100.png",
       "sizes": "100x100",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/static/images/icons/icon-100x100.png",
-      "sizes": "100x100",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/static/images/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/static/images/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     },
     {
       "src": "/static/images/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/static/images/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -86,9 +68,5 @@
       ]
     }
   ],
-  "prefer_related_applications": false,
-  "id": "/",
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  "prefer_related_applications": false
 } 
