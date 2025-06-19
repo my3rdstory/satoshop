@@ -1,35 +1,11 @@
 // 장바구니 관련 공통 함수들
 
-// 장바구니 배지 업데이트
+// 장바구니 배지 업데이트 (제거됨 - 플로팅 버튼 없음)
 function updateCartBadge(itemCount) {
-    const cartBadge = document.getElementById('cartBadge');
-    const cartToggleBtn = document.getElementById('cartToggleBtn');
-    
-    if (!cartToggleBtn) return;
-
-    if (itemCount > 0) {
-        if (cartBadge) {
-            cartBadge.textContent = itemCount;
-            cartBadge.style.display = 'flex';
-        } else {
-            // 배지가 없으면 새로 생성
-            const badge = document.createElement('span');
-            badge.id = 'cartBadge';
-            badge.className = 'absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center';
-            badge.textContent = itemCount;
-            cartToggleBtn.appendChild(badge);
-        }
-        // 애니메이션 효과
-        cartToggleBtn.classList.add('animate-pulse');
-        setTimeout(() => {
-            cartToggleBtn.classList.remove('animate-pulse');
-        }, 1000);
-    } else {
-        if (cartBadge) {
-            cartBadge.style.display = 'none';
-        }
-    }
+    // 플로팅 버튼이 제거되어 더 이상 필요하지 않음
 }
+
+
 
 // 성공 메시지 표시
 function showSuccessMessage(message) {
@@ -167,7 +143,7 @@ function generateCartHTML(cartItems, totalAmount) {
                                 }
                             </h4>
                             <button class="flex-shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded p-0.5" 
-                                    onclick="removeFromCart(${item.id})" title="삭제">
+                                    onclick="removeFromCart('${item.id}')" title="삭제">
                                 <i class="fas fa-times text-xs"></i>
                             </button>
                         </div>
@@ -212,6 +188,8 @@ function generateCartHTML(cartItems, totalAmount) {
     
     return html;
 }
+
+
 
 // 장바구니에서 아이템 삭제 (비동기)
 async function removeFromCart(itemId) {

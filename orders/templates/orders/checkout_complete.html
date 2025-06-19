@@ -276,6 +276,59 @@
       {% endif %}
     {% endfor %}
 
+    <!-- 주문서 다운로드 섹션 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+      <!-- 헤더 -->
+      <div class="bg-gradient-to-r from-bitcoin to-orange-500 text-white p-6">
+        <div class="flex items-center">
+          <i class="fas fa-download text-xl mr-3"></i>
+          <h2 class="text-xl font-bold">주문서 다운로드</h2>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        {% if total_orders > 1 %}
+          <p class="text-gray-600 dark:text-gray-400 mb-4">각 스토어별로 주문서를 다운로드 받으실 수 있습니다.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for order in all_orders %}
+            <a 
+              href="{% url 'orders:download_order_txt_public' order.order_number %}" 
+              class="inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-bitcoin/10 to-orange-500/10 hover:from-bitcoin/20 hover:to-orange-500/20 border border-bitcoin/30 hover:border-bitcoin/50 text-bitcoin font-medium rounded-xl transition-all duration-200 hover:shadow-md"
+              download
+            >
+              <div class="text-center">
+                <div class="flex items-center justify-center mb-1">
+                  <i class="fas fa-file-alt mr-2"></i>
+                  {{ order.store.store_name }}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">{{ order.order_number }}</div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-gray-600 dark:text-gray-400 mb-4">아래 버튼을 클릭하여 주문서를 TXT 파일로 다운로드 받으세요.</p>
+          <div class="text-center">
+            <a 
+              href="{% url 'orders:download_order_txt_public' primary_order.order_number %}" 
+              class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+              download
+            >
+              <div class="flex items-center">
+                <div class="p-2 bg-white/20 rounded-lg mr-3">
+                  <i class="fas fa-download text-xl"></i>
+                </div>
+                <div class="text-left">
+                  <div class="text-lg font-bold">주문서 다운로드</div>
+                  <div class="text-sm opacity-90">{{ primary_order.order_number }}</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- 액션 버튼 -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
       <a 

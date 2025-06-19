@@ -59,25 +59,10 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-// 화면 크기에 따른 장바구니 초기화
+// 화면 크기에 따른 장바구니 초기화 (플로팅 버튼 제거로 단순화)
 document.addEventListener('DOMContentLoaded', function() {
-  const cartToggleBtn = document.getElementById('cartToggleBtn');
-  
-  // 데스크톱에서는 기본으로 열려있도록 설정 (아이템이 있을 때만)
-  if (window.innerWidth >= 1025 && cartToggleBtn && cartToggleBtn.classList.contains('has-items')) {
-    openCart();
-  }
-  
-  // 화면 크기 변경 감지
-  window.addEventListener('resize', function() {
-    if (window.innerWidth >= 1025 && cartToggleBtn && cartToggleBtn.classList.contains('has-items')) {
-      // 데스크톱에서는 아이템이 있을 때만 자동으로 열기
-      openCart();
-    } else {
-      // 모바일/태블릿에서는 닫기
-      closeCart();
-    }
-  });
+  // 플로팅 버튼이 제거되어 자동 열기 기능 비활성화
+  // 사용자가 직접 네비게이션에서 장바구니 페이지로 이동해야 함
 });
 
 // removeFromCart 함수는 cart-common.js에서 로드됩니다 

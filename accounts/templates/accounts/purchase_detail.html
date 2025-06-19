@@ -28,13 +28,34 @@
     </div>
 
     <!-- 페이지 헤더 -->
-    <div class="flex items-center justify-center mb-8">
-      <div class="p-2 order-detail-icon rounded-full mr-3">
-        <i class="fas fa-receipt text-3xl text-white"></i>
+    <div class="flex flex-col items-center justify-center mb-8">
+      <div class="flex items-center mb-4">
+        <div class="p-2 order-detail-icon rounded-full mr-3">
+          <i class="fas fa-receipt text-3xl text-white"></i>
+        </div>
+        <div class="text-center">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">주문 상세 정보</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400">주문번호: {{ order.order_number }}</p>
+        </div>
       </div>
-      <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">주문 상세 정보</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400">주문번호: {{ order.order_number }}</p>
+      
+      <!-- 주문서 다운로드 버튼 - 눈에 잘 띄게 배치 -->
+      <div class="flex items-center justify-center">
+        <a 
+          href="{% url 'accounts:download_order_txt' order.order_number %}" 
+          class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 border-2 border-bitcoin/20 hover:border-bitcoin/40"
+          download
+        >
+          <div class="flex items-center">
+            <div class="p-2 bg-white/20 rounded-lg mr-3">
+              <i class="fas fa-download text-xl"></i>
+            </div>
+            <div class="text-left">
+              <div class="text-lg font-bold">주문서 다운로드</div>
+              <div class="text-sm opacity-90">TXT 파일로 저장</div>
+            </div>
+          </div>
+        </a>
       </div>
     </div>
 

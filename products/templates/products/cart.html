@@ -4,7 +4,6 @@
 <!-- 장바구니 스타일은 products.css에 정의되어 있습니다 -->
 
 <!-- 사이드바 장바구니 -->
-{% if user.is_authenticated %}
 <!-- 배경 오버레이 -->
 <div class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="cartOverlay" onclick="handleOverlayClick()"></div>
 
@@ -79,7 +78,7 @@
                     {{ item.product.title|truncatechars:20 }}
                   </h4>
                   <button class="flex-shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded p-0.5" 
-                          data-item-id="{{ item.id }}" onclick="removeFromCart(parseInt(this.dataset.itemId))" title="삭제">
+                          data-item-id="{{ item.id }}" onclick="removeFromCart(this.dataset.itemId)" title="삭제">
                     <i class="fas fa-times text-xs"></i>
                   </button>
                 </div>
@@ -128,24 +127,15 @@
     
     <!-- 액션 버튼 -->
     <div class="p-6 border-t border-gray-200 dark:border-gray-700" id="cartActions" {% if cart_items_count == 0 %}style="display: none;"{% endif %}>
-      <a href="{% url 'orders:checkout' %}" 
-         class="w-full inline-flex items-center justify-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
-        <i class="fas fa-credit-card mr-2"></i>
-        주문하기
-      </a>
+      <div class="space-y-2">
+        <a href="{% url 'orders:shipping_info' %}" 
+           class="w-full inline-flex items-center justify-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-credit-card mr-2"></i>
+          주문하기
+        </a>        
+      </div>
     </div>
   </div>
 </div>
 
-<!-- 장바구니 토글 버튼 -->
-<button class="fixed bottom-6 right-6 w-14 h-14 bg-bitcoin hover:bg-bitcoin/90 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-30 flex items-center justify-center{% if cart_items_count > 0 %} animate-pulse{% endif %}" 
-        id="cartToggleBtn" onclick="toggleCart()">
-  <i class="fas fa-shopping-cart text-lg"></i>
-  {% if cart_items_count > 0 %}
-  <span class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center" id="cartBadge">
-    {{ cart_items_count }}
-  </span>
-  {% endif %}
-</button>
-
-{% endif %} 
+ 

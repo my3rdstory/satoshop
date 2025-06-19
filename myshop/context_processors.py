@@ -30,6 +30,7 @@ def user_store(request):
     
     return context
 
+
 def get_file_hash(file_path):
     """파일의 MD5 해시를 계산"""
     try:

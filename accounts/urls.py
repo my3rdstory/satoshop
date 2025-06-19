@@ -13,4 +13,5 @@ urlpatterns = [
     # 구매 내역
     path('my-purchases/', views.my_purchases, name='my_purchases'),
     path('purchase/<str:order_number>/', views.purchase_detail, name='purchase_detail'),
+    path('purchase/<str:order_number>/download/', views.download_order_txt, name='download_order_txt'),
 ] 

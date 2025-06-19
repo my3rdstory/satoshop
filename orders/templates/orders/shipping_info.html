@@ -137,7 +137,7 @@
               id="buyer_email" 
               name="buyer_email" 
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
-              value="{{ form_data.buyer_email|default:user.email }}" 
+              value="{% if user.is_authenticated %}{{ form_data.buyer_email|default:user.email }}{% else %}{{ form_data.buyer_email|default:'' }}{% endif %}" 
               required
             >
           </div>
