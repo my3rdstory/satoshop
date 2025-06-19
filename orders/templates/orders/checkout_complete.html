@@ -276,6 +276,59 @@
       {% endif %}
     {% endfor %}
 
+    <!-- 주문서 다운로드 섹션 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+      <!-- 헤더 -->
+      <div class="bg-gradient-to-r from-bitcoin to-orange-500 text-white p-6">
+        <div class="flex items-center">
+          <i class="fas fa-download text-xl mr-3"></i>
+          <h2 class="text-xl font-bold">주문서 다운로드</h2>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        {% if total_orders > 1 %}
+          <p class="text-gray-600 dark:text-gray-400 mb-4">각 스토어별로 주문서를 다운로드 받으실 수 있습니다.</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for order in all_orders %}
+            <a 
+              href="{% url 'orders:download_order_txt_public' order.order_number %}" 
+              class="inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-bitcoin/10 to-orange-500/10 hover:from-bitcoin/20 hover:to-orange-500/20 border border-bitcoin/30 hover:border-bitcoin/50 text-bitcoin font-medium rounded-xl transition-all duration-200 hover:shadow-md"
+              download
+            >
+              <div class="text-center">
+                <div class="flex items-center justify-center mb-1">
+                  <i class="fas fa-file-alt mr-2"></i>
+                  {{ order.store.store_name }}
+                </div>
+                <div class="text-xs text-gray-600 dark:text-gray-400">{{ order.order_number }}</div>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-gray-600 dark:text-gray-400 mb-4">아래 버튼을 클릭하여 주문서를 TXT 파일로 다운로드 받으세요.</p>
+          <div class="text-center">
+            <a 
+              href="{% url 'orders:download_order_txt_public' primary_order.order_number %}" 
+              class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+              download
+            >
+              <div class="flex items-center">
+                <div class="p-2 bg-white/20 rounded-lg mr-3">
+                  <i class="fas fa-download text-xl"></i>
+                </div>
+                <div class="text-left">
+                  <div class="text-lg font-bold">주문서 다운로드</div>
+                  <div class="text-sm opacity-90">{{ primary_order.order_number }}</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
     <!-- 액션 버튼 -->
     <div class="flex flex-col sm:flex-row gap-4 justify-center">
       <a 
@@ -299,4 +352,86 @@
 
 {% block extra_js %}
 <script src="{% static 'js/common.js' %}"></script>
+
+<!-- 다운로드 URL들을 data 속성으로 전달 -->
+<div id="downloadData" style="display:none;" 
+     data-single-order="{% if total_orders == 1 %}true{% else %}false{% endif %}"
+     {% if total_orders == 1 %}
+     data-download-url="{% url 'orders:download_order_txt_public' primary_order.order_number %}"
+     data-filename="order_{{ primary_order.order_number }}.txt"
+     {% else %}
+     data-download-urls="{% for order in all_orders %}{% url 'orders:download_order_txt_public' order.order_number %}{% if not forloop.last %}|{% endif %}{% endfor %}"
+     {% endif %}
+></div>
+
+<script>
+// 페이지 로드 시 자동으로 주문서 다운로드
+document.addEventListener('DOMContentLoaded', function() {
+  // 페이지 로드 후 1초 뒤에 다운로드 시작 (사용자가 완료 메시지를 볼 수 있도록)
+  setTimeout(function() {
+    const downloadData = document.getElementById('downloadData');
+    const isSingleOrder = downloadData.getAttribute('data-single-order') === 'true';
+    
+    if (isSingleOrder) {
+      // 단일 스토어 주문인 경우
+      const downloadUrl = downloadData.getAttribute('data-download-url');
+      const filename = downloadData.getAttribute('data-filename');
+      downloadFile(downloadUrl, filename);
+      showDownloadNotification('주문서 다운로드를 시작합니다.');
+    } else {
+      // 다중 스토어 주문인 경우
+      const downloadUrls = downloadData.getAttribute('data-download-urls').split('|');
+      
+      // 각 주문서를 0.5초 간격으로 다운로드 (브라우저 제한 방지)
+      downloadUrls.forEach(function(url, index) {
+        setTimeout(function() {
+          downloadFile(url, 'order_' + (index + 1) + '.txt');
+        }, index * 500);
+      });
+      
+      showDownloadNotification('다중 스토어 주문서 다운로드를 시작합니다.');
+    }
+  }, 1000);
+});
+
+// 파일 다운로드 함수
+function downloadFile(url, filename) {
+  try {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'order.txt';
+    link.style.display = 'none';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('다운로드 중 오류 발생:', error);
+  }
+}
+
+// 다운로드 알림 표시 함수
+function showDownloadNotification(message) {
+  // 기존 알림이 있다면 제거
+  const existingNotification = document.getElementById('downloadNotification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  // 새 알림 생성
+  const notification = document.createElement('div');
+  notification.id = 'downloadNotification';
+  notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+  notification.innerHTML = '<i class="fas fa-download mr-2"></i><span>' + message + '</span><button onclick="this.parentElement.remove()" class="ml-3 text-white hover:text-gray-200"><i class="fas fa-times"></i></button>';
+  
+  document.body.appendChild(notification);
+  
+  // 5초 후 자동으로 제거
+  setTimeout(function() {
+    if (notification && notification.parentElement) {
+      notification.remove();
+    }
+  }, 5000);
+}
+</script>
 {% endblock %} 

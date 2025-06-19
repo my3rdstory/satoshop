@@ -301,7 +301,7 @@ class Invoice(models.Model):
     )
     
     # 사용자 및 관련 정보
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices', verbose_name='사용자')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices', null=True, blank=True, verbose_name='사용자')
     store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, related_name='invoices', verbose_name='스토어')
     order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='invoices', verbose_name='주문')
     
@@ -323,7 +323,8 @@ class Invoice(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.amount_sats} sats ({self.get_status_display()})"
+        user_display = self.user.username if self.user else '비회원'
+        return f"{user_display} - {self.amount_sats} sats ({self.get_status_display()})"
     
     @property
     def is_expired(self):

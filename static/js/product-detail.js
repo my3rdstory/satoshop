@@ -150,13 +150,6 @@ function updateTotalPrice() {
 function addToCart() {
     if (!productData) return;
     
-    if (!productData.isAuthenticated) {
-        if (confirm('로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
-            window.location.href = productData.loginUrl;
-        }
-        return;
-    }
-    
 
     
     const quantity = parseInt(document.getElementById('quantity')?.value || 1);
@@ -190,13 +183,9 @@ function addToCart() {
             // 성공 메시지 (간단하게)
             showSuccessMessage('장바구니에 추가되었습니다!');
             
-            // 장바구니 내용 업데이트 및 자동 열기
-            updateCartContent().then(() => {
-                // 데스크톱에서는 자동으로 장바구니 열기
-                if (window.innerWidth >= 1025) {
-                    openCart();
-                }
-            });
+            // 장바구니 내용 업데이트 및 사이드바 열기
+            updateCartContent();
+            openCart();
         } else {
             alert(data.error || '장바구니 추가에 실패했습니다.');
         }

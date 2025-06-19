@@ -25,4 +25,5 @@ urlpatterns = [
     path('checkout/check_payment/', views.check_checkout_payment, name='check_checkout_payment'),
     path('checkout/cancel_invoice/', views.cancel_invoice, name='cancel_invoice'),
     path('checkout/complete/<str:order_number>/', views.checkout_complete, name='checkout_complete'),
+    path('download/<str:order_number>/', views.download_order_txt_public, name='download_order_txt_public'),
 ] 

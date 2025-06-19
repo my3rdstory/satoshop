@@ -1094,122 +1094,34 @@ def delete_product_image(request, store_id, product_id, image_id):
 # 장바구니 관련 View
 # =================================
 
-@login_required
 def cart_view(request):
-    """장바구니 보기"""
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    
-    context = {
-        'cart': cart,
-        'cart_items': cart.items.all().select_related('product', 'product__store'),
-    }
-    return render(request, 'stores/cart.html', context)
+    """장바구니 보기 (CartService 사용)"""
+    # orders 앱의 cart_view로 리다이렉트 (중복 제거)
+    return redirect('orders:cart_view')
 
 
-@login_required
 @require_POST
 def add_to_cart(request):
-    """장바구니에 상품 추가"""
-    try:
-        data = json.loads(request.body)
-        product_id = data.get('product_id')
-        quantity = int(data.get('quantity', 1))
-        selected_options = data.get('selected_options', {})
-        
-        product = get_object_or_404(Product, id=product_id, is_active=True)
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        
-        # 동일한 상품과 옵션이 이미 장바구니에 있는지 확인
-        existing_item = cart.items.filter(
-            product=product,
-            selected_options=selected_options
-        ).first()
-        
-        if existing_item:
-            existing_item.quantity += quantity
-            existing_item.save()
-            action = 'updated'
-        else:
-            CartItem.objects.create(
-                cart=cart,
-                product=product,
-                quantity=quantity,
-                selected_options=selected_options
-            )
-            action = 'added'
-        
-        return JsonResponse({
-            'success': True,
-            'action': action,
-            'cart_total_items': cart.total_items,
-            'cart_total_amount': cart.total_amount,
-        })
-        
-    except Exception as e:
-        logger.error(f"장바구니 추가 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '장바구니 추가 중 오류가 발생했습니다.'
-        })
+    """장바구니에 상품 추가 (CartService 사용)"""
+    # orders 앱의 add_to_cart로 리다이렉트 (중복 제거)
+    from orders.views import add_to_cart as orders_add_to_cart
+    return orders_add_to_cart(request)
 
 
-@login_required
 @require_POST
 def remove_from_cart(request, item_id):
-    """장바구니에서 상품 제거"""
-    try:
-        cart = get_object_or_404(Cart, user=request.user)
-        item = get_object_or_404(CartItem, id=item_id, cart=cart)
-        
-        item.delete()
-        
-        return JsonResponse({
-            'success': True,
-            'cart_total_items': cart.total_items,
-            'cart_total_amount': cart.total_amount,
-        })
-        
-    except Exception as e:
-        logger.error(f"장바구니 제거 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '장바구니에서 제거 중 오류가 발생했습니다.'
-        })
+    """장바구니에서 상품 제거 (CartService 사용)"""
+    # orders 앱의 remove_from_cart로 리다이렉트 (중복 제거)
+    from orders.views import remove_from_cart as orders_remove_from_cart
+    return orders_remove_from_cart(request, item_id)
 
 
-@login_required
 @require_POST
 def update_cart_item(request, item_id):
-    """장바구니 상품 수량 업데이트"""
-    try:
-        data = json.loads(request.body)
-        quantity = int(data.get('quantity', 1))
-        
-        if quantity < 1:
-            return JsonResponse({
-                'success': False,
-                'error': '수량은 1 이상이어야 합니다.'
-            })
-        
-        cart = get_object_or_404(Cart, user=request.user)
-        item = get_object_or_404(CartItem, id=item_id, cart=cart)
-        
-        item.quantity = quantity
-        item.save()
-        
-        return JsonResponse({
-            'success': True,
-            'item_total_price': item.total_price,
-            'cart_total_items': cart.total_items,
-            'cart_total_amount': cart.total_amount,
-        })
-        
-    except Exception as e:
-        logger.error(f"장바구니 수량 업데이트 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '수량 업데이트 중 오류가 발생했습니다.'
-        })
+    """장바구니 상품 수량 업데이트 (CartService 사용)"""
+    # orders 앱의 update_cart_item로 리다이렉트 (중복 제거)
+    from orders.views import update_cart_item as orders_update_cart_item
+    return orders_update_cart_item(request, item_id)
 
 
 # =================================

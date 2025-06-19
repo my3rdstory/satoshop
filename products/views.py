@@ -34,17 +34,17 @@ def public_product_list(request, store_id):
     
     products = Product.objects.filter(store=store, is_active=True).order_by('-created_at')
     
-    # 사용자의 장바구니 정보 가져오기 (로그인된 경우)
+    # 사용자의 장바구니 정보 가져오기 (로그인/비로그인 모두 지원)
     cart_items_count = 0
     cart_total_amount = 0
-    if request.user.is_authenticated:
-        try:
-            from orders.models import Cart
-            cart = Cart.objects.get(user=request.user)
-            cart_items_count = cart.total_items
-            cart_total_amount = cart.total_amount
-        except Cart.DoesNotExist:
-            pass
+    try:
+        from orders.services import CartService
+        cart_service = CartService(request)
+        cart_summary = cart_service.get_cart_summary()
+        cart_items_count = cart_summary['total_items']
+        cart_total_amount = cart_summary['total_amount']
+    except Exception:
+        pass
     
     context = {
         'store': store,
@@ -119,19 +119,14 @@ def product_detail(request, store_id, product_id):
     # 상품 옵션 가져오기
     product_options = product.options.all().prefetch_related('choices').order_by('order')
     
-    # 사용자의 장바구니 정보 가져오기 (로그인된 경우)
-    cart_items_count = 0
-    cart_total_amount = 0
-    cart_items = []
-    if request.user.is_authenticated:
-        try:
-            from orders.models import Cart
-            cart = Cart.objects.get(user=request.user)
-            cart_items_count = cart.total_items
-            cart_total_amount = cart.total_amount
-            cart_items = cart.items.all().select_related('product', 'product__store').order_by('product__store__store_name', '-added_at')
-        except Cart.DoesNotExist:
-            pass
+    # 사용자의 장바구니 정보 가져오기 (CartService 사용)
+    from orders.services import CartService
+    cart_service = CartService(request)
+    cart_summary = cart_service.get_cart_summary()
+    cart_items = cart_service.get_cart_items()
+    
+    cart_items_count = cart_summary['total_items']
+    cart_total_amount = cart_summary['total_amount']
     
     context = {
         'store': store,

@@ -29,7 +29,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- 계정 정보 카드 -->
       <div>
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-5">
           <div class="flex items-start space-x-6">
             <!-- 프로필 아바타 -->
             <div class="flex-shrink-0">
@@ -98,29 +98,6 @@
                 </h4>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   계정 보안을 위해 비밀번호를 변경하세요
-                </p>
-              </div>
-              <div class="flex-shrink-0">
-                <i class="fas fa-chevron-right text-gray-400 group-hover:text-bitcoin transition-colors"></i>
-              </div>
-            </a>
-
-            <!-- 구매 내역 -->
-            <a 
-              href="{% url 'accounts:my_purchases' %}" 
-              class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 transition-all duration-200"
-            >
-              <div class="flex-shrink-0">
-                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-bitcoin/20 transition-colors">
-                  <i class="fas fa-shopping-bag text-blue-600 dark:text-blue-400 group-hover:text-bitcoin"></i>
-                </div>
-              </div>
-              <div class="ml-4 flex-1">
-                <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-bitcoin transition-colors">
-                  구매 내역
-                </h4>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  결제한 상품 구매 내역을 확인하세요
                 </p>
               </div>
               <div class="flex-shrink-0">
