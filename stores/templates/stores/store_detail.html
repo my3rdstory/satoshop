@@ -6,15 +6,29 @@
 {% block title %}{{ store.store_name }} - SatoShop{% endblock %}
 
 <!-- Open Graph Meta Tags for Store -->
-{% block og_title %}{{ store.store_name }} - SatoShop{% endblock %}
-{% block og_description %}{{ store.store_description|truncatewords:30|default:"SatoShop 스토어에서 비트코인으로 쇼핑하세요" }}{% endblock %}
-{% block og_type %}website{% endblock %}
-{% block og_image %}{% if store.images.exists %}{{ store.images.first.file_url }}{% else %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% load static %}{{ request.build_absolute_uri }}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endif %}{% endif %}{% endblock %}
+{% block opengraph_meta %}
+<meta property="og:title" content="{{ store.store_name }} - SatoShop">
+<meta property="og:description" content="{% if store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% if store.images.exists %}
+<meta property="og:image" content="{{ store.images.first.file_url }}">
+{% else %}
+<meta property="og:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+{% endif %}
+<meta property="og:site_name" content="SatoShop">
+<meta property="og:locale" content="ko_KR">
 
-<!-- Twitter Card Meta Tags for Store -->
-{% block twitter_title %}{{ store.store_name }} - SatoShop{% endblock %}
-{% block twitter_description %}{{ store.store_description|truncatewords:30|default:"SatoShop 스토어에서 비트코인으로 쇼핑하세요" }}{% endblock %}
-{% block twitter_image %}{% if store.images.exists %}{{ store.images.first.file_url }}{% else %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% load static %}{{ request.build_absolute_uri }}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endif %}{% endif %}{% endblock %}
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ store.store_name }} - SatoShop">
+<meta name="twitter:description" content="{% if store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}">
+{% if store.images.exists %}
+<meta name="twitter:image" content="{{ store.images.first.file_url }}">
+{% else %}
+<meta name="twitter:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+{% endif %}
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">

@@ -5,28 +5,24 @@
 -->
 
 <!-- Open Graph Meta Tags -->
-<meta property="og:title" content="{{ title|default:site_settings.site_title|default:'SatoShop' }}">
-<meta property="og:description" content="{{ description|default:site_settings.site_description|default:'비트코인 라이트닝 결제 플랫폼' }}">
+<meta property="og:title" content="{{ title|default:'SatoShop' }}">
+<meta property="og:description" content="{{ description|default:'비트코인 라이트닝 결제 플랫폼' }}">
 <meta property="og:type" content="{{ type|default:'website' }}">
 <meta property="og:url" content="{{ request.build_absolute_uri }}">
 {% if image %}
 <meta property="og:image" content="{{ image }}">
-{% elif site_settings.og_default_image %}
-<meta property="og:image" content="{{ site_settings.og_default_image }}">
 {% else %}
 <meta property="og:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
 {% endif %}
-<meta property="og:site_name" content="{{ site_settings.og_site_name|default:'SatoShop' }}">
+<meta property="og:site_name" content="SatoShop">
 <meta property="og:locale" content="ko_KR">
 
 <!-- Twitter Card Meta Tags -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ title|default:site_settings.site_title|default:'SatoShop' }}">
-<meta name="twitter:description" content="{{ description|default:site_settings.site_description|default:'비트코인 라이트닝 결제 플랫폼' }}">
+<meta name="twitter:title" content="{{ title|default:'SatoShop' }}">
+<meta name="twitter:description" content="{{ description|default:'비트코인 라이트닝 결제 플랫폼' }}">
 {% if image %}
 <meta name="twitter:image" content="{{ image }}">
-{% elif site_settings.og_default_image %}
-<meta name="twitter:image" content="{{ site_settings.og_default_image }}">
 {% else %}
 <meta name="twitter:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
 {% endif %} 
