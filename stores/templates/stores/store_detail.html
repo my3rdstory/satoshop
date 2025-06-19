@@ -126,38 +126,7 @@
             </div>
             {% endif %}
 
-            <!-- 사업자 정보 -->
-            <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-              <h5 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">사업자 정보</h5>
-              <div class="space-y-2">
-                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-building text-blue-500 mr-3"></i>
-                  <span class="font-medium mr-2">사업자등록번호:</span>
-                  {% if user.is_authenticated %}
-                    <span>{% if store.business_license_number %}{{ store.business_license_number }}{% else %}<span class="text-gray-500">(미등록)</span>{% endif %}</span>
-                  {% else %}
-                    {% if store.business_license_number %}
-                      <span class="text-gray-500 italic">* 로그인 후 확인 가능</span>
-                    {% else %}
-                      <span class="text-gray-500">(미등록)</span>
-                    {% endif %}
-                  {% endif %}
-                </div>
-                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-certificate text-blue-500 mr-3"></i>
-                  <span class="font-medium mr-2">통신판매업번호:</span>
-                  {% if user.is_authenticated %}
-                    <span>{% if store.telecommunication_sales_number %}{{ store.telecommunication_sales_number }}{% else %}<span class="text-gray-500">(미등록)</span>{% endif %}</span>
-                  {% else %}
-                    {% if store.telecommunication_sales_number %}
-                      <span class="text-gray-500 italic">* 로그인 후 확인 가능</span>
-                    {% else %}
-                      <span class="text-gray-500">(미등록)</span>
-                    {% endif %}
-                  {% endif %}
-                </div>
-              </div>
-            </div>
+
           </div>
 
           <div class="mt-6">

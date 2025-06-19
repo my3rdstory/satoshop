@@ -314,6 +314,22 @@
           {% endif %}
         </div>
 
+        <!-- 사업자 정보 -->
+        {% if store.business_license_number or store.telecommunication_sales_number %}
+        <div class="flex flex-wrap justify-center items-center gap-6 mb-6 text-sm text-gray-400">
+          {% if store.business_license_number %}
+          <span class="flex items-center">
+            <i class="fas fa-building mr-2"></i>사업자등록번호: {{ store.business_license_number }}
+          </span>
+          {% endif %}
+          {% if store.telecommunication_sales_number %}
+          <span class="flex items-center">
+            <i class="fas fa-certificate mr-2"></i>통신판매업번호: {{ store.telecommunication_sales_number }}
+          </span>
+          {% endif %}
+        </div>
+        {% endif %}
+
         <!-- 사이트 공통 푸터 -->
         <div class="border-t border-gray-700 pt-4">
           <div class="flex flex-col md:flex-row justify-between items-center">
