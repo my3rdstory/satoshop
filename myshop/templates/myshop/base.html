@@ -243,7 +243,7 @@
   <script>
     // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
     const isDebugMode = window.location.hostname === 'localhost' || 
-                       PW 
+                       window.location.hostname === '127.0.0.1' || 
                        window.location.hostname.includes('dev') ||
                        window.location.hostname === 'satoshop-dev.onrender.com';
     
