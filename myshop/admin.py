@@ -205,27 +205,6 @@ class DocumentContentAdmin(admin.ModelAdmin):
         }),
         ('문서 내용', {
             'fields': ('content',),
-            'description': '''
-            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h4 style="margin-top: 0;">📝 마크다운 작성 가이드</h4>
-                <p><strong>기본 문법:</strong></p>
-                <ul>
-                    <li><code># 제목1</code>, <code>## 제목2</code>, <code>### 제목3</code></li>
-                    <li><code>**굵은글씨**</code>, <code>*기울임*</code></li>
-                    <li><code>- 목록 항목</code> 또는 <code>1. 번호 목록</code></li>
-                    <li><code>[링크 텍스트](URL)</code></li>
-                    <li><code>> 인용문</code></li>
-                </ul>
-                <p><strong>표 만들기:</strong></p>
-                <pre>| 헤더1 | 헤더2 |
-|-------|-------|
-| 내용1 | 내용2 |</pre>
-                <p><strong>코드 블록:</strong></p>
-                <pre>```
-코드 내용
-```</pre>
-            </div>
-            '''
         }),
         ('메타 정보', {
             'fields': ('created_at', 'updated_at'),
