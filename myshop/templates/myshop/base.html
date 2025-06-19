@@ -13,12 +13,13 @@
   <meta name="keywords" content="{% block meta_keywords %}{% if site_settings and site_settings.meta_keywords %}{{ site_settings.meta_keywords }}{% else %}비트코인, 라이트닝, 온라인 스토어, 결제, 비트코인 결제, 비트코인 라이트닝 결제, 비트코인 라이트닝 결제 플랫폼, 사토샵, SatoShop{% endif %}{% endblock %}">
   
   <!-- Open Graph Meta Tags -->
+  {% block opengraph_meta %}
   <meta property="og:title" content="{% block og_title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}{% endblock %}">
   <meta property="og:description" content="{% block og_description %}{% if site_settings and site_settings.site_description %}{{ site_settings.site_description }}{% else %}비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
   <meta property="og:image" content="{% block og_image %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
-  <meta property="og:site_name" content="{% if site_settings and site_settings.og_site_name %}{{ site_settings.og_site_name }}{% else %}SatoShop{% endif %}">
+  <meta property="og:site_name" content="{% if site_settings and site_settings.og_site_name %}{{ site_settings.og_site_name %}{% else %}SatoShop{% endif %}">
   <meta property="og:locale" content="ko_KR">
   
   <!-- Twitter Card Meta Tags -->
@@ -26,6 +27,7 @@
   <meta name="twitter:title" content="{% block twitter_title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}{% endblock %}">
   <meta name="twitter:description" content="{% block twitter_description %}{% if site_settings and site_settings.site_description %}{{ site_settings.site_description }}{% else %}비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}">
   <meta name="twitter:image" content="{% block twitter_image %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+  {% endblock %}
   
   <!-- Favicons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
