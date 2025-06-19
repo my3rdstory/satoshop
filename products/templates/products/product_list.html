@@ -4,6 +4,10 @@
 
 {% block title %}{{ store.store_name }} - {% if is_public_view %}상품 목록{% else %}상품 관리{% endif %}{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" "|add:is_public_view|yesno:"상품 목록,상품 관리" description=is_public_view|yesno:store.store_name|add:"의 다양한 상품들을 둘러보고 비트코인으로 결제하세요.",store.store_name|add:"의 상품을 효율적으로 관리하고 편집하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 {% endblock %}
 

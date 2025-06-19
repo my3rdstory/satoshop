@@ -10,7 +10,8 @@ const isDebugMode = self.location.hostname === 'localhost' ||
 
 // 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
 const isProduction = self.location.hostname === 'store.btcmap.kr' || 
-                    self.location.hostname === 'satoshop.onrender.com';
+                    self.location.hostname === 'satoshop.onrender.com' ||
+                    self.location.hostname.endsWith('.onrender.com');
 const shouldDebug = isDebugMode && !isProduction;
 
 function debugLog(...args) {
@@ -23,6 +24,15 @@ function debugError(...args) {
   if (shouldDebug) {
     console.error(...args);
   }
+}
+
+// 운영 환경에서는 모든 콘솔 로그 비활성화
+if (isProduction) {
+  console.log = function() {};
+  console.error = function() {};
+  console.warn = function() {};
+  console.info = function() {};
+  console.debug = function() {};
 }
 
 // 캐시할 정적 리소스

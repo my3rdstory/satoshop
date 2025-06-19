@@ -3,6 +3,10 @@
 
 {% block title %}내 스토어 - SatoShop{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title="내 스토어 관리" description="SatoShop에서 내가 운영하는 스토어를 관리하고 설정을 변경하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 <style>
 /* 내 스토어 페이지 스타일 */
