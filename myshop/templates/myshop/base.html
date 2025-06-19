@@ -210,7 +210,7 @@
       const modal = document.getElementById('ios-install-modal');
       if (modal) {
         modal.classList.remove('hidden');
-        console.log('iOS 설치 안내 모달 표시됨');
+        debugLog('iOS 설치 안내 모달 표시됨');
       }
     }
     
@@ -218,7 +218,7 @@
       const modal = document.getElementById('ios-install-modal');
       if (modal) {
         modal.classList.add('hidden');
-        console.log('iOS 설치 안내 모달 숨김');
+        debugLog('iOS 설치 안내 모달 숨김');
       }
     }
     
@@ -240,19 +240,34 @@
   
   <!-- PWA Service Worker Registration -->
   <script>
+    // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
+    const isDebugMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('dev');
+    
+    function debugLog(...args) {
+      if (isDebugMode) {
+        console.log(...args);
+      }
+    }
+    
+    function debugError(...args) {
+      if (isDebugMode) {
+        console.error(...args);
+      }
+    }
+    
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-                 navigator.serviceWorker.register('/sw.js', {
-           scope: '/'
-         })
+        navigator.serviceWorker.register('/sw.js', {
+          scope: '/'
+        })
         .then(function(registration) {
-          console.log('Service Worker registered successfully:', registration);
+          debugLog('Service Worker registered successfully:', registration);
           
           // PWA 설치 가능성 확인
           function checkPWAInstallability() {
             // 이미 설치된 경우 확인
             if (window.matchMedia('(display-mode: standalone)').matches) {
-              console.log('PWA가 이미 설치되어 있습니다.');
+              debugLog('PWA가 이미 설치되어 있습니다.');
               return false;
             }
             
@@ -261,7 +276,7 @@
             const isStandalone = window.navigator.standalone;
             
             if (isIOS && !isStandalone) {
-              console.log('iOS에서 PWA 설치 가능합니다. Safari 공유 메뉴에서 "홈 화면에 추가"를 찾아보세요.');
+              debugLog('iOS에서 PWA 설치 가능합니다. Safari 공유 메뉴에서 "홈 화면에 추가"를 찾아보세요.');
               showIOSInstallInstructions();
               return false;
             }
@@ -276,18 +291,18 @@
             
             if (iosInstructionDiv) {
               iosInstructionDiv.style.display = 'flex';
-              console.log('iOS 데스크톱 설치 안내 표시됨');
+              debugLog('iOS 데스크톱 설치 안내 표시됨');
             }
             if (iosInstructionMobileDiv) {
               iosInstructionMobileDiv.style.display = 'block';
-              console.log('iOS 모바일 설치 안내 표시됨');
+              debugLog('iOS 모바일 설치 안내 표시됨');
             }
           }
           
           // 설치 프롬프트 처리
           let deferredPrompt;
           window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('PWA 설치 프롬프트 준비됨');
+            debugLog('PWA 설치 프롬프트 준비됨');
             e.preventDefault();
             deferredPrompt = e;
             
@@ -299,11 +314,11 @@
               function showInstallButtons() {
                 if (installButton) {
                   installButton.style.display = 'flex';
-                  console.log('데스크톱 설치 버튼 표시됨');
+                  debugLog('데스크톱 설치 버튼 표시됨');
                 }
                 if (installButtonMobile) {
                   installButtonMobile.style.display = 'block';
-                  console.log('모바일 설치 버튼 표시됨');
+                  debugLog('모바일 설치 버튼 표시됨');
                 }
               }
               
@@ -314,13 +329,13 @@
               
               function handleInstallClick() {
                 if (deferredPrompt) {
-                  console.log('PWA 설치 프롬프트 표시');
+                  debugLog('PWA 설치 프롬프트 표시');
                   deferredPrompt.prompt();
                   deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                      console.log('사용자가 PWA 설치를 수락했습니다');
+                      debugLog('사용자가 PWA 설치를 수락했습니다');
                     } else {
-                      console.log('사용자가 PWA 설치를 거부했습니다');
+                      debugLog('사용자가 PWA 설치를 거부했습니다');
                     }
                     deferredPrompt = null;
                     hideInstallButtons();
@@ -341,42 +356,44 @@
           
           // 앱이 설치되면 설치 버튼 숨기기
           window.addEventListener('appinstalled', (evt) => {
-            console.log('PWA가 설치되었습니다');
+            debugLog('PWA가 설치되었습니다');
             const installButton = document.getElementById('pwa-install-button');
             const installButtonMobile = document.getElementById('pwa-install-button-mobile');
             if (installButton) installButton.style.display = 'none';
             if (installButtonMobile) installButtonMobile.style.display = 'none';
           });
           
-          // PWA 설치 가능성 초기 확인
-          setTimeout(() => {
-            if (!deferredPrompt) {
-              console.log('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
-              console.log('다음을 확인해주세요:');
-              console.log('1. HTTPS 연결인지 확인');
-              console.log('2. manifest.json이 올바르게 로드되는지 확인');
-              console.log('3. Service Worker가 등록되었는지 확인');
-              console.log('4. 앱이 이미 설치되어 있지 않은지 확인');
-              
-              // 브라우저별 안내
-              const userAgent = navigator.userAgent;
-              if (userAgent.includes('Chrome')) {
-                console.log('Chrome: 주소창 우측의 설치 아이콘을 찾아보세요.');
-              } else if (userAgent.includes('Firefox')) {
-                console.log('Firefox: 주소창의 설치 아이콘을 찾아보세요.');
-              } else if (userAgent.includes('Edge')) {
-                console.log('Edge: 주소창의 앱 아이콘을 찾아보세요.');
+          // PWA 설치 가능성 초기 확인 (개발 모드에서만)
+          if (isDebugMode) {
+            setTimeout(() => {
+              if (!deferredPrompt) {
+                debugLog('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
+                debugLog('다음을 확인해주세요:');
+                debugLog('1. HTTPS 연결인지 확인');
+                debugLog('2. manifest.json이 올바르게 로드되는지 확인');
+                debugLog('3. Service Worker가 등록되었는지 확인');
+                debugLog('4. 앱이 이미 설치되어 있지 않은지 확인');
+                
+                // 브라우저별 안내
+                const userAgent = navigator.userAgent;
+                if (userAgent.includes('Chrome')) {
+                  debugLog('Chrome: 주소창 우측의 설치 아이콘을 찾아보세요.');
+                } else if (userAgent.includes('Firefox')) {
+                  debugLog('Firefox: 주소창의 설치 아이콘을 찾아보세요.');
+                } else if (userAgent.includes('Edge')) {
+                  debugLog('Edge: 주소창의 앱 아이콘을 찾아보세요.');
+                }
               }
-            }
-          }, 3000);
+            }, 3000);
+          }
           
         })
         .catch(function(error) {
-          console.log('Service Worker registration failed:', error);
+          debugError('Service Worker registration failed:', error);
         });
       });
     } else {
-      console.log('이 브라우저는 Service Worker를 지원하지 않습니다.');
+      debugLog('이 브라우저는 Service Worker를 지원하지 않습니다.');
     }
   </script>
   
