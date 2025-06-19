@@ -3,16 +3,24 @@ const STATIC_CACHE_NAME = 'satoshop-static-v1.0.0';
 const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.0.0';
 
 // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
-const isDebugMode = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1' || self.location.hostname.includes('dev');
+const isDebugMode = self.location.hostname === 'localhost' || 
+                   self.location.hostname === '127.0.0.1' || 
+                   self.location.hostname.includes('dev') ||
+                   self.location.hostname === 'satoshop-dev.onrender.com';
+
+// 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
+const isProduction = self.location.hostname === 'store.btcmap.kr' || 
+                    self.location.hostname === 'satoshop.onrender.com';
+const shouldDebug = isDebugMode && !isProduction;
 
 function debugLog(...args) {
-  if (isDebugMode) {
+  if (shouldDebug) {
     console.log(...args);
   }
 }
 
 function debugError(...args) {
-  if (isDebugMode) {
+  if (shouldDebug) {
     console.error(...args);
   }
 }

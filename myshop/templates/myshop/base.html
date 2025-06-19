@@ -241,16 +241,24 @@
   <!-- PWA Service Worker Registration -->
   <script>
     // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
-    const isDebugMode = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('dev');
+    const isDebugMode = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' || 
+                       window.location.hostname.includes('dev') ||
+                       window.location.hostname === 'satoshop-dev.onrender.com';
+    
+    // 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
+    const isProduction = window.location.hostname === 'store.btcmap.kr' || 
+                        window.location.hostname === 'satoshop.onrender.com';
+    const shouldDebug = isDebugMode && !isProduction;
     
     function debugLog(...args) {
-      if (isDebugMode) {
+      if (shouldDebug) {
         console.log(...args);
       }
     }
     
     function debugError(...args) {
-      if (isDebugMode) {
+      if (shouldDebug) {
         console.error(...args);
       }
     }
@@ -364,7 +372,7 @@
           });
           
           // PWA 설치 가능성 초기 확인 (개발 모드에서만)
-          if (isDebugMode) {
+          if (shouldDebug) {
             setTimeout(() => {
               if (!deferredPrompt) {
                 debugLog('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
