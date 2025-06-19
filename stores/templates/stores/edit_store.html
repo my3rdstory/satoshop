@@ -3,6 +3,10 @@
 
 {% block title %}스토어 편집: {{ store.store_name }} - SatoShop{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" 편집" description=store.store_name|add:" 스토어의 정보, 테마, API 설정 등을 편집하고 수정하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
 <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>

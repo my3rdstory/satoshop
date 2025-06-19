@@ -1,0 +1,46 @@
+{% extends 'myshop/base.html' %}
+
+{% block title %}예시 페이지 - SatoShop{% endblock %}
+
+<!-- 기존 방식 대신 새로운 컴포넌트 사용 -->
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title="예시 페이지 - SatoShop" description="이것은 새로운 오픈그래프 컴포넌트를 사용하는 예시입니다." type="website" %}
+{% endblock %}
+
+<!-- 또는 더 간단하게 동적 데이터 사용 -->
+{% comment %}
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" - SatoShop" description=store.store_description type="website" image=store.images.first.file_url %}
+{% endblock %}
+{% endcomment %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <h1>오픈그래프 컴포넌트 사용 예시</h1>
+  
+  <h2>사용법</h2>
+  
+  <h3>1. 기본 사용법</h3>
+  <pre><code>
+{% verbatim %}{% include 'myshop/components/simple_opengraph.html' with title="페이지 제목" description="페이지 설명" %}{% endverbatim %}
+  </code></pre>
+  
+  <h3>2. 스토어 페이지에서 사용</h3>
+  <pre><code>
+{% verbatim %}{% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" - SatoShop" description=store.store_description image=store.images.first.file_url %}{% endverbatim %}
+  </code></pre>
+  
+  <h3>3. 제품 페이지에서 사용</h3>
+  <pre><code>
+{% verbatim %}{% include 'myshop/components/simple_opengraph.html' with title=product.title|add:" - "|add:store.store_name description=product.description type="product" image=product.images.first.file_url %}{% endverbatim %}
+  </code></pre>
+  
+  <h3>장점</h3>
+  <ul>
+    <li>한 곳에서 오픈그래프 설정 관리</li>
+    <li>각 페이지에서 간단하게 사용 가능</li>
+    <li>기본값 자동 설정</li>
+    <li>동적 데이터 쉽게 전달</li>
+  </ul>
+</div>
+{% endblock %} 

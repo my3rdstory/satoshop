@@ -3,6 +3,11 @@
 
 {% block title %}스토어 일시 중단 - {{ store.store_name }}{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" - 일시 중단" description=store.store_name|add:" 스토어는 현재 일시적으로 서비스를 중단하고 있습니다. 주인장에게 문의해주세요." %}
+{% endblock %}
+
+
 {% block content %}
 <!-- 비활성화 알림 헤더 -->
 <section class="bg-gradient-to-br from-orange-500 to-red-600 py-16">

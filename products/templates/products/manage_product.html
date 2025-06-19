@@ -4,6 +4,10 @@
 
 {% block title %}{{ store.store_name }} - 상품 관리{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=product.title|add:" 관리" description=store.store_name|add:"의 "|add:product.title|add:" 상품을 관리하고 설정을 변경하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/products.css' %}">
 <style>

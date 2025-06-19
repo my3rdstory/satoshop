@@ -3,6 +3,10 @@
 
 {% block title %}{{ store.store_name }} - 상품 추가{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" 상품 추가" description=store.store_name|add:"에 새로운 상품을 등록하고 비트코인 라이트닝 결제로 판매를 시작하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/products.css' %}">
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">

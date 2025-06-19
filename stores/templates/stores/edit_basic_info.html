@@ -3,6 +3,11 @@
 
 {% block title %}기본 정보 편집: {{ store.store_name }} - SatoShop{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" 기본 정보 편집" description=store.store_name|add:" 스토어의 기본 정보, 주인장 정보, 연락처를 편집하고 수정하세요." %}
+{% endblock %}
+
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
 <style>

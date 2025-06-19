@@ -3,6 +3,10 @@
 
 {% block title %}테마 설정: {{ store.store_name }} - SatoShop{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" 테마 설정" description=store.store_name|add:" 스토어의 색상과 디자인을 커스터마이징하고 테마를 변경하세요." %}
+{% endblock %}
+
 {% block extra_css %}
 <style>
 /* 테마 설정 페이지 스타일 */

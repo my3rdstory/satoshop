@@ -3,6 +3,10 @@
 
 {% block title %}스토어를 찾을 수 없습니다{% endblock %}
 
+{% block opengraph_meta %}
+  {% include 'myshop/components/simple_opengraph.html' with title="스토어를 찾을 수 없습니다" description="요청하신 스토어가 존재하지 않습니다. 스토어 ID를 다시 확인해주세요." %}
+{% endblock %}
+
 {% block content %}
 <!-- 404 알림 헤더 -->
 <section class="bg-gradient-to-br from-red-500 to-pink-600 py-16">
