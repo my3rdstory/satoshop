@@ -32,7 +32,22 @@ document.addEventListener('DOMContentLoaded', function() {
             checkoutBtn.disabled = false;
             checkoutBtn.classList.remove('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'disabled:shadow-none');
             checkoutBtn.classList.add('bg-bitcoin', 'hover:bg-bitcoin/90');
-            checkoutBtnText.textContent = '다음 단계 (결제하기)';
+            
+            // 총 금액 확인하여 버튼 텍스트 설정
+            const totalAmount = window.shippingPageData ? window.shippingPageData.totalAmount : 0;
+            const checkoutBtnIcon = document.getElementById('checkout-btn-icon');
+            
+            if (totalAmount === 0) {
+                checkoutBtnText.textContent = '무료 주문 완료하기';
+                if (checkoutBtnIcon) {
+                    checkoutBtnIcon.className = 'fas fa-check mr-2';
+                }
+            } else {
+                checkoutBtnText.textContent = '결제하기';
+                if (checkoutBtnIcon) {
+                    checkoutBtnIcon.className = 'fas fa-credit-card mr-2';
+                }
+            }
         } else {
             checkoutBtn.disabled = true;
             checkoutBtn.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'disabled:shadow-none');

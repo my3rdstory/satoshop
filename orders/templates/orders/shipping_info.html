@@ -79,6 +79,14 @@
             <span>총 결제 금액</span>
             <span class="text-bitcoin">{{ total_amount|floatformat:0 }} sats</span>
           </div>
+          {% if total_amount == 0 %}
+          <div class="mt-3 pt-3 border-t border-green-200 dark:border-green-600">
+            <div class="flex items-center text-green-600 dark:text-green-400 text-sm">
+              <i class="fas fa-gift mr-2"></i>
+              <span class="font-medium">무료 주문입니다! 배송정보 입력 후 바로 주문이 완료됩니다.</span>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -251,7 +259,7 @@
              class="flex-1 inline-flex items-center justify-center px-8 py-3 bg-bitcoin hover:bg-bitcoin/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors shadow-lg disabled:shadow-none"
              disabled
            >
-             <i class="fas fa-credit-card mr-2"></i>
+             <i class="fas fa-credit-card mr-2" id="checkout-btn-icon"></i>
              <span id="checkout-btn-text">필수 정보를 입력해주세요</span>
            </button>
          </div>
@@ -291,5 +299,13 @@
 {% block extra_js %}
 <!-- Daum 우편번호 API -->
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<!-- 데이터 전달을 위한 스크립트 -->
+<script>
+  window.shippingPageData = {
+    totalAmount: {{ total_amount|default:0 }},
+    subtotalAmount: {{ subtotal_amount|default:0 }},
+    totalShippingFee: {{ total_shipping_fee|default:0 }}
+  };
+</script>
 <script src="{% static 'js/shipping-info.js' %}"></script>
 {% endblock %} 

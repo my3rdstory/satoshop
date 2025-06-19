@@ -661,6 +661,68 @@ def shipping_info(request):
         
         # 세션에 배송 정보 저장
         request.session['shipping_data'] = shipping_data
+        
+        # 총 금액이 0인 경우 바로 주문 생성 후 완료 화면으로 이동
+        cart_service = CartService(request)
+        cart_items = cart_service.get_cart_items()
+        
+        # 총 금액 계산
+        stores_data = {}
+        total_shipping_fee = 0
+        
+        for item in cart_items:
+            store_id = item['store_id']
+            if store_id not in stores_data:
+                stores_data[store_id] = {
+                    'store_name': item['store_name'],
+                    'store_id': store_id,
+                    'items': []
+                }
+            stores_data[store_id]['items'].append(item)
+        
+        for store_id, store_data in stores_data.items():
+            store_items = store_data['items']
+            
+            # 스토어별 배송비 계산 (상품 정보에서 가져오기)
+            shipping_fees = []
+            for item in store_items:
+                try:
+                    product = Product.objects.get(id=item['product_id'])
+                    shipping_fees.append(product.display_shipping_fee)
+                except Product.DoesNotExist:
+                    shipping_fees.append(0)
+            
+            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            total_shipping_fee += store_shipping_fee
+        
+        # 전체 총액 계산
+        subtotal_amount = sum(item['total_price'] for item in cart_items)
+        total_amount = subtotal_amount + total_shipping_fee
+        
+        if total_amount == 0:
+            # 무료 주문인 경우 바로 주문 생성
+            try:
+                import uuid
+                from django.utils import timezone
+                
+                # 임시 결제 해시 생성 (무료 주문용)
+                payment_hash = f"FREE-{timezone.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+                
+                # 주문 생성
+                order_result = create_order_from_cart_service(request, payment_hash, shipping_data)
+                
+                # 세션에서 배송 정보 삭제
+                if 'shipping_data' in request.session:
+                    del request.session['shipping_data']
+                
+                # 주문 완료 페이지로 이동
+                messages.success(request, '무료 주문이 완료되었습니다!')
+                return redirect('orders:checkout_complete', order_number=order_result['primary_order_number'])
+                
+            except Exception as e:
+                messages.error(request, f'주문 처리 중 오류가 발생했습니다: {str(e)}')
+                return redirect('orders:shipping_info')
+        
         return redirect('orders:checkout')
     
     # 스토어별로 그룹화하여 배송비 계산
