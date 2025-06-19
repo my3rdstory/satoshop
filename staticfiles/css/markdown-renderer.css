@@ -1,0 +1,365 @@
+/**
+ * Markdown Renderer CSS - 마크다운 렌더링을 위한 스타일
+ * 
+ * 사용법:
+ * <link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+ */
+
+/* 기본 prose 스타일 */
+.prose {
+  color: inherit;
+  max-width: none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* 헤더 스타일 */
+.prose h1, 
+.prose h2, 
+.prose h3, 
+.prose h4, 
+.prose h5, 
+.prose h6 {
+  color: inherit;
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.25;
+}
+
+.prose h1 { 
+  font-size: 1.875rem; /* 30px */
+  margin-top: 0;
+}
+.prose h2 { 
+  font-size: 1.5rem; /* 24px */
+}
+.prose h3 { 
+  font-size: 1.25rem; /* 20px */
+}
+.prose h4 { 
+  font-size: 1.125rem; /* 18px */
+}
+.prose h5 { 
+  font-size: 1rem; /* 16px */
+}
+.prose h6 { 
+  font-size: 0.875rem; /* 14px */
+}
+
+/* 문단 스타일 */
+.prose p {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* 강조 텍스트 */
+.prose strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose del {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* 리스트 스타일 */
+.prose ul, 
+.prose ol {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  padding-left: 1.5em;
+}
+
+.prose ul {
+  list-style-type: disc;
+}
+
+.prose ol {
+  list-style-type: decimal;
+}
+
+.prose li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* 인용구 스타일 */
+.prose blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1em;
+  margin: 1em 0;
+  font-style: italic;
+  color: #6b7280;
+  background-color: #f9fafb;
+  padding: 1em;
+  border-radius: 0.375rem;
+}
+
+.dark .prose blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+  background-color: #1f2937;
+}
+
+/* 코드 스타일 */
+.prose code {
+  background-color: #f3f4f6;
+  padding: 0.125em 0.375em;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: 'Courier New', Courier, monospace;
+  color: #dc2626;
+  word-break: break-all;
+  overflow-wrap: break-word;
+}
+
+.dark .prose code {
+  background-color: #374151;
+  color: #fca5a5;
+}
+
+.prose pre {
+  background-color: #f3f4f6;
+  padding: 1em;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1em 0;
+  border: 1px solid #e5e7eb;
+}
+
+.dark .prose pre {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+  font-size: 0.875em;
+}
+
+/* 링크 스타일 */
+.prose a {
+  color: #3b82f6;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.prose a:hover {
+  color: #1d4ed8;
+  text-decoration-thickness: 2px;
+}
+
+.dark .prose a {
+  color: #60a5fa;
+}
+
+.dark .prose a:hover {
+  color: #93c5fd;
+}
+
+/* 수평선 스타일 */
+.prose hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2em 0;
+}
+
+.dark .prose hr {
+  border-top-color: #4b5563;
+}
+
+/* 테이블 스타일 */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.prose th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.dark .prose th,
+.dark .prose td {
+  border-color: #4b5563;
+}
+
+.dark .prose th {
+  background-color: #374151;
+}
+
+/* 이미지 스타일 */
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 1em 0;
+}
+
+/* 유튜브 임베드 컨테이너 */
+.prose .youtube-embed {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  margin: 1em 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.prose .youtube-embed iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* 이미지 플레이스홀더 */
+.prose .image-placeholder {
+  background-color: #f3f4f6;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 2em;
+  text-align: center;
+  color: #6b7280;
+  margin: 1em 0;
+}
+
+.dark .prose .image-placeholder {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+}
+
+.prose .image-placeholder i {
+  font-size: 2rem;
+  margin-bottom: 0.5em;
+  display: block;
+}
+
+/* 반응형 조정 */
+@media (max-width: 640px) {
+  .prose {
+    font-size: 0.875rem;
+  }
+  
+  /* 모바일에서 텍스트 색상 명확하게 지정 */
+  .prose,
+  .prose p,
+  .prose li,
+  .prose td,
+  .prose span,
+  .prose div {
+    color: #1f2937 !important; /* 라이트 모드에서 진한 회색 */
+  }
+  
+  .dark .prose,
+  .dark .prose p,
+  .dark .prose li,
+  .dark .prose td,
+  .dark .prose span,
+  .dark .prose div {
+    color: #e5e7eb !important; /* 다크 모드에서 밝은 회색 */
+  }
+  
+  .prose h1 { 
+    font-size: 1.5rem;
+    color: #111827 !important; /* 라이트 모드 헤더 */
+  }
+  .prose h2 { 
+    font-size: 1.25rem;
+    color: #111827 !important;
+  }
+  .prose h3 { 
+    font-size: 1.125rem;
+    color: #111827 !important;
+  }
+  .prose h4 { 
+    font-size: 1rem;
+    color: #111827 !important;
+  }
+  .prose h5 { 
+    font-size: 0.875rem;
+    color: #111827 !important;
+  }
+  .prose h6 { 
+    font-size: 0.75rem;
+    color: #111827 !important;
+  }
+  
+  .dark .prose h1,
+  .dark .prose h2,
+  .dark .prose h3,
+  .dark .prose h4,
+  .dark .prose h5,
+  .dark .prose h6 {
+    color: #f9fafb !important; /* 다크 모드 헤더 */
+  }
+  
+  .prose ul,
+  .prose ol {
+    padding-left: 1.25em;
+  }
+  
+  .prose blockquote {
+    padding: 0.75em;
+    margin: 0.75em 0;
+  }
+  
+  .prose pre {
+    padding: 0.75em;
+    font-size: 0.75rem;
+  }
+}
+
+/* 다크 모드 추가 조정 */
+@media (prefers-color-scheme: dark) {
+  .prose {
+    color: #e5e7eb;
+  }
+  
+  .prose h1,
+  .prose h2,
+  .prose h3,
+  .prose h4,
+  .prose h5,
+  .prose h6 {
+    color: #f9fafb;
+  }
+} 

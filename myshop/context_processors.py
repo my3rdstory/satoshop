@@ -103,6 +103,7 @@ def site_settings(request):
             'site_settings': site_settings_obj,
             'documents': documents_dict,
             'STATIC_VERSION': getattr(settings, 'STATIC_VERSION', '1'),
+            'DEBUG': settings.DEBUG,
         }
     except Exception:
         # 마이그레이션 전이나 오류 상황에서는 기본값 반환
@@ -110,4 +111,5 @@ def site_settings(request):
             'site_settings': None,
             'documents': {},
             'STATIC_VERSION': getattr(settings, 'STATIC_VERSION', '1'),
+            'DEBUG': settings.DEBUG,
         } 

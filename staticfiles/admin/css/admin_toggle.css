@@ -1,0 +1,496 @@
+/* Django Admin 사이드바 카테고리 토글 기능 CSS */
+
+/* 다양한 사이드바 셀렉터에 대응 */
+#nav-sidebar .app-label,
+.sidebar .app-label,
+#navigation .app-label,
+.navigation .app-label,
+#nav-sidebar h2,
+.sidebar h2,
+#navigation h2,
+.navigation h2 {
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+    padding-right: 12px !important;
+    /* transition 제거됨 */
+}
+
+/* 토글 아이콘 제거 및 토글 기능 비활성화 */
+#nav-sidebar .app-label::after,
+.sidebar .app-label::after,
+#navigation .app-label::after,
+.navigation .app-label::after,
+#nav-sidebar h2::after,
+.sidebar h2::after,
+#navigation h2::after,
+.navigation h2::after {
+    display: none !important;
+}
+
+/* 토글 기능 비활성화 - 항상 펼쳐진 상태 유지 */
+#nav-sidebar .app-label,
+.sidebar .app-label,
+#navigation .app-label,
+.navigation .app-label,
+#nav-sidebar h2,
+.sidebar h2,
+#navigation h2,
+.navigation h2 {
+    pointer-events: none !important;
+}
+
+/* 앱 컨테이너는 항상 펼쳐진 상태 유지 */
+#nav-sidebar .app,
+.sidebar .app,
+#navigation .app,
+.navigation .app {
+    /* app-collapsed 클래스 효과 무효화 */
+}
+
+#nav-sidebar .app .app-list,
+.sidebar .app .app-list,
+#navigation .app .app-list,
+.navigation .app .app-list,
+#nav-sidebar .app ul,
+.sidebar .app ul,
+#navigation .app ul,
+.navigation .app ul {
+    display: block !important;
+    max-height: none !important;
+    opacity: 1 !important;
+}
+
+/* 접힌 상태의 토글 아이콘 제거됨 */
+
+/* 앱 모델 리스트 토글 */
+#nav-sidebar .app-list,
+.sidebar .app-list,
+#navigation .app-list,
+.navigation .app-list,
+#nav-sidebar ul,
+.sidebar ul,
+#navigation ul,
+.navigation ul,
+#nav-sidebar tbody,
+.sidebar tbody,
+#navigation tbody,
+.navigation tbody {
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+}
+
+/* 접힌 상태 */
+#nav-sidebar .app-collapsed .app-list,
+.sidebar .app-collapsed .app-list,
+#navigation .app-collapsed .app-list,
+.navigation .app-collapsed .app-list,
+#nav-sidebar .app-collapsed ul,
+.sidebar .app-collapsed ul,
+#navigation .app-collapsed ul,
+.navigation .app-collapsed ul,
+#nav-sidebar .app-collapsed tbody,
+.sidebar .app-collapsed tbody,
+#navigation .app-collapsed tbody,
+.navigation .app-collapsed tbody {
+    max-height: 0 !important;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+}
+
+/* 펼쳐진 상태 */
+#nav-sidebar .app:not(.app-collapsed) .app-list,
+.sidebar .app:not(.app-collapsed) .app-list,
+#navigation .app:not(.app-collapsed) .app-list,
+.navigation .app:not(.app-collapsed) .app-list,
+#nav-sidebar .app:not(.app-collapsed) ul,
+.sidebar .app:not(.app-collapsed) ul,
+#navigation .app:not(.app-collapsed) ul,
+.navigation .app:not(.app-collapsed) ul,
+#nav-sidebar .app:not(.app-collapsed) tbody,
+.sidebar .app:not(.app-collapsed) tbody,
+#navigation .app:not(.app-collapsed) tbody,
+.navigation .app:not(.app-collapsed) tbody {
+    max-height: 500px;
+    opacity: 1;
+}
+
+/* 호버 효과 제거됨 */
+
+/* 카테고리별 색상 구분 (선택사항) */
+#nav-sidebar .app:nth-child(1) .app-label {
+    border-left: 3px solid #e74c3c;
+}
+
+#nav-sidebar .app:nth-child(2) .app-label {
+    border-left: 3px solid #3498db;
+}
+
+#nav-sidebar .app:nth-child(3) .app-label {
+    border-left: 3px solid #2ecc71;
+}
+
+#nav-sidebar .app:nth-child(4) .app-label {
+    border-left: 3px solid #f39c12;
+}
+
+#nav-sidebar .app:nth-child(5) .app-label {
+    border-left: 3px solid #9b59b6;
+}
+
+#nav-sidebar .app:nth-child(6) .app-label {
+    border-left: 3px solid #1abc9c;
+}
+
+/* 공간 효율성 개선 - 메뉴 항목 간격 완전 제거 */
+#nav-sidebar ul li,
+.sidebar ul li,
+#navigation ul li,
+.navigation ul li,
+#nav-sidebar tr,
+.sidebar tr,
+#navigation tr,
+.navigation tr {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    border-spacing: 0 !important;
+}
+
+#nav-sidebar ul li a,
+.sidebar ul li a,
+#navigation ul li a,
+.navigation ul li a {
+    padding: 4px 16px 4px 16px !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    font-size: 13px !important;
+    display: block !important;
+}
+
+/* 테이블 셀 여백 완전 제거 */
+#nav-sidebar td,
+.sidebar td,
+#navigation td,
+.navigation td {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-spacing: 0 !important;
+    vertical-align: top !important;
+}
+
+/* 앱 헤더 간격 완전 제거 */
+#nav-sidebar .app-label,
+.sidebar .app-label,
+#navigation .app-label,
+.navigation .app-label,
+#nav-sidebar h2,
+.sidebar h2,
+#navigation h2,
+.navigation h2 {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+    padding: 6px 16px !important;
+    line-height: 1.2 !important;
+}
+
+/* 앱 컨테이너 간격 완전 제거 */
+#nav-sidebar .app,
+.sidebar .app,
+#navigation .app,
+.navigation .app {
+    margin: 0 !important;
+    margin-bottom: 2px !important;
+    padding: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* ul 목록 여백 줄이기 */
+#nav-sidebar .app ul,
+.sidebar .app ul,
+#navigation .app ul,
+.navigation .app ul {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* 테이블 기반 메뉴 완전 최적화 */
+#nav-sidebar table,
+.sidebar table,
+#navigation table,
+.navigation table {
+    border-spacing: 0 !important;
+    border-collapse: collapse !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+#nav-sidebar th,
+.sidebar th,
+#navigation th,
+.navigation th {
+    padding: 3px 16px !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    font-size: 13px !important;
+    border: none !important;
+    vertical-align: top !important;
+}
+
+#nav-sidebar th a,
+.sidebar th a,
+#navigation th a,
+.navigation th a {
+    padding: 3px 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    line-height: 1.1 !important;
+}
+
+/* 전체 사이드바 패딩 최적화 */
+#nav-sidebar,
+.sidebar,
+#navigation,
+.navigation {
+    padding: 8px 8px 4px 8px !important;
+}
+
+/* Django 기본 여백 완전 제거 */
+#nav-sidebar * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+#nav-sidebar .app * {
+    margin: 0 !important;
+}
+
+/* 특별히 문제가 되는 요소들 */
+#nav-sidebar .app-list li,
+.sidebar .app-list li,
+#navigation .app-list li,
+.navigation .app-list li {
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+/* 모든 여백 강제 제거 */
+#nav-sidebar .app + .app,
+.sidebar .app + .app,
+#navigation .app + .app,
+.navigation .app + .app {
+    margin-top: 1px !important;
+}
+
+/* 스크롤바 영역도 최적화 */
+#nav-sidebar .app-list,
+.sidebar .app-list,
+#navigation .app-list,
+.navigation .app-list {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    #nav-sidebar .app-label {
+        padding-right: 20px !important;
+        font-size: 12px;
+    }
+    
+    #nav-sidebar .app-label::after {
+        right: 6px;
+        font-size: 9px;
+    }
+    
+    #nav-sidebar ul li a {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+    }
+}
+
+/* Django Admin 사이드바 토글 스타일 */
+
+/* 앱이 닫힌 상태일 때 */
+.app-collapsed ul,
+.app-collapsed .app-list {
+    display: none !important;
+}
+
+/* 앱 헤더 스타일 */
+.app .app-label,
+.app a.section,
+.app h2 {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.app .app-label:hover,
+.app a.section:hover,
+.app h2:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 활성 앱 헤더 스타일 */
+.app-active {
+    background-color: rgba(0, 123, 186, 0.2) !important;
+    font-weight: bold;
+}
+
+/* 활성 메뉴의 부모 요소 스타일 (li 기반 메뉴용) */
+li.active,
+li.current,
+.model.active,
+.model.current,
+#nav-sidebar li.active,
+#nav-sidebar li.current,
+.sidebar li.active,
+.sidebar li.current,
+.app li.active,
+.app li.current,
+.module li.active,
+.module li.current,
+.app-list li.active,
+.app-list li.current,
+.model-list li.active,
+.model-list li.current {
+    background-color: rgba(0, 124, 186, 0.2) !important;
+    border-radius: 4px !important;
+    margin: 1px 0 !important;
+}
+
+/* 테이블 기반 메뉴의 tr 활성 스타일 */
+#nav-sidebar tr.current-model,
+.sidebar tr.current-model,
+#navigation tr.current-model,
+.navigation tr.current-model,
+#nav-sidebar tr.active,
+.sidebar tr.active,
+#navigation tr.active,
+.navigation tr.active,
+tr.current-model,
+tr.active {
+    background-color: rgba(0, 124, 186, 0.2) !important;
+    border-radius: 4px !important;
+    margin: 1px 0 !important;
+}
+
+/* 활성 tr 내부의 th, td 요소는 배경색 제거하여 tr 배경이 보이도록 */
+#nav-sidebar tr.current-model th,
+#nav-sidebar tr.current-model td,
+.sidebar tr.current-model th,
+.sidebar tr.current-model td,
+#navigation tr.current-model th,
+#navigation tr.current-model td,
+#nav-sidebar tr.active th,
+#nav-sidebar tr.active td,
+.sidebar tr.active th,
+.sidebar tr.active td,
+#navigation tr.active th,
+#navigation tr.active td,
+tr.current-model th,
+tr.current-model td,
+tr.active th,
+tr.active td {
+    background-color: transparent !important;
+    border-radius: 0 !important;
+}
+
+/* 현재 활성 메뉴 링크 스타일 (텍스트만 강조) */
+a.active,
+a.current,
+#nav-sidebar a.active,
+#nav-sidebar a.current,
+.sidebar a.active,
+.sidebar a.current,
+.app a.active,
+.app a.current,
+.module a.active,
+.module a.current,
+.app-list a.active,
+.app-list a.current,
+.model-list a.active,
+.model-list a.current {
+    background-color: transparent !important;
+    color: #51719e !important;
+    font-weight: bold !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+/* 로딩 애니메이션 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 앱 토글 아이콘 (선택사항) */
+.app .app-label::before,
+.app a.section::before,
+.app h2::before {
+    content: "▶";
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.2s ease;
+    font-size: 0.8em;
+}
+
+.app:not(.app-collapsed) .app-label::before,
+.app:not(.app-collapsed) a.section::before,
+.app:not(.app-collapsed) h2::before {
+    transform: rotate(90deg);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    #nav-sidebar a.active,
+    #nav-sidebar a.current,
+    .sidebar a.active,
+    .sidebar a.current {
+        font-size: 14px;
+        padding: 10px 8px;
+    }
+}
+
+/* 토글 네비게이션 사이드바 버튼 숨기기 */
+.toggle-nav-sidebar,
+#toggle-nav-sidebar,
+button.toggle-nav-sidebar,
+.sticky.toggle-nav-sidebar {
+    display: none !important;
+}
+
+/* 현재 활성 메뉴 스타일 (배경색 제거, 텍스트만 강조) */
+#nav-sidebar a.active:hover,
+#nav-sidebar a.current:hover,
+.sidebar a.active:hover,
+.sidebar a.current:hover,
+a.active:hover,
+
+/* 메뉴 링크 일반 스타일 개선 */
+#nav-sidebar a,
+.sidebar a {
+    transition: all 0.2s ease;
+    border-radius: 3px;
+    margin: 1px 0;
+}
+
+#nav-sidebar a:hover,
+.sidebar a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
+}
+
+/* 기존 Django 어드민 테마 토글 버튼 숨기기 */
+#user-tools .theme-toggle,
+.theme-toggle,
+button.theme-toggle {
+    display: none !important;
+} 
