@@ -62,11 +62,16 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
         notice = self.get_object()
         
         # 댓글 목록 (대댓글 제외한 최상위 댓글만)
+        from django.db.models import Prefetch
+        
         comments = NoticeComment.objects.filter(
             notice=notice, 
             is_active=True, 
             parent=None
-        ).select_related('author').prefetch_related('replies__author')
+        ).select_related('author').prefetch_related(
+            Prefetch('replies', 
+                    queryset=NoticeComment.objects.filter(is_active=True).select_related('author'))
+        )
         
         context['comments'] = comments
         context['comment_form'] = NoticeCommentForm()
@@ -75,6 +80,11 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
             is_staff_or_superuser(self.request.user)
         )
         context['can_create'] = is_staff_or_superuser(self.request.user)
+        
+        # 활성화된 댓글 총 개수 (답글 포함)
+        total_comments = NoticeComment.objects.filter(notice=notice, is_active=True).count()
+        context['total_comments'] = total_comments
+        
         return context
 
 
@@ -172,8 +182,8 @@ def comment_edit(request, comment_pk):
     """댓글 수정"""
     comment = get_object_or_404(NoticeComment, pk=comment_pk, is_active=True)
     
-    # 작성자만 수정 가능
-    if request.user != comment.author:
+    # 작성자이거나 관리자만 수정 가능
+    if not (request.user == comment.author or is_staff_or_superuser(request.user)):
         messages.error(request, '댓글 수정 권한이 없습니다.')
         return redirect('boards:notice_detail', pk=comment.notice.pk)
     
@@ -196,15 +206,26 @@ def comment_edit(request, comment_pk):
 @require_POST
 def comment_delete(request, comment_pk):
     """댓글 삭제 (비활성화)"""
-    comment = get_object_or_404(NoticeComment, pk=comment_pk, is_active=True)
-    
-    # 작성자이거나 관리자만 삭제 가능
-    if not (request.user == comment.author or is_staff_or_superuser(request.user)):
-        messages.error(request, '댓글 삭제 권한이 없습니다.')
+    try:
+        comment = get_object_or_404(NoticeComment, pk=comment_pk)
+        
+        # 이미 삭제된 댓글인 경우
+        if not comment.is_active:
+            messages.info(request, '이미 삭제된 댓글입니다.')
+            return redirect('boards:notice_detail', pk=comment.notice.pk)
+        
+        # 작성자이거나 관리자만 삭제 가능
+        if not (request.user == comment.author or is_staff_or_superuser(request.user)):
+            messages.error(request, '댓글 삭제 권한이 없습니다.')
+            return redirect('boards:notice_detail', pk=comment.notice.pk)
+        
+        comment.is_active = False
+        comment.save()
+        
+        messages.success(request, '댓글이 삭제되었습니다.')
         return redirect('boards:notice_detail', pk=comment.notice.pk)
-    
-    comment.is_active = False
-    comment.save()
-    
-    messages.success(request, '댓글이 삭제되었습니다.')
-    return redirect('boards:notice_detail', pk=comment.notice.pk)
+        
+    except NoticeComment.DoesNotExist:
+        messages.error(request, '존재하지 않는 댓글입니다.')
+        # 이전 페이지로 돌아가거나 공지사항 목록으로 이동
+        return redirect('boards:notice_list')

@@ -21,27 +21,7 @@ function toggleReplyForm(commentId) {
     }
 }
 
-/**
- * 댓글 삭제
- */
-function deleteComment(commentId) {
-    if (confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
-        // Django URL reverse를 사용하여 올바른 URL 생성
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = window.location.origin + '/boards/comment/' + commentId + '/delete/';
-        
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken;
-        
-        form.appendChild(csrfInput);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+
 
 // ===== 댓글 수정 관련 기능 =====
 
@@ -539,16 +519,9 @@ function setupCommentEventListeners() {
         });
     });
     
-    // 댓글 삭제 버튼 이벤트 리스너
-    document.querySelectorAll('.comment-action.delete').forEach(button => {
-        button.addEventListener('click', function() {
-            const commentId = this.getAttribute('data-comment-id');
-            deleteComment(commentId);
-        });
-    });
+
 }
 
 // ===== 전역 함수 노출 =====
 window.toggleReplyForm = toggleReplyForm;
-window.deleteComment = deleteComment;
 window.showToast = showToast; 
