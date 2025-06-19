@@ -9,6 +9,9 @@
 .prose {
   color: inherit;
   max-width: none;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* 헤더 스타일 */
@@ -50,6 +53,9 @@
   margin-top: 0.75em;
   margin-bottom: 0.75em;
   line-height: 1.6;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* 강조 텍스트 */
@@ -121,6 +127,8 @@
   font-size: 0.875em;
   font-family: 'Courier New', Courier, monospace;
   color: #dc2626;
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .dark .prose code {
@@ -155,6 +163,9 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s ease;
+  word-break: break-all;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .prose a:hover {
@@ -268,12 +279,58 @@
     font-size: 0.875rem;
   }
   
-  .prose h1 { font-size: 1.5rem; }
-  .prose h2 { font-size: 1.25rem; }
-  .prose h3 { font-size: 1.125rem; }
-  .prose h4 { font-size: 1rem; }
-  .prose h5 { font-size: 0.875rem; }
-  .prose h6 { font-size: 0.75rem; }
+  /* 모바일에서 텍스트 색상 명확하게 지정 */
+  .prose,
+  .prose p,
+  .prose li,
+  .prose td,
+  .prose span,
+  .prose div {
+    color: #1f2937 !important; /* 라이트 모드에서 진한 회색 */
+  }
+  
+  .dark .prose,
+  .dark .prose p,
+  .dark .prose li,
+  .dark .prose td,
+  .dark .prose span,
+  .dark .prose div {
+    color: #e5e7eb !important; /* 다크 모드에서 밝은 회색 */
+  }
+  
+  .prose h1 { 
+    font-size: 1.5rem;
+    color: #111827 !important; /* 라이트 모드 헤더 */
+  }
+  .prose h2 { 
+    font-size: 1.25rem;
+    color: #111827 !important;
+  }
+  .prose h3 { 
+    font-size: 1.125rem;
+    color: #111827 !important;
+  }
+  .prose h4 { 
+    font-size: 1rem;
+    color: #111827 !important;
+  }
+  .prose h5 { 
+    font-size: 0.875rem;
+    color: #111827 !important;
+  }
+  .prose h6 { 
+    font-size: 0.75rem;
+    color: #111827 !important;
+  }
+  
+  .dark .prose h1,
+  .dark .prose h2,
+  .dark .prose h3,
+  .dark .prose h4,
+  .dark .prose h5,
+  .dark .prose h6 {
+    color: #f9fafb !important; /* 다크 모드 헤더 */
+  }
   
   .prose ul,
   .prose ol {
