@@ -19,7 +19,7 @@ def is_staff_or_superuser(user):
     return user.is_staff or user.is_superuser
 
 
-class NoticeListView(LoginRequiredMixin, ListView):
+class NoticeListView(ListView):
     """공지사항 목록 뷰"""
     model = Notice
     template_name = 'boards/notice/list.html'
@@ -41,11 +41,15 @@ class NoticeListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search'] = self.request.GET.get('search', '')
-        context['can_create'] = is_staff_or_superuser(self.request.user)
+        # 로그인한 사용자이고 스태프인 경우에만 작성 권한 부여
+        context['can_create'] = (
+            self.request.user.is_authenticated and 
+            is_staff_or_superuser(self.request.user)
+        )
         return context
 
 
-class NoticeDetailView(LoginRequiredMixin, DetailView):
+class NoticeDetailView(DetailView):
     """공지사항 상세 뷰"""
     model = Notice
     template_name = 'boards/notice/detail.html'
@@ -61,7 +65,7 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         notice = self.get_object()
         
-        # 댓글 목록 (대댓글 제외한 최상위 댓글만)
+        # 댓글 목록 (대댓글 제외한 최상위 댓글만, 최신 순)
         from django.db.models import Prefetch
         
         comments = NoticeComment.objects.filter(
@@ -70,16 +74,23 @@ class NoticeDetailView(LoginRequiredMixin, DetailView):
             parent=None
         ).select_related('author').prefetch_related(
             Prefetch('replies', 
-                    queryset=NoticeComment.objects.filter(is_active=True).select_related('author'))
-        )
+                    queryset=NoticeComment.objects.filter(is_active=True).select_related('author').order_by('-created_at'))
+        ).order_by('-created_at')
         
         context['comments'] = comments
         context['comment_form'] = NoticeCommentForm()
+        # 로그인한 사용자이고 권한이 있는 경우에만 수정 권한 부여
         context['can_edit'] = (
-            self.request.user == notice.author or 
+            self.request.user.is_authenticated and (
+                self.request.user == notice.author or 
+                is_staff_or_superuser(self.request.user)
+            )
+        )
+        # 로그인한 사용자이고 스태프인 경우에만 작성 권한 부여
+        context['can_create'] = (
+            self.request.user.is_authenticated and 
             is_staff_or_superuser(self.request.user)
         )
-        context['can_create'] = is_staff_or_superuser(self.request.user)
         
         # 활성화된 댓글 총 개수 (답글 포함)
         total_comments = NoticeComment.objects.filter(notice=notice, is_active=True).count()

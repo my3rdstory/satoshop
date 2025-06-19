@@ -25,11 +25,9 @@
       <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'stores:browse_stores' %}">
         <i class="fas fa-search mr-2"></i>스토어 탐색
       </a>
-      {% if user.is_authenticated %}
       <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'boards:notice_list' %}">
         <i class="fas fa-bullhorn mr-2"></i>공지사항
       </a>
-      {% endif %}
 
       <!-- Right Navigation - 사용자별 메뉴 -->
       <div class="flex items-center space-x-4">
@@ -149,11 +147,9 @@
         <i class="fas fa-search mr-2"></i>스토어 탐색
       </a>
       
-      {% if user.is_authenticated %}
       <a href="{% url 'boards:notice_list' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
         <i class="fas fa-bullhorn mr-2"></i>공지사항
       </a>
-      {% endif %}
       
       {% if user.is_authenticated %}
       <a href="{% url 'accounts:mypage' %}" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

@@ -49,7 +49,7 @@
             </button>
         </form>
 
-        {% if user.is_staff %}
+        {% if can_create %}
         <a href="{% url 'boards:notice_create' %}" class="btn-notice btn-primary">
             <!-- Heroicon: plus -->
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
