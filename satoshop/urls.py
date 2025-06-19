@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from myshop.views import service_worker_view, manifest_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,6 +29,10 @@ urlpatterns = [
     path('ln_payment/', include('ln_payment.urls')),
     path('boards/', include('boards.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
+    
+    # PWA 관련 파일들을 루트에서 제공
+    path('sw.js', service_worker_view, name='service_worker'),
+    path('manifest.json', manifest_view, name='manifest'),
 ]
 
 # WhiteNoise가 정적 파일 서빙을 자동으로 처리합니다

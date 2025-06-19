@@ -45,7 +45,7 @@
   <meta name="msapplication-tap-highlight" content="no">
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="{% static 'manifest.json' %}">
+  <link rel="manifest" href="/manifest.json">
   
   <!-- PWA Apple Touch Icons -->
   <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icons/icon-192x192.png' %}">
@@ -242,9 +242,9 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/static/js/sw.js', {
-          scope: '/'
-        })
+                 navigator.serviceWorker.register('/sw.js', {
+           scope: '/'
+         })
         .then(function(registration) {
           console.log('Service Worker registered successfully:', registration);
           

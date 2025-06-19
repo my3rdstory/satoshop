@@ -10,6 +10,4 @@ urlpatterns = [
     path('webhook/update-exchange-rate/', views.update_exchange_rate_webhook, name='update_exchange_rate_webhook'),
     path('document/<str:doc_type>/', views.document_view, name='document'),
     path('offline/', views.offline_view, name='offline'),
-    path('manifest.json', views.manifest_view, name='manifest'),
-    path('sw.js', views.service_worker_view, name='service_worker'),
 ] 
