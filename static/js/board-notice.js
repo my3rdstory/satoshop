@@ -26,10 +26,10 @@ function toggleReplyForm(commentId) {
  */
 function deleteComment(commentId) {
     if (confirm('정말로 이 댓글을 삭제하시겠습니까?')) {
-        // 댓글 삭제를 위한 폼 생성 및 제출
+        // Django URL reverse를 사용하여 올바른 URL 생성
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/boards/comment/' + commentId + '/delete/';
+        form.action = window.location.origin + '/boards/comment/' + commentId + '/delete/';
         
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const csrfInput = document.createElement('input');
@@ -461,6 +461,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // 공지사항 목록 또는 상세 페이지
         initSearch();
         restoreScrollPosition();
+        // 댓글 관련 이벤트 리스너 설정
+        setupCommentEventListeners();
     }
     
     // 모든 페이지에서 공통으로 실행
@@ -515,6 +517,33 @@ function initCommonFeatures() {
     images.forEach(img => {
         img.addEventListener('error', function() {
             this.style.display = 'none';
+        });
+    });
+}
+
+// ===== 이벤트 리스너 설정 =====
+function setupCommentEventListeners() {
+    // 답글 버튼 이벤트 리스너
+    document.querySelectorAll('.comment-action.reply').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.getAttribute('data-comment-id');
+            toggleReplyForm(commentId);
+        });
+    });
+    
+    // 답글 취소 버튼 이벤트 리스너
+    document.querySelectorAll('.cancel-reply').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.getAttribute('data-comment-id');
+            toggleReplyForm(commentId);
+        });
+    });
+    
+    // 댓글 삭제 버튼 이벤트 리스너
+    document.querySelectorAll('.comment-action.delete').forEach(button => {
+        button.addEventListener('click', function() {
+            const commentId = this.getAttribute('data-comment-id');
+            deleteComment(commentId);
         });
     });
 }

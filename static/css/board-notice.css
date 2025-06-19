@@ -805,9 +805,21 @@
     display: flex;
     gap: 16px;
     justify-content: flex-end;
-    padding-top: 24px;
-    border-top: 1px solid var(--border-color);
-    margin-top: 32px;
+    padding-top: 16px;
+    margin-top: 20px;
+}
+
+/* 댓글 수정 폼 전용 스타일 */
+.comment-edit-form {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 20px;
+}
+
+.comment-edit-form .form-actions {
+    padding-top: 5px;
+    margin-top: 5px;
 }
 
 /* URL 미리보기 영역 */
@@ -1245,32 +1257,97 @@
     border: 1px solid var(--border-color);
 }
 
-.guide-section {
-    background: rgba(255, 193, 7, 0.15);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 193, 7, 0.3);
+/* 댓글 수정 페이지 관련 스타일 정리 */
+.comment-notice-info {
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+    color: #1e40af;
+}
+
+[data-theme="dark"] .comment-notice-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(29, 78, 216, 0.1));
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+.info-header {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notice-reference {
+    margin-top: 12px;
+}
+
+.reference-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: inherit;
+}
+
+.reference-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.reference-meta > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reference-meta svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.original-comment {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
     padding: 20px;
     margin-bottom: 24px;
 }
 
-.guide-section h4 {
-    margin-bottom: 15px;
-    color: #856404;
-}
-
-[data-theme="dark"] .guide-section h4 {
-    color: #ffc107;
-}
-
-.guide-section ul {
-    margin: 0;
-    padding-left: 20px;
-    color: #856404;
-    line-height: 1.6;
-}
-
-[data-theme="dark"] .guide-section ul {
+.original-header {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     color: var(--text-secondary);
+}
+
+.original-content {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.original-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.original-text {
+    color: var(--text-primary);
+    line-height: 1.6;
 }
 
 .parent-comment-section {
