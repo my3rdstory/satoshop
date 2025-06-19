@@ -1240,7 +1240,6 @@ def check_checkout_payment(request):
         return JsonResponse({'success': False, 'error': f'결제 상태 확인 중 오류가 발생했습니다: {str(e)}'}, status=500)
 
 
-@login_required
 @require_POST
 def cancel_invoice(request):
     """인보이스 취소"""
@@ -1260,9 +1259,14 @@ def cancel_invoice(request):
         if not payment_hash:
             return JsonResponse({'success': False, 'error': 'payment_hash가 필요합니다.'}, status=400)
         
-        # 인보이스 찾기 및 권한 확인
+        # 인보이스 찾기 (로그인/비로그인 사용자 모두 지원)
         try:
-            invoice = Invoice.objects.get(payment_hash=payment_hash, user=request.user)
+            if request.user.is_authenticated:
+                # 로그인된 사용자의 경우 사용자별 인보이스 찾기
+                invoice = Invoice.objects.get(payment_hash=payment_hash, user=request.user)
+            else:
+                # 비로그인 사용자의 경우 user가 None인 인보이스 찾기
+                invoice = Invoice.objects.get(payment_hash=payment_hash, user=None)
         except Invoice.DoesNotExist:
             return JsonResponse({'success': False, 'error': '인보이스를 찾을 수 없습니다.'}, status=404)
         
