@@ -1,6 +1,6 @@
-const CACHE_NAME = 'satoshop-v1.0.0';
-const STATIC_CACHE_NAME = 'satoshop-static-v1.0.0';
-const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.0.0';
+const CACHE_NAME = 'satoshop-v1.1.0';
+const STATIC_CACHE_NAME = 'satoshop-static-v1.1.0';
+const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.1.0';
 
 // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
 const isDebugMode = self.location.hostname === 'localhost' || 
@@ -158,16 +158,14 @@ async function handleRequest(request) {
 
 // 정적 리소스 판별
 function isStaticAsset(url) {
+  // manifest.json은 정적 리소스에서 제외하여 항상 네트워크에서 가져오도록 함
+  if (url.includes('/manifest.json')) {
+    return false;
+  }
+  
   return url.includes('/static/') || 
          url.includes('fonts.googleapis.com') ||
-         url.includes('cdnjs.cloudflare.com') ||
-         url.includes('.css') ||
-         url.includes('.js') ||
-         url.includes('.png') ||
-         url.includes('.jpg') ||
-         url.includes('.jpeg') ||
-         url.includes('.webp') ||
-         url.includes('.svg');
+         url.includes('cdnjs.cloudflare.com');
 }
 
 // Cache First 전략
