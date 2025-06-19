@@ -289,14 +289,6 @@
       <div class="max-w-7xl mx-auto px-4 py-8 text-center">
         <p class="text-lg mb-4">
           <strong class="text-bitcoin">{{ store.store_name }}</strong> - {{ store.owner_name }}
-          <br>
-          <span class="text-gray-300">
-            {% if store.store_description %}
-            {{ store.store_description|truncatechars:100 }}
-            {% else %}
-            SatoShop 플랫폼으로 구축된 온라인 스토어
-            {% endif %}
-          </span>
         </p>
 
         <!-- 연락처 정보 -->
