@@ -7,7 +7,27 @@
 
 <!-- Open Graph Meta Tags for Store -->
 {% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" - SatoShop" description=store.store_description|truncatewords:30|default:"SatoShop 스토어에서 비트코인으로 쇼핑하세요" type="website" image=store.images.first.file_url %}
+<meta property="og:title" content="{{ store.store_name }} - SatoShop">
+<meta property="og:description" content="{% if store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+{% if store.images.exists %}
+<meta property="og:image" content="{{ store.images.first.file_url }}">
+{% else %}
+<meta property="og:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+{% endif %}
+<meta property="og:site_name" content="SatoShop">
+<meta property="og:locale" content="ko_KR">
+
+<!-- Twitter Card Meta Tags -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ store.store_name }} - SatoShop">
+<meta name="twitter:description" content="{% if store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}">
+{% if store.images.exists %}
+<meta name="twitter:image" content="{{ store.images.first.file_url }}">
+{% else %}
+<meta name="twitter:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}
