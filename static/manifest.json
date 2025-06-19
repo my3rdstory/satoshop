@@ -48,19 +48,7 @@
       "purpose": "maskable"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "스토어 둘러보기",
-      "short_name": "스토어",
-      "description": "등록된 스토어들을 둘러보세요",
-      "url": "/stores/",
-      "icons": [
-        {
-          "src": "/static/images/icons/icon-100x100.png",
-          "sizes": "100x100"
-        }
-      ]
-    },
+  "shortcuts": [    
     {
       "name": "홈",
       "short_name": "홈",
@@ -74,10 +62,10 @@
       ]
     },
     {
-      "name": "내 스토어",
-      "short_name": "내 스토어",
-      "description": "내가 운영하는 스토어를 관리하세요",
-      "url": "/stores/my/",
+      "name": "스토어 탐색",
+      "short_name": "스토어 탐색",
+      "description": "등록된 스토어들을 둘러보세요",
+      "url": "/stores/browse/",
       "icons": [
         {
           "src": "/static/images/icons/icon-100x100.png",
