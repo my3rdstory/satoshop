@@ -8,6 +8,7 @@ import os
 from django.utils import timezone
 from django.http import Http404
 from django.conf import settings
+import hashlib
 
 # Create your views here.
 
@@ -254,14 +255,75 @@ def offline_view(request):
     return render(request, 'myshop/offline.html')
 
 def manifest_view(request):
-    """Web App Manifest 파일 서빙"""
+    """Web App Manifest 파일 서빙 (해시 기반 캐시 무효화 적용)"""
     try:
         manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+        
+        # 파일 내용 읽기
         with open(manifest_path, 'r', encoding='utf-8') as f:
             content = f.read()
-        return HttpResponse(content, content_type='application/manifest+json')
+        
+        # 파일 해시 계산 (캐시 무효화용)
+        file_hash = hashlib.md5(content.encode('utf-8')).hexdigest()[:8]
+        
+        # ETag 헤더로 조건부 요청 지원
+        etag = f'"{file_hash}"'
+        if_none_match = request.META.get('HTTP_IF_NONE_MATCH')
+        
+        if if_none_match == etag:
+            # 파일이 변경되지 않았으면 304 응답
+            response = HttpResponse(status=304)
+            response['ETag'] = etag
+            return response
+        
+        # JSON 파싱하여 동적으로 수정
+        try:
+            manifest_data = json.loads(content)
+            
+            # 매니페스트에 버전 정보 추가
+            manifest_data['version'] = file_hash
+            manifest_data['cache_version'] = f"v1.1.0-{file_hash}"
+            
+            # 아이콘 URL에 버전 파라미터 추가
+            if 'icons' in manifest_data:
+                for icon in manifest_data['icons']:
+                    if 'src' in icon and not icon['src'].startswith('http'):
+                        # 이미 버전 파라미터가 있으면 제거 후 새로 추가
+                        src = icon['src'].split('?')[0]
+                        icon['src'] = f"{src}?v={file_hash}"
+            
+            # 숏컷 아이콘에도 버전 파라미터 추가
+            if 'shortcuts' in manifest_data:
+                for shortcut in manifest_data['shortcuts']:
+                    if 'icons' in shortcut:
+                        for icon in shortcut['icons']:
+                            if 'src' in icon and not icon['src'].startswith('http'):
+                                # 이미 버전 파라미터가 있으면 제거 후 새로 추가
+                                src = icon['src'].split('?')[0]
+                                icon['src'] = f"{src}?v={file_hash}"
+            
+            # 수정된 내용을 JSON으로 변환
+            content = json.dumps(manifest_data, ensure_ascii=False, indent=2)
+            
+        except json.JSONDecodeError:
+            # JSON 파싱 실패시 원본 내용 사용
+            pass
+        
+        # 응답 생성
+        response = HttpResponse(content, content_type='application/manifest+json')
+        
+        # 캐시 헤더 설정 (더 적극적인 캐시 무효화)
+        response['ETag'] = etag
+        response['Cache-Control'] = 'public, max-age=300, must-revalidate'  # 5분 캐시, 재검증 필수
+        response['Vary'] = 'Accept-Encoding'
+        response['Last-Modified'] = request.build_absolute_uri().split('?')[0]  # URL 기반 Last-Modified
+        
+        return response
+        
     except FileNotFoundError:
         return HttpResponse('Manifest not found', status=404)
+    except Exception as e:
+        return HttpResponse(f'Manifest error: {str(e)}', status=500)
 
 def service_worker_view(request):
     """Service Worker 파일 서빙"""

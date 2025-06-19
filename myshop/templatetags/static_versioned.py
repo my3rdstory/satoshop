@@ -68,4 +68,44 @@ def js_v(path):
     """JavaScript 파일 전용 버전 관리 태그 (백업용)"""
     if not path.startswith('js/'):
         path = f'js/{path}'
-    return static_v(path) 
+    return static_v(path)
+
+@register.simple_tag
+def manifest_url():
+    """매니페스트 파일 URL에 해시 기반 버전 파라미터 추가"""
+    try:
+        # 매니페스트 파일 경로
+        manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+        
+        # 파일 해시 계산
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'rb') as f:
+                file_hash = hashlib.md5(f.read()).hexdigest()[:8]
+            return f"/manifest.json?v={file_hash}"
+        else:
+            # 파일이 없으면 기본 URL 반환
+            return "/manifest.json"
+            
+    except Exception:
+        # 오류 발생시 기본 URL 반환
+        return "/manifest.json"
+
+@register.simple_tag
+def sw_url():
+    """서비스 워커 파일 URL에 해시 기반 버전 파라미터 추가"""
+    try:
+        # 서비스 워커 파일 경로
+        sw_path = os.path.join(settings.BASE_DIR, 'static', 'js', 'sw.js')
+        
+        # 파일 해시 계산
+        if os.path.exists(sw_path):
+            with open(sw_path, 'rb') as f:
+                file_hash = hashlib.md5(f.read()).hexdigest()[:8]
+            return f"/sw.js?v={file_hash}"
+        else:
+            # 파일이 없으면 기본 URL 반환
+            return "/sw.js"
+            
+    except Exception:
+        # 오류 발생시 기본 URL 반환
+        return "/sw.js" 

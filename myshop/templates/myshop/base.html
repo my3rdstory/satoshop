@@ -1,4 +1,5 @@
 {% load static %}
+{% load static_versioned %}
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -47,7 +48,7 @@
   <meta name="msapplication-tap-highlight" content="no">
   
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="{% manifest_url %}">
   
   <!-- PWA Apple Touch Icons -->
   <link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icons/icon-192x192.png' %}">
@@ -280,7 +281,7 @@
     
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js', {
+        navigator.serviceWorker.register('{% sw_url %}', {
           scope: '/'
         })
         .then(function(registration) {
