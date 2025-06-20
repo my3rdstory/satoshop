@@ -1,0 +1,1447 @@
+
+
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ddd - test20</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="test20">
+  <meta name="keywords" content="비트코인, Bitcoin, bitcoin, btc, BTC, btcmap, 비티씨맵, 비트코인 결제 매장, Bitcoin Accept Here, 라이트닝 네트워크, 라이트닝">
+  
+  <!-- Open Graph Meta Tags -->
+  
+  <meta property="og:title" content="ddd - test20">
+  <meta property="og:description" content="dddd">
+  <meta property="og:type" content="product">
+  <meta property="og:url" content="http://localhost:8000/stores/test20/product/36/">
+  <meta property="og:image" content="/static/images/satoshop-logo-1x1-favicon.png">
+  <meta property="og:site_name" content="SatoShop">
+  <meta property="og:locale" content="ko_KR">
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ddd - test20">
+  <meta name="twitter:description" content="dddd">
+  <meta name="twitter:image" content="/static/images/satoshop-logo-1x1-favicon.png">
+  
+  
+  <!-- Favicons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/static/images/icons/icon-100x100.png">
+  <link rel="shortcut icon" type="image/png" href="/static/images/icons/icon-100x100.png">
+  <link rel="apple-touch-icon" href="/static/images/icons/icon-100x100.png">
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#f59e0b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SatoShop">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="SatoShop">
+  <meta name="msapplication-TileColor" content="#f59e0b">
+  <meta name="msapplication-tap-highlight" content="no">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json?v=7b66b5d1">
+  
+  <!-- PWA Apple Touch Icons -->
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icons/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/images/icons/icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/images/icons/icon-512x512.png">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind 설정 -->
+  <script src="/static/js/tailwind-config.js"></script>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Custom Tailwind styles -->
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+  </style>
+
+  <link rel="stylesheet" href="/static/css/mobile-menu.css">
+  
+<!-- 플로팅 장바구니 스타일 컴포넌트 -->
+
+
+<!-- 통합 장바구니 컴포넌트 -->
+<!-- 장바구니 스타일은 products.css에 정의되어 있습니다 -->
+
+<!-- 사이드바 장바구니 -->
+<!-- 배경 오버레이 -->
+<div class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="cartOverlay" onclick="handleOverlayClick()"></div>
+
+<!-- 사이드바 장바구니 -->
+<div class="fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50" id="sidebarCart">
+  <!-- 닫기 버튼 (최상단 메뉴 아래) -->
+  <button class="absolute top-16 right-4 w-8 h-8 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors z-10 shadow-md" onclick="handleCloseCart()">
+    <i class="fas fa-times text-gray-600 dark:text-gray-400 text-sm"></i>
+  </button>
+  
+  <div class="flex flex-col h-full">
+    <!-- 헤더 -->
+    <div class="flex items-center p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <i class="fas fa-shopping-cart text-bitcoin mr-3"></i>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">장바구니</h2>
+      </div>
+    </div>
+
+    <!-- 바디 -->
+    <div class="flex-1 overflow-y-auto" id="cartContent">
+      
+      <div class="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div class="text-6xl mb-4">🛒</div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">장바구니가 비어있습니다</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">다양한 스토어에서 상품을 추가해보세요!</p>
+        <div class="text-xs text-gray-400 dark:text-gray-500">
+          <p>• 여러 스토어의 상품을 함께 담을 수 있습니다</p>
+          <p>• 스토어별로 정리되어 표시됩니다</p>
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- 액션 버튼 -->
+    <div class="p-6 border-t border-gray-200 dark:border-gray-700" id="cartActions" style="display: none;">
+      <div class="space-y-2">
+        <!-- 비회원 주문 가능 안내 -->
+        <div class="text-center mb-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+            <i class="fas fa-user-plus mr-1"></i>비회원 주문 가능
+          </span>
+        </div>
+        <a href="/orders/shipping/" 
+           class="w-full inline-flex items-center justify-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-credit-card mr-2"></i>
+          주문하기
+        </a>        
+      </div>
+    </div>
+  </div>
+</div>
+
+ 
+<link rel="stylesheet" href="/static/css/products.css">
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="/static/css/markdown-renderer.css">
+<style>
+.product-image-container {
+    aspect-ratio: 1 / 1;
+    background: #f9fafb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.dark .product-image-container {
+    background: #1f2937;
+}
+.thumbnail {
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+.thumbnail.active {
+    ring: 2px solid #f59e0b;
+}
+.option-choice {
+    transition: all 0.2s ease;
+    background-color: white !important;
+}
+.dark .option-choice {
+    background-color: #111827 !important;
+}
+.option-choice:hover {
+    transform: translateY(-1px);
+}
+.option-choice.selected {
+    background: #f59e0b !important;
+    color: white !important;
+    border-color: #f59e0b !important;
+}
+.option-choice.selected .option-title,
+.option-choice.selected .option-price {
+    color: white !important;
+}
+</style>
+
+  
+  <!-- Google Analytics -->
+  
+
+  <!-- FOUC 방지를 위한 테마 초기화 스크립트 -->
+  <script>
+    (function() {
+      // localStorage에서 테마 읽기
+      let theme = 'light'; // 기본값
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored) {
+          theme = stored;
+        } else {
+          // 저장된 값이 없으면 시스템 설정 확인
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+        }
+      } catch (e) {
+        // localStorage 접근 실패 시 시스템 설정으로 fallback
+        try {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+        } catch (e2) {
+          // 최종 fallback은 light
+          theme = 'light';
+        }
+      }
+      
+      // 즉시 적용 (DOM 요소가 생성되기 전에)
+      document.documentElement.setAttribute('data-theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+</head>
+
+<body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white store-page store-test20">
+  <div class="min-h-screen flex flex-col">
+    <!-- 플랫폼 네비게이션 바 -->
+    <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
+      <!-- 플랫폼 브랜드 및 탐색 메뉴 컴포넌트 -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="flex justify-between items-center h-16">
+    <!-- 브랜드 로고 -->
+    <div class="flex items-center">
+      <a class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors" href="/?force_home=1">
+        
+          <img src="/static/images/btcmap-logo-basic-200x43.webp" alt="BTCmap" class="h-8 w-auto">
+        
+        <span class="bg-gray-700 text-white text-xs px-2 py-1 rounded">Hub</span>
+      </a>
+    </div>
+
+    <!-- 데스크톱 네비게이션 -->
+    <div class="hidden md:flex items-center space-x-8">
+      <!-- Left Navigation - 플랫폼 탐색 -->
+      <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="/stores/browse/">
+        <i class="fas fa-search mr-2"></i>스토어 탐색
+      </a>
+      <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="/boards/notice/">
+        <i class="fas fa-bullhorn mr-2"></i>공지사항
+      </a>
+
+      <!-- Right Navigation - 사용자별 메뉴 -->
+      <div class="flex items-center space-x-4">
+        <!-- PWA 설치 버튼 -->
+        <button id="pwa-install-button" style="display: none;" 
+                class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
+          <i class="fas fa-download mr-2"></i>앱 설치
+        </button>
+        
+        <!-- iOS PWA 설치 안내 -->
+        <div id="ios-install-instructions" style="display: none;" 
+             class="flex items-center text-gray-300 hover:text-bitcoin transition-colors cursor-pointer"
+             onclick="showIOSInstallModal()">
+          <i class="fas fa-download mr-2"></i>앱 설치
+        </div>
+        
+        
+        <!-- 비로그인 사용자 메뉴 -->
+        <div class="relative group">
+          <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
+            <i class="fas fa-cog mr-2"></i>설정
+            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+          </button>
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <span class="theme-toggle-menu-item">
+                <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                <span class="theme-text">다크 모드로</span>
+              </span>
+            </a>
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <i class="fas fa-user-plus mr-2"></i>회원가입
+            </a>
+            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <i class="fas fa-sign-in-alt mr-2"></i>로그인
+            </a>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- 모바일 메뉴 버튼 -->
+    <div class="md:hidden">
+      <button id="mobile-menu-button" class="flex items-center justify-center w-12 h-12 text-gray-300 hover:text-bitcoin hover:bg-gray-800 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700 touch-manipulation">
+        <i class="fas fa-bars text-xl pointer-events-none"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- 모바일 메뉴 -->
+  <div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
+    <div class="px-2 pt-2 pb-3 space-y-1">
+      <!-- PWA 설치 버튼 (모바일) -->
+      <button id="pwa-install-button-mobile" style="display: none;" 
+              class="block w-full text-left px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-download mr-2"></i>앱 설치
+      </button>
+      
+      <!-- iOS PWA 설치 안내 (모바일) -->
+      <div id="ios-install-instructions-mobile" style="display: none;" 
+           class="block w-full text-left px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
+           onclick="showIOSInstallModal()">
+        <i class="fas fa-download mr-2"></i>앱 설치
+      </div>
+      
+      <a href="/stores/browse/" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-search mr-2"></i>스토어 탐색
+      </a>
+      
+      <a href="/boards/notice/" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-bullhorn mr-2"></i>공지사항
+      </a>
+      
+      
+      <a href="#" onclick="redirectToSignup()" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-user-plus mr-2"></i>회원가입
+      </a>
+      <a href="#" onclick="redirectToLogin()" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <i class="fas fa-sign-in-alt mr-2"></i>로그인
+      </a>
+      
+      
+      <a href="#" onclick="toggleTheme(); return false;" class="block px-3 py-2 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+        <span class="theme-toggle-menu-item">
+          <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+          <i class="fas fa-moon theme-moon-icon mr-2"></i>
+          <span class="theme-text">다크 모드로</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// 모바일 메뉴 토글 (nav_bar.html용)
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileMenuButton = document.getElementById('mobile-menu-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+  
+  if (mobileMenuButton && mobileMenu) {
+    // 메뉴 토글 함수
+    function toggleMobileMenu(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // 토글 처리
+      const isHidden = mobileMenu.classList.contains('hidden');
+      if (isHidden) {
+        mobileMenu.classList.remove('hidden');
+      } else {
+        mobileMenu.classList.add('hidden');
+      }
+      
+      // 아이콘 변경
+      const icon = mobileMenuButton.querySelector('i');
+      if (icon) {
+        if (mobileMenu.classList.contains('hidden')) {
+          icon.className = 'fas fa-bars text-xl pointer-events-none';
+        } else {
+          icon.className = 'fas fa-times text-xl pointer-events-none';
+        }
+      }
+    }
+    
+    // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
+    mobileMenuButton.addEventListener('click', toggleMobileMenu);
+    mobileMenuButton.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMobileMenu();
+    });
+    
+    // 메뉴 외부 클릭 시 닫기
+    document.addEventListener('click', function(e) {
+      if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+        if (!mobileMenu.classList.contains('hidden')) {
+          mobileMenu.classList.add('hidden');
+          const icon = mobileMenuButton.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-bars text-xl pointer-events-none';
+          }
+        }
+      }
+    });
+    
+    // ESC 키로 메뉴 닫기
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+        mobileMenu.classList.add('hidden');
+        const icon = mobileMenuButton.querySelector('i');
+        if (icon) {
+          icon.className = 'fas fa-bars text-xl pointer-events-none';
+        }
+      }
+    });
+  }
+});
+</script> 
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="flex-1 pt-16">
+      
+<div class="min-h-screen flex flex-col" style="--hero-gradient: linear-gradient(135deg, #667eea, #764ba2);--hero-text-color: #ffffff;">
+    <!-- 스토어 네비게이션 바 -->
+    <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <!-- 왼쪽 네비게이션 -->
+          <div class="flex items-center space-x-4">
+            <!-- 네비게이션 드롭다운 (데스크톱) -->
+            <div class="relative group hidden md:block">
+              <button class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
+                <i class="fas fa-compass mr-2"></i>
+                내비게이션
+                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+              </button>
+              <div class="absolute left-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <a href="/?force_home=1" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                  <i class="fas fa-home mr-2"></i>Hub 메인으로
+                </a>
+                <a href="/stores/browse/" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                  <i class="fas fa-search mr-2"></i>스토어 탐색
+                </a>
+              </div>
+            </div>
+
+            <!-- 스토어 이름 -->
+            
+            <div class="flex items-center space-x-6">
+              <a href="/stores/test20/" class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors">
+                <span class="font-bold">test20</span>
+                <span class="px-2 py-1 bg-gray-700 text-white text-xs rounded">Store</span>
+              </a>
+              <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
+              <a href="/products/test20/list/" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+                <i class="fas fa-list mr-2 text-xs"></i>
+                상품 목록
+              </a>
+            </div>
+            
+          </div>
+
+          <!-- 오른쪽 네비게이션 -->
+          <div class="flex items-center space-x-4">
+            <!-- 모바일 메뉴 버튼 -->
+            <button id="mobile-menu-button" class="md:hidden flex items-center justify-center w-12 h-12 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors rounded-lg touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700" style="min-height: 44px; min-width: 44px;">
+              <i class="fas fa-bars text-lg pointer-events-none"></i>
+            </button>
+
+            <!-- 데스크톱 메뉴 -->
+            <div class="hidden md:flex items-center space-x-4">
+              
+              <!-- 비로그인 사용자 설정 드롭다운 -->
+              <div class="relative group">
+                <button class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
+                  <i class="fas fa-cog mr-2"></i>
+                  설정
+                  <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                    <span class="theme-toggle-menu-item">
+                      <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                      <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                      <span class="theme-text">다크 모드로</span>
+                    </span>
+                  </a>
+                  <div class="border-t border-gray-600"></div>
+                  <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                    <i class="fas fa-user-plus mr-2"></i>회원가입
+                  </a>
+                  <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                    <i class="fas fa-sign-in-alt mr-2"></i>로그인
+                  </a>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+
+        <!-- 모바일 메뉴 -->
+        <div id="mobile-menu" class="md:hidden hidden border-t border-gray-700 py-4">
+          <!-- 네비게이션 링크 -->
+          <div class="space-y-2 mb-4">
+            <a href="/?force_home=1" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-home mr-3"></i>Hub 메인으로
+            </a>
+            <a href="/stores/browse/" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-search mr-3"></i>스토어 탐색
+            </a>
+            
+            <a href="/products/test20/list/" class="flex items-center px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors border border-gray-600">
+              <i class="fas fa-list mr-3 text-xs"></i>상품 목록
+            </a>
+            
+          </div>
+
+          
+          <div class="border-t border-gray-600 pt-4 space-y-2">
+            <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <span class="theme-toggle-menu-item flex items-center">
+                <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
+                <i class="fas fa-moon theme-moon-icon mr-3"></i>
+                <span class="theme-text">다크 모드로</span>
+              </span>
+            </button>
+            <button onclick="redirectToSignup()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-user-plus mr-3"></i>회원가입
+            </button>
+            <button onclick="redirectToLogin()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+              <i class="fas fa-sign-in-alt mr-3"></i>로그인
+            </button>
+          </div>
+          
+        </div>
+      </div>
+    </nav>
+
+    <!-- 스토어 전용 네비게이션 오버라이드 -->
+    <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="store navigation">
+      
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="flex justify-between h-16">
+    <!-- 왼쪽 네비게이션 -->
+    <div class="flex items-center space-x-4">
+      <!-- 네비게이션 드롭다운 (데스크톱) -->
+      <div class="relative group hidden md:block">
+        <button class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
+          <i class="fas fa-compass mr-2"></i>
+          내비게이션
+          <i class="fas fa-chevron-down ml-2 text-xs"></i>
+        </button>
+        <div class="absolute left-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+          <a href="/?force_home=1" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <i class="fas fa-home mr-2"></i>Hub 메인으로
+          </a>
+          <a href="/stores/browse/" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <i class="fas fa-search mr-2"></i>스토어 탐색
+          </a>
+        </div>
+      </div>
+
+      <!-- 스토어 이름 -->
+      
+      <div class="flex items-center space-x-6">
+        <a href="/stores/test20/" class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors">
+          <span class="font-bold">test20</span>
+          <span class="px-2 py-1 bg-gray-700 text-white text-xs rounded">Store</span>
+        </a>
+        <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
+        <a href="/products/test20/list/" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+          <i class="fas fa-list mr-2 text-xs"></i>
+          상품 목록
+        </a>
+      </div>
+      
+    </div>
+
+    <!-- 오른쪽 네비게이션 -->
+    <div class="flex items-center space-x-4">
+      <!-- 모바일 메뉴 버튼 -->
+      <button id="mobile-menu-button" class="md:hidden flex items-center justify-center w-12 h-12 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors rounded-lg touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700" style="min-height: 44px; min-width: 44px;">
+        <i class="fas fa-bars text-lg pointer-events-none"></i>
+      </button>
+
+      <!-- 데스크톱 메뉴 -->
+      <div class="hidden md:flex items-center space-x-4">
+        
+        <!-- 비로그인 사용자 설정 드롭다운 -->
+        <div class="relative group">
+          <button class="flex items-center px-3 py-2 text-gray-300 hover:text-white transition-colors">
+            <i class="fas fa-cog mr-2"></i>
+            설정
+            <i class="fas fa-chevron-down ml-2 text-xs"></i>
+          </button>
+          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <span class="theme-toggle-menu-item">
+                <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+                <i class="fas fa-moon theme-moon-icon mr-2"></i>
+                <span class="theme-text">다크 모드로</span>
+              </span>
+            </a>
+            <div class="border-t border-gray-600"></div>
+            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <i class="fas fa-user-plus mr-2"></i>회원가입
+            </a>
+            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+              <i class="fas fa-sign-in-alt mr-2"></i>로그인
+            </a>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <!-- 모바일 메뉴 -->
+  <div id="mobile-menu" class="md:hidden hidden border-t border-gray-700 py-4">
+    <!-- 네비게이션 링크 -->
+    <div class="space-y-2 mb-4">
+      <a href="/?force_home=1" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+        <i class="fas fa-home mr-3"></i>Hub 메인으로
+      </a>
+      <a href="/stores/browse/" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+        <i class="fas fa-search mr-3"></i>스토어 탐색
+      </a>
+      
+      <a href="/products/test20/list/" class="flex items-center px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors border border-gray-600">
+        <i class="fas fa-list mr-3 text-xs"></i>상품 목록
+      </a>
+      
+    </div>
+
+    
+    <div class="border-t border-gray-600 pt-4 space-y-2">
+      <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+        <span class="theme-toggle-menu-item flex items-center">
+          <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
+          <i class="fas fa-moon theme-moon-icon mr-3"></i>
+          <span class="theme-text">다크 모드로</span>
+        </span>
+      </button>
+      <button onclick="redirectToSignup()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+        <i class="fas fa-user-plus mr-3"></i>회원가입
+      </button>
+      <button onclick="redirectToLogin()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
+        <i class="fas fa-sign-in-alt mr-3"></i>로그인
+      </button>
+    </div>
+    
+  </div>
+</div> 
+      
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="flex-1 pt-16">
+      
+
+      
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <!-- 상품 이미지 -->
+      <div class="space-y-4">
+        <!-- 메인 이미지 -->
+        <div class="product-image-container">
+          
+          <div class="w-full h-full flex items-center justify-center">
+            <div class="text-center text-gray-400">
+              <i class="fas fa-image text-6xl mb-4"></i>
+              <div class="text-lg">이미지 없음</div>
+            </div>
+          </div>
+          
+        </div>
+        
+        <!-- 썸네일 이미지 -->
+        
+      </div>
+
+      <!-- 상품 정보 -->
+      <div class="space-y-4">
+        <!-- 제목 -->
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">ddd</h1>
+        </div>
+
+        <!-- 가격 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="space-y-4">
+            <!-- 메인 가격 -->
+            <div>
+              
+              <div class="text-3xl font-bold text-gray-900 dark:text-white">
+                10 sats
+              </div>
+              
+            </div>
+            
+            <!-- 배송비 -->
+            <div class="flex items-center justify-between py-3 border-t border-gray-200 dark:border-gray-600">
+              <div class="flex items-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-truck mr-2"></i>
+                <span>배송비</span>
+              </div>
+              <div class="font-medium text-gray-900 dark:text-white">
+                0 sats
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 옵션 선택 -->
+        
+
+        <!-- 수량 선택 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">수량</h4>
+            <div class="flex items-center gap-2">
+              <i class="fas fa-box text-sm text-gray-500"></i>
+              <span class="text-sm font-medium text-green-500">
+                
+                  재고: 21,000개
+                
+              </span>
+            </div>
+          </div>
+          
+          <div class="flex items-center gap-4">
+            <button class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors" 
+                    onclick="changeQuantity(-1)">
+              <i class="fas fa-minus text-gray-600 dark:text-gray-400"></i>
+            </button>
+            <input type="number" id="quantity" value="1" min="1" max="21000"
+                   class="w-20 text-center py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" 
+                   onchange="validateQuantity()">
+            <button class="w-10 h-10 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg flex items-center justify-center transition-colors" 
+                    onclick="changeQuantity(1)">
+              <i class="fas fa-plus text-gray-600 dark:text-gray-400"></i>
+            </button>
+          </div>
+          
+        </div>
+
+        <!-- 총액 계산 영역 -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700" id="totalCalculation">
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">주문 요약</h4>
+          <div class="space-y-3">
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">상품 금액</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="productTotal">
+                10 sats
+              </span>
+            </div>
+            <div class="flex justify-between hidden" id="optionsRow">
+              <span class="text-gray-600 dark:text-gray-400">옵션 추가금액</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="optionsTotal">0 sats</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">수량</span>
+              <span class="font-medium text-gray-900 dark:text-white" id="quantityDisplay">1개</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">배송비</span>
+              <span class="font-medium text-gray-900 dark:text-white">
+                0 sats
+              </span>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+              <div class="flex justify-between">
+                <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제금액</span>
+                <span class="text-xl font-bold text-bitcoin" id="finalTotal">
+                  10 sats
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="space-y-3">
+          
+          <button class="w-full py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                  onclick="addToCart()">
+            <i class="fas fa-shopping-cart"></i>
+            <span>장바구니 담기</span>
+          </button>
+          <!-- 비회원 주문 가능 안내 -->
+          <div class="text-center">
+            <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+              <i class="fas fa-user-plus mr-1"></i>비회원 주문 가능
+            </span>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+    <!-- 상품 설명 -->
+    
+    <div class="mt-16">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">상품 설명</h2>
+        <div class="prose max-w-none markdown-content">
+          dddd
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- 플로팅 장바구니 컴포넌트 -->
+
+
+<!-- 통합 장바구니 컴포넌트 -->
+<!-- 장바구니 스타일은 products.css에 정의되어 있습니다 -->
+
+<!-- 사이드바 장바구니 -->
+<!-- 배경 오버레이 -->
+<div class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" id="cartOverlay" onclick="handleOverlayClick()"></div>
+
+<!-- 사이드바 장바구니 -->
+<div class="fixed right-0 top-0 h-full w-96 bg-white dark:bg-gray-800 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out z-50" id="sidebarCart">
+  <!-- 닫기 버튼 (최상단 메뉴 아래) -->
+  <button class="absolute top-16 right-4 w-8 h-8 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full flex items-center justify-center transition-colors z-10 shadow-md" onclick="handleCloseCart()">
+    <i class="fas fa-times text-gray-600 dark:text-gray-400 text-sm"></i>
+  </button>
+  
+  <div class="flex flex-col h-full">
+    <!-- 헤더 -->
+    <div class="flex items-center p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <i class="fas fa-shopping-cart text-bitcoin mr-3"></i>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">장바구니</h2>
+      </div>
+    </div>
+
+    <!-- 바디 -->
+    <div class="flex-1 overflow-y-auto" id="cartContent">
+      
+      <div class="flex flex-col items-center justify-center h-full p-6 text-center">
+        <div class="text-6xl mb-4">🛒</div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">장바구니가 비어있습니다</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">다양한 스토어에서 상품을 추가해보세요!</p>
+        <div class="text-xs text-gray-400 dark:text-gray-500">
+          <p>• 여러 스토어의 상품을 함께 담을 수 있습니다</p>
+          <p>• 스토어별로 정리되어 표시됩니다</p>
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- 액션 버튼 -->
+    <div class="p-6 border-t border-gray-200 dark:border-gray-700" id="cartActions" style="display: none;">
+      <div class="space-y-2">
+        <!-- 비회원 주문 가능 안내 -->
+        <div class="text-center mb-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+            <i class="fas fa-user-plus mr-1"></i>비회원 주문 가능
+          </span>
+        </div>
+        <a href="/orders/shipping/" 
+           class="w-full inline-flex items-center justify-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          <i class="fas fa-credit-card mr-2"></i>
+          주문하기
+        </a>        
+      </div>
+    </div>
+  </div>
+</div>
+
+ 
+
+<!-- 상품 정보를 JavaScript 변수로 전달 -->
+<script type="application/json" id="product-data">
+{
+  "basePrice": 10,
+  "shippingFee": 0,
+  "productId": 36,
+  "isAuthenticated": false,
+  "isStoreOwner": false,
+  "loginUrl": "/accounts/login/",
+  "addToCartUrl": "/orders/cart/add/",
+  "cartViewUrl": "/orders/cart/",
+  "csrfToken": "It0eEI0zP6UnbYNr5decPeQlICg2i3Hh8IY7GkDP4A0MkdbsXXb1HszxpHMISCNP"
+}
+</script>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="/static/js/markdown-renderer.js"></script>
+<script src="/static/js/cart-common.js"></script>
+<script src="/static/js/product-detail.js"></script>
+<script src="/static/js/cart.js"></script>
+
+    </main>
+
+    <!-- 스토어 전용 푸터 -->
+    <footer class="bg-gray-900 dark:bg-gray-950 text-white">
+      <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+        <p class="text-lg mb-4">
+          <strong class="text-bitcoin">test20</strong> - test20
+        </p>
+
+        <!-- 연락처 정보 -->
+        <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
+          
+          <span class="flex items-center">
+            <i class="fas fa-phone mr-2"></i>010-0000-0000
+          </span>
+          
+          
+          
+          <span>
+            <a href="https://example.com" target="_blank" class="text-white hover:text-bitcoin transition-colors flex items-center">
+              <i class="fas fa-comments mr-2"></i>소통채널
+            </a>
+          </span>
+          
+        </div>
+
+        <!-- 사업자 정보 -->
+        
+        <div class="flex flex-wrap justify-center items-center gap-6 mb-6 text-sm text-gray-400">
+          
+          <span class="flex items-center">
+            <i class="fas fa-building mr-2"></i>사업자등록번호: 333
+          </span>
+          
+          
+          <span class="flex items-center">
+            <i class="fas fa-certificate mr-2"></i>통신판매업번호: 3333
+          </span>
+          
+        </div>
+        
+
+        <!-- 사이트 공통 푸터 -->
+        <div class="border-t border-gray-700 pt-4">
+          <div class="flex flex-col md:flex-row justify-between items-center">
+            <!-- 카피라이트 -->
+            <p class="text-gray-400 text-sm">
+              
+                © 2025 SatoShop. All rights reserved.
+              
+            </p>
+            
+            <!-- 법적 문서 링크 (가운데) -->
+            
+            <div class="mt-4 md:mt-0">
+              <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+                
+                  <a href="/document/terms/" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                    이용약관
+                  </a>
+                
+                
+                
+                  <a href="/document/privacy/" class="text-red-400 font-bold hover:text-red-300 text-sm transition-colors duration-200">
+                    개인정보처리방침
+                  </a>
+                
+                
+                
+                  <a href="/document/refund/" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                    환불 및 반품 정책
+                  </a>
+                
+              </div>
+            </div>
+            
+            
+            <!-- 비트코인 아이콘 (오른쪽) -->
+            <div class="flex items-center mt-4 md:mt-0">
+              <span class="text-gray-400 text-sm mr-2">Powered by</span>
+              <i class="fab fa-bitcoin text-bitcoin text-lg"></i>
+              <span class="text-gray-400 text-sm ml-1">Bitcoin Lightning & SatoShop</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 스토어 전용 JavaScript -->
+  <script>
+    // Django URL과 CSRF 토큰을 전역 변수로 설정
+    window.csrfToken = 'It0eEI0zP6UnbYNr5decPeQlICg2i3Hh8IY7GkDP4A0MkdbsXXb1HszxpHMISCNP';
+    window.logoutUrl = "/accounts/logout/";
+    window.loginUrl = "/accounts/login/";
+    window.signupUrl = "/accounts/signup/";
+    window.homeUrl = "/";
+    
+    window.storeId = "test20";
+    
+
+    // 모바일 메뉴 토글 (개선된 버전)
+    document.addEventListener('DOMContentLoaded', function() {
+      const mobileMenuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      
+      if (mobileMenuButton && mobileMenu) {
+        // 메뉴 토글 함수
+        function toggleMobileMenu(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          
+          // 토글 처리
+          const isHidden = mobileMenu.classList.contains('hidden');
+          if (isHidden) {
+            mobileMenu.classList.remove('hidden');
+          } else {
+            mobileMenu.classList.add('hidden');
+          }
+          
+          // 아이콘 변경
+          const icon = mobileMenuButton.querySelector('i');
+          if (icon) {
+            if (mobileMenu.classList.contains('hidden')) {
+              icon.className = 'fas fa-bars text-lg';
+            } else {
+              icon.className = 'fas fa-times text-lg';
+            }
+          }
+        }
+        
+        // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
+        mobileMenuButton.addEventListener('click', toggleMobileMenu);
+        mobileMenuButton.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleMobileMenu();
+        });
+        
+        // 메뉴 외부 클릭 시 닫기
+        document.addEventListener('click', function(e) {
+          if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+            if (!mobileMenu.classList.contains('hidden')) {
+              mobileMenu.classList.add('hidden');
+              const icon = mobileMenuButton.querySelector('i');
+              if (icon) {
+                icon.className = 'fas fa-bars text-lg';
+              }
+            }
+          }
+        });
+        
+        // ESC 키로 메뉴 닫기
+        document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+            mobileMenu.classList.add('hidden');
+            const icon = mobileMenuButton.querySelector('i');
+            if (icon) {
+              icon.className = 'fas fa-bars text-lg';
+            }
+          }
+        });
+      } else {
+        console.error('Mobile menu elements not found');
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="/static/css/mobile-menu.css">
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/store-common.js"></script>
+
+  
+</div>
+
+    </main>
+
+    <!-- 동적 푸터 -->
+    <!-- 사이트 푸터 -->
+<footer class="bg-gray-900 text-white mt-auto">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">    
+    
+    <!-- 구분선 -->
+    <div class="border-t border-gray-700 pt-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <!-- 카피라이트 -->
+        <p class="text-gray-400 text-sm">
+          
+            © 2025 SatoShop. All rights reserved.
+          
+        </p>
+        
+        <!-- 법적 문서 링크 (가운데) -->
+        
+        <div class="mt-4 md:mt-0">
+          <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+            
+              <a href="/document/terms/" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                이용약관
+              </a>
+            
+            
+            
+              <a href="/document/privacy/" class="text-red-400 font-bold hover:text-red-300 text-sm transition-colors duration-200">
+                개인정보처리방침
+              </a>
+            
+            
+            
+              <a href="/document/refund/" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                환불 및 반품 정책
+              </a>
+            
+          </div>
+        </div>
+        
+        
+        <!-- 비트코인 아이콘 (오른쪽) -->
+        <div class="flex items-center mt-4 md:mt-0">
+          <span class="text-gray-400 text-sm mr-2">Powered by</span>
+          <i class="fab fa-bitcoin text-bitcoin text-lg"></i>
+          <span class="text-gray-400 text-sm ml-1">Bitcoin Lightning & SatoShop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer> 
+  </div>
+
+  <!-- iOS PWA 설치 안내 모달 -->
+  <div id="ios-install-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">앱 설치하기</h3>
+        <button onclick="hideIOSInstallModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <p class="text-gray-600 dark:text-gray-300">
+          BTCmap을 홈 화면에 추가하여 앱처럼 사용하세요!
+        </p>
+        
+        <div class="space-y-3">
+          <div class="flex items-center space-x-3">
+            <div class="bg-blue-100 dark:bg-blue-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-share text-blue-600 dark:text-blue-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">1. 공유 버튼 탭</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">Safari 하단의 공유 아이콘을 탭하세요</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <div class="bg-green-100 dark:bg-green-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-plus-square text-green-600 dark:text-green-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">2. 홈 화면에 추가</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">"홈 화면에 추가" 옵션을 선택하세요</p>
+            </div>
+          </div>
+          
+          <div class="flex items-center space-x-3">
+            <div class="bg-purple-100 dark:bg-purple-900 rounded-full p-2 flex-shrink-0">
+              <i class="fas fa-check text-purple-600 dark:text-purple-400"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-900 dark:text-white">3. 추가 완료</p>
+              <p class="text-sm text-gray-600 dark:text-gray-300">우측 상단의 "추가" 버튼을 탭하세요</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end">
+          <button onclick="hideIOSInstallModal()" 
+                  class="px-4 py-2 bg-bitcoin hover:bg-bitcoin-dark text-white rounded-md transition-colors">
+            확인
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 공통 JavaScript -->
+  <script>
+    // Django URL과 CSRF 토큰을 전역 변수로 설정
+    window.csrfToken = 'It0eEI0zP6UnbYNr5decPeQlICg2i3Hh8IY7GkDP4A0MkdbsXXb1HszxpHMISCNP';
+    window.logoutUrl = "/accounts/logout/";
+    window.loginUrl = "/accounts/login/";
+    window.signupUrl = "/accounts/signup/";
+  </script>
+  <script src="/static/js/common.js"></script>
+  <script src="/static/js/theme-toggle.js"></script>
+  
+  <!-- iOS PWA 설치 모달 제어 스크립트 -->
+  <script>
+    function showIOSInstallModal() {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        debugLog('iOS 설치 안내 모달 표시됨');
+      }
+    }
+    
+    function hideIOSInstallModal() {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        debugLog('iOS 설치 안내 모달 숨김');
+      }
+    }
+    
+    // 모달 외부 클릭 시 닫기
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('ios-install-modal');
+      if (modal && event.target === modal) {
+        hideIOSInstallModal();
+      }
+    });
+    
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        hideIOSInstallModal();
+      }
+    });
+  </script>
+  
+  <!-- PWA Service Worker Registration -->
+  <script>
+    // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
+    const isDebugMode = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1' || 
+                       window.location.hostname.includes('dev') ||
+                       window.location.hostname === 'satoshop-dev.onrender.com';
+    
+    // 프로덕션 도메인에서는 명시적으로 디버깅 비활성화
+    const isProduction = window.location.hostname === 'store.btcmap.kr' || 
+                        window.location.hostname === 'satoshop.onrender.com' ||
+                        window.location.hostname.endsWith('.onrender.com');
+    const shouldDebug = isDebugMode && !isProduction;
+    
+    // PWA 기능 설정 - 운영 환경에서는 브라우저 기본 배너 사용
+    const enableCustomPWA = !isProduction;
+    
+    function debugLog(...args) {
+      if (shouldDebug) {
+        console.log(...args);
+      }
+    }
+    
+    function debugError(...args) {
+      if (shouldDebug) {
+        console.error(...args);
+      }
+    }
+    
+    // 운영 환경에서는 모든 콘솔 로그 비활성화
+    if (isProduction) {
+      console.log = function() {};
+      console.error = function() {};
+      console.warn = function() {};
+      console.info = function() {};
+      console.debug = function() {};
+    }
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js?v=5dea0d5e', {
+          scope: '/'
+        })
+        .then(function(registration) {
+          debugLog('Service Worker registered successfully:', registration);
+          
+          // PWA 설치 가능성 확인
+          function checkPWAInstallability() {
+            // 이미 설치된 경우 확인
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+              debugLog('PWA가 이미 설치되어 있습니다.');
+              return false;
+            }
+            
+            // iOS Safari 확인
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone;
+            
+            if (isIOS && !isStandalone) {
+              debugLog('iOS에서 PWA 설치 가능합니다. Safari 공유 메뉴에서 "홈 화면에 추가"를 찾아보세요.');
+              showIOSInstallInstructions();
+              return false;
+            }
+            
+            return true;
+          }
+          
+          function showIOSInstallInstructions() {
+            // iOS 설치 안내 표시
+            const iosInstructionDiv = document.getElementById('ios-install-instructions');
+            const iosInstructionMobileDiv = document.getElementById('ios-install-instructions-mobile');
+            
+            if (iosInstructionDiv) {
+              iosInstructionDiv.style.display = 'flex';
+              debugLog('iOS 데스크톱 설치 안내 표시됨');
+            }
+            if (iosInstructionMobileDiv) {
+              iosInstructionMobileDiv.style.display = 'block';
+              debugLog('iOS 모바일 설치 안내 표시됨');
+            }
+          }
+          
+                    // 설치 프롬프트 처리
+          let deferredPrompt;
+          let installButtonsInitialized = false;
+          
+          window.addEventListener('beforeinstallprompt', (e) => {
+            debugLog('PWA 설치 프롬프트 준비됨');
+            
+            if (isProduction) {
+              // 운영 환경에서는 PWA 설치 배너 완전히 차단
+              e.preventDefault();
+              debugLog('운영 환경에서 PWA 설치 배너 차단됨');
+              return;
+            }
+            
+            if (enableCustomPWA && checkPWAInstallability() && !installButtonsInitialized) {
+              // 조건이 모두 충족될 때만 preventDefault 호출
+              const installButton = document.getElementById('pwa-install-button');
+              const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+              
+              if (installButton || installButtonMobile) {
+                // 설치 버튼이 존재하는 경우에만 preventDefault 호출
+                e.preventDefault();
+                deferredPrompt = e;
+                setupInstallButtons();
+                debugLog('커스텀 PWA 설치 기능 활성화됨');
+              } else {
+                debugLog('PWA 설치 버튼이 없어 기본 브라우저 동작을 허용합니다');
+              }
+            } else {
+              // 조건이 충족되지 않으면 기본 브라우저 동작 허용
+              debugLog('브라우저 기본 설치 배너를 표시합니다');
+            }
+          });
+          
+          function setupInstallButtons() {
+            // PWA 설치 버튼 표시
+            const installButton = document.getElementById('pwa-install-button');
+            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+            
+            function showInstallButtons() {
+              if (installButton) {
+                installButton.style.display = 'flex';
+                debugLog('데스크톱 설치 버튼 표시됨');
+              }
+              if (installButtonMobile) {
+                installButtonMobile.style.display = 'block';
+                debugLog('모바일 설치 버튼 표시됨');
+              }
+            }
+            
+            function hideInstallButtons() {
+              if (installButton) installButton.style.display = 'none';
+              if (installButtonMobile) installButtonMobile.style.display = 'none';
+            }
+            
+            function handleInstallClick() {
+              if (deferredPrompt) {
+                debugLog('PWA 설치 프롬프트 표시');
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                  if (choiceResult.outcome === 'accepted') {
+                    debugLog('사용자가 PWA 설치를 수락했습니다');
+                  } else {
+                    debugLog('사용자가 PWA 설치를 거부했습니다');
+                  }
+                  deferredPrompt = null;
+                  hideInstallButtons();
+                });
+              } else {
+                debugLog('설치 프롬프트가 없습니다. 브라우저 기본 설치 방법을 사용하세요.');
+              }
+            }
+            
+            // 버튼이 존재하는 경우에만 이벤트 리스너 추가
+            if (installButton || installButtonMobile) {
+              showInstallButtons();
+              installButtonsInitialized = true;
+              
+              if (installButton) {
+                installButton.addEventListener('click', handleInstallClick);
+              }
+              if (installButtonMobile) {
+                installButtonMobile.addEventListener('click', handleInstallClick);
+              }
+            } else {
+              debugLog('PWA 설치 버튼을 찾을 수 없습니다');
+            }
+          }
+          
+          // 앱이 설치되면 설치 버튼 숨기기
+          window.addEventListener('appinstalled', (evt) => {
+            debugLog('PWA가 설치되었습니다');
+            const installButton = document.getElementById('pwa-install-button');
+            const installButtonMobile = document.getElementById('pwa-install-button-mobile');
+            if (installButton) installButton.style.display = 'none';
+            if (installButtonMobile) installButtonMobile.style.display = 'none';
+          });
+          
+          // PWA 설치 가능성 초기 확인 (개발 모드에서만)
+          if (shouldDebug) {
+            setTimeout(() => {
+              if (!deferredPrompt) {
+                debugLog('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
+                debugLog('다음을 확인해주세요:');
+                debugLog('1. HTTPS 연결인지 확인');
+                debugLog('2. manifest.json이 올바르게 로드되는지 확인');
+                debugLog('3. Service Worker가 등록되었는지 확인');
+                debugLog('4. 앱이 이미 설치되어 있지 않은지 확인');
+                
+                // 브라우저별 안내
+                const userAgent = navigator.userAgent;
+                if (userAgent.includes('Chrome')) {
+                  debugLog('Chrome: 주소창 우측의 설치 아이콘을 찾아보세요.');
+                } else if (userAgent.includes('Firefox')) {
+                  debugLog('Firefox: 주소창의 설치 아이콘을 찾아보세요.');
+                } else if (userAgent.includes('Edge')) {
+                  debugLog('Edge: 주소창의 앱 아이콘을 찾아보세요.');
+                }
+              }
+            }, 3000);
+          }
+          
+        })
+        .catch(function(error) {
+          debugError('Service Worker registration failed:', error);
+        });
+      });
+    } else {
+      debugLog('이 브라우저는 Service Worker를 지원하지 않습니다.');
+    }
+  </script>
+  
+  
+</body>
+
+</html>
