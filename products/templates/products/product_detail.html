@@ -204,7 +204,7 @@
                    data-choice-id="{{ choice.id }}"
                    data-choice-price="{{ choice.public_price }}"
                    onclick="selectOption(this)">
-                  <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}</div>
+                  <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}&nbsp;</div>
                   {% if choice.public_price > 0 %}
                     <div class="option-price text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
                        + {{ choice.public_price|floatformat:0|intcomma }} sats

@@ -426,5 +426,5 @@ class ProductOptionChoice(models.Model):
         if self.option.product.price_display == 'krw' and self.price_krw is not None:
             if self.price_krw == 0:
                 return ""
-            return f"+{self.price_krw:,}원"
+            return f"(+{self.price_krw:,}원)"
         return None
