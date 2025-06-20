@@ -1,0 +1,86 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}서버 오류가 발생했습니다 - SatoShop{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+  <div class="max-w-lg w-full text-center">
+    <!-- 500 아이콘 -->
+    <div class="mb-8">
+      <div class="inline-flex items-center justify-center w-24 h-24 bg-red-100 dark:bg-red-900/30 rounded-full mb-6">
+        <i class="fas fa-server text-4xl text-red-500"></i>
+      </div>
+      
+      <!-- 500 텍스트 -->
+      <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4">500</h1>
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+        서버 오류가 발생했습니다
+      </h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">
+        일시적인 서버 문제로 인해 요청을 처리할 수 없습니다.
+      </p>
+    </div>
+
+    <!-- 오류 설명 -->
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8 text-left">
+      <h3 class="font-semibold text-red-800 dark:text-red-200 mb-3">현재 상황:</h3>
+      <ul class="space-y-2 text-red-700 dark:text-red-300">
+        <li class="flex items-start space-x-2">
+          <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+          <span>서버에서 예상치 못한 오류가 발생했습니다</span>
+        </li>
+        <li class="flex items-start space-x-2">
+          <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+          <span>개발팀에서 문제를 확인하고 있습니다</span>
+        </li>
+        <li class="flex items-start space-x-2">
+          <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
+          <span>잠시 후 다시 시도해 주세요</span>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- 액션 버튼들 -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+      <a href="{% url 'myshop:home' %}" 
+         class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+        <i class="fas fa-home mr-2"></i>
+        홈페이지로 이동
+      </a>
+      
+      <button onclick="window.location.reload()" 
+              class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+        <i class="fas fa-refresh mr-2"></i>
+        페이지 새로고침
+      </button>
+    </div>
+
+    <!-- 문의 정보 -->
+    <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        문제가 지속되면 아래 정보와 함께 문의해 주세요:
+      </p>
+      <div class="bg-gray-100 dark:bg-gray-800 rounded-md p-3 text-xs text-gray-600 dark:text-gray-400 mb-4">
+        <p>오류 코드: 500</p>
+        <p>시간: <span id="error-time"></span></p>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400">
+        <a href="mailto:support@satoshop.com" class="text-orange-500 hover:text-orange-600">support@satoshop.com</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 현재 시간 표시
+document.getElementById('error-time').textContent = new Date().toLocaleString('ko-KR');
+
+// 5초 후 자동 새로고침 (선택적)
+// setTimeout(() => {
+//   window.location.reload();
+// }, 5000);
+</script>
+{% endblock %} 
