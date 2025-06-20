@@ -9,6 +9,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const postalCodeField = document.getElementById('shipping_postal_code');
     const addressField = document.getElementById('shipping_address');
     
+    // 필수 요소들이 존재하는지 확인
+    if (!checkoutBtn) {
+        console.error('checkout-btn 요소를 찾을 수 없습니다.');
+        return;
+    }
+    if (!checkoutBtnText) {
+        console.error('checkout-btn-text 요소를 찾을 수 없습니다.');
+    }
+    if (!addressModal) {
+        console.error('address-modal 요소를 찾을 수 없습니다.');
+    }
+    
     // 필수 필드들
     const requiredFields = [
         'buyer_name',
@@ -28,6 +40,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // checkoutBtn이 존재하는지 확인
+        if (!checkoutBtn) {
+            console.error('checkout-btn 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
         if (allFilled) {
             checkoutBtn.disabled = false;
             checkoutBtn.classList.remove('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'disabled:shadow-none');
@@ -38,12 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const checkoutBtnIcon = document.getElementById('checkout-btn-icon');
             
             if (totalAmount === 0) {
-                checkoutBtnText.textContent = '무료 주문 완료하기';
+                if (checkoutBtnText) {
+                    checkoutBtnText.textContent = '무료 주문 완료하기';
+                }
                 if (checkoutBtnIcon) {
                     checkoutBtnIcon.className = 'fas fa-check mr-2';
                 }
             } else {
-                checkoutBtnText.textContent = '결제하기';
+                if (checkoutBtnText) {
+                    checkoutBtnText.textContent = '결제하기';
+                }
                 if (checkoutBtnIcon) {
                     checkoutBtnIcon.className = 'fas fa-credit-card mr-2';
                 }
@@ -52,7 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
             checkoutBtn.disabled = true;
             checkoutBtn.classList.add('disabled:bg-gray-400', 'disabled:cursor-not-allowed', 'disabled:shadow-none');
             checkoutBtn.classList.remove('bg-bitcoin', 'hover:bg-bitcoin/90');
-            checkoutBtnText.textContent = '필수 정보를 입력해주세요';
+            if (checkoutBtnText) {
+                checkoutBtnText.textContent = '필수 정보를 입력해주세요';
+            }
         }
     }
     
@@ -61,15 +85,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 모달 열기/닫기 함수
     function openAddressModal() {
-        addressModal.classList.remove('hidden');
-        addressModal.classList.add('flex');
-        document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+        if (addressModal) {
+            addressModal.classList.remove('hidden');
+            addressModal.classList.add('flex');
+            document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
+        }
     }
     
     function closeAddressModal() {
-        addressModal.classList.add('hidden');
-        addressModal.classList.remove('flex');
-        document.body.style.overflow = ''; // 배경 스크롤 복원
+        if (addressModal) {
+            addressModal.classList.add('hidden');
+            addressModal.classList.remove('flex');
+            document.body.style.overflow = ''; // 배경 스크롤 복원
+        }
         
         // API가 자체적으로 정리할 시간을 준 후 컨테이너 초기화
         setTimeout(() => {
@@ -83,6 +111,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 주소 검색 기능
     function execDaumPostcode() {
+        // addressModal이 존재하지 않으면 함수 종료
+        if (!addressModal) {
+            console.error('address-modal 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
         // 이미 모달이 열려있으면 중복 실행 방지
         if (!addressModal.classList.contains('hidden')) {
             return;
@@ -94,6 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 컨테이너 가져오기
         const container = document.getElementById('address-search-container');
         if (!container) {
+            console.error('address-search-container 요소를 찾을 수 없습니다.');
             return;
         }
         
