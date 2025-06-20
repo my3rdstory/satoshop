@@ -38,6 +38,30 @@
 #mobile-menu {
   transition: all 0.3s ease-in-out;
   transform-origin: top;
+  /* 화면 높이에서 나브바 높이를 뺀 만큼을 최대 높이로 설정 */
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  /* 스크롤바 스타일링 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+/* 웹킷 브라우저용 스크롤바 스타일링 */
+#mobile-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+#mobile-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#mobile-menu::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+#mobile-menu::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
 }
 
 #mobile-menu.hidden {
@@ -50,7 +74,8 @@
 #mobile-menu:not(.hidden) {
   opacity: 1;
   transform: scaleY(1);
-  max-height: 500px;
+  /* 콘텐츠에 맞게 자동으로 높이 조정, 최대 높이는 화면 크기에 맞춤 */
+  max-height: calc(100vh - 64px);
 }
 
 /* 모바일 메뉴 항목 터치 최적화 */
@@ -74,6 +99,8 @@
   /* 모바일 메뉴 패딩 조정 */
   #mobile-menu {
     padding: 1rem;
+    /* 작은 화면에서는 더 제한적인 최대 높이 */
+    max-height: calc(100vh - 80px);
   }
   
   /* 모바일 메뉴 항목 간격 조정 */
@@ -89,6 +116,19 @@
 @media (prefers-color-scheme: dark) {
   #mobile-menu-button:active {
     background-color: rgba(55, 65, 81, 0.8);
+  }
+  
+  /* 다크 모드에서 스크롤바 색상 조정 */
+  #mobile-menu {
+    scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
+  }
+  
+  #mobile-menu::-webkit-scrollbar-thumb {
+    background-color: rgba(107, 114, 128, 0.5);
+  }
+  
+  #mobile-menu::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.7);
   }
 }
 
