@@ -339,3 +339,13 @@ def service_worker_view(request):
         return response
     except FileNotFoundError:
         return HttpResponse('Service Worker not found', status=404)
+
+
+def custom_404_view(request, exception):
+    """커스텀 404 페이지"""
+    return render(request, '404.html', status=404)
+
+
+def custom_500_view(request):
+    """커스텀 500 페이지"""
+    return render(request, '500.html', status=500)

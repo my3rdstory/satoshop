@@ -753,10 +753,6 @@ def _process_product_options_form(request, product):
                     choice_name = request.POST.get(f'options[{option_index}][choices][{choice_index}][name]', '').strip()
                     choice_price = request.POST.get(f'options[{option_index}][choices][{choice_index}][price]', 0)
                     
-                    # 숨겨진 필드에서 변환된 가격 값들 가져오기
-                    choice_price_krw = request.POST.get(f'options[{option_index}][choices][{choice_index}][price_krw]', None)
-                    choice_price_sats = request.POST.get(f'options[{option_index}][choices][{choice_index}][price_sats]', None)
-                    
                     if choice_name:
                         # 가격 표시 방식에 따라 적절한 필드에 저장
                         choice_data = {
@@ -768,37 +764,13 @@ def _process_product_options_form(request, product):
                         if choice_price:
                             price_value = int(choice_price)
                             if product.price_display == 'krw':
-                                # 원화연동: 입력된 값을 원화 필드에 저장
+                                # 원화연동: 입력된 값을 원화 필드에 저장, 사토시는 0으로 설정 (runtime에서 계산)
                                 choice_data['price_krw'] = price_value
-                                # 사토시 값은 숨겨진 필드에서 가져오거나 원화를 사토시로 변환
-                                if choice_price_sats:
-                                    choice_data['price'] = int(choice_price_sats)
-                                else:
-                                    # 원화를 사토시로 변환
-                                    try:
-                                        from decimal import Decimal
-                                        import requests
-                                        
-                                        # 업비트 API에서 현재 환율 가져오기
-                                        response = requests.get('https://api.upbit.com/v1/ticker?markets=KRW-BTC', timeout=5)
-                                        if response.status_code == 200:
-                                            data = response.json()[0]
-                                            btc_krw_rate = Decimal(str(data['trade_price']))
-                                            # 1 BTC = 100,000,000 사토시
-                                            sats_per_krw = Decimal('100000000') / btc_krw_rate
-                                            choice_data['price'] = int(price_value * sats_per_krw)
-                                        else:
-                                            choice_data['price'] = 0
-                                    except Exception:
-                                        choice_data['price'] = 0
+                                choice_data['price'] = 0  # runtime에서 public_price 속성으로 계산됨
                             else:
                                 # 사토시 고정: 입력된 값을 사토시 필드에 저장
                                 choice_data['price'] = price_value
-                                # 원화 값은 숨겨진 필드에서 가져오거나 None으로 설정
-                                if choice_price_krw:
-                                    choice_data['price_krw'] = int(choice_price_krw)
-                                else:
-                                    choice_data['price_krw'] = None
+                                choice_data['price_krw'] = None
                         else:
                             choice_data['price'] = 0
                             choice_data['price_krw'] = None

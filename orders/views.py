@@ -919,27 +919,36 @@ def checkout(request):
 
 def checkout_complete(request, order_number):
     """주문 완료 페이지"""
-    # 기본 주문 정보 가져오기
-    if request.user.is_authenticated:
-        # 로그인 사용자는 기존 방식대로
-        primary_order = get_object_or_404(Order, order_number=order_number, user=request.user)
-        all_orders = Order.objects.filter(
-            user=request.user,
-            payment_id=primary_order.payment_id
-        ).prefetch_related('items__product__images')
-    else:
-        # 비로그인 사용자는 주문 번호만으로 조회 (익명 사용자 주문)
+    try:
+        # 먼저 주문 번호로만 조회
         primary_order = get_object_or_404(Order, order_number=order_number)
         
-        # 추가 보안 체크: 익명 사용자 주문인지 확인
-        if primary_order.user.username != 'anonymous_guest':
-            # 다른 사용자의 주문이라면 접근 거부
-            raise Http404("주문을 찾을 수 없습니다.")
-        
-        # 같은 결제 해시로 생성된 모든 주문 가져오기
-        all_orders = Order.objects.filter(
-            payment_id=primary_order.payment_id
-        ).prefetch_related('items__product__images')
+        # 로그인된 사용자인 경우 소유권 확인
+        if request.user.is_authenticated:
+            # 현재 로그인한 사용자의 주문인지 확인
+            if primary_order.user != request.user:
+                # 다른 사용자의 주문이라면 접근 거부
+                raise Http404("주문을 찾을 수 없습니다.")
+            
+            # 같은 결제 해시로 생성된 모든 주문 가져오기
+            all_orders = Order.objects.filter(
+                user=request.user,
+                payment_id=primary_order.payment_id
+            ).prefetch_related('items__product__images')
+        else:
+            # 비로그인 사용자의 경우
+            # 익명 사용자 주문인지 확인
+            if primary_order.user.username != 'anonymous_guest':
+                # 일반 사용자의 주문이라면 접근 거부
+                raise Http404("주문을 찾을 수 없습니다.")
+            
+            # 같은 결제 해시로 생성된 모든 주문 가져오기
+            all_orders = Order.objects.filter(
+                payment_id=primary_order.payment_id
+            ).prefetch_related('items__product__images')
+    except Order.DoesNotExist:
+        # 주문이 존재하지 않는 경우
+        raise Http404("주문을 찾을 수 없습니다.")
     
     # 전체 통계 계산
     total_amount = sum(order.total_amount for order in all_orders)

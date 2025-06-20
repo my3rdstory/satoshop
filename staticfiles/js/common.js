@@ -24,11 +24,11 @@ function logout() {
   csrfInput.value = csrfToken;
   form.appendChild(csrfInput);
 
-  // next 파라미터 추가
+  // 로그아웃 후 홈페이지로 이동하도록 설정 (현재 페이지가 아닌)
   const nextInput = document.createElement('input');
   nextInput.type = 'hidden';
   nextInput.name = 'next';
-  nextInput.value = window.location.pathname + window.location.search;
+  nextInput.value = window.homeUrl || '/';
   form.appendChild(nextInput);
 
   document.body.appendChild(form);

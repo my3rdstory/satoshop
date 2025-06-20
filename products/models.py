@@ -145,27 +145,83 @@ class Product(models.Model):
 
     @property
     def public_price(self):
-        """사용자용 가격 (항상 사토시)"""
+        """사용자용 가격 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
+        if self.price_display == 'krw' and self.price_krw is not None:
+            # 원화 연동 상품: 최신 환율로 사토시 가격 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
         return self.price
 
     @property
     def public_discounted_price(self):
-        """사용자용 할인가 (항상 사토시)"""
-        return self.discounted_price if self.is_discounted else None
+        """사용자용 할인가 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
+        if not self.is_discounted:
+            return None
+        
+        if self.price_display == 'krw' and self.discounted_price_krw is not None:
+            # 원화 연동 상품: 최신 환율로 사토시 할인가 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                btc_amount = self.discounted_price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
+        return self.discounted_price
 
     @property
     def public_shipping_fee(self):
-        """사용자용 배송비 (항상 사토시)"""
+        """사용자용 배송비 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
+        if self.price_display == 'krw' and self.shipping_fee_krw is not None:
+            # 원화 연동 상품: 최신 환율로 사토시 배송비 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                if self.shipping_fee_krw == 0:
+                    return 0
+                btc_amount = self.shipping_fee_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
         return self.shipping_fee
 
     @property
     def public_discount_rate(self):
-        """사용자용 할인율 (사토시 기준)"""
-        if not self.is_discounted or not self.discounted_price:
+        """사용자용 할인율 (사토시 기준) - 원화 연동 시 최신 환율 반영"""
+        if not self.is_discounted or not self.public_discounted_price:
             return 0
-        if self.price <= 0:
+        
+        public_price = self.public_price
+        public_discounted_price = self.public_discounted_price
+        
+        if public_price <= 0:
             return 0
-        return round((self.price - self.discounted_price) / self.price * 100, 1)
+        return round((public_price - public_discounted_price) / public_price * 100, 1)
+
+    @property
+    def krw_price_display(self):
+        """원화 가격 표시 (원화 연동 상품용)"""
+        if self.price_display == 'krw' and self.price_krw is not None:
+            return f"{self.price_krw:,}원"
+        return None
+
+    @property
+    def krw_discounted_price_display(self):
+        """원화 할인가 표시 (원화 연동 상품용)"""
+        if self.price_display == 'krw' and self.is_discounted and self.discounted_price_krw is not None:
+            return f"{self.discounted_price_krw:,}원"
+        return None
+
+    @property
+    def current_exchange_rate(self):
+        """현재 환율 정보"""
+        from myshop.models import ExchangeRate
+        return ExchangeRate.get_latest_rate()
 
     @property
     def shipping_fee_display(self):
@@ -347,3 +403,28 @@ class ProductOptionChoice(models.Model):
         if self.option.product.price_display == 'krw' and self.price_krw is not None:
             return self.price_krw
         return self.price
+
+    @property
+    def public_price(self):
+        """사용자용 추가 가격 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
+        if self.option.product.price_display == 'krw' and self.price_krw is not None:
+            # 원화 연동 상품: 최신 환율로 사토시 가격 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                if self.price_krw == 0:
+                    return 0
+                btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
+        return self.price
+
+    @property
+    def krw_price_display(self):
+        """원화 추가 가격 표시 (원화 연동 상품용)"""
+        if self.option.product.price_display == 'krw' and self.price_krw is not None:
+            if self.price_krw == 0:
+                return ""
+            return f"(+{self.price_krw:,}원)"
+        return None

@@ -90,12 +90,25 @@
               {{ product.public_price|floatformat:0|intcomma }} sats
             </span>
           </div>
+          {% if product.price_display == 'krw' %}
+          <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <span class="text-red-600 dark:text-red-400 font-medium">{{ product.krw_discounted_price_display }}</span>
+            <span class="line-through ml-1">{{ product.krw_price_display }}</span>
+            <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+          </div>
+          {% endif %}
           {% else %}
           <div class="flex items-center">
             <span class="text-xl font-bold text-gray-900 dark:text-white">
               {{ product.public_price|floatformat:0|intcomma }} sats
             </span>
           </div>
+          {% if product.price_display == 'krw' %}
+          <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <span class="font-medium">{{ product.krw_price_display }}</span>
+            <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+          </div>
+          {% endif %}
           {% endif %}
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
             배송비: 
@@ -103,6 +116,9 @@
               무료
             {% else %}
               {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
+              {% if product.price_display == 'krw' and product.shipping_fee_krw %}
+                ({{ product.shipping_fee_krw|floatformat:0|intcomma }}원)
+              {% endif %}
             {% endif %}
           </p>
         </div>

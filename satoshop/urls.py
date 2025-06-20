@@ -36,3 +36,7 @@ urlpatterns = [
 ]
 
 # WhiteNoise가 정적 파일 서빙을 자동으로 처리합니다
+
+# 에러 페이지 핸들러
+handler404 = 'myshop.views.custom_404_view'
+handler500 = 'myshop.views.custom_500_view'
