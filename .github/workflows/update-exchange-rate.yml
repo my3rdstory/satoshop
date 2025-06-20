@@ -1,4 +1,4 @@
-name: 환율 자동 업데이트 (웹훅 방식)
+name: 환율 자동 업데이트 (멀티 서버 웹훅 방식)
 
 on:
   schedule:
@@ -17,23 +17,15 @@ jobs:
     timeout-minutes: 5
     
     steps:
-    - name: 환율 업데이트 웹훅 호출
+    - name: 환율 업데이트 웹훅 호출 (멀티 서버)
       env:
-        WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         WEBHOOK_TOKEN: ${{ secrets.WEBHOOK_TOKEN }}
       run: |
         echo "🚀 GitHub Actions에서 환율 업데이트 웹훅 호출 시작"
         echo "⏰ 시작 시간: $(date)"
-        echo "🔧 실행 모드: 웹훅 방식 (DB 직접 연결 안함)"
+        echo "🔧 실행 모드: 멀티 서버 웹훅 방식"
         
-        # 환경변수 존재 여부 확인
-        if [ -z "$WEBHOOK_URL" ]; then
-          echo "❌ WEBHOOK_URL이 설정되지 않았습니다."
-          echo "GitHub Secrets에서 WEBHOOK_URL을 설정하세요."
-          echo "예시: https://your-render-app.onrender.com/webhook/update-exchange-rate/"
-          exit 1
-        fi
-        
+        # 웹훅 토큰 확인
         if [ -z "$WEBHOOK_TOKEN" ]; then
           echo "❌ WEBHOOK_TOKEN이 설정되지 않았습니다."
           echo "GitHub Secrets에서 WEBHOOK_TOKEN을 설정하세요."
@@ -41,58 +33,82 @@ jobs:
           exit 1
         fi
         
-        echo "📡 서버 URL: ${WEBHOOK_URL}"
         echo "🔐 토큰 설정: ✅ (길이: ${#WEBHOOK_TOKEN}자)"
         
-        # 웹훅 호출
-        echo "📞 웹훅 호출 중..."
-        response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
-          --connect-timeout 10 \
-          --max-time 30 \
-          -X POST \
-          -H "Content-Type: application/json" \
-          -d "{\"token\": \"${WEBHOOK_TOKEN}\", \"source\": \"github_actions\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}" \
-          "${WEBHOOK_URL}")
+        # 서버 URL 목록 정의
+        WEBHOOK_URLS=(
+          "https://satoshop-dev.onrender.com/webhook/update-exchange-rate/"
+          "https://satoshop.onrender.com/webhook/update-exchange-rate/"
+          "https://store.btcmap.kr/webhook/update-exchange-rate/"
+        )
         
-        # 응답 파싱
-        body=$(echo "$response" | sed -E 's/HTTPSTATUS\:[0-9]{3}$//')
-        code=$(echo "$response" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+        # 각 서버에 웹훅 호출
+        success_count=0
+        total_count=${#WEBHOOK_URLS[@]}
         
-        echo "📊 HTTP 응답 코드: $code"
-        echo "📄 응답 내용: $body"
+        for i in "${!WEBHOOK_URLS[@]}"; do
+          url="${WEBHOOK_URLS[$i]}"
+          server_name=$(echo "$url" | sed 's|https://||' | sed 's|/.*||')
+          
+          echo ""
+          echo "📞 서버 $((i+1))/$total_count: $server_name"
+          echo "🌐 URL: $url"
+          
+          # 웹훅 호출
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" \
+            --connect-timeout 10 \
+            --max-time 30 \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "{\"token\": \"${WEBHOOK_TOKEN}\", \"source\": \"github_actions\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)\"}" \
+            "$url")
+          
+          # 응답 파싱
+          body=$(echo "$response" | sed -E 's/HTTPSTATUS\:[0-9]{3}$//')
+          code=$(echo "$response" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+          
+          echo "📊 HTTP 응답 코드: $code"
+          
+          # 결과 처리
+          case $code in
+            200)
+              echo "✅ $server_name: 환율 업데이트 성공!"
+              success_count=$((success_count + 1))
+              ;;
+            401)
+              echo "❌ $server_name: 인증 실패 (HTTP 401)"
+              echo "🔑 WEBHOOK_TOKEN이 서버와 일치하지 않습니다."
+              ;;
+            404)
+              echo "❌ $server_name: 엔드포인트를 찾을 수 없음 (HTTP 404)"
+              echo "🌐 웹훅 URL이 올바른지 확인하세요."
+              ;;
+            500)
+              echo "❌ $server_name: 서버 내부 오류 (HTTP 500)"
+              echo "🔧 서버에서 환율 업데이트 중 오류가 발생했습니다."
+              ;;
+            000)
+              echo "❌ $server_name: 연결 실패 (타임아웃 또는 서버 다운)"
+              echo "🌐 서버 상태를 확인하세요."
+              ;;
+            *)
+              echo "❌ $server_name: 예상치 못한 응답 (HTTP $code)"
+              echo "🌐 서버 상태를 확인하세요."
+              ;;
+          esac
+        done
         
-        # 결과 처리
-        case $code in
-          200)
-            echo "✅ 환율 업데이트 웹훅 호출 성공!"
-            echo "🎉 환율이 정상적으로 업데이트되었습니다."
-            ;;
-          401)
-            echo "❌ 인증 실패 (HTTP 401)"
-            echo "🔑 WEBHOOK_TOKEN이 서버와 일치하지 않습니다."
-            echo "💡 해결방법: GitHub Secrets와 서버 환경변수의 WEBHOOK_TOKEN을 확인하세요."
-            exit 1
-            ;;
-          404)
-            echo "❌ 엔드포인트를 찾을 수 없음 (HTTP 404)"
-            echo "🌐 WEBHOOK_URL이 올바른지 확인하세요."
-            echo "💡 올바른 URL: https://your-domain.com/webhook/update-exchange-rate/"
-            exit 1
-            ;;
-          500)
-            echo "❌ 서버 내부 오류 (HTTP 500)"
-            echo "🔧 서버에서 환율 업데이트 중 오류가 발생했습니다."
-            echo "📊 서버 로그를 확인하세요."
-            exit 1
-            ;;
-          *)
-            echo "❌ 예상치 못한 응답 (HTTP $code)"
-            echo "🌐 서버 상태를 확인하세요."
-            exit 1
-            ;;
-        esac
-        
+        echo ""
+        echo "📊 최종 결과: $success_count/$total_count 서버 성공"
         echo "⏰ 완료 시간: $(date)"
+        
+        # 모든 서버가 실패한 경우에만 exit 1
+        if [ $success_count -eq 0 ]; then
+          echo "❌ 모든 서버에서 환율 업데이트 실패!"
+          exit 1
+        else
+          echo "✅ $success_count개 서버에서 환율 업데이트 성공!"
+        fi
     
     - name: 실행 결과 알림 (실패 시)
       if: failure()
@@ -103,18 +119,18 @@ jobs:
         echo ""
         echo "📋 체크리스트:"
         echo "1. GitHub Secrets 설정 확인:"
-        echo "   - WEBHOOK_URL: https://your-domain.com/webhook/update-exchange-rate/"
         echo "   - WEBHOOK_TOKEN: 안전한 토큰 값"
         echo ""
-        echo "2. 서버 환경변수 설정 확인:"
+        echo "2. 서버 환경변수 설정 확인 (각 서버별):"
         echo "   - WEBHOOK_TOKEN: GitHub과 동일한 값"
         echo ""
         echo "3. 서버 상태 확인:"
-        echo "   - 서버가 정상 작동하는지 확인"
-        echo "   - 웹훅 엔드포인트 접근 가능한지 확인"
+        echo "   - satoshop-dev.onrender.com"
+        echo "   - satoshop.onrender.com" 
+        echo "   - store.btcmap.kr"
         echo ""
         echo "4. 로그 확인:"
         echo "   - GitHub Actions 로그: https://github.com/${{ github.repository }}/actions"
-        echo "   - 서버 로그: Render.com Dashboard"
+        echo "   - 각 서버 로그: Render.com Dashboard 또는 서버 로그"
         echo ""
         echo "💡 도움말: WEBHOOK_SETUP_GUIDE.md 파일을 참조하세요." 
