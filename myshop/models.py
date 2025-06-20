@@ -2,7 +2,6 @@ from django.db import models
 from django.core.exceptions import ValidationError
 import re
 from django.utils import timezone
-from datetime import timedelta
 
 
 def get_current_year_copyright():
@@ -47,8 +46,8 @@ class ExchangeRate(models.Model):
         return cls.objects.first()
     
     @classmethod
-    def cleanup_old_rates(cls, keep_count=5):
-        """오래된 환율 데이터 정리 (최근 5개만 유지)"""
+    def cleanup_old_rates(cls, keep_count=10):
+        """오래된 환율 데이터 정리 (최근 10개만 유지)"""
         if cls.objects.count() > keep_count:
             old_rates = cls.objects.all()[keep_count:]
             cls.objects.filter(id__in=[rate.id for rate in old_rates]).delete()
@@ -302,13 +301,6 @@ class SiteSettings(models.Model):
         help_text="스토어 생성 시 블링크 API 정보 얻는 방법 문서 링크"
     )
     
-    # 환율 API 설정
-    exchange_rate_update_interval = models.PositiveIntegerField(
-        default=10,
-        verbose_name="환율 업데이트 간격 (분)",
-        help_text="업비트 API에서 환율을 가져오는 간격 (분 단위)"
-    )
-    
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
@@ -333,12 +325,6 @@ class SiteSettings(models.Model):
                 raise ValidationError({
                     'youtube_video_id': '올바른 유튜브 비디오 ID를 입력하세요. (11자리 영숫자, 하이픈, 언더스코어만 허용)'
                 })
-        
-        # 환율 업데이트 간격 유효성 검사
-        if self.exchange_rate_update_interval < 1:
-            raise ValidationError({
-                'exchange_rate_update_interval': '환율 업데이트 간격은 1분 이상이어야 합니다.'
-            })
     
     def save(self, *args, **kwargs):
         # 싱글톤 패턴: 하나의 설정만 존재하도록
@@ -362,14 +348,7 @@ class SiteSettings(models.Model):
         settings, created = cls.objects.get_or_create(pk=1)
         return settings
     
-    def should_update_exchange_rate(self):
-        """환율 업데이트가 필요한지 확인"""
-        latest_rate = ExchangeRate.get_latest_rate()
-        if not latest_rate:
-            return True
-        
-        time_diff = timezone.now() - latest_rate.created_at
-        return time_diff >= timedelta(minutes=self.exchange_rate_update_interval)
+
     
     def get_youtube_embed_url(self):
         """유튜브 임베드 URL 생성 (UI 요소 최대한 숨김)"""
