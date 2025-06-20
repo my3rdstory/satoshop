@@ -1,28 +1,13 @@
 {% load static %}
 
-<!-- 모바일 메뉴 컴포넌트 -->
-<div id="mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
+<!-- 스토어 모바일 메뉴 컴포넌트 -->
+<div id="store-mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
   <div class="px-2 py-2 space-y-0.5">
     
-    <!-- 스토어에서만: Hub 메인으로 -->
-    {% if store %}
+    <!-- 네비게이션 링크 -->
     <a href="{% url 'myshop:home' %}?force_home=1" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-home mr-2"></i>Hub 메인으로
     </a>
-    {% endif %}
-    
-    <!-- PWA 설치 버튼 (모바일) -->
-    <button id="site-pwa-install-button-mobile" style="display: none;" 
-            class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </button>
-    
-    <!-- iOS PWA 설치 안내 (모바일) -->
-    <div id="site-ios-install-instructions-mobile" style="display: none;" 
-         class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
-         onclick="showIOSInstallModal()">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </div>
     
     <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-search mr-2"></i>스토어 탐색
@@ -32,6 +17,26 @@
       <i class="fas fa-bullhorn mr-2"></i>공지사항
     </a>
     
+    <!-- 스토어 전용: 상품 목록 (모바일에서만 표시) -->
+    {% if store %}
+    <a href="{% url 'products:product_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+      <i class="fas fa-list mr-2 text-xs"></i>상품 목록
+    </a>
+    {% endif %}
+    
+    <!-- PWA 설치 버튼 (모바일) -->
+    <button id="store-pwa-install-button-mobile" style="display: none;" 
+            class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-download mr-2"></i>앱 설치
+    </button>
+    
+    <!-- iOS PWA 설치 안내 (모바일) -->
+    <div id="store-ios-install-instructions-mobile" style="display: none;" 
+         class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
+         onclick="showIOSInstallModal()">
+      <i class="fas fa-download mr-2"></i>앱 설치
+    </div>
+
     {% if user.is_authenticated %}
     <a href="{% url 'accounts:mypage' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-user-cog mr-2"></i>마이페이지
@@ -75,6 +80,6 @@
   </div>
 </div>
 
-<!-- 모바일 메뉴 CSS/JS -->
+<!-- 스토어 모바일 메뉴 CSS/JS -->
 <link rel="stylesheet" href="{% static 'css/mobile_menu.css' %}">
-<script src="{% static 'js/mobile_menu.js' %}"></script> 
+<script src="{% static 'js/store_mobile_menu.js' %}"></script> 

@@ -8,6 +8,7 @@
 
 
 {% block extra_css %}
+{{ block.super }}
 <style>
   .store-header {
     background: var(--hero-gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
@@ -30,14 +31,28 @@
 <!-- 스토어 헤더 -->
 <section class="store-header py-16">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center">
-      <h1 class="text-5xl font-bold mb-4 text-white">
-        <i class="fas fa-store mr-4"></i>
-        {{ store.store_name }}
-      </h1>
-      <p class="text-2xl text-white">
-        주인장: {{ store.owner_name }}
-      </p>
+    <div class="text-center relative">
+      <div class="flex flex-col items-center justify-center">
+        <div class="flex-shrink-0">
+          <h1 class="text-5xl font-bold mb-4 text-white">
+            <i class="fas fa-store mr-4"></i>
+            {{ store.store_name }}
+          </h1>
+        </div>
+        
+        <p class="text-2xl text-white mb-6">
+          주인장: {{ store.owner_name }}
+        </p>
+        
+        <!-- 상품 목록 버튼 - 스토어 이름 아래에 배치 -->
+        <div>
+          <a href="#products-section" 
+             class="inline-flex items-center px-6 py-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-medium rounded-lg transition-all duration-200 backdrop-blur-sm border border-white border-opacity-30">
+            <i class="fas fa-shopping-bag mr-2"></i>
+            상품 목록 보기
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -130,7 +145,7 @@
 </section>
 
 <!-- 상품 목록 -->
-<section class="py-8">
+<section id="products-section" class="py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center">
       <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>

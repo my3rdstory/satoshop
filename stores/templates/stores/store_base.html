@@ -1,92 +1,180 @@
-{% extends 'myshop/base.html' %}
 {% load static %}
 
-{% block title %}{{ store.store_name }} - SatoShop{% endblock %}
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>{% block title %}{{ store.store_name }} - SatoShop{% endblock %}</title>
+    
+    <!-- 메타 태그 -->
+    <meta name="description" content="{% block meta_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+    <meta name="keywords" content="{% if site_settings and site_settings.meta_keywords %}{{ site_settings.meta_keywords }}{% else %}비트코인, 쇼핑, 온라인스토어, 암호화폐{% endif %}">
+    <meta name="author" content="{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}">
+    
+    <!-- 오픈그래프 태그 -->
+    <meta property="og:title" content="{% block og_title %}{{ store.store_name }} - SatoShop{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:image" content="{% block og_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+    <meta property="og:site_name" content="{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}">
+    
+    <!-- 트위터 카드 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ store.store_name }} - SatoShop{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+    
+    <!-- PWA 매니페스트 -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+    
+    <!-- CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="{% static 'css/custom.css' %}">
+    <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+    
+    <!-- 테일윈드 설정 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'noto': ['Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        'bitcoin': '#f7931a',
+                        'lightning': '#fbbf24',
+                    }
+                }
+            }
+        }
+    </script>
 
-{% block meta_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
-
-<!-- 스토어별 오픈그래프 설정 -->
-{% block og_title %}{{ store.store_name }} - SatoShop{% endblock %}
-{% block og_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
-{% block og_type %}website{% endblock %}
-{% block og_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
-
-{% block twitter_title %}{{ store.store_name }} - SatoShop{% endblock %}
-{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
-{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
-
-{% block body_class %} store-page{% if store %} store-{{ store.store_id }}{% endif %}{% endblock %}
-
-{% block content %}
-<!-- 스토어 메인 컨텐츠 -->
-<div style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
-    <!-- 메인 컨텐츠 (사이트 공통 나브바는 base.html에서 처리) -->
-    <main class="flex-1">
-      {% if messages %}
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {% for message in messages %}
-        <div class="bg-{{ message.tags }}-100 dark:bg-{{ message.tags }}-900/30 border border-{{ message.tags }}-400 dark:border-{{ message.tags }}-600 text-{{ message.tags }}-700 dark:text-{{ message.tags }}-300 px-4 py-3 rounded-lg mb-4 relative">
-          <button class="absolute top-0 bottom-0 right-0 px-4 py-3 text-{{ message.tags }}-500 hover:text-{{ message.tags }}-700 dark:hover:text-{{ message.tags }}-300" onclick="this.parentElement.remove()">
-            <i class="fas fa-times"></i>
-          </button>
-          {{ message }}
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      {% block store_content %}
-      {% endblock %}
-    </main>
-
-    <!-- 스토어 정보 섹션 -->
-    <section class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div class="text-center">
-          <!-- 스토어 이름과 주인장 -->
-          <div class="mb-2">
-            <h3 class="text-base font-bold text-gray-900 dark:text-white">
-              <i class="fas fa-store mr-2 text-blue-500"></i>
-              {{ store.store_name }} - {{ store.owner_name }}
-            </h3>
-          </div>
-
-          <!-- 사업자 정보 -->
-          {% if store.business_license_number or store.telecommunication_sales_number %}
-          <div class="flex flex-wrap justify-center items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-            {% if store.business_license_number %}
-            <span class="flex items-center">
-              <i class="fas fa-building mr-1"></i>
-              사업자등록번호: {{ store.business_license_number }}
-            </span>
-            {% endif %}
-            {% if store.telecommunication_sales_number %}
-            <span class="flex items-center">
-              <i class="fas fa-certificate mr-1"></i>
-              통신판매업번호: {{ store.telecommunication_sales_number }}
-            </span>
-            {% endif %}
-          </div>
-          {% endif %}
-        </div>
-      </div>
-    </section>
-  </div>
+{% block extra_css %}
 {% endblock %}
 
-<!-- 스토어 전용 JavaScript -->
-<script>
-  // Django URL과 CSRF 토큰을 전역 변수로 설정
-  window.csrfToken = '{{ csrf_token }}';
-  window.logoutUrl = "{% url 'accounts:logout' %}";
-  window.loginUrl = "{% url 'accounts:login' %}";
-  window.signupUrl = "{% url 'accounts:signup' %}";
-  window.homeUrl = "{% url 'myshop:home' %}";
-  {% if store.store_id %}
-  window.storeId = "{{ store.store_id }}";
-  {% endif %}
-</script>
-<script src="{% static 'js/common.js' %}"></script>
-<script src="{% static 'js/store-common.js' %}"></script>
+    <!-- 구글 애널리틱스 -->
+    {% if site_settings and site_settings.google_analytics_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.google_analytics_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ site_settings.google_analytics_id }}');
+    </script>
+    {% endif %}
+</head>
 
-{% block extra_js %}{% endblock %}
+<body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white{% block body_class %} store-page{% if store %} store-{{ store.store_id }}{% endif %}{% endblock %}">
+  <div class="min-h-screen flex flex-col">
+    <!-- 스토어 네비게이션 바 -->
+    <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="store navigation">
+      {% include 'stores/store_nav_bar.html' %}
+    </nav>
+
+    <!-- 메인 컨텐츠 -->
+    <main class="flex-1 pt-16">
+      <!-- 스토어 메인 컨텐츠 -->
+      <div style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
+        {% if messages %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          {% for message in messages %}
+          <div class="bg-{{ message.tags }}-100 dark:bg-{{ message.tags }}-900/30 border border-{{ message.tags }}-400 dark:border-{{ message.tags }}-600 text-{{ message.tags }}-700 dark:text-{{ message.tags }}-300 px-4 py-3 rounded-lg mb-4 relative">
+            <button class="absolute top-0 bottom-0 right-0 px-4 py-3 text-{{ message.tags }}-500 hover:text-{{ message.tags }}-700 dark:hover:text-{{ message.tags }}-300" onclick="this.parentElement.remove()">
+              <i class="fas fa-times"></i>
+            </button>
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block store_content %}
+        {% endblock %}
+      </div>
+
+      <!-- 스토어 정보 섹션 -->
+      <section class="bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div class="text-center">
+            <!-- 스토어 이름과 주인장 -->
+            <div class="mb-2">
+              <h3 class="text-base font-bold text-gray-900 dark:text-white">
+                <i class="fas fa-store mr-2 text-blue-500"></i>
+                {{ store.store_name }} - {{ store.owner_name }}
+              </h3>
+            </div>
+
+            <!-- 사업자 정보 -->
+            {% if store.business_license_number or store.telecommunication_sales_number %}
+            <div class="flex flex-wrap justify-center items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              {% if store.business_license_number %}
+              <span class="flex items-center">
+                <i class="fas fa-building mr-1"></i>
+                사업자등록번호: {{ store.business_license_number }}
+              </span>
+              {% endif %}
+              {% if store.telecommunication_sales_number %}
+              <span class="flex items-center">
+                <i class="fas fa-certificate mr-1"></i>
+                통신판매업번호: {{ store.telecommunication_sales_number }}
+              </span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 동적 푸터 -->
+    {% block footer %}
+    {% include 'myshop/footer.html' %}
+    {% endblock %}
+  </div>
+
+  <!-- iOS PWA 설치 안내 모달 -->
+  <div id="ios-install-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
+      <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">앱 설치 방법</h3>
+      <div class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <p>1. Safari에서 <i class="fas fa-share text-blue-500"></i> 공유 버튼을 누르세요</p>
+        <p>2. "홈 화면에 추가"를 선택하세요</p>
+        <p>3. "추가" 버튼을 누르세요</p>
+      </div>
+      <button onclick="closeIOSInstallModal()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <!-- 스토어 전용 JavaScript -->
+  <script>
+    // Django URL과 CSRF 토큰을 전역 변수로 설정
+    window.csrfToken = '{{ csrf_token }}';
+    window.logoutUrl = "{% url 'accounts:logout' %}";
+    window.loginUrl = "{% url 'accounts:login' %}";
+    window.signupUrl = "{% url 'accounts:signup' %}";
+    window.homeUrl = "{% url 'myshop:home' %}";
+    {% if store.store_id %}
+    window.storeId = "{{ store.store_id }}";
+    {% endif %}
+
+         // 스토어 전용 기본 설정
+  </script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/store-common.js' %}"></script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
