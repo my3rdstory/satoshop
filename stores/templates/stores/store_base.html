@@ -1,97 +1,24 @@
+{% extends 'myshop/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="ko">
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}{{ store.store_name }} - SatoShop{% endblock %}</title>
-  
-  <!-- SEO Meta Tags -->
-  <meta name="description" content="{% block meta_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
-  <meta name="keywords" content="{% block meta_keywords %}{% if site_settings and site_settings.meta_keywords %}{{ site_settings.meta_keywords }}{% else %}비트코인, 라이트닝, 온라인 스토어, 결제, 비트코인 결제, 비트코인 라이트닝 결제, 비트코인 라이트닝 결제 플랫폼, 사토샵, SatoShop{% endif %}{% endblock %}">
-  
-  <!-- Open Graph Meta Tags -->
-  {% block opengraph_meta %}
-  <meta property="og:title" content="{% block og_title %}{% if store %}{{ store.store_name }} - SatoShop{% else %}SatoShop{% endif %}{% endblock %}">
-  <meta property="og:description" content="{% block og_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
-  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
-  <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
-  <meta property="og:image" content="{% block og_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
-  <meta property="og:site_name" content="{% if site_settings and site_settings.og_site_name %}{{ site_settings.og_site_name %}{% else %}SatoShop{% endif %}">
-  <meta property="og:locale" content="ko_KR">
-  
-  <!-- Twitter Card Meta Tags -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="{% block twitter_title %}{% if store %}{{ store.store_name }} - SatoShop{% else %}SatoShop{% endif %}{% endblock %}">
-  <meta name="twitter:description" content="{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
-  <meta name="twitter:image" content="{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
-  {% endblock %}
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
-  <link rel="shortcut icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
-  <link rel="apple-touch-icon" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Tailwind 설정 -->
-  <script src="{% static 'js/tailwind-config.js' %}"></script>
-  
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Custom Tailwind styles -->
-  <style>
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-    }
-  </style>
+{% block title %}{{ store.store_name }} - SatoShop{% endblock %}
 
-  <!-- FOUC 방지를 위한 테마 초기화 스크립트 -->
-  <script>
-    (function() {
-      // localStorage에서 테마 읽기
-      let theme = 'light'; // 기본값
-      try {
-        const stored = localStorage.getItem('theme');
-        if (stored) {
-          theme = stored;
-        } else {
-          // 저장된 값이 없으면 시스템 설정 확인
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            theme = 'dark';
-          }
-        }
-      } catch (e) {
-        // localStorage 접근 실패 시 시스템 설정으로 fallback
-        try {
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            theme = 'dark';
-          }
-        } catch (e2) {
-          // 최종 fallback은 light
-          theme = 'light';
-        }
-      }
-      
-      // 즉시 적용 (DOM 요소가 생성되기 전에)
-      document.documentElement.setAttribute('data-theme', theme);
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.add('light');
-      }
-    })();
-  </script>
+{% block meta_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
 
-  {% block extra_css %}{% endblock %}
-</head>
+<!-- 스토어별 오픈그래프 설정 -->
+{% block og_title %}{{ store.store_name }} - SatoShop{% endblock %}
+{% block og_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
+{% block og_type %}website{% endblock %}
+{% block og_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
 
-<body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-  style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
-  <div class="min-h-screen flex flex-col">
+{% block twitter_title %}{{ store.store_name }} - SatoShop{% endblock %}
+{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}
+{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
+
+{% block body_class %} store-page{% if store %} store-{{ store.store_id }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col" style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
     <!-- 스토어 네비게이션 바 -->
     <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -324,6 +251,13 @@
       </div>
     </nav>
 
+    <!-- 스토어 전용 네비게이션 오버라이드 -->
+    <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="store navigation">
+      {% block store_navigation %}
+      {% include 'stores/store_navigation.html' %}
+      {% endblock %}
+    </nav>
+
     <!-- 메인 컨텐츠 -->
     <main class="flex-1 pt-16">
       {% if messages %}
@@ -339,11 +273,11 @@
       </div>
       {% endif %}
 
-      {% block content %}
+      {% block store_content %}
       {% endblock %}
     </main>
 
-    <!-- 스토어 푸터 -->
+    <!-- 스토어 전용 푸터 -->
     <footer class="bg-gray-900 dark:bg-gray-950 text-white">
       <div class="max-w-7xl mx-auto px-4 py-8 text-center">
         <p class="text-lg mb-4">
@@ -436,7 +370,7 @@
     </footer>
   </div>
 
-  <!-- 공통 JavaScript -->
+  <!-- 스토어 전용 JavaScript -->
   <script>
     // Django URL과 CSRF 토큰을 전역 변수로 설정
     window.csrfToken = '{{ csrf_token }}';
@@ -453,8 +387,6 @@
       const mobileMenuButton = document.getElementById('mobile-menu-button');
       const mobileMenu = document.getElementById('mobile-menu');
       
-      // 모바일 메뉴 요소 확인
-      
       if (mobileMenuButton && mobileMenu) {
         // 메뉴 토글 함수
         function toggleMobileMenu(e) {
@@ -462,7 +394,6 @@
             e.preventDefault();
             e.stopPropagation();
           }
-          // 모바일 메뉴 버튼 활성화
           
           // 토글 처리
           const isHidden = mobileMenu.classList.contains('hidden');
@@ -477,10 +408,8 @@
           if (icon) {
             if (mobileMenu.classList.contains('hidden')) {
               icon.className = 'fas fa-bars text-lg';
-              // 메뉴 닫힘
             } else {
               icon.className = 'fas fa-times text-lg';
-                              // 메뉴 열림
             }
           }
         }
@@ -502,7 +431,6 @@
               if (icon) {
                 icon.className = 'fas fa-bars text-lg';
               }
-              // 외부 클릭으로 메뉴 닫힘
             }
           }
         });
@@ -515,7 +443,6 @@
             if (icon) {
               icon.className = 'fas fa-bars text-lg';
             }
-                            // ESC 키로 메뉴 닫힘
           }
         });
       } else {
@@ -524,11 +451,9 @@
     });
   </script>
   <link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
-  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <script src="{% static 'js/common.js' %}"></script>
   <script src="{% static 'js/store-common.js' %}"></script>
 
   {% block extra_js %}{% endblock %}
-</body>
-
-</html>
+</div>
+{% endblock %}

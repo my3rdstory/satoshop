@@ -314,7 +314,7 @@ def test_payment(request):
 @login_required
 def my_stores(request):
     """내 스토어 관리"""
-    store = Store.objects.filter(owner=request.user, deleted_at__isnull=True).first()
+    store = Store.objects.filter(owner=request.user, deleted_at__isnull=True).select_related('owner').first()
     
     return render(request, 'stores/my_stores.html', {'store': store})
 

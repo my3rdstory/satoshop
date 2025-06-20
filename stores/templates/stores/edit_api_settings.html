@@ -3,9 +3,10 @@
 
 {% block title %}API 설정 편집: {{ store.store_name }} - SatoShop{% endblock %}
 
-{% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" API 설정" description=store.store_name|add:" 스토어의 블링크 API 정보를 관리하고 테스트하여 안전한 결제 환경을 설정하세요." %}
-{% endblock %}
+{% block og_title %}{{ store.store_name }} API 설정 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }} 스토어의 블링크 API 정보를 관리하고 테스트하여 안전한 결제 환경을 설정하세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} API 설정 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }} 스토어의 블링크 API 정보를 관리하고 테스트하여 안전한 결제 환경을 설정하세요.{% endblock %}
 
 
 {% block extra_css %}

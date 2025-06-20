@@ -3,9 +3,10 @@
 
 {% block title %}스토어 편집: {{ store.store_name }} - SatoShop{% endblock %}
 
-{% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title=store.store_name|add:" 편집" description=store.store_name|add:" 스토어의 정보, 테마, API 설정 등을 편집하고 수정하세요." %}
-{% endblock %}
+{% block og_title %}{{ store.store_name }} 편집 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }} 스토어의 정보, 테마, API 설정 등을 편집하고 수정하세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 편집 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }} 스토어의 정보, 테마, API 설정 등을 편집하고 수정하세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">

@@ -3,9 +3,10 @@
 
 {% block title %}스토어를 찾을 수 없습니다{% endblock %}
 
-{% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title="스토어를 찾을 수 없습니다" description="요청하신 스토어가 존재하지 않습니다. 스토어 ID를 다시 확인해주세요." %}
-{% endblock %}
+{% block og_title %}스토어를 찾을 수 없습니다 - SatoShop{% endblock %}
+{% block og_description %}요청하신 스토어가 존재하지 않습니다. 스토어 ID를 다시 확인해주세요.{% endblock %}
+{% block twitter_title %}스토어를 찾을 수 없습니다 - SatoShop{% endblock %}
+{% block twitter_description %}요청하신 스토어가 존재하지 않습니다. 스토어 ID를 다시 확인해주세요.{% endblock %}
 
 {% block content %}
 <!-- 404 알림 헤더 -->

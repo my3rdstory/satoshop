@@ -4,34 +4,12 @@
 
 {% block title %}{{ store.store_name }} - {% if is_public_view %}상품 목록{% else %}상품 관리{% endif %}{% endblock %}
 
-{% block opengraph_meta %}
-<meta property="og:title" content="{{ store.store_name }} - {% if is_public_view %}상품 목록{% else %}상품 관리{% endif %}">
-<meta property="og:description" content="{% if is_public_view %}{{ store.store_name }}의 다양한 상품들을 둘러보고 비트코인으로 결제하세요.{% else %}{{ store.store_name }}의 상품을 효율적으로 관리하고 편집하세요.{% endif %}">
-<meta property="og:type" content="website">
-<meta property="og:url" content="{{ request.build_absolute_uri }}">
-{% if store.images.exists %}
-<meta property="og:image" content="{{ store.images.first.file_url }}">
-{% else %}
-<meta property="og:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-{% endif %}
-<meta property="og:site_name" content="SatoShop">
-<meta property="og:locale" content="ko_KR">
 
-<!-- Twitter Card Meta Tags -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ store.store_name }} - {% if is_public_view %}상품 목록{% else %}상품 관리{% endif %}">
-<meta name="twitter:description" content="{% if is_public_view %}{{ store.store_name }}의 다양한 상품들을 둘러보고 비트코인으로 결제하세요.{% else %}{{ store.store_name }}의 상품을 효율적으로 관리하고 편집하세요.{% endif %}">
-{% if store.images.exists %}
-<meta name="twitter:image" content="{{ store.images.first.file_url }}">
-{% else %}
-<meta name="twitter:image" content="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
-{% endif %}
-{% endblock %}
 
 {% block extra_css %}
 {% endblock %}
 
-{% block content %}
+{% block store_content %}
 <div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->

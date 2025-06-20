@@ -1,6 +1,6 @@
-const CACHE_NAME = 'satoshop-v1.1.0';
-const STATIC_CACHE_NAME = 'satoshop-static-v1.1.0';
-const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.1.0';
+const CACHE_NAME = 'satoshop-v1.0.0';
+const STATIC_CACHE_NAME = 'satoshop-static-v1.0.0';
+const DYNAMIC_CACHE_NAME = 'satoshop-dynamic-v1.0.0';
 
 // 디버깅 모드 확인 (프로덕션에서는 로그 비활성화)
 const isDebugMode = self.location.hostname === 'localhost' || 
@@ -35,9 +35,8 @@ if (isProduction) {
   console.debug = function() {};
 }
 
-// 캐시할 정적 리소스
+// 캐시할 정적 리소스 (실제 존재하는 파일들만, 동적 페이지 제외)
 const STATIC_ASSETS = [
-  '/',
   '/static/css/bulma.min.css',
   '/static/css/custom.css',
   '/static/css/components.css',
@@ -45,16 +44,62 @@ const STATIC_ASSETS = [
   '/static/css/products.css',
   '/static/css/stores.css',
   '/static/css/themes.css',
+  '/static/css/board-notice.css',
+  '/static/css/document.css',
+  '/static/css/mobile-menu.css',
+  '/static/css/markdown-renderer.css',
   '/static/js/common.js',
   '/static/js/theme-toggle.js',
+  '/static/js/cart-common.js',
+  '/static/js/markdown-renderer.js',
   '/static/images/satoshop-logo-1x1-favicon.png',
   '/static/images/btcmap-logo-basic-200x43.webp',
+  '/static/images/btcmap-simbol-1vs1-100x100.webp',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
 // 오프라인 페이지
 const OFFLINE_PAGE = '/offline/';
+
+// 개별 파일 캐싱 함수 (실패해도 전체가 실패하지 않음)
+async function cacheAssetsIndividually(cache, assets) {
+  const results = await Promise.allSettled(
+    assets.map(async (asset) => {
+      try {
+        // 외부 리소스에 대해서는 no-cors 모드로 요청
+        const fetchOptions = asset.startsWith('http') && !asset.includes(self.location.origin) 
+          ? { mode: 'no-cors' } 
+          : {};
+          
+        const response = await fetch(asset, fetchOptions);
+        
+        if (response.ok || response.type === 'opaque') {
+          await cache.put(asset, response);
+          debugLog(`Service Worker: Cached ${asset}`);
+          return { asset, success: true };
+        } else {
+          debugError(`Service Worker: Failed to fetch ${asset} - Status: ${response.status}`);
+          return { asset, success: false, error: `Status: ${response.status}` };
+        }
+      } catch (error) {
+        debugError(`Service Worker: Error caching ${asset}:`, error);
+        return { asset, success: false, error: error.message };
+      }
+    })
+  );
+
+  const successful = results.filter(result => result.value?.success).length;
+  const failed = results.filter(result => !result.value?.success);
+  
+  debugLog(`Service Worker: Cached ${successful}/${assets.length} assets`);
+  
+  if (failed.length > 0) {
+    debugError('Service Worker: Failed to cache assets:', failed.map(f => f.value?.asset));
+  }
+  
+  return results;
+}
 
 // Service Worker 설치
 self.addEventListener('install', event => {
@@ -63,15 +108,17 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then(cache => {
-        debugLog('Service Worker: Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        debugLog('Service Worker: Caching static assets individually');
+        return cacheAssetsIndividually(cache, STATIC_ASSETS);
       })
-      .then(() => {
-        debugLog('Service Worker: Static assets cached');
+      .then((results) => {
+        debugLog('Service Worker: Static asset caching completed');
         return self.skipWaiting();
       })
       .catch(err => {
-        debugError('Service Worker: Error caching static assets', err);
+        debugError('Service Worker: Error during installation', err);
+        // 설치는 계속 진행 (일부 파일 캐싱 실패해도 Service Worker는 작동)
+        return self.skipWaiting();
       })
   );
 });

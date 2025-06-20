@@ -3,9 +3,10 @@
 
 {% block title %}4단계: 테스트 결제 - SatoShop{% endblock %}
 
-{% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title="테스트 결제" description="스토어 생성 4단계: 블링크 API 설정이 올바른지 테스트 결제로 확인하고 스토어 생성을 완료하세요." %}
-{% endblock %}
+{% block og_title %}테스트 결제 - SatoShop{% endblock %}
+{% block og_description %}스토어 생성 4단계: 블링크 API 설정이 올바른지 테스트 결제로 확인하고 스토어 생성을 완료하세요.{% endblock %}
+{% block twitter_title %}테스트 결제 - SatoShop{% endblock %}
+{% block twitter_description %}스토어 생성 4단계: 블링크 API 설정이 올바른지 테스트 결제로 확인하고 스토어 생성을 완료하세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/stores.css' %}">

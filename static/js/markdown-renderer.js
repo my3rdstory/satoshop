@@ -7,6 +7,13 @@
  * 3. 또는 MarkdownRenderer.render(element) 호출하여 특정 요소만 렌더링
  */
 
+// 중복 로드 방지 - IIFE 사용
+(function() {
+  // 이미 로드되어 있으면 건너뛰기
+  if (typeof window.MarkdownRenderer !== 'undefined') {
+    return;
+  }
+
 class MarkdownRenderer {
   // 허용되는 이미지 확장자 (Django settings에서 가져올 수 있지만 여기서는 하드코딩)
   static imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico'];
@@ -285,4 +292,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 전역에서 사용할 수 있도록 window 객체에 추가
-window.MarkdownRenderer = MarkdownRenderer; 
+window.MarkdownRenderer = MarkdownRenderer;
+
+})(); // IIFE 닫기 
