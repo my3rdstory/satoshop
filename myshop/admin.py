@@ -110,26 +110,21 @@ class SiteSettingsAdmin(admin.ModelAdmin):
     def update_exchange_rate(self, request):
         """환율 업데이트 액션"""
         try:
-            service = UpbitExchangeService()
-            rate_info = service.get_current_rate()
+            # UpbitExchangeService를 사용하여 환율 업데이트
+            exchange_rate = UpbitExchangeService.fetch_btc_krw_rate()
             
-            if rate_info:
-                rate, created = ExchangeRate.objects.get_or_create(
-                    currency='KRW',
-                    defaults={'rate': rate_info['rate']}
+            if exchange_rate:
+                messages.success(
+                    request, 
+                    f"환율이 성공적으로 업데이트되었습니다. (1 BTC = {exchange_rate.btc_krw_rate:,.0f} KRW)"
                 )
-                if not created:
-                    rate.rate = rate_info['rate']
-                    rate.save()
-                
-                messages.success(request, f"환율이 성공적으로 업데이트되었습니다. (1 USD = {rate_info['rate']:,.2f} KRW)")
             else:
-                messages.error(request, "환율 정보를 가져올 수 없습니다.")
+                messages.error(request, "환율 정보를 가져올 수 없습니다. 업비트 API 상태를 확인하세요.")
         
         except Exception as e:
             messages.error(request, f"환율 업데이트 중 오류가 발생했습니다: {str(e)}")
         
-        return HttpResponseRedirect(reverse('admin:myshop_sitesettings_changelist'))
+        return HttpResponseRedirect(reverse('admin:myshop_exchangerate_changelist'))
 
     def changelist_view(self, request, extra_context=None):
         """변경 목록에 커스텀 버튼 추가"""
@@ -178,6 +173,12 @@ class ExchangeRateAdmin(admin.ModelAdmin):
         else:
             return format_html('<span style="color: red;">오래됨</span>')
     is_recent.short_description = '상태'
+    
+    def changelist_view(self, request, extra_context=None):
+        """변경 목록에 수동 업데이트 버튼 URL 추가"""
+        extra_context = extra_context or {}
+        extra_context['update_rate_url'] = reverse('admin:update_exchange_rate')
+        return super().changelist_view(request, extra_context)
     
     def has_add_permission(self, request):
         # 관리자 페이지에서 직접 추가하지 못하도록 제한
