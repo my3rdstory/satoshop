@@ -18,7 +18,8 @@
 {% block body_class %} store-page{% if store %} store-{{ store.store_id }}{% endif %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex flex-col" style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
+<!-- 스토어 메인 컨텐츠 -->
+<div style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
     <!-- 스토어 네비게이션 바 -->
     <nav class="bg-gray-900 shadow-sm border-b border-gray-700 fixed top-0 left-0 right-0 z-50" role="navigation" aria-label="main navigation">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -276,184 +277,185 @@
       {% block store_content %}
       {% endblock %}
     </main>
-
-    <!-- 스토어 전용 푸터 -->
-    <footer class="bg-gray-900 dark:bg-gray-950 text-white">
-      <div class="max-w-7xl mx-auto px-4 py-8 text-center">
-        <p class="text-lg mb-4">
-          <strong class="text-bitcoin">{{ store.store_name }}</strong> - {{ store.owner_name }}
-        </p>
-
-        <!-- 연락처 정보 -->
-        <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
-          {% if store.owner_phone %}
-          <span class="flex items-center">
-            <i class="fas fa-phone mr-2"></i>{{ store.owner_phone }}
-          </span>
-          {% endif %}
-          {% if store.owner_email %}
-          <span class="flex items-center">
-            <i class="fas fa-envelope mr-2"></i>{{ store.owner_email }}
-          </span>
-          {% endif %}
-          {% if store.chat_channel %}
-          <span>
-            <a href="{{ store.chat_channel }}" target="_blank" class="text-white hover:text-bitcoin transition-colors flex items-center">
-              <i class="fas fa-comments mr-2"></i>소통채널
-            </a>
-          </span>
-          {% endif %}
-        </div>
-
-        <!-- 사업자 정보 -->
-        {% if store.business_license_number or store.telecommunication_sales_number %}
-        <div class="flex flex-wrap justify-center items-center gap-6 mb-6 text-sm text-gray-400">
-          {% if store.business_license_number %}
-          <span class="flex items-center">
-            <i class="fas fa-building mr-2"></i>사업자등록번호: {{ store.business_license_number }}
-          </span>
-          {% endif %}
-          {% if store.telecommunication_sales_number %}
-          <span class="flex items-center">
-            <i class="fas fa-certificate mr-2"></i>통신판매업번호: {{ store.telecommunication_sales_number }}
-          </span>
-          {% endif %}
-        </div>
-        {% endif %}
-
-        <!-- 사이트 공통 푸터 -->
-        <div class="border-t border-gray-700 pt-4">
-          <div class="flex flex-col md:flex-row justify-between items-center">
-            <!-- 카피라이트 -->
-            <p class="text-gray-400 text-sm">
-              {% if site_settings and site_settings.footer_copyright %}
-                {{ site_settings.footer_copyright }}
-              {% else %}
-                © {% now "Y" %} SatoShop. All rights reserved.
-              {% endif %}
-            </p>
-            
-            <!-- 법적 문서 링크 (가운데) -->
-            {% if documents %}
-            <div class="mt-4 md:mt-0">
-              <div class="flex flex-wrap justify-center gap-4 md:gap-6">
-                {% if documents.terms %}
-                  <a href="{% url 'myshop:document' 'terms' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
-                    {{ documents.terms.title }}
-                  </a>
-                {% endif %}
-                
-                {% if documents.privacy %}
-                  <a href="{% url 'myshop:document' 'privacy' %}" class="text-red-400 font-bold hover:text-red-300 text-sm transition-colors duration-200">
-                    {{ documents.privacy.title }}
-                  </a>
-                {% endif %}
-                
-                {% if documents.refund %}
-                  <a href="{% url 'myshop:document' 'refund' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
-                    {{ documents.refund.title }}
-                  </a>
-                {% endif %}
-              </div>
-            </div>
-            {% endif %}
-            
-            <!-- 비트코인 아이콘 (오른쪽) -->
-            <div class="flex items-center mt-4 md:mt-0">
-              <span class="text-gray-400 text-sm mr-2">Powered by</span>
-              <i class="fab fa-bitcoin text-bitcoin text-lg"></i>
-              <span class="text-gray-400 text-sm ml-1">Bitcoin Lightning & SatoShop</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
   </div>
+{% endblock %}
 
-  <!-- 스토어 전용 JavaScript -->
-  <script>
-    // Django URL과 CSRF 토큰을 전역 변수로 설정
-    window.csrfToken = '{{ csrf_token }}';
-    window.logoutUrl = "{% url 'accounts:logout' %}";
-    window.loginUrl = "{% url 'accounts:login' %}";
-    window.signupUrl = "{% url 'accounts:signup' %}";
-    window.homeUrl = "{% url 'myshop:home' %}";
-    {% if store.store_id %}
-    window.storeId = "{{ store.store_id }}";
+{% block footer %}
+<!-- 스토어 전용 푸터 -->
+<footer class="bg-gray-900 dark:bg-gray-950 text-white">
+  <div class="max-w-7xl mx-auto px-4 py-8 text-center">
+    <p class="text-lg mb-4">
+      <strong class="text-bitcoin">{{ store.store_name }}</strong> - {{ store.owner_name }}
+    </p>
+
+    <!-- 연락처 정보 -->
+    <div class="flex flex-wrap justify-center items-center gap-6 mb-6">
+      {% if store.owner_phone %}
+      <span class="flex items-center">
+        <i class="fas fa-phone mr-2"></i>{{ store.owner_phone }}
+      </span>
+      {% endif %}
+      {% if store.owner_email %}
+      <span class="flex items-center">
+        <i class="fas fa-envelope mr-2"></i>{{ store.owner_email }}
+      </span>
+      {% endif %}
+      {% if store.chat_channel %}
+      <span>
+        <a href="{{ store.chat_channel }}" target="_blank" class="text-white hover:text-bitcoin transition-colors flex items-center">
+          <i class="fas fa-comments mr-2"></i>소통채널
+        </a>
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- 사업자 정보 -->
+    {% if store.business_license_number or store.telecommunication_sales_number %}
+    <div class="flex flex-wrap justify-center items-center gap-6 mb-6 text-sm text-gray-400">
+      {% if store.business_license_number %}
+      <span class="flex items-center">
+        <i class="fas fa-building mr-2"></i>사업자등록번호: {{ store.business_license_number }}
+      </span>
+      {% endif %}
+      {% if store.telecommunication_sales_number %}
+      <span class="flex items-center">
+        <i class="fas fa-certificate mr-2"></i>통신판매업번호: {{ store.telecommunication_sales_number }}
+      </span>
+      {% endif %}
+    </div>
     {% endif %}
 
-    // 모바일 메뉴 토글 (개선된 버전)
-    document.addEventListener('DOMContentLoaded', function() {
-      const mobileMenuButton = document.getElementById('mobile-menu-button');
-      const mobileMenu = document.getElementById('mobile-menu');
-      
-      if (mobileMenuButton && mobileMenu) {
-        // 메뉴 토글 함수
-        function toggleMobileMenu(e) {
-          if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-          
-          // 토글 처리
-          const isHidden = mobileMenu.classList.contains('hidden');
-          if (isHidden) {
-            mobileMenu.classList.remove('hidden');
-          } else {
-            mobileMenu.classList.add('hidden');
-          }
-          
-          // 아이콘 변경
-          const icon = mobileMenuButton.querySelector('i');
-          if (icon) {
-            if (mobileMenu.classList.contains('hidden')) {
-              icon.className = 'fas fa-bars text-lg';
-            } else {
-              icon.className = 'fas fa-times text-lg';
-            }
-          }
-        }
+    <!-- 사이트 공통 푸터 -->
+    <div class="border-t border-gray-700 pt-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <!-- 카피라이트 -->
+        <p class="text-gray-400 text-sm">
+          {% if site_settings and site_settings.footer_copyright %}
+            {{ site_settings.footer_copyright }}
+          {% else %}
+            © {% now "Y" %} SatoShop. All rights reserved.
+          {% endif %}
+        </p>
         
-        // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
-        mobileMenuButton.addEventListener('click', toggleMobileMenu);
-        mobileMenuButton.addEventListener('touchend', function(e) {
+        <!-- 법적 문서 링크 (가운데) -->
+        {% if documents %}
+        <div class="mt-4 md:mt-0">
+          <div class="flex flex-wrap justify-center gap-4 md:gap-6">
+            {% if documents.terms %}
+              <a href="{% url 'myshop:document' 'terms' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                {{ documents.terms.title }}
+              </a>
+            {% endif %}
+            
+            {% if documents.privacy %}
+              <a href="{% url 'myshop:document' 'privacy' %}" class="text-red-400 font-bold hover:text-red-300 text-sm transition-colors duration-200">
+                {{ documents.privacy.title }}
+              </a>
+            {% endif %}
+            
+            {% if documents.refund %}
+              <a href="{% url 'myshop:document' 'refund' %}" class="text-gray-300 hover:text-white text-sm transition-colors duration-200">
+                {{ documents.refund.title }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- 비트코인 아이콘 (오른쪽) -->
+        <div class="flex items-center mt-4 md:mt-0">
+          <span class="text-gray-400 text-sm mr-2">Powered by</span>
+          <i class="fab fa-bitcoin text-bitcoin text-lg"></i>
+          <span class="text-gray-400 text-sm ml-1">Bitcoin Lightning & SatoShop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}
+
+<!-- 스토어 전용 JavaScript -->
+<script>
+  // Django URL과 CSRF 토큰을 전역 변수로 설정
+  window.csrfToken = '{{ csrf_token }}';
+  window.logoutUrl = "{% url 'accounts:logout' %}";
+  window.loginUrl = "{% url 'accounts:login' %}";
+  window.signupUrl = "{% url 'accounts:signup' %}";
+  window.homeUrl = "{% url 'myshop:home' %}";
+  {% if store.store_id %}
+  window.storeId = "{{ store.store_id }}";
+  {% endif %}
+
+  // 모바일 메뉴 토글 (개선된 버전)
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (mobileMenuButton && mobileMenu) {
+      // 메뉴 토글 함수
+      function toggleMobileMenu(e) {
+        if (e) {
           e.preventDefault();
           e.stopPropagation();
-          toggleMobileMenu();
-        });
+        }
         
-        // 메뉴 외부 클릭 시 닫기
-        document.addEventListener('click', function(e) {
-          if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
-            if (!mobileMenu.classList.contains('hidden')) {
-              mobileMenu.classList.add('hidden');
-              const icon = mobileMenuButton.querySelector('i');
-              if (icon) {
-                icon.className = 'fas fa-bars text-lg';
-              }
-            }
+        // 토글 처리
+        const isHidden = mobileMenu.classList.contains('hidden');
+        if (isHidden) {
+          mobileMenu.classList.remove('hidden');
+        } else {
+          mobileMenu.classList.add('hidden');
+        }
+        
+        // 아이콘 변경
+        const icon = mobileMenuButton.querySelector('i');
+        if (icon) {
+          if (mobileMenu.classList.contains('hidden')) {
+            icon.className = 'fas fa-bars text-lg';
+          } else {
+            icon.className = 'fas fa-times text-lg';
           }
-        });
-        
-        // ESC 키로 메뉴 닫기
-        document.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+        }
+      }
+      
+      // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
+      mobileMenuButton.addEventListener('click', toggleMobileMenu);
+      mobileMenuButton.addEventListener('touchend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMobileMenu();
+      });
+      
+      // 메뉴 외부 클릭 시 닫기
+      document.addEventListener('click', function(e) {
+        if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
+          if (!mobileMenu.classList.contains('hidden')) {
             mobileMenu.classList.add('hidden');
             const icon = mobileMenuButton.querySelector('i');
             if (icon) {
               icon.className = 'fas fa-bars text-lg';
             }
           }
-        });
-      } else {
-        console.error('Mobile menu elements not found');
-      }
-    });
-  </script>
-  <link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
-  <script src="{% static 'js/common.js' %}"></script>
-  <script src="{% static 'js/store-common.js' %}"></script>
+        }
+      });
+      
+      // ESC 키로 메뉴 닫기
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
+          mobileMenu.classList.add('hidden');
+          const icon = mobileMenuButton.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-bars text-lg';
+          }
+        }
+      });
+    } else {
+      console.error('Mobile menu elements not found');
+    }
+  });
+</script>
+<link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
+<script src="{% static 'js/common.js' %}"></script>
+<script src="{% static 'js/store-common.js' %}"></script>
 
-  {% block extra_js %}{% endblock %}
-</div>
-{% endblock %}
+{% block extra_js %}{% endblock %}
