@@ -79,7 +79,7 @@
                   <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
                          type="number"
                          name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][price]"
-                         min="0" placeholder="추가 가격" value="{{ choice.display_price }}">
+                         min="0" placeholder="추가 가격" value="{% if product.price_display == 'krw' and choice.price_krw is not None %}{{ choice.price_krw }}{% else %}{{ choice.price }}{% endif %}">
                 </div>
                 <div class="relative w-16">
                   <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">{{ product.price_unit }}</span>
