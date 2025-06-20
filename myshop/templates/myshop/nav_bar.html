@@ -52,11 +52,11 @@
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'accounts:mypage' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'accounts:mypage' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-user-cog mr-2"></i>마이페이지
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
             </a>
           </div>
@@ -70,22 +70,22 @@
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-box mr-2"></i>상품관리
             </a>
-            <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-shopping-cart mr-2"></i>주문관리
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-store mr-2"></i>스토어 관리
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-eye mr-2"></i>내 스토어 보기
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
@@ -102,11 +102,11 @@
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'stores:create_store' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="{% url 'stores:create_store' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-plus mr-2"></i>스토어 만들기
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
@@ -125,7 +125,7 @@
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
                 <i class="fas fa-moon theme-moon-icon mr-2"></i>
@@ -133,10 +133,10 @@
               </span>
             </a>
             <div class="border-t border-gray-600"></div>
-            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="redirectToSignup()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-user-plus mr-2"></i>회원가입
             </a>
-            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+            <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-sign-in-alt mr-2"></i>로그인
             </a>
           </div>
