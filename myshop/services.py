@@ -34,7 +34,7 @@ class UpbitExchangeService:
                         api_response_data=btc_data
                     )
                     
-                    # 오래된 데이터 정리 (최근 5개만 유지)
+                    # 오래된 데이터 정리 (최근 10개만 유지)
                     ExchangeRate.cleanup_old_rates()
                     
                     logger.info(f"환율 업데이트 성공: 1 BTC = {trade_price:,} KRW")
@@ -55,22 +55,13 @@ class UpbitExchangeService:
     
     @classmethod
     def get_current_rate(cls):
-        """현재 환율 가져오기 (필요시 API 호출)"""
-        settings = SiteSettings.get_settings()
-        
-        # 환율 업데이트가 필요한지 확인
-        if settings.should_update_exchange_rate():
-            # API에서 새로운 환율 가져오기
-            new_rate = cls.fetch_btc_krw_rate()
-            if new_rate:
-                return new_rate
-        
+        """현재 환율 가져오기 (DB에서만 조회, 외부 서버에서 crontab으로 업데이트됨)"""
         # 최신 환율 데이터 반환
         latest_rate = ExchangeRate.get_latest_rate()
         if latest_rate:
             return latest_rate
         
-        # 환율 데이터가 없으면 API에서 가져오기 시도
+        # 환율 데이터가 없으면 API에서 가져오기 시도 (초기 설정용)
         logger.warning("환율 데이터가 없습니다. API에서 가져오는 중...")
         return cls.fetch_btc_krw_rate()
     
@@ -98,4 +89,6 @@ class UpbitExchangeService:
             return rate.get_krw_from_sats(sats_amount)
         
         logger.error("환율 데이터를 가져올 수 없어 변환에 실패했습니다.")
-        return 0 
+        return 0
+
+ 

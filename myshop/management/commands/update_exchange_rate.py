@@ -8,7 +8,7 @@ import sys
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = '업비트 API에서 BTC/KRW 환율을 가져와 업데이트합니다 (GitHub Actions 최적화)'
+    help = '업비트 API에서 BTC/KRW 환율을 가져와 업데이트합니다 (외부 서버 환율 업데이터 최적화)'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -30,28 +30,16 @@ class Command(BaseCommand):
             logging.basicConfig(level=logging.DEBUG)
         
         self.stdout.write(
-            self.style.SUCCESS(f'🚀 [{start_time}] 환율 업데이트 시작 (GitHub Actions)')
+            self.style.SUCCESS(f'🚀 [{start_time}] 환율 업데이트 시작 (외부 서버 환율 업데이터)')
         )
 
         try:
-            # 사이트 설정 로드
-            settings = SiteSettings.get_settings()
-            self.stdout.write(f'⚙️ 환율 업데이트 간격: {settings.exchange_rate_update_interval}분')
-            
-            # 강제 업데이트가 아닌 경우 시간 간격 확인
-            if not options['force'] and not settings.should_update_exchange_rate():
-                latest_rate = ExchangeRate.get_latest_rate()
-                if latest_rate:
-                    time_since_last = timezone.now() - latest_rate.created_at
-                    self.stdout.write(
-                        self.style.WARNING(
-                            f'⏰ 아직 업데이트 시간이 되지 않았습니다.\n'
-                            f'   마지막 업데이트: {latest_rate.created_at}\n'
-                            f'   경과 시간: {time_since_last}\n'
-                            f'   업데이트 간격: {settings.exchange_rate_update_interval}분'
-                        )
-                    )
-                    return
+            # force 옵션이 없으면 안내 메시지만 출력
+            if not options['force']:
+                self.stdout.write(
+                    self.style.WARNING('ℹ️  외부 서버에서 crontab으로 자동 업데이트됩니다. 수동 업데이트하려면 --force 옵션을 사용하세요.')
+                )
+                return
 
             # 현재 환율 상태 확인
             current_rate = ExchangeRate.get_latest_rate()
@@ -98,7 +86,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(error_msg))
                 logger.error('환율 업데이트 실패: API 응답 없음')
                 
-                # GitHub Actions에서 실패를 명확히 알 수 있도록 exit code 설정
+                # 외부 서버에서 실패를 명확히 알 수 있도록 exit code 설정
                 sys.exit(1)
                 
         except Exception as e:
@@ -106,7 +94,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(error_msg))
             logger.error(f'환율 업데이트 오류: {e}', exc_info=True)
             
-            # GitHub Actions에서 실패를 명확히 알 수 있도록 exit code 설정
+            # 외부 서버에서 실패를 명확히 알 수 있도록 exit code 설정
             sys.exit(1)
 
         # 실행 시간 계산

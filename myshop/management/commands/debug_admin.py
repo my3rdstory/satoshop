@@ -37,7 +37,9 @@ class Command(BaseCommand):
             if SiteSettings in admin.site._registry:
                 self.stdout.write('✅ SiteSettings 어드민 등록됨')
                 settings = SiteSettings.get_settings()
-                self.stdout.write(f'⚙️ 환율 업데이트 간격: {settings.exchange_rate_update_interval}분')
+                self.stdout.write(f'🏠 사이트 제목: {settings.site_title}')
+                self.stdout.write(f'👥 회원가입 허용: {"✅" if settings.enable_user_registration else "❌"}')
+                self.stdout.write(f'🏪 스토어 생성 허용: {"✅" if settings.enable_store_creation else "❌"}')
             else:
                 self.stdout.write('❌ SiteSettings 어드민 미등록')
                 
