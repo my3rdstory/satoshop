@@ -3,9 +3,10 @@
 
 {% block title %}2단계: 스토어 정보 - SatoShop{% endblock %}
 
-{% block opengraph_meta %}
-  {% include 'myshop/components/simple_opengraph.html' with title="스토어 정보 입력" description="스토어 생성 2단계: 스토어 이름, 설명, 주인장 정보를 입력하여 고객들에게 보여질 스토어 정보를 설정하세요." %}
-{% endblock %}
+{% block og_title %}스토어 정보 입력 - SatoShop{% endblock %}
+{% block og_description %}스토어 생성 2단계: 스토어 이름, 설명, 주인장 정보를 입력하여 고객들에게 보여질 스토어 정보를 설정하세요.{% endblock %}
+{% block twitter_title %}스토어 정보 입력 - SatoShop{% endblock %}
+{% block twitter_description %}스토어 생성 2단계: 스토어 이름, 설명, 주인장 정보를 입력하여 고객들에게 보여질 스토어 정보를 설정하세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
