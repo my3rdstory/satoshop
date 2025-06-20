@@ -135,11 +135,11 @@ cat > "$INSTALL_DIR/$CONFIG_FILE" << EOF
 # 자동 생성됨: $(date)
 
 # 웹훅 인증 토큰 (자동 생성됨)
-SATOSHOP_WEBHOOK_TOKEN=$WEBHOOK_TOKEN
+WEBHOOK_TOKEN=$WEBHOOK_TOKEN
 
 # 웹훅 URL 목록 (쉼표로 구분, 선택사항)
 # 설정하지 않으면 기본 URL들을 사용합니다
-# SATOSHOP_WEBHOOK_URLS=https://your-domain1.com/webhook/update-exchange-rate/,https://your-domain2.com/webhook/update-exchange-rate/
+# WEBHOOK_URLS=https://your-domain1.com/webhook/update-exchange-rate/,https://your-domain2.com/webhook/update-exchange-rate/
 
 # 기본 URL 목록:
 # - https://satoshop-dev.onrender.com/webhook/update-exchange-rate/

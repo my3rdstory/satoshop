@@ -14,7 +14,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # 토큰 추출
-WEBHOOK_TOKEN=$(grep "SATOSHOP_WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
+WEBHOOK_TOKEN=$(grep "WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
 
 if [ -z "$WEBHOOK_TOKEN" ]; then
     echo "❌ 웹훅 토큰을 찾을 수 없습니다."

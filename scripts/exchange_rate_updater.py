@@ -28,18 +28,18 @@ class ExchangeRateUpdater:
     
     def __init__(self):
         # 환경 변수에서 설정 로드
-        self.webhook_token = os.getenv('SATOSHOP_WEBHOOK_TOKEN')
+        self.webhook_token = os.getenv('WEBHOOK_TOKEN')
         self.webhook_urls = self._load_webhook_urls()
         self.timeout = 30  # 30초 타임아웃
         
         if not self.webhook_token:
-            logger.error("SATOSHOP_WEBHOOK_TOKEN 환경 변수가 설정되지 않았습니다.")
+            logger.error("WEBHOOK_TOKEN 환경 변수가 설정되지 않았습니다.")
             sys.exit(1)
     
     def _load_webhook_urls(self) -> List[str]:
         """웹훅 URL 목록 로드"""
         # 환경 변수에서 URL 목록 가져오기 (쉼표로 구분)
-        urls_env = os.getenv('SATOSHOP_WEBHOOK_URLS', '')
+        urls_env = os.getenv('WEBHOOK_URLS', '')
         
         if urls_env:
             urls = [url.strip() for url in urls_env.split(',') if url.strip()]

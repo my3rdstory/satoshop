@@ -22,7 +22,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 
 # 기존 토큰 확인
-OLD_TOKEN=$(grep "SATOSHOP_WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
+OLD_TOKEN=$(grep "WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
 if [ -n "$OLD_TOKEN" ]; then
     echo "📋 기존 토큰: $OLD_TOKEN"
 fi
@@ -45,10 +45,10 @@ cp "$CONFIG_FILE" "$BACKUP_FILE"
 
 # 토큰 업데이트
 echo "🔄 설정 파일 업데이트"
-sed -i "s/SATOSHOP_WEBHOOK_TOKEN=.*/SATOSHOP_WEBHOOK_TOKEN=$NEW_TOKEN/" "$CONFIG_FILE"
+sed -i "s/WEBHOOK_TOKEN=.*/WEBHOOK_TOKEN=$NEW_TOKEN/" "$CONFIG_FILE"
 
 # 업데이트 확인
-UPDATED_TOKEN=$(grep "SATOSHOP_WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
+UPDATED_TOKEN=$(grep "WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
 if [ "$UPDATED_TOKEN" = "$NEW_TOKEN" ]; then
     echo "✅ 토큰 업데이트 성공!"
 else

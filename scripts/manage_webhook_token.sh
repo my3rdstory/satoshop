@@ -30,7 +30,7 @@ show_token() {
         exit 1
     fi
     
-    WEBHOOK_TOKEN=$(grep "SATOSHOP_WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
+    WEBHOOK_TOKEN=$(grep "WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
     
     if [ -z "$WEBHOOK_TOKEN" ]; then
         echo "❌ 웹훅 토큰을 찾을 수 없습니다."
@@ -91,7 +91,7 @@ test_webhook() {
         exit 1
     fi
     
-    WEBHOOK_TOKEN=$(grep "SATOSHOP_WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
+    WEBHOOK_TOKEN=$(grep "WEBHOOK_TOKEN=" "$CONFIG_FILE" | cut -d'=' -f2)
     
     if [ -z "$WEBHOOK_TOKEN" ]; then
         echo "❌ 웹훅 토큰을 찾을 수 없습니다."
