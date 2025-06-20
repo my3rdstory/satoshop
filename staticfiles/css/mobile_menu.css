@@ -1,0 +1,118 @@
+/* 모바일 메뉴 개선 스타일 */
+
+/* 모바일 메뉴 버튼 터치 최적화 */
+#mobile-menu-button {
+  /* 최소 터치 영역 확보 (44px x 44px) */
+  min-width: 44px;
+  min-height: 44px;
+  
+  /* 터치 반응성 개선 */
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+  /* 터치 지연 제거 */
+  touch-action: manipulation;
+  
+  /* 포커스 상태 개선 */
+  outline: none;
+}
+
+/* 모바일 메뉴 버튼 활성 상태 */
+#mobile-menu-button:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* 모바일 메뉴 버튼 아이콘 */
+#mobile-menu-button i {
+  pointer-events: none;
+  transition: transform 0.2s ease;
+}
+
+/* 모바일 메뉴 애니메이션 */
+#mobile-menu {
+  transition: all 0.3s ease-in-out;
+  transform-origin: top;
+}
+
+#mobile-menu.hidden {
+  opacity: 0;
+  transform: scaleY(0);
+  max-height: 0;
+  overflow: hidden;
+}
+
+#mobile-menu:not(.hidden) {
+  opacity: 1;
+  transform: scaleY(1);
+  max-height: 500px;
+}
+
+/* 모바일 메뉴 항목 터치 최적화 */
+#mobile-menu a,
+#mobile-menu button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  touch-action: manipulation;
+}
+
+/* 모바일에서만 적용되는 스타일 */
+@media (max-width: 768px) {
+  /* 모바일 메뉴 버튼 크기 조정 */
+  #mobile-menu-button {
+    width: 48px;
+    height: 48px;
+  }
+  
+  /* 모바일 메뉴 패딩 조정 */
+  #mobile-menu {
+    padding: 1rem;
+  }
+  
+  /* 모바일 메뉴 항목 간격 조정 */
+  #mobile-menu a,
+  #mobile-menu button {
+    padding: 0.75rem 1rem;
+    margin: 0.25rem 0;
+    border-radius: 0.5rem;
+  }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  #mobile-menu-button:active {
+    background-color: rgba(55, 65, 81, 0.8);
+  }
+}
+
+/* 고대비 모드 지원 */
+@media (prefers-contrast: high) {
+  #mobile-menu-button {
+    border: 2px solid currentColor;
+  }
+  
+  #mobile-menu-button:focus {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* 애니메이션 감소 설정 존중 */
+@media (prefers-reduced-motion: reduce) {
+  #mobile-menu-button,
+  #mobile-menu,
+  #mobile-menu-button i {
+    transition: none;
+  }
+  
+  #mobile-menu-button:active {
+    transform: none;
+  }
+} 

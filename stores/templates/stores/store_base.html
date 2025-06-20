@@ -187,68 +187,7 @@
         </div>
 
         <!-- 모바일 메뉴 -->
-        <div id="mobile-menu" class="md:hidden hidden border-t border-gray-700 py-4">
-          <!-- 네비게이션 링크 -->
-          <div class="space-y-2 mb-4">
-            <a href="{% url 'myshop:home' %}?force_home=1" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-home mr-3"></i>Hub 메인으로
-            </a>
-            <a href="{% url 'stores:browse_stores' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-search mr-3"></i>스토어 탐색
-            </a>
-            {% if store.store_id %}
-            <a href="{% url 'products:public_product_list' store.store_id %}" class="flex items-center px-3 py-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors border border-gray-600">
-              <i class="fas fa-list mr-3 text-xs"></i>상품 목록
-            </a>
-            {% endif %}
-          </div>
-
-          {% if user.is_authenticated %}
-          <div class="border-t border-gray-600 pt-4 space-y-2">
-            <a href="{% url 'accounts:mypage' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-user-cog mr-3"></i>마이페이지
-            </a>
-            {% if user_has_active_store and user_active_store.is_active %}
-            <a href="{% url 'stores:my_stores' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-store mr-3"></i>스토어 관리
-            </a>
-            <a href="{% url 'boards:notice_list' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-bullhorn mr-3"></i>사이트 공지사항 확인
-            </a>
-            {% else %}
-            <a href="{% url 'stores:create_store' %}" class="flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-plus mr-3"></i>스토어 만들기
-            </a>
-            {% endif %}
-            <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <span class="theme-toggle-menu-item flex items-center">
-                <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
-                <i class="fas fa-moon theme-moon-icon mr-3"></i>
-                <span class="theme-text">다크 모드로</span>
-              </span>
-            </button>
-            <button onclick="logout()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-sign-out-alt mr-3"></i>로그아웃
-            </button>
-          </div>
-          {% else %}
-          <div class="border-t border-gray-600 pt-4 space-y-2">
-            <button onclick="toggleTheme(); return false;" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <span class="theme-toggle-menu-item flex items-center">
-                <i class="fas fa-sun theme-sun-icon mr-3" style="display: none;"></i>
-                <i class="fas fa-moon theme-moon-icon mr-3"></i>
-                <span class="theme-text">다크 모드로</span>
-              </span>
-            </button>
-            <button onclick="redirectToSignup()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-user-plus mr-3"></i>회원가입
-            </button>
-            <button onclick="redirectToLogin()" class="w-full flex items-center px-3 py-2 text-gray-300 hover:bg-gray-700 rounded-lg transition-colors">
-              <i class="fas fa-sign-in-alt mr-3"></i>로그인
-            </button>
-          </div>
-          {% endif %}
-        </div>
+        {% include 'myshop/mobile_menu.html' %}
       </div>
     </nav>
 
@@ -385,74 +324,6 @@
   {% if store.store_id %}
   window.storeId = "{{ store.store_id }}";
   {% endif %}
-
-  // 모바일 메뉴 토글 (개선된 버전)
-  document.addEventListener('DOMContentLoaded', function() {
-    const mobileMenuButton = document.getElementById('mobile-menu-button');
-    const mobileMenu = document.getElementById('mobile-menu');
-    
-    if (mobileMenuButton && mobileMenu) {
-      // 메뉴 토글 함수
-      function toggleMobileMenu(e) {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        
-        // 토글 처리
-        const isHidden = mobileMenu.classList.contains('hidden');
-        if (isHidden) {
-          mobileMenu.classList.remove('hidden');
-        } else {
-          mobileMenu.classList.add('hidden');
-        }
-        
-        // 아이콘 변경
-        const icon = mobileMenuButton.querySelector('i');
-        if (icon) {
-          if (mobileMenu.classList.contains('hidden')) {
-            icon.className = 'fas fa-bars text-lg';
-          } else {
-            icon.className = 'fas fa-times text-lg';
-          }
-        }
-      }
-      
-      // 다양한 이벤트 리스너 추가 (모바일 호환성 향상)
-      mobileMenuButton.addEventListener('click', toggleMobileMenu);
-      mobileMenuButton.addEventListener('touchend', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleMobileMenu();
-      });
-      
-      // 메뉴 외부 클릭 시 닫기
-      document.addEventListener('click', function(e) {
-        if (!mobileMenu.contains(e.target) && !mobileMenuButton.contains(e.target)) {
-          if (!mobileMenu.classList.contains('hidden')) {
-            mobileMenu.classList.add('hidden');
-            const icon = mobileMenuButton.querySelector('i');
-            if (icon) {
-              icon.className = 'fas fa-bars text-lg';
-            }
-          }
-        }
-      });
-      
-      // ESC 키로 메뉴 닫기
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !mobileMenu.classList.contains('hidden')) {
-          mobileMenu.classList.add('hidden');
-          const icon = mobileMenuButton.querySelector('i');
-          if (icon) {
-            icon.className = 'fas fa-bars text-lg';
-          }
-        }
-      });
-    } else {
-      console.error('Mobile menu elements not found');
-    }
-  });
 </script>
 <link rel="stylesheet" href="{% static 'css/mobile-menu.css' %}">
 <script src="{% static 'js/common.js' %}"></script>
