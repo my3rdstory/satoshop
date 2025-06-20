@@ -262,9 +262,20 @@ def download_order_txt(request, order_number):
 ===============================================
 """
 
-    # HTTP 응답 생성
-    response = HttpResponse(content, content_type='text/plain; charset=utf-8')
+    # HTTP 응답 생성 (BOM 추가로 인코딩 문제 해결)
+    content_with_bom = '\ufeff' + content  # UTF-8 BOM 추가
+    response = HttpResponse(content_with_bom, content_type='text/plain; charset=utf-8')
+    
+    # 파일명 인코딩 처리 (모바일 브라우저 호환성 개선)
     filename = f"주문서_{order.order_number}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.txt"
-    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    try:
+        # RFC 5987 방식으로 UTF-8 파일명 인코딩
+        from urllib.parse import quote
+        encoded_filename = quote(filename.encode('utf-8'))
+        response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
+    except:
+        # 백업 방식: 영문 파일명 사용
+        fallback_filename = f"order_{order.order_number}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        response['Content-Disposition'] = f'attachment; filename="{fallback_filename}"'
     
     return response

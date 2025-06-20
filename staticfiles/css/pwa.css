@@ -1,0 +1,291 @@
+/* PWA 관련 스타일 */
+
+/* PWA 설치 모달 */
+.pwa-modal {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.pwa-modal-content {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: pwa-modal-appear 0.3s ease-out;
+}
+
+@keyframes pwa-modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* PWA 설치 단계 아이콘 */
+.pwa-step-icon {
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.pwa-step-icon:hover {
+  transform: scale(1.1);
+}
+
+/* PWA 설치 버튼 기본 스타일 */
+.pwa-install-button {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 10px 16px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.pwa-install-button:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.pwa-install-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.3);
+}
+
+.pwa-install-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.pwa-install-button:hover::before {
+  left: 100%;
+}
+
+/* PWA 설치 버튼 모바일 스타일 */
+.pwa-install-button-mobile {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.pwa-install-button-mobile:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* PWA 상태 표시 */
+.pwa-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pwa-status.installed {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.pwa-status.available {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+
+.pwa-status.not-supported {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+/* PWA 아이콘 애니메이션 */
+.pwa-icon {
+  transition: transform 0.3s ease;
+}
+
+.pwa-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* PWA 설치 프롬프트 배너 */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.4s ease-out;
+}
+
+.pwa-install-banner.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.pwa-install-banner .banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.pwa-install-banner .banner-text {
+  flex: 1;
+}
+
+.pwa-install-banner .banner-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pwa-install-banner .banner-description {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.pwa-install-banner .banner-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.pwa-install-banner .banner-button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.pwa-install-banner .banner-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.pwa-install-banner .banner-button.primary {
+  background: white;
+  color: #d97706;
+}
+
+.pwa-install-banner .banner-button.primary:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .pwa-install-banner {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .pwa-install-banner .banner-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .pwa-install-banner .banner-actions {
+    justify-content: stretch;
+  }
+  
+  .pwa-install-banner .banner-button {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .pwa-status.installed {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+  }
+  
+  .pwa-status.available {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+  
+  .pwa-status.not-supported {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+  }
+}
+
+/* PWA 애니메이션 클래스 */
+.pwa-fade-in {
+  animation: pwa-fade-in 0.5s ease-out;
+}
+
+.pwa-fade-out {
+  animation: pwa-fade-out 0.3s ease-in;
+}
+
+.pwa-slide-up {
+  animation: pwa-slide-up 0.4s ease-out;
+}
+
+@keyframes pwa-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pwa-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pwa-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+} 

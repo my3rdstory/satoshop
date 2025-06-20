@@ -1,0 +1,83 @@
+{% load static %}
+{% load static_versioned %}
+
+<!-- PWA Meta Tags -->
+<meta name="theme-color" content="#f59e0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SatoShop">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="SatoShop">
+<meta name="msapplication-TileColor" content="#f59e0b">
+<meta name="msapplication-tap-highlight" content="no">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="{% manifest_url %}">
+
+<!-- PWA Apple Touch Icons -->
+<link rel="apple-touch-icon" sizes="180x180" href="{% static 'images/icons/icon-192x192.png' %}">
+<link rel="icon" type="image/png" sizes="192x192" href="{% static 'images/icons/icon-192x192.png' %}">
+<link rel="icon" type="image/png" sizes="512x512" href="{% static 'images/icons/icon-512x512.png' %}">
+
+<!-- PWA CSS -->
+<link rel="stylesheet" href="{% static 'css/pwa.css' %}">
+
+<!-- iOS PWA 설치 안내 모달 -->
+<div id="ios-install-modal" class="pwa-modal fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="pwa-modal-content bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">앱 설치하기</h3>
+      <button onclick="hideIOSInstallModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="space-y-4">
+      <p class="text-gray-600 dark:text-gray-300">
+        BTCmap을 홈 화면에 추가하여 앱처럼 사용하세요!
+      </p>
+      
+      <div class="space-y-3">
+        <div class="flex items-center space-x-3">
+          <div class="pwa-step-icon bg-blue-100 dark:bg-blue-900 rounded-full p-2 flex-shrink-0">
+            <i class="fas fa-share text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900 dark:text-white">1. 공유 버튼 탭</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Safari 하단의 공유 아이콘을 탭하세요</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <div class="pwa-step-icon bg-green-100 dark:bg-green-900 rounded-full p-2 flex-shrink-0">
+            <i class="fas fa-plus-square text-green-600 dark:text-green-400"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900 dark:text-white">2. 홈 화면에 추가</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">"홈 화면에 추가" 옵션을 선택하세요</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <div class="pwa-step-icon bg-purple-100 dark:bg-purple-900 rounded-full p-2 flex-shrink-0">
+            <i class="fas fa-check text-purple-600 dark:text-purple-400"></i>
+          </div>
+          <div>
+            <p class="font-medium text-gray-900 dark:text-white">3. 추가 완료</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">우측 상단의 "추가" 버튼을 탭하세요</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex justify-end">
+        <button onclick="hideIOSInstallModal()" 
+                class="px-4 py-2 bg-bitcoin hover:bg-bitcoin-dark text-white rounded-md transition-colors">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PWA JavaScript -->
+<script src="{% static 'js/pwa.js' %}"></script> 

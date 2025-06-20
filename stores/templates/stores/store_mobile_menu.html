@@ -1,0 +1,85 @@
+{% load static %}
+
+<!-- 스토어 모바일 메뉴 컴포넌트 -->
+<div id="store-mobile-menu" class="md:hidden hidden bg-gray-800 border-t border-gray-700">
+  <div class="px-2 py-2 space-y-0.5">
+    
+    <!-- 네비게이션 링크 -->
+    <a href="{% url 'myshop:home' %}?force_home=1" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-home mr-2"></i>Hub 메인으로
+    </a>
+    
+    <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-search mr-2"></i>스토어 탐색
+    </a>
+    
+    <a href="{% url 'boards:notice_list' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-bullhorn mr-2"></i>공지사항
+    </a>
+    
+    <!-- 스토어 전용: 상품 목록 (모바일에서만 표시) -->
+    {% if store %}
+    <a href="{% url 'products:product_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+      <i class="fas fa-list mr-2 text-xs"></i>상품 목록
+    </a>
+    {% endif %}
+    
+    <!-- PWA 설치 버튼 (모바일) -->
+    <button id="store-pwa-install-button-mobile" style="display: none;" 
+            class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-download mr-2"></i>앱 설치
+    </button>
+    
+    <!-- iOS PWA 설치 안내 (모바일) -->
+    <div id="store-ios-install-instructions-mobile" style="display: none;" 
+         class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
+         onclick="showIOSInstallModal()">
+      <i class="fas fa-download mr-2"></i>앱 설치
+    </div>
+
+    {% if user.is_authenticated %}
+    <a href="{% url 'accounts:mypage' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-user-cog mr-2"></i>마이페이지
+    </a>
+    
+    {% if user_has_active_store and user_active_store.is_active %}
+    <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-box mr-2"></i>상품관리
+    </a>
+    <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-shopping-cart mr-2"></i>주문관리
+    </a>
+    <a href="{% url 'stores:my_stores' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-store mr-2"></i>스토어 관리
+    </a>
+    {% else %}
+    <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-plus mr-2"></i>스토어 만들기
+    </a>
+    {% endif %}
+    
+    <a href="#" onclick="logout()" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-sign-out-alt mr-2"></i>로그아웃
+    </a>
+    {% else %}
+    <a href="#" onclick="redirectToSignup()" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-user-plus mr-2"></i>회원가입
+    </a>
+    <a href="#" onclick="redirectToLogin()" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-sign-in-alt mr-2"></i>로그인
+    </a>
+    {% endif %}
+    
+    <a href="#" onclick="toggleTheme(); return false;" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <span class="theme-toggle-menu-item">
+        <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>
+        <i class="fas fa-moon theme-moon-icon mr-2"></i>
+        <span class="theme-text">다크 모드로</span>
+      </span>
+    </a>
+  </div>
+</div>
+
+<!-- 스토어 모바일 메뉴 CSS/JS -->
+<link rel="stylesheet" href="{% static 'css/mobile_menu.css' %}">
+<script src="{% static 'js/store_mobile_menu.js' %}"></script> 

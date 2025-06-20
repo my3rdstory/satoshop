@@ -8,6 +8,7 @@
 
 
 {% block extra_css %}
+{{ block.super }}
 <style>
   .store-header {
     background: var(--hero-gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
@@ -30,14 +31,19 @@
 <!-- 스토어 헤더 -->
 <section class="store-header py-16">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="text-center">
-      <h1 class="text-5xl font-bold mb-4 text-white">
-        <i class="fas fa-store mr-4"></i>
-        {{ store.store_name }}
-      </h1>
-      <p class="text-2xl text-white">
-        주인장: {{ store.owner_name }}
-      </p>
+    <div class="text-center relative">
+      <div class="flex flex-col items-center justify-center">
+        <div class="flex-shrink-0">
+          <h1 class="text-5xl font-bold mb-4 text-white">
+            <i class="fas fa-store mr-4"></i>
+            {{ store.store_name }}
+          </h1>
+        </div>
+        
+        <p class="text-2xl text-white mb-6">
+          주인장: {{ store.owner_name }}
+        </p>
+      </div>
     </div>
   </div>
 </section>
@@ -130,7 +136,7 @@
 </section>
 
 <!-- 상품 목록 -->
-<section class="py-8">
+<section id="products-section" class="py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center">
       <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>

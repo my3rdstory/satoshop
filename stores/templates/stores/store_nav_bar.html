@@ -1,36 +1,59 @@
-<!-- 플랫폼 브랜드 및 탐색 메뉴 컴포넌트 -->
+{% load static %}
+
+<!-- 스토어 브랜드 및 탐색 메뉴 컴포넌트 -->
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
   <div class="flex justify-between items-center h-16">
-    <!-- 브랜드 로고 -->
-    <div class="flex items-center">
-      <a class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors" href="{% url 'myshop:home' %}?force_home=1">
-        {% if site_settings and site_settings.site_logo_url %}
-          <img src="{{ site_settings.site_logo_url }}" alt="{% if site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}" class="h-8 w-auto">
-        {% else %}
-          <strong class="text-xl">
-            {% if site_settings and site_settings.site_title %}
-              {{ site_settings.site_title }}
-            {% else %}
-              SatoShop
-            {% endif %}
-          </strong>
-        {% endif %}
-        <span class="bg-gray-700 text-white text-xs px-2 py-1 rounded">Hub</span>
-      </a>
+    <!-- 왼쪽 네비게이션 -->
+    <div class="flex items-center space-x-0">
+      <!-- 네비게이션 드롭다운 (데스크톱) -->
+      <div class="relative group hidden md:block">
+        <button class="flex items-center px-3 py-2 text-gray-300 hover:text-bitcoin transition-colors">
+          <i class="fas fa-compass mr-2"></i>
+          내비게이션
+          <i class="fas fa-chevron-down ml-2 text-xs"></i>
+        </button>
+        <div class="absolute left-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+          <a href="{% url 'myshop:home' %}?force_home=1" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="fas fa-home mr-2"></i>Hub 메인으로
+          </a>
+          <a href="{% url 'stores:browse_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="fas fa-search mr-2"></i>스토어 탐색
+          </a>
+          <a href="{% url 'boards:notice_list' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="fas fa-bullhorn mr-2"></i>공지사항
+          </a>
+        </div>
+      </div>
+
+      <!-- 스토어 이름 -->
+      {% if store %}
+      <div class="flex items-center space-x-6">
+        <a href="{% url 'stores:store_detail' store_id=store.store_id %}" class="flex items-center space-x-2 text-white hover:text-bitcoin transition-colors">
+          <!-- 파비콘 이미지 -->
+          <img src="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}" 
+               alt="Store Icon" 
+               class="h-8 w-8 object-contain">
+          <span class="font-bold">{{ store.store_name }}</span>
+          <span class="px-2 py-1 bg-gray-700 text-white text-xs rounded">Store</span>
+        </a>
+        <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
+        <a href="{% url 'products:product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+          <i class="fas fa-list mr-2 text-xs"></i>
+          상품 목록
+        </a>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- 데스크톱 네비게이션 -->
-    <div class="hidden md:flex items-center space-x-8">
-      <!-- Left Navigation - 플랫폼 탐색 -->
-      <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'stores:browse_stores' %}">
-        <i class="fas fa-search mr-2"></i>스토어 탐색
-      </a>
-      <a class="text-gray-300 hover:text-bitcoin transition-colors flex items-center" href="{% url 'boards:notice_list' %}">
-        <i class="fas fa-bullhorn mr-2"></i>공지사항
-      </a>
+    <!-- 오른쪽 네비게이션 -->
+    <div class="flex items-center space-x-4">
+      <!-- 모바일 메뉴 버튼 -->
+      <button id="store-mobile-menu-button" class="md:hidden flex items-center justify-center w-12 h-12 text-gray-300 hover:text-bitcoin hover:bg-gray-800 transition-colors rounded-lg touch-manipulation focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700" style="min-height: 44px; min-width: 44px;">
+        <i class="fas fa-bars text-lg pointer-events-none"></i>
+      </button>
 
-      <!-- Right Navigation - 사용자별 메뉴 -->
-      <div class="flex items-center space-x-4">
+      <!-- 데스크톱 메뉴 -->
+      <div class="hidden md:flex items-center space-x-4">
         <!-- PWA 설치 버튼 -->
         <button id="pwa-install-button" style="display: none;" 
                 class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
@@ -43,7 +66,7 @@
              onclick="showIOSInstallModal()">
           <i class="fas fa-download mr-2"></i>앱 설치
         </div>
-        
+
         {% if user.is_authenticated %}
         <!-- 사용자 드롭다운 -->
         <div class="relative group">
@@ -118,7 +141,7 @@
         {% endif %}
 
         {% else %}
-        <!-- 비로그인 사용자 메뉴 -->
+        <!-- 비로그인 사용자 설정 드롭다운 -->
         <div class="relative group">
           <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
             <i class="fas fa-cog mr-2"></i>설정
@@ -144,15 +167,8 @@
         {% endif %}
       </div>
     </div>
-
-    <!-- 모바일 메뉴 버튼 -->
-    <div class="md:hidden">
-      <button id="mobile-menu-button" class="flex items-center justify-center w-12 h-12 text-gray-300 hover:text-bitcoin hover:bg-gray-800 transition-colors rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 active:bg-gray-700 touch-manipulation" style="min-height: 44px; min-width: 44px;">
-        <i class="fas fa-bars text-lg pointer-events-none"></i>
-      </button>
-    </div>
   </div>
 
-  <!-- 모바일 메뉴 -->
-  {% include 'myshop/mobile_menu.html' %}
+  <!-- 스토어 모바일 메뉴 -->
+  {% include 'stores/store_mobile_menu.html' %}
 </div> 
