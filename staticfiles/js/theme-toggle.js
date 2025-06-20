@@ -1,4 +1,11 @@
 // 완전히 새로운 테마 전환 시스템
+// 중복 로드 방지 - IIFE 사용
+(function() {
+  // 이미 로드되어 있으면 건너뛰기
+  if (typeof window.ThemeManager !== 'undefined') {
+    return;
+  }
+
 class ThemeManager {
     constructor() {
         // HTML에 이미 설정된 테마가 있으면 그것을 사용
@@ -188,4 +195,9 @@ window.themeManager = {
     get current() { return themeManager?.currentTheme || 'light'; },
     toggle: () => window.toggleTheme(),
     apply: (theme) => themeManager?.applyTheme(theme)
-}; 
+};
+
+// ThemeManager 클래스를 전역에 등록
+window.ThemeManager = ThemeManager;
+
+})(); // IIFE 닫기 
