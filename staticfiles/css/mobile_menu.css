@@ -1,7 +1,8 @@
 /* 모바일 메뉴 개선 스타일 */
 
 /* 모바일 메뉴 버튼 터치 최적화 */
-#mobile-menu-button {
+#mobile-menu-button,
+#store-mobile-menu-button {
   /* 최소 터치 영역 확보 (44px x 44px) */
   min-width: 44px;
   min-height: 44px;
@@ -23,19 +24,22 @@
 }
 
 /* 모바일 메뉴 버튼 활성 상태 */
-#mobile-menu-button:active {
+#mobile-menu-button:active,
+#store-mobile-menu-button:active {
   transform: scale(0.95);
   transition: transform 0.1s ease;
 }
 
 /* 모바일 메뉴 버튼 아이콘 */
-#mobile-menu-button i {
+#mobile-menu-button i,
+#store-mobile-menu-button i {
   pointer-events: none;
   transition: transform 0.2s ease;
 }
 
 /* 모바일 메뉴 애니메이션 */
-#mobile-menu {
+#mobile-menu,
+#store-mobile-menu {
   transition: all 0.3s ease-in-out;
   transform-origin: top;
   /* 화면 높이에서 나브바 높이를 뺀 만큼을 최대 높이로 설정 */
@@ -47,31 +51,37 @@
 }
 
 /* 웹킷 브라우저용 스크롤바 스타일링 */
-#mobile-menu::-webkit-scrollbar {
+#mobile-menu::-webkit-scrollbar,
+#store-mobile-menu::-webkit-scrollbar {
   width: 6px;
 }
 
-#mobile-menu::-webkit-scrollbar-track {
+#mobile-menu::-webkit-scrollbar-track,
+#store-mobile-menu::-webkit-scrollbar-track {
   background: transparent;
 }
 
-#mobile-menu::-webkit-scrollbar-thumb {
+#mobile-menu::-webkit-scrollbar-thumb,
+#store-mobile-menu::-webkit-scrollbar-thumb {
   background-color: rgba(156, 163, 175, 0.5);
   border-radius: 3px;
 }
 
-#mobile-menu::-webkit-scrollbar-thumb:hover {
+#mobile-menu::-webkit-scrollbar-thumb:hover,
+#store-mobile-menu::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.7);
 }
 
-#mobile-menu.hidden {
+#mobile-menu.hidden,
+#store-mobile-menu.hidden {
   opacity: 0;
   transform: scaleY(0);
   max-height: 0;
   overflow: hidden;
 }
 
-#mobile-menu:not(.hidden) {
+#mobile-menu:not(.hidden),
+#store-mobile-menu:not(.hidden) {
   opacity: 1;
   transform: scaleY(1);
   /* 콘텐츠에 맞게 자동으로 높이 조정, 최대 높이는 화면 크기에 맞춤 */
@@ -80,7 +90,9 @@
 
 /* 모바일 메뉴 항목 터치 최적화 */
 #mobile-menu a,
-#mobile-menu button {
+#mobile-menu button,
+#store-mobile-menu a,
+#store-mobile-menu button {
   min-height: 44px;
   display: flex;
   align-items: center;
@@ -91,13 +103,15 @@
 /* 모바일에서만 적용되는 스타일 */
 @media (max-width: 768px) {
   /* 모바일 메뉴 버튼 크기 조정 */
-  #mobile-menu-button {
+  #mobile-menu-button,
+  #store-mobile-menu-button {
     width: 48px;
     height: 48px;
   }
   
   /* 모바일 메뉴 패딩 조정 */
-  #mobile-menu {
+  #mobile-menu,
+  #store-mobile-menu {
     padding: 1rem;
     /* 작은 화면에서는 더 제한적인 최대 높이 */
     max-height: calc(100vh - 80px);
@@ -105,7 +119,9 @@
   
   /* 모바일 메뉴 항목 간격 조정 */
   #mobile-menu a,
-  #mobile-menu button {
+  #mobile-menu button,
+  #store-mobile-menu a,
+  #store-mobile-menu button {
     padding: 0.75rem 1rem;
     margin: 0.25rem 0;
     border-radius: 0.5rem;
@@ -114,31 +130,37 @@
 
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: dark) {
-  #mobile-menu-button:active {
+  #mobile-menu-button:active,
+  #store-mobile-menu-button:active {
     background-color: rgba(55, 65, 81, 0.8);
   }
   
   /* 다크 모드에서 스크롤바 색상 조정 */
-  #mobile-menu {
+  #mobile-menu,
+  #store-mobile-menu {
     scrollbar-color: rgba(107, 114, 128, 0.5) transparent;
   }
   
-  #mobile-menu::-webkit-scrollbar-thumb {
+  #mobile-menu::-webkit-scrollbar-thumb,
+  #store-mobile-menu::-webkit-scrollbar-thumb {
     background-color: rgba(107, 114, 128, 0.5);
   }
   
-  #mobile-menu::-webkit-scrollbar-thumb:hover {
+  #mobile-menu::-webkit-scrollbar-thumb:hover,
+  #store-mobile-menu::-webkit-scrollbar-thumb:hover {
     background-color: rgba(107, 114, 128, 0.7);
   }
 }
 
 /* 고대비 모드 지원 */
 @media (prefers-contrast: high) {
-  #mobile-menu-button {
+  #mobile-menu-button,
+  #store-mobile-menu-button {
     border: 2px solid currentColor;
   }
   
-  #mobile-menu-button:focus {
+  #mobile-menu-button:focus,
+  #store-mobile-menu-button:focus {
     outline: 3px solid currentColor;
     outline-offset: 2px;
   }
@@ -148,11 +170,15 @@
 @media (prefers-reduced-motion: reduce) {
   #mobile-menu-button,
   #mobile-menu,
-  #mobile-menu-button i {
+  #mobile-menu-button i,
+  #store-mobile-menu-button,
+  #store-mobile-menu,
+  #store-mobile-menu-button i {
     transition: none;
   }
   
-  #mobile-menu-button:active {
+  #mobile-menu-button:active,
+  #store-mobile-menu-button:active {
     transform: none;
   }
 } 

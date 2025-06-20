@@ -26,8 +26,8 @@
     <meta name="twitter:description" content="{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
     <meta name="twitter:image" content="{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
     
-    <!-- PWA 매니페스트 -->
-    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <!-- PWA 관련 설정 -->
+    {% include 'myshop/components/pwa.html' %}
     
     <!-- 파비콘 -->
     <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
@@ -143,20 +143,7 @@
     {% endblock %}
   </div>
 
-  <!-- iOS PWA 설치 안내 모달 -->
-  <div id="ios-install-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
-      <h3 class="text-lg font-bold mb-4 text-gray-900 dark:text-white">앱 설치 방법</h3>
-      <div class="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
-        <p>1. Safari에서 <i class="fas fa-share text-blue-500"></i> 공유 버튼을 누르세요</p>
-        <p>2. "홈 화면에 추가"를 선택하세요</p>
-        <p>3. "추가" 버튼을 누르세요</p>
-      </div>
-      <button onclick="closeIOSInstallModal()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-        확인
-      </button>
-    </div>
-  </div>
+
 
   <!-- 스토어 전용 JavaScript -->
   <script>

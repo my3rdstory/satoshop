@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const icon = mobileMenuButton.querySelector('i');
       if (icon) {
         if (mobileMenu.classList.contains('hidden')) {
-          icon.className = 'fas fa-bars text-xl pointer-events-none';
+          icon.className = 'fas fa-bars text-lg pointer-events-none';
         } else {
-          icon.className = 'fas fa-times text-xl pointer-events-none';
+          icon.className = 'fas fa-times text-lg pointer-events-none';
         }
       }
     }
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
           mobileMenu.classList.add('hidden');
           const icon = mobileMenuButton.querySelector('i');
           if (icon) {
-            icon.className = 'fas fa-bars text-xl pointer-events-none';
+            icon.className = 'fas fa-bars text-lg pointer-events-none';
           }
         }
       }
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileMenu.classList.add('hidden');
         const icon = mobileMenuButton.querySelector('i');
         if (icon) {
-          icon.className = 'fas fa-bars text-xl pointer-events-none';
+          icon.className = 'fas fa-bars text-lg pointer-events-none';
         }
       }
     });
