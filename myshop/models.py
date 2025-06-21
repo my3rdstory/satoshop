@@ -2,7 +2,17 @@ from django.db import models
 from django.core.exceptions import ValidationError
 import re
 from django.utils import timezone
+from django.contrib.auth.models import User
+from decimal import Decimal
+import uuid
+import os
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.mail import send_mail
+import logging
 
+logger = logging.getLogger(__name__)
 
 def get_current_year_copyright():
     """현재 연도로 기본 저작권 문구 생성"""
@@ -71,6 +81,45 @@ class ExchangeRate(models.Model):
         btc_amount = sats_amount / 100_000_000
         krw_amount = btc_amount * float(self.btc_krw_rate)
         return int(krw_amount)
+
+@receiver(post_save, sender=ExchangeRate)
+def send_exchange_rate_notification(sender, instance, created, **kwargs):
+    """환율 데이터 저장 시 이메일 알림 전송"""
+    if created:  # 새로 생성된 경우만
+        try:
+            notification_email = getattr(settings, 'EXCHANGE_RATE_NOTIFICATION_EMAIL', 'satoshopkr@gmail.com')
+            
+            subject = f'[Satoshop] 환율 업데이트 알림 - {instance.created_at.strftime("%Y-%m-%d %H:%M:%S")}'
+            
+            message = f"""
+안녕하세요, Satoshop 관리자님!
+
+새로운 환율 데이터가 성공적으로 저장되었습니다.
+
+📊 환율 정보:
+- BTC/KRW 환율: {instance.btc_krw_rate:,} KRW
+- 업데이트 시간: {instance.created_at.strftime('%Y년 %m월 %d일 %H시 %M분 %S초')}
+- 데이터 소스: 업비트 API
+
+✅ 환율 데이터 저장이 성공적으로 완료되었습니다.
+
+---
+이 메일은 자동으로 발송된 알림입니다.
+Satoshop 시스템에서 발송됨
+            """.strip()
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[notification_email],
+                fail_silently=False,
+            )
+            
+            logger.info(f"환율 알림 이메일 전송 성공: {notification_email} - 환율: {instance.btc_krw_rate:,} KRW")
+            
+        except Exception as e:
+            logger.error(f"환율 알림 이메일 전송 실패: {str(e)}")
 
 class SiteSettings(models.Model):
     """사이트 전역 설정"""
@@ -347,8 +396,6 @@ class SiteSettings(models.Model):
         """현재 사이트 설정 가져오기"""
         settings, created = cls.objects.get_or_create(pk=1)
         return settings
-    
-
     
     def get_youtube_embed_url(self):
         """유튜브 임베드 URL 생성 (UI 요소 최대한 숨김)"""

@@ -58,6 +58,7 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **실시간 결제 확인**: 자동 결제 상태 추적
 - **인보이스 관리**: 결제 내역 및 상태 관리
 - **환율 자동 업데이트**: 업비트 API를 통한 BTC/KRW 환율 자동 갱신
+- **환율 이메일 알림**: 환율 데이터 저장 시 자동 이메일 알림 전송
 
 ### 🛒 주문 관리
 - **장바구니 기능**: 다중 스토어 상품 동시 주문
@@ -296,6 +297,21 @@ HOTLINK_PROTECTION_ENABLED=True
 HOTLINK_ALLOWED_DOMAINS=trusted-partner.com,cdn.example.com
 ```
 
+### Gmail 이메일 설정
+
+```env
+# Gmail SMTP 설정 (환율 알림용)
+EMAIL_HOST_USER=satoshopkr@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+DEFAULT_FROM_EMAIL=satoshopkr@gmail.com
+EXCHANGE_RATE_NOTIFICATION_EMAIL=satoshopkr@gmail.com
+```
+
+> **Gmail 앱 비밀번호 생성 방법**:
+> 1. Google 계정 → 보안 → 2단계 인증 활성화
+> 2. 앱 비밀번호 생성 → "메일" 선택
+> 3. 생성된 16자리 비밀번호를 `EMAIL_HOST_PASSWORD`에 설정
+
 ### 관리자 계정 설정 (배포용)
 
 ```env
@@ -433,6 +449,15 @@ uv run python manage.py update_exchange_rate --force
 
 # 환율 업데이트 상태 확인
 uv run python manage.py update_exchange_rate --verbose
+
+# 환율 이메일 알림 테스트
+uv run python manage.py test_exchange_rate_email --test-only
+
+# 실제 환율 업데이트와 함께 이메일 테스트
+uv run python manage.py test_exchange_rate_email
+
+# 특정 이메일로 테스트 전송
+uv run python manage.py test_exchange_rate_email --email admin@example.com
 ```
 
 #### 정적 파일 관리
