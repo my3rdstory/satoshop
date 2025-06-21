@@ -26,7 +26,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('🧪 환율 이메일 알림 테스트 시작'))
         
-        test_email = options.get('email') or getattr(settings, 'EXCHANGE_RATE_NOTIFICATION_EMAIL', 'satoshopkr@gmail.com')
+        # 사용자가 이메일을 지정하지 않은 경우 SiteSettings에서 가져오기
+        if options.get('email'):
+            test_email = options.get('email')
+        else:
+            from myshop.models import SiteSettings
+            site_settings = SiteSettings.get_settings()
+            test_email = site_settings.exchange_rate_notification_email
         
         if options['test_only']:
             # 테스트 이메일만 전송

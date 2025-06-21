@@ -304,13 +304,14 @@ HOTLINK_ALLOWED_DOMAINS=trusted-partner.com,cdn.example.com
 EMAIL_HOST_USER=satoshopkr@gmail.com
 EMAIL_HOST_PASSWORD=your-gmail-app-password
 DEFAULT_FROM_EMAIL=satoshopkr@gmail.com
-EXCHANGE_RATE_NOTIFICATION_EMAIL=satoshopkr@gmail.com
 ```
 
 > **Gmail 앱 비밀번호 생성 방법**:
 > 1. Google 계정 → 보안 → 2단계 인증 활성화
 > 2. 앱 비밀번호 생성 → "메일" 선택
 > 3. 생성된 16자리 비밀번호를 `EMAIL_HOST_PASSWORD`에 설정
+> 
+> **환율 알림 이메일 설정**: Django 관리자 패널(`/admin/`) → 사이트 설정에서 알림 받을 이메일 주소를 설정하세요.
 
 ### 관리자 계정 설정 (배포용)
 

@@ -78,6 +78,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('blink_api_doc_url',),
             'description': '스토어 생성 시 사용자에게 제공되는 블링크 API 관련 문서 링크'
         }),
+        ('환율 알림 설정', {
+            'fields': ('exchange_rate_notification_email',),
+            'description': '환율 데이터 업데이트 시 알림을 받을 이메일 주소를 설정합니다.'
+        }),
 
         ('고급 설정', {
             'fields': ('created_at', 'updated_at'),

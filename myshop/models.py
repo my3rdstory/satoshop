@@ -87,7 +87,9 @@ def send_exchange_rate_notification(sender, instance, created, **kwargs):
     """환율 데이터 저장 시 이메일 알림 전송"""
     if created:  # 새로 생성된 경우만
         try:
-            notification_email = getattr(settings, 'EXCHANGE_RATE_NOTIFICATION_EMAIL', 'satoshopkr@gmail.com')
+            # SiteSettings에서 알림 이메일 주소 가져오기
+            site_settings = SiteSettings.get_settings()
+            notification_email = site_settings.exchange_rate_notification_email
             
             subject = f'[Satoshop] 환율 업데이트 알림 - {instance.created_at.strftime("%Y-%m-%d %H:%M:%S")}'
             
@@ -348,6 +350,13 @@ class SiteSettings(models.Model):
         default="#",
         verbose_name="블링크 API 문서 링크",
         help_text="스토어 생성 시 블링크 API 정보 얻는 방법 문서 링크"
+    )
+    
+    # 환율 알림 이메일 설정
+    exchange_rate_notification_email = models.EmailField(
+        default="satoshopkr@gmail.com",
+        verbose_name="환율 알림 이메일",
+        help_text="환율 데이터 업데이트 시 알림을 받을 이메일 주소"
     )
     
     # 메타 정보
