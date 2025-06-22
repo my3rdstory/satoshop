@@ -445,6 +445,19 @@ gunicorn satoshop.wsgi:application --bind 0.0.0.0:8000
 - **회원가입 허용/차단**: 새 사용자 등록 제어
 - **스토어 생성 허용/차단**: 새 스토어 개설 제어
 
+#### 텔레그램 환율 알림 설정
+- **텔레그램 봇 토큰**: BotFather에서 생성한 봇 API 토큰
+- **텔레그램 채팅 ID**: 알림을 받을 개인 또는 그룹 채팅 ID
+- **즉시 알림 활성화**: 환율 업데이트 시 실시간 텔레그램 알림
+
+##### 텔레그램 봇 설정 방법:
+1. **봇 생성**: 텔레그램에서 @BotFather에게 `/newbot` 명령어로 봇 생성
+2. **봇 토큰 복사**: BotFather가 제공하는 API 토큰을 사이트 설정에 입력
+3. **채팅 ID 확인**: 
+   - 개인: @userinfobot에게 메시지 보내서 ID 확인
+   - 그룹: 봇을 그룹에 추가 후 `/start` 명령어로 그룹 ID 확인
+4. **테스트**: `uv run python manage.py test_telegram_bot` 명령어로 연결 확인
+
 ### 관리 명령어
 
 #### 환율 관리
@@ -458,17 +471,20 @@ uv run python manage.py update_exchange_rate --force
 # 환율 업데이트 상태 확인
 uv run python manage.py update_exchange_rate --verbose
 
-# 환율 요약 이메일 전송 (1시간마다 최근 5개 데이터)
-uv run python manage.py send_hourly_exchange_rate_summary
+# 텔레그램 봇 연결 및 알림 테스트 (전체 테스트)
+uv run python manage.py test_telegram_bot
 
-# 사용자 정의 옵션으로 환율 요약 이메일 전송
-uv run python manage.py send_hourly_exchange_rate_summary --hours 2 --limit 10
+# 텔레그램 봇 연결만 테스트
+uv run python manage.py test_telegram_bot --test-connection
 
-# 특정 이메일로 환율 요약 전송
-uv run python manage.py send_hourly_exchange_rate_summary --email admin@example.com
+# 텔레그램 테스트 메시지 전송
+uv run python manage.py test_telegram_bot --send-test-message
 
-# 환율 이메일 알림 테스트 (개별 알림 - 현재 비활성화됨)
-uv run python manage.py test_exchange_rate_email --test-only
+# 현재 환율로 텔레그램 알림 테스트
+uv run python manage.py test_telegram_bot --send-rate-update
+
+# 특정 봇 토큰과 채팅 ID로 테스트
+uv run python manage.py test_telegram_bot --bot-token YOUR_BOT_TOKEN --chat-id YOUR_CHAT_ID
 ```
 
 #### 정적 파일 관리

@@ -6,6 +6,66 @@ from .models import ExchangeRate, SiteSettings
 
 logger = logging.getLogger(__name__)
 
+class TelegramService:
+    """텔레그램 봇 서비스"""
+    
+    @classmethod
+    def send_message(cls, bot_token, chat_id, message, parse_mode='Markdown'):
+        """텔레그램 메시지 전송"""
+        try:
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                'chat_id': chat_id,
+                'text': message,
+                'parse_mode': parse_mode
+            }
+            
+            response = requests.post(url, json=payload, timeout=30)
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('ok'):
+                logger.info(f"텔레그램 메시지 전송 성공: {chat_id}")
+                return True
+            else:
+                logger.error(f"텔레그램 API 오류: {result.get('description', 'Unknown error')}")
+                return False
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"텔레그램 메시지 전송 실패: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"텔레그램 메시지 전송 중 오류: {e}")
+            return False
+    
+    @classmethod
+    def test_bot_connection(cls, bot_token):
+        """텔레그램 봇 연결 테스트"""
+        try:
+            url = f"https://api.telegram.org/bot{bot_token}/getMe"
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('ok'):
+                bot_info = result.get('result', {})
+                return {
+                    'success': True,
+                    'bot_name': bot_info.get('first_name', 'Unknown'),
+                    'bot_username': bot_info.get('username', 'Unknown')
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': result.get('description', 'Unknown error')
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+
 class UpbitExchangeService:
     """업비트 환율 서비스"""
     
