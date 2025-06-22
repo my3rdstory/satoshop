@@ -11,19 +11,6 @@
     </a>
     {% endif %}
     
-    <!-- PWA 설치 버튼 (모바일) -->
-    <button id="site-pwa-install-button-mobile" style="display: none;" 
-            class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </button>
-    
-    <!-- iOS PWA 설치 안내 (모바일) -->
-    <div id="site-ios-install-instructions-mobile" style="display: none;" 
-         class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
-         onclick="showIOSInstallModal()">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </div>
-    
     <a href="{% url 'stores:browse_stores' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-search mr-2"></i>스토어 탐색
     </a>

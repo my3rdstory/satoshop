@@ -26,8 +26,7 @@
     <meta name="twitter:description" content="{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
     <meta name="twitter:image" content="{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
     
-    <!-- PWA 관련 설정 -->
-    {% include 'myshop/components/pwa.html' %}
+
     
     <!-- 파비콘 -->
     <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">

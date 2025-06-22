@@ -54,18 +54,6 @@
 
       <!-- 데스크톱 메뉴 -->
       <div class="hidden md:flex items-center space-x-4">
-        <!-- PWA 설치 버튼 -->
-        <button id="pwa-install-button" style="display: none;" 
-                class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
-          <i class="fas fa-download mr-2"></i>앱 설치
-        </button>
-        
-        <!-- iOS PWA 설치 안내 -->
-        <div id="ios-install-instructions" style="display: none;" 
-             class="flex items-center text-gray-300 hover:text-bitcoin transition-colors cursor-pointer"
-             onclick="showIOSInstallModal()">
-          <i class="fas fa-download mr-2"></i>앱 설치
-        </div>
 
         {% if user.is_authenticated %}
         <!-- 사용자 드롭다운 -->
