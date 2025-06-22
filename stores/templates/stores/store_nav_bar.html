@@ -37,7 +37,7 @@
           <span class="px-2 py-1 bg-gray-700 text-white text-xs rounded">Store</span>
         </a>
         <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
-        <a href="{% url 'products:product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+        <a href="{% url 'products:public_product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-list mr-2 text-xs"></i>
           상품 목록
         </a>
