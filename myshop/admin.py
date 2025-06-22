@@ -154,7 +154,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 @admin.register(ExchangeRate)
 class ExchangeRateAdmin(admin.ModelAdmin):
     """환율 관리 어드민"""
-    list_display = ['btc_krw_rate_formatted', 'created_at', 'is_recent']
+    list_display = ['btc_krw_rate_formatted', 'btc_usd_price_formatted', 'usd_krw_rate_formatted', 'created_at', 'is_recent']
     list_filter = ['created_at']
     search_fields = []
     readonly_fields = ['created_at']
@@ -165,6 +165,22 @@ class ExchangeRateAdmin(admin.ModelAdmin):
         return f"{obj.btc_krw_rate:,.0f} KRW"
     btc_krw_rate_formatted.short_description = 'BTC/KRW 환율'
     btc_krw_rate_formatted.admin_order_field = 'btc_krw_rate'
+    
+    def btc_usd_price_formatted(self, obj):
+        """BTC/USD 가격을 포맷팅하여 표시"""
+        if obj.btc_usd_price:
+            return f"${obj.btc_usd_price:,.2f}"
+        return "-"
+    btc_usd_price_formatted.short_description = 'BTC/USD 가격'
+    btc_usd_price_formatted.admin_order_field = 'btc_usd_price'
+    
+    def usd_krw_rate_formatted(self, obj):
+        """USD/KRW 환율을 포맷팅하여 표시"""
+        if obj.usd_krw_rate:
+            return f"{obj.usd_krw_rate:,.2f} KRW"
+        return "-"
+    usd_krw_rate_formatted.short_description = 'USD/KRW 환율'
+    usd_krw_rate_formatted.admin_order_field = 'usd_krw_rate'
     
     def is_recent(self, obj):
         """최근 업데이트 여부 표시"""

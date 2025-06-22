@@ -70,11 +70,38 @@ class UpbitExchangeService:
     """업비트 환율 서비스"""
     
     UPBIT_API_URL = "https://api.upbit.com/v1/ticker"
+    # 환율 API - 한국은행 공공데이터나 ExchangeRate-API 사용
+    USD_KRW_API_URL = "https://api.exchangerate-api.com/v4/latest/USD"
+    
+    @classmethod
+    def fetch_usd_krw_rate(cls):
+        """USD/KRW 환율 가져오기"""
+        try:
+            response = requests.get(cls.USD_KRW_API_URL, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            usd_krw_rate = data.get('rates', {}).get('KRW')
+            
+            if usd_krw_rate:
+                logger.info(f"USD/KRW 환율: 1 USD = {usd_krw_rate} KRW")
+                return float(usd_krw_rate)
+            else:
+                logger.error("USD/KRW 환율 데이터를 찾을 수 없습니다.")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            logger.error(f"USD/KRW 환율 API 호출 실패: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"USD/KRW 환율 처리 중 오류: {e}")
+            return None
     
     @classmethod
     def fetch_btc_krw_rate(cls):
-        """업비트 API에서 BTC/KRW 환율 가져오기"""
+        """업비트 API에서 BTC/KRW 환율 가져오기 (달러 정보 포함)"""
         try:
+            # BTC/KRW 환율 가져오기
             response = requests.get(
                 cls.UPBIT_API_URL,
                 params={'markets': 'KRW-BTC'},
@@ -88,10 +115,25 @@ class UpbitExchangeService:
                 trade_price = btc_data.get('trade_price')
                 
                 if trade_price:
-                    # 환율 데이터 저장
+                    # USD/KRW 환율 가져오기
+                    usd_krw_rate = cls.fetch_usd_krw_rate()
+                    
+                    # API 응답 데이터에 달러 정보 추가
+                    enhanced_api_data = btc_data.copy()
+                    btc_usd_price = None
+                    
+                    if usd_krw_rate:
+                        btc_usd_price = trade_price / usd_krw_rate
+                        enhanced_api_data['usd_krw_rate'] = usd_krw_rate
+                        enhanced_api_data['btc_usd_price'] = btc_usd_price
+                        logger.info(f"BTC/USD 가격: ${btc_usd_price:,.2f}")
+                    
+                    # 환율 데이터 저장 (달러 정보를 별도 필드에 저장)
                     exchange_rate = ExchangeRate.objects.create(
                         btc_krw_rate=Decimal(str(trade_price)),
-                        api_response_data=btc_data
+                        usd_krw_rate=Decimal(str(usd_krw_rate)) if usd_krw_rate else None,
+                        btc_usd_price=Decimal(str(btc_usd_price)) if btc_usd_price else None,
+                        api_response_data=enhanced_api_data
                     )
                     
                     # 오래된 데이터 정리 (최근 10개만 유지)
