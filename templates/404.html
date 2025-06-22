@@ -1,104 +1,173 @@
 {% extends 'myshop/base.html' %}
 {% load static %}
 
-{% block title %}페이지를 찾을 수 없습니다 - SatoShop{% endblock %}
+{% block title %}페이지를 찾을 수 없습니다 - {% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
-  <div class="max-w-lg w-full text-center">
-    <!-- 404 아이콘 -->
-    <div class="mb-8">
-      <div class="inline-flex items-center justify-center w-24 h-24 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-6">
-        <i class="fas fa-exclamation-triangle text-4xl text-orange-500"></i>
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center px-4">
+  <div class="max-w-2xl w-full">
+    <!-- 메인 404 컨테이너 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12 text-center border border-gray-200 dark:border-gray-700">
+      
+      <!-- 404 애니메이션 아이콘 -->
+      <div class="mb-8">
+        <div class="relative inline-block">
+          <!-- 배경 원 -->
+          <div class="w-32 h-32 bg-gradient-to-br from-orange-100 to-red-100 dark:from-orange-900/30 dark:to-red-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <!-- 아이콘 -->
+            <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center animate-pulse">
+              <i class="fas fa-search text-2xl text-white"></i>
+            </div>
+          </div>
+          <!-- 떠다니는 점들 -->
+          <div class="absolute -top-2 -right-2 w-4 h-4 bg-orange-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+          <div class="absolute -bottom-2 -left-2 w-3 h-3 bg-red-400 rounded-full animate-bounce" style="animation-delay: 0.3s;"></div>
+        </div>
       </div>
       
       <!-- 404 텍스트 -->
-      <h1 class="text-6xl font-bold text-gray-900 dark:text-white mb-4">404</h1>
-      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-        페이지를 찾을 수 없습니다
-      </h2>
-      <p class="text-gray-600 dark:text-gray-400 mb-8">
-        요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.
-      </p>
-    </div>
-
-    <!-- 가능한 원인 설명 -->
-    <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-6 mb-8 text-left">
-      <h3 class="font-semibold text-orange-800 dark:text-orange-200 mb-3">다음과 같은 경우일 수 있습니다:</h3>
-      <ul class="space-y-2 text-orange-700 dark:text-orange-300">
-        <li class="flex items-start space-x-2">
-          <i class="fas fa-exclamation-circle text-orange-500 mt-0.5"></i>
-          <span>잘못된 URL을 입력하셨습니다</span>
-        </li>
-        <li class="flex items-start space-x-2">
-          <i class="fas fa-exclamation-circle text-orange-500 mt-0.5"></i>
-          <span>페이지가 삭제되거나 이동되었습니다</span>
-        </li>
-        <li class="flex items-start space-x-2">
-          <i class="fas fa-exclamation-circle text-orange-500 mt-0.5"></i>
-          <span>접근 권한이 없는 페이지입니다</span>
-        </li>
-        <li class="flex items-start space-x-2">
-          <i class="fas fa-exclamation-circle text-orange-500 mt-0.5"></i>
-          <span>임시적인 서버 오류가 발생했습니다</span>
-        </li>
-      </ul>
-    </div>
-    
-    <!-- 액션 버튼들 -->
-    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-6">
-      <a href="{% url 'myshop:home' %}" 
-         class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-        <i class="fas fa-home mr-2"></i>
-        홈페이지로 이동
-      </a>
-      
-      <button onclick="window.history.back()" 
-              class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>
-        이전 페이지로
-      </button>
-    </div>
-
-    <!-- 스토어 관련 링크 -->
-    {% if user.is_authenticated %}
-    <div class="mb-6">
-      <h4 class="font-medium text-gray-900 dark:text-white mb-3">유용한 링크</h4>
-      <div class="flex flex-wrap justify-center gap-2">
-        <a href="{% url 'stores:browse_stores' %}" 
-           class="inline-flex items-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-          <i class="fas fa-store mr-1"></i>
-          스토어 둘러보기
-        </a>
-        {% if user_has_active_store %}
-        <a href="{% url 'stores:my_stores' %}" 
-           class="inline-flex items-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-          <i class="fas fa-cog mr-1"></i>
-          내 스토어 관리
-        </a>
-        {% else %}
-        <a href="{% url 'stores:create_store' %}" 
-           class="inline-flex items-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-          <i class="fas fa-plus mr-1"></i>
-          스토어 만들기
-        </a>
-        {% endif %}
-        <a href="{% url 'accounts:mypage' %}" 
-           class="inline-flex items-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-          <i class="fas fa-user mr-1"></i>
-          마이페이지
-        </a>
+      <div class="mb-8">
+        <h1 class="text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 mb-4 leading-none">
+          404
+        </h1>
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          페이지를 찾을 수 없습니다
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+          요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.
+        </p>
       </div>
-    </div>
-    {% endif %}
-    
-    <!-- 문의 링크 -->
-    <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
-      <p class="text-sm text-gray-500 dark:text-gray-400">
-        문제가 지속되면 
-        <a href="mailto:support@satoshop.com" class="text-orange-500 hover:text-orange-600">고객센터</a>로 
-        문의해 주세요.
-      </p>
+
+      <!-- 주요 액션 버튼들 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <a href="{% url 'myshop:home' %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-red-600 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+          <i class="fas fa-home mr-3"></i>
+          홈페이지로 이동
+        </a>
+        
+        <button onclick="window.history.back()" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+          <i class="fas fa-arrow-left mr-3"></i>
+          이전 페이지로
+        </button>
+      </div>
+
+      <!-- 유용한 링크들 -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-8">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">유용한 링크</h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- 스토어 둘러보기 -->
+          <a href="{% url 'stores:browse_stores' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-orange-300 dark:hover:border-orange-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
+                <i class="fas fa-store text-orange-600 dark:text-orange-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400">스토어 둘러보기</span>
+            </div>
+          </a>
+
+          <!-- 공지사항 -->
+          <a href="{% url 'boards:notice_list' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors">
+                <i class="fas fa-bullhorn text-blue-600 dark:text-blue-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">공지사항</span>
+            </div>
+          </a>
+
+          {% if user.is_authenticated %}
+          <!-- 마이페이지 -->
+          <a href="{% url 'accounts:mypage' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                <i class="fas fa-user text-green-600 dark:text-green-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400">마이페이지</span>
+            </div>
+          </a>
+
+          <!-- 스토어 관련 링크 -->
+          {% if user_has_active_store %}
+          <a href="{% url 'stores:my_stores' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                <i class="fas fa-cog text-purple-600 dark:text-purple-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400">스토어 관리</span>
+            </div>
+          </a>
+          {% else %}
+          <a href="{% url 'stores:create_store' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                <i class="fas fa-plus text-purple-600 dark:text-purple-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400">스토어 만들기</span>
+            </div>
+          </a>
+          {% endif %}
+          
+          {% else %}
+          <!-- 로그인 -->
+          <a href="{% url 'accounts:login' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-green-300 dark:hover:border-green-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+                <i class="fas fa-sign-in-alt text-green-600 dark:text-green-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400">로그인</span>
+            </div>
+          </a>
+
+          <!-- 회원가입 -->
+          <a href="{% url 'accounts:signup' %}" 
+             class="group p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 border border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-700">
+            <div class="flex flex-col items-center text-center">
+              <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50 transition-colors">
+                <i class="fas fa-user-plus text-purple-600 dark:text-purple-400"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400">회원가입</span>
+            </div>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- 도움말 정보 -->
+      <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/10 dark:to-red-900/10 rounded-xl p-6 border border-orange-200 dark:border-orange-800">
+          <h4 class="font-semibold text-orange-800 dark:text-orange-200 mb-3 flex items-center">
+            <i class="fas fa-lightbulb mr-2"></i>
+            이런 경우일 수 있습니다
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-orange-700 dark:text-orange-300">
+            <div class="flex items-start space-x-2">
+              <i class="fas fa-exclamation-circle text-orange-500 mt-0.5 flex-shrink-0"></i>
+              <span>잘못된 URL을 입력하셨습니다</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <i class="fas fa-exclamation-circle text-orange-500 mt-0.5 flex-shrink-0"></i>
+              <span>페이지가 삭제되거나 이동되었습니다</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <i class="fas fa-exclamation-circle text-orange-500 mt-0.5 flex-shrink-0"></i>
+              <span>접근 권한이 없는 페이지입니다</span>
+            </div>
+            <div class="flex items-start space-x-2">
+              <i class="fas fa-exclamation-circle text-orange-500 mt-0.5 flex-shrink-0"></i>
+              <span>임시적인 서버 오류가 발생했습니다</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -106,10 +175,44 @@
 
 {% block extra_js %}
 <script>
-// 자동으로 이전 페이지로 돌아가는 기능 (5초 후)
-// 주석 처리: 사용자가 직접 선택하도록 함
-// setTimeout(() => {
-//   window.history.back();
-// }, 5000);
+document.addEventListener('DOMContentLoaded', function() {
+  // 페이지 로드 애니메이션
+  const container = document.querySelector('.max-w-2xl');
+  if (container) {
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(20px)';
+    
+    setTimeout(() => {
+      container.style.transition = 'all 0.6s ease-out';
+      container.style.opacity = '1';
+      container.style.transform = 'translateY(0)';
+    }, 100);
+  }
+  
+  // 뒤로가기 버튼 개선 - 히스토리가 없으면 홈으로
+  const backButton = document.querySelector('button[onclick="window.history.back()"]');
+  if (backButton && window.history.length <= 1) {
+    backButton.onclick = function() { 
+      window.location.href = "{% url 'myshop:home' %}"; 
+    };
+    const span = backButton.querySelector('i').nextSibling;
+    if (span) {
+      span.textContent = ' 홈으로 가기';
+    }
+  }
+  
+  // 키보드 단축키
+  document.addEventListener('keydown', function(e) {
+    // ESC 키로 홈으로 이동
+    if (e.key === 'Escape') {
+      window.location.href = "{% url 'myshop:home' %}";
+    }
+    // Backspace 키로 뒤로가기
+    if (e.key === 'Backspace' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      window.history.back();
+    }
+  });
+});
 </script>
 {% endblock %} 

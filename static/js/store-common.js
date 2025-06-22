@@ -8,7 +8,7 @@ function scrollToProducts() {
   } else {
     // 상품 섹션이 없으면 상품 목록 페이지로 이동
     if (window.storeId) {
-      window.location.href = `/stores/${window.storeId}/products/`;
+      window.location.href = `/products/${window.storeId}/list/`;
     } else {
       window.location.href = window.homeUrl || '/';
     }

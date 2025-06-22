@@ -19,23 +19,10 @@
     
     <!-- 스토어 전용: 상품 목록 (모바일에서만 표시) -->
     {% if store %}
-    <a href="{% url 'products:product_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+    <a href="{% url 'products:public_product_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
       <i class="fas fa-list mr-2 text-xs"></i>상품 목록
     </a>
     {% endif %}
-    
-    <!-- PWA 설치 버튼 (모바일) -->
-    <button id="store-pwa-install-button-mobile" style="display: none;" 
-            class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </button>
-    
-    <!-- iOS PWA 설치 안내 (모바일) -->
-    <div id="store-ios-install-instructions-mobile" style="display: none;" 
-         class="block w-full text-left px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md cursor-pointer"
-         onclick="showIOSInstallModal()">
-      <i class="fas fa-download mr-2"></i>앱 설치
-    </div>
 
     {% if user.is_authenticated %}
     <a href="{% url 'accounts:mypage' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

@@ -37,7 +37,7 @@
           <span class="px-2 py-1 bg-gray-700 text-white text-xs rounded">Store</span>
         </a>
         <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
-        <a href="{% url 'products:product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+        <a href="{% url 'products:public_product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-list mr-2 text-xs"></i>
           상품 목록
         </a>
@@ -54,18 +54,6 @@
 
       <!-- 데스크톱 메뉴 -->
       <div class="hidden md:flex items-center space-x-4">
-        <!-- PWA 설치 버튼 -->
-        <button id="pwa-install-button" style="display: none;" 
-                class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
-          <i class="fas fa-download mr-2"></i>앱 설치
-        </button>
-        
-        <!-- iOS PWA 설치 안내 -->
-        <div id="ios-install-instructions" style="display: none;" 
-             class="flex items-center text-gray-300 hover:text-bitcoin transition-colors cursor-pointer"
-             onclick="showIOSInstallModal()">
-          <i class="fas fa-download mr-2"></i>앱 설치
-        </div>
 
         {% if user.is_authenticated %}
         <!-- 사용자 드롭다운 -->
