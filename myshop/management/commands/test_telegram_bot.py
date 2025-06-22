@@ -142,6 +142,10 @@ class Command(BaseCommand):
         current_time = timezone.now()
         korea_time = latest_rate.created_at.astimezone(timezone.get_current_timezone())
         
+        # 달러 정보 추출
+        usd_krw_rate = float(latest_rate.usd_krw_rate) if latest_rate.usd_krw_rate else None
+        btc_usd_price = float(latest_rate.btc_usd_price) if latest_rate.btc_usd_price else None
+        
         if previous_rate:
             rate_change = float(latest_rate.btc_krw_rate) - float(previous_rate.btc_krw_rate)
             rate_change_percent = (rate_change / float(previous_rate.btc_krw_rate)) * 100
@@ -159,13 +163,18 @@ class Command(BaseCommand):
             change_emoji = "🆕"
             change_text = "첫 번째 환율 데이터"
         
+        # 달러 가격 정보 추가 (소숫점 제거)
+        usd_info = ""
+        if btc_usd_price:
+            usd_info = f"\n💰 *BTC/USD: `${btc_usd_price:,.0f}`*"
+        
         message = f"""🪙 *환율 업데이트 알림 (테스트)*
 
-{change_emoji} *BTC/KRW: `{latest_rate.btc_krw_rate:,} KRW`*
+{change_emoji} *BTC/KRW: `{latest_rate.btc_krw_rate:,} KRW`*{usd_info}
 
 📊 변동: {change_text}
 ⏰ 업데이트: {korea_time.strftime('%m/%d %H:%M:%S')}
-💡 소스: 업비트 API
+💡 소스: 업비트 API + ExchangeRate-API
 
 🧪 이 메시지는 텔레그램 봇 테스트용입니다."""
         

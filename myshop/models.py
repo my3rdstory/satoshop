@@ -31,6 +31,25 @@ class ExchangeRate(models.Model):
         help_text="1 BTC = ? KRW"
     )
     
+    # 달러 관련 필드 추가
+    usd_krw_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="USD/KRW 환율",
+        help_text="1 USD = ? KRW"
+    )
+    
+    btc_usd_price = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="BTC/USD 가격",
+        help_text="1 BTC = ? USD"
+    )
+    
     api_response_data = models.JSONField(
         verbose_name="API 응답 데이터",
         help_text="업비트 API 전체 응답 데이터"
@@ -109,6 +128,10 @@ def send_exchange_rate_telegram_notification(sender, instance, created, **kwargs
         current_time = timezone.now()
         korea_time = instance.created_at.astimezone(timezone.get_current_timezone())
         
+        # 달러 정보 추출 (별도 필드에서 가져오기)
+        usd_krw_rate = float(instance.usd_krw_rate) if instance.usd_krw_rate else None
+        btc_usd_price = float(instance.btc_usd_price) if instance.btc_usd_price else None
+        
         if previous_rate:
             rate_change = float(instance.btc_krw_rate) - float(previous_rate.btc_krw_rate)
             rate_change_percent = (rate_change / float(previous_rate.btc_krw_rate)) * 100
@@ -126,13 +149,18 @@ def send_exchange_rate_telegram_notification(sender, instance, created, **kwargs
             change_emoji = "🆕"
             change_text = "첫 번째 환율 데이터"
         
+        # 달러 가격 정보 추가 (소숫점 제거)
+        usd_info = ""
+        if btc_usd_price:
+            usd_info = f"\n💰 *BTC/USD: `${btc_usd_price:,.0f}`*"
+        
         message = f"""🪙 *환율 업데이트 알림*
 
-{change_emoji} *BTC/KRW: `{instance.btc_krw_rate:,} KRW`*
+{change_emoji} *BTC/KRW: `{instance.btc_krw_rate:,} KRW`*{usd_info}
 
 📊 변동: {change_text}
 ⏰ 업데이트: {korea_time.strftime('%m/%d %H:%M:%S')}
-💡 소스: 업비트 API"""
+💡 소스: 업비트 API + ExchangeRate-API"""
         
         # 텔레그램 메시지 전송 (비동기로 처리하여 DB 저장에 영향 없도록)
         TelegramService.send_message(
