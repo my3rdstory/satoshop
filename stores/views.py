@@ -581,6 +581,10 @@ def edit_email_settings(request, store_id):
     """스토어 이메일 발송 설정 편집"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     
+    # 사이트 설정에서 Gmail 도움말 URL 가져오기
+    from myshop.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+    
     # 기존 이메일 설정 확인
     has_existing_password = bool(store.email_host_password_encrypted)
     
@@ -648,6 +652,7 @@ def edit_email_settings(request, store_id):
         'store': store,
         'has_existing_password': has_existing_password,
         'masked_password': masked_password,
+        'gmail_help_url': site_settings.gmail_help_url,
     })
 
 @login_required

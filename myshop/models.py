@@ -324,6 +324,13 @@ class SiteSettings(models.Model):
         help_text="환율 데이터 업데이트 시 알림을 받을 이메일 주소"
     )
     
+    # Gmail 설정 도움말 URL
+    gmail_help_url = models.URLField(
+        blank=True,
+        verbose_name="Gmail 앱 비밀번호 도움말 URL",
+        help_text="스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크"
+    )
+    
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")

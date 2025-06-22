@@ -75,11 +75,13 @@
           <div class="ml-4">
             <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
               <span class="flex-1">Gmail 앱 비밀번호 설정 방법</span>
-              <a href="https://support.google.com/accounts/answer/185833" target="_blank" 
+              {% if gmail_help_url %}
+              <a href="{{ gmail_help_url }}" target="_blank" 
                  class="ml-4 inline-flex items-center px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
                 <i class="fas fa-external-link-alt mr-1.5"></i>
                 <span>구글 도움말</span>
               </a>
+              {% endif %}
             </h3>
             <div class="space-y-2 text-sm text-blue-700 dark:text-blue-300">
               <p><strong>1단계:</strong> Google 계정 → 보안 → 2단계 인증 활성화</p>

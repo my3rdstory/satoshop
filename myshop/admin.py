@@ -82,6 +82,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('exchange_rate_notification_email',),
             'description': '환율 데이터 업데이트 시 알림을 받을 이메일 주소를 설정합니다.'
         }),
+        ('Gmail 도움말 설정', {
+            'fields': ('gmail_help_url',),
+            'description': '스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크'
+        }),
 
         ('고급 설정', {
             'fields': ('created_at', 'updated_at'),

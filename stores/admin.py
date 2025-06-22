@@ -98,9 +98,9 @@ class StoreImageAdmin(admin.ModelAdmin):
 class StoreAdmin(admin.ModelAdmin):
     list_display = [
         'store_name', 'store_id', 'owner_name', 'owner', 
-        'is_active', 'created_at', 'get_store_link'
+        'is_active', 'email_status_display', 'created_at', 'get_store_link'
     ]
-    list_filter = ['is_active', 'created_at', 'deleted_at']
+    list_filter = ['is_active', 'email_enabled', 'created_at', 'deleted_at']
     search_fields = ['store_name', 'store_id', 'owner_name', 'owner__username']
     readonly_fields = ['created_at', 'updated_at', 'get_store_link', 'hero_gradient_css']
     list_per_page = 10  # 페이지당 항목 수 제한으로 성능 개선
@@ -115,6 +115,10 @@ class StoreAdmin(admin.ModelAdmin):
         }),
         ('API 설정', {
             'fields': ('blink_api_info_encrypted', 'blink_wallet_id_encrypted'),
+            'classes': ('collapse',)
+        }),
+        ('이메일 발송 설정', {
+            'fields': ('email_enabled', 'email_host_user', 'email_host_password_encrypted', 'email_from_name'),
             'classes': ('collapse',)
         }),
         ('테마 설정', {
@@ -141,6 +145,24 @@ class StoreAdmin(admin.ModelAdmin):
             return format_html('<a href="{}" target="_blank">스토어 보기</a>', url)
         return "-"
     get_store_link.short_description = "스토어 링크"
+    
+    def email_status_display(self, obj):
+        """이메일 발송 설정 상태 표시"""
+        if not obj.email_enabled:
+            return format_html('<span style="color: #666;">비활성화</span>')
+        
+        # 이메일 주소와 비밀번호 설정 확인
+        has_email = bool(obj.email_host_user)
+        has_password = bool(obj.email_host_password_encrypted)
+        
+        if has_email and has_password:
+            return format_html('<span style="color: #28a745;">✓ 발송 가능</span>')
+        elif has_email:
+            return format_html('<span style="color: #ffc107;">⚠ 비밀번호 미설정</span>')
+        else:
+            return format_html('<span style="color: #dc3545;">✗ 설정 필요</span>')
+    
+    email_status_display.short_description = "이메일 상태"
 
 
 class DeletedStoreAdmin(admin.ModelAdmin):
