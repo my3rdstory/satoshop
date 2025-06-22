@@ -1,0 +1,388 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}이메일 발송 설정 - {{ store.store_name }} - SatoShop{% endblock %}
+
+{% block og_title %}이메일 발송 설정 - {{ store.store_name }} - SatoShop{% endblock %}
+{% block og_description %}스토어의 Gmail 이메일 발송 설정을 관리하고 테스트해보세요.{% endblock %}
+{% block twitter_title %}이메일 발송 설정 - {{ store.store_name }} - SatoShop{% endblock %}
+{% block twitter_description %}스토어의 Gmail 이메일 발송 설정을 관리하고 테스트해보세요.{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 이메일 설정 페이지 스타일 */
+.email-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.test-avatar {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.email-test-result {
+    display: none;
+}
+
+.email-test-result.show {
+    display: block;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-green-500/10 rounded-full mr-3">
+        <i class="fas fa-envelope text-3xl text-green-500"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">이메일 발송 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어 전용 Gmail 이메일 발송 기능을 설정하고 테스트해보세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <!-- Gmail 설정 안내 -->
+    <div class="mb-8">
+      <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-3 flex items-center">
+              <span class="flex-1">Gmail 앱 비밀번호 설정 방법</span>
+              <a href="https://support.google.com/accounts/answer/185833" target="_blank" 
+                 class="ml-4 inline-flex items-center px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
+                <i class="fas fa-external-link-alt mr-1.5"></i>
+                <span>구글 도움말</span>
+              </a>
+            </h3>
+            <div class="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+              <p><strong>1단계:</strong> Google 계정 → 보안 → 2단계 인증 활성화</p>
+              <p><strong>2단계:</strong> 앱 비밀번호 생성 → "메일" 선택</p>
+              <p><strong>3단계:</strong> 생성된 16자리 비밀번호를 아래에 입력</p>
+              <p class="text-blue-600 dark:text-blue-400 mt-3">
+                <i class="fas fa-shield-alt mr-1"></i>
+                <strong>보안:</strong> 앱 비밀번호는 암호화되어 저장되며, 관리자도 볼 수 없습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 왼쪽: 이메일 설정 입력 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <div class="flex items-center mb-6">
+            <div class="w-12 h-12 email-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+              <i class="fas fa-cog text-white text-lg"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white">이메일 설정</h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Gmail 발송 정보를 입력하세요</p>
+            </div>
+          </div>
+
+          <form method="post" id="emailSettingsForm" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- 이메일 기능 활성화 -->
+            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div>
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white">이메일 발송 기능</h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400">이메일 발송 기능을 활성화/비활성화합니다</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="email_enabled" id="email_enabled" value="1" 
+                       {% if store.email_enabled %}checked{% endif %}
+                       class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+              </label>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Gmail 이메일 주소
+                {% if not store.email_host_user %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </div>
+                <input type="email" name="email_host_user" id="email_host_user"
+                  placeholder="your-email@gmail.com"
+                  value="{{ store.email_host_user }}"
+                  {% if not store.email_host_user %}required{% endif %}
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:ring-green-400 dark:focus:border-green-400 transition-colors">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Gmail 앱 비밀번호
+                {% if not has_existing_password %}<span class="text-red-500">*</span>{% endif %}
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-key text-gray-400"></i>
+                </div>
+                <input type="password" name="email_host_password" id="email_host_password"
+                  placeholder="{% if has_existing_password %}변경하려면 새 앱 비밀번호 입력 (비워두면 기존 값 유지){% else %}16자리 Gmail 앱 비밀번호를 입력하세요{% endif %}"
+                  {% if not has_existing_password %}required{% endif %}
+                  class="w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:ring-green-400 dark:focus:border-green-400 transition-colors">
+                <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" id="togglePassword">
+                  <i class="fas fa-eye text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"></i>
+                </button>
+              </div>
+              {% if has_existing_password %}
+              <div class="mt-2 space-y-1">
+                <div class="text-green-600 dark:text-green-400 text-xs">
+                  <i class="fas fa-check-circle"></i>
+                  현재 설정: {{ masked_password }}
+                </div>
+                <div class="text-blue-600 dark:text-blue-400 text-xs">변경하려면 새로운 값을 입력하고, 유지하려면 비워두세요.</div>
+              </div>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                발신자 이름 (선택사항)
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-user text-gray-400"></i>
+                </div>
+                <input type="text" name="email_from_name" id="email_from_name"
+                  placeholder="발신자 이름 (기본값: {{ store.store_name }})"
+                  value="{{ store.email_from_name }}"
+                  class="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:focus:ring-green-400 dark:focus:border-green-400 transition-colors">
+              </div>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                비워두면 스토어명({{ store.store_name }})이 발신자 이름으로 사용됩니다.
+              </p>
+            </div>
+
+            <div class="flex gap-3">
+              <button type="submit" name="action" value="save"
+                class="flex-1 flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-lg">
+                <i class="fas fa-save mr-2"></i>
+                설정 저장
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 테스트 및 상태 -->
+      <div class="space-y-6">
+        <!-- 현재 상태 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+            현재 상태
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">이메일 기능</span>
+              {% if store.email_enabled %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                <i class="fas fa-check mr-1"></i>
+                활성화
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                <i class="fas fa-times mr-1"></i>
+                비활성화
+              </span>
+              {% endif %}
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Gmail 주소</span>
+              {% if store.email_host_user %}
+              <span class="text-xs text-green-600 dark:text-green-400 font-mono">{{ store.email_host_user }}</span>
+              {% else %}
+              <span class="text-xs text-gray-400">미설정</span>
+              {% endif %}
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">앱 비밀번호</span>
+              {% if has_existing_password %}
+              <span class="text-xs text-green-600 dark:text-green-400">
+                <i class="fas fa-lock mr-1"></i>
+                설정됨
+              </span>
+              {% else %}
+              <span class="text-xs text-gray-400">미설정</span>
+              {% endif %}
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600 dark:text-gray-400">발신자 이름</span>
+              <span class="text-xs text-gray-600 dark:text-gray-400">{{ store.email_from_display }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이메일 테스트 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+          <div class="flex items-center mb-4">
+            <div class="w-10 h-10 test-avatar rounded-lg flex items-center justify-center shadow-lg mr-3">
+              <i class="fas fa-paper-plane text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">이메일 테스트</h3>
+              <p class="text-xs text-gray-600 dark:text-gray-400">설정이 올바른지 확인해보세요</p>
+            </div>
+          </div>
+
+          <form id="emailTestForm" class="space-y-4">
+            {% csrf_token %}
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                테스트 이메일 주소
+              </label>
+              <input type="email" name="test_email" id="test_email"
+                placeholder="test@example.com"
+                value="{{ store.email_host_user }}"
+                required
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <button type="submit" id="testEmailBtn"
+              {% if not store.email_enabled or not store.email_host_user or not has_existing_password %}disabled{% endif %}
+              class="w-full flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors text-sm">
+              <i class="fas fa-paper-plane mr-2"></i>
+              <span id="testBtnText">테스트 이메일 전송</span>
+            </button>
+          </form>
+
+          <!-- 테스트 결과 -->
+          <div id="testResult" class="email-test-result mt-4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 비밀번호 표시/숨기기
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('email_host_password');
+    
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function() {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            const icon = togglePassword.querySelector('i');
+            if (type === 'password') {
+                icon.className = 'fas fa-eye text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer';
+            } else {
+                icon.className = 'fas fa-eye-slash text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer';
+            }
+        });
+    }
+    
+    // 이메일 테스트
+    const testForm = document.getElementById('emailTestForm');
+    const testBtn = document.getElementById('testEmailBtn');
+    const testBtnText = document.getElementById('testBtnText');
+    const testResult = document.getElementById('testResult');
+    
+    if (testForm) {
+        testForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const testEmail = document.getElementById('test_email').value;
+            if (!testEmail) {
+                showTestResult('error', '테스트 이메일 주소를 입력해주세요.');
+                return;
+            }
+            
+            // 버튼 상태 변경
+            testBtn.disabled = true;
+            testBtnText.textContent = '전송 중...';
+            
+            // AJAX 요청
+            fetch('{% url "stores:test_store_email" store_id=store.store_id %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    test_email: testEmail
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showTestResult('success', data.message);
+                } else {
+                    showTestResult('error', data.error || '테스트 이메일 전송에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showTestResult('error', '네트워크 오류가 발생했습니다.');
+            })
+            .finally(() => {
+                // 버튼 상태 복원
+                testBtn.disabled = false;
+                testBtnText.textContent = '테스트 이메일 전송';
+            });
+        });
+    }
+    
+    function showTestResult(type, message) {
+        const iconClass = type === 'success' ? 'fas fa-check-circle text-green-500' : 'fas fa-exclamation-circle text-red-500';
+        const bgClass = type === 'success' ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800';
+        const textClass = type === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200';
+        
+        testResult.innerHTML = `
+            <div class="p-3 rounded-lg border ${bgClass}">
+                <div class="flex items-start">
+                    <i class="${iconClass} mr-2 mt-0.5"></i>
+                    <div class="text-sm ${textClass}">${message}</div>
+                </div>
+            </div>
+        `;
+        testResult.classList.add('show');
+        
+        // 5초 후 자동 숨김
+        setTimeout(() => {
+            testResult.classList.remove('show');
+        }, 5000);
+    }
+});
+</script>
+{% endblock %} 

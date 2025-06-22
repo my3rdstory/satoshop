@@ -55,6 +55,29 @@
         </div>
       </a>
 
+      <!-- 이메일 발송 설정 -->
+      <a 
+        href="{% url 'stores:edit_email_settings' store_id=store.store_id %}" 
+        class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200"
+      >
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
+            <i class="fas fa-envelope text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">
+            이메일 발송 설정
+          </h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Gmail 이메일 발송 기능 설정 및 테스트
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500 transition-colors"></i>
+        </div>
+      </a>
+
       <!-- 스토어 테마 설정 -->
       <a 
         href="{% url 'stores:edit_theme' store_id=store.store_id %}" 
