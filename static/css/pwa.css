@@ -22,6 +22,28 @@
   }
 }
 
+/* PWA 페이드인 애니메이션 */
+.pwa-fade-in {
+  animation: pwa-fade-in 0.5s ease-out;
+}
+
+@keyframes pwa-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* PWA 요소들의 초기 숨김 상태 */
+[id*="pwa-install-button"] {
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
 /* PWA 설치 단계 아이콘 */
 .pwa-step-icon {
   min-width: 40px;

@@ -38,6 +38,12 @@ class Store(models.Model):
     blink_api_info_encrypted = models.TextField(blank=True, help_text="암호화된 블링크 API 정보")
     blink_wallet_id_encrypted = models.TextField(blank=True, help_text="암호화된 블링크 월렛 ID")
     
+    # 이메일 발송 설정 (암호화 저장)
+    email_host_user = models.EmailField(blank=True, help_text="Gmail 이메일 주소")
+    email_host_password_encrypted = models.TextField(blank=True, help_text="암호화된 Gmail 앱 비밀번호")
+    email_from_name = models.CharField(max_length=100, blank=True, help_text="발신자 이름 (기본값: 스토어명)")
+    email_enabled = models.BooleanField(default=False, help_text="이메일 발송 기능 활성화")
+    
     # 스토어 테마 설정
     hero_color1 = models.CharField(max_length=7, default="#667eea", help_text="히어로 섹션 그라데이션 시작 색상")
     hero_color2 = models.CharField(max_length=7, default="#764ba2", help_text="히어로 섹션 그라데이션 끝 색상")
@@ -196,6 +202,28 @@ class Store(models.Model):
             if settings.DEBUG:
                 print(f"DEBUG: 월렛 ID 복호화 실패 - 평문으로 간주")
             return self.blink_wallet_id_encrypted
+    
+    def set_email_host_password(self, password):
+        """Gmail 앱 비밀번호 암호화 저장"""
+        self.email_host_password_encrypted = self.encrypt_data(password)
+    
+    def get_email_host_password(self):
+        """Gmail 앱 비밀번호 가져오기"""
+        if not self.email_host_password_encrypted:
+            return ""
+        
+        try:
+            return self.decrypt_data(self.email_host_password_encrypted)
+        except:
+            # 복호화 실패시 평문으로 간주하여 그대로 반환 (기존 데이터 호환성)
+            if settings.DEBUG:
+                print(f"DEBUG: 이메일 비밀번호 복호화 실패 - 평문으로 간주")
+            return self.email_host_password_encrypted
+    
+    @property
+    def email_from_display(self):
+        """이메일 발신자 표시명 반환 (기본값: 스토어명)"""
+        return self.email_from_name or self.store_name
     
     @property
     def store_url(self):

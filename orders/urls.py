@@ -7,6 +7,7 @@ urlpatterns = [
     # 장바구니
     path('cart/', views.cart_view, name='cart_view'),
     path('cart/api/', views.cart_api, name='cart_api'),
+    path('cart/check_conflict/', views.check_cart_store_conflict, name='check_cart_store_conflict'),
     path('cart/add/', views.add_to_cart, name='add_to_cart'),
     path('cart/remove/', views.remove_from_cart, name='remove_from_cart'),  # POST 요청용
     path('cart/remove/<int:item_id>/', views.remove_from_cart, name='remove_from_cart_get'),  # GET 요청용

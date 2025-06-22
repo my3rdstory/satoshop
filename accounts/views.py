@@ -174,93 +174,9 @@ def download_order_txt(request, order_number):
     """주문서 TXT 파일 다운로드"""
     order = get_object_or_404(Order, order_number=order_number, user=request.user)
     
-    # TXT 내용 생성
-    content = f"""
-===============================================
-                주 문 서
-===============================================
-
-▣ 주문 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-주문번호: {order.order_number}
-주문일시: {order.created_at.strftime('%Y년 %m월 %d일 %H시 %M분')}
-결제일시: {order.paid_at.strftime('%Y년 %m월 %d일 %H시 %M분') if order.paid_at else '-'}
-주문상태: 결제 완료
-결제방식: 라이트닝 네트워크 (Lightning Network)
-
-▣ 스토어 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-스토어명: {order.store.store_name}
-판매자: {order.store.owner_name}"""
-
-    if order.store.owner_phone:
-        content += f"\n연락처: {order.store.owner_phone}"
-    
-    if order.store.chat_channel:
-        content += f"\n소통채널: {order.store.chat_channel}"
-
-    content += f"""
-
-▣ 주문자 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-이름: {order.buyer_name}
-연락처: {order.buyer_phone}
-이메일: {order.buyer_email}
-
-▣ 배송지 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-우편번호: {order.shipping_postal_code}
-주소: {order.shipping_address}"""
-
-    if order.shipping_detail_address:
-        content += f"\n상세주소: {order.shipping_detail_address}"
-
-    if order.order_memo:
-        content += f"\n배송요청사항: {order.order_memo}"
-
-    content += f"""
-
-▣ 주문 상품 ({order.items.count()}개)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
-
-    for i, item in enumerate(order.items.all(), 1):
-        content += f"""
-
-{i}. {item.product_title}
-   - 수량: {item.quantity}개
-   - 단가: {item.product_price:,.0f} sats"""
-        
-        if item.options_price > 0:
-            content += f"\n   - 옵션추가: {item.options_price:,.0f} sats"
-        
-        if item.selected_options:
-            content += "\n   - 선택옵션:"
-            for option_name, choice_name in item.selected_options.items():
-                content += f" {option_name}({choice_name})"
-        
-        content += f"\n   - 소계: {item.total_price:,.0f} sats"
-
-    content += f"""
-
-▣ 결제 내역
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-상품 금액: {order.subtotal:,.0f} sats
-배송비: {order.shipping_fee:,.0f} sats
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-총 결제 금액: {order.total_amount:,.0f} sats
-
-▣ 비트코인 관련 정보
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-• 결제 네트워크: 라이트닝 네트워크 (Lightning Network)
-• 단위: sats (사토시, 1 BTC = 100,000,000 sats)
-• 특징: 즉시 결제, 낮은 수수료, 확장성
-
-※ 이 주문서는 SatoShop에서 자동 생성된 문서입니다.
-   문의사항이 있으시면 스토어 판매자에게 연락해주세요.
-
-생성일시: {timezone.now().strftime('%Y년 %m월 %d일 %H시 %M분')}
-===============================================
-"""
+    # TXT 내용 생성 (새로운 포맷터 사용)
+    from orders.formatters import generate_txt_order
+    content = generate_txt_order(order)
 
     # HTTP 응답 생성 (BOM 추가로 인코딩 문제 해결)
     content_with_bom = '\ufeff' + content  # UTF-8 BOM 추가

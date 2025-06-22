@@ -2,7 +2,17 @@ from django.db import models
 from django.core.exceptions import ValidationError
 import re
 from django.utils import timezone
+from django.contrib.auth.models import User
+from decimal import Decimal
+import uuid
+import os
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.core.mail import send_mail
+import logging
 
+logger = logging.getLogger(__name__)
 
 def get_current_year_copyright():
     """현재 연도로 기본 저작권 문구 생성"""
@@ -71,6 +81,72 @@ class ExchangeRate(models.Model):
         btc_amount = sats_amount / 100_000_000
         krw_amount = btc_amount * float(self.btc_krw_rate)
         return int(krw_amount)
+
+# 환율 데이터 저장 시 텔레그램 즉시 알림
+@receiver(post_save, sender=ExchangeRate)
+def send_exchange_rate_telegram_notification(sender, instance, created, **kwargs):
+    """환율 데이터 저장 시 텔레그램 즉시 알림 전송"""
+    if not created:
+        return  # 새로 생성된 데이터만 알림
+    
+    try:
+        from .services import TelegramService
+        from django.utils import timezone
+        
+        site_settings = SiteSettings.get_settings()
+        
+        # 텔레그램 알림이 비활성화되어 있거나 설정이 없으면 건너뛰기
+        if (not site_settings.enable_telegram_exchange_rate_alerts or 
+            not site_settings.telegram_bot_token or 
+            not site_settings.telegram_chat_id):
+            return
+        
+        # 이전 환율과 비교하여 변화량 계산
+        previous_rate = ExchangeRate.objects.filter(
+            created_at__lt=instance.created_at
+        ).order_by('-created_at').first()
+        
+        current_time = timezone.now()
+        korea_time = instance.created_at.astimezone(timezone.get_current_timezone())
+        
+        if previous_rate:
+            rate_change = float(instance.btc_krw_rate) - float(previous_rate.btc_krw_rate)
+            rate_change_percent = (rate_change / float(previous_rate.btc_krw_rate)) * 100
+            
+            if rate_change > 0:
+                change_emoji = "📈"
+                change_text = f"상승 (+{rate_change:,.0f} KRW, +{rate_change_percent:.2f}%)"
+            elif rate_change < 0:
+                change_emoji = "📉"
+                change_text = f"하락 ({rate_change:,.0f} KRW, {rate_change_percent:.2f}%)"
+            else:
+                change_emoji = "➡️"
+                change_text = "보합 (변화없음)"
+        else:
+            change_emoji = "🆕"
+            change_text = "첫 번째 환율 데이터"
+        
+        message = f"""🪙 *환율 업데이트 알림*
+
+{change_emoji} *BTC/KRW: `{instance.btc_krw_rate:,} KRW`*
+
+📊 변동: {change_text}
+⏰ 업데이트: {korea_time.strftime('%m/%d %H:%M:%S')}
+💡 소스: 업비트 API"""
+        
+        # 텔레그램 메시지 전송 (비동기로 처리하여 DB 저장에 영향 없도록)
+        TelegramService.send_message(
+            site_settings.telegram_bot_token,
+            site_settings.telegram_chat_id,
+            message
+        )
+        
+    except Exception as e:
+        # 알림 전송 실패해도 환율 데이터 저장에는 영향 없도록
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"환율 텔레그램 알림 전송 실패: {e}")
+        pass
 
 class SiteSettings(models.Model):
     """사이트 전역 설정"""
@@ -301,6 +377,34 @@ class SiteSettings(models.Model):
         help_text="스토어 생성 시 블링크 API 정보 얻는 방법 문서 링크"
     )
     
+    # 텔레그램 봇 설정 (환율 즉시 알림용)
+    telegram_bot_token = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name="텔레그램 봇 토큰",
+        help_text="환율 알림을 보낼 텔레그램 봇의 API 토큰 (BotFather에서 생성)"
+    )
+    
+    telegram_chat_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="텔레그램 채팅 ID",
+        help_text="알림을 받을 텔레그램 채팅 ID (개인 또는 그룹 채팅)"
+    )
+    
+    enable_telegram_exchange_rate_alerts = models.BooleanField(
+        default=True,
+        verbose_name="텔레그램 환율 즉시 알림",
+        help_text="환율 데이터가 업데이트될 때마다 텔레그램으로 즉시 알림 전송"
+    )
+    
+    # Gmail 설정 도움말 URL
+    gmail_help_url = models.URLField(
+        blank=True,
+        verbose_name="Gmail 앱 비밀번호 도움말 URL",
+        help_text="스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크"
+    )
+    
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
@@ -347,8 +451,6 @@ class SiteSettings(models.Model):
         """현재 사이트 설정 가져오기"""
         settings, created = cls.objects.get_or_create(pk=1)
         return settings
-    
-
     
     def get_youtube_embed_url(self):
         """유튜브 임베드 URL 생성 (UI 요소 최대한 숨김)"""

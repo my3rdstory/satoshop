@@ -577,6 +577,187 @@ def edit_api_settings(request, store_id):
     })
 
 @login_required
+def edit_email_settings(request, store_id):
+    """스토어 이메일 발송 설정 편집"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    
+    # 사이트 설정에서 Gmail 도움말 URL 가져오기
+    from myshop.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+    
+    # 기존 이메일 설정 확인
+    has_existing_password = bool(store.email_host_password_encrypted)
+    
+    # 기존 비밀번호가 있으면 마스킹된 형태로 표시용 데이터 준비
+    masked_password = ""
+    if has_existing_password:
+        try:
+            current_password = store.get_email_host_password()
+            if current_password and len(current_password) > 8:
+                # 앱 비밀번호의 앞 4자리와 뒤 4자리만 보여주고 나머지는 마스킹
+                masked_password = current_password[:4] + "*" * (len(current_password) - 8) + current_password[-4:]
+            elif current_password:
+                masked_password = "*" * len(current_password)
+        except:
+            masked_password = "****암호화된 정보****"
+    
+    if request.method == 'POST':
+        email_enabled = request.POST.get('email_enabled') == '1'
+        email_host_user = request.POST.get('email_host_user', '').strip()
+        email_host_password = request.POST.get('email_host_password', '').strip()
+        email_from_name = request.POST.get('email_from_name', '').strip()
+        
+        try:
+            # 이메일 기능이 활성화된 경우 필수 필드 검증
+            if email_enabled:
+                if not email_host_user:
+                    messages.error(request, 'Gmail 이메일 주소를 입력해주세요.')
+                    return render(request, 'stores/edit_email_settings.html', {
+                        'store': store,
+                        'has_existing_password': has_existing_password,
+                        'masked_password': masked_password,
+                    })
+                
+                # 기존 비밀번호가 없고 새로운 비밀번호도 없으면 오류
+                if not has_existing_password and not email_host_password:
+                    messages.error(request, 'Gmail 앱 비밀번호를 입력해주세요.')
+                    return render(request, 'stores/edit_email_settings.html', {
+                        'store': store,
+                        'has_existing_password': has_existing_password,
+                        'masked_password': masked_password,
+                    })
+            
+            # 설정 업데이트
+            store.email_enabled = email_enabled
+            store.email_host_user = email_host_user
+            store.email_from_name = email_from_name
+            
+            # 비밀번호가 입력된 경우에만 업데이트
+            if email_host_password:
+                store.set_email_host_password(email_host_password)
+            
+            store.save()
+            
+            if email_enabled:
+                messages.success(request, '이메일 발송 설정이 성공적으로 저장되었습니다.')
+            else:
+                messages.success(request, '이메일 발송 기능이 비활성화되었습니다.')
+            
+            return redirect('stores:my_stores')
+            
+        except Exception as e:
+            messages.error(request, f'설정 저장 중 오류가 발생했습니다: {str(e)}')
+    
+    return render(request, 'stores/edit_email_settings.html', {
+        'store': store,
+        'has_existing_password': has_existing_password,
+        'masked_password': masked_password,
+        'gmail_help_url': site_settings.gmail_help_url,
+    })
+
+@login_required
+@require_POST
+def test_store_email(request, store_id):
+    """스토어 이메일 설정 테스트"""
+    import json
+    from django.core.mail import EmailMessage
+    from django.conf import settings
+    
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    
+    try:
+        # JSON 요청 파싱
+        data = json.loads(request.body)
+        test_email = data.get('test_email', '').strip()
+        
+        if not test_email:
+            return JsonResponse({
+                'success': False,
+                'error': '테스트 이메일 주소를 입력해주세요.'
+            })
+        
+        # 이메일 설정 확인
+        if not store.email_enabled:
+            return JsonResponse({
+                'success': False,
+                'error': '이메일 발송 기능이 비활성화되어 있습니다.'
+            })
+        
+        if not store.email_host_user:
+            return JsonResponse({
+                'success': False,
+                'error': 'Gmail 이메일 주소가 설정되지 않았습니다.'
+            })
+        
+        if not store.email_host_password_encrypted:
+            return JsonResponse({
+                'success': False,
+                'error': 'Gmail 앱 비밀번호가 설정되지 않았습니다.'
+            })
+        
+        # 이메일 발송 테스트
+        try:
+            # Gmail SMTP 설정으로 이메일 전송
+            from django.core.mail.backends.smtp import EmailBackend
+            
+            # 스토어별 SMTP 설정
+            backend = EmailBackend(
+                host='smtp.gmail.com',
+                port=587,
+                username=store.email_host_user,
+                password=store.get_email_host_password(),
+                use_tls=True,
+                fail_silently=False,
+            )
+            
+            # 테스트 이메일 작성
+            subject = f'[{store.store_name}] 이메일 발송 테스트'
+            message = f'''안녕하세요!
+
+{store.store_name} 스토어의 이메일 발송 기능이 정상적으로 작동하고 있습니다.
+
+이 메시지는 테스트 목적으로 발송되었습니다.
+
+감사합니다.
+
+---
+{store.store_name}
+주인장: {store.owner_name}
+'''
+            
+            email = EmailMessage(
+                subject=subject,
+                body=message,
+                from_email=f'{store.email_from_display} <{store.email_host_user}>',
+                to=[test_email],
+                connection=backend
+            )
+            
+            email.send()
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{test_email}로 테스트 이메일이 성공적으로 전송되었습니다.'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'이메일 전송 실패: {str(e)}'
+            })
+            
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'테스트 중 오류가 발생했습니다: {str(e)}'
+        })
+
+@login_required
 def edit_theme(request, store_id):
     """스토어 테마 설정 편집"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)

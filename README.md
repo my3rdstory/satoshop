@@ -58,9 +58,10 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **실시간 결제 확인**: 자동 결제 상태 추적
 - **인보이스 관리**: 결제 내역 및 상태 관리
 - **환율 자동 업데이트**: 업비트 API를 통한 BTC/KRW 환율 자동 갱신
+- **환율 요약 이메일**: 1시간마다 최근 5개 환율 데이터를 모아서 요약 이메일 전송
 
 ### 🛒 주문 관리
-- **장바구니 기능**: 다중 스토어 상품 동시 주문
+- **장바구니 기능**: 단일 스토어 상품 주문 (스토어별 분리 구매)
 - **주문 추적**: 주문 상태별 관리
 - **배송 정보**: 배송지 및 배송비 관리
 - **주문 내역**: 구매자/판매자별 주문 조회
@@ -296,6 +297,22 @@ HOTLINK_PROTECTION_ENABLED=True
 HOTLINK_ALLOWED_DOMAINS=trusted-partner.com,cdn.example.com
 ```
 
+### Gmail 이메일 설정
+
+```env
+# Gmail SMTP 설정 (환율 알림용)
+EMAIL_HOST_USER=satoshopkr@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+DEFAULT_FROM_EMAIL=satoshopkr@gmail.com
+```
+
+> **Gmail 앱 비밀번호 생성 방법**:
+> 1. Google 계정 → 보안 → 2단계 인증 활성화
+> 2. 앱 비밀번호 생성 → "메일" 선택
+> 3. 생성된 16자리 비밀번호를 `EMAIL_HOST_PASSWORD`에 설정
+> 
+> **환율 알림 이메일 설정**: Django 관리자 패널(`/admin/`) → 사이트 설정에서 알림 받을 이메일 주소를 설정하세요.
+
 ### 관리자 계정 설정 (배포용)
 
 ```env
@@ -368,10 +385,17 @@ ALLOWED_HOSTS=satoshop.onrender.com
 SECURE_SSL_REDIRECT=True
 ```
 
-#### Cron Job 설정 (환율 자동 업데이트)
+#### Cron Job 설정
+
+**환율 자동 업데이트**
 - "New Cron Job" 생성
 - 명령어: `uv run python manage.py update_exchange_rate`
 - 스케줄: `*/10 * * * *` (10분마다)
+
+**환율 요약 이메일 전송**
+- "New Cron Job" 생성  
+- 명령어: `uv run python manage.py send_hourly_exchange_rate_summary`
+- 스케줄: `0 * * * *` (매시 정각)
 
 ### Docker 배포
 
@@ -421,6 +445,19 @@ gunicorn satoshop.wsgi:application --bind 0.0.0.0:8000
 - **회원가입 허용/차단**: 새 사용자 등록 제어
 - **스토어 생성 허용/차단**: 새 스토어 개설 제어
 
+#### 텔레그램 환율 알림 설정
+- **텔레그램 봇 토큰**: BotFather에서 생성한 봇 API 토큰
+- **텔레그램 채팅 ID**: 알림을 받을 개인 또는 그룹 채팅 ID
+- **즉시 알림 활성화**: 환율 업데이트 시 실시간 텔레그램 알림
+
+##### 텔레그램 봇 설정 방법:
+1. **봇 생성**: 텔레그램에서 @BotFather에게 `/newbot` 명령어로 봇 생성
+2. **봇 토큰 복사**: BotFather가 제공하는 API 토큰을 사이트 설정에 입력
+3. **채팅 ID 확인**: 
+   - 개인: @userinfobot에게 메시지 보내서 ID 확인
+   - 그룹: 봇을 그룹에 추가 후 `/start` 명령어로 그룹 ID 확인
+4. **테스트**: `uv run python manage.py test_telegram_bot` 명령어로 연결 확인
+
 ### 관리 명령어
 
 #### 환율 관리
@@ -433,6 +470,21 @@ uv run python manage.py update_exchange_rate --force
 
 # 환율 업데이트 상태 확인
 uv run python manage.py update_exchange_rate --verbose
+
+# 텔레그램 봇 연결 및 알림 테스트 (전체 테스트)
+uv run python manage.py test_telegram_bot
+
+# 텔레그램 봇 연결만 테스트
+uv run python manage.py test_telegram_bot --test-connection
+
+# 텔레그램 테스트 메시지 전송
+uv run python manage.py test_telegram_bot --send-test-message
+
+# 현재 환율로 텔레그램 알림 테스트
+uv run python manage.py test_telegram_bot --send-rate-update
+
+# 특정 봇 토큰과 채팅 ID로 테스트
+uv run python manage.py test_telegram_bot --bot-token YOUR_BOT_TOKEN --chat-id YOUR_CHAT_ID
 ```
 
 #### 정적 파일 관리

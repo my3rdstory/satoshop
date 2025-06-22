@@ -4,6 +4,9 @@ from products.models import Product, ProductOption, ProductOptionChoice
 from .models import Cart, CartItem
 import json
 import logging
+from django.core.mail.backends.smtp import EmailBackend
+from django.core.mail import EmailMessage
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ class CartService:
             logger.warning(f"장바구니 아이템 조회 실패: {e}")
             return []
     
-    def add_to_cart(self, product_id, quantity=1, selected_options=None):
+    def add_to_cart(self, product_id, quantity=1, selected_options=None, force_replace=False):
         """장바구니에 상품 추가"""
         if selected_options is None:
             selected_options = {}
@@ -44,6 +47,29 @@ class CartService:
                 'success': False,
                 'error': '상품을 찾을 수 없습니다.'
             }
+        
+        # 🛡️ 단일 스토어 제약 확인
+        existing_items = self.get_cart_items()
+        if existing_items and not force_replace:
+            # 기존 장바구니에 있는 스토어들 확인
+            existing_stores = set(item['store_id'] for item in existing_items)
+            current_store_id = product.store.store_id
+            
+            # 다른 스토어의 상품이 이미 있는 경우
+            if current_store_id not in existing_stores:
+                existing_store_names = set(item['store_name'] for item in existing_items)
+                return {
+                    'success': False,
+                    'error': 'multi_store_conflict',
+                    'message': f'장바구니에 다른 스토어({", ".join(existing_store_names)})의 상품이 있습니다.',
+                    'current_store': product.store.store_name,
+                    'existing_stores': list(existing_store_names),
+                    'require_confirmation': True
+                }
+        
+        # force_replace가 True인 경우 기존 장바구니 비우기
+        if force_replace and existing_items:
+            self.clear_cart()
         
         try:
             if self.user:
@@ -413,4 +439,99 @@ class CartService:
         return {
             'success': False,
             'error': '장바구니 아이템을 찾을 수 없습니다.'
-        } 
+        }
+
+def generate_order_txt_content(order):
+    """
+    주문서 TXT 내용 생성 (하위 호환성을 위한 래퍼 함수)
+    
+    Args:
+        order: Order 인스턴스
+    
+    Returns:
+        str: 주문서 텍스트 내용
+    """
+    from .formatters import generate_txt_order
+    return generate_txt_order(order)
+
+
+def send_order_notification_email(order):
+    """
+    주문 완료 시 스토어 주인장에게 이메일 발송
+    
+    Args:
+        order: Order 인스턴스
+    
+    Returns:
+        bool: 발송 성공 여부
+    """
+    try:
+        # 🛡️ 중복 이메일 발송 방지: 같은 payment_id로 이미 이메일을 발송했는지 확인
+        if order.payment_id:
+            # 같은 payment_id를 가진 다른 주문들 중에서 이메일이 이미 발송된 것이 있는지 확인
+            from django.core.cache import cache
+            email_cache_key = f"order_email_sent_{order.payment_id}_{order.store.id}"
+            
+            if cache.get(email_cache_key):
+                logger.debug(f"주문 {order.order_number}: 같은 결제ID({order.payment_id})로 이미 이메일 발송됨")
+                return False
+        
+        # 스토어 이메일 설정 확인
+        store = order.store
+        
+        # 이메일 기능이 비활성화되어 있으면 발송하지 않음
+        if not store.email_enabled:
+            logger.debug(f"주문 {order.order_number}: 스토어 이메일 기능 비활성화됨")
+            return False
+            
+        # 필수 설정 확인 (Gmail 설정)
+        if not store.email_host_user or not store.email_host_password_encrypted:
+            logger.debug(f"주문 {order.order_number}: Gmail 설정 불완전 (이메일: {bool(store.email_host_user)}, 비밀번호: {bool(store.email_host_password_encrypted)})")
+            return False
+            
+        # 🔥 중요: 수신 이메일 주소 확인 (주인장 이메일)
+        if not store.owner_email:
+            logger.debug(f"주문 {order.order_number}: 스토어 주인장 이메일 주소가 설정되지 않음")
+            return False
+            
+        # 스토어별 SMTP 설정
+        backend = EmailBackend(
+            host='smtp.gmail.com',
+            port=587,
+            username=store.email_host_user,
+            password=store.get_email_host_password(),
+            use_tls=True,
+            fail_silently=False,
+        )
+        
+        # 이메일용 주문서 생성 (새로운 포맷터 사용)
+        from .formatters import generate_email_order
+        email_data = generate_email_order(order)
+        
+        subject = email_data['subject']
+        message = email_data['body']
+        
+        # 이메일 발송
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=f'{store.email_from_display} <{store.email_host_user}>',
+            to=[store.owner_email],
+            connection=backend
+        )
+        
+        email.send()
+        
+        # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
+        if order.payment_id:
+            from django.core.cache import cache
+            email_cache_key = f"order_email_sent_{order.payment_id}_{order.store.id}"
+            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
+        
+        logger.info(f"주문 알림 이메일 발송 성공 - 주문: {order.order_number}, 수신: {store.owner_email}")
+        return True
+        
+    except Exception as e:
+        # 이메일 발송 실패 시 로그 기록 (주문 처리는 계속 진행)
+        logger.error(f"주문 알림 이메일 발송 실패 - 주문: {order.order_number}, 오류: {str(e)}")
+        return False 

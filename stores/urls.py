@@ -20,6 +20,8 @@ urlpatterns = [
     # 분리된 편집 기능들
     path('edit/<str:store_id>/basic-info/', views.edit_basic_info, name='edit_basic_info'),
     path('edit/<str:store_id>/api-settings/', views.edit_api_settings, name='edit_api_settings'),
+    path('edit/<str:store_id>/email-settings/', views.edit_email_settings, name='edit_email_settings'),
+    path('edit/<str:store_id>/test-email/', views.test_store_email, name='test_store_email'),
     path('edit/<str:store_id>/theme/', views.edit_theme, name='edit_theme'),
     path('edit/<str:store_id>/manage/', views.manage_store, name='manage_store'),
     
