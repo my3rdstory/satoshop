@@ -35,7 +35,7 @@ class CartService:
             logger.warning(f"장바구니 아이템 조회 실패: {e}")
             return []
     
-    def add_to_cart(self, product_id, quantity=1, selected_options=None):
+    def add_to_cart(self, product_id, quantity=1, selected_options=None, force_replace=False):
         """장바구니에 상품 추가"""
         if selected_options is None:
             selected_options = {}
@@ -47,6 +47,29 @@ class CartService:
                 'success': False,
                 'error': '상품을 찾을 수 없습니다.'
             }
+        
+        # 🛡️ 단일 스토어 제약 확인
+        existing_items = self.get_cart_items()
+        if existing_items and not force_replace:
+            # 기존 장바구니에 있는 스토어들 확인
+            existing_stores = set(item['store_id'] for item in existing_items)
+            current_store_id = product.store.store_id
+            
+            # 다른 스토어의 상품이 이미 있는 경우
+            if current_store_id not in existing_stores:
+                existing_store_names = set(item['store_name'] for item in existing_items)
+                return {
+                    'success': False,
+                    'error': 'multi_store_conflict',
+                    'message': f'장바구니에 다른 스토어({", ".join(existing_store_names)})의 상품이 있습니다.',
+                    'current_store': product.store.store_name,
+                    'existing_stores': list(existing_store_names),
+                    'require_confirmation': True
+                }
+        
+        # force_replace가 True인 경우 기존 장바구니 비우기
+        if force_replace and existing_items:
+            self.clear_cart()
         
         try:
             if self.user:

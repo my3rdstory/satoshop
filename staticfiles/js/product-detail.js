@@ -147,10 +147,8 @@ function updateTotalPrice() {
 }
 
 // 장바구니에 추가
-function addToCart() {
+function addToCart(forceReplace = false) {
     if (!productData) return;
-    
-
     
     const quantity = parseInt(document.getElementById('quantity')?.value || 1);
     const selectedOptions = {};
@@ -160,7 +158,54 @@ function addToCart() {
         selectedOptions[option.dataset.optionId] = option.dataset.choiceId;
     });
     
-    // 서버로 전송 (JSON 형식으로)
+    // 🚀 1단계: 먼저 스토어 충돌 체크 (force_replace가 false일 때만)
+    if (!forceReplace) {
+        checkCartStoreConflict()
+            .then(conflictData => {
+                if (conflictData.has_conflict) {
+                    // 충돌이 있으면 사용자에게 확인
+                    handleMultiStoreConflict(conflictData);
+                } else {
+                    // 충돌이 없으면 바로 추가
+                    performAddToCart(quantity, selectedOptions, false);
+                }
+            })
+            .catch(error => {
+                console.error('충돌 체크 실패:', error);
+                // 충돌 체크 실패 시에도 추가 시도
+                performAddToCart(quantity, selectedOptions, false);
+            });
+    } else {
+        // force_replace가 true면 바로 추가
+        performAddToCart(quantity, selectedOptions, true);
+    }
+}
+
+// 🔍 스토어 충돌 체크
+function checkCartStoreConflict() {
+    return fetch('/orders/cart/check_conflict/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': productData.csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            product_id: productData.productId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            return data;
+        } else {
+            throw new Error(data.error || '충돌 체크 실패');
+        }
+    });
+}
+
+// 🛒 실제 장바구니 추가 수행
+function performAddToCart(quantity, selectedOptions, forceReplace) {
     fetch(productData.addToCartUrl, {
         method: 'POST',
         headers: {
@@ -171,7 +216,8 @@ function addToCart() {
         body: JSON.stringify({
             product_id: productData.productId,
             quantity: quantity,
-            selected_options: selectedOptions
+            selected_options: selectedOptions,
+            force_replace: forceReplace
         })
     })
     .then(response => response.json())
@@ -186,14 +232,44 @@ function addToCart() {
             // 장바구니 내용 업데이트 및 사이드바 열기
             updateCartContent();
             openCart();
+        } else if (data.error === 'multi_store_conflict') {
+            // 🛡️ 다중 스토어 충돌 처리 (백업)
+            handleMultiStoreConflict(data);
         } else {
-            alert(data.error || '장바구니 추가에 실패했습니다.');
+            alert(data.error || data.message || '장바구니 추가에 실패했습니다.');
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('오류가 발생했습니다. 다시 시도해주세요.');
     });
+}
+
+// 🛡️ 다중 스토어 충돌 처리
+function handleMultiStoreConflict(data) {
+    const existingStores = data.existing_stores.join(', ');
+    const currentStore = data.current_store;
+    
+    const confirmed = confirm(
+        `⚠️ 장바구니 충돌 감지\n\n` +
+        `현재 장바구니에 다른 스토어(${existingStores})의 상품이 있습니다.\n\n` +
+        `"${currentStore}" 스토어의 상품을 추가하려면 기존 장바구니를 비워야 합니다.\n\n` +
+        `기존 장바구니를 비우고 새 상품을 추가하시겠습니까?`
+    );
+    
+    if (confirmed) {
+        // 강제로 장바구니 교체
+        const quantity = parseInt(document.getElementById('quantity')?.value || 1);
+        const selectedOptions = {};
+        
+        // 선택된 옵션들 수집
+        document.querySelectorAll('.option-choice.selected').forEach(option => {
+            selectedOptions[option.dataset.optionId] = option.dataset.choiceId;
+        });
+        
+        // 강제 교체로 추가
+        performAddToCart(quantity, selectedOptions, true);
+    }
 }
 
 // 공통 함수들은 cart-common.js에서 로드됩니다

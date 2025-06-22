@@ -133,16 +133,30 @@
     const siteInstallButtonMobile = document.getElementById('site-pwa-install-button-mobile');
     const storeInstallButtonMobile = document.getElementById('store-pwa-install-button-mobile');
 
-    // 모든 설치 버튼 표시
+    // 모든 설치 버튼 표시 (부드러운 애니메이션과 함께)
     [installButton, installButtonMobile, siteInstallButtonMobile, storeInstallButtonMobile].forEach(button => {
       if (button) {
+        // 초기 상태: 투명하게 설정
+        button.style.opacity = '0';
+        button.style.transform = 'translateY(-10px)';
         button.style.display = 'block';
+        
+        // 부드러운 페이드인 애니메이션
+        setTimeout(() => {
+          button.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+          button.style.opacity = '1';
+          button.style.transform = 'translateY(0)';
+        }, 100);
+        
         button.classList.add('pwa-fade-in');
         
-        // 클릭 이벤트 추가
-        button.addEventListener('click', function() {
-          installPWA();
-        });
+        // 클릭 이벤트 추가 (중복 방지)
+        if (!button.hasAttribute('data-pwa-initialized')) {
+          button.addEventListener('click', function() {
+            installPWA();
+          });
+          button.setAttribute('data-pwa-initialized', 'true');
+        }
       }
     });
   }
@@ -268,7 +282,23 @@
 
   // PWA 초기화
   function initPWA() {
-    debugLog('PWA 초기화 시작');
+    debugLog('PWA 초기화 시작 (지연된 초기화)');
+
+    // 먼저 모든 PWA 관련 요소들을 숨김 상태로 확실히 설정
+    const pwaElements = [
+      'pwa-install-button',
+      'pwa-install-button-mobile',
+      'site-pwa-install-button-mobile',
+      'store-pwa-install-button-mobile'
+    ];
+    
+    pwaElements.forEach(elementId => {
+      const element = document.getElementById(elementId);
+      if (element && !element.hasAttribute('data-pwa-initialized')) {
+        element.style.display = 'none';
+        element.style.opacity = '0';
+      }
+    });
 
     // Service Worker 등록
     registerServiceWorker();
@@ -292,14 +322,25 @@
       debugLog('PWA 설치 프롬프트가 아직 트리거되지 않았습니다.');
     }
 
-    debugLog('PWA 초기화 완료');
+    debugLog('PWA 초기화 완료 (지연된 초기화)');
   }
 
-  // DOM 로드 완료 후 PWA 초기화
+  // DOM 로드 완료 후 PWA 초기화 (지연 처리)
+  function delayedInitPWA() {
+    // 페이지가 완전히 로드된 후 1초 지연
+    setTimeout(() => {
+      initPWA();
+    }, 1000);
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initPWA);
+    document.addEventListener('DOMContentLoaded', delayedInitPWA);
+  } else if (document.readyState === 'interactive') {
+    // DOM은 로드되었지만 리소스가 아직 로딩 중
+    window.addEventListener('load', delayedInitPWA);
   } else {
-    initPWA();
+    // 페이지가 완전히 로드됨
+    delayedInitPWA();
   }
 
   // 전역 PWA 함수들 내보내기

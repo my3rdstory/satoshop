@@ -117,6 +117,52 @@ def cart_api(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+def check_cart_store_conflict(request):
+    """장바구니 스토어 충돌 여부 확인"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
+    
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        
+        if not product_id:
+            return JsonResponse({'success': False, 'error': '상품 ID가 필요합니다.'})
+        
+        try:
+            from products.models import Product
+            product = Product.objects.get(id=product_id, is_active=True)
+        except Product.DoesNotExist:
+            return JsonResponse({'success': False, 'error': '상품을 찾을 수 없습니다.'})
+        
+        cart_service = CartService(request)
+        existing_items = cart_service.get_cart_items()
+        
+        if existing_items:
+            # 기존 장바구니에 있는 스토어들 확인
+            existing_stores = set(item['store_id'] for item in existing_items)
+            current_store_id = product.store.store_id
+            
+            # 다른 스토어의 상품이 이미 있는 경우
+            if current_store_id not in existing_stores:
+                existing_store_names = set(item['store_name'] for item in existing_items)
+                return JsonResponse({
+                    'success': True,
+                    'has_conflict': True,
+                    'current_store': product.store.store_name,
+                    'existing_stores': list(existing_store_names),
+                    'message': f'장바구니에 다른 스토어({", ".join(existing_store_names)})의 상품이 있습니다.'
+                })
+        
+        return JsonResponse({
+            'success': True,
+            'has_conflict': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
 def add_to_cart(request):
     """장바구니에 상품 추가"""
     if request.method != 'POST':
@@ -127,9 +173,10 @@ def add_to_cart(request):
         product_id = data.get('product_id')
         quantity = int(data.get('quantity', 1))
         selected_options = data.get('selected_options', {})
+        force_replace = data.get('force_replace', False)  # 장바구니 교체 강제 여부
         
         cart_service = CartService(request)
-        result = cart_service.add_to_cart(product_id, quantity, selected_options)
+        result = cart_service.add_to_cart(product_id, quantity, selected_options, force_replace)
         
         if result['success']:
             cart_summary = cart_service.get_cart_summary()
