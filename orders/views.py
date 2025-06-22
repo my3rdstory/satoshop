@@ -1119,7 +1119,7 @@ def create_checkout_invoice(request):
             logger.debug(f"[INVOICE]   - 배송비 총액: {total_shipping_fee} sats")
             logger.debug(f"[INVOICE]   - 최종 총액: {total_amount} sats")
         
-        # 첫 번째 스토어의 블링크 API 사용 (다중 스토어 주문의 경우 향후 개선 필요)
+        # 첫 번째 스토어의 블링크 API 사용 (단일 스토어 제약으로 항상 하나의 스토어만 존재)
         first_store = stores_with_items[0]['store']
         
         # 메모 생성 - 제품 정보 포함

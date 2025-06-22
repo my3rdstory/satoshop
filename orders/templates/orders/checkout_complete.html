@@ -117,7 +117,7 @@
           
           <div class="space-y-6">
             {% if total_orders > 1 %}
-            <!-- 다중 스토어 주문인 경우 스토어별로 그룹화하여 표시 -->
+            <!-- 주문 상품 목록 -->
             {% for order in all_orders %}
             <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
               <div class="flex items-center mb-4 pb-3 border-b border-gray-200 dark:border-gray-600">
@@ -287,45 +287,24 @@
       </div>
       
       <div class="p-6">
-        {% if total_orders > 1 %}
-          <p class="text-gray-600 dark:text-gray-400 mb-4">각 스토어별로 주문서를 다운로드 받으실 수 있습니다.</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for order in all_orders %}
-            <a 
-              href="{% url 'orders:download_order_txt_public' order.order_number %}" 
-              class="inline-flex items-center justify-center px-4 py-3 bg-gradient-to-r from-bitcoin/10 to-orange-500/10 hover:from-bitcoin/20 hover:to-orange-500/20 border border-bitcoin/30 hover:border-bitcoin/50 text-bitcoin font-medium rounded-xl transition-all duration-200 hover:shadow-md"
-              download
-            >
-              <div class="text-center">
-                <div class="flex items-center justify-center mb-1">
-                  <i class="fas fa-file-alt mr-2"></i>
-                  {{ order.store.store_name }}
-                </div>
-                <div class="text-xs text-gray-600 dark:text-gray-400">{{ order.order_number }}</div>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">아래 버튼을 클릭하여 주문서를 TXT 파일로 다운로드 받으세요.</p>
+        <div class="text-center">
+          <a 
+            href="{% url 'orders:download_order_txt_public' primary_order.order_number %}" 
+            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
+            download
+          >
+            <div class="flex items-center">
+              <div class="p-2 bg-white/20 rounded-lg mr-3">
+                <i class="fas fa-download text-xl"></i>
               </div>
-            </a>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p class="text-gray-600 dark:text-gray-400 mb-4">아래 버튼을 클릭하여 주문서를 TXT 파일로 다운로드 받으세요.</p>
-          <div class="text-center">
-            <a 
-              href="{% url 'orders:download_order_txt_public' primary_order.order_number %}" 
-              class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-bitcoin to-orange-500 hover:from-bitcoin/90 hover:to-orange-500/90 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
-              download
-            >
-              <div class="flex items-center">
-                <div class="p-2 bg-white/20 rounded-lg mr-3">
-                  <i class="fas fa-download text-xl"></i>
-                </div>
-                <div class="text-left">
-                  <div class="text-lg font-bold">주문서 다운로드</div>
-                  <div class="text-sm opacity-90">{{ primary_order.order_number }}</div>
-                </div>
+              <div class="text-left">
+                <div class="text-lg font-bold">주문서 다운로드</div>
+                <div class="text-sm opacity-90">{{ primary_order.order_number }}</div>
               </div>
-            </a>
-          </div>
-        {% endif %}
+            </div>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -353,15 +332,10 @@
 {% block extra_js %}
 <script src="{% static 'js/common.js' %}"></script>
 
-<!-- 다운로드 URL들을 data 속성으로 전달 -->
+<!-- 다운로드 URL을 data 속성으로 전달 -->
 <div id="downloadData" style="display:none;" 
-     data-single-order="{% if total_orders == 1 %}true{% else %}false{% endif %}"
-     {% if total_orders == 1 %}
      data-download-url="{% url 'orders:download_order_txt_public' primary_order.order_number %}"
      data-filename="order_{{ primary_order.order_number }}.txt"
-     {% else %}
-     data-download-urls="{% for order in all_orders %}{% url 'orders:download_order_txt_public' order.order_number %}{% if not forloop.last %}|{% endif %}{% endfor %}"
-     {% endif %}
 ></div>
 
 <script>
@@ -370,27 +344,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // 페이지 로드 후 1초 뒤에 다운로드 시작 (사용자가 완료 메시지를 볼 수 있도록)
   setTimeout(function() {
     const downloadData = document.getElementById('downloadData');
-    const isSingleOrder = downloadData.getAttribute('data-single-order') === 'true';
+    const downloadUrl = downloadData.getAttribute('data-download-url');
+    const filename = downloadData.getAttribute('data-filename');
     
-    if (isSingleOrder) {
-      // 단일 스토어 주문인 경우
-      const downloadUrl = downloadData.getAttribute('data-download-url');
-      const filename = downloadData.getAttribute('data-filename');
-      downloadFile(downloadUrl, filename);
-      showDownloadNotification('주문서 다운로드를 시작합니다.');
-    } else {
-      // 다중 스토어 주문인 경우
-      const downloadUrls = downloadData.getAttribute('data-download-urls').split('|');
-      
-      // 각 주문서를 0.5초 간격으로 다운로드 (브라우저 제한 방지)
-      downloadUrls.forEach(function(url, index) {
-        setTimeout(function() {
-          downloadFile(url, 'order_' + (index + 1) + '.txt');
-        }, index * 500);
-      });
-      
-      showDownloadNotification('다중 스토어 주문서 다운로드를 시작합니다.');
-    }
+    downloadFile(downloadUrl, filename);
+    showDownloadNotification('주문서 다운로드를 시작합니다.');
   }, 1000);
 });
 
