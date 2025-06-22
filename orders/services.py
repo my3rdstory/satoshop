@@ -466,6 +466,16 @@ def send_order_notification_email(order):
         bool: 발송 성공 여부
     """
     try:
+        # 🛡️ 중복 이메일 발송 방지: 같은 payment_id로 이미 이메일을 발송했는지 확인
+        if order.payment_id:
+            # 같은 payment_id를 가진 다른 주문들 중에서 이메일이 이미 발송된 것이 있는지 확인
+            from django.core.cache import cache
+            email_cache_key = f"order_email_sent_{order.payment_id}_{order.store.id}"
+            
+            if cache.get(email_cache_key):
+                logger.debug(f"주문 {order.order_number}: 같은 결제ID({order.payment_id})로 이미 이메일 발송됨")
+                return False
+        
         # 스토어 이메일 설정 확인
         store = order.store
         
@@ -511,6 +521,12 @@ def send_order_notification_email(order):
         )
         
         email.send()
+        
+        # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
+        if order.payment_id:
+            from django.core.cache import cache
+            email_cache_key = f"order_email_sent_{order.payment_id}_{order.store.id}"
+            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
         logger.info(f"주문 알림 이메일 발송 성공 - 주문: {order.order_number}, 수신: {store.owner_email}")
         return True

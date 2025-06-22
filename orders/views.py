@@ -1286,6 +1286,22 @@ def check_checkout_payment(request):
         # 결제 완료 시 주문 생성
         if result['status'] == 'paid':
             try:
+                # 🛡️ 중복 결제 처리 방지: 이미 해당 payment_hash로 주문이 존재하는지 먼저 확인
+                existing_orders = Order.objects.filter(payment_id=payment_hash)
+                if existing_orders.exists():
+                    if settings.DEBUG:
+                        logger.debug(f"[PAYMENT] 중복 결제 처리 방지: {payment_hash} - 기존 주문 {existing_orders.count()}개 발견")
+                    
+                    # 기존 주문 정보 반환
+                    all_orders = list(existing_orders)
+                    return JsonResponse({
+                        'success': True,
+                        'status': result['status'],
+                        'paid': True,
+                        'order_number': all_orders[0].order_number if all_orders else None,
+                        'redirect_url': f'/orders/checkout/complete/{all_orders[0].order_number}/' if all_orders else None
+                    })
+                
                 # 인보이스 상태 업데이트
                 try:
                     invoice = Invoice.objects.get(payment_hash=payment_hash)
