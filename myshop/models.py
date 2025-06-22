@@ -82,46 +82,11 @@ class ExchangeRate(models.Model):
         krw_amount = btc_amount * float(self.btc_krw_rate)
         return int(krw_amount)
 
-@receiver(post_save, sender=ExchangeRate)
-def send_exchange_rate_notification(sender, instance, created, **kwargs):
-    """환율 데이터 저장 시 이메일 알림 전송"""
-    if created:  # 새로 생성된 경우만
-        try:
-            # SiteSettings에서 알림 이메일 주소 가져오기
-            site_settings = SiteSettings.get_settings()
-            notification_email = site_settings.exchange_rate_notification_email
-            
-            subject = f'[Satoshop] 환율 업데이트 알림 - {instance.created_at.strftime("%Y-%m-%d %H:%M:%S")}'
-            
-            message = f"""
-안녕하세요, Satoshop 관리자님!
-
-새로운 환율 데이터가 성공적으로 저장되었습니다.
-
-📊 환율 정보:
-- BTC/KRW 환율: {instance.btc_krw_rate:,} KRW
-- 업데이트 시간: {instance.created_at.strftime('%Y년 %m월 %d일 %H시 %M분 %S초')}
-- 데이터 소스: 업비트 API
-
-✅ 환율 데이터 저장이 성공적으로 완료되었습니다.
-
----
-이 메일은 자동으로 발송된 알림입니다.
-Satoshop 시스템에서 발송됨
-            """.strip()
-            
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[notification_email],
-                fail_silently=False,
-            )
-            
-            logger.info(f"환율 알림 이메일 전송 성공: {notification_email} - 환율: {instance.btc_krw_rate:,} KRW")
-            
-        except Exception as e:
-            logger.error(f"환율 알림 이메일 전송 실패: {str(e)}")
+# 즉시 알림 기능을 비활성화하고 스케줄러 기반 알림으로 변경
+# @receiver(post_save, sender=ExchangeRate)
+# def send_exchange_rate_notification(sender, instance, created, **kwargs):
+#     """환율 데이터 저장 시 이메일 알림 전송 - 비활성화됨 (스케줄러 기반 알림으로 대체)"""
+#     pass
 
 class SiteSettings(models.Model):
     """사이트 전역 설정"""

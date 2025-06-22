@@ -58,7 +58,7 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **실시간 결제 확인**: 자동 결제 상태 추적
 - **인보이스 관리**: 결제 내역 및 상태 관리
 - **환율 자동 업데이트**: 업비트 API를 통한 BTC/KRW 환율 자동 갱신
-- **환율 이메일 알림**: 환율 데이터 저장 시 자동 이메일 알림 전송
+- **환율 요약 이메일**: 1시간마다 최근 5개 환율 데이터를 모아서 요약 이메일 전송
 
 ### 🛒 주문 관리
 - **장바구니 기능**: 다중 스토어 상품 동시 주문
@@ -385,10 +385,17 @@ ALLOWED_HOSTS=satoshop.onrender.com
 SECURE_SSL_REDIRECT=True
 ```
 
-#### Cron Job 설정 (환율 자동 업데이트)
+#### Cron Job 설정
+
+**환율 자동 업데이트**
 - "New Cron Job" 생성
 - 명령어: `uv run python manage.py update_exchange_rate`
 - 스케줄: `*/10 * * * *` (10분마다)
+
+**환율 요약 이메일 전송**
+- "New Cron Job" 생성  
+- 명령어: `uv run python manage.py send_hourly_exchange_rate_summary`
+- 스케줄: `0 * * * *` (매시 정각)
 
 ### Docker 배포
 
@@ -451,14 +458,17 @@ uv run python manage.py update_exchange_rate --force
 # 환율 업데이트 상태 확인
 uv run python manage.py update_exchange_rate --verbose
 
-# 환율 이메일 알림 테스트
+# 환율 요약 이메일 전송 (1시간마다 최근 5개 데이터)
+uv run python manage.py send_hourly_exchange_rate_summary
+
+# 사용자 정의 옵션으로 환율 요약 이메일 전송
+uv run python manage.py send_hourly_exchange_rate_summary --hours 2 --limit 10
+
+# 특정 이메일로 환율 요약 전송
+uv run python manage.py send_hourly_exchange_rate_summary --email admin@example.com
+
+# 환율 이메일 알림 테스트 (개별 알림 - 현재 비활성화됨)
 uv run python manage.py test_exchange_rate_email --test-only
-
-# 실제 환율 업데이트와 함께 이메일 테스트
-uv run python manage.py test_exchange_rate_email
-
-# 특정 이메일로 테스트 전송
-uv run python manage.py test_exchange_rate_email --email admin@example.com
 ```
 
 #### 정적 파일 관리
