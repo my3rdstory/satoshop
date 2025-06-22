@@ -72,6 +72,43 @@
         gtag('config', '{{ site_settings.google_analytics_id }}');
     </script>
     {% endif %}
+
+    <!-- FOUC 방지를 위한 테마 초기화 스크립트 -->
+    <script>
+      (function() {
+        // localStorage에서 테마 읽기
+        let theme = 'light'; // 기본값
+        try {
+          const stored = localStorage.getItem('theme');
+          if (stored) {
+            theme = stored;
+          } else {
+            // 저장된 값이 없으면 시스템 설정 확인
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            }
+          }
+        } catch (e) {
+          // localStorage 접근 실패 시 시스템 설정으로 fallback
+          try {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+              theme = 'dark';
+            }
+          } catch (e2) {
+            // 최종 fallback은 light
+            theme = 'light';
+          }
+        }
+        
+        // 즉시 적용 (DOM 요소가 생성되기 전에)
+        document.documentElement.setAttribute('data-theme', theme);
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.add('light');
+        }
+      })();
+    </script>
 </head>
 
 <body class="font-noto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white{% block body_class %} store-page{% if store %} store-{{ store.store_id }}{% endif %}{% endblock %}">
@@ -159,6 +196,7 @@
          // 스토어 전용 기본 설정
   </script>
   <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <script src="{% static 'js/store-common.js' %}"></script>
 
   {% block extra_js %}{% endblock %}
