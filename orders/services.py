@@ -4,6 +4,9 @@ from products.models import Product, ProductOption, ProductOptionChoice
 from .models import Cart, CartItem
 import json
 import logging
+from django.core.mail.backends.smtp import EmailBackend
+from django.core.mail import EmailMessage
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -413,4 +416,83 @@ class CartService:
         return {
             'success': False,
             'error': '장바구니 아이템을 찾을 수 없습니다.'
-        } 
+        }
+
+def generate_order_txt_content(order):
+    """
+    주문서 TXT 내용 생성 (하위 호환성을 위한 래퍼 함수)
+    
+    Args:
+        order: Order 인스턴스
+    
+    Returns:
+        str: 주문서 텍스트 내용
+    """
+    from .formatters import generate_txt_order
+    return generate_txt_order(order)
+
+
+def send_order_notification_email(order):
+    """
+    주문 완료 시 스토어 주인장에게 이메일 발송
+    
+    Args:
+        order: Order 인스턴스
+    
+    Returns:
+        bool: 발송 성공 여부
+    """
+    try:
+        # 스토어 이메일 설정 확인
+        store = order.store
+        
+        # 이메일 기능이 비활성화되어 있으면 발송하지 않음
+        if not store.email_enabled:
+            logger.debug(f"주문 {order.order_number}: 스토어 이메일 기능 비활성화됨")
+            return False
+            
+        # 필수 설정 확인 (Gmail 설정)
+        if not store.email_host_user or not store.email_host_password_encrypted:
+            logger.debug(f"주문 {order.order_number}: Gmail 설정 불완전 (이메일: {bool(store.email_host_user)}, 비밀번호: {bool(store.email_host_password_encrypted)})")
+            return False
+            
+        # 🔥 중요: 수신 이메일 주소 확인 (주인장 이메일)
+        if not store.owner_email:
+            logger.debug(f"주문 {order.order_number}: 스토어 주인장 이메일 주소가 설정되지 않음")
+            return False
+            
+        # 스토어별 SMTP 설정
+        backend = EmailBackend(
+            host='smtp.gmail.com',
+            port=587,
+            username=store.email_host_user,
+            password=store.get_email_host_password(),
+            use_tls=True,
+            fail_silently=False,
+        )
+        
+        # 이메일용 주문서 생성 (새로운 포맷터 사용)
+        from .formatters import generate_email_order
+        email_data = generate_email_order(order)
+        
+        subject = email_data['subject']
+        message = email_data['body']
+        
+        # 이메일 발송
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=f'{store.email_from_display} <{store.email_host_user}>',
+            to=[store.owner_email],
+            connection=backend
+        )
+        
+        email.send()
+        
+        logger.info(f"주문 알림 이메일 발송 성공 - 주문: {order.order_number}, 수신: {store.owner_email}")
+        return True
+        
+    except Exception as e:
+        # 이메일 발송 실패 시 로그 기록 (주문 처리는 계속 진행)
+        logger.error(f"주문 알림 이메일 발송 실패 - 주문: {order.order_number}, 오류: {str(e)}")
+        return False 
