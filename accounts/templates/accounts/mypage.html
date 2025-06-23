@@ -1,5 +1,6 @@
 {% extends 'myshop/base.html' %}
 {% load static %}
+{% load user_extras %}
 
 {% block title %}마이페이지 - SatoShop{% endblock %}
 
@@ -40,8 +41,8 @@
             
             <!-- 사용자 정보 -->
             <div class="flex-1 min-w-0">
-              <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {{ user.username }}
+              <h2 class="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2 break-all">
+                {{ user|friendly_display_name }}
               </h2>
               {% if user.email %}
               <p class="text-gray-600 dark:text-gray-400 mb-4">{{ user.email }}</p>
@@ -82,7 +83,8 @@
           </div>
 
           <div class="space-y-3">
-            <!-- 비밀번호 변경 -->
+            <!-- 비밀번호 변경 (비밀번호가 설정된 사용자만) -->
+            {% if user.has_usable_password %}
             <a 
               href="{% url 'accounts:change_password' %}" 
               class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 transition-all duration-200"
@@ -104,6 +106,89 @@
                 <i class="fas fa-chevron-right text-gray-400 group-hover:text-bitcoin transition-colors"></i>
               </div>
             </a>
+            {% endif %}
+
+            <!-- 라이트닝 인증 연동 -->
+            {% if user.lightning_profile %}
+            <div class="group flex items-center p-4 rounded-xl border border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/20">
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-bolt text-green-600 dark:text-green-400"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-green-900 dark:text-green-100">
+                  라이트닝 인증 연동됨
+                </h4>
+                <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                  공개키: {{ user.lightning_profile.public_key|slice:":16" }}...
+                </p>
+                {% if not user.has_usable_password %}
+                <p class="text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium">
+                  <i class="fas fa-exclamation-triangle mr-1"></i>
+                  라이트닝 전용 계정 (연동 해제 시 계정 삭제)
+                </p>
+                {% endif %}
+              </div>
+              <div class="flex-shrink-0">
+                <button 
+                  id="unlinkLightningBtn"
+                  class="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 font-medium"
+                  title="{% if user.has_usable_password %}연동 해제{% else %}계정 탈퇴{% endif %}"
+                  data-has-password="{{ user.has_usable_password|yesno:'true,false' }}"
+                >
+                  {% if user.has_usable_password %}연동 해제{% else %}계정 탈퇴{% endif %}
+                </button>
+              </div>
+            </div>
+            {% else %}
+            <a 
+              href="{% url 'accounts:link_lightning' %}"
+              class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-bitcoin hover:bg-bitcoin/5 dark:hover:bg-bitcoin/10 transition-all duration-200 w-full text-left"
+            >
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center group-hover:bg-bitcoin/20 transition-colors">
+                  <i class="fas fa-bolt text-orange-600 dark:text-orange-400 group-hover:text-bitcoin"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-bitcoin transition-colors">
+                  라이트닝 인증 연동
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  라이트닝 지갑을 연결하여 빠른 로그인을 사용하세요
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- 회원탈퇴 (수퍼어드민 제외, 라이트닝 전용 계정 제외) -->
+            {% if not user.is_superuser and user.has_usable_password %}
+            <button
+              id="deleteAccountBtn"
+              class="group flex items-center p-4 rounded-xl border border-red-200 dark:border-red-600 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 w-full text-left"
+            >
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
+                  <i class="fas fa-user-times text-red-600 dark:text-red-400"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-red-900 dark:text-red-100 group-hover:text-red-700 dark:group-hover:text-red-200 transition-colors">
+                  회원탈퇴
+                </h4>
+                <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                  계정을 완전히 삭제합니다 (복구 불가능)
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <i class="fas fa-chevron-right text-red-400 group-hover:text-red-500 transition-colors"></i>
+              </div>
+            </button>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -149,6 +234,103 @@
 
 {% block extra_js %}
 <script>
-  // 마이페이지 관련 JavaScript가 필요한 경우 여기에 추가
+document.addEventListener('DOMContentLoaded', function() {
+  const unlinkLightningBtn = document.getElementById('unlinkLightningBtn');
+  const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+  
+  // 라이트닝 연동 해제/계정 탈퇴
+  if (unlinkLightningBtn) {
+    unlinkLightningBtn.addEventListener('click', function() {
+      const hasPassword = this.dataset.hasPassword === 'true';
+      let confirmMessage, warningMessage;
+      
+      if (hasPassword) {
+        // 일반 계정 - 연동 해제
+        confirmMessage = '라이트닝 지갑 연동을 해제하시겠습니까?\n해제 후에도 기존 비밀번호로 로그인할 수 있습니다.';
+      } else {
+        // 라이트닝 전용 계정 - 계정 탈퇴
+        confirmMessage = '⚠️ 경고: 라이트닝 전용 계정 탈퇴\n\n라이트닝 지갑 연동을 해제하면 계정이 완전히 삭제됩니다.\n• 모든 개인정보가 즉시 삭제됩니다\n• 구매 내역 및 스토어 정보가 삭제됩니다\n• 복구가 불가능합니다\n\n정말로 계정을 탈퇴하시겠습니까?';
+      }
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      
+      // 라이트닝 전용 계정의 경우 추가 확인
+      if (!hasPassword) {
+        if (!confirm('최종 확인: 정말로 계정을 완전히 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+          return;
+        }
+      }
+      
+      const url = hasPassword ? '{% url "accounts:unlink_lightning_wallet" %}' : '{% url "accounts:delete_account" %}';
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({})
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          if (hasPassword) {
+            // 연동 해제 성공 - 페이지 새로고침
+            location.reload();
+          } else {
+            // 계정 탈퇴 성공 - 홈페이지로 이동
+            alert('계정이 성공적으로 삭제되었습니다.');
+            window.location.href = '/';
+          }
+        } else {
+          alert('오류: ' + (data.error || '처리에 실패했습니다.'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('네트워크 오류가 발생했습니다.');
+      });
+    });
+  }
+  
+  // 일반 회원탈퇴
+  if (deleteAccountBtn) {
+    deleteAccountBtn.addEventListener('click', function() {
+      const confirmMessage = '⚠️ 회원탈퇴 경고\n\n계정을 탈퇴하면 다음 정보가 영구적으로 삭제됩니다:\n• 모든 개인정보\n• 구매 내역\n• 스토어 및 상품 정보\n• 라이트닝 지갑 연동 정보\n\n이 작업은 복구할 수 없습니다.\n정말로 탈퇴하시겠습니까?';
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+      
+      if (!confirm('최종 확인: 정말로 계정을 완전히 삭제하시겠습니까?')) {
+        return;
+      }
+      
+      fetch('{% url "accounts:delete_account" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({})
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('계정이 성공적으로 삭제되었습니다.');
+          window.location.href = '/';
+        } else {
+          alert('오류: ' + (data.error || '탈퇴 처리에 실패했습니다.'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('네트워크 오류가 발생했습니다.');
+      });
+    });
+  }
+});
 </script>
 {% endblock %}

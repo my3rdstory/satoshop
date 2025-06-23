@@ -36,6 +36,15 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
 
+# 개발 환경에서 로컬 네트워크 접근 허용
+if DEBUG:
+    ALLOWED_HOSTS.extend([
+        'localhost',
+        '127.0.0.1',
+        '0.0.0.0',
+        '460a-14-52-155-113.ngrok-free.app',  # 현재 ngrok 도메인
+    ])
+
 
 # Application definition
 
@@ -179,6 +188,18 @@ LOGOUT_REDIRECT_URL = 'myshop:home'
 
 # 블링크 API 설정
 BLINK_API_URL = 'https://api.blink.sv/graphql'
+
+# LNURL-auth 설정 (lnauth-django 호환)
+LNURL_AUTH_ROOT_DOMAIN = os.getenv('LNURL_AUTH_ROOT_DOMAIN', '460a-14-52-155-113.ngrok-free.app')
+LNURL_AUTH_K1_TIMEOUT = int(os.getenv('LNURL_AUTH_K1_TIMEOUT', str(60 * 60)))  # 1시간
+
+# 캐시 설정 (LNURL k1 저장용)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'lnurl-auth-cache',
+    }
+}
 
 # S3 오브젝트 스토리지 설정 (iwinv)
 S3_ACCESS_KEY_ID = os.getenv('S3_ACCESS_KEY_ID')

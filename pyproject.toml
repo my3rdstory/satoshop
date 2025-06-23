@@ -19,4 +19,6 @@ dependencies = [
     "gunicorn>=23.0.0",
     "dj-database-url>=3.0.0",
     "whitenoise>=6.9.0",
+    "secp256k1>=0.14.0",
+    "bech32>=1.2.0",
 ]

@@ -8,13 +8,23 @@ from django.views.generic import CreateView, TemplateView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.views import View
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST, require_GET
+from django.contrib.auth.models import User
+from django.conf import settings
+import json
+import logging
+from django.core.cache import cache
 
 # orders 앱에서 필요한 모델들 import
 from orders.models import PurchaseHistory, Order
 from orders.services import CartService
+from .models import LightningUser
+from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
 
+logger = logging.getLogger(__name__)
 
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
@@ -30,8 +40,6 @@ class CustomLoginView(LoginView):
             cart_service.migrate_session_to_db()
         except Exception as e:
             # 마이그레이션 실패해도 로그인은 진행
-            import logging
-            logger = logging.getLogger(__name__)
             logger.warning(f"장바구니 마이그레이션 실패: {e}")
         
         return response
@@ -100,8 +108,6 @@ class SignUpView(CreateView):
             cart_service.migrate_session_to_db()
         except Exception as e:
             # 마이그레이션 실패해도 회원가입은 진행
-            import logging
-            logger = logging.getLogger(__name__)
             logger.warning(f"장바구니 마이그레이션 실패: {e}")
         
         # next 파라미터가 있으면 해당 URL로 리다이렉트
@@ -195,3 +201,605 @@ def download_order_txt(request, order_number):
         response['Content-Disposition'] = f'attachment; filename="{fallback_filename}"'
     
     return response
+
+
+def create_lnurl_auth(request):
+    """LNURL-auth 세션 생성 (lnauth-django 방식)"""
+    try:
+        if not request.user.is_anonymous:
+            return JsonResponse({
+                'success': False,
+                'error': '이미 로그인된 사용자입니다.'
+            }, status=400)
+
+        # action 파라미터 확인 (기본값: login)
+        action = request.GET.get('action', 'login')
+        if action not in ['login', 'register']:
+            action = 'login'
+        
+        if settings.DEBUG:
+            logger.debug(f"LNURL-auth 세션 생성 요청 - action: {action}")
+        
+        # LNURL 서비스 초기화
+        lnurl_service = LNURLAuthService()
+        
+        # k1 생성
+        k1_bytes = lnurl_service.generate_k1()
+        
+        # LNURL 생성
+        lnurl = lnurl_service.get_auth_url(k1_bytes, action)
+        
+        if settings.DEBUG:
+            logger.debug(f"LNURL-auth 세션 생성 완료: k1={k1_bytes.hex()[:16]}..., action={action}")
+        
+        return JsonResponse({
+            'success': True,
+            'lnurl': lnurl,
+            'k1': k1_bytes.hex(),
+            'action': action
+        })
+        
+    except LNURLAuthException as e:
+        logger.error(f"LNURL-auth 세션 생성 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+    except Exception as e:
+        logger.error(f"LNURL-auth 세션 생성 예외: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+
+@csrf_exempt
+def lnurl_auth_callback(request):
+    """LNURL-auth 콜백 (lnauth-django 방식)"""
+    try:
+        logger.info(f"LNURL-auth 콜백 요청: method={request.method}, user={request.user}, GET={dict(request.GET)}")
+        
+        if request.method == 'GET':
+            # sig와 key가 있으면 2단계 요청으로 처리
+            if 'sig' in request.GET and 'key' in request.GET:
+                logger.info("GET 요청이지만 sig/key가 있어서 2단계 요청으로 처리")
+                # POST 처리 로직으로 이동
+                data = request.GET
+                k1_hex = data['k1']
+                sig_hex = data['sig']
+                key_hex = data['key']
+                action = data.get('action', 'login')
+                
+                logger.info(f"LNURL-auth GET 서명 검증 시작 - k1: {k1_hex[:16]}..., action: {action}, key: {key_hex[:16]}...")
+                
+                # 서명 검증 및 인증 처리
+                lnurl_service = LNURLAuthService()
+                
+                try:
+                    # 서명 검증
+                    lnurl_service.verify_ln_auth(k1_hex, sig_hex, key_hex, action)
+                    logger.info("서명 검증 성공")
+                    
+                    # 사용자 인증/등록/연동
+                    if action == 'link':
+                        logger.info("연동 처리 시작")
+                        # 연동 처리
+                        user, is_linked = lnurl_service.authenticate_user(key_hex, action, k1_hex)
+                        logger.info(f"연동 완료: user={user.username}")
+                        
+                        return JsonResponse({
+                            'status': 'OK',
+                            'event': 'link-success'
+                        })
+                    else:
+                        # 로그인/회원가입의 경우 이미 인증된 사용자면 오류
+                        if not request.user.is_anonymous:
+                            logger.error(f"로그인/회원가입 GET 요청이지만 이미 인증된 상태: {request.user.username}")
+                            return JsonResponse({
+                                'status': 'ERROR',
+                                'reason': '이미 인증된 사용자입니다.'
+                            }, status=400)
+                        
+                        print(f"🚀 GET 로그인/회원가입 처리 시작: action={action}")
+                        logger.info(f"로그인/회원가입 처리 시작: action={action}")
+                        # 로그인/회원가입
+                        user, is_new = lnurl_service.authenticate_user(key_hex, action)
+                        
+                        print(f"✅ GET 사용자 인증 완료: user={user.username}, is_new={is_new}")
+                        logger.info(f"사용자 인증 완료: user={user.username}, is_new={is_new}")
+                        
+                        # 로그인 성공 정보를 캐시에 저장 (브라우저에서 확인할 수 있도록)
+                        auth_cache_key = f"lnauth-success-{k1_hex}"
+                        print(f"🔑 GET 캐시 키 생성: {auth_cache_key}")
+                        auth_data = {
+                            'user_id': user.id,
+                            'username': user.username,
+                            'is_new': is_new,
+                            'next_url': request.GET.get('next')
+                        }
+                        from django.core.cache import cache
+                        cache.set(auth_cache_key, auth_data, timeout=300)  # 5분
+                        print(f"💾 GET 인증 정보 캐시 저장: {auth_cache_key}, data={auth_data}")
+                        logger.info(f"인증 정보 캐시 저장: {auth_cache_key}")
+                        
+                        return JsonResponse({
+                            'status': 'OK',
+                            'event': 'auth-signup' if is_new else 'auth-success'
+                        })
+                        
+                except LNURLAuthException as e:
+                    logger.warning(f"LNURL-auth GET 검증 실패: {str(e)}")
+                    
+                    # 에러 정보를 캐시에 저장 (클라이언트에서 확인할 수 있도록)
+                    if action in ['login', 'register']:
+                        error_cache_key = f"lnauth-error-{k1_hex}"
+                        cache.set(error_cache_key, str(e), timeout=300)  # 5분
+                        logger.info(f"GET 에러 정보 캐시 저장: {error_cache_key}")
+                    elif action == 'link':
+                        # 연동 에러는 k1과 공개키 둘 다로 저장
+                        error_cache_key_k1 = f"lnauth-error-{k1_hex}"
+                        error_cache_key_pubkey = f"lnauth-link-error-{key_hex}"
+                        cache.set(error_cache_key_k1, str(e), timeout=300)  # 5분
+                        cache.set(error_cache_key_pubkey, str(e), timeout=300)  # 5분
+                        logger.info(f"GET 연동 에러 정보 캐시 저장: {error_cache_key_k1}, {error_cache_key_pubkey}")
+                    
+                    return JsonResponse({
+                        'status': 'ERROR',
+                        'reason': str(e)
+                    }, status=400)
+            
+            # 1단계: 지갑이 QR 코드 정보를 요청
+            required_params = ['tag', 'k1', 'action']
+            for param in required_params:
+                if param not in request.GET:
+                    logger.error(f"필수 파라미터 누락: {param}")
+                    return JsonResponse({
+                        'status': 'ERROR',
+                        'reason': f'필수 파라미터 누락: {param}'
+                    }, status=400)
+            
+            if request.GET['tag'] != 'login':
+                logger.error(f"잘못된 태그: {request.GET['tag']}")
+                return JsonResponse({
+                    'status': 'ERROR',
+                    'reason': 'Invalid tag'
+                }, status=400)
+            
+            k1_hex = request.GET['k1']
+            action = request.GET['action']
+            logger.info(f"LNURL-auth GET 요청: k1={k1_hex[:16]}..., action={action}")
+            
+            # 연동 액션의 경우 추가 검증
+            if action == 'link':
+                # 로그인 상태가 아니면 오류
+                if request.user.is_anonymous:
+                    logger.error("연동 요청이지만 로그인되지 않은 상태")
+                    return JsonResponse({
+                        'status': 'ERROR',
+                        'reason': '라이트닝 연동은 로그인된 상태에서만 가능합니다.'
+                    }, status=400)
+                
+                logger.info(f"연동 요청: user={request.user.username}")
+                
+                # 연동 세션을 위해 사용자 ID를 캐시에 저장
+                from django.core.cache import cache
+                timeout = getattr(settings, 'LNURL_AUTH_K1_TIMEOUT', 60 * 60)  # 1시간
+                cache.set(f"lnauth-link-user-{k1_hex}", request.user.id, timeout=timeout)
+                logger.info(f"사용자 ID 캐시 저장: lnauth-link-user-{k1_hex[:16]}... = {request.user.id}")
+                
+            else:
+                # 로그인/회원가입의 경우 이미 인증된 사용자면 오류
+                if not request.user.is_anonymous:
+                    logger.error(f"로그인/회원가입 요청이지만 이미 인증된 상태: {request.user.username}")
+                    return JsonResponse({
+                        'status': 'ERROR',
+                        'reason': '이미 인증된 사용자입니다.'
+                    }, status=400)
+            
+            # LNURL 서비스로 응답 생성
+            lnurl_service = LNURLAuthService()
+            response_data = lnurl_service.create_lnurl_response(k1_hex)
+            logger.info(f"LNURL 응답 생성 완료: {response_data}")
+            
+            return JsonResponse(response_data)
+            
+        elif request.method == 'POST':
+            # 2단계: 지갑이 서명과 함께 인증 요청
+            logger.info(f"LNURL-auth POST 요청: content_type={request.content_type}")
+            
+            # POST 데이터 파싱
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                logger.info(f"JSON 데이터: {data}")
+            else:
+                data = request.POST
+                logger.info(f"POST 데이터: {dict(data)}")
+                
+            # URL 파라미터도 확인 (일부 지갑에서 GET 파라미터로 전송)
+            if not data:
+                data = request.GET
+                logger.info(f"GET 파라미터로 폴백: {dict(data)}")
+            
+            required_params = ['k1', 'sig', 'key']
+            for param in required_params:
+                if param not in data:
+                    logger.error(f"POST 요청에서 필수 파라미터 누락: {param}")
+                    return JsonResponse({
+                        'status': 'ERROR',
+                        'reason': f'필수 파라미터 누락: {param}'
+                    }, status=400)
+            
+            k1_hex = data['k1']
+            sig_hex = data['sig']
+            key_hex = data['key']
+            action = data.get('action', 'login')
+            
+            logger.info(f"LNURL-auth 서명 검증 시작 - k1: {k1_hex[:16]}..., action: {action}, key: {key_hex[:16]}...")
+            
+            # LNURL 서비스로 검증 및 인증
+            lnurl_service = LNURLAuthService()
+            
+            try:
+                # 서명 검증
+                lnurl_service.verify_ln_auth(k1_hex, sig_hex, key_hex, action)
+                logger.info("서명 검증 성공")
+                
+                # 사용자 인증/등록/연동
+                if action == 'link':
+                    logger.info("연동 처리 시작")
+                    # 연동 처리
+                    user, is_linked = lnurl_service.authenticate_user(key_hex, action, k1_hex)
+                    logger.info(f"연동 완료: user={user.username}")
+                    
+                    return JsonResponse({
+                        'status': 'OK',
+                        'event': 'link-success'
+                    })
+                else:
+                    # 로그인/회원가입의 경우 이미 인증된 사용자면 오류
+                    if not request.user.is_anonymous:
+                        logger.error(f"로그인/회원가입 POST 요청이지만 이미 인증된 상태: {request.user.username}")
+                        return JsonResponse({
+                            'status': 'ERROR',
+                            'reason': '이미 인증된 사용자입니다.'
+                        }, status=400)
+                    
+                    print(f"🚀 로그인/회원가입 처리 시작: action={action}")
+                    logger.info(f"로그인/회원가입 처리 시작: action={action}")
+                    # 로그인/회원가입
+                    user, is_new = lnurl_service.authenticate_user(key_hex, action)
+                    
+                    print(f"✅ 사용자 인증 완료: user={user.username}, is_new={is_new}")
+                    logger.info(f"사용자 인증 완료: user={user.username}, is_new={is_new}")
+                    
+                    # 로그인 성공 정보를 캐시에 저장 (브라우저에서 확인할 수 있도록)
+                    auth_cache_key = f"lnauth-success-{k1_hex}"
+                    print(f"🔑 캐시 키 생성: {auth_cache_key}")
+                    auth_data = {
+                        'user_id': user.id,
+                        'username': user.username,
+                        'is_new': is_new,
+                        'next_url': request.GET.get('next')
+                    }
+                    cache.set(auth_cache_key, auth_data, timeout=300)  # 5분
+                    print(f"💾 인증 정보 캐시 저장: {auth_cache_key}, data={auth_data}")
+                    logger.info(f"인증 정보 캐시 저장: {auth_cache_key}")
+                    
+                    if settings.DEBUG:
+                        logger.debug(f"LNURL-auth 완료: user={user.username}, is_new={is_new}")
+                    
+                    return JsonResponse({
+                        'status': 'OK',
+                        'event': 'auth-signup' if is_new else 'auth-success'
+                    })
+                
+            except LNURLAuthException as e:
+                logger.warning(f"LNURL-auth 검증 실패: {str(e)}")
+                
+                # 에러 정보를 캐시에 저장 (클라이언트에서 확인할 수 있도록)
+                if action in ['login', 'register']:
+                    error_cache_key = f"lnauth-error-{k1_hex}"
+                    cache.set(error_cache_key, str(e), timeout=300)  # 5분
+                    logger.info(f"에러 정보 캐시 저장: {error_cache_key}")
+                
+                return JsonResponse({
+                    'status': 'ERROR',
+                    'reason': str(e)
+                }, status=400)
+        
+        else:
+            logger.error(f"지원하지 않는 HTTP 메서드: {request.method}")
+            return JsonResponse({
+                'status': 'ERROR',
+                'reason': 'Method not allowed'
+            }, status=405)
+        
+    except Exception as e:
+        logger.error(f"LNURL-auth 콜백 오류: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'status': 'ERROR',
+            'reason': 'Internal server error'
+        }, status=500)
+
+
+def lightning_login_view(request):
+    """라이트닝 로그인 페이지"""
+    # 이미 로그인된 경우 리다이렉트
+    if request.user.is_authenticated:
+        next_url = request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('accounts:mypage')
+    
+    return render(request, 'accounts/lightning_login.html')
+
+
+@login_required
+def link_lightning_view(request):
+    """라이트닝 인증 연동 페이지"""
+    # 이미 연동된 경우 마이페이지로 리다이렉트
+    if hasattr(request.user, 'lightning_profile'):
+        messages.info(request, '이미 라이트닝 지갑이 연동되어 있습니다.')
+        return redirect('accounts:mypage')
+    
+    return render(request, 'accounts/link_lightning.html')
+
+
+def check_lightning_auth_status(request):
+    """라이트닝 인증 상태 확인 및 로그인 처리"""
+    try:
+        # 이미 로그인된 경우
+        if request.user.is_authenticated:
+            return JsonResponse({
+                'authenticated': True,
+                'username': request.user.username
+            })
+        
+        # k1 파라미터로 인증 성공 여부 확인
+        k1 = request.GET.get('k1')
+        if not k1:
+            return JsonResponse({'authenticated': False})
+        
+        # 캐시에서 인증 성공 정보 확인
+        auth_cache_key = f"lnauth-success-{k1}"
+        auth_data = cache.get(auth_cache_key)
+        
+        # 캐시에서 에러 정보 확인
+        error_cache_key = f"lnauth-error-{k1}"
+        error_data = cache.get(error_cache_key)
+        
+        print(f"🔍 인증 상태 확인: k1={k1[:16]}..., cache_key={auth_cache_key}, data={auth_data}, error={error_data}")
+        logger.info(f"인증 상태 확인: k1={k1[:16]}..., cache_key={auth_cache_key}, data={auth_data}, error={error_data}")
+        
+        # 에러가 있으면 에러 반환
+        if error_data:
+            cache.delete(error_cache_key)  # 에러는 한 번만 반환
+            return JsonResponse({
+                'authenticated': False,
+                'error': error_data
+            })
+        
+        if auth_data:
+            # 인증 성공한 사용자 정보가 있으면 실제 로그인 처리
+            try:
+                user = User.objects.get(id=auth_data['user_id'])
+                login(request, user)
+                
+                # 세션 장바구니를 DB로 마이그레이션
+                try:
+                    from orders.services import CartService
+                    cart_service = CartService(request)
+                    cart_service.migrate_session_to_db()
+                except Exception as e:
+                    logger.warning(f"장바구니 마이그레이션 실패: {e}")
+                
+                # 캐시에서 제거
+                cache.delete(auth_cache_key)
+                
+                logger.info(f"라이트닝 로그인 완료: {user.username}")
+                
+                return JsonResponse({
+                    'authenticated': True,
+                    'username': user.username,
+                    'is_new': auth_data.get('is_new', False),
+                    'next_url': auth_data.get('next_url')
+                })
+                
+            except User.DoesNotExist:
+                logger.error(f"인증된 사용자를 찾을 수 없음: user_id={auth_data['user_id']}")
+                cache.delete(auth_cache_key)
+                return JsonResponse({'authenticated': False, 'error': '사용자를 찾을 수 없습니다.'})
+        
+        return JsonResponse({'authenticated': False})
+        
+    except Exception as e:
+        logger.error(f"라이트닝 인증 상태 확인 오류: {str(e)}")
+        return JsonResponse({
+            'authenticated': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def check_lightning_link(request):
+    """라이트닝 지갑 연동 상태 확인"""
+    try:
+        # k1 파라미터로 에러 정보도 확인
+        k1 = request.GET.get('k1')
+        if k1:
+            # 캐시에서 에러 정보 확인 (k1 기반)
+            error_cache_key = f"lnauth-error-{k1}"
+            error_data = cache.get(error_cache_key)
+            
+            if error_data:
+                cache.delete(error_cache_key)  # 에러는 한 번만 반환
+                return JsonResponse({
+                    'success': False,
+                    'linked': False,
+                    'error': error_data
+                })
+            
+            # 사용자별 연동 에러 확인 (연동 세션 기반)
+            user_error_cache_key = f"lnauth-link-error-user-{request.user.id}"
+            user_error_data = cache.get(user_error_cache_key)
+            
+            if user_error_data:
+                cache.delete(user_error_cache_key)  # 에러는 한 번만 반환
+                return JsonResponse({
+                    'success': False,
+                    'linked': False,
+                    'error': user_error_data
+                })
+        
+        lightning_user = LightningUser.objects.get(user=request.user)
+        return JsonResponse({
+            'success': True,
+            'linked': True,
+            'public_key': lightning_user.public_key
+        })
+    except LightningUser.DoesNotExist:
+        return JsonResponse({
+            'success': True,
+            'linked': False
+        })
+    except Exception as e:
+        logger.error(f"연동 상태 확인 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def create_lnurl_link(request):
+    """라이트닝 지갑 연동용 LNURL 생성"""
+    try:
+        # 이미 연동된 경우 체크
+        if hasattr(request.user, 'lightning_profile'):
+            return JsonResponse({
+                'success': False,
+                'error': '이미 라이트닝 지갑이 연동되어 있습니다.'
+            }, status=400)
+
+        if settings.DEBUG:
+            logger.debug(f"라이트닝 연동용 LNURL 생성 요청 - user: {request.user.username}")
+        
+        # LNURL 서비스 초기화
+        lnurl_service = LNURLAuthService()
+        
+        # k1 생성
+        k1_bytes = lnurl_service.generate_k1()
+        
+        # action=link로 LNURL 생성
+        lnurl = lnurl_service.get_auth_url(k1_bytes, 'link')
+        
+        # 사용자 정보를 캐시에 저장 (연동용)
+        cache_key = f"lnauth-link-user-{k1_bytes.hex()}"
+        cache.set(cache_key, request.user.id, timeout=getattr(settings, 'LNURL_AUTH_K1_TIMEOUT', 60 * 60))
+        
+        if settings.DEBUG:
+            logger.debug(f"라이트닝 연동용 LNURL 생성 완료: k1={k1_bytes.hex()[:16]}...")
+        
+        return JsonResponse({
+            'success': True,
+            'lnurl': lnurl,
+            'k1': k1_bytes.hex(),
+            'action': 'link'
+        })
+        
+    except LNURLAuthException as e:
+        logger.error(f"라이트닝 연동용 LNURL 생성 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+    except Exception as e:
+        logger.error(f"라이트닝 연동용 LNURL 생성 예외: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_POST
+def unlink_lightning_wallet(request):
+    """라이트닝 지갑 연동 해제 (일반 계정용)"""
+    try:
+        # 연동된 라이트닝 프로필이 있는지 확인
+        if not hasattr(request.user, 'lightning_profile'):
+            return JsonResponse({
+                'success': False,
+                'error': '연동된 라이트닝 지갑이 없습니다.'
+            }, status=400)
+        
+        # 비밀번호가 설정되지 않은 라이트닝 전용 계정인지 확인
+        if not request.user.has_usable_password():
+            return JsonResponse({
+                'success': False,
+                'error': '라이트닝 전용 계정은 연동 해제 시 계정이 삭제됩니다. 계정 삭제 기능을 사용해주세요.'
+            }, status=400)
+        
+        # 연동 해제
+        lightning_profile = request.user.lightning_profile
+        public_key_short = lightning_profile.public_key[:16]
+        lightning_profile.delete()
+        
+        if settings.DEBUG:
+            logger.debug(f"라이트닝 지갑 연동 해제: user={request.user.username}, pubkey={public_key_short}...")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '라이트닝 지갑 연동이 해제되었습니다.'
+        })
+            
+    except Exception as e:
+        logger.error(f"라이트닝 지갑 연동 해제 오류: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+
+@login_required
+@require_POST
+def delete_account(request):
+    """계정 완전 삭제"""
+    try:
+        # 수퍼어드민은 탈퇴 불가
+        if request.user.is_superuser:
+            return JsonResponse({
+                'success': False,
+                'error': '관리자 계정은 탈퇴할 수 없습니다.'
+            }, status=400)
+        
+        user = request.user
+        username = user.username
+        
+        if settings.DEBUG:
+            logger.debug(f"계정 삭제 요청: user={username}")
+        
+        # 사용자 계정 완전 삭제 (연관된 모든 데이터도 CASCADE로 삭제됨)
+        # Django의 User 모델은 related objects를 CASCADE로 삭제하므로
+        # LightningUser, 주문내역, 스토어 등이 자동으로 삭제됩니다
+        
+        # 로그아웃 처리 (계정 삭제 전에)
+        from django.contrib.auth import logout
+        logout(request)
+        
+        # 계정 삭제
+        user.delete()
+        
+        logger.info(f"계정 삭제 완료: username={username}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '계정이 성공적으로 삭제되었습니다.'
+        })
+            
+    except Exception as e:
+        logger.error(f"계정 삭제 오류: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': f'오류가 발생했습니다: {str(e)}'
+        }, status=500)

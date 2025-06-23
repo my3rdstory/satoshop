@@ -1,0 +1,174 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}라이트닝 로그인 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lightning-login.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 lightning-icon rounded-full mr-3">
+        <i class="fas fa-bolt text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이트닝 로그인</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">라이트닝 지갑으로 빠르고 안전하게 로그인하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'accounts:login' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>일반 로그인으로 돌아가기</span>
+      </a>
+    </div>
+
+    <!-- 라이트닝 로그인 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+      <!-- 카드 내용 -->
+      <div class="p-8">
+        <!-- 초기 상태 -->
+        <div id="initialState" class="text-center">
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            라이트닝 지갑의 서명으로 안전하게 로그인하거나<br>
+            새 계정을 자동으로 생성할 수 있습니다.
+          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+            <i class="fas fa-info-circle mr-1"></i>
+            로그인 과정에서 결제는 발생하지 않습니다. 지갑의 서명만 사용됩니다.<br />
+            지원하는 지갑의 보내기(Send) 버튼을 눌러 로그인을 시도해보세요.
+          </p>
+          <button 
+            id="startLoginBtn"
+            class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-bolt mr-2"></i>
+            라이트닝 로그인 시작
+          </button>
+        </div>
+
+        <!-- 로딩 상태 -->
+        <div id="loadingState" class="hidden text-center py-8">
+          <div class="loading-spinner mx-auto mb-4"></div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">로그인 준비 중</h3>
+          <p class="text-gray-600 dark:text-gray-400">라이트닝 인증을 준비하고 있습니다...</p>
+        </div>
+
+        <!-- QR 코드 표시 -->
+        <div id="qrState" class="hidden text-center">
+          <div class="qr-container mb-6">
+            <img id="qrCodeImage" src="" alt="QR Code" class="qr-code">
+          </div>
+          
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <p class="font-medium mb-2">LNURL-auth 지원 지갑으로 QR 코드를 스캔하세요</p>
+            <p class="text-xs mb-1">지갑이 자동으로 인증을 처리합니다 (결제 없음)</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              LNURL-auth 지원 지갑만 사용 가능 (Phoenix, Blue Wallet, Zeus, Wallet of Satoshi 등)
+            </p>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">LNURL-auth:</label>
+            <div class="flex">
+              <input 
+                id="lnurlText" 
+                type="text" 
+                readonly 
+                class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-xs font-mono"
+              >
+              <button 
+                id="copyLnurlBtn" 
+                class="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-lg text-gray-700 dark:text-gray-300 text-xs"
+                title="복사"
+              >
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div id="statusMessage" class="p-3 rounded-lg border text-sm font-medium status-pending">
+            <i class="fas fa-clock mr-2"></i>
+            인증을 기다리고 있습니다...
+          </div>
+        </div>
+
+        <!-- 성공 상태 -->
+        <div id="successState" class="hidden text-center py-4">
+          <div class="text-green-500 mb-4">
+            <i class="fas fa-check-circle text-6xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">로그인 성공!</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">
+            라이트닝 인증이 완료되었습니다.<br>
+            잠시 후 자동으로 이동합니다...
+          </p>
+          <div class="loading-spinner mx-auto"></div>
+        </div>
+
+        <!-- 에러 상태 -->
+        <div id="errorState" class="hidden text-center py-4">
+          <div class="text-red-500 mb-4">
+            <i class="fas fa-exclamation-circle text-6xl"></i>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">로그인 실패</h3>
+          <p id="errorMessage" class="text-gray-600 dark:text-gray-400 mb-6"></p>
+          <button 
+            id="retryBtn"
+            class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+          >
+            <i class="fas fa-redo mr-2"></i>
+            다시 시도
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 정보 섹션 -->
+    <div class="mt-8">
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">LNURL-auth 로그인</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-4">
+              <li>• 라이트닝 지갑의 개인키로 안전하게 인증하는 방식입니다</li>
+              <li>• 결제 없이 암호화 서명만으로 신원을 확인합니다</li>
+              <li>• 기존 계정이 있으면 로그인, 없으면 자동으로 새 계정을 생성합니다</li>
+              <li>• 일반 아이디/패스워드 로그인과 동일한 권한을 가집니다</li>
+            </ul>
+            <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3">
+              <h4 class="text-sm font-semibold text-orange-800 dark:text-orange-200 mb-2">
+                <i class="fas fa-mobile-alt mr-1"></i>지원 지갑
+              </h4>
+              <div class="text-xs text-orange-700 dark:text-orange-300 space-y-1">
+                <p><strong>LNURL-auth 지원:</strong> Wallet of Satoshi, Speed Phoenix, Zeus, Breez, Muun</p>
+                <p><strong>미지원:</strong> Strike, Blink, 일부 구형 지갑들</p>
+                <p class="text-orange-600 dark:text-orange-400 font-medium mt-2">
+                  ⚠️ LNURL-auth를 지원하지 않는 지갑에서는 "인보이스가 아님" 오류가 발생합니다
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/lightning-login.js' %}"></script>
+{% endblock %}
