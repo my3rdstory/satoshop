@@ -33,11 +33,19 @@ class LNURLAuthService:
     
     def __init__(self, domain=None):
         self.domain = domain or getattr(settings, 'LNURL_AUTH_ROOT_DOMAIN', 'localhost:8000')
-        # ngrok이나 외부 도메인을 사용할 때는 항상 https 사용
-        if 'ngrok' in self.domain or 'localhost' not in self.domain:
-            self.protocol = 'https'
+        
+        # 프로토콜 결정 로직
+        if settings.DEBUG:
+            # 개발 환경
+            if 'ngrok' in self.domain:
+                self.protocol = 'https'  # ngrok은 항상 https
+            elif 'localhost' in self.domain or '127.0.0.1' in self.domain:
+                self.protocol = 'http'   # localhost는 http
+            else:
+                self.protocol = 'https'  # 기타 도메인은 https
         else:
-            self.protocol = 'https' if not settings.DEBUG else 'http'
+            # 운영 환경은 항상 https
+            self.protocol = 'https'
     
     def generate_k1(self):
         """32바이트 k1 챌린지 생성"""

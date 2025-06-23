@@ -15,12 +15,36 @@ import os
 import time
 from dotenv import load_dotenv
 
-
-# .env 파일 로드
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# .env 파일 로드 (로컬 개발용만)
+# 클라우드 환경(렌더 등)에서는 환경변수 설정 메뉴 사용 권장
+render_env = os.getenv('RENDER')  # 렌더 환경 감지
+cloud_env = render_env or os.getenv('RAILWAY') or os.getenv('HEROKU')  # 기타 클라우드 환경
+
+if cloud_env:
+    # 클라우드 환경에서는 .env 파일 로드하지 않음 (환경변수 메뉴 사용)
+    platform = "렌더" if render_env else "클라우드"
+    print(f"🚀 {platform} 환경 감지: 환경변수 메뉴에서 설정 로드")
+else:
+    # 로컬 개발 환경에서만 .env 파일 로드
+    env_files = [
+        '.env.local',      # 로컬 개발용 (우선순위 1)
+        '.env'             # 기본 파일 (우선순위 2)
+    ]
+    
+    # 존재하는 첫 번째 .env 파일 로드
+    for env_file in env_files:
+        env_path = BASE_DIR / env_file
+        if env_path.exists():
+            load_dotenv(env_path)
+            print(f"🔧 환경 파일 로드: {env_file}")
+            break
+    else:
+        # 아무 .env 파일도 없으면 기본 load_dotenv() 호출
+        load_dotenv()
+        print("🔧 기본 환경 파일 로드 시도")
 
 
 # Quick-start development settings - unsuitable for production
@@ -42,8 +66,12 @@ if DEBUG:
         'localhost',
         '127.0.0.1',
         '0.0.0.0',
-        '460a-14-52-155-113.ngrok-free.app',  # 현재 ngrok 도메인
     ])
+    
+    # ngrok 도메인이 환경변수에 설정된 경우 추가
+    ngrok_domain = os.getenv('NGROK_DOMAIN')
+    if ngrok_domain:
+        ALLOWED_HOSTS.append(ngrok_domain)
 
 
 # Application definition
@@ -190,7 +218,16 @@ LOGOUT_REDIRECT_URL = 'myshop:home'
 BLINK_API_URL = 'https://api.blink.sv/graphql'
 
 # LNURL-auth 설정 (lnauth-django 호환)
-LNURL_AUTH_ROOT_DOMAIN = os.getenv('LNURL_AUTH_ROOT_DOMAIN', '460a-14-52-155-113.ngrok-free.app')
+# 환경별 도메인 설정
+if DEBUG:
+    # 개발 환경: ngrok 또는 localhost 사용
+    default_domain = 'localhost:8000'
+else:
+    # 운영 환경: 실제 도메인 사용 (환경변수에서 가져오기)
+    default_domain = 'your-production-domain.com'
+
+# 호환성을 위해 LNURL_DOMAIN도 지원 (기존 설정과의 호환성)
+LNURL_AUTH_ROOT_DOMAIN = os.getenv('LNURL_AUTH_ROOT_DOMAIN') or os.getenv('LNURL_DOMAIN') or default_domain
 LNURL_AUTH_K1_TIMEOUT = int(os.getenv('LNURL_AUTH_K1_TIMEOUT', str(60 * 60)))  # 1시간
 
 # 캐시 설정 (LNURL k1 저장용)
