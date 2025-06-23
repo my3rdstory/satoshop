@@ -6,6 +6,16 @@ set -o errexit  # 오류 발생 시 스크립트 중단
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
+echo "🔧 시스템 의존성 설치 중..."
+# secp256k1 라이브러리를 위한 시스템 패키지 설치
+apt-get update -qq
+apt-get install -y --no-install-recommends \
+    libsecp256k1-dev \
+    pkg-config \
+    build-essential \
+    libffi-dev \
+    python3-dev
+
 echo "📦 의존성 설치 중..."
 pip install -r requirements.txt
 
@@ -123,5 +133,23 @@ python manage.py check
 
 echo "🔍 Django 어드민 모델 등록 상태 확인..."
 python manage.py debug_admin
+
+echo "⚡ 라이트닝 연동 기능 테스트..."
+python manage.py shell -c "
+try:
+    import secp256k1
+    import bech32
+    from accounts.lnurl_service import LNURLAuthService
+    print('✅ secp256k1 라이브러리 로드 성공')
+    print('✅ bech32 라이브러리 로드 성공')
+    print('✅ LNURL 인증 서비스 로드 성공')
+    print('⚡ 라이트닝 연동 기능이 정상적으로 설정되었습니다.')
+except ImportError as e:
+    print(f'❌ 라이트닝 의존성 로드 실패: {e}')
+    print('⚠️ 라이트닝 기능이 제한될 수 있습니다.')
+except Exception as e:
+    print(f'⚠️ 라이트닝 서비스 초기화 경고: {e}')
+    print('📝 환경변수 설정을 확인해주세요.')
+"
 
 echo "✅ 빌드 완료! satoshop-dev 프로젝트가 배포 준비되었습니다."
