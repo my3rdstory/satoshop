@@ -55,6 +55,9 @@
     <a href="#" onclick="redirectToLogin()" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-sign-in-alt mr-2"></i>로그인
     </a>
+    <a href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-bolt mr-2"></i>라이트닝 로그인
+    </a>
     {% endif %}
     
     <a href="#" onclick="toggleTheme(); return false;" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

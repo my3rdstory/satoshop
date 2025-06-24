@@ -23,6 +23,69 @@ body.auth-page.dark,
 body.auth-page[data-theme="dark"] {
     background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
 }
+
+/* 라이트닝 버튼 스타일 */
+.lightning-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.lightning-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+/* QR 코드 스타일 */
+.qr-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.qr-code {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 로딩 애니메이션 */
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #f59e0b;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 상태 메시지 스타일 */
+.status-pending {
+    color: #d97706;
+    background-color: #fef3c7;
+    border-color: #fde68a;
+}
+
+.status-paid {
+    color: #059669;
+    background-color: #d1fae5;
+    border-color: #a7f3d0;
+}
+
+.status-error {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-color: #fecaca;
+}
 </style>
 {% endblock %}
 
@@ -35,6 +98,26 @@ body.auth-page[data-theme="dark"] {
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">회원가입</h1>
         <p class="text-gray-600 dark:text-gray-400">SatoShop 가족이 되어주세요</p>
+      </div>
+
+      <!-- 안내 메시지 -->
+      <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div class="flex items-start">
+          <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
+          <div class="text-sm text-blue-700 dark:text-blue-300">
+            <p class="font-medium mb-1">더 쉬운 가입 방법</p>
+            <p class="mb-3">
+              <strong>LNURL-auth 지원 지갑</strong>(Wallet of Satoshi, Speed, Phoenix, Zeus 등)을 사용하시면 
+              별도의 회원가입 없이 자동으로 계정이 생성됩니다.
+            </p>
+            <!-- 라이트닝 로그인 버튼 -->
+            <a href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+               class="inline-flex items-center justify-center w-full px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-medium text-sm rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg">
+              <i class="fas fa-bolt mr-2"></i>
+              라이트닝으로 즉시 가입하기
+            </a>            
+          </div>
+        </div>
       </div>
 
       <!-- 회원가입 폼 -->
@@ -171,10 +254,12 @@ body.auth-page[data-theme="dark"] {
     </div>
   </div>
 </div>
+
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // 회원가입 페이지 추가 스크립트가 필요한 경우 여기에 작성
+// 회원가입 페이지에서는 라이트닝 로그인 페이지로 리다이렉트하는 기능만 제공
 </script>
 {% endblock %}

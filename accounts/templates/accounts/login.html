@@ -23,6 +23,69 @@ body.auth-page.dark,
 body.auth-page[data-theme="dark"] {
     background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
 }
+
+/* 라이트닝 버튼 스타일 */
+.lightning-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.lightning-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+/* QR 코드 스타일 */
+.qr-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.qr-code {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 로딩 애니메이션 */
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #f59e0b;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 상태 메시지 스타일 */
+.status-pending {
+    color: #d97706;
+    background-color: #fef3c7;
+    border-color: #fde68a;
+}
+
+.status-paid {
+    color: #059669;
+    background-color: #d1fae5;
+    border-color: #a7f3d0;
+}
+
+.status-error {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-color: #fecaca;
+}
 </style>
 {% endblock %}
 
@@ -35,6 +98,29 @@ body.auth-page[data-theme="dark"] {
       <div class="text-center mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">로그인</h1>
         <p class="text-gray-600 dark:text-gray-400">SatoShop에 오신 것을 환영합니다</p>
+      </div>
+
+      <!-- 라이트닝 로그인 버튼 -->
+      <div class="mb-6">
+        <a 
+          href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+          class="lightning-btn w-full flex justify-center items-center py-3 px-4 rounded-lg text-white font-medium text-sm transition-all shadow-lg"
+        >
+          <i class="fas fa-bolt mr-2"></i>
+          라이트닝으로 로그인
+        </a>
+      </div>
+
+      <!-- 구분선 -->
+      <div class="mb-6">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
+          </div>
+        </div>
       </div>
 
       <!-- 로그인 폼 -->
@@ -151,32 +237,34 @@ body.auth-page[data-theme="dark"] {
     </div>
   </div>
 </div>
+
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  function goBack() {
-    // URL 파라미터에서 next 값 확인
-    const urlParams = new URLSearchParams(window.location.search);
-    const nextUrl = urlParams.get('next');
+function goBack() {
+  // URL 파라미터에서 next 값 확인
+  const urlParams = new URLSearchParams(window.location.search);
+  const nextUrl = urlParams.get('next');
 
-    // referrer 정보 확인
-    const referrer = document.referrer;
+  // referrer 정보 확인
+  const referrer = document.referrer;
 
-    // 1순위: next 파라미터가 있으면 해당 URL로
-    if (nextUrl) {
-      window.location.href = decodeURIComponent(nextUrl);
-      return;
-    }
-
-    // 2순위: referrer가 있고 우리 사이트 내부이면 돌아가기
-    if (referrer && referrer.includes(window.location.hostname)) {
-      window.history.back();
-      return;
-    }
-
-    // 3순위: 홈으로
-    window.location.href = "{% url 'myshop:home' %}?force_home=1";
+  // 1순위: next 파라미터가 있으면 해당 URL로
+  if (nextUrl) {
+    window.location.href = decodeURIComponent(nextUrl);
+    return;
   }
+
+  // 2순위: referrer가 있고 우리 사이트 내부이면 돌아가기
+  if (referrer && referrer.includes(window.location.hostname)) {
+    window.history.back();
+    return;
+  }
+
+  // 3순위: 홈으로
+  window.location.href = "{% url 'myshop:home' %}?force_home=1";
+}
 </script>
 {% endblock %}
