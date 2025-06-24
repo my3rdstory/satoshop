@@ -127,6 +127,9 @@
             <a href="#" onclick="redirectToLogin()" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-sign-in-alt mr-2"></i>로그인
             </a>
+            <a href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+              <i class="fas fa-bolt mr-2"></i>라이트닝 로그인
+            </a>
           </div>
         </div>
         {% endif %}
