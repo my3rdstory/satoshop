@@ -210,6 +210,35 @@
               </div>
             </div>
 
+            <!-- 환율 고정 안내 (원화 연동 상품이 있을 때만) -->
+            {% if has_krw_products %}
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <div class="w-10 h-10 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
+                    <i class="fas fa-lock text-blue-600 dark:text-blue-400"></i>
+                  </div>
+                </div>
+                <div class="ml-3">
+                  <h3 class="font-semibold text-gray-900 dark:text-white mb-1 flex items-center">
+                    <i class="fas fa-won-sign text-blue-600 dark:text-blue-400 mr-1 text-sm"></i>
+                    <span class="text-sm">가격 고정 적용됨</span>
+                  </h3>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <p class="flex items-start">
+                      <i class="fas fa-check-circle text-green-500 mr-1 mt-0.5 text-xs"></i>
+                      <span>장바구니 담기 시점의 환율로 가격이 <strong class="text-green-600">고정</strong>되었습니다.</span>
+                    </p>
+                    <p class="flex items-start">
+                      <i class="fas fa-shield-alt text-blue-500 mr-1 mt-0.5 text-xs"></i>
+                      <span>환율 변동과 무관하게 <strong class="text-blue-600">안정적인 결제</strong>가 진행됩니다.</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
             <!-- 배송 정보 -->
             {% if shipping_data %}
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">

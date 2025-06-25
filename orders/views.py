@@ -62,12 +62,38 @@ def cart_view(request):
     
     dummy_cart = DummyCart(cart_summary['total_amount'], cart_summary['total_items'])
     
+    # 원화 연동 상품 여부 확인
+    has_krw_products = False
+    current_exchange_rate = None
+    
+    if cart_items:
+        # 장바구니에 원화 연동 상품이 있는지 확인
+        for item in cart_items:
+            try:
+                product = Product.objects.get(id=item['product_id'])
+                if product.price_krw:
+                    has_krw_products = True
+                    break
+            except Product.DoesNotExist:
+                continue
+        
+        # 원화 연동 상품이 있으면 현재 환율 정보 가져오기
+        if has_krw_products:
+            try:
+                from myshop.models import ExchangeRate
+                exchange_rate = ExchangeRate.objects.latest('created_at')
+                current_exchange_rate = exchange_rate.btc_krw_rate
+            except ExchangeRate.DoesNotExist:
+                pass
+    
     context = {
         'cart_items': cart_items,
         'cart': dummy_cart,
         'store': store,
         'cart_items_count': cart_summary['total_items'],
         'cart_total_amount': cart_summary['total_amount'],
+        'has_krw_products': has_krw_products,
+        'current_exchange_rate': current_exchange_rate,
     }
     return render(request, 'orders/cart.html', context)
 
@@ -829,6 +855,19 @@ def shipping_info(request):
     # store_base.html을 위한 기본 store 설정
     store = stores_with_items[0]['store'] if stores_with_items else None
     
+    # 원화 연동 상품 여부 확인
+    has_krw_products = False
+    if cart_items:
+        # 장바구니에 원화 연동 상품이 있는지 확인
+        for item in cart_items:
+            try:
+                product = Product.objects.get(id=item['product_id'])
+                if product.price_krw:
+                    has_krw_products = True
+                    break
+            except Product.DoesNotExist:
+                continue
+    
     # 기존 Cart 객체와 호환되는 더미 객체 생성
     cart_summary = cart_service.get_cart_summary()
     class DummyCart:
@@ -846,6 +885,7 @@ def shipping_info(request):
         'total_shipping_fee': total_shipping_fee,
         'total_amount': total_amount,
         'store': store,
+        'has_krw_products': has_krw_products,
     }
     return render(request, 'orders/shipping_info.html', context)
 
@@ -939,6 +979,19 @@ def checkout(request):
     # store_base.html을 위한 기본 store 설정
     store = stores_with_items[0]['store'] if stores_with_items else None
     
+    # 원화 연동 상품 여부 확인
+    has_krw_products = False
+    if cart_items:
+        # 장바구니에 원화 연동 상품이 있는지 확인
+        for item in cart_items:
+            try:
+                product = Product.objects.get(id=item['product_id'])
+                if product.price_krw:
+                    has_krw_products = True
+                    break
+            except Product.DoesNotExist:
+                continue
+    
     # 세션에서 배송 정보 가져오기
     shipping_data = request.session.get('shipping_data', {})
     
@@ -960,6 +1013,7 @@ def checkout(request):
         'total_amount': total_amount,
         'shipping_data': shipping_data,
         'store': store,
+        'has_krw_products': has_krw_products,
     }
     return render(request, 'orders/checkout.html', context)
 
@@ -1592,22 +1646,19 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                         except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                             continue
                 
-                # 옵션 가격 계산
-                options_price = 0
-                if item.get('selected_options'):
-                    for option_id, choice_id in item['selected_options'].items():
-                        try:
-                            from products.models import ProductOptionChoice
-                            choice = ProductOptionChoice.objects.get(id=choice_id)
-                            options_price += choice.price
-                        except ProductOptionChoice.DoesNotExist:
-                            continue
+                # 장바구니의 고정된 가격 사용 (환율 고정 반영)
+                unit_price = item['unit_price']  # 이미 고정된 가격 포함
+                
+                # 기존 로직 호환을 위해 상품 가격과 옵션 가격 분리
+                # 하지만 총합은 장바구니의 고정된 가격을 사용
+                base_product_price = product.final_price if not hasattr(item, 'frozen_product_price_sats') else item.get('frozen_product_price_sats', product.final_price)
+                options_price = unit_price - base_product_price if unit_price > base_product_price else 0
                 
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=product,
                     product_title=product.title,
-                    product_price=product.final_price,
+                    product_price=base_product_price,
                     quantity=item['quantity'],
                     selected_options=options_display,
                     options_price=options_price

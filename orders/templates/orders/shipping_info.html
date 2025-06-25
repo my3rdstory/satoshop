@@ -62,7 +62,7 @@
         </div>
         <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
           <span>상품 금액</span>
-          <span class="font-medium">{{ subtotal_amount|floatformat:0 }} sats</span>
+          <span class="font-medium">{{ subtotal_amount|floatformat:0|intcomma }} sats</span>
         </div>
         <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
           <span>배송비</span>
@@ -70,14 +70,14 @@
             {% if total_shipping_fee == 0 %}
               <span class="text-green-600 dark:text-green-400">무료</span>
             {% else %}
-              {{ total_shipping_fee|floatformat:0 }} sats
+              {{ total_shipping_fee|floatformat:0|intcomma }} sats
             {% endif %}
           </span>
         </div>
         <div class="border-t border-gray-200 dark:border-gray-600 pt-3 mt-3">
           <div class="flex justify-between items-center text-lg font-bold text-gray-900 dark:text-white">
             <span>총 결제 금액</span>
-            <span class="text-bitcoin">{{ total_amount|floatformat:0 }} sats</span>
+            <span class="text-bitcoin">{{ total_amount|floatformat:0|intcomma }} sats</span>
           </div>
           {% if total_amount == 0 %}
           <div class="mt-3 pt-3 border-t border-green-200 dark:border-green-600">
@@ -90,6 +90,35 @@
         </div>
       </div>
     </div>
+
+    <!-- 환율 고정 안내 (원화 연동 상품이 있을 때만) -->
+    {% if has_krw_products %}
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-700 mb-8">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center">
+            <i class="fas fa-lock text-blue-600 dark:text-blue-400"></i>
+          </div>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center">
+            <i class="fas fa-won-sign text-blue-600 dark:text-blue-400 mr-2"></i>
+            가격 고정 완료
+          </h3>
+          <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+            <p class="flex items-start">
+              <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5 text-xs"></i>
+              <span>장바구니 담기 시점의 환율로 <strong class="text-green-600">가격이 고정</strong>되어 안전하게 주문하실 수 있습니다.</span>
+            </p>
+            <p class="flex items-start">
+              <i class="fas fa-shield-alt text-blue-500 mr-2 mt-0.5 text-xs"></i>
+              <span>환율 변동과 관계없이 <strong class="text-blue-600">동일한 가격</strong>으로 결제됩니다.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <!-- 배송 정보 입력 폼 -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
