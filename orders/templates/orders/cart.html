@@ -50,6 +50,9 @@
             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
               <i class="fas fa-cog mr-1 text-xs"></i>
               {{ option.option_name }}: {{ option.choice_name }}
+              {% if option.choice_price > 0 %}
+              <span class="ml-1 text-xs text-blue-600 dark:text-blue-300">+{{ option.choice_price|floatformat:0 }}sats</span>
+              {% endif %}
             </span>
             {% endfor %}
           </div>
@@ -59,11 +62,13 @@
         <!-- 가격 및 수량 정보 -->
         <div class="text-right">
           <div class="text-xl font-bold text-bitcoin mb-1">{{ item.total_price|floatformat:0 }} sats</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400 mb-3">수량: {{ item.quantity }}개</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+            개당 {{ item.unit_price|floatformat:0 }} sats × {{ item.quantity }}개
+          </div>
 
           <button 
             onclick="removeFromCart('{{ item.id }}')" 
-            class="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg transition-colors"
+            class="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg transition-colors mt-2"
           >
             <i class="fas fa-trash mr-1 text-xs"></i>
             삭제

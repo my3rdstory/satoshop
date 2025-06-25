@@ -82,7 +82,7 @@ def cart_view(request):
             try:
                 from myshop.models import ExchangeRate
                 exchange_rate = ExchangeRate.objects.latest('created_at')
-                current_exchange_rate = exchange_rate.btc_to_krw
+                current_exchange_rate = exchange_rate.btc_krw_rate
             except ExchangeRate.DoesNotExist:
                 pass
     
@@ -1646,22 +1646,19 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                         except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                             continue
                 
-                # 옵션 가격 계산
-                options_price = 0
-                if item.get('selected_options'):
-                    for option_id, choice_id in item['selected_options'].items():
-                        try:
-                            from products.models import ProductOptionChoice
-                            choice = ProductOptionChoice.objects.get(id=choice_id)
-                            options_price += choice.price
-                        except ProductOptionChoice.DoesNotExist:
-                            continue
+                # 장바구니의 고정된 가격 사용 (환율 고정 반영)
+                unit_price = item['unit_price']  # 이미 고정된 가격 포함
+                
+                # 기존 로직 호환을 위해 상품 가격과 옵션 가격 분리
+                # 하지만 총합은 장바구니의 고정된 가격을 사용
+                base_product_price = product.final_price if not hasattr(item, 'frozen_product_price_sats') else item.get('frozen_product_price_sats', product.final_price)
+                options_price = unit_price - base_product_price if unit_price > base_product_price else 0
                 
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=product,
                     product_title=product.title,
-                    product_price=product.final_price,
+                    product_price=base_product_price,
                     quantity=item['quantity'],
                     selected_options=options_display,
                     options_price=options_price
