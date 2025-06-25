@@ -45,6 +45,23 @@ class CartItem(models.Model):
         help_text='옵션ID: 선택지ID 형태로 저장'
     )
     
+    # 환율 고정을 위한 필드들 (원화 연동 상품용)
+    frozen_exchange_rate = models.DecimalField(
+        max_digits=15, decimal_places=2, null=True, blank=True,
+        verbose_name='고정 환율',
+        help_text='장바구니 추가 시점의 BTC/KRW 환율'
+    )
+    frozen_product_price_sats = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name='고정 상품 가격(사토시)',
+        help_text='장바구니 추가 시점의 사토시 가격'
+    )
+    frozen_options_price_sats = models.PositiveIntegerField(
+        default=0,
+        verbose_name='고정 옵션 가격(사토시)',
+        help_text='장바구니 추가 시점의 옵션 사토시 가격'
+    )
+    
     # 메타 정보
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -68,13 +85,13 @@ class CartItem(models.Model):
     
     @property
     def options_price(self):
-        """선택된 옵션들의 총 가격"""
+        """선택된 옵션들의 총 가격 (환율 적용)"""
         total = 0
         for option_id, choice_id in self.selected_options.items():
             try:
                 from products.models import ProductOptionChoice
                 choice = ProductOptionChoice.objects.get(id=choice_id)
-                total += choice.price
+                total += choice.public_price
             except ProductOptionChoice.DoesNotExist:
                 continue
         return total
@@ -82,7 +99,24 @@ class CartItem(models.Model):
     @property
     def unit_price(self):
         """개당 가격 (상품가격 + 옵션가격)"""
-        return self.product.final_price + self.options_price
+        # 고정된 가격이 있으면 사용 (환율 고정)
+        if self.frozen_product_price_sats is not None:
+            return self.frozen_product_price_sats + self.frozen_options_price_sats
+        
+        # 고정된 가격이 없으면 실시간 가격 사용 (기존 로직)
+        base_price = self.product.public_price
+        
+        # 옵션 가격도 환율 적용
+        options_total = 0
+        for option_id, choice_id in self.selected_options.items():
+            try:
+                from products.models import ProductOptionChoice
+                choice = ProductOptionChoice.objects.get(id=choice_id)
+                options_total += choice.public_price
+            except ProductOptionChoice.DoesNotExist:
+                continue
+        
+        return base_price + options_total
     
     @property
     def total_price(self):
@@ -102,7 +136,7 @@ class CartItem(models.Model):
                 options_info.append({
                     'option_name': option.name,
                     'choice_name': choice.name,
-                    'choice_price': choice.price
+                    'choice_price': choice.public_price
                 })
             except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                 continue

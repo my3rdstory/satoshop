@@ -199,6 +199,40 @@ class CartService:
     
     # === DB 카트 관련 메서드 ===
     
+    def _freeze_prices_if_krw_product(self, product, selected_options):
+        """원화 연동 상품인 경우 현재 환율로 가격을 고정"""
+        frozen_data = {}
+        
+        if product.price_krw:  # 원화 연동 상품인 경우
+            from myshop.models import ExchangeRate
+            
+            # 현재 환율 가져오기
+            try:
+                exchange_rate = ExchangeRate.objects.latest('created_at')
+                frozen_data['frozen_exchange_rate'] = exchange_rate.btc_to_krw
+                
+                # 상품 가격 고정
+                frozen_data['frozen_product_price_sats'] = product.public_price
+                
+                # 옵션 가격 고정
+                options_price_sats = 0
+                if selected_options:
+                    from products.models import ProductOptionChoice
+                    for option_id, choice_id in selected_options.items():
+                        try:
+                            choice = ProductOptionChoice.objects.get(id=choice_id)
+                            options_price_sats += choice.public_price
+                        except ProductOptionChoice.DoesNotExist:
+                            continue
+                
+                frozen_data['frozen_options_price_sats'] = options_price_sats
+                
+            except ExchangeRate.DoesNotExist:
+                # 환율 정보가 없으면 고정하지 않음
+                pass
+        
+        return frozen_data
+    
     def _get_db_cart_items(self):
         """DB에서 장바구니 아이템들 가져오기"""
         try:
@@ -216,7 +250,7 @@ class CartService:
                             options_display.append({
                                 'option_name': option.name,
                                 'choice_name': choice.name,
-                                'choice_price': choice.price
+                                'choice_price': choice.public_price
                             })
                         except:
                             pass
@@ -250,12 +284,16 @@ class CartService:
         """DB 장바구니에 상품 추가"""
         cart, created = Cart.objects.get_or_create(user=self.user)
         
+        # 원화 연동 상품인 경우 현재 환율을 고정
+        frozen_data = self._freeze_prices_if_krw_product(product, selected_options)
+        
         # 항상 새 항목으로 추가 (기존 로직 유지)
         cart_item = CartItem.objects.create(
             cart=cart,
             product=product,
             quantity=quantity,
-            selected_options=selected_options
+            selected_options=selected_options,
+            **frozen_data
         )
         
         return {
@@ -318,9 +356,9 @@ class CartService:
                             options_display.append({
                                 'option_name': option.name,
                                 'choice_name': choice.name,
-                                'choice_price': choice.price
+                                'choice_price': choice.public_price
                             })
-                            options_price += choice.price
+                            options_price += choice.public_price
                         except:
                             pass
                 
@@ -329,7 +367,20 @@ class CartService:
                 if product.images.first():
                     product_image_url = product.images.first().file_url
                 
-                unit_price = product.final_price + options_price
+                # 원화 연동 상품의 경우 환율이 적용된 public_price 사용
+                base_price = product.public_price
+                
+                # 옵션 가격도 환율 적용 (public_price 사용)
+                options_total = 0
+                if item_data.get('selected_options'):
+                    for option_id, choice_id in item_data['selected_options'].items():
+                        try:
+                            choice = ProductOptionChoice.objects.get(id=choice_id)
+                            options_total += choice.public_price
+                        except:
+                            pass
+                
+                unit_price = base_price + options_total
                 total_price = unit_price * item_data['quantity']
                 
                 items.append({

@@ -269,11 +269,29 @@
         <!-- 총액 계산 영역 -->
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700" id="totalCalculation">
           <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">주문 요약</h4>
+          
+          {% if product.price_krw %}
+          <!-- 원화 연동 상품 환율 안내 -->
+          <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+            <div class="flex items-start text-sm">
+              <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
+              <div class="text-blue-700 dark:text-blue-300">
+                <p class="font-medium mb-1 flex items-center">
+                  <i class="fas fa-won-sign mr-1"></i>
+                  원화 연동 상품
+                </p>
+                <p class="text-xs text-blue-600 dark:text-blue-400">
+                  장바구니에 담는 순간 현재 환율로 가격이 고정되어 안정적인 결제가 가능합니다.
+                </p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
           <div class="space-y-3">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">상품 금액</span>
               <span class="font-medium text-gray-900 dark:text-white" id="productTotal">
-                {{ product.final_price|floatformat:0|intcomma }} sats
+                {{ product.public_price|floatformat:0|intcomma }} sats
               </span>
             </div>
             <div class="flex justify-between hidden" id="optionsRow">
@@ -294,7 +312,7 @@
               <div class="flex justify-between">
                 <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제금액</span>
                 <span class="text-xl font-bold text-bitcoin" id="finalTotal">
-                  {{ product.final_price|floatformat:0|intcomma }} sats
+                  {% with total_price=product.public_price|add:product.public_shipping_fee %}{{ total_price|floatformat:0|intcomma }}{% endwith %} sats
                 </span>
               </div>
             </div>
@@ -352,8 +370,8 @@
 <!-- 상품 정보를 JavaScript 변수로 전달 -->
 <script type="application/json" id="product-data">
 {
-  "basePrice": {{ product.final_price }},
-  "shippingFee": {{ product.shipping_fee }},
+  "basePrice": {{ product.public_price }},
+  "shippingFee": {{ product.public_shipping_fee }},
   "productId": {{ product.id }},
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
   "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},
