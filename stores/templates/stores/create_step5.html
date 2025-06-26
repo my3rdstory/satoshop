@@ -107,11 +107,13 @@
             <div class="py-2">
               <span class="font-medium text-gray-700 dark:text-gray-300 block mb-2">스토어 URL</span>
               <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
-                <code class="text-sm text-gray-800 dark:text-gray-200">{{ request.scheme }}://{{ request.get_host }}/{{ store.store_url }}</code>
-                <span class="inline-flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs rounded-full ml-2">
-                  <i class="fas fa-clock mr-1"></i>
-                  생성 후 접근 가능
-                </span>
+                <code class="text-sm text-gray-800 dark:text-gray-200 break-all">{{ request.scheme }}://{{ request.get_host }}/{{ store.store_url }}</code>
+                <div class="mt-2">
+                  <span class="inline-flex items-center px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 text-xs rounded-full">
+                    <i class="fas fa-clock mr-1"></i>
+                    생성 후 접근 가능
+                  </span>
+                </div>
               </div>
             </div>
           </div>
