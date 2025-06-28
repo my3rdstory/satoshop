@@ -13,16 +13,14 @@ import json
 
 def get_store_or_404(store_id, user):
     """스토어 조회 및 권한 확인"""
-    store = get_object_or_404(Store, store_id=store_id)
-    if store.owner != user:
-        raise PermissionDenied("이 스토어에 대한 권한이 없습니다.")
+    store = get_object_or_404(Store, store_id=store_id, owner=user, deleted_at__isnull=True)
     return store
 
 @login_required
 def menu_list(request, store_id):
     """메뉴 목록 페이지"""
     store = get_store_or_404(store_id, request.user)
-    menus = Menu.objects.filter(store=store).prefetch_related('categories', 'images')
+    menus = Menu.objects.filter(store=store).prefetch_related('categories')
     
     context = {
         'store': store,
@@ -45,14 +43,7 @@ def add_menu(request, store_id):
                 menu.save()
                 form.save_m2m()  # ManyToMany 관계 저장
                 
-                # 이미지 처리
-                images = request.FILES.getlist('images')
-                for i, image in enumerate(images):
-                    MenuImage.objects.create(
-                        menu=menu,
-                        image=image,
-                        order=i
-                    )
+
                 
                 # 옵션 처리
                 option_counter = 1
@@ -96,21 +87,7 @@ def edit_menu(request, store_id, menu_id):
             with transaction.atomic():
                 menu = form.save()
                 
-                # 기존 이미지 삭제 처리
-                for image in menu.images.all():
-                    keep_key = f'keep_image_{image.id}'
-                    if request.POST.get(keep_key) == 'false':
-                        image.delete()
-                
-                # 새 이미지 추가
-                images = request.FILES.getlist('images')
-                existing_count = menu.images.count()
-                for i, image in enumerate(images):
-                    MenuImage.objects.create(
-                        menu=menu,
-                        image=image,
-                        order=existing_count + i
-                    )
+
                 
                 # 기존 옵션 삭제
                 menu.options.all().delete()

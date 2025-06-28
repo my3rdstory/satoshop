@@ -88,6 +88,10 @@
               <i class="fas fa-shopping-cart mr-2"></i>주문관리
             </a>
             <div class="border-t border-gray-600"></div>
+            <a href="{% url 'menu:menu_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+              <i class="fas fa-utensils mr-2"></i>메뉴 관리
+            </a>
+            <div class="border-t border-gray-600"></div>
             <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-store mr-2"></i>스토어 관리
             </a>
