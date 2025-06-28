@@ -58,7 +58,6 @@ function addToCart(menuId, menuName, price) {
     }
     
     updateCartDisplay();
-    showAddToCartFeedback(menuName);
 }
 
 // 장바구니에서 메뉴 제거
@@ -152,26 +151,7 @@ function processOrder() {
     }
 }
 
-// 장바구니 추가 피드백 표시
-function showAddToCartFeedback(menuName) {
-    // 간단한 토스트 메시지 (나중에 더 예쁘게 구현 가능)
-    const message = `"${menuName}"이(가) 장바구니에 추가되었습니다.`;
-    
-    // 임시 알림 요소 생성
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity';
-    toast.textContent = message;
-    
-    document.body.appendChild(toast);
-    
-    // 3초 후 제거
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
-}
+
 
 // 유틸리티 함수들
 function formatNumber(num) {
