@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const sortSelect = document.getElementById('menuSort');
     
     // 카테고리 관련 요소들
-    const categoryManageBtn = document.getElementById('categoryManageBtn');
-    const categoryModal = document.getElementById('categoryModal');
+    const toggleCategoryManagementBtn = document.getElementById('toggleCategoryManagement');
+    const categoryManagementSection = document.getElementById('categoryManagementSection');
     const categoryFilters = document.getElementById('categoryFilters');
     const clearCategoryFilter = document.getElementById('clearCategoryFilter');
     const addCategoryForm = document.getElementById('addCategoryForm');
@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 카테고리 관리 이벤트 리스너
-    if (categoryManageBtn) {
-        categoryManageBtn.addEventListener('click', openCategoryModal);
+    if (toggleCategoryManagementBtn) {
+        toggleCategoryManagementBtn.addEventListener('click', toggleCategoryManagement);
     }
 
     if (clearCategoryFilter) {
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 초기화
-    if (categoryManageBtn) {
+    if (toggleCategoryManagementBtn) {
         loadCategories();
     }
 
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 categories = data.categories;
                 renderCategoryFilters();
-                if (categoryModal && !categoryModal.classList.contains('hidden')) {
+                if (categoryManagementSection && !categoryManagementSection.classList.contains('hidden')) {
                     renderCategoryList();
                 }
             }
@@ -480,20 +480,25 @@ document.addEventListener('DOMContentLoaded', function() {
         checkEmptyState();
     }
 
-    function openCategoryModal() {
-        if (!categoryModal) return;
+    function toggleCategoryManagement() {
+        if (!categoryManagementSection) return;
         
-        categoryModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        loadCategories();
+        const isHidden = categoryManagementSection.classList.contains('hidden');
+        const toggleBtn = document.getElementById('toggleCategoryManagement');
+        
+        if (isHidden) {
+            categoryManagementSection.classList.remove('hidden');
+            toggleBtn.innerHTML = '<i class="fas fa-minus mr-1"></i>닫기';
+            loadCategories();
+        } else {
+            categoryManagementSection.classList.add('hidden');
+            toggleBtn.innerHTML = '<i class="fas fa-plus mr-1"></i>카테고리 추가/편집';
+        }
     }
 
-    window.closeCategoryModal = function() {
-        if (!categoryModal) return;
-        
-        categoryModal.classList.add('hidden');
-        document.body.style.overflow = '';
-    };
+    // 전역 함수로 노출
+    window.toggleCategoryManagement = toggleCategoryManagement;
+    window.clearCategoryFilters = clearCategoryFilters;
 
     function handleAddCategory(e) {
         e.preventDefault();

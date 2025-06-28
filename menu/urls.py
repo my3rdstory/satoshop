@@ -10,6 +10,9 @@ urlpatterns = [
     path('<str:store_id>/<uuid:menu_id>/edit/', views.edit_menu, name='edit_menu'),
     path('<str:store_id>/<uuid:menu_id>/', views.menu_detail, name='menu_detail'),
     
+    # 카테고리 관리 페이지
+    path('<str:store_id>/categories/manage/', views.category_manage, name='category_manage'),
+    
     # 카테고리 관리 API
     path('<str:store_id>/categories/', views.category_list_api, name='category_list_api'),
     path('<str:store_id>/categories/create/', views.category_create_api, name='category_create_api'),

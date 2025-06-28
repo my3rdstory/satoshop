@@ -1,0 +1,149 @@
+/* 카테고리 관리 페이지 스타일 */
+
+.category-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+}
+
+.category-card .category-name {
+    max-width: 150px;
+}
+
+/* 카테고리 카드 애니메이션 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.category-card {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+/* 알림 스타일 */
+#notification {
+    transition: all 0.3s ease-in-out;
+}
+
+#notification.show {
+    display: block !important;
+    animation: slideInRight 0.3s ease-out;
+}
+
+#notification.hide {
+    animation: slideOutRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* 수정 모달 애니메이션 */
+#editModal {
+    transition: opacity 0.3s ease-in-out;
+}
+
+#editModal > div > div:last-child {
+    transition: transform 0.3s ease-in-out;
+    transform: scale(0.9);
+}
+
+#editModal:not(.hidden) > div > div:last-child {
+    transform: scale(1);
+}
+
+/* 로딩 상태 */
+.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading button {
+    cursor: not-allowed;
+}
+
+/* 빈 상태 애니메이션 */
+#emptyState {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 반응형 그리드 조정 */
+@media (max-width: 640px) {
+    #categoryGrid {
+        grid-template-columns: 1fr;
+    }
+    
+    .category-card .category-name {
+        max-width: 200px;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    #categoryGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1025px) and (max-width: 1280px) {
+    #categoryGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 버튼 호버 효과 개선 */
+.category-card button {
+    transition: all 0.2s ease-in-out;
+}
+
+.category-card button:hover {
+    transform: scale(1.1);
+}
+
+/* 폼 입력 필드 포커스 효과 */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 다크 모드 개선 */
+.dark .category-card {
+    background: linear-gradient(135deg, rgba(55, 65, 81, 0.8), rgba(75, 85, 99, 0.8));
+}
+
+.dark .category-card:hover {
+    background: linear-gradient(135deg, rgba(55, 65, 81, 0.9), rgba(75, 85, 99, 0.9));
+} 

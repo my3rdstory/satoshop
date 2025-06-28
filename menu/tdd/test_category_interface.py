@@ -30,32 +30,32 @@ class CategoryInterfaceTest(TestCase):
         )
         self.client.login(username='testuser', password='testpass123')
 
-    # 1. 모달 열기/닫기 테스트 (3개)
-    def test_category_modal_page_loads(self):
+    # 1. 카테고리 관리 섹션 토글 테스트 (3개)
+    def test_category_management_section_loads(self):
         """Given: 메뉴 관리 페이지가 로드됨
-        When: 카테고리 관리 버튼을 클릭함
-        Then: 카테고리 관리 모달이 열림"""
+        When: 페이지를 확인함
+        Then: 카테고리 관리 섹션이 존재함"""
         response = self.client.get(reverse('menu:menu_list', args=[self.store.store_id]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="categoryModal"')
-        self.assertContains(response, 'onclick="openCategoryModal()"')
+        self.assertContains(response, 'id="categoryManagementSection"')
+        self.assertContains(response, 'id="toggleCategoryManagement"')
 
-    def test_category_modal_close_button(self):
-        """Given: 카테고리 관리 모달이 열려있음
-        When: X 버튼을 클릭함
-        Then: 모달이 닫힘"""
+    def test_category_management_toggle_button(self):
+        """Given: 메뉴 관리 페이지가 로드됨
+        When: 토글 버튼을 확인함
+        Then: 토글 함수가 연결되어 있음"""
         response = self.client.get(reverse('menu:menu_list', args=[self.store.store_id]))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'onclick="closeCategoryModal()"')
+        self.assertContains(response, 'onclick="toggleCategoryManagement()"')
 
-    def test_category_modal_background_click(self):
-        """Given: 카테고리 관리 모달이 열려있음
-        When: 모달 배경을 클릭함
-        Then: 모달이 닫힘"""
+    def test_category_management_section_hidden_by_default(self):
+        """Given: 메뉴 관리 페이지가 로드됨
+        When: 카테고리 관리 섹션을 확인함
+        Then: 기본적으로 숨겨져 있음"""
         response = self.client.get(reverse('menu:menu_list', args=[self.store.store_id]))
         self.assertEqual(response.status_code, 200)
-        # 모달 배경 클릭 이벤트가 있는지 확인
-        self.assertContains(response, 'categoryModal')
+        # 카테고리 관리 섹션이 hidden 클래스를 가지고 있는지 확인
+        self.assertContains(response, 'id="categoryManagementSection" class="hidden')
 
     # 2. 카테고리 추가 테스트 (4개)
     def test_add_valid_category_api(self):
@@ -148,8 +148,8 @@ class CategoryInterfaceTest(TestCase):
         category = MenuCategory.objects.create(store=self.store, name='수정할 카테고리')
         response = self.client.get(reverse('menu:menu_list', args=[self.store.store_id]))
         self.assertEqual(response.status_code, 200)
-        # 카테고리 관리 모달이 있는지 확인
-        self.assertContains(response, 'categoryModal')
+        # 카테고리 관리 섹션이 있는지 확인
+        self.assertContains(response, 'categoryManagementSection')
         # JavaScript에서 editCategory 함수가 있는지 확인
         self.assertContains(response, 'menu-list.js')
 
@@ -200,8 +200,8 @@ class CategoryInterfaceTest(TestCase):
         category = MenuCategory.objects.create(store=self.store, name='삭제할 카테고리')
         response = self.client.get(reverse('menu:menu_list', args=[self.store.store_id]))
         self.assertEqual(response.status_code, 200)
-        # 카테고리 관리 모달이 있는지 확인
-        self.assertContains(response, 'categoryModal')
+        # 카테고리 관리 섹션이 있는지 확인
+        self.assertContains(response, 'categoryManagementSection')
         # JavaScript에서 deleteCategory 함수가 있는지 확인
         self.assertContains(response, 'menu-list.js')
 

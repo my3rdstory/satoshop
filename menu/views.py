@@ -135,6 +135,18 @@ def menu_detail(request, store_id, menu_id):
     }
     return render(request, 'menu/menu_detail.html', context)
 
+@login_required
+def category_manage(request, store_id):
+    """카테고리 관리 페이지"""
+    store = get_store_or_404(store_id, request.user)
+    categories = MenuCategory.objects.filter(store=store).order_by('name')
+    
+    context = {
+        'store': store,
+        'categories': categories,
+    }
+    return render(request, 'menu/category_manage.html', context)
+
 # === 카테고리 관리 API ===
 
 @login_required
