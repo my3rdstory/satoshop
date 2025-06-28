@@ -68,7 +68,7 @@ class Menu(models.Model):
                 # 원화를 사토시로 변환
                 btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
                 sats_amount = btc_amount * 100_000_000
-                return int(sats_amount)
+                return round(sats_amount)
         return self.price
 
     @property
@@ -85,7 +85,7 @@ class Menu(models.Model):
                 # 원화를 사토시로 변환
                 btc_amount = self.discounted_price_krw / float(latest_rate.btc_krw_rate)
                 sats_amount = btc_amount * 100_000_000
-                return int(sats_amount)
+                return round(sats_amount)
         return self.discounted_price
 
     @property
