@@ -44,11 +44,11 @@
     <!-- 페이지 헤더 -->
     <div class="flex items-center justify-center mb-8">
       <div class="p-2 menu-form-avatar rounded-full mr-3">
-        <i class="fas fa-utensils text-3xl text-white"></i>
+        <i class="fas fa-edit text-3xl text-white"></i>
       </div>
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">메뉴 추가</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}에 새로운 메뉴를 등록하세요</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">메뉴 수정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ menu.name }} 메뉴를 수정하세요</p>
       </div>
     </div>
 
@@ -71,7 +71,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 기본적인 정보를 입력하세요</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 기본적인 정보를 수정하세요</p>
           </div>
         </div>
 
@@ -82,7 +82,7 @@
               메뉴명 <span class="text-red-500">*</span>
             </label>
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                   type="text" id="name" name="name" required placeholder="메뉴명을 입력하세요">
+                   type="text" id="name" name="name" required placeholder="메뉴명을 입력하세요" value="{{ menu.name }}">
           </div>
 
           <!-- 설명 -->
@@ -92,7 +92,7 @@
             </label>
             <textarea id="description" name="description" rows="10" 
                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      placeholder="메뉴에 대한 자세한 설명을 마크다운 형식으로 작성하세요"></textarea>
+                      placeholder="메뉴에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ menu.description }}</textarea>
           </div>
         </div>
       </div>
@@ -105,7 +105,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">가격 정보</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 가격과 할인 정보를 설정하세요</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 가격과 할인 정보를 수정하세요</p>
           </div>
         </div>
 
@@ -120,23 +120,25 @@
                 <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
                 <span class="text-sm font-medium text-amber-800 dark:text-amber-200">중요: 가격 표시 방식은 메뉴 등록 후 변경할 수 없습니다.</span>
               </div>
-              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">신중하게 선택해 주세요.</p>
+              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">현재 설정된 방식을 유지합니다.</p>
             </div>
             
             <div class="space-y-2">
               <label class="flex items-center">
                 <input type="radio" name="price_display" value="sats" 
                        class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
-                       checked>
+                       {% if menu.price_display == 'sats' %}checked{% endif %} disabled>
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사토시 고정</span>
               </label>
               <label class="flex items-center">
                 <input type="radio" name="price_display" value="krw" 
-                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if menu.price_display == 'krw' %}checked{% endif %} disabled>
                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">원화 비율 연동</span>
               </label>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격을 사토시 또는 원화 기준으로 설정합니다</p>
+            <input type="hidden" name="price_display" value="{{ menu.price_display }}">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격 표시 방식은 수정할 수 없습니다</p>
           </div>
 
           <!-- 가격 -->
@@ -147,11 +149,13 @@
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
                      type="number" id="price" name="price" required min="0" placeholder="메뉴 가격을 입력하세요"
-                     data-price-krw="">
-              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+                     data-price-krw="" value="{{ menu.price }}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if menu.price_display == 'sats' %}sats{% else %}원{% endif %}</span>
             </div>
             <div class="mt-2">
-              <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">가격은 사토시 단위로 입력하세요</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">
+                {% if menu.price_display == 'sats' %}가격은 사토시 단위로 입력하세요{% else %}가격은 원화 단위로 입력하세요{% endif %}
+              </p>
               <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
                 <span class="converted-amount"></span>
                 <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
@@ -163,19 +167,20 @@
           <div class="mb-6">
             <div class="flex items-center">
               <input type="checkbox" id="is_discounted" name="is_discounted" 
-                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                     {% if menu.is_discounted %}checked{% endif %}>
               <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">할인 적용</label>
             </div>
           </div>
 
           <!-- 할인가 -->
-          <div class="mb-6 hidden" id="discountSection">
+          <div class="mb-6 {% if not menu.is_discounted %}hidden{% endif %}" id="discountSection">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
                      type="number" id="discounted_price" name="discounted_price" min="1" placeholder="할인가를 입력하세요"
-                     data-discounted-price-krw="">
-              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
+                     data-discounted-price-krw="" value="{% if menu.is_discounted %}{{ menu.discounted_price }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if menu.price_display == 'sats' %}sats{% else %}원{% endif %}</span>
             </div>
             <div class="mt-2">
               <p class="text-sm text-gray-500 dark:text-gray-400 discount-help-text">할인가는 정가보다 낮아야 합니다</p>
@@ -196,12 +201,32 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">사이즈, 맵기 정도 등의 옵션을 설정할 수 있습니다</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">사이즈, 맵기 정도 등의 옵션을 수정할 수 있습니다</p>
           </div>
         </div>
 
         <div id="optionsContainer" class="space-y-4 mb-6">
-          <!-- 옵션들이 여기에 동적으로 추가됩니다 -->
+          <!-- 기존 옵션들이 여기에 표시됩니다 -->
+          {% for option in menu.options.all %}
+          <div class="menu-option-item" id="option-{{ forloop.counter }}">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-medium text-gray-900 dark:text-white">옵션 {{ forloop.counter }}</h4>
+              <button type="button" class="text-red-500 hover:text-red-700" onclick="removeOption({{ forloop.counter }})">
+                <i class="fas fa-trash text-sm"></i>
+              </button>
+            </div>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션명</label>
+                <input type="text" name="option_{{ forloop.counter }}_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 사이즈, 맵기 정도" value="{{ option.name }}">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션값 (콤마로 구분)</label>
+                <input type="text" name="option_{{ forloop.counter }}_values" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 소, 중, 대" value="{{ option.values_list|join:', ' }}">
+              </div>
+            </div>
+          </div>
+          {% endfor %}
         </div>
         
         <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
@@ -218,12 +243,30 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">메뉴 이미지</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 이미지를 업로드하세요 (1:1 비율 권장)</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 이미지를 수정하세요 (1:1 비율 권장)</p>
           </div>
         </div>
 
+        <!-- 기존 이미지 -->
+        {% if menu.images.exists %}
+        <div class="mb-6">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">현재 이미지</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="existingImages">
+            {% for image in menu.images.all %}
+            <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200" data-image-id="{{ image.id }}">
+              <img src="{{ image.file_url }}" alt="메뉴 이미지" class="w-full h-full object-cover">
+              <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600" onclick="removeExistingImage({{ image.id }})">
+                <i class="fas fa-times"></i>
+              </button>
+              <input type="hidden" name="keep_image_{{ image.id }}" value="true">
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">메뉴 이미지 (1:1 비율 권장)</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">새 이미지 추가 (1:1 비율 권장)</label>
           <div class="drag-drop-area" id="imageDropArea">
             <div class="text-center">
               <i class="fas fa-image text-4xl text-gray-400 mb-4"></i>
@@ -244,16 +287,39 @@
         </a>
         <button type="submit" 
                 class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
-          메뉴 등록
+          메뉴 수정
         </button>
       </div>
     </form>
   </div>
 </div>
+
+<script>
+// 옵션 카운터 초기화 (기존 옵션 개수 기준)
+window.optionCount = {{ menu.options.count }};
+
+// 기존 이미지 제거 함수
+window.removeExistingImage = function(imageId) {
+    if (confirm('이 이미지를 삭제하시겠습니까?')) {
+        const imageDiv = document.querySelector(`[data-image-id="${imageId}"]`);
+        const keepInput = document.querySelector(`input[name="keep_image_${imageId}"]`);
+        
+        if (imageDiv && keepInput) {
+            imageDiv.style.opacity = '0';
+            imageDiv.style.transform = 'scale(0.9)';
+            keepInput.value = 'false';
+            
+            setTimeout(() => {
+                imageDiv.style.display = 'none';
+            }, 300);
+        }
+    }
+};
+</script>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'js/easymde.min.js' %}"></script>
 <script src="{% static 'js/currency-exchange.js' %}"></script>
-<script src="{% static 'js/add-menu.js' %}"></script>
+<script src="{% static 'js/edit-menu.js' %}"></script>
 {% endblock %} 
