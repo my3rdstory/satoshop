@@ -177,7 +177,7 @@
               <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">
                 {% if menu.price_display == 'sats' %}가격은 사토시 단위로 입력하세요{% else %}가격은 원화 단위로 입력하세요{% endif %}
               </p>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info {% if menu.price_display == 'sats' %}hidden{% endif %}">
                 <span class="converted-amount"></span>
                 <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
               </div>
@@ -206,7 +206,7 @@
             </div>
             <div class="mt-2">
               <p class="text-sm text-gray-500 dark:text-gray-400 discount-help-text">할인가는 정가보다 낮아야 합니다</p>
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 discount-exchange-info hidden">
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 discount-exchange-info {% if menu.price_display == 'sats' %}hidden{% endif %}">
                 <span class="discount-converted-amount"></span>
                 <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
               </div>

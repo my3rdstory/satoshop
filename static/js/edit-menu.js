@@ -22,44 +22,50 @@ document.addEventListener('DOMContentLoaded', function() {
     init();
 
     function init() {
+        // DOM 요소 초기화
+        initializeDOMElements();
+        
+        // 가격 표시 방식 초기화
+        initializePriceDisplay();
+        
+        // 마크다운 에디터 초기화
+        initMarkdownEditor();
+        
+        // 이벤트 리스너 설정
+        setupEventListeners();
+        
+        // 환율 정보 로드 (원화 모드인 경우)
+        if (currentPriceDisplay === 'krw') {
+            fetchExchangeRate();
+        }
+    }
+
+    function initializeDOMElements() {
+        // DOM 요소들 가져오기
+        priceInput = document.getElementById('price');
+        discountedPriceInput = document.getElementById('discounted_price');
+        isDiscountedCheckbox = document.getElementById('is_discounted');
+        discountSection = document.getElementById('discountSection');
+        addOptionBtn = document.getElementById('addOptionBtn');
+        optionsContainer = document.getElementById('optionsContainer');
+        imageDropArea = document.getElementById('imageDropArea');
+        imageInput = document.getElementById('imageInput');
+        menuForm = document.getElementById('menuForm');
+    }
+
+    function initializePriceDisplay() {
         // 현재 가격 표시 방식 확인
         currentPriceDisplay = window.menuPriceDisplay || 'sats';
         const checkedRadio = document.querySelector('input[name="price_display"]:checked');
         if (checkedRadio) {
             currentPriceDisplay = checkedRadio.value;
         }
-
-        // 마크다운 에디터 초기화
-        initMarkdownEditor();
-
-        // 환율 정보 가져오기
-        fetchExchangeRate();
-
-        // 이벤트 리스너 설정
-        setupEventListeners();
-
+        
         // 초기 가격 정보 업데이트
         updatePriceInfo();
-
+        
         // 할인 섹션 초기 상태 설정
         updateDiscountSection();
-
-        // 가격 표시 방식에 따른 환율 정보 표시
-        initializePriceDisplay();
-    }
-
-    function initializePriceDisplay() {
-        // 환율 정보 표시/숨김
-        const exchangeInfo = document.querySelector('.exchange-info');
-        const discountExchangeInfo = document.querySelector('.discount-exchange-info');
-        
-        if (currentPriceDisplay === 'krw') {
-            if (exchangeInfo) exchangeInfo.classList.remove('hidden');
-            if (discountExchangeInfo) discountExchangeInfo.classList.remove('hidden');
-        } else {
-            if (exchangeInfo) exchangeInfo.classList.add('hidden');
-            if (discountExchangeInfo) discountExchangeInfo.classList.add('hidden');
-        }
     }
 
     function initMarkdownEditor() {
@@ -116,17 +122,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fetchExchangeRate() {
-        if (window.CurrencyExchange && typeof window.CurrencyExchange.fetchExchangeRate === 'function') {
-            window.CurrencyExchange.fetchExchangeRate()
-                .then(rate => {
-                    exchangeRate = rate;
+        // 환율 API 호출
+        fetch('/api/exchange-rate/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    exchangeRate = data.btc_krw_rate;
+                    console.log('환율 정보 로드됨:', exchangeRate);
                     updatePriceInfo();
                     updateDiscountPriceInfo();
-                })
-                .catch(error => {
-                    console.error('환율 정보를 가져오는데 실패했습니다:', error);
-                });
-        }
+                } else {
+                    console.error('환율 정보 로드 실패:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('환율 정보를 가져오는데 실패했습니다:', error);
+            });
     }
 
     function updatePriceInfo() {
@@ -150,17 +161,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 : '가격은 원화 단위로 입력하세요';
         }
 
-        // 환율 정보 표시
-        if (exchangeInfo && convertedAmount && exchangeRate && !isNaN(price) && price > 0) {
-            let convertedValue;
-            if (currentPriceDisplay === 'sats') {
-                convertedValue = Math.round(price * exchangeRate / 100000000);
-                convertedAmount.textContent = `약 ${convertedValue.toLocaleString()}원`;
-            } else {
-                convertedValue = Math.round(price / exchangeRate * 100000000);
+        // 환율 정보 표시 (원화 모드일 때만)
+        if (currentPriceDisplay === 'krw' && exchangeInfo && convertedAmount) {
+            if (exchangeRate && !isNaN(price) && price > 0) {
+                const convertedValue = Math.round(price / exchangeRate * 100000000);
                 convertedAmount.textContent = `약 ${convertedValue.toLocaleString()} sats`;
+                exchangeInfo.classList.remove('hidden');
+            } else if (!exchangeRate && !isNaN(price) && price > 0) {
+                // 환율 데이터가 없으면 로딩
+                convertedAmount.textContent = '환율 정보 로딩 중...';
+                exchangeInfo.classList.remove('hidden');
+                if (!exchangeRate) {
+                    fetchExchangeRate();
+                }
+            } else {
+                exchangeInfo.classList.add('hidden');
             }
-            exchangeInfo.classList.remove('hidden');
         } else if (exchangeInfo) {
             exchangeInfo.classList.add('hidden');
         }
@@ -173,16 +189,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const discountExchangeInfo = document.querySelector('.discount-exchange-info');
         const discountConvertedAmount = document.querySelector('.discount-converted-amount');
 
-        if (discountExchangeInfo && discountConvertedAmount && exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
-            let convertedValue;
-            if (currentPriceDisplay === 'sats') {
-                convertedValue = Math.round(discountPrice * exchangeRate / 100000000);
-                discountConvertedAmount.textContent = `약 ${convertedValue.toLocaleString()}원`;
-            } else {
-                convertedValue = Math.round(discountPrice / exchangeRate * 100000000);
+        // 환율 정보 표시 (원화 모드일 때만)
+        if (currentPriceDisplay === 'krw' && discountExchangeInfo && discountConvertedAmount) {
+            if (exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
+                const convertedValue = Math.round(discountPrice / exchangeRate * 100000000);
                 discountConvertedAmount.textContent = `약 ${convertedValue.toLocaleString()} sats`;
+                discountExchangeInfo.classList.remove('hidden');
+            } else if (!exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
+                // 환율 데이터가 없으면 로딩
+                discountConvertedAmount.textContent = '환율 정보 로딩 중...';
+                discountExchangeInfo.classList.remove('hidden');
+                if (!exchangeRate) {
+                    fetchExchangeRate();
+                }
+            } else {
+                discountExchangeInfo.classList.add('hidden');
             }
-            discountExchangeInfo.classList.remove('hidden');
         } else if (discountExchangeInfo) {
             discountExchangeInfo.classList.add('hidden');
         }
