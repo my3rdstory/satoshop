@@ -6,7 +6,9 @@
   {% for menu in menus %}
   <!-- 공개 뷰에서는 활성화된 메뉴만 표시 -->
   {% if not is_public_view or menu.is_active %}
-  <div class="bg-white dark:bg-gray-800 {% if menu.is_discounted %}border-2 border-red-500 rounded-none{% elif not menu.is_active %}border-2 border-gray-500 rounded-none opacity-70{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+  <div class="bg-white dark:bg-gray-800 {% if menu.is_discounted %}border-2 border-red-500 rounded-none{% elif not menu.is_active %}border-2 border-gray-500 rounded-none opacity-70{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 menu-card" 
+       data-menu-id="{{ menu.id }}" 
+       data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
     <!-- 메뉴 이미지 -->
     <div class="relative aspect-square">
       <!-- 태그들 (할인, 비활성화, 품절 상태) -->

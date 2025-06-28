@@ -10,6 +10,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/edit-menu.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
 <link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
 <style>
 .menu-form-avatar {
@@ -62,6 +63,24 @@
 
     <form method="post" enctype="multipart/form-data" id="menuForm" class="space-y-8">
       {% csrf_token %}
+
+      <!-- 카테고리 선택 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-tags text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">카테고리</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴가 속할 카테고리를 선택하세요 (선택사항)</p>
+          </div>
+        </div>
+
+        <div id="categorySelection" class="space-y-3">
+          <!-- 카테고리 체크박스들이 여기에 동적으로 로드됩니다 -->
+          <p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러오는 중...</p>
+        </div>
+      </div>
 
       <!-- 기본 정보 -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
@@ -297,6 +316,9 @@
 <script>
 // 옵션 카운터 초기화 (기존 옵션 개수 기준)
 window.optionCount = {{ menu.options.count }};
+
+// 현재 메뉴의 카테고리 정보를 JavaScript 변수로 전달
+window.menuCategories = [{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
 
 // 기존 이미지 제거 함수
 window.removeExistingImage = function(imageId) {

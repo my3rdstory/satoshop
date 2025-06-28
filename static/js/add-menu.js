@@ -91,6 +91,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 카테고리 로드
+    loadCategories();
+
     // 함수들
     function updatePriceDisplay() {
         const selectedType = document.querySelector('input[name="price_display"]:checked').value;
@@ -266,6 +269,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         return true;
+    }
+
+    // 카테고리 관련 함수들
+    function loadCategories() {
+        const storeId = getStoreIdFromUrl();
+        if (!storeId) return;
+
+        fetch(`/menu/${storeId}/categories/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                renderCategorySelection(data.categories);
+            } else {
+                document.getElementById('categorySelection').innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러올 수 없습니다.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('카테고리 로드 오류:', error);
+            document.getElementById('categorySelection').innerHTML = '<p class="text-red-500 text-sm">카테고리 로드 중 오류가 발생했습니다.</p>';
+        });
+    }
+
+    function renderCategorySelection(categories) {
+        const categorySelection = document.getElementById('categorySelection');
+        if (!categorySelection) return;
+
+        if (categories.length === 0) {
+            categorySelection.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">등록된 카테고리가 없습니다.</p>';
+            return;
+        }
+
+        const categoryHtml = categories.map(category => `
+            <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                <input type="checkbox" name="categories" value="${category.id}" 
+                       class="w-4 h-4 text-purple-500 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <span class="text-sm font-medium text-gray-900 dark:text-white">${category.name}</span>
+            </label>
+        `).join('');
+
+        categorySelection.innerHTML = categoryHtml;
+    }
+
+    function getStoreIdFromUrl() {
+        const pathParts = window.location.pathname.split('/');
+        const menuIndex = pathParts.indexOf('menu');
+        return menuIndex !== -1 && pathParts[menuIndex + 1] ? pathParts[menuIndex + 1] : null;
     }
 
     // 초기화

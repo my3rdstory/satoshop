@@ -6,6 +6,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/menu-list.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
 {% endblock %}
 
 {% block store_content %}
@@ -43,6 +44,11 @@
           </a>
           {% endif %}
           {% else %}
+          <button id="categoryManageBtn" 
+                  class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-tags mr-2"></i>
+            카테고리 관리
+          </button>
           <a href="{% url 'menu:add_menu' store.store_id %}" 
              class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
             <i class="fas fa-plus mr-2"></i>
@@ -57,10 +63,63 @@
       </div>
     </div>
 
+    <!-- 카테고리 필터 -->
+    {% if not is_public_view %}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">카테고리 필터</h3>
+        <button id="clearCategoryFilter" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          전체 보기
+        </button>
+      </div>
+      <div id="categoryFilters" class="flex flex-wrap gap-2">
+        <!-- 카테고리 필터 버튼들이 여기에 동적으로 추가됩니다 -->
+      </div>
+    </div>
+    {% endif %}
+
     <!-- 메뉴 목록 -->
     {% include 'menu/menu_grid.html' %}
   </div>
 </div>
+
+<!-- 카테고리 관리 모달 -->
+{% if not is_public_view %}
+<div id="categoryModal" class="fixed inset-0 z-50 hidden">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="fixed inset-0 bg-black opacity-50" onclick="closeCategoryModal()"></div>
+    <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+      <!-- 모달 헤더 -->
+      <div class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">카테고리 관리</h2>
+        <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <!-- 카테고리 추가 폼 -->
+      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">새 카테고리 추가</h3>
+        <form id="addCategoryForm" class="flex gap-3">
+          <input type="text" id="newCategoryName" placeholder="카테고리명을 입력하세요" 
+                 class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+          <button type="submit" class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-plus mr-2"></i>추가
+          </button>
+        </form>
+      </div>
+      
+      <!-- 기존 카테고리 목록 -->
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">기존 카테고리</h3>
+        <div id="categoryList" class="space-y-3 max-h-96 overflow-y-auto">
+          <!-- 카테고리 목록이 여기에 동적으로 로드됩니다 -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

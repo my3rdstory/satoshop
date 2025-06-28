@@ -371,4 +371,165 @@
     .menu-empty-title {
         font-size: 1.25rem;
     }
+}
+
+/* 카테고리 필터 */
+.category-filter-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: white;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-filter-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.category-filter-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+.dark .category-filter-btn {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+}
+
+.dark .category-filter-btn:hover {
+    background: #4b5563;
+    border-color: #6b7280;
+}
+
+.dark .category-filter-btn.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+}
+
+/* 카테고리 관리 모달 */
+.category-modal-overlay {
+    backdrop-filter: blur(4px);
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    background: #f3f4f6;
+}
+
+.dark .category-item {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+.dark .category-item:hover {
+    background: #4b5563;
+}
+
+.category-name {
+    flex: 1;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.dark .category-name {
+    color: #f9fafb;
+}
+
+.category-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.category-edit-btn,
+.category-delete-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.category-edit-btn {
+    background: #3b82f6;
+    color: white;
+}
+
+.category-edit-btn:hover {
+    background: #2563eb;
+}
+
+.category-delete-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.category-delete-btn:hover {
+    background: #dc2626;
+}
+
+.category-edit-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+}
+
+.category-edit-input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    background: white;
+    color: #1f2937;
+}
+
+.dark .category-edit-input {
+    background: #1f2937;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.category-save-btn,
+.category-cancel-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.category-save-btn {
+    background: #10b981;
+    color: white;
+}
+
+.category-save-btn:hover {
+    background: #059669;
+}
+
+.category-cancel-btn {
+    background: #6b7280;
+    color: white;
+}
+
+.category-cancel-btn:hover {
+    background: #4b5563;
 } 

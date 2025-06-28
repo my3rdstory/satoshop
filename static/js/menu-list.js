@@ -5,6 +5,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('menuSearch');
     const filterButtons = document.querySelectorAll('.filter-btn');
     const sortSelect = document.getElementById('menuSort');
+    
+    // 카테고리 관련 요소들
+    const categoryManageBtn = document.getElementById('categoryManageBtn');
+    const categoryModal = document.getElementById('categoryModal');
+    const categoryFilters = document.getElementById('categoryFilters');
+    const clearCategoryFilter = document.getElementById('clearCategoryFilter');
+    const addCategoryForm = document.getElementById('addCategoryForm');
+    const categoryList = document.getElementById('categoryList');
+    
+    // 카테고리 관련 변수
+    let categories = [];
+    let selectedCategoryId = null;
 
     // 검색 기능
     if (searchInput) {
@@ -45,6 +57,24 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'translateY(0)';
         });
     });
+
+    // 카테고리 관리 이벤트 리스너
+    if (categoryManageBtn) {
+        categoryManageBtn.addEventListener('click', openCategoryModal);
+    }
+
+    if (clearCategoryFilter) {
+        clearCategoryFilter.addEventListener('click', clearCategoryFilters);
+    }
+
+    if (addCategoryForm) {
+        addCategoryForm.addEventListener('submit', handleAddCategory);
+    }
+
+    // 초기화
+    if (categoryManageBtn) {
+        loadCategories();
+    }
 
     // 장바구니 추가 기능
     window.addToCart = function(menuId, menuName) {
@@ -342,6 +372,268 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error loading more menus:', error);
             loading = false;
         });
+    }
+
+    // === 카테고리 관리 함수들 ===
+    
+    function loadCategories() {
+        const storeId = getStoreIdFromUrl();
+        if (!storeId) return;
+
+        fetch(`/menu/${storeId}/categories/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                categories = data.categories;
+                renderCategoryFilters();
+                if (categoryModal && !categoryModal.classList.contains('hidden')) {
+                    renderCategoryList();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('카테고리 로드 오류:', error);
+        });
+    }
+
+    function renderCategoryFilters() {
+        if (!categoryFilters) return;
+
+        categoryFilters.innerHTML = '';
+        
+        categories.forEach(category => {
+            const filterBtn = document.createElement('button');
+            filterBtn.className = 'category-filter-btn';
+            filterBtn.textContent = category.name;
+            filterBtn.onclick = () => filterByCategory(category.id);
+            categoryFilters.appendChild(filterBtn);
+        });
+    }
+
+    function filterByCategory(categoryId) {
+        selectedCategoryId = categoryId;
+        
+        // 필터 버튼 활성화 상태 업데이트
+        document.querySelectorAll('.category-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        if (categoryId) {
+            event.target.classList.add('active');
+        }
+
+        // 메뉴 카드 필터링
+        menuCards.forEach(card => {
+            const menuCategories = JSON.parse(card.dataset.categories || '[]');
+            const shouldShow = !categoryId || menuCategories.includes(categoryId);
+            
+            if (shouldShow) {
+                card.style.display = 'block';
+                card.style.opacity = '1';
+            } else {
+                card.style.display = 'none';
+                card.style.opacity = '0';
+            }
+        });
+
+        checkEmptyState();
+    }
+
+    function clearCategoryFilters() {
+        selectedCategoryId = null;
+        
+        // 모든 필터 버튼 비활성화
+        document.querySelectorAll('.category-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // 모든 메뉴 카드 표시
+        menuCards.forEach(card => {
+            card.style.display = 'block';
+            card.style.opacity = '1';
+        });
+
+        checkEmptyState();
+    }
+
+    function openCategoryModal() {
+        if (!categoryModal) return;
+        
+        categoryModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        loadCategories();
+    }
+
+    window.closeCategoryModal = function() {
+        if (!categoryModal) return;
+        
+        categoryModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    function handleAddCategory(e) {
+        e.preventDefault();
+        
+        const nameInput = document.getElementById('newCategoryName');
+        const name = nameInput.value.trim();
+        
+        if (!name) {
+            showNotification('카테고리명을 입력해주세요.', 'error');
+            return;
+        }
+
+        const storeId = getStoreIdFromUrl();
+        if (!storeId) return;
+
+        fetch(`/menu/${storeId}/categories/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('카테고리가 추가되었습니다.', 'success');
+                nameInput.value = '';
+                loadCategories();
+            } else {
+                showNotification('오류가 발생했습니다: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('카테고리 추가 오류:', error);
+            showNotification('네트워크 오류가 발생했습니다.', 'error');
+        });
+    }
+
+    function renderCategoryList() {
+        if (!categoryList) return;
+
+        categoryList.innerHTML = '';
+        
+        if (categories.length === 0) {
+            categoryList.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-center py-4">등록된 카테고리가 없습니다.</p>';
+            return;
+        }
+
+        categories.forEach(category => {
+            const categoryItem = document.createElement('div');
+            categoryItem.className = 'category-item';
+            categoryItem.innerHTML = `
+                <span class="category-name">${category.name}</span>
+                <div class="category-actions">
+                    <button class="category-edit-btn" onclick="editCategory(${category.id}, '${category.name}')">
+                        <i class="fas fa-edit"></i> 수정
+                    </button>
+                    <button class="category-delete-btn" onclick="deleteCategory(${category.id}, '${category.name}')">
+                        <i class="fas fa-trash"></i> 삭제
+                    </button>
+                </div>
+            `;
+            categoryList.appendChild(categoryItem);
+        });
+    }
+
+    window.editCategory = function(categoryId, currentName) {
+        const categoryItem = event.target.closest('.category-item');
+        if (!categoryItem) return;
+
+        categoryItem.innerHTML = `
+            <form class="category-edit-form" onsubmit="saveCategory(event, ${categoryId})">
+                <input type="text" class="category-edit-input" value="${currentName}" required>
+                <button type="submit" class="category-save-btn">
+                    <i class="fas fa-check"></i> 저장
+                </button>
+                <button type="button" class="category-cancel-btn" onclick="cancelEdit()">
+                    <i class="fas fa-times"></i> 취소
+                </button>
+            </form>
+        `;
+    };
+
+    window.saveCategory = function(e, categoryId) {
+        e.preventDefault();
+        
+        const input = e.target.querySelector('.category-edit-input');
+        const newName = input.value.trim();
+        
+        if (!newName) {
+            showNotification('카테고리명을 입력해주세요.', 'error');
+            return;
+        }
+
+        const storeId = getStoreIdFromUrl();
+        if (!storeId) return;
+
+        fetch(`/menu/${storeId}/categories/${categoryId}/`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: newName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('카테고리가 수정되었습니다.', 'success');
+                loadCategories();
+            } else {
+                showNotification('오류가 발생했습니다: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('카테고리 수정 오류:', error);
+            showNotification('네트워크 오류가 발생했습니다.', 'error');
+        });
+    };
+
+    window.cancelEdit = function() {
+        loadCategories();
+    };
+
+    window.deleteCategory = function(categoryId, categoryName) {
+        if (!confirm(`"${categoryName}" 카테고리를 삭제하시겠습니까?\n\n이 카테고리를 사용하는 메뉴들에서 카테고리가 제거됩니다.`)) {
+            return;
+        }
+
+        const storeId = getStoreIdFromUrl();
+        if (!storeId) return;
+
+        fetch(`/menu/${storeId}/categories/${categoryId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('카테고리가 삭제되었습니다.', 'success');
+                loadCategories();
+            } else {
+                showNotification('오류가 발생했습니다: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('카테고리 삭제 오류:', error);
+            showNotification('네트워크 오류가 발생했습니다.', 'error');
+        });
+    };
+
+    function getStoreIdFromUrl() {
+        const pathParts = window.location.pathname.split('/');
+        const menuIndex = pathParts.indexOf('menu');
+        return menuIndex !== -1 && pathParts[menuIndex + 1] ? pathParts[menuIndex + 1] : null;
     }
 
     // 초기화
