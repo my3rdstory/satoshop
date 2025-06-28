@@ -11,6 +11,100 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/manage-menu.css' %}">
+<style>
+.manage-avatar {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+.status-avatar {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+.danger-avatar {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* 커스텀 토글 스위치 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #10b981;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #10b981;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.status-active {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-inactive {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.danger-zone {
+    border: 2px solid #fecaca;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
+}
+
+.dark .danger-zone {
+    border: 2px solid #7f1d1d;
+    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+}
+</style>
 {% endblock %}
 
 {% block store_content %}
@@ -126,118 +220,29 @@
         </div>
       </div>
 
-      <!-- 관리 메뉴 -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div class="bg-gradient-to-r from-orange-500 to-yellow-500 text-white p-6">
-          <div class="flex items-center">
-            <i class="fas fa-tools text-xl mr-3"></i>
-            <div>
-              <h2 class="text-xl font-bold">메뉴 관리</h2>
-              <p class="text-orange-100 text-sm mt-1">메뉴의 다양한 설정을 변경할 수 있습니다</p>
-            </div>
+      <!-- 빠른 액션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-bolt text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">빠른 액션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 보기 및 관리 기능</p>
           </div>
         </div>
 
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
-          <!-- 기본 정보 수정 -->
-          <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <a href="{% url 'menu:edit_menu' store.store_id menu.id %}" class="flex items-center justify-between group">
-              <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
-                    기본 정보 수정
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    메뉴명, 설명, 가격, 할인 설정 변경
-                  </p>
-                </div>
-              </div>
-              <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-            </a>
-          </div>
-
-          <!-- 옵션 관리 -->
-          <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <a href="{% url 'menu:edit_menu' store.store_id menu.id %}#options" class="flex items-center justify-between group">
-              <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-list text-yellow-600 dark:text-yellow-400"></i>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
-                    옵션 관리
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    사이즈, 맛 등 메뉴 옵션 설정
-                  </p>
-                </div>
-              </div>
-              <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-            </a>
-          </div>
-
-          <!-- 이미지 관리 -->
-          <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <a href="{% url 'menu:edit_menu' store.store_id menu.id %}#images" class="flex items-center justify-between group">
-              <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-images text-purple-600 dark:text-purple-400"></i>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
-                    이미지 관리
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    메뉴 이미지 업로드, 삭제
-                  </p>
-                </div>
-              </div>
-              <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-            </a>
-          </div>
-
-          <!-- 카테고리 관리 -->
-          <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <a href="{% url 'menu:category_manage' store.store_id %}" class="flex items-center justify-between group">
-              <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-tags text-green-600 dark:text-green-400"></i>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
-                    카테고리 관리
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    메뉴 카테고리 생성, 수정, 삭제
-                  </p>
-                </div>
-              </div>
-              <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-            </a>
-          </div>
-
-          <!-- 메뉴 상세보기 -->
-          <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" target="_blank" class="flex items-center justify-between group">
-              <div class="flex items-start space-x-3">
-                <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-eye text-indigo-600 dark:text-indigo-400"></i>
-                </div>
-                <div>
-                  <h4 class="font-medium text-gray-900 dark:text-white group-hover:text-orange-500 transition-colors">
-                    메뉴 상세보기
-                  </h4>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    고객이 보는 메뉴 페이지 확인
-                  </p>
-                </div>
-              </div>
-              <i class="fas fa-external-link-alt text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-            </a>
-          </div>
+        <div class="flex justify-center space-x-4">
+          <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" target="_blank"
+             class="inline-flex items-center justify-center px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors shadow-lg text-lg">
+            <i class="fas fa-eye mr-3"></i>
+            <span>메뉴 보기</span>
+          </a>
+          <a href="{% url 'menu:edit_menu' store.store_id menu.id %}"
+             class="inline-flex items-center justify-center px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-lg text-lg">
+            <i class="fas fa-edit mr-3"></i>
+            <span>메뉴 수정</span>
+          </a>
         </div>
       </div>
 
@@ -285,11 +290,56 @@
           </div>
         </div>
       </div>
+
+      <!-- 위험한 작업들 -->
+      <div class="danger-zone p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 danger-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-red-800 dark:text-red-200">위험한 작업</h2>
+            <p class="text-sm text-red-600 dark:text-red-300">아래 작업을 실행하면 되돌릴 수 없습니다</p>
+          </div>
+        </div>
+
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mt-0.5 mr-3"></i>
+            <p class="text-sm text-red-800 dark:text-red-200">
+              <strong>주의:</strong> 메뉴를 삭제하면 모든 관련 데이터(이미지, 옵션, 주문 내역 등)가 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-red-200 dark:border-red-800 p-6">
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">메뉴 삭제</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                메뉴와 관련된 모든 데이터가 영구적으로 삭제됩니다.
+              </p>
+            </div>
+            <div class="ml-6">
+              <button class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl" 
+                      onclick="confirmDelete()">
+                <i class="fas fa-trash"></i>
+                <span>메뉴 삭제</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script>
+  // URL 및 CSRF 토큰 설정
+  window.deleteMenuUrl = '{% url "menu:delete_menu" store.store_id menu.id %}';
+  window.csrfToken = '{{ csrf_token }}';
+</script>
 <script src="{% static 'js/manage-menu.js' %}"></script>
 {% endblock %} 

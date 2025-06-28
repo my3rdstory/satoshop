@@ -11,6 +11,7 @@ urlpatterns = [
     path('<str:store_id>/add/', views.add_menu, name='add_menu'),
     path('<str:store_id>/<int:menu_id>/edit/', views.edit_menu, name='edit_menu'),
     path('<str:store_id>/<int:menu_id>/manage/', views.manage_menu, name='manage_menu'),
+    path('<str:store_id>/<int:menu_id>/delete/', views.delete_menu, name='delete_menu'),
     
     # 메뉴 이미지 업로드 API
     path('<str:store_id>/<int:menu_id>/upload-image/', views.upload_menu_image, name='upload_menu_image'),

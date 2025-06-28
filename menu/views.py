@@ -686,20 +686,25 @@ def toggle_temporary_out_of_stock(request, store_id, menu_id):
         store = get_store_or_404(store_id, request.user)
         menu = get_object_or_404(Menu, id=menu_id, store=store)
         
-        data = json.loads(request.body)
-        is_temporarily_out_of_stock = data.get('is_temporarily_out_of_stock', False)
+        # JSON 데이터가 있으면 사용, 없으면 현재 상태를 토글
+        try:
+            data = json.loads(request.body)
+            is_temporarily_out_of_stock = data.get('is_temporarily_out_of_stock', False)
+        except (json.JSONDecodeError, ValueError):
+            # JSON 파싱 실패 시 현재 상태를 토글
+            is_temporarily_out_of_stock = not menu.is_temporarily_out_of_stock
         
         menu.is_temporarily_out_of_stock = is_temporarily_out_of_stock
         menu.save()
         
+        status_text = "일시품절" if is_temporarily_out_of_stock else "일시품절 해제"
+        
         return JsonResponse({
             'success': True,
             'is_temporarily_out_of_stock': menu.is_temporarily_out_of_stock,
-            'message': '일시품절 상태가 변경되었습니다.'
+            'message': f'메뉴가 {status_text}되었습니다.'
         })
         
-    except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': '잘못된 JSON 데이터입니다.'}, status=400)
     except Exception as e:
         logger.error(f"일시품절 상태 변경 오류: {e}")
         return JsonResponse({'success': False, 'error': '서버 오류가 발생했습니다.'}, status=500)
@@ -764,3 +769,35 @@ def manage_menu(request, store_id, menu_id):
         'menu': menu,
     }
     return render(request, 'menu/manage_menu.html', context)
+
+@login_required
+@require_POST
+def delete_menu(request, store_id, menu_id):
+    """메뉴 삭제"""
+    store = get_store_or_404(store_id, request.user)
+    menu = get_object_or_404(Menu, id=menu_id, store=store)
+    
+    if request.method == 'POST':
+        menu_name = menu.name
+        
+        try:
+            with transaction.atomic():
+                # 관련 이미지 파일들 삭제
+                for image in menu.images.all():
+                    if image.file_path:
+                        try:
+                            from storage.utils import delete_file_from_s3
+                            delete_file_from_s3(image.file_path)
+                        except Exception as e:
+                            logger.warning(f"S3 파일 삭제 실패: {e}")
+                
+                # 메뉴 완전 삭제 (관련 데이터도 CASCADE로 함께 삭제됨)
+                menu.delete()
+                
+                messages.success(request, f'"{menu_name}" 메뉴가 완전히 삭제되었습니다.')
+                
+        except Exception as e:
+            logger.error(f"메뉴 삭제 오류: {e}", exc_info=True)
+            messages.error(request, '메뉴 삭제 중 오류가 발생했습니다.')
+    
+    return redirect('menu:menu_list', store_id=store_id)

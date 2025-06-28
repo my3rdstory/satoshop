@@ -199,4 +199,23 @@ document.addEventListener('DOMContentLoaded', function() {
             this.style.transform = 'translateX(0)';
         });
     });
-}); 
+});
+
+// 메뉴 삭제 확인 및 실행
+function confirmDelete() {
+    if (confirm('정말로 이 메뉴를 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없으며, 다음 데이터가 모두 삭제됩니다:\n- 메뉴 정보\n- 메뉴 이미지\n- 메뉴 옵션\n- 관련 주문 내역\n\n삭제하려면 "확인"을 클릭하세요.')) {
+        // 삭제 폼 생성 및 제출
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.deleteMenuUrl || '/menu/delete/';
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]')?.value || window.csrfToken || csrftoken;
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+} 
