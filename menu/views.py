@@ -681,29 +681,54 @@ def category_reorder_api(request, store_id):
 @login_required
 @require_http_methods(["POST"])
 def toggle_temporary_out_of_stock(request, store_id, menu_id):
-    """일시품절 상태 토글 API"""
-    store = get_store_or_404(store_id, request.user)
-    menu = get_object_or_404(Menu, id=menu_id, store=store)
-    
+    """메뉴 일시품절 상태 토글"""
     try:
-        menu.is_temporarily_out_of_stock = not menu.is_temporarily_out_of_stock
-        menu.save()
+        store = get_store_or_404(store_id, request.user)
+        menu = get_object_or_404(Menu, id=menu_id, store=store)
         
-        status = "일시품절" if menu.is_temporarily_out_of_stock else "주문 가능"
-        action = "설정" if menu.is_temporarily_out_of_stock else "해제"
+        data = json.loads(request.body)
+        is_temporarily_out_of_stock = data.get('is_temporarily_out_of_stock', False)
+        
+        menu.is_temporarily_out_of_stock = is_temporarily_out_of_stock
+        menu.save()
         
         return JsonResponse({
             'success': True,
-            'message': f'"{menu.name}" 메뉴의 일시품절이 {action}되었습니다.',
             'is_temporarily_out_of_stock': menu.is_temporarily_out_of_stock,
-            'status': status
+            'message': '일시품절 상태가 변경되었습니다.'
         })
         
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '잘못된 JSON 데이터입니다.'}, status=400)
     except Exception as e:
+        logger.error(f"일시품절 상태 변경 오류: {e}")
+        return JsonResponse({'success': False, 'error': '서버 오류가 발생했습니다.'}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def toggle_menu_active(request, store_id, menu_id):
+    """메뉴 활성화 상태 토글"""
+    try:
+        store = get_store_or_404(store_id, request.user)
+        menu = get_object_or_404(Menu, id=menu_id, store=store)
+        
+        data = json.loads(request.body)
+        is_active = data.get('is_active', False)
+        
+        menu.is_active = is_active
+        menu.save()
+        
         return JsonResponse({
-            'success': False,
-            'error': str(e)
+            'success': True,
+            'is_active': menu.is_active,
+            'message': '메뉴 활성화 상태가 변경되었습니다.'
         })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '잘못된 JSON 데이터입니다.'}, status=400)
+    except Exception as e:
+        logger.error(f"메뉴 활성화 상태 변경 오류: {e}")
+        return JsonResponse({'success': False, 'error': '서버 오류가 발생했습니다.'}, status=500)
 
 def menu_board(request, store_id):
     """메뉴판 화면 (공개, 비회원 접근 가능)"""
@@ -727,3 +752,15 @@ def menu_board(request, store_id):
         'is_menu_board': True,  # 메뉴판 화면임을 표시
     }
     return render(request, 'menu/menu_board.html', context)
+
+@login_required
+def manage_menu(request, store_id, menu_id):
+    """메뉴 관리 페이지"""
+    store = get_store_or_404(store_id, request.user)
+    menu = get_object_or_404(Menu, id=menu_id, store=store)
+    
+    context = {
+        'store': store,
+        'menu': menu,
+    }
+    return render(request, 'menu/manage_menu.html', context)

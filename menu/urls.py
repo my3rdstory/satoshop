@@ -10,6 +10,7 @@ urlpatterns = [
     path('<str:store_id>/list/<int:menu_id>/', views.menu_detail, name='menu_detail'),
     path('<str:store_id>/add/', views.add_menu, name='add_menu'),
     path('<str:store_id>/<int:menu_id>/edit/', views.edit_menu, name='edit_menu'),
+    path('<str:store_id>/<int:menu_id>/manage/', views.manage_menu, name='manage_menu'),
     
     # 메뉴 이미지 업로드 API
     path('<str:store_id>/<int:menu_id>/upload-image/', views.upload_menu_image, name='upload_menu_image'),
@@ -26,4 +27,5 @@ urlpatterns = [
     
     # 메뉴 상태 관리 API
     path('<str:store_id>/<int:menu_id>/toggle-temporary-out-of-stock/', views.toggle_temporary_out_of_stock, name='toggle_temporary_out_of_stock'),
+    path('<str:store_id>/<int:menu_id>/toggle-active/', views.toggle_menu_active, name='toggle_menu_active'),
 ] 
