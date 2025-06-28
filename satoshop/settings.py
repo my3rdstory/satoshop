@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'ln_payment',
     'storage',
     'boards',
+    'menu',
 ]
 
 MIDDLEWARE = [
