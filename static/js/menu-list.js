@@ -48,15 +48,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 메뉴 카드 호버 효과
-    menuCards.forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-4px)';
-        });
+    if (menuCards && menuCards.length > 0) {
+        menuCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-4px)';
+            });
 
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
         });
-    });
+    }
 
     // 카테고리 관리 이벤트 리스너
     if (categoryManageBtn) {
@@ -142,6 +144,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 함수들
     function filterMenus(searchTerm) {
+        if (!menuCards || menuCards.length === 0) {
+            return;
+        }
+
         menuCards.forEach(card => {
             const menuName = card.querySelector('.menu-name')?.textContent.toLowerCase() || '';
             const menuDescription = card.querySelector('.menu-description')?.textContent.toLowerCase() || '';
@@ -161,6 +167,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function filterByStatus(filterType) {
+        if (!menuCards || menuCards.length === 0) {
+            return;
+        }
+
         menuCards.forEach(card => {
             const statusBadge = card.querySelector('.menu-status-badge');
             let shouldShow = true;
@@ -205,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function sortMenus(sortType) {
         const menuGrid = document.querySelector('.menu-grid');
-        if (!menuGrid) return;
+        if (!menuGrid || !menuCards || menuCards.length === 0) return;
 
         const menuArray = Array.from(menuCards);
         
@@ -259,6 +269,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function checkEmptyState() {
+        // menuCards가 존재하지 않거나 비어있는 경우 안전하게 처리
+        if (!menuCards || menuCards.length === 0) {
+            return;
+        }
+
         const visibleCards = Array.from(menuCards).filter(card => 
             card.style.display !== 'none' && card.style.opacity !== '0'
         );
@@ -267,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const menuGrid = document.querySelector('.menu-grid');
 
         if (visibleCards.length === 0) {
-            if (!emptyState) {
+            if (!emptyState && menuGrid) {
                 const emptyStateHtml = `
                     <div class="menu-empty-state text-center py-16">
                         <div class="menu-empty-icon">
@@ -278,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
                 menuGrid.insertAdjacentHTML('afterend', emptyStateHtml);
-            } else {
+            } else if (emptyState) {
                 emptyState.style.display = 'block';
             }
         } else {
@@ -427,19 +442,21 @@ document.addEventListener('DOMContentLoaded', function() {
             event.target.classList.add('active');
         }
 
-        // 메뉴 카드 필터링
-        menuCards.forEach(card => {
-            const menuCategories = JSON.parse(card.dataset.categories || '[]');
-            const shouldShow = !categoryId || menuCategories.includes(categoryId);
-            
-            if (shouldShow) {
-                card.style.display = 'block';
-                card.style.opacity = '1';
-            } else {
-                card.style.display = 'none';
-                card.style.opacity = '0';
-            }
-        });
+        // 메뉴 카드 필터링 (menuCards가 존재하는 경우에만)
+        if (menuCards && menuCards.length > 0) {
+            menuCards.forEach(card => {
+                const menuCategories = JSON.parse(card.dataset.categories || '[]');
+                const shouldShow = !categoryId || menuCategories.includes(categoryId);
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.display = 'none';
+                    card.style.opacity = '0';
+                }
+            });
+        }
 
         checkEmptyState();
     }
@@ -452,11 +469,13 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.classList.remove('active');
         });
 
-        // 모든 메뉴 카드 표시
-        menuCards.forEach(card => {
-            card.style.display = 'block';
-            card.style.opacity = '1';
-        });
+        // 모든 메뉴 카드 표시 (menuCards가 존재하는 경우에만)
+        if (menuCards && menuCards.length > 0) {
+            menuCards.forEach(card => {
+                card.style.display = 'block';
+                card.style.opacity = '1';
+            });
+        }
 
         checkEmptyState();
     }
@@ -490,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const storeId = getStoreIdFromUrl();
         if (!storeId) return;
 
-        fetch(`/menu/${storeId}/categories/`, {
+        fetch(`/menu/${storeId}/categories/create/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': getCsrfToken(),
@@ -608,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const storeId = getStoreIdFromUrl();
         if (!storeId) return;
 
-        fetch(`/menu/${storeId}/categories/${categoryId}/`, {
+        fetch(`/menu/${storeId}/categories/${categoryId}/delete/`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': getCsrfToken(),
