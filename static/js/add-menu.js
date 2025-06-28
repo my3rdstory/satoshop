@@ -346,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
 
-        if (!price || price <= 0) {
+        if (isNaN(price) || price < 0) {
             alert('올바른 가격을 입력해주세요.');
             return false;
         }
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 할인가 검증
         if (isDiscountedCheckbox.checked) {
             const discountedPrice = parseFloat(discountedPriceInput.value);
-            if (!discountedPrice || discountedPrice <= 0) {
+            if (isNaN(discountedPrice) || discountedPrice < 0) {
                 alert('올바른 할인가를 입력해주세요.');
                 return false;
             }

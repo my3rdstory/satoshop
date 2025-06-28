@@ -71,7 +71,7 @@ class MenuForm(forms.ModelForm):
             }),
             'price': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
-                'min': '1',
+                'min': '0',
                 'placeholder': '메뉴 가격을 입력하세요'
             }),
             'is_discounted': forms.CheckboxInput(attrs={
@@ -79,7 +79,7 @@ class MenuForm(forms.ModelForm):
             }),
             'discounted_price': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
-                'min': '1',
+                'min': '0',
                 'placeholder': '할인가를 입력하세요'
             })
         }
@@ -99,9 +99,9 @@ class MenuForm(forms.ModelForm):
         discounted_price = cleaned_data.get('discounted_price')
 
         if is_discounted:
-            if not discounted_price:
+            if discounted_price is None:
                 raise ValidationError('할인 적용 시 할인가를 입력해야 합니다.')
-            if price and discounted_price and discounted_price >= price:
+            if price is not None and discounted_price is not None and discounted_price >= price:
                 raise ValidationError('할인가는 정가보다 낮아야 합니다.')
 
         return cleaned_data

@@ -35,10 +35,10 @@ class Menu(models.Model):
     
     # 가격 정보
     price_display = models.CharField(max_length=10, choices=PRICE_DISPLAY_CHOICES, default='sats', verbose_name='가격 표시 방식')
-    price = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name='가격')
+    price = models.PositiveIntegerField(validators=[MinValueValidator(0)], verbose_name='가격')
     price_krw = models.PositiveIntegerField(null=True, blank=True, verbose_name='원화 가격')
     is_discounted = models.BooleanField(default=False, verbose_name='할인 적용')
-    discounted_price = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)], verbose_name='할인가')
+    discounted_price = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(0)], verbose_name='할인가')
     discounted_price_krw = models.PositiveIntegerField(null=True, blank=True, verbose_name='원화 할인가')
     
     # 상태 정보
