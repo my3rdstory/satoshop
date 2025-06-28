@@ -545,13 +545,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 현재 메뉴의 카테고리 정보 가져오기 (템플릿에서 전달된 데이터)
         const currentCategories = window.menuCategories || [];
-        console.log('현재 메뉴 카테고리:', currentCategories);
-        console.log('사용 가능한 카테고리:', categories);
 
         const categoryHtml = categories.map(category => {
             // 타입을 맞춰서 비교 (숫자로 변환하여 비교)
             const isChecked = currentCategories.includes(parseInt(category.id));
-            console.log(`카테고리 ${category.name} (ID: ${category.id}, 타입: ${typeof category.id}): ${isChecked ? '선택됨' : '선택안됨'}`);
             return `
                 <label class="inline-flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                     <input type="checkbox" name="categories" value="${category.id}" 
