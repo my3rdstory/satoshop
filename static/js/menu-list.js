@@ -445,14 +445,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const filterBtn = document.createElement('button');
             filterBtn.className = 'category-filter-btn px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 font-medium';
             filterBtn.textContent = category.name;
-            filterBtn.onclick = () => filterByCategory(category.id);
+            // category.id가 문자열로 오므로 정수로 변환
+            filterBtn.onclick = () => filterByCategory(parseInt(category.id));
             categoryFilters.appendChild(filterBtn);
-            console.log('카테고리 버튼 추가됨:', category.name);
+            console.log('카테고리 버튼 추가됨:', category.name, '(ID:', category.id, ')');
         });
     }
 
     function filterByCategory(categoryId) {
         selectedCategoryId = categoryId;
+        console.log('filterByCategory 호출됨, categoryId:', categoryId, typeof categoryId);
         
         // 필터 버튼 활성화 상태 업데이트
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
@@ -469,7 +471,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (menuCards && menuCards.length > 0) {
             menuCards.forEach(card => {
                 const menuCategories = JSON.parse(card.dataset.categories || '[]');
-                const shouldShow = !categoryId || menuCategories.includes(categoryId);
+                console.log('메뉴 카테고리:', menuCategories, '필터 카테고리:', categoryId);
+                
+                // 카테고리 ID를 숫자로 변환하여 비교
+                const categoryIdNum = parseInt(categoryId);
+                const shouldShow = !categoryId || menuCategories.includes(categoryIdNum);
+                
+                console.log('메뉴 표시 여부:', shouldShow, '카테고리 포함:', menuCategories.includes(categoryIdNum));
                 
                 if (shouldShow) {
                     card.style.display = 'block';

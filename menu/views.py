@@ -495,7 +495,7 @@ def category_list_api(request, store_id):
         'success': True,
         'categories': [
             {
-                'id': str(category.id),
+                'id': category.id,  # 숫자로 반환
                 'name': category.name,
                 'created_at': category.created_at.isoformat()
             }
