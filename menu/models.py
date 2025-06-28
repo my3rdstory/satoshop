@@ -124,6 +124,51 @@ class Menu(models.Model):
                 raise ValidationError('할인가는 정가보다 낮아야 합니다.')
 
 
+class MenuImage(models.Model):
+    """메뉴 이미지 모델"""
+    menu = models.ForeignKey(Menu, on_delete=models.CASCADE, related_name='images')
+    
+    # 이미지 정보
+    original_name = models.CharField(max_length=255, verbose_name='원본 파일명')
+    file_path = models.CharField(max_length=500, verbose_name='파일 경로')
+    file_url = models.URLField(max_length=800, verbose_name='파일 URL')  # S3 URL은 길 수 있음
+    file_size = models.PositiveIntegerField(null=True, blank=True, verbose_name='파일 크기 (bytes)')
+    
+    # 이미지 크기 정보
+    width = models.PositiveIntegerField(default=500, verbose_name='이미지 너비')
+    height = models.PositiveIntegerField(default=500, verbose_name='이미지 높이')  # 1:1 비율
+    
+    # 순서 정보 (이미지 정렬용)
+    order = models.PositiveIntegerField(default=0, verbose_name='정렬 순서')
+    
+    # 메타 정보
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='업로드 시간')
+    uploaded_by = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, verbose_name='업로드 사용자')
+    
+    class Meta:
+        verbose_name = '메뉴 이미지'
+        verbose_name_plural = '메뉴 이미지들'
+        ordering = ['order', 'uploaded_at']
+        indexes = [
+            models.Index(fields=['menu', 'order']),
+            models.Index(fields=['uploaded_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.menu.name} - {self.original_name}"
+    
+    def get_file_size_display(self):
+        """파일 크기를 읽기 쉬운 형태로 반환"""
+        if not self.file_size:
+            return "크기 정보 없음"
+        
+        size = self.file_size
+        for unit in ['bytes', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
+
 
 class MenuOption(models.Model):
     """메뉴 옵션 모델"""

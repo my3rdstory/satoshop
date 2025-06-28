@@ -372,30 +372,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleImageFiles(files) {
-        const validFiles = files.filter(file => {
+        // 1장만 허용
+        if (files.length > 1) {
+            showNotification('메뉴 이미지는 1장만 업로드할 수 있습니다.', 'error');
+            return;
+        }
+        
+        // 기존 미리보기 제거
+        imagePreview.innerHTML = '';
+        
+        const file = files[0];
+        if (file) {
             if (!file.type.startsWith('image/')) {
                 showNotification('이미지 파일만 업로드할 수 있습니다.', 'error');
-                return false;
+                return;
             }
             if (file.size > 10 * 1024 * 1024) {
                 showNotification('파일 크기는 10MB 이하여야 합니다.', 'error');
-                return false;
+                return;
             }
-            return true;
-        });
-
-        validFiles.forEach(file => {
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 addImagePreview(e.target.result, file.name);
             };
             reader.readAsDataURL(file);
-        });
-
-        // 파일 input에 새 파일들 설정
-        const dt = new DataTransfer();
-        validFiles.forEach(file => dt.items.add(file));
-        imageInput.files = dt.files;
+            
+            // 파일 input에 파일 설정
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            imageInput.files = dt.files;
+        }
     }
 
     function addImagePreview(src, fileName) {

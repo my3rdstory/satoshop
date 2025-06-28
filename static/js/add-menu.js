@@ -170,18 +170,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleImageFiles(files) {
-        files.forEach(file => {
-            if (file.type.startsWith('image/')) {
-                if (file.size <= 10 * 1024 * 1024) { // 10MB 제한
-                    selectedImages.push(file);
-                    displayImagePreview(file);
-                } else {
-                    alert('이미지 크기는 10MB 이하여야 합니다.');
-                }
-            }
-        });
+        // 1장만 허용
+        if (files.length > 1) {
+            alert('메뉴 이미지는 1장만 업로드할 수 있습니다.');
+            return;
+        }
         
-        updateImageInput();
+        // 기존 이미지 제거
+        selectedImages = [];
+        imagePreview.innerHTML = '';
+        
+        const file = files[0];
+        if (file && file.type.startsWith('image/')) {
+            if (file.size <= 10 * 1024 * 1024) { // 10MB 제한
+                selectedImages.push(file);
+                displayImagePreview(file);
+                updateImageInput();
+            } else {
+                alert('이미지 크기는 10MB 이하여야 합니다.');
+            }
+        } else {
+            alert('이미지 파일만 업로드할 수 있습니다.');
+        }
     }
 
     function displayImagePreview(file) {

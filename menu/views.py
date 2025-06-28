@@ -2,15 +2,18 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
 from django.db import transaction, IntegrityError
 from django.db import models
 from stores.models import Store
-from .models import Menu, MenuCategory, MenuOption
+from .models import Menu, MenuCategory, MenuOption, MenuImage
 from .forms import MenuForm, MenuCategoryForm
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 def get_store_or_404(store_id, user):
     """스토어 조회 및 권한 확인"""
@@ -81,6 +84,24 @@ def add_menu(request, store_id):
                 else:
                     menu.categories.clear()
                     print(f"DEBUG: 카테고리 모두 제거됨")  # 디버깅용
+                
+                # 이미지 처리
+                images = request.FILES.getlist('images')
+                if images:
+                    # 메뉴당 1장만 허용
+                    image_file = images[0]
+                    try:
+                        from storage.utils import upload_menu_image
+                        result = upload_menu_image(image_file, menu, request.user)
+                        
+                        if result['success']:
+                            logger.info(f"메뉴 이미지 업로드 성공: {image_file.name}")
+                        else:
+                            logger.warning(f"메뉴 이미지 업로드 실패: {image_file.name}, 오류: {result['error']}")
+                            messages.warning(request, f'이미지 업로드 실패: {result["error"]}')
+                    except Exception as e:
+                        logger.error(f"메뉴 이미지 처리 오류: {e}", exc_info=True)
+                        messages.warning(request, '이미지 업로드 중 오류가 발생했습니다.')
                 
                 # 옵션 처리 (새로운 형식)
                 options_data = {}
@@ -223,6 +244,55 @@ def edit_menu(request, store_id, menu_id):
                     menu.categories.clear()
                     print(f"DEBUG (edit_menu): 카테고리 모두 제거됨")  # 디버깅용
                 
+                # 기존 이미지 삭제 처리
+                for key, value in request.POST.items():
+                    if key.startswith('keep_image_') and value == 'false':
+                        image_id = key.replace('keep_image_', '')
+                        try:
+                            image = MenuImage.objects.get(id=image_id, menu=menu)
+                            # S3에서 파일 삭제
+                            from storage.utils import delete_file_from_s3
+                            try:
+                                delete_file_from_s3(image.file_path)
+                            except Exception as e:
+                                logger.warning(f"S3 파일 삭제 실패: {e}")
+                            # DB에서 삭제
+                            image.delete()
+                            logger.info(f"메뉴 이미지 삭제: {image.original_name}")
+                        except MenuImage.DoesNotExist:
+                            pass
+                
+                # 새 이미지 처리
+                images = request.FILES.getlist('images')
+                if images:
+                    # 기존 이미지가 있으면 삭제 (메뉴당 1장만 허용)
+                    existing_images = menu.images.all()
+                    if existing_images.exists():
+                        for existing_image in existing_images:
+                            # S3에서 파일 삭제
+                            try:
+                                from storage.utils import delete_file_from_s3
+                                delete_file_from_s3(existing_image.file_path)
+                            except Exception as e:
+                                logger.warning(f"S3 파일 삭제 실패: {e}")
+                            # DB에서 삭제
+                            existing_image.delete()
+                    
+                    # 새 이미지 업로드 (첫 번째 이미지만)
+                    image_file = images[0]
+                    try:
+                        from storage.utils import upload_menu_image
+                        result = upload_menu_image(image_file, menu, request.user)
+                        
+                        if result['success']:
+                            logger.info(f"메뉴 이미지 업로드 성공: {image_file.name}")
+                        else:
+                            logger.warning(f"메뉴 이미지 업로드 실패: {image_file.name}, 오류: {result['error']}")
+                            messages.warning(request, f'이미지 업로드 실패: {result["error"]}')
+                    except Exception as e:
+                        logger.error(f"메뉴 이미지 처리 오류: {e}", exc_info=True)
+                        messages.warning(request, '이미지 업로드 중 오류가 발생했습니다.')
+                
                 # 기존 옵션 삭제
                 menu.options.all().delete()
                 
@@ -306,6 +376,80 @@ def edit_menu(request, store_id, menu_id):
         'form': form,
     }
     return render(request, 'menu/edit_menu.html', context)
+
+@login_required
+@require_POST
+def upload_menu_image(request, store_id, menu_id):
+    """메뉴 이미지 업로드 (AJAX)"""
+    try:
+        store = get_store_or_404(store_id, request.user)
+        menu = get_object_or_404(Menu, id=menu_id, store=store)
+        
+        if 'image' not in request.FILES:
+            return JsonResponse({
+                'success': False,
+                'error': '이미지 파일이 필요합니다.'
+            })
+        
+        image_file = request.FILES['image']
+        
+        # 파일 크기 제한 (10MB)
+        if image_file.size > 10 * 1024 * 1024:
+            return JsonResponse({
+                'success': False,
+                'error': '파일 크기는 10MB를 초과할 수 없습니다.'
+            })
+        
+        # 이미지 파일 검증
+        if not image_file.content_type.startswith('image/'):
+            return JsonResponse({
+                'success': False,
+                'error': '이미지 파일만 업로드할 수 있습니다.'
+            })
+        
+        # 메뉴당 1장만 허용 - 기존 이미지가 있으면 삭제
+        existing_images = menu.images.all()
+        if existing_images.exists():
+            for existing_image in existing_images:
+                # S3에서 파일 삭제
+                try:
+                    from storage.utils import delete_file_from_s3
+                    delete_file_from_s3(existing_image.file_path)
+                except Exception as e:
+                    logger.warning(f"S3 파일 삭제 실패: {e}")
+                # DB에서 삭제
+                existing_image.delete()
+        
+        # 이미지 업로드
+        from storage.utils import upload_menu_image
+        result = upload_menu_image(image_file, menu, request.user)
+        
+        if result['success']:
+            menu_image = result['menu_image']
+            return JsonResponse({
+                'success': True,
+                'image': {
+                    'id': menu_image.id,
+                    'original_name': menu_image.original_name,
+                    'file_url': menu_image.file_url,
+                    'file_size': menu_image.file_size,
+                    'width': menu_image.width,
+                    'height': menu_image.height,
+                    'order': menu_image.order,
+                }
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            })
+            
+    except Exception as e:
+        logger.error(f"메뉴 이미지 업로드 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '이미지 업로드 중 오류가 발생했습니다.'
+        })
 
 @login_required
 def menu_detail(request, store_id, menu_id):
