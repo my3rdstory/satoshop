@@ -1,11 +1,9 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from stores.models import Store
-import uuid
 
 class MenuCategory(models.Model):
     """메뉴 카테고리 모델"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='menu_categories')
     name = models.CharField(max_length=50, verbose_name='카테고리명')
     order = models.PositiveIntegerField(default=0, verbose_name='순서')
@@ -27,8 +25,6 @@ class Menu(models.Model):
         ('sats', '사토시 고정'),
         ('krw', '원화 비율 연동'),
     ]
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='menus')
     categories = models.ManyToManyField(MenuCategory, blank=True, related_name='menus', verbose_name='카테고리')
     
@@ -40,8 +36,10 @@ class Menu(models.Model):
     # 가격 정보
     price_display = models.CharField(max_length=10, choices=PRICE_DISPLAY_CHOICES, default='sats', verbose_name='가격 표시 방식')
     price = models.PositiveIntegerField(validators=[MinValueValidator(1)], verbose_name='가격')
+    price_krw = models.PositiveIntegerField(null=True, blank=True, verbose_name='원화 가격')
     is_discounted = models.BooleanField(default=False, verbose_name='할인 적용')
     discounted_price = models.PositiveIntegerField(null=True, blank=True, validators=[MinValueValidator(1)], verbose_name='할인가')
+    discounted_price_krw = models.PositiveIntegerField(null=True, blank=True, verbose_name='원화 할인가')
     
     # 상태 정보
     is_active = models.BooleanField(default=True, verbose_name='활성화')
@@ -61,22 +59,33 @@ class Menu(models.Model):
 
     @property
     def public_price(self):
-        """공개 가격 (사토시 단위)"""
-        if self.price_display == 'krw':
-            # 원화 연동의 경우 실시간 환율로 계산 (임시로 고정값 사용)
-            # 실제로는 환율 API를 통해 동적으로 계산해야 함
-            return self.price * 100  # 임시 환율
+        """사용자용 가격 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
+        if self.price_display == 'krw' and self.price_krw is not None:
+            # 원화 연동 메뉴: 최신 환율로 사토시 가격 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
         return self.price
 
     @property
     def public_discounted_price(self):
-        """공개 할인가 (사토시 단위)"""
+        """사용자용 할인가 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
         if not self.is_discounted or not self.discounted_price:
             return None
         
-        if self.price_display == 'krw':
-            # 원화 연동의 경우 실시간 환율로 계산
-            return self.discounted_price * 100  # 임시 환율
+        if self.price_display == 'krw' and self.discounted_price_krw is not None:
+            # 원화 연동 메뉴: 최신 환율로 사토시 할인가 계산
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                # 원화를 사토시로 변환
+                btc_amount = self.discounted_price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return int(sats_amount)
         return self.discounted_price
 
     @property
@@ -95,15 +104,15 @@ class Menu(models.Model):
     @property
     def krw_price_display(self):
         """원화 표시용 가격"""
-        if self.price_display == 'krw':
-            return f"{self.price:,}원"
+        if self.price_display == 'krw' and self.price_krw is not None:
+            return f"{self.price_krw:,}원"
         return None
 
     @property
     def krw_discounted_price_display(self):
         """원화 표시용 할인가"""
-        if self.price_display == 'krw' and self.is_discounted and self.discounted_price:
-            return f"{self.discounted_price:,}원"
+        if self.price_display == 'krw' and self.is_discounted and self.discounted_price_krw is not None:
+            return f"{self.discounted_price_krw:,}원"
         return None
 
     def clean(self):
@@ -118,7 +127,6 @@ class Menu(models.Model):
 
 class MenuOption(models.Model):
     """메뉴 옵션 모델"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE, related_name='options')
     name = models.CharField(max_length=50, verbose_name='옵션명')
     values = models.TextField(verbose_name='옵션값들 (JSON)')

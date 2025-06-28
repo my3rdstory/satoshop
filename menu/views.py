@@ -41,6 +41,29 @@ def add_menu(request, store_id):
             with transaction.atomic():
                 menu = form.save(commit=False)
                 menu.store = store
+                
+                # 가격 처리 - 가격 표시 방식에 따라 적절한 필드에 저장
+                price_display = request.POST.get('price_display', 'sats')
+                menu.price_display = price_display
+                
+                if price_display == 'krw':
+                    # 원화 비율 연동: 원화 값을 저장하고 사토시는 JavaScript에서 계산된 값 사용
+                    menu.price_krw = int(request.POST.get('price', 0))
+                    # 환율 변환된 사토시 가격은 public_price 프로퍼티에서 계산
+                    
+                    if request.POST.get('is_discounted'):
+                        discounted_price = request.POST.get('discounted_price')
+                        if discounted_price:
+                            menu.discounted_price_krw = int(discounted_price)
+                else:
+                    # 사토시 고정: 사토시 값을 저장
+                    menu.price = int(request.POST.get('price', 0))
+                    
+                    if request.POST.get('is_discounted'):
+                        discounted_price = request.POST.get('discounted_price')
+                        if discounted_price:
+                            menu.discounted_price = int(discounted_price)
+                
                 menu.save()
                 form.save_m2m()  # ManyToMany 관계 저장
                 
@@ -139,14 +162,101 @@ def edit_menu(request, store_id, menu_id):
         form = MenuForm(request.POST, request.FILES, instance=menu, store=store)
         if form.is_valid():
             with transaction.atomic():
-                menu = form.save()
+                # 가격 처리 - 가격 표시 방식에 따라 적절한 필드에 저장
+                price_display = menu.price_display  # 메뉴 수정에서는 가격 표시 방식 변경 불가
                 
-
+                if price_display == 'krw':
+                    # 원화 비율 연동: 원화 값을 저장
+                    menu.price_krw = int(request.POST.get('price', 0))
+                    
+                    if request.POST.get('is_discounted'):
+                        discounted_price = request.POST.get('discounted_price')
+                        if discounted_price:
+                            menu.discounted_price_krw = int(discounted_price)
+                        else:
+                            menu.discounted_price_krw = None
+                    else:
+                        menu.discounted_price_krw = None
+                else:
+                    # 사토시 고정: 사토시 값을 저장
+                    menu.price = int(request.POST.get('price', 0))
+                    
+                    if request.POST.get('is_discounted'):
+                        discounted_price = request.POST.get('discounted_price')
+                        if discounted_price:
+                            menu.discounted_price = int(discounted_price)
+                        else:
+                            menu.discounted_price = None
+                    else:
+                        menu.discounted_price = None
+                
+                # 폼의 나머지 필드들 저장
+                menu.name = request.POST.get('name', menu.name)
+                menu.description = request.POST.get('description', menu.description)
+                menu.is_discounted = bool(request.POST.get('is_discounted'))
+                menu.save()
+                
+                # 카테고리 처리
+                categories = request.POST.getlist('categories')
+                if categories:
+                    menu.categories.set(categories)
+                else:
+                    menu.categories.clear()
                 
                 # 기존 옵션 삭제
                 menu.options.all().delete()
                 
-                # 새 옵션 추가
+                # 옵션 처리 (새로운 형식)
+                options_data = {}
+                for key, value in request.POST.items():
+                    if key.startswith('options[') and value.strip():
+                        # options[0][name], options[0][choices][0][name], options[0][choices][0][price] 형식 파싱
+                        parts = key.replace('options[', '').replace(']', '').split('[')
+                        if len(parts) >= 2:
+                            option_index = int(parts[0])
+                            if option_index not in options_data:
+                                options_data[option_index] = {'name': '', 'choices': {}}
+                            
+                            if parts[1] == 'name':
+                                options_data[option_index]['name'] = value.strip()
+                            elif parts[1] == 'choices' and len(parts) >= 4:
+                                choice_index = int(parts[2])
+                                if choice_index not in options_data[option_index]['choices']:
+                                    options_data[option_index]['choices'][choice_index] = {}
+                                
+                                if parts[3] == 'name':
+                                    options_data[option_index]['choices'][choice_index]['name'] = value.strip()
+                                elif parts[3] == 'price':
+                                    try:
+                                        options_data[option_index]['choices'][choice_index]['price'] = float(value) if value else 0
+                                    except ValueError:
+                                        options_data[option_index]['choices'][choice_index]['price'] = 0
+
+                # 옵션 생성
+                for option_index, option_data in options_data.items():
+                    if option_data['name'] and option_data['choices']:
+                        option = MenuOption.objects.create(
+                            menu=menu,
+                            name=option_data['name'],
+                            order=option_index
+                        )
+                        
+                        # 옵션 선택지들을 values_list 형태로 변환
+                        values_list = []
+                        for choice_data in option_data['choices'].values():
+                            if choice_data.get('name'):
+                                choice_name = choice_data['name']
+                                choice_price = choice_data.get('price', 0)
+                                if choice_price > 0:
+                                    values_list.append(f"{choice_name}(+{choice_price})")
+                                else:
+                                    values_list.append(choice_name)
+                        
+                        if values_list:
+                            option.set_values_list(values_list)
+                            option.save()
+                
+                # 기존 옵션 처리 (하위 호환성)
                 option_counter = 1
                 while f'option_{option_counter}_name' in request.POST:
                     option_name = request.POST.get(f'option_{option_counter}_name')
@@ -158,7 +268,7 @@ def edit_menu(request, store_id, menu_id):
                             option = MenuOption.objects.create(
                                 menu=menu,
                                 name=option_name,
-                                order=option_counter
+                                order=option_counter + 1000  # 새로운 형식과 구분하기 위해 큰 수 사용
                             )
                             option.set_values_list(values_list)
                             option.save()

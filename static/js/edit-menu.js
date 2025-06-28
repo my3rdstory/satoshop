@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function init() {
         // 현재 가격 표시 방식 확인
+        currentPriceDisplay = window.menuPriceDisplay || 'sats';
         const checkedRadio = document.querySelector('input[name="price_display"]:checked');
         if (checkedRadio) {
             currentPriceDisplay = checkedRadio.value;
@@ -42,6 +43,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 할인 섹션 초기 상태 설정
         updateDiscountSection();
+
+        // 가격 표시 방식에 따른 환율 정보 표시
+        initializePriceDisplay();
+    }
+
+    function initializePriceDisplay() {
+        // 환율 정보 표시/숨김
+        const exchangeInfo = document.querySelector('.exchange-info');
+        const discountExchangeInfo = document.querySelector('.discount-exchange-info');
+        
+        if (currentPriceDisplay === 'krw') {
+            if (exchangeInfo) exchangeInfo.classList.remove('hidden');
+            if (discountExchangeInfo) discountExchangeInfo.classList.remove('hidden');
+        } else {
+            if (exchangeInfo) exchangeInfo.classList.add('hidden');
+            if (discountExchangeInfo) discountExchangeInfo.classList.add('hidden');
+        }
     }
 
     function initMarkdownEditor() {
@@ -196,58 +214,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const optionSection = document.createElement('div');
         optionSection.className = 'option-section bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4';
+        optionSection.setAttribute('data-option-index', optionCount);
         optionSection.innerHTML = `
-            <div class="flex items-center gap-4">
-                <div class="flex-1">
-                    <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                           type="text" name="options[${optionCount}][name]" required
-                           placeholder="옵션명 (예: 색상, 사이즈)">
-                </div>
-                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                        onclick="this.closest('.option-section').remove()">
-                    <i class="fas fa-trash"></i>
+            <div class="flex items-center justify-between">
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">옵션 ${optionCount + 1}</h4>
+                <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOption(this.closest('.option-section'))">
+                    <i class="fas fa-trash text-sm"></i>
                 </button>
             </div>
             
-            <div class="space-y-3">
-                <div class="flex items-center gap-3">
-                    <div class="flex-1">
-                        <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                               type="text" name="options[${optionCount}][choices][0][name]" required
-                               placeholder="옵션 종류 (예: 빨강, 파랑)">
-                    </div>
-                    <div class="w-32">
-                        <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
-                               type="number" name="options[${optionCount}][choices][0][price]" min="0"
-                               placeholder="추가 가격">
-                    </div>
-                    <div class="relative w-16">
-                        <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
-                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
-                            <span class="option-converted-amount"></span>
-                        </div>
-                    </div>
-                    <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                            onclick="this.closest('.flex').remove()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">옵션명</label>
+                <input type="text" name="options[${optionCount}][name]" 
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       placeholder="예: 사이즈, 맵기 정도" required>
             </div>
             
-            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors" 
-                    onclick="addOptionChoice(this)">
-                <i class="fas fa-plus text-sm"></i>
-                <span>옵션 종류 추가</span>
-            </button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">옵션 선택지</label>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                   type="text" name="options[${optionCount}][choices][0][name]" required
+                                   placeholder="옵션 종류 (예: 빨강, 파랑)">
+                        </div>
+                        <div class="w-32">
+                            <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                                   type="number" name="options[${optionCount}][choices][0][price]" min="0"
+                                   placeholder="추가 가격" value="0">
+                        </div>
+                        <div class="relative w-16">
+                            <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
+                            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
+                                <span class="option-converted-amount"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOptionChoice(this)">
+                            <i class="fas fa-minus-circle text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="button" class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors text-sm" onclick="addOptionChoice(this.closest('.option-section'))">
+                    <i class="fas fa-plus text-xs"></i>
+                    <span>선택지 추가</span>
+                </button>
+            </div>
         `;
+        
         optionsContainer.appendChild(optionSection);
         optionCount++;
     }
 
-    // addOptionChoice 함수를 전역으로 정의
-    window.addOptionChoice = function(button) {
-        const optionSection = button.closest('.option-section');
-        const optionIndex = Array.from(optionsContainer.children).indexOf(optionSection);
+    // 전역 함수들 정의
+    window.addOptionChoice = function(optionSection) {
+        const optionIndex = parseInt(optionSection.getAttribute('data-option-index'));
         const choicesContainer = optionSection.querySelector('.space-y-3');
         const choiceCount = choicesContainer.children.length;
 
@@ -272,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="w-32">
                 <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
                        type="number" name="options[${optionIndex}][choices][${choiceCount}][price]" min="0"
-                       placeholder="추가 가격">
+                       placeholder="추가 가격" value="0">
             </div>
             <div class="relative w-16">
                 <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
@@ -280,24 +302,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="option-converted-amount"></span>
                 </div>
             </div>
-            <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                    onclick="this.closest('.flex').remove()">
-                <i class="fas fa-times"></i>
+            <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOptionChoice(this)">
+                <i class="fas fa-minus-circle text-sm"></i>
             </button>
         `;
         choicesContainer.appendChild(choiceDiv);
     };
 
-    // 전역 함수로 옵션 제거 (HTML에서 호출)
-    window.removeOption = function(optionId) {
-        const optionElement = document.getElementById(`option-${optionId}`);
-        if (optionElement) {
-            optionElement.style.transition = 'all 0.3s ease';
-            optionElement.style.opacity = '0';
-            optionElement.style.transform = 'scale(0.95)';
+    window.removeOption = function(optionSection) {
+        if (optionSection) {
+            optionSection.style.transition = 'all 0.3s ease';
+            optionSection.style.opacity = '0';
+            optionSection.style.transform = 'scale(0.95)';
             
             setTimeout(() => {
-                optionElement.remove();
+                optionSection.remove();
+            }, 300);
+        }
+    };
+
+    window.removeOptionChoice = function(button) {
+        const choiceDiv = button.closest('.flex');
+        if (choiceDiv) {
+            choiceDiv.style.transition = 'all 0.3s ease';
+            choiceDiv.style.opacity = '0';
+            choiceDiv.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                choiceDiv.remove();
             }, 300);
         }
     };
@@ -548,6 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (hasChanges) {
             e.preventDefault();
             e.returnValue = '변경사항이 저장되지 않았습니다. 페이지를 떠나시겠습니까?';
-        }
-    });
-}); 
+                  }
+      });
+  }); 
