@@ -1,0 +1,205 @@
+{% load humanize %}
+
+<!-- 메뉴 목록 그리드 -->
+{% if menus %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  {% for menu in menus %}
+  <!-- 공개 뷰에서는 활성화된 메뉴만 표시 -->
+  {% if not is_public_view or menu.is_active %}
+  <div class="bg-white dark:bg-gray-800 {% if menu.is_discounted %}border-2 border-red-500 rounded-none{% elif not menu.is_active %}border-2 border-gray-500 rounded-none opacity-70{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <!-- 메뉴 이미지 -->
+    <div class="relative aspect-square">
+      <!-- 태그들 (할인, 비활성화, 품절 상태) -->
+      <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+        {% if not menu.is_active %}
+        <div class="bg-gray-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          비활성화
+        </div>
+        {% elif menu.is_discounted %}
+        <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {{ menu.public_discount_rate }}% 할인
+        </div>
+        {% endif %}
+        
+        <!-- 품절 상태 태그 -->
+        {% if not is_public_view %}
+        <!-- 관리자 뷰: 품절 상태 표시 -->
+        {% if menu.is_temporarily_out_of_stock %}
+        <div class="bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          일시품절
+        </div>
+        {% endif %}
+        {% else %}
+        <!-- 공개 뷰: 품절 상태 표시 -->
+        {% if menu.is_temporarily_out_of_stock %}
+        <div class="bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          일시품절
+        </div>
+        {% endif %}
+        {% endif %}
+      </div>
+      
+      {% if is_public_view %}
+      <a href="{% url 'stores:menu_detail' store.store_id menu.id %}">
+      {% else %}
+      <a href="{% url 'menu:menu_detail' store.store_id menu.id %}">
+      {% endif %}
+        {% if menu.images.exists %}
+        <img src="{{ menu.images.first.file_url }}" alt="{{ menu.name }}" 
+             class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+        {% else %}
+        <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center">
+          <i class="fas fa-utensils text-gray-400 text-4xl mb-2"></i>
+          <span class="text-gray-500 dark:text-gray-400 text-sm">이미지 없음</span>
+        </div>
+        {% endif %}
+      </a>
+    </div>
+
+    <div class="p-4">
+      <div class="mb-4">
+        {% if is_public_view %}
+        <a href="{% url 'stores:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors">
+        {% else %}
+        <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors">
+        {% endif %}
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+            {{ menu.name }}
+            {% if not menu.is_active %}
+            <span class="inline-block ml-2 px-2 py-1 bg-gray-500 text-white text-xs rounded-full">비활성화</span>
+            {% endif %}
+          </h4>
+        </a>
+
+        <!-- 가격 정보 -->
+        <div class="mb-3">
+          {% if menu.is_discounted %}
+          <div class="flex items-center space-x-2 mb-1">
+            <span class="text-xl font-bold text-red-500">
+              {{ menu.public_discounted_price|floatformat:0|intcomma }} sats
+            </span>
+            <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
+              {{ menu.public_price|floatformat:0|intcomma }} sats
+            </span>
+          </div>
+          {% if menu.price_display == 'krw' %}
+          <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+            <span class="text-red-600 dark:text-red-400 font-medium">{{ menu.krw_discounted_price_display }}</span>
+            <span class="line-through ml-1">{{ menu.krw_price_display }}</span>
+            <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+          </div>
+          {% endif %}
+          {% else %}
+          <div class="flex items-center">
+            <span class="text-xl font-bold text-gray-900 dark:text-white">
+              {{ menu.public_price|floatformat:0|intcomma }} sats
+            </span>
+          </div>
+          {% if menu.price_display == 'krw' %}
+          <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+            <span class="font-medium">{{ menu.krw_price_display }}</span>
+            <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+          </div>
+          {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- 메뉴 상태 정보 -->
+        <div class="mb-3 flex items-center gap-2">
+          <i class="fas fa-utensils text-sm text-gray-500"></i>
+          <span class="text-sm font-medium {% if menu.is_temporarily_out_of_stock %}text-purple-500{% else %}text-green-500{% endif %}">
+            {% if menu.is_temporarily_out_of_stock %}
+              일시 품절
+            {% else %}
+              주문 가능
+            {% endif %}
+          </span>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="flex flex-wrap gap-2">
+          {% if not is_public_view %}
+          <!-- 관리자 전용 버튼들 -->
+          <a href="{% url 'menu:edit_menu' store.store_id menu.id %}" 
+             class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors text-sm">
+            <i class="fas fa-edit mr-1"></i>
+            수정
+          </a>
+          <a href="{% url 'menu:manage_menu' store.store_id menu.id %}" 
+             class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm">
+            <i class="fas fa-cog mr-1"></i>
+            관리
+          </a>
+          
+          <!-- 일시품절 버튼 -->
+          <button onclick="toggleTemporaryOutOfStock({{ menu.id }}, '{{ menu.name|escapejs }}')" 
+                  class="w-full inline-flex items-center justify-center px-3 py-2 {% if menu.is_temporarily_out_of_stock %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} rounded-lg transition-colors text-sm">
+            <i class="fas {% if menu.is_temporarily_out_of_stock %}fa-play{% else %}fa-pause{% endif %} mr-1"></i>
+            <span>{% if menu.is_temporarily_out_of_stock %}일시품절 해제{% else %}일시품절{% endif %}</span>
+          </button>
+          {% endif %}
+          
+          <!-- 메뉴보기 버튼 -->
+          {% if is_public_view %}
+            {% if menu.is_active and not menu.is_temporarily_out_of_stock %}
+            <a href="{% url 'stores:menu_detail' store.store_id menu.id %}" 
+               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+              <i class="fas fa-eye mr-1"></i>
+              메뉴보기
+            </a>
+            {% elif menu.is_temporarily_out_of_stock %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-pause mr-1"></i>
+              일시품절
+            </button>
+            {% else %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-pause mr-1"></i>
+              판매중단
+            </button>
+            {% endif %}
+          {% else %}
+            <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" 
+               class="w-full inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm" target="_blank">
+              <i class="fas fa-eye mr-1"></i>
+              메뉴보기
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<!-- 메뉴가 없을 때 -->
+<div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
+  <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
+    <i class="fas fa-utensils text-gray-400 text-3xl"></i>
+  </div>
+  {% if is_public_view %}
+  <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">등록된 메뉴가 없습니다</h3>
+  <p class="text-gray-600 dark:text-gray-400 mb-6">아직 판매 중인 메뉴가 없어요</p>
+  <a href="{% url 'stores:store_detail' store.store_id %}" 
+     class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+    <i class="fas fa-arrow-left mr-2"></i>
+    스토어로 돌아가기
+  </a>
+  {% else %}
+  <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">첫 번째 메뉴를 등록해보세요</h3>
+  <p class="text-gray-600 dark:text-gray-400 mb-6">메뉴를 등록하여 고객들에게 판매를 시작하세요</p>
+  <div class="flex flex-col sm:flex-row gap-3 justify-center">
+    <a href="{% url 'menu:add_menu' store.store_id %}" 
+       class="inline-flex items-center px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+      <i class="fas fa-plus mr-2"></i>
+      메뉴 추가
+    </a>
+    <a href="{% url 'stores:my_stores' %}" 
+       class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+      스토어 관리로 돌아가기
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endif %} 
