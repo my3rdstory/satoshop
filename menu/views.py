@@ -65,12 +65,22 @@ def add_menu(request, store_id):
                             menu.discounted_price = int(discounted_price)
                 
                 menu.save()
-                form.save_m2m()  # ManyToMany 관계 저장
                 
-                # 카테고리 처리 (새로운 옵션 형식)
+                # 카테고리 처리
+                print(f"DEBUG: 전체 POST 데이터: {dict(request.POST)}")  # 디버깅용
                 categories = request.POST.getlist('categories')
+                print(f"DEBUG: 전송된 카테고리 데이터: {categories}")  # 디버깅용
                 if categories:
-                    menu.categories.set(categories)
+                    # 카테고리 ID들이 해당 스토어의 카테고리인지 확인
+                    valid_categories = MenuCategory.objects.filter(
+                        id__in=categories, 
+                        store=store
+                    )
+                    menu.categories.set(valid_categories)
+                    print(f"DEBUG: 메뉴에 설정된 카테고리: {list(menu.categories.all())}")  # 디버깅용
+                else:
+                    menu.categories.clear()
+                    print(f"DEBUG: 카테고리 모두 제거됨")  # 디버깅용
                 
                 # 옵션 처리 (새로운 형식)
                 options_data = {}
@@ -197,11 +207,21 @@ def edit_menu(request, store_id, menu_id):
                 menu.save()
                 
                 # 카테고리 처리
+                print(f"DEBUG (edit_menu): 전체 POST 데이터: {dict(request.POST)}")  # 디버깅용
                 categories = request.POST.getlist('categories')
+                print(f"DEBUG (edit_menu): 전송된 카테고리 데이터: {categories}")  # 디버깅용
                 if categories:
-                    menu.categories.set(categories)
+                    # 카테고리 ID들이 해당 스토어의 카테고리인지 확인
+                    valid_categories = MenuCategory.objects.filter(
+                        id__in=categories, 
+                        store=store
+                    )
+                    print(f"DEBUG (edit_menu): 유효한 카테고리: {list(valid_categories)}")  # 디버깅용
+                    menu.categories.set(valid_categories)
+                    print(f"DEBUG (edit_menu): 메뉴에 설정된 카테고리: {list(menu.categories.all())}")  # 디버깅용
                 else:
                     menu.categories.clear()
+                    print(f"DEBUG (edit_menu): 카테고리 모두 제거됨")  # 디버깅용
                 
                 # 기존 옵션 삭제
                 menu.options.all().delete()

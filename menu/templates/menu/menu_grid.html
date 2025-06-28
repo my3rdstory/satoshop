@@ -41,6 +41,22 @@
         {% endif %}
       </div>
       
+      <!-- 카테고리 태그들 (오른쪽 상단) -->
+      {% if menu.categories.exists %}
+      <div class="absolute top-3 right-3 z-10 flex flex-col gap-1 items-end menu-category-tags">
+        {% for category in menu.categories.all %}
+        <div class="menu-category-tag text-white px-2 py-1 rounded-lg text-xs font-medium shadow-lg" title="{{ category.name }}">
+          <i class="fas fa-tag mr-1"></i>{{ category.name }}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <!-- 디버깅: 카테고리가 없는 경우 표시 -->
+      <div class="absolute top-3 right-3 z-10 bg-gray-500 text-white px-2 py-1 rounded-lg text-xs font-medium opacity-50">
+        카테고리 없음
+      </div>
+      {% endif %}
+      
       {% if is_public_view %}
       <a href="{% url 'stores:menu_detail' store.store_id menu.id %}">
       {% else %}

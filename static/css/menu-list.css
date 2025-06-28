@@ -417,6 +417,39 @@
     backdrop-filter: blur(4px);
 }
 
+/* 메뉴 카드 카테고리 태그 */
+.menu-category-tags {
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.menu-category-tags::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.menu-category-tag {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.2s ease;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.menu-category-tag:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.dark .menu-category-tag {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
 .category-item {
     display: flex;
     align-items: center;
