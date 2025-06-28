@@ -1,4 +1,5 @@
 {% load static %}
+{% load menu_extras %}
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -16,131 +17,273 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 메뉴판 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- 상단 네비게이션 -->
-        <div class="mb-6">
-            <nav class="flex items-center text-sm text-gray-600">
-                <a href="{% url 'menu:menu_board' store.store_id %}" class="hover:text-blue-600 transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
-                </a>
-                <span class="mx-2">/</span>
-                <span class="text-gray-900">{{ menu.name }}</span>
-            </nav>
+<body class="bg-gray-100">
+    <div class="menu-board-container flex">
+        <!-- 왼쪽: 카테고리 사이드바 -->
+        <div class="category-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600">메뉴 카테고리</p>
+            </div>
+            
+            <div class="p-2">
+                <!-- 메뉴판으로 돌아가기 -->
+                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-arrow-left mr-3 text-blue-500"></i>
+                        <span class="font-medium">메뉴판으로 돌아가기</span>
+                    </div>
+                </div>
+                
+                <!-- 전체 보기 -->
+                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-gray-500"></i>
+                        <span class="font-medium">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="category-item p-3 rounded-lg mb-1 {% if category in menu.categories.all %}active{% endif %}" 
+                     onclick="location.href='{% url 'menu:menu_board' store.store_id %}#category-{{ category.id }}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 {% if category in menu.categories.all %}text-white{% else %}text-gray-500{% endif %}"></i>
+                        <span class="font-medium">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
-
-        <!-- 메뉴 상세 정보 -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
-                <!-- 왼쪽: 메뉴 이미지 -->
-                <div class="space-y-4">
-                    <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
-                        {% if menu.images.exists %}
-                        <img src="{{ menu.images.first.file_url }}" 
-                             alt="{{ menu.name }}" 
-                             class="w-full h-full object-cover">
-                        {% else %}
-                        <div class="w-full h-full flex flex-col items-center justify-center">
-                            <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
-                            <span class="text-gray-500 text-lg">이미지 없음</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- 추가 이미지들 (있는 경우) -->
-                    {% if menu.images.count > 1 %}
-                    <div class="grid grid-cols-4 gap-2">
-                        {% for image in menu.images.all %}
-                        {% if not forloop.first %}
-                        <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
-                             onclick="changeMainImage('{{ image.file_url }}')">
-                            <img src="{{ image.file_url }}" 
-                                 alt="{{ menu.name }}" 
-                                 class="w-full h-full object-cover">
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
+        
+        <!-- 가운데: 메뉴 상세 정보 -->
+        <div class="menu-content custom-scrollbar">
+            <div class="p-6">
+                <!-- 상단 네비게이션 -->
+                <div class="mb-6">
+                    <nav class="flex items-center text-sm text-gray-600">
+                        <a href="{% url 'menu:menu_board' store.store_id %}" class="hover:text-blue-600 transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>메뉴판
+                        </a>
+                        <span class="mx-2">/</span>
+                        <span class="text-gray-900">{{ menu.name }}</span>
+                    </nav>
                 </div>
 
-                <!-- 오른쪽: 메뉴 정보 -->
-                <div class="space-y-6">
-                    <!-- 메뉴명과 가격 -->
-                    <div class="border-b border-gray-200 pb-6">
-                        <div class="flex items-start justify-between mb-4">
-                            <h1 class="text-3xl font-bold text-gray-900">{{ menu.name }}</h1>
-                            <div class="text-right">
-                                {% if menu.is_discounted %}
-                                <div class="space-y-1">
-                                    <div class="text-2xl font-bold text-red-500">
-                                        {{ menu.public_discounted_price|floatformat:0 }} sats
-                                    </div>
-                                    <div class="text-lg text-gray-500 line-through">
-                                        {{ menu.public_price|floatformat:0 }} sats
-                                    </div>
-                                    <div class="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-lg text-sm font-medium">
-                                        {{ menu.public_discount_rate }}% 할인
-                                    </div>
-                                </div>
+                <!-- 메뉴 상세 정보 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                        <!-- 왼쪽: 메뉴 이미지 -->
+                        <div class="space-y-4">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                                {% if menu.images.exists %}
+                                <img src="{{ menu.images.first.file_url }}" 
+                                     alt="{{ menu.name }}" 
+                                     class="w-full h-full object-cover">
                                 {% else %}
-                                <div class="text-2xl font-bold text-gray-900">
-                                    {{ menu.public_price|floatformat:0 }} sats
+                                <div class="w-full h-full flex flex-col items-center justify-center">
+                                    <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
+                                    <span class="text-gray-500 text-lg">이미지 없음</span>
                                 </div>
                                 {% endif %}
                             </div>
+                            
+                            <!-- 추가 이미지들 (있는 경우) -->
+                            {% if menu.images.count > 1 %}
+                            <div class="grid grid-cols-4 gap-2">
+                                {% for image in menu.images.all %}
+                                {% if not forloop.first %}
+                                <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
+                                     onclick="changeMainImage('{{ image.file_url }}')">
+                                    <img src="{{ image.file_url }}" 
+                                         alt="{{ menu.name }}" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
 
-                        <!-- 상태 표시 -->
-                        <div class="flex items-center space-x-3">
-                            {% if menu.is_temporarily_out_of_stock %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-600">
-                                <i class="fas fa-pause mr-2"></i>일시품절
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-600">
-                                <i class="fas fa-check mr-2"></i>주문 가능
-                            </span>
+                        <!-- 오른쪽: 메뉴 정보 -->
+                        <div class="space-y-4">
+                            <!-- 메뉴명과 가격 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <h1 class="text-2xl font-bold text-gray-900">{{ menu.name }}</h1>
+                                    <div class="text-right">
+                                        {% if menu.is_discounted %}
+                                        <div class="space-y-1">
+                                            <div class="text-xl font-bold text-red-500" id="current-price">
+                                                {{ menu.public_discounted_price|floatformat:0 }} sats
+                                            </div>
+                                            <div class="text-sm text-gray-500 line-through">
+                                                {{ menu.public_price|floatformat:0 }} sats
+                                            </div>
+                                            <div class="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">
+                                                {{ menu.public_discount_rate }}% 할인
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-xl font-bold text-gray-900" id="current-price">
+                                            {{ menu.public_price|floatformat:0 }} sats
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- 상태 표시 -->
+                                <div class="flex items-center space-x-2 flex-wrap">
+                                    {% if menu.is_temporarily_out_of_stock %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600">
+                                        <i class="fas fa-pause mr-1"></i>일시품절
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">
+                                        <i class="fas fa-check mr-1"></i>주문 가능
+                                    </span>
+                                    {% endif %}
+
+                                    <!-- 카테고리 표시 -->
+                                    {% for category in menu.categories.all %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                        <i class="fas fa-tag mr-1"></i>{{ category.name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- 메뉴 설명 -->
+                            {% if menu.description %}
+                            <div class="border-b border-gray-200 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-2">메뉴 설명</h3>
+                                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ menu.description }}</div>
+                            </div>
                             {% endif %}
 
-                            <!-- 카테고리 표시 -->
-                            {% for category in menu.categories.all %}
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
-                                <i class="fas fa-tag mr-2"></i>{{ category.name }}
-                            </span>
-                            {% endfor %}
+                            <!-- 옵션 선택 -->
+                            {% if menu.options.exists %}
+                            <div class="border-b border-gray-200 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">옵션 선택</h3>
+                                <div class="space-y-3" id="options-container">
+                                    {% for option in menu.options.all %}
+                                    <div class="option-group" data-option-id="{{ option.id }}" data-option-name="{{ option.name }}">
+                                        <label class="block text-xs font-medium text-gray-700 mb-2">
+                                            {{ option.name }}
+                                            {% if option.is_required %}
+                                            <span class="text-red-500">*</span>
+                                            {% endif %}
+                                        </label>
+                                        <div class="grid grid-cols-1 gap-1">
+                                            {% for value in option.values_list %}
+                                            {% with parsed_value=value|split_option_value %}
+                                            <label class="flex items-center justify-between p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors option-choice"
+                                                   data-option-value="{{ parsed_value.name }}" data-option-price="{{ parsed_value.price }}">
+                                                <div class="flex items-center">
+                                                    <input type="radio" name="option_{{ option.id }}" 
+                                                           value="{{ parsed_value.name }}" 
+                                                           data-price="{{ parsed_value.price }}"
+                                                           class="mr-2 text-blue-600 focus:ring-blue-500"
+                                                           {% if option.is_required and forloop.first %}required{% endif %}
+                                                           onchange="updatePrice()">
+                                                    <span class="text-sm text-gray-900">{{ parsed_value.name }}</span>
+                                                </div>
+                                                {% if parsed_value.price != "0" %}
+                                                <span class="text-xs text-gray-600">+{{ parsed_value.price }} sats</span>
+                                                {% endif %}
+                                            </label>
+                                            {% endwith %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 수량 선택 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">수량</h3>
+                                <div class="flex items-center space-x-3">
+                                    <button type="button" onclick="changeQuantity(-1)" 
+                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-minus text-gray-600 text-sm"></i>
+                                    </button>
+                                    <span id="quantity-display" class="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">1</span>
+                                    <button type="button" onclick="changeQuantity(1)" 
+                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-plus text-gray-600 text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 총 가격 표시 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-semibold text-gray-900">총 가격</span>
+                                    <span id="total-price" class="text-lg font-bold text-blue-600">
+                                        {{ menu.public_discounted_price|default:menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 액션 버튼들 -->
+                            <div class="flex space-x-3">
+                                <button onclick="history.back()" 
+                                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-1"></i>뒤로가기
+                                </button>
+                                
+                                {% if menu.is_temporarily_out_of_stock %}
+                                <button class="flex-1 bg-purple-400 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed" disabled>
+                                    <i class="fas fa-pause mr-1"></i>일시품절
+                                </button>
+                                {% else %}
+                                <button onclick="addToCart()"
+                                        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-plus mr-1"></i>장바구니 담기
+                                </button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-
-                    <!-- 메뉴 설명 -->
-                    <div class="border-b border-gray-200 pb-6">
-                        {% if menu.description %}
-                        <h3 class="text-lg font-semibold text-gray-900 mb-3">메뉴 설명</h3>
-                        <div class="text-gray-700 leading-relaxed whitespace-pre-line">{{ menu.description }}</div>
-                        {% else %}
-                        <div class="text-gray-500 italic">메뉴 설명이 없습니다.</div>
-                        {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- 오른쪽: 장바구니 사이드바 -->
+        <div class="cart-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">장바구니</h2>
+                <p class="text-sm text-gray-600">주문할 메뉴</p>
+            </div>
+            
+            <div class="p-4">
+                <!-- 장바구니 아이템 목록 -->
+                <div id="cart-items" class="space-y-3 mb-6">
+                    <!-- 장바구니가 비어있을 때 -->
+                    <div id="empty-cart" class="text-center py-8">
+                        <i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500 text-sm">장바구니가 비어있습니다</p>
                     </div>
-
-                    <!-- 액션 버튼들 -->
-                    <div class="flex space-x-4">
-                        <button onclick="history.back()" 
-                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-arrow-left mr-2"></i>뒤로가기
-                        </button>
-                        
-                        {% if menu.is_temporarily_out_of_stock %}
-                        <button class="flex-1 bg-purple-400 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed" disabled>
-                            <i class="fas fa-pause mr-2"></i>일시품절
-                        </button>
-                        {% else %}
-                        <button onclick="addToCart({{ menu.id }}, '{{ menu.name|escapejs }}', {{ menu.public_discounted_price|default:menu.public_price }})"
-                                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-plus mr-2"></i>장바구니 담기
-                        </button>
-                        {% endif %}
+                </div>
+                
+                <!-- 총 금액 -->
+                <div id="cart-total" class="border-t border-gray-200 pt-4 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold">총 금액</span>
+                        <span class="text-xl font-bold text-blue-600" id="total-amount">0 sats</span>
                     </div>
+                    
+                    <!-- 주문 버튼 -->
+                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                            onclick="processOrder()">
+                        <i class="fas fa-credit-card mr-2"></i>주문하기
+                    </button>
                 </div>
             </div>
         </div>
@@ -148,6 +291,10 @@
 
     <!-- JavaScript -->
     <script>
+        // 전역 변수
+        let currentQuantity = 1;
+        const basePrice = {{ menu.public_discounted_price|default:menu.public_price }};
+        
         // 메인 이미지 변경 함수
         function changeMainImage(imageUrl) {
             const mainImage = document.querySelector('.aspect-square img');
@@ -156,32 +303,141 @@
             }
         }
 
-        // 장바구니 담기 함수 (menu_board.js와 동일한 로직 사용)
-        function addToCart(menuId, menuName, price) {
+        // 수량 변경 함수
+        function changeQuantity(delta) {
+            const newQuantity = currentQuantity + delta;
+            if (newQuantity >= 1 && newQuantity <= 99) {
+                currentQuantity = newQuantity;
+                document.getElementById('quantity-display').textContent = currentQuantity;
+                updatePrice();
+            }
+        }
+
+        // 가격 업데이트 함수
+        function updatePrice() {
+            let totalPrice = basePrice;
+            
+            // 선택된 옵션들의 추가 가격 계산
+            const selectedOptions = document.querySelectorAll('input[type="radio"]:checked');
+            selectedOptions.forEach(option => {
+                const optionPrice = parseFloat(option.dataset.price) || 0;
+                totalPrice += optionPrice;
+            });
+            
+            // 수량 적용
+            totalPrice *= currentQuantity;
+            
+            // 가격 표시 업데이트
+            document.getElementById('total-price').textContent = Math.round(totalPrice).toLocaleString() + ' sats';
+        }
+
+        // 선택된 옵션 검증 함수
+        function validateOptions() {
+            const requiredOptions = document.querySelectorAll('.option-group input[required]');
+            for (let option of requiredOptions) {
+                const optionName = option.name;
+                const selectedOption = document.querySelector(`input[name="${optionName}"]:checked`);
+                if (!selectedOption) {
+                    const optionGroup = option.closest('.option-group');
+                    const optionLabel = optionGroup.querySelector('label').textContent.replace('*', '').trim();
+                    alert(`"${optionLabel}" 옵션을 선택해주세요.`);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 장바구니 담기 함수
+        function addToCart() {
+            // 필수 옵션 검증
+            if (!validateOptions()) {
+                return;
+            }
+
+            // 선택된 옵션 수집
+            const selectedOptions = {};
+            const optionInputs = document.querySelectorAll('input[type="radio"]:checked');
+            optionInputs.forEach(input => {
+                const optionGroup = input.closest('.option-group');
+                const optionName = optionGroup.dataset.optionName;
+                const optionValue = input.value;
+                const optionPrice = parseFloat(input.dataset.price) || 0;
+                
+                selectedOptions[optionName] = {
+                    value: optionValue,
+                    price: optionPrice
+                };
+            });
+
+            // 총 가격 계산
+            let totalPrice = basePrice;
+            Object.values(selectedOptions).forEach(option => {
+                totalPrice += option.price;
+            });
+
+            // 장바구니 아이템 생성
+            const cartItem = {
+                id: {{ menu.id }},
+                name: '{{ menu.name|escapejs }}',
+                basePrice: basePrice,
+                totalPrice: totalPrice,
+                quantity: currentQuantity,
+                options: selectedOptions,
+                storeId: '{{ store.store_id }}',
+                storeName: '{{ store.store_name|escapejs }}'
+            };
+
             // 로컬 스토리지에서 장바구니 데이터 가져오기
             let cart = JSON.parse(localStorage.getItem('cart') || '[]');
             
-            // 이미 있는 메뉴인지 확인
-            const existingItem = cart.find(item => item.id === menuId);
+            // 같은 메뉴, 같은 옵션인지 확인
+            const existingItemIndex = cart.findIndex(item => {
+                if (item.id !== cartItem.id) return false;
+                
+                // 옵션 비교
+                const itemOptions = item.options || {};
+                const newOptions = cartItem.options || {};
+                
+                const itemOptionKeys = Object.keys(itemOptions).sort();
+                const newOptionKeys = Object.keys(newOptions).sort();
+                
+                if (itemOptionKeys.length !== newOptionKeys.length) return false;
+                
+                for (let key of itemOptionKeys) {
+                    if (!newOptions[key] || itemOptions[key].value !== newOptions[key].value) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
             
-            if (existingItem) {
-                existingItem.quantity += 1;
+            if (existingItemIndex !== -1) {
+                // 기존 아이템의 수량 증가
+                cart[existingItemIndex].quantity += cartItem.quantity;
             } else {
-                cart.push({
-                    id: menuId,
-                    name: menuName,
-                    price: price,
-                    quantity: 1
-                });
+                // 새로운 아이템 추가
+                cart.push(cartItem);
             }
             
             // 로컬 스토리지에 저장
             localStorage.setItem('cart', JSON.stringify(cart));
             
-            // 토스트 메시지 제거됨
+            // 장바구니 UI 업데이트
+            updateCartDisplay();
+            
+            // 성공 메시지 표시
+            alert('장바구니에 추가되었습니다!');
         }
 
-
+        // 페이지 로드 시 초기 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePrice();
+            updateCartDisplay();
+        });
     </script>
+    
+    <!-- 메뉴판 전용 JavaScript (장바구니 기능) -->
+    <script src="{% static 'js/menu_board.js' %}"></script>
 </body>
 </html> 

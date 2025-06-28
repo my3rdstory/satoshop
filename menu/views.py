@@ -459,9 +459,13 @@ def menu_detail(request, store_id, menu_id):
     # 활성화된 메뉴만 조회
     menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
     
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
     context = {
         'store': store,
         'menu': menu,
+        'categories': categories,
         'is_public_view': True,
     }
     return render(request, 'menu/menu_detail.html', context)
