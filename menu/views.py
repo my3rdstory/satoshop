@@ -701,3 +701,26 @@ def toggle_temporary_out_of_stock(request, store_id, menu_id):
             'success': False,
             'error': str(e)
         })
+
+def menu_board(request, store_id):
+    """메뉴판 화면 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menus = Menu.objects.filter(
+        store=store, 
+        is_active=True
+    ).prefetch_related('categories', 'images')
+    
+    # 카테고리 조회 (순서대로)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menus': menus,
+        'categories': categories,
+        'is_public_view': True,
+        'is_menu_board': True,  # 메뉴판 화면임을 표시
+    }
+    return render(request, 'menu/menu_board.html', context)

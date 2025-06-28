@@ -1,0 +1,110 @@
+/* 메뉴판 전용 스타일 */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.menu-board-container {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 카테고리 사이드바 */
+.category-sidebar {
+    width: 250px;
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    overflow-y: auto;
+}
+
+/* 메뉴 콘텐츠 영역 */
+.menu-content {
+    flex: 1;
+    background: #ffffff;
+    overflow-y: auto;
+}
+
+/* 장바구니 사이드바 */
+.cart-sidebar {
+    width: 300px;
+    background: #f1f5f9;
+    border-left: 1px solid #e2e8f0;
+    overflow-y: auto;
+}
+
+/* 카테고리 아이템 */
+.category-item {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.category-item:hover {
+    background: #e2e8f0;
+}
+
+.category-item.active {
+    background: #3b82f6;
+    color: white;
+}
+
+/* 메뉴 카드 */
+.menu-card {
+    transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* 스크롤바 스타일 */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .menu-board-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .category-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 200px;
+    }
+    
+    .cart-sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 300px;
+    }
+    
+    .menu-content {
+        min-height: 60vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .category-sidebar {
+        max-height: 150px;
+    }
+    
+    .cart-sidebar {
+        max-height: 250px;
+    }
+} 

@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('카테고리 버튼 생성 중...');
         categories.forEach(category => {
             const filterBtn = document.createElement('button');
-            filterBtn.className = 'category-filter-btn px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-600 dark:hover:text-blue-300 transition-colors';
+            filterBtn.className = 'category-filter-btn px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 font-medium';
             filterBtn.textContent = category.name;
             filterBtn.onclick = () => filterByCategory(category.id);
             categoryFilters.appendChild(filterBtn);
@@ -456,13 +456,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 필터 버튼 활성화 상태 업데이트
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-500', 'text-white');
-            btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+            btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
+            btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-600');
         });
         
         if (categoryId && event.target) {
-            event.target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
-            event.target.classList.add('bg-blue-500', 'text-white');
+            event.target.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-600');
+            event.target.classList.add('bg-blue-500', 'text-white', 'border-blue-500');
         }
 
         // 메뉴 카드 필터링 (menuCards가 존재하는 경우에만)
@@ -489,8 +489,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 모든 필터 버튼 비활성화
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-500', 'text-white');
-            btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+            btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
+            btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-600');
         });
 
         // 모든 메뉴 카드 표시 (menuCards가 존재하는 경우에만)

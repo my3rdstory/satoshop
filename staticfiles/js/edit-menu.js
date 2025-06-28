@@ -22,24 +22,32 @@ document.addEventListener('DOMContentLoaded', function() {
     init();
 
     function init() {
+        // 가격 표시 방식 초기화
+        initializePriceDisplay();
+        
+        // 마크다운 에디터 초기화
+        initMarkdownEditor();
+        
+        // 이벤트 리스너 설정
+        setupEventListeners();
+        
+        // 환율 정보 로드 (원화 모드인 경우)
+        if (currentPriceDisplay === 'krw') {
+            fetchExchangeRate();
+        }
+    }
+
+    function initializePriceDisplay() {
         // 현재 가격 표시 방식 확인
+        currentPriceDisplay = window.menuPriceDisplay || 'sats';
         const checkedRadio = document.querySelector('input[name="price_display"]:checked');
         if (checkedRadio) {
             currentPriceDisplay = checkedRadio.value;
         }
-
-        // 마크다운 에디터 초기화
-        initMarkdownEditor();
-
-        // 환율 정보 가져오기
-        fetchExchangeRate();
-
-        // 이벤트 리스너 설정
-        setupEventListeners();
-
+        
         // 초기 가격 정보 업데이트
         updatePriceInfo();
-
+        
         // 할인 섹션 초기 상태 설정
         updateDiscountSection();
     }
@@ -98,17 +106,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fetchExchangeRate() {
-        if (window.CurrencyExchange && typeof window.CurrencyExchange.fetchExchangeRate === 'function') {
-            window.CurrencyExchange.fetchExchangeRate()
-                .then(rate => {
-                    exchangeRate = rate;
+        // 환율 API 호출
+        fetch('/api/exchange-rate/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    exchangeRate = data.btc_krw_rate;
+                    console.log('환율 정보 로드됨:', exchangeRate);
                     updatePriceInfo();
                     updateDiscountPriceInfo();
-                })
-                .catch(error => {
-                    console.error('환율 정보를 가져오는데 실패했습니다:', error);
-                });
-        }
+                } else {
+                    console.error('환율 정보 로드 실패:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('환율 정보를 가져오는데 실패했습니다:', error);
+            });
     }
 
     function updatePriceInfo() {
@@ -132,17 +145,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 : '가격은 원화 단위로 입력하세요';
         }
 
-        // 환율 정보 표시
-        if (exchangeInfo && convertedAmount && exchangeRate && !isNaN(price) && price > 0) {
-            let convertedValue;
-            if (currentPriceDisplay === 'sats') {
-                convertedValue = Math.round(price * exchangeRate / 100000000);
-                convertedAmount.textContent = `약 ${convertedValue.toLocaleString()}원`;
-            } else {
-                convertedValue = Math.round(price / exchangeRate * 100000000);
+        // 환율 정보 표시 (원화 모드일 때만)
+        if (currentPriceDisplay === 'krw' && exchangeInfo && convertedAmount) {
+            if (exchangeRate && !isNaN(price) && price > 0) {
+                const convertedValue = Math.round(price / exchangeRate * 100000000);
                 convertedAmount.textContent = `약 ${convertedValue.toLocaleString()} sats`;
+                exchangeInfo.classList.remove('hidden');
+            } else if (!exchangeRate && !isNaN(price) && price > 0) {
+                // 환율 데이터가 없으면 로딩
+                convertedAmount.textContent = '환율 정보 로딩 중...';
+                exchangeInfo.classList.remove('hidden');
+                if (!exchangeRate) {
+                    fetchExchangeRate();
+                }
+            } else {
+                exchangeInfo.classList.add('hidden');
             }
-            exchangeInfo.classList.remove('hidden');
         } else if (exchangeInfo) {
             exchangeInfo.classList.add('hidden');
         }
@@ -155,16 +173,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const discountExchangeInfo = document.querySelector('.discount-exchange-info');
         const discountConvertedAmount = document.querySelector('.discount-converted-amount');
 
-        if (discountExchangeInfo && discountConvertedAmount && exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
-            let convertedValue;
-            if (currentPriceDisplay === 'sats') {
-                convertedValue = Math.round(discountPrice * exchangeRate / 100000000);
-                discountConvertedAmount.textContent = `약 ${convertedValue.toLocaleString()}원`;
-            } else {
-                convertedValue = Math.round(discountPrice / exchangeRate * 100000000);
+        // 환율 정보 표시 (원화 모드일 때만)
+        if (currentPriceDisplay === 'krw' && discountExchangeInfo && discountConvertedAmount) {
+            if (exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
+                const convertedValue = Math.round(discountPrice / exchangeRate * 100000000);
                 discountConvertedAmount.textContent = `약 ${convertedValue.toLocaleString()} sats`;
+                discountExchangeInfo.classList.remove('hidden');
+            } else if (!exchangeRate && !isNaN(discountPrice) && discountPrice > 0) {
+                // 환율 데이터가 없으면 로딩
+                discountConvertedAmount.textContent = '환율 정보 로딩 중...';
+                discountExchangeInfo.classList.remove('hidden');
+                if (!exchangeRate) {
+                    fetchExchangeRate();
+                }
+            } else {
+                discountExchangeInfo.classList.add('hidden');
             }
-            discountExchangeInfo.classList.remove('hidden');
         } else if (discountExchangeInfo) {
             discountExchangeInfo.classList.add('hidden');
         }
@@ -184,41 +208,134 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function addOption() {
-        optionCount++;
-        const optionHtml = `
-            <div class="menu-option-item" id="option-${optionCount}">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-medium text-gray-900 dark:text-white">옵션 ${optionCount}</h4>
-                    <button type="button" class="text-red-500 hover:text-red-700" onclick="removeOption(${optionCount})">
-                        <i class="fas fa-trash text-sm"></i>
-                    </button>
-                </div>
+        if (optionCount >= 20) {
+            alert('옵션은 최대 20개까지만 추가할 수 있습니다.');
+            return;
+        }
+
+        // 현재 선택된 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
+        const isKrwMode = currentPriceDisplay === 'krw';
+        const priceUnit = isKrwMode ? '원' : 'sats';
+        const exchangeInfoClass = isKrwMode ? '' : 'hidden';
+
+        const optionSection = document.createElement('div');
+        optionSection.className = 'option-section bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4';
+        optionSection.setAttribute('data-option-index', optionCount);
+        optionSection.innerHTML = `
+            <div class="flex items-center justify-between">
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">옵션 ${optionCount + 1}</h4>
+                <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOption(this.closest('.option-section'))">
+                    <i class="fas fa-trash text-sm"></i>
+                </button>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">옵션명</label>
+                <input type="text" name="options[${optionCount}][name]" 
+                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       placeholder="예: 사이즈, 맵기 정도" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">옵션 선택지</label>
                 <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션명</label>
-                        <input type="text" name="option_${optionCount}_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 사이즈, 맵기 정도">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션값 (콤마로 구분)</label>
-                        <input type="text" name="option_${optionCount}_values" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 소, 중, 대">
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                            <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                                   type="text" name="options[${optionCount}][choices][0][name]" required
+                                   placeholder="옵션 종류 (예: 빨강, 파랑)">
+                        </div>
+                        <div class="w-32">
+                            <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                                   type="number" name="options[${optionCount}][choices][0][price]" min="0"
+                                   placeholder="추가 가격" value="0">
+                        </div>
+                        <div class="relative w-16">
+                            <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
+                            <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
+                                <span class="option-converted-amount"></span>
+                            </div>
+                        </div>
+                        <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOptionChoice(this)">
+                            <i class="fas fa-minus-circle text-sm"></i>
+                        </button>
                     </div>
                 </div>
+                
+                <button type="button" class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors text-sm" onclick="addOptionChoice(this.closest('.option-section'))">
+                    <i class="fas fa-plus text-xs"></i>
+                    <span>선택지 추가</span>
+                </button>
             </div>
         `;
         
-        optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
+        optionsContainer.appendChild(optionSection);
+        optionCount++;
     }
 
-    // 전역 함수로 옵션 제거 (HTML에서 호출)
-    window.removeOption = function(optionId) {
-        const optionElement = document.getElementById(`option-${optionId}`);
-        if (optionElement) {
-            optionElement.style.transition = 'all 0.3s ease';
-            optionElement.style.opacity = '0';
-            optionElement.style.transform = 'scale(0.95)';
+    // 전역 함수들 정의
+    window.addOptionChoice = function(optionSection) {
+        const optionIndex = parseInt(optionSection.getAttribute('data-option-index'));
+        const choicesContainer = optionSection.querySelector('.space-y-3');
+        const choiceCount = choicesContainer.children.length;
+
+        if (choiceCount >= 20) {
+            alert('옵션 종류는 최대 20개까지만 추가할 수 있습니다.');
+            return;
+        }
+
+        // 현재 선택된 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
+        const isKrwMode = currentPriceDisplay === 'krw';
+        const priceUnit = isKrwMode ? '원' : 'sats';
+        const exchangeInfoClass = isKrwMode ? '' : 'hidden';
+
+        const choiceDiv = document.createElement('div');
+        choiceDiv.className = 'flex items-center gap-3';
+        choiceDiv.innerHTML = `
+            <div class="flex-1">
+                <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                       type="text" name="options[${optionIndex}][choices][${choiceCount}][name]" required
+                       placeholder="옵션 종류 (예: 빨강, 파랑)">
+            </div>
+            <div class="w-32">
+                <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                       type="number" name="options[${optionIndex}][choices][${choiceCount}][price]" min="0"
+                       placeholder="추가 가격" value="0">
+            </div>
+            <div class="relative w-16">
+                <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
+                    <span class="option-converted-amount"></span>
+                </div>
+            </div>
+            <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOptionChoice(this)">
+                <i class="fas fa-minus-circle text-sm"></i>
+            </button>
+        `;
+        choicesContainer.appendChild(choiceDiv);
+    };
+
+    window.removeOption = function(optionSection) {
+        if (optionSection) {
+            optionSection.style.transition = 'all 0.3s ease';
+            optionSection.style.opacity = '0';
+            optionSection.style.transform = 'scale(0.95)';
             
             setTimeout(() => {
-                optionElement.remove();
+                optionSection.remove();
+            }, 300);
+        }
+    };
+
+    window.removeOptionChoice = function(button) {
+        const choiceDiv = button.closest('.flex');
+        if (choiceDiv) {
+            choiceDiv.style.transition = 'all 0.3s ease';
+            choiceDiv.style.opacity = '0';
+            choiceDiv.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+                choiceDiv.remove();
             }, 300);
         }
     };
@@ -255,30 +372,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleImageFiles(files) {
-        const validFiles = files.filter(file => {
+        // 1장만 허용
+        if (files.length > 1) {
+            showNotification('메뉴 이미지는 1장만 업로드할 수 있습니다.', 'error');
+            return;
+        }
+        
+        // 기존 미리보기 제거
+        imagePreview.innerHTML = '';
+        
+        const file = files[0];
+        if (file) {
             if (!file.type.startsWith('image/')) {
                 showNotification('이미지 파일만 업로드할 수 있습니다.', 'error');
-                return false;
+                return;
             }
             if (file.size > 10 * 1024 * 1024) {
                 showNotification('파일 크기는 10MB 이하여야 합니다.', 'error');
-                return false;
+                return;
             }
-            return true;
-        });
-
-        validFiles.forEach(file => {
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 addImagePreview(e.target.result, file.name);
             };
             reader.readAsDataURL(file);
-        });
-
-        // 파일 input에 새 파일들 설정
-        const dt = new DataTransfer();
-        validFiles.forEach(file => dt.items.add(file));
-        imageInput.files = dt.files;
+            
+            // 파일 input에 파일 설정
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            imageInput.files = dt.files;
+        }
     }
 
     function addImagePreview(src, fileName) {
@@ -436,9 +560,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentCategories = window.menuCategories || [];
 
         const categoryHtml = categories.map(category => {
-            const isChecked = currentCategories.includes(category.id);
+            // 타입을 맞춰서 비교 (숫자로 변환하여 비교)
+            const isChecked = currentCategories.includes(parseInt(category.id));
             return `
-                <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                <label class="inline-flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                     <input type="checkbox" name="categories" value="${category.id}" 
                            ${isChecked ? 'checked' : ''}
                            class="w-4 h-4 text-purple-500 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
@@ -456,19 +581,5 @@ document.addEventListener('DOMContentLoaded', function() {
         return menuIndex !== -1 && pathParts[menuIndex + 1] ? pathParts[menuIndex + 1] : null;
     }
 
-    // 페이지 언로드 시 확인
-    window.addEventListener('beforeunload', function(e) {
-        const formData = new FormData(menuForm);
-        let hasChanges = false;
-
-        // 폼 데이터 변경 여부 확인 (간단한 구현)
-        if (easyMDE && easyMDE.value().trim()) {
-            hasChanges = true;
-        }
-
-        if (hasChanges) {
-            e.preventDefault();
-            e.returnValue = '변경사항이 저장되지 않았습니다. 페이지를 떠나시겠습니까?';
-        }
-    });
-}); 
+        // 페이지 언로드 시 확인 제거됨 (사용자 요청)
+  }); 

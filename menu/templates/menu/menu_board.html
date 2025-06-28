@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ store.store_name }} - 메뉴판</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 메뉴판 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
+</head>
+<body class="bg-gray-100">
+    <div class="menu-board-container flex">
+        <!-- 왼쪽: 카테고리 사이드바 -->
+        <div class="category-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600">메뉴 카테고리</p>
+            </div>
+            
+            <div class="p-2">
+                <!-- 전체 보기 -->
+                <div class="category-item p-3 rounded-lg mb-1 active" data-category="all">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-blue-500"></i>
+                        <span class="font-medium">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="category-item p-3 rounded-lg mb-1" data-category="{{ category.id }}">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 text-gray-500"></i>
+                        <span class="font-medium">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 가운데: 메뉴 목록 -->
+        <div class="menu-content custom-scrollbar">
+            <div class="p-6">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-2">메뉴 목록</h1>
+                    <p class="text-gray-600">맛있는 메뉴를 선택해보세요</p>
+                </div>
+                
+                <!-- 메뉴 그리드 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="menu-grid">
+                    {% for menu in menus %}
+                    <div class="menu-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200" 
+                         data-menu-id="{{ menu.id }}" 
+                         data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
+                        
+                        <!-- 메뉴 이미지 -->
+                        <div class="relative aspect-square">
+                            {% if menu.images.exists %}
+                            <img src="{{ menu.images.first.file_url }}" 
+                                 alt="{{ menu.name }}" 
+                                 class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                                <i class="fas fa-utensils text-gray-400 text-4xl mb-2"></i>
+                                <span class="text-gray-500 text-sm">이미지 없음</span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- 할인 태그 -->
+                            {% if menu.is_discounted %}
+                            <div class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                {{ menu.public_discount_rate }}% 할인
+                            </div>
+                            {% endif %}
+                            
+                            <!-- 품절 태그 -->
+                            {% if menu.is_temporarily_out_of_stock %}
+                            <div class="absolute top-3 right-3 bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                일시품절
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 메뉴 정보 -->
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ menu.name }}</h3>
+                            <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ menu.description }}</p>
+                            
+                            <!-- 가격 정보 -->
+                            <div class="mb-4">
+                                {% if menu.is_discounted %}
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xl font-bold text-red-500">
+                                        {{ menu.public_discounted_price|floatformat:0 }} sats
+                                    </span>
+                                    <span class="text-sm text-gray-500 line-through">
+                                        {{ menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                </div>
+                                {% else %}
+                                <span class="text-xl font-bold text-gray-900">
+                                    {{ menu.public_price|floatformat:0 }} sats
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 주문 버튼 -->
+                            {% if menu.is_temporarily_out_of_stock %}
+                            <button class="w-full bg-purple-400 text-white py-2 px-4 rounded-lg cursor-not-allowed" disabled>
+                                <i class="fas fa-pause mr-2"></i>일시품절
+                            </button>
+                            {% else %}
+                            <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
+                                    onclick="addToCart({{ menu.id }}, '{{ menu.name|escapejs }}', {{ menu.public_discounted_price|default:menu.public_price }})">
+                                <i class="fas fa-plus mr-2"></i>장바구니 담기
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 메뉴가 없는 경우 -->
+                {% if not menus %}
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-utensils text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">등록된 메뉴가 없습니다</h3>
+                    <p class="text-gray-600">아직 판매 중인 메뉴가 없어요</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 오른쪽: 장바구니 사이드바 -->
+        <div class="cart-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">장바구니</h2>
+                <p class="text-sm text-gray-600">주문할 메뉴</p>
+            </div>
+            
+            <div class="p-4">
+                <!-- 장바구니 아이템 목록 -->
+                <div id="cart-items" class="space-y-3 mb-6">
+                    <!-- 장바구니가 비어있을 때 -->
+                    <div id="empty-cart" class="text-center py-8">
+                        <i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500 text-sm">장바구니가 비어있습니다</p>
+                    </div>
+                </div>
+                
+                <!-- 총 금액 -->
+                <div id="cart-total" class="border-t border-gray-200 pt-4 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold">총 금액</span>
+                        <span class="text-xl font-bold text-blue-600" id="total-amount">0 sats</span>
+                    </div>
+                    
+                    <!-- 주문 버튼 -->
+                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                            onclick="processOrder()">
+                        <i class="fas fa-credit-card mr-2"></i>주문하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 메뉴판 전용 JavaScript -->
+    <script src="{% static 'js/menu_board.js' %}"></script>
+</body>
+</html> 
