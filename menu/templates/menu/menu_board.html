@@ -52,7 +52,15 @@
         
         <!-- 가운데: 메뉴 목록 -->
         <div class="menu-content custom-scrollbar">
-            <div class="p-6">                
+            <div class="p-6">
+                <!-- 안내 메시지 -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                        <span class="text-sm text-blue-700">메뉴를 선택하여 장바구니에 담으세요.</span>
+                    </div>
+                </div>
+                
                 <!-- 메뉴 그리드 -->
                 <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="menu-grid">
                     {% for menu in menus %}
@@ -110,18 +118,6 @@
                                 </span>
                                 {% endif %}
                             </div>
-                            
-                            <!-- 주문 버튼 -->
-                            {% if menu.is_temporarily_out_of_stock %}
-                            <button class="w-full bg-purple-400 text-white py-2 px-4 rounded-lg cursor-not-allowed" disabled>
-                                <i class="fas fa-pause mr-2"></i>일시품절
-                            </button>
-                            {% else %}
-                            <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors"
-                                    onclick="addToCart({{ menu.id }}, '{{ menu.name|escapejs }}', {{ menu.public_discounted_price|default:menu.public_price }})">
-                                <i class="fas fa-plus mr-2"></i>장바구니 담기
-                            </button>
-                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}

@@ -65,7 +65,7 @@
             <div class="p-6">
                 <!-- 상단 네비게이션 -->
                 <div class="mb-6">
-                    <nav class="flex items-center text-sm text-gray-600">
+                    <nav class="flex items-center text-lg text-gray-600">
                         <a href="{% url 'menu:menu_board' store.store_id %}" class="hover:text-blue-600 transition-colors">
                             <i class="fas fa-arrow-left mr-2"></i>메뉴판
                         </a>
@@ -79,7 +79,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                         <!-- 왼쪽: 메뉴 이미지 -->
                         <div class="space-y-4">
-                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
                                 {% if menu.images.exists %}
                                 <img src="{{ menu.images.first.file_url }}" 
                                      alt="{{ menu.name }}" 
@@ -88,6 +88,18 @@
                                 <div class="w-full h-full flex flex-col items-center justify-center">
                                     <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
                                     <span class="text-gray-500 text-lg">이미지 없음</span>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 메뉴 설명 오버레이 -->
+                                {% if menu.description %}
+                                <div class="absolute bottom-0 left-0 right-0 h-1/2 bg-black bg-opacity-60 backdrop-blur-sm">
+                                    <div class="h-full p-4 flex flex-col">
+                                        <h4 class="text-white text-sm font-semibold mb-2 flex-shrink-0">메뉴 설명</h4>
+                                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                                            <p class="text-white text-sm leading-relaxed whitespace-pre-line">{{ menu.description }}</p>
+                                        </div>
+                                    </div>
                                 </div>
                                 {% endif %}
                             </div>
@@ -135,35 +147,7 @@
                                         {% endif %}
                                     </div>
                                 </div>
-
-                                <!-- 상태 표시 -->
-                                <div class="flex items-center space-x-2 flex-wrap">
-                                    {% if menu.is_temporarily_out_of_stock %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-600">
-                                        <i class="fas fa-pause mr-1"></i>일시품절
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-600">
-                                        <i class="fas fa-check mr-1"></i>주문 가능
-                                    </span>
-                                    {% endif %}
-
-                                    <!-- 카테고리 표시 -->
-                                    {% for category in menu.categories.all %}
-                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                        <i class="fas fa-tag mr-1"></i>{{ category.name }}
-                                    </span>
-                                    {% endfor %}
-                                </div>
                             </div>
-
-                            <!-- 메뉴 설명 -->
-                            {% if menu.description %}
-                            <div class="border-b border-gray-200 pb-4">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-2">메뉴 설명</h3>
-                                <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ menu.description }}</div>
-                            </div>
-                            {% endif %}
 
                             <!-- 옵션 선택 -->
                             {% if menu.options.exists %}
@@ -172,7 +156,7 @@
                                 <div class="space-y-3" id="options-container">
                                     {% for option in menu.options.all %}
                                     <div class="option-group" data-option-id="{{ option.id }}" data-option-name="{{ option.name }}">
-                                        <label class="block text-xs font-medium text-gray-700 mb-2">
+                                        <label class="block text-lg font-medium text-gray-700 mb-2">
                                             {{ option.name }}
                                             {% if option.is_required %}
                                             <span class="text-red-500">*</span>
@@ -181,21 +165,23 @@
                                         <div class="grid grid-cols-1 gap-1">
                                             {% for value in option.values_list %}
                                             {% with parsed_value=value|split_option_value %}
-                                            <label class="flex items-center justify-between p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors option-choice"
-                                                   data-option-value="{{ parsed_value.name }}" data-option-price="{{ parsed_value.price }}">
+                                            <div class="flex items-center justify-between p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors option-choice"
+                                                 data-option-id="{{ option.id }}" 
+                                                 data-option-name="{{ option.name }}"
+                                                 data-option-value="{{ parsed_value.name }}" 
+                                                 data-option-price="{{ parsed_value.price }}"
+                                                 data-is-required="{{ option.is_required|yesno:'true,false' }}"
+                                                 onclick="toggleOption(this)">
                                                 <div class="flex items-center">
-                                                    <input type="radio" name="option_{{ option.id }}" 
-                                                           value="{{ parsed_value.name }}" 
-                                                           data-price="{{ parsed_value.price }}"
-                                                           class="mr-2 text-blue-600 focus:ring-blue-500"
-                                                           {% if option.is_required and forloop.first %}required{% endif %}
-                                                           onchange="updatePrice()">
-                                                    <span class="text-sm text-gray-900">{{ parsed_value.name }}</span>
+                                                    <div class="w-5 h-5 mr-3 border-2 border-blue-600 rounded flex items-center justify-center option-checkbox">
+                                                        <i class="fas fa-check text-blue-600 text-sm hidden option-check-icon"></i>
+                                                    </div>
+                                                    <span class="text-xl text-gray-900">{{ parsed_value.name }}</span>
                                                 </div>
                                                 {% if parsed_value.price != "0" %}
-                                                <span class="text-xs text-gray-600">+{{ parsed_value.price }} sats</span>
+                                                <span class="text-sm text-gray-600">+{{ parsed_value.price }} sats</span>
                                                 {% endif %}
-                                            </label>
+                                            </div>
                                             {% endwith %}
                                             {% endfor %}
                                         </div>
@@ -224,8 +210,8 @@
                             <!-- 총 가격 표시 -->
                             <div class="border-b border-gray-200 pb-4">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-gray-900">총 가격</span>
-                                    <span id="total-price" class="text-lg font-bold text-blue-600">
+                                    <span class="text-base font-semibold text-gray-900">총 가격</span>
+                                    <span id="total-price" class="text-2xl font-bold text-blue-600">
                                         {{ menu.public_discounted_price|default:menu.public_price|floatformat:0 }} sats
                                     </span>
                                 </div>
@@ -244,7 +230,7 @@
                                 </button>
                                 {% else %}
                                 <button onclick="addToCart()"
-                                        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-lg font-medium transition-colors">
                                     <i class="fas fa-plus mr-1"></i>장바구니 담기
                                 </button>
                                 {% endif %}
@@ -313,14 +299,53 @@
             }
         }
 
+        // 옵션 토글 함수
+        function toggleOption(optionElement) {
+            const optionId = optionElement.dataset.optionId;
+            const isRequired = optionElement.dataset.isRequired === 'true';
+            const checkIcon = optionElement.querySelector('.option-check-icon');
+            const isCurrentlySelected = !checkIcon.classList.contains('hidden');
+            
+            // 같은 옵션 그룹의 다른 선택지들 해제
+            const optionGroup = optionElement.closest('.option-group');
+            const allChoicesInGroup = optionGroup.querySelectorAll('.option-choice');
+            allChoicesInGroup.forEach(choice => {
+                const icon = choice.querySelector('.option-check-icon');
+                const checkbox = choice.querySelector('.option-checkbox');
+                icon.classList.add('hidden');
+                checkbox.classList.remove('bg-blue-600');
+                choice.classList.remove('bg-blue-50', 'border-blue-500');
+            });
+            
+            // 현재 선택지가 선택되지 않은 상태였다면 선택
+            if (!isCurrentlySelected) {
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+            }
+            // 필수 옵션이고 현재 선택된 상태라면 해제 불가
+            else if (isRequired) {
+                // 다시 선택 상태로 되돌리기
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                alert('필수 옵션은 해제할 수 없습니다.');
+                return;
+            }
+            
+            updatePrice();
+        }
+
         // 가격 업데이트 함수
         function updatePrice() {
             let totalPrice = basePrice;
             
             // 선택된 옵션들의 추가 가격 계산
-            const selectedOptions = document.querySelectorAll('input[type="radio"]:checked');
+            const selectedOptions = document.querySelectorAll('.option-choice.bg-blue-50');
             selectedOptions.forEach(option => {
-                const optionPrice = parseFloat(option.dataset.price) || 0;
+                const optionPrice = parseFloat(option.dataset.optionPrice) || 0;
                 totalPrice += optionPrice;
             });
             
@@ -333,15 +358,16 @@
 
         // 선택된 옵션 검증 함수
         function validateOptions() {
-            const requiredOptions = document.querySelectorAll('.option-group input[required]');
-            for (let option of requiredOptions) {
-                const optionName = option.name;
-                const selectedOption = document.querySelector(`input[name="${optionName}"]:checked`);
-                if (!selectedOption) {
-                    const optionGroup = option.closest('.option-group');
-                    const optionLabel = optionGroup.querySelector('label').textContent.replace('*', '').trim();
-                    alert(`"${optionLabel}" 옵션을 선택해주세요.`);
-                    return false;
+            const optionGroups = document.querySelectorAll('.option-group');
+            for (let group of optionGroups) {
+                const hasRequiredOption = group.querySelector('[data-is-required="true"]');
+                if (hasRequiredOption) {
+                    const selectedOption = group.querySelector('.option-choice.bg-blue-50');
+                    if (!selectedOption) {
+                        const optionLabel = group.querySelector('label').textContent.replace('*', '').trim();
+                        alert(`"${optionLabel}" 옵션을 선택해주세요.`);
+                        return false;
+                    }
                 }
             }
             return true;
@@ -356,12 +382,11 @@
 
             // 선택된 옵션 수집
             const selectedOptions = {};
-            const optionInputs = document.querySelectorAll('input[type="radio"]:checked');
-            optionInputs.forEach(input => {
-                const optionGroup = input.closest('.option-group');
-                const optionName = optionGroup.dataset.optionName;
-                const optionValue = input.value;
-                const optionPrice = parseFloat(input.dataset.price) || 0;
+            const selectedChoices = document.querySelectorAll('.option-choice.bg-blue-50');
+            selectedChoices.forEach(choice => {
+                const optionName = choice.dataset.optionName;
+                const optionValue = choice.dataset.optionValue;
+                const optionPrice = parseFloat(choice.dataset.optionPrice) || 0;
                 
                 selectedOptions[optionName] = {
                     value: optionValue,
