@@ -392,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const categoryHtml = categories.map(category => `
-            <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+            <label class="inline-flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                 <input type="checkbox" name="categories" value="${category.id}" 
                        class="w-4 h-4 text-purple-500 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                 <span class="text-sm font-medium text-gray-900 dark:text-white">${category.name}</span>

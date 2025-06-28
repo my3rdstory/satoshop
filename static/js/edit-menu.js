@@ -184,30 +184,109 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function addOption() {
-        optionCount++;
-        const optionHtml = `
-            <div class="menu-option-item" id="option-${optionCount}">
-                <div class="flex items-center justify-between mb-3">
-                    <h4 class="font-medium text-gray-900 dark:text-white">옵션 ${optionCount}</h4>
-                    <button type="button" class="text-red-500 hover:text-red-700" onclick="removeOption(${optionCount})">
-                        <i class="fas fa-trash text-sm"></i>
+        if (optionCount >= 20) {
+            alert('옵션은 최대 20개까지만 추가할 수 있습니다.');
+            return;
+        }
+
+        // 현재 선택된 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
+        const isKrwMode = currentPriceDisplay === 'krw';
+        const priceUnit = isKrwMode ? '원' : 'sats';
+        const exchangeInfoClass = isKrwMode ? '' : 'hidden';
+
+        const optionSection = document.createElement('div');
+        optionSection.className = 'option-section bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4';
+        optionSection.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="flex-1">
+                    <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                           type="text" name="options[${optionCount}][name]" required
+                           placeholder="옵션명 (예: 색상, 사이즈)">
+                </div>
+                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        onclick="this.closest('.option-section').remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                               type="text" name="options[${optionCount}][choices][0][name]" required
+                               placeholder="옵션 종류 (예: 빨강, 파랑)">
+                    </div>
+                    <div class="w-32">
+                        <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                               type="number" name="options[${optionCount}][choices][0][price]" min="0"
+                               placeholder="추가 가격">
+                    </div>
+                    <div class="relative w-16">
+                        <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
+                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
+                            <span class="option-converted-amount"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            onclick="this.closest('.flex').remove()">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션명</label>
-                        <input type="text" name="option_${optionCount}_name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 사이즈, 맵기 정도">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">옵션값 (콤마로 구분)</label>
-                        <input type="text" name="option_${optionCount}_values" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 소, 중, 대">
-                    </div>
+            </div>
+            
+            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-lg transition-colors" 
+                    onclick="addOptionChoice(this)">
+                <i class="fas fa-plus text-sm"></i>
+                <span>옵션 종류 추가</span>
+            </button>
+        `;
+        optionsContainer.appendChild(optionSection);
+        optionCount++;
+    }
+
+    // addOptionChoice 함수를 전역으로 정의
+    window.addOptionChoice = function(button) {
+        const optionSection = button.closest('.option-section');
+        const optionIndex = Array.from(optionsContainer.children).indexOf(optionSection);
+        const choicesContainer = optionSection.querySelector('.space-y-3');
+        const choiceCount = choicesContainer.children.length;
+
+        if (choiceCount >= 20) {
+            alert('옵션 종류는 최대 20개까지만 추가할 수 있습니다.');
+            return;
+        }
+
+        // 현재 선택된 가격 표시 방식에 따라 단위와 환율 정보 표시 여부 결정
+        const isKrwMode = currentPriceDisplay === 'krw';
+        const priceUnit = isKrwMode ? '원' : 'sats';
+        const exchangeInfoClass = isKrwMode ? '' : 'hidden';
+
+        const choiceDiv = document.createElement('div');
+        choiceDiv.className = 'flex items-center gap-3';
+        choiceDiv.innerHTML = `
+            <div class="flex-1">
+                <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                       type="text" name="options[${optionIndex}][choices][${choiceCount}][name]" required
+                       placeholder="옵션 종류 (예: 빨강, 파랑)">
+            </div>
+            <div class="w-32">
+                <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                       type="number" name="options[${optionIndex}][choices][${choiceCount}][price]" min="0"
+                       placeholder="추가 가격">
+            </div>
+            <div class="relative w-16">
+                <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">${priceUnit}</span>
+                <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info ${exchangeInfoClass}">
+                    <span class="option-converted-amount"></span>
                 </div>
             </div>
+            <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                    onclick="this.closest('.flex').remove()">
+                <i class="fas fa-times"></i>
+            </button>
         `;
-        
-        optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
-    }
+        choicesContainer.appendChild(choiceDiv);
+    };
 
     // 전역 함수로 옵션 제거 (HTML에서 호출)
     window.removeOption = function(optionId) {
@@ -438,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const categoryHtml = categories.map(category => {
             const isChecked = currentCategories.includes(category.id);
             return `
-                <label class="flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                <label class="inline-flex items-center space-x-3 p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                     <input type="checkbox" name="categories" value="${category.id}" 
                            ${isChecked ? 'checked' : ''}
                            class="w-4 h-4 text-purple-500 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
