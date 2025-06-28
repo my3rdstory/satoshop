@@ -22,9 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
     init();
 
     function init() {
-        // DOM 요소 초기화
-        initializeDOMElements();
-        
         // 가격 표시 방식 초기화
         initializePriceDisplay();
         
@@ -38,19 +35,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (currentPriceDisplay === 'krw') {
             fetchExchangeRate();
         }
-    }
-
-    function initializeDOMElements() {
-        // DOM 요소들 가져오기
-        priceInput = document.getElementById('price');
-        discountedPriceInput = document.getElementById('discounted_price');
-        isDiscountedCheckbox = document.getElementById('is_discounted');
-        discountSection = document.getElementById('discountSection');
-        addOptionBtn = document.getElementById('addOptionBtn');
-        optionsContainer = document.getElementById('optionsContainer');
-        imageDropArea = document.getElementById('imageDropArea');
-        imageInput = document.getElementById('imageInput');
-        menuForm = document.getElementById('menuForm');
     }
 
     function initializePriceDisplay() {
