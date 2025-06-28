@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from stores.models import Store
 from .models import Menu, MenuCategory, MenuOption
 from .forms import MenuForm, MenuCategoryForm
@@ -199,6 +199,11 @@ def category_create_api(request, store_id):
             'success': False,
             'error': '잘못된 요청 형식입니다.'
         })
+    except IntegrityError:
+        return JsonResponse({
+            'success': False,
+            'error': '데이터베이스 제약조건 위반: 이미 존재하는 카테고리명입니다.'
+        })
     except Exception as e:
         return JsonResponse({
             'success': False,
@@ -245,6 +250,11 @@ def category_update_api(request, store_id, category_id):
         return JsonResponse({
             'success': False,
             'error': '잘못된 요청 형식입니다.'
+        })
+    except IntegrityError:
+        return JsonResponse({
+            'success': False,
+            'error': '데이터베이스 제약조건 위반: 이미 존재하는 카테고리명입니다.'
         })
     except Exception as e:
         return JsonResponse({
