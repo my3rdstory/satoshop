@@ -36,6 +36,13 @@ urlpatterns = [
     path('manifest.json', manifest_view, name='manifest'),
 ]
 
+# 개발 환경에서 정적 파일 서빙
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
 # WhiteNoise가 정적 파일 서빙을 자동으로 처리합니다
 
 # 에러 페이지 핸들러

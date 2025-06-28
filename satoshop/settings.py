@@ -106,6 +106,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# 개발 환경에서 정적 파일 캐시 헤더 비활성화
+if DEBUG:
+    # 정적 파일에 no-cache 헤더 추가
+    WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ['js', 'css']
+    WHITENOISE_ADD_HEADERS_FUNCTION = 'satoshop.utils.add_no_cache_headers'
+
 ROOT_URLCONF = 'satoshop.urls'
 
 TEMPLATES = [
@@ -201,6 +207,12 @@ STORAGES = {
 # WhiteNoise 설정
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
+
+# 개발 환경에서 브라우저 캐시 비활성화
+if DEBUG:
+    WHITENOISE_MAX_AGE = 0  # 캐시 비활성화
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_SKIP_COMPRESS_EXTENSIONS = ['js', 'css', 'map']
 
 # 정적 파일 버전 관리 (브라우저 캐시 무효화) - 백업용
 STATIC_VERSION = str(int(time.time()))

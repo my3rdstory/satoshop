@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                showNotification('카테고리가 추가되었습니다.', 'success');
                 newCategoryNameInput.value = '';
                 addCategoryToGrid(data.category);
                 updateCategoryCount();
@@ -87,6 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                showNotification('카테고리가 수정되었습니다.', 'success');
                 updateCategoryInGrid(categoryId, name);
                 closeEditModal();
             } else {
@@ -306,6 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                showNotification('카테고리가 삭제되었습니다.', 'success');
                 removeCategoryFromGrid(categoryId);
             } else {
                 showNotification(data.error || '카테고리 삭제에 실패했습니다.', 'error');
