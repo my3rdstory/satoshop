@@ -451,15 +451,18 @@ def upload_menu_image(request, store_id, menu_id):
             'error': '이미지 업로드 중 오류가 발생했습니다.'
         })
 
-@login_required
 def menu_detail(request, store_id, menu_id):
-    """메뉴 상세 페이지"""
-    store = get_store_or_404(store_id, request.user)
-    menu = get_object_or_404(Menu, id=menu_id, store=store)
+    """메뉴 상세 페이지 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
     
     context = {
         'store': store,
         'menu': menu,
+        'is_public_view': True,
     }
     return render(request, 'menu/menu_detail.html', context)
 

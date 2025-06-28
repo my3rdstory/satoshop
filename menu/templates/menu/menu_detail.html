@@ -1,0 +1,217 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ menu.name }} - {{ store.store_name }}</title>
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- 상단 네비게이션 -->
+        <div class="mb-6">
+            <nav class="flex items-center text-sm text-gray-600">
+                <a href="{% url 'menu:menu_board' store.store_id %}" class="hover:text-blue-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
+                </a>
+                <span class="mx-2">/</span>
+                <span class="text-gray-900">{{ menu.name }}</span>
+            </nav>
+        </div>
+
+        <!-- 메뉴 상세 정보 -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+                <!-- 왼쪽: 메뉴 이미지 -->
+                <div class="space-y-4">
+                    <div class="aspect-square rounded-lg overflow-hidden bg-gray-100">
+                        {% if menu.images.exists %}
+                        <img src="{{ menu.images.first.file_url }}" 
+                             alt="{{ menu.name }}" 
+                             class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex flex-col items-center justify-center">
+                            <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
+                            <span class="text-gray-500 text-lg">이미지 없음</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- 추가 이미지들 (있는 경우) -->
+                    {% if menu.images.count > 1 %}
+                    <div class="grid grid-cols-4 gap-2">
+                        {% for image in menu.images.all %}
+                        {% if not forloop.first %}
+                        <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
+                             onclick="changeMainImage('{{ image.file_url }}')">
+                            <img src="{{ image.file_url }}" 
+                                 alt="{{ menu.name }}" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 오른쪽: 메뉴 정보 -->
+                <div class="space-y-6">
+                    <!-- 메뉴명과 가격 -->
+                    <div class="border-b border-gray-200 pb-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <h1 class="text-3xl font-bold text-gray-900">{{ menu.name }}</h1>
+                            <div class="text-right">
+                                {% if menu.is_discounted %}
+                                <div class="space-y-1">
+                                    <div class="text-2xl font-bold text-red-500">
+                                        {{ menu.public_discounted_price|floatformat:0 }} sats
+                                    </div>
+                                    <div class="text-lg text-gray-500 line-through">
+                                        {{ menu.public_price|floatformat:0 }} sats
+                                    </div>
+                                    <div class="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-lg text-sm font-medium">
+                                        {{ menu.public_discount_rate }}% 할인
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="text-2xl font-bold text-gray-900">
+                                    {{ menu.public_price|floatformat:0 }} sats
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 상태 표시 -->
+                        <div class="flex items-center space-x-3">
+                            {% if menu.is_temporarily_out_of_stock %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-600">
+                                <i class="fas fa-pause mr-2"></i>일시품절
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-600">
+                                <i class="fas fa-check mr-2"></i>주문 가능
+                            </span>
+                            {% endif %}
+
+                            <!-- 카테고리 표시 -->
+                            {% for category in menu.categories.all %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                                <i class="fas fa-tag mr-2"></i>{{ category.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 메뉴 설명 -->
+                    <div class="border-b border-gray-200 pb-6">
+                        {% if menu.description %}
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">메뉴 설명</h3>
+                        <div class="text-gray-700 leading-relaxed whitespace-pre-line">{{ menu.description }}</div>
+                        {% else %}
+                        <div class="text-gray-500 italic">메뉴 설명이 없습니다.</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 액션 버튼들 -->
+                    <div class="flex space-x-4">
+                        <button onclick="history.back()" 
+                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-arrow-left mr-2"></i>뒤로가기
+                        </button>
+                        
+                        {% if menu.is_temporarily_out_of_stock %}
+                        <button class="flex-1 bg-purple-400 text-white py-3 px-6 rounded-lg font-medium cursor-not-allowed" disabled>
+                            <i class="fas fa-pause mr-2"></i>일시품절
+                        </button>
+                        {% else %}
+                        <button onclick="addToCart({{ menu.id }}, '{{ menu.name|escapejs }}', {{ menu.public_discounted_price|default:menu.public_price }})"
+                                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                            <i class="fas fa-plus mr-2"></i>장바구니 담기
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // 메인 이미지 변경 함수
+        function changeMainImage(imageUrl) {
+            const mainImage = document.querySelector('.aspect-square img');
+            if (mainImage) {
+                mainImage.src = imageUrl;
+            }
+        }
+
+        // 장바구니 담기 함수 (menu_board.js와 동일한 로직 사용)
+        function addToCart(menuId, menuName, price) {
+            // 로컬 스토리지에서 장바구니 데이터 가져오기
+            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            // 이미 있는 메뉴인지 확인
+            const existingItem = cart.find(item => item.id === menuId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    id: menuId,
+                    name: menuName,
+                    price: price,
+                    quantity: 1
+                });
+            }
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('cart', JSON.stringify(cart));
+            
+            // 성공 메시지 표시
+            showToast(`${menuName}이(가) 장바구니에 추가되었습니다.`);
+        }
+
+        // 토스트 메시지 표시 함수
+        function showToast(message) {
+            // 기존 토스트가 있으면 제거
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // 토스트 엘리먼트 생성
+            const toast = document.createElement('div');
+            toast.className = 'toast fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
+            toast.textContent = message;
+            
+            document.body.appendChild(toast);
+            
+            // 애니메이션으로 표시
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            // 3초 후 자동 제거
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 

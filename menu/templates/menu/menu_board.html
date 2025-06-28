@@ -61,13 +61,13 @@
                          data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
                         
                         <!-- 메뉴 이미지 -->
-                        <div class="relative aspect-square">
+                        <div class="relative aspect-square cursor-pointer" onclick="location.href='{% url 'menu:menu_detail' store.store_id menu.id %}'">
                             {% if menu.images.exists %}
                             <img src="{{ menu.images.first.file_url }}" 
                                  alt="{{ menu.name }}" 
-                                 class="w-full h-full object-cover">
+                                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-200">
                             {% else %}
-                            <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                            <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
                                 <i class="fas fa-utensils text-gray-400 text-4xl mb-2"></i>
                                 <span class="text-gray-500 text-sm">이미지 없음</span>
                             </div>
@@ -90,7 +90,8 @@
                         
                         <!-- 메뉴 정보 -->
                         <div class="p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ menu.name }}</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors" 
+                                onclick="location.href='{% url 'menu:menu_detail' store.store_id menu.id %}'">{{ menu.name }}</h3>
                             
                             <!-- 가격 정보 -->
                             <div class="mb-4">
