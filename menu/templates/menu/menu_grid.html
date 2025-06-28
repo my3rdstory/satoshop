@@ -58,9 +58,9 @@
       {% endif %}
       
       {% if is_public_view %}
-      <a href="{% url 'stores:menu_detail' store.store_id menu.id %}">
+      <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" target="_blank">
       {% else %}
-      <a href="{% url 'menu:menu_detail' store.store_id menu.id %}">
+      <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" target="_blank">
       {% endif %}
         {% if menu.images.exists %}
         <img src="{{ menu.images.first.file_url }}" alt="{{ menu.name }}" 
@@ -77,9 +77,9 @@
     <div class="p-4">
       <div class="mb-4">
         {% if is_public_view %}
-        <a href="{% url 'stores:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors">
+        <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors" target="_blank">
         {% else %}
-        <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors">
+        <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" class="block hover:text-orange-500 transition-colors" target="_blank">
         {% endif %}
           <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
             {{ menu.name }}
@@ -160,8 +160,8 @@
           <!-- 메뉴보기 버튼 -->
           {% if is_public_view %}
             {% if menu.is_active and not menu.is_temporarily_out_of_stock %}
-            <a href="{% url 'stores:menu_detail' store.store_id menu.id %}" 
-               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+            <a href="{% url 'menu:menu_detail' store.store_id menu.id %}" 
+               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm" target="_blank">
               <i class="fas fa-eye mr-1"></i>
               메뉴보기
             </a>

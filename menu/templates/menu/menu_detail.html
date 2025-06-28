@@ -178,40 +178,10 @@
             // 로컬 스토리지에 저장
             localStorage.setItem('cart', JSON.stringify(cart));
             
-            // 성공 메시지 표시
-            showToast(`${menuName}이(가) 장바구니에 추가되었습니다.`);
+            // 토스트 메시지 제거됨
         }
 
-        // 토스트 메시지 표시 함수
-        function showToast(message) {
-            // 기존 토스트가 있으면 제거
-            const existingToast = document.querySelector('.toast');
-            if (existingToast) {
-                existingToast.remove();
-            }
 
-            // 토스트 엘리먼트 생성
-            const toast = document.createElement('div');
-            toast.className = 'toast fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform translate-x-full transition-transform duration-300';
-            toast.textContent = message;
-            
-            document.body.appendChild(toast);
-            
-            // 애니메이션으로 표시
-            setTimeout(() => {
-                toast.classList.remove('translate-x-full');
-            }, 100);
-            
-            // 3초 후 자동 제거
-            setTimeout(() => {
-                toast.classList.add('translate-x-full');
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 300);
-            }, 3000);
-        }
     </script>
 </body>
 </html> 
