@@ -18,6 +18,7 @@ urlpatterns = [
     path('<str:store_id>/categories/create/', views.category_create_api, name='category_create_api'),
     path('<str:store_id>/categories/<uuid:category_id>/', views.category_update_api, name='category_update_api'),
     path('<str:store_id>/categories/<uuid:category_id>/delete/', views.category_delete_api, name='category_delete_api'),
+    path('<str:store_id>/categories/reorder/', views.category_reorder_api, name='category_reorder_api'),
     
     # 메뉴 상태 관리 API
     path('<str:store_id>/<uuid:menu_id>/toggle-temporary-out-of-stock/', views.toggle_temporary_out_of_stock, name='toggle_temporary_out_of_stock'),

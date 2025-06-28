@@ -139,7 +139,7 @@ def menu_detail(request, store_id, menu_id):
 def category_manage(request, store_id):
     """카테고리 관리 페이지"""
     store = get_store_or_404(store_id, request.user)
-    categories = MenuCategory.objects.filter(store=store).order_by('name')
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
     
     context = {
         'store': store,
@@ -154,7 +154,7 @@ def category_manage(request, store_id):
 def category_list_api(request, store_id):
     """카테고리 목록 API"""
     store = get_store_or_404(store_id, request.user)
-    categories = MenuCategory.objects.filter(store=store).order_by('name')
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
     
     data = {
         'success': True,
@@ -192,9 +192,15 @@ def category_create_api(request, store_id):
                 'error': '이미 존재하는 카테고리명입니다.'
             })
         
+        # 새 카테고리의 순서를 마지막으로 설정
+        max_order = MenuCategory.objects.filter(store=store).aggregate(
+            max_order=models.Max('order')
+        )['max_order'] or 0
+        
         category = MenuCategory.objects.create(
             store=store,
-            name=name
+            name=name,
+            order=max_order + 1
         )
         
         return JsonResponse({
@@ -290,6 +296,51 @@ def category_delete_api(request, store_id, category_id):
             'message': f'"{category_name}" 카테고리가 삭제되었습니다.'
         })
         
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+@login_required
+@require_http_methods(["POST"])
+def category_reorder_api(request, store_id):
+    """카테고리 순서 변경 API"""
+    store = get_store_or_404(store_id, request.user)
+    
+    try:
+        data = json.loads(request.body)
+        category_orders = data.get('category_orders', [])
+        
+        if not category_orders:
+            return JsonResponse({
+                'success': False,
+                'error': '카테고리 순서 데이터가 없습니다.'
+            })
+        
+        # 각 카테고리의 순서 업데이트
+        for item in category_orders:
+            category_id = item.get('id')
+            order = item.get('order')
+            
+            if category_id and order is not None:
+                try:
+                    category = MenuCategory.objects.get(id=category_id, store=store)
+                    category.order = order
+                    category.save(update_fields=['order'])
+                except MenuCategory.DoesNotExist:
+                    continue
+        
+        return JsonResponse({
+            'success': True,
+            'message': '카테고리 순서가 변경되었습니다.'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
     except Exception as e:
         return JsonResponse({
             'success': False,

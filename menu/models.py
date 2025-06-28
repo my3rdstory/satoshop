@@ -8,6 +8,7 @@ class MenuCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='menu_categories')
     name = models.CharField(max_length=50, verbose_name='카테고리명')
+    order = models.PositiveIntegerField(default=0, verbose_name='순서')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성일시')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='수정일시')
 
@@ -15,7 +16,7 @@ class MenuCategory(models.Model):
         verbose_name = '메뉴 카테고리'
         verbose_name_plural = '메뉴 카테고리'
         unique_together = ['store', 'name']  # 같은 스토어 내에서 카테고리명 중복 방지
-        ordering = ['name']
+        ordering = ['order', 'name']
 
     def __str__(self):
         return f"{self.store.store_name} - {self.name}"

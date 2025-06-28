@@ -119,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'category-card';
         cardDiv.setAttribute('data-category-id', category.id);
+        cardDiv.setAttribute('draggable', 'true');
         
         const date = new Date(category.created_at).toLocaleDateString('ko-KR', {
             year: 'numeric',
@@ -127,11 +128,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }).replace(/\./g, '.').replace(/ /g, '');
 
         cardDiv.innerHTML = `
-            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200">
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200 cursor-move">
                 <div class="flex items-center justify-between mb-3">
-                    <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
-                        ${category.name}
-                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-grip-vertical text-gray-400 drag-handle"></i>
+                        <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
+                            ${category.name}
+                        </h3>
+                    </div>
                     <div class="flex space-x-1">
                         <button onclick="editCategory('${category.id}', '${category.name}')" 
                                 class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
@@ -151,6 +155,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
+
+        // 새 카드에 드래그 기능 추가 (별도 파일에서 처리)
+        if (window.addDragToNewCard) {
+            window.addDragToNewCard(cardDiv);
+        }
 
         return cardDiv;
     }
@@ -342,4 +351,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (notification) {
         notification.addEventListener('click', hideNotification);
     }
+
+    // 드래그&드롭 기능은 별도 파일(category-drag-drop.js)에서 처리
 }); 

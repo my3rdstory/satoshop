@@ -58,12 +58,15 @@
       
       <div id="categoryGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {% for category in categories %}
-        <div class="category-card" data-category-id="{{ category.id }}">
-          <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200">
+        <div class="category-card" data-category-id="{{ category.id }}" draggable="true">
+          <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200 cursor-move">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
-                {{ category.name }}
-              </h3>
+              <div class="flex items-center space-x-2">
+                <i class="fas fa-grip-vertical text-gray-400 drag-handle"></i>
+                <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
+                  {{ category.name }}
+                </h3>
+              </div>
               <div class="flex space-x-1">
                 <button onclick="editCategory('{{ category.id }}', '{{ category.name }}')" 
                         class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
@@ -140,9 +143,11 @@
 
 {% block extra_js %}
 <script src="{% static 'js/category-manage.js' %}"></script>
+<script src="{% static 'js/category-drag-drop.js' %}{% if debug %}?t={{ 'now'|date:'U' }}{% endif %}"></script>
 <script>
 // Django 설정을 JavaScript로 전달
 window.storeId = "{{ store.store_id }}";
 window.csrfToken = "{{ csrf_token }}";
+console.log('전역 변수 설정 완료:', { storeId: window.storeId, csrfToken: window.csrfToken });
 </script>
 {% endblock %} 
