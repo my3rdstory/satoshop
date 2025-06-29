@@ -42,12 +42,10 @@ function filterMenusByCategory(categoryId) {
 
 // 장바구니에서 메뉴 제거
 function removeFromCart(itemId) {
-    if (confirm('이 메뉴를 장바구니에서 삭제하시겠습니까?')) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        cart = cart.filter(item => item.id != itemId);
-        localStorage.setItem('cart', JSON.stringify(cart));
-        updateCartDisplay();
-    }
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart = cart.filter(item => item.id != itemId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    updateCartDisplay();
 }
 
 // 수량 업데이트
@@ -162,15 +160,11 @@ function clearCart() {
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     
     if (cart.length === 0) {
-        alert('장바구니가 이미 비어있습니다.');
         return;
     }
     
-    if (confirm('장바구니를 모두 비우시겠습니까?')) {
-        localStorage.removeItem('cart');
-        updateCartDisplay();
-        alert('장바구니가 비워졌습니다.');
-    }
+    localStorage.removeItem('cart');
+    updateCartDisplay();
 }
 
 

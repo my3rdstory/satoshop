@@ -254,13 +254,13 @@
                     
                     <!-- 주문 버튼 -->
                     <div class="flex space-x-2">
-                        <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                        <button class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
                                 onclick="clearCart()">
-                            <i class="fas fa-trash mr-2"></i>비우기
+                            <i class="fas fa-trash mr-1"></i>비우기
                         </button>
-                        <button class="flex-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                        <button class="w-1/2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
                                 onclick="processOrder()">
-                            <i class="fas fa-shopping-cart mr-2"></i>장바구니
+                            <i class="fas fa-credit-card mr-1"></i>결제하기
                         </button>
                     </div>
                 </div>
@@ -444,8 +444,7 @@
             // 장바구니 UI 업데이트
             updateCartDisplay();
             
-            // 성공 메시지 표시
-            alert('장바구니에 추가되었습니다!');
+            // 장바구니 추가 완료 (알림 없음)
         }
 
         // 장바구니 비우기
@@ -453,15 +452,11 @@
             const cart = JSON.parse(localStorage.getItem('cart') || '[]');
             
             if (cart.length === 0) {
-                alert('장바구니가 이미 비어있습니다.');
                 return;
             }
             
-            if (confirm('장바구니를 모두 비우시겠습니까?')) {
-                localStorage.removeItem('cart');
-                updateCartDisplay();
-                alert('장바구니가 비워졌습니다.');
-            }
+            localStorage.removeItem('cart');
+            updateCartDisplay();
         }
 
         // 주문 처리 (장바구니 페이지로 이동)

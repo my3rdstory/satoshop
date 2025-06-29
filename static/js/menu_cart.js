@@ -126,30 +126,27 @@ function updateItemQuantity(itemId, newQuantity) {
 
 // 장바구니 아이템 삭제
 function removeCartItem(itemId) {
-    if (confirm('이 메뉴를 장바구니에서 삭제하시겠습니까?')) {
-        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-        cart = cart.filter(item => item.id != itemId);
-        localStorage.setItem('cart', JSON.stringify(cart));
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart = cart.filter(item => item.id != itemId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    
+    // 삭제 애니메이션 효과
+    const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+    if (itemElement) {
+        itemElement.style.transform = 'translateX(-100%)';
+        itemElement.style.opacity = '0';
+        setTimeout(() => {
+            displayCartItems(cart);
+        }, 200);
+    } else {
         displayCartItems(cart);
-        
-        // 삭제 애니메이션 효과
-        const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
-        if (itemElement) {
-            itemElement.style.transform = 'translateX(-100%)';
-            itemElement.style.opacity = '0';
-            setTimeout(() => {
-                displayCartItems(cart);
-            }, 200);
-        }
     }
 }
 
 // 전체 장바구니 비우기
 function clearCart() {
-    if (confirm('장바구니를 모두 비우시겠습니까?')) {
-        localStorage.removeItem('cart');
-        displayCartItems([]);
-    }
+    localStorage.removeItem('cart');
+    displayCartItems([]);
 }
 
 // 주문 처리
@@ -175,8 +172,8 @@ function processOrder() {
             timestamp: new Date().toISOString()
         });
         
-        // 임시: 주문 완료 메시지
-        alert('주문이 완료되었습니다!\n\n주문 기능은 현재 개발 중입니다.');
+        // 임시: 결제 완료 메시지
+        alert('결제가 완료되었습니다!\n\n결제 기능은 현재 개발 중입니다.');
         
         // 주문 완료 후 장바구니 비우기 (나중에 실제 주문 완료 후에 실행)
         // localStorage.removeItem('cart');
