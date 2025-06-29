@@ -434,11 +434,9 @@ function removeCartItem(itemId) {
 
 // 전체 장바구니 비우기
 function clearCart() {
-    if (confirm('장바구니를 모두 비우시겠습니까?')) {
-        cartData = [];
-        saveCartToStorage();
-        updateAllCartDisplays();
-    }
+    cartData = [];
+    saveCartToStorage();
+    updateAllCartDisplays();
 }
 
 // 장바구니 페이지 열기
@@ -461,28 +459,23 @@ function closeCartPage() {
 // 주문 처리 (사이드바에서)
 function processOrder() {
     if (cartData.length === 0) {
-        alert('장바구니가 비어있습니다.');
         return;
     }
     
     const totalAmount = cartData.reduce((sum, item) => sum + ((item.totalPrice || 0) * item.quantity), 0);
     const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
     
-    const confirmMessage = `총 ${totalItems}개 메뉴, ${formatNumber(totalAmount)} sats를 주문하시겠습니까?`;
+    // 주문 처리 로직 (실제 구현 시 서버로 데이터 전송)
+    console.log('주문 데이터:', {
+        items: cartData,
+        totalAmount: totalAmount,
+        totalItems: totalItems,
+        storeId: currentStoreId,
+        timestamp: new Date().toISOString()
+    });
     
-    if (confirm(confirmMessage)) {
-        // 주문 처리 로직 (실제 구현 시 서버로 데이터 전송)
-        console.log('주문 데이터:', {
-            items: cartData,
-            totalAmount: totalAmount,
-            totalItems: totalItems,
-            storeId: currentStoreId,
-            timestamp: new Date().toISOString()
-        });
-        
-        // 임시: 결제 완료 메시지
-        alert('결제가 완료되었습니다!\n\n결제 기능은 현재 개발 중입니다.');
-    }
+    // 임시: 콘솔에만 로그 출력
+    console.log('결제가 완료되었습니다! 결제 기능은 현재 개발 중입니다.');
 }
 
 // 주문 처리 (페이지에서)

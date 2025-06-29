@@ -470,6 +470,26 @@ def menu_detail(request, store_id, menu_id):
     }
     return render(request, 'menu/menu_detail.html', context)
 
+def menu_detail_ajax(request, store_id, menu_id):
+    """메뉴 상세 페이지 AJAX 버전 (SPA용)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
+    
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'categories': categories,
+        'is_public_view': True,
+        'is_ajax': True,  # AJAX 요청임을 표시
+    }
+    return render(request, 'menu/menu_detail.html', context)
+
 @login_required
 def category_manage(request, store_id):
     """카테고리 관리 페이지"""
