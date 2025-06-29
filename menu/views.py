@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction, IntegrityError
 from django.db import models
 from django.utils import timezone
+from django.core.paginator import Paginator
 from stores.models import Store
 from .models import Menu, MenuCategory, MenuOption, MenuImage, MenuOrder, MenuOrderItem
 from .forms import MenuForm, MenuCategoryForm
@@ -1080,3 +1081,96 @@ def check_cart_payment(request, store_id):
     except Exception as e:
         logger.error(f"장바구니 결제 상태 확인 오류: {str(e)}")
         return JsonResponse({'success': False, 'error': f'결제 상태 확인 중 오류가 발생했습니다: {str(e)}'}, status=500)
+
+
+@login_required
+def menu_orders(request, store_id):
+    """메뉴 판매 현황 페이지"""
+    store = get_store_or_404(store_id, request.user)
+    
+    # 메뉴별 판매 통계 계산
+    menus_with_orders = []
+    menus = Menu.objects.filter(store=store).prefetch_related('images')
+    
+    for menu in menus:
+        # 결제 완료된 주문 아이템만 집계
+        paid_items = MenuOrderItem.objects.filter(
+            menu=menu,
+            order__status='paid'
+        )
+        
+        total_orders = paid_items.values('order').distinct().count()
+        total_quantity = paid_items.aggregate(
+            total=models.Sum('quantity')
+        )['total'] or 0
+        total_revenue = paid_items.aggregate(
+            total=models.Sum(models.F('menu_price') + models.F('options_price'))
+        )['total'] or 0
+        
+        # 통계가 있는 메뉴만 추가하거나 모든 메뉴 표시
+        menu.total_orders = total_orders
+        menu.total_quantity = total_quantity
+        menu.total_revenue = total_revenue
+        menus_with_orders.append(menu)
+    
+    # 매출 순으로 정렬
+    menus_with_orders.sort(key=lambda x: x.total_revenue, reverse=True)
+    
+    # 전체 통계
+    total_menu_orders = MenuOrder.objects.filter(store=store, status='paid').count()
+    total_menu_revenue = MenuOrder.objects.filter(store=store, status='paid').aggregate(
+        total=models.Sum('total_amount')
+    )['total'] or 0
+    total_menu_items = MenuOrderItem.objects.filter(
+        order__store=store, order__status='paid'
+    ).aggregate(
+        total=models.Sum('quantity')
+    )['total'] or 0
+    
+    context = {
+        'store': store,
+        'menus_with_orders': menus_with_orders,
+        'total_menu_orders': total_menu_orders,
+        'total_menu_revenue': total_menu_revenue,
+        'total_menu_items': total_menu_items,
+    }
+    
+    return render(request, 'menu/menu_orders.html', context)
+
+
+@login_required
+def menu_orders_detail(request, store_id, menu_id):
+    """메뉴별 판매 현황 상세 페이지"""
+    store = get_store_or_404(store_id, request.user)
+    menu = get_object_or_404(Menu, id=menu_id, store=store)
+    
+    # 해당 메뉴의 주문 아이템들 (결제 완료된 것만)
+    order_items = MenuOrderItem.objects.filter(
+        menu=menu,
+        order__status='paid'
+    ).select_related('order').order_by('-order__created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(order_items, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # 통계 계산
+    total_orders = order_items.values('order').distinct().count()
+    total_quantity = order_items.aggregate(
+        total=models.Sum('quantity')
+    )['total'] or 0
+    total_revenue = order_items.aggregate(
+        total=models.Sum(models.F('menu_price') + models.F('options_price'))
+    )['total'] or 0
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'page_obj': page_obj,
+        'total_orders': total_orders,
+        'total_quantity': total_quantity,
+        'total_revenue': total_revenue,
+    }
+    
+    return render(request, 'menu/menu_orders_detail.html', context)
