@@ -442,7 +442,9 @@
             localStorage.setItem('cart', JSON.stringify(cart));
             
             // 장바구니 UI 업데이트
-            updateCartDisplay();
+            if (typeof updateCartDisplay === 'function') {
+                updateCartDisplay();
+            }
             
             // 장바구니 추가 완료 (알림 없음)
         }
@@ -456,7 +458,9 @@
             }
             
             localStorage.removeItem('cart');
-            updateCartDisplay();
+            if (typeof updateCartDisplay === 'function') {
+                updateCartDisplay();
+            }
         }
 
         // 주문 처리 (장바구니 페이지로 이동)
@@ -476,7 +480,10 @@
         // 페이지 로드 시 초기 설정
         document.addEventListener('DOMContentLoaded', function() {
             updatePrice();
-            updateCartDisplay();
+            // 장바구니 표시 업데이트는 menu_board.js에서 처리
+            if (typeof updateCartDisplay === 'function') {
+                updateCartDisplay();
+            }
         });
     </script>
     

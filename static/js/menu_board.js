@@ -178,4 +178,11 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-} 
+}
+
+// 다른 탭이나 페이지에서 장바구니가 변경될 때 동기화
+window.addEventListener('storage', function(e) {
+    if (e.key === 'cart') {
+        updateCartDisplay();
+    }
+}); 
