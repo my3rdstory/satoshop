@@ -137,46 +137,19 @@
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 -->
-        <div class="cart-sidebar custom-scrollbar">
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">장바구니</h2>
-                <p class="text-sm text-gray-600">주문할 메뉴</p>
-            </div>
-            
-            <div class="p-4">
-                <!-- 장바구니 아이템 목록 -->
-                <div id="cart-items" class="space-y-3 mb-6">
-                    <!-- 장바구니가 비어있을 때 -->
-                    <div id="empty-cart" class="text-center py-8">
-                        <i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i>
-                        <p class="text-gray-500 text-sm">장바구니가 비어있습니다</p>
-                    </div>
-                </div>
-                
-                <!-- 총 금액 -->
-                <div id="cart-total" class="border-t border-gray-200 pt-4 hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-lg font-semibold">총 금액</span>
-                        <span class="text-xl font-bold text-blue-600" id="total-amount">0 sats</span>
-                    </div>
-                    
-                    <!-- 주문 버튼 -->
-                    <div class="flex space-x-2">
-                        <button class="w-1/3 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                                onclick="clearCart()">
-                            <i class="fas fa-trash mr-1"></i>비우기
-                        </button>
-                        <button class="w-2/3 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                                onclick="processOrder()">
-                            <i class="fas fa-credit-card mr-1"></i>결제하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'menu/cart_sidebar.html' %}
     </div>
     
-    <!-- 메뉴판 전용 JavaScript -->
-    <script src="{% static 'js/menu_board.js' %}"></script>
+    <!-- 장바구니 전체 페이지 컴포넌트 -->
+    {% include 'menu/cart_page.html' %}
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 메뉴 필터링 JavaScript -->
+    <script src="{% static 'js/menu_filters.js' %}"></script>
+    
+    <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/cart_unified.js' %}"></script>
 </body>
 </html> 

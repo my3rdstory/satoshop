@@ -229,43 +229,7 @@
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 -->
-        <div class="cart-sidebar custom-scrollbar">
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">장바구니</h2>
-                <p class="text-sm text-gray-600">주문할 메뉴</p>
-            </div>
-            
-            <div class="p-4">
-                <!-- 장바구니 아이템 목록 -->
-                <div id="cart-items" class="space-y-3 mb-6">
-                    <!-- 장바구니가 비어있을 때 -->
-                    <div id="empty-cart" class="text-center py-8">
-                        <i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i>
-                        <p class="text-gray-500 text-sm">장바구니가 비어있습니다</p>
-                    </div>
-                </div>
-                
-                <!-- 총 금액 -->
-                <div id="cart-total" class="border-t border-gray-200 pt-4 hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-lg font-semibold">총 금액</span>
-                        <span class="text-xl font-bold text-blue-600" id="total-amount">0 sats</span>
-                    </div>
-                    
-                    <!-- 주문 버튼 -->
-                    <div class="flex space-x-2">
-                        <button class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                                onclick="clearCart()">
-                            <i class="fas fa-trash mr-1"></i>비우기
-                        </button>
-                        <button class="w-1/2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                                onclick="processOrder()">
-                            <i class="fas fa-credit-card mr-1"></i>결제하기
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'menu/cart_sidebar.html' %}
     </div>
 
     <!-- JavaScript -->
@@ -405,89 +369,27 @@
                 storeName: '{{ store.store_name|escapejs }}'
             };
 
-            // 로컬 스토리지에서 장바구니 데이터 가져오기
-            let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            
-            // 같은 메뉴, 같은 옵션인지 확인
-            const existingItemIndex = cart.findIndex(item => {
-                if (item.id !== cartItem.id) return false;
-                
-                // 옵션 비교
-                const itemOptions = item.options || {};
-                const newOptions = cartItem.options || {};
-                
-                const itemOptionKeys = Object.keys(itemOptions).sort();
-                const newOptionKeys = Object.keys(newOptions).sort();
-                
-                if (itemOptionKeys.length !== newOptionKeys.length) return false;
-                
-                for (let key of itemOptionKeys) {
-                    if (!newOptions[key] || itemOptions[key].value !== newOptions[key].value) {
-                        return false;
-                    }
-                }
-                
-                return true;
-            });
-            
-            if (existingItemIndex !== -1) {
-                // 기존 아이템의 수량 증가
-                cart[existingItemIndex].quantity += cartItem.quantity;
-            } else {
-                // 새로운 아이템 추가
-                cart.push(cartItem);
-            }
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('cart', JSON.stringify(cart));
-            
-            // 장바구니 UI 업데이트
-            if (typeof updateCartDisplay === 'function') {
-                updateCartDisplay();
-            }
-            
-            // 장바구니 추가 완료 (알림 없음)
-        }
-
-        // 장바구니 비우기
-        function clearCart() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            
-            if (cart.length === 0) {
-                return;
-            }
-            
-            localStorage.removeItem('cart');
-            if (typeof updateCartDisplay === 'function') {
-                updateCartDisplay();
+            // 통합 장바구니 시스템 사용
+            if (typeof window.addToCart === 'function') {
+                window.addToCart(cartItem);
             }
         }
 
-        // 주문 처리 (장바구니 페이지로 이동)
-        function processOrder() {
-            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-            
-            if (cart.length === 0) {
-                alert('장바구니가 비어있습니다.');
-                return;
-            }
-            
-            // 장바구니 페이지로 이동
-            const storeId = '{{ store.store_id }}';
-            window.location.href = `/menu/${storeId}/cart/`;
-        }
+
 
         // 페이지 로드 시 초기 설정
         document.addEventListener('DOMContentLoaded', function() {
             updatePrice();
-            // 장바구니 표시 업데이트는 menu_board.js에서 처리
-            if (typeof updateCartDisplay === 'function') {
-                updateCartDisplay();
-            }
         });
     </script>
     
-    <!-- 메뉴판 전용 JavaScript (장바구니 기능) -->
-    <script src="{% static 'js/menu_board.js' %}"></script>
+    <!-- 장바구니 전체 페이지 컴포넌트 -->
+    {% include 'menu/cart_page.html' %}
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/cart_unified.js' %}"></script>
 </body>
 </html> 
