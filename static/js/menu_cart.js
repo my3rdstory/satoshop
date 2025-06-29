@@ -804,34 +804,28 @@ function generateQRCode(invoice) {
     const container = document.getElementById('qr-code-container');
     if (!container) return;
     
-    // QR 코드 라이브러리가 있는지 확인
-    if (typeof QRCode !== 'undefined') {
+    // QRious 라이브러리 사용
+    if (typeof QRious !== 'undefined') {
         try {
-            // QRCode.js 라이브러리 사용
+            // 기존 내용 지우기
             container.innerHTML = '';
-            const qr = new QRCode(container, {
-                text: invoice,
-                width: 256,
-                height: 256,
-                colorDark: '#000000',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
+            
+            // 캔버스 생성
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            
+            // QRious 인스턴스 생성
+            const qr = new QRious({
+                element: canvas,
+                value: invoice,
+                size: 256,
+                foreground: '#000000',
+                background: '#ffffff',
+                level: 'M'
             });
         } catch (error) {
-            console.warn('QRCode.js 라이브러리 오류:', error);
+            console.warn('QRious 라이브러리 오류:', error);
             // fallback으로 API 사용
-            generateQRCodeWithAPI(invoice, container);
-        }
-    } else if (typeof window.QRCode !== 'undefined') {
-        try {
-            // window.QRCode 사용
-            container.innerHTML = '';
-            window.QRCode.toCanvas(container, invoice, {
-                width: 256,
-                margin: 2
-            });
-        } catch (error) {
-            console.warn('window.QRCode 오류:', error);
             generateQRCodeWithAPI(invoice, container);
         }
     } else {

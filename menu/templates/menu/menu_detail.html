@@ -375,7 +375,7 @@
 
             // 고유 ID 생성 (메뉴 ID + 옵션 조합)
             const optionsString = Object.entries(selectedOptions).map(([key, value]) => `${key}:${value.value}`).sort().join('|');
-            const uniqueId = `{{ menu.id }}_${btoa(optionsString).replace(/[+\/=]/g, '')}`;
+            const uniqueId = `{{ menu.id }}_${btoa(unescape(encodeURIComponent(optionsString))).replace(/[+\/=]/g, '')}`;
             
             // 장바구니 아이템 생성
             const cartItem = {
@@ -566,7 +566,7 @@
 
             // 고유 ID 생성 (메뉴 ID + 옵션 조합)
             const optionsString = Object.entries(selectedOptions).map(([key, value]) => `${key}:${value.value}`).sort().join('|');
-            const uniqueId = `{{ menu.id }}_${btoa(optionsString).replace(/[+\/=]/g, '')}`;
+            const uniqueId = `{{ menu.id }}_${btoa(unescape(encodeURIComponent(optionsString))).replace(/[+\/=]/g, '')}`;
             
             // 장바구니 아이템 생성
             const cartItem = {
