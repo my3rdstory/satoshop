@@ -184,8 +184,6 @@ function clearCart() {
     updateCartDisplay();
 }
 
-
-
 // 유틸리티 함수들
 function formatNumber(num) {
     return num.toLocaleString();
@@ -202,4 +200,13 @@ window.addEventListener('storage', function(e) {
     if (e.key === 'cart') {
         updateCartDisplay();
     }
-}); 
+});
+
+// 메뉴판으로 돌아가기 (다른 스크립트와의 호환성을 위해)
+function goBackToMenuBoard() {
+    // 스토어 ID 가져오기
+    const storeId = window.location.pathname.split('/')[2];
+    
+    // 메뉴판 첫 화면으로 이동
+    window.location.href = `/menu/${storeId}/list/`;
+} 

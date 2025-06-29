@@ -200,3 +200,108 @@ class MenuOption(models.Model):
         """옵션값 리스트 설정"""
         import json
         self.values = json.dumps(values_list, ensure_ascii=False)
+
+class MenuOrder(models.Model):
+    """메뉴 주문 모델"""
+    ORDER_STATUS_CHOICES = [
+        ('pending', '주문 대기'),
+        ('payment_pending', '결제 대기'),
+        ('paid', '결제 완료'),
+        ('cancelled', '주문 취소'),
+        ('expired', '주문 만료'),
+    ]
+    
+    # 주문 기본 정보
+    order_number = models.CharField(max_length=50, unique=True, verbose_name='주문번호')
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='menu_orders', verbose_name='스토어')
+    status = models.CharField(
+        max_length=20, choices=ORDER_STATUS_CHOICES, 
+        default='pending', verbose_name='주문 상태'
+    )
+    
+    # 결제 정보
+    total_amount = models.PositiveIntegerField(verbose_name='총 금액', help_text='사토시 단위')
+    payment_hash = models.CharField(max_length=100, blank=True, verbose_name='결제 해시')
+    
+    # 고객 정보 (비회원 가능)
+    customer_info = models.JSONField(
+        default=dict, blank=True,
+        verbose_name='고객 정보',
+        help_text='비회원 주문 시 고객 정보 저장'
+    )
+    
+    # 시간 정보
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='주문 시간')
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name='결제 시간')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='수정 시간')
+    
+    class Meta:
+        verbose_name = '메뉴 주문'
+        verbose_name_plural = '메뉴 주문들'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['store', 'created_at']),
+            models.Index(fields=['status']),
+            models.Index(fields=['order_number']),
+            models.Index(fields=['payment_hash']),
+        ]
+    
+    def __str__(self):
+        return f"{self.order_number} - {self.store.store_name}"
+    
+    def save(self, *args, **kwargs):
+        if not self.order_number:
+            self.order_number = self.generate_order_number()
+        super().save(*args, **kwargs)
+    
+    def generate_order_number(self):
+        """주문번호 생성"""
+        import datetime
+        import random
+        now = datetime.datetime.now()
+        return f"MENU{now.strftime('%Y%m%d')}{random.randint(100000, 999999)}"
+
+
+class MenuOrderItem(models.Model):
+    """메뉴 주문 아이템 모델"""
+    order = models.ForeignKey(MenuOrder, on_delete=models.CASCADE, related_name='items', verbose_name='주문')
+    menu = models.ForeignKey(Menu, on_delete=models.CASCADE, verbose_name='메뉴')
+    
+    # 주문 당시의 메뉴 정보 (메뉴가 변경되어도 주문 내역은 유지)
+    menu_name = models.CharField(max_length=100, verbose_name='메뉴명')
+    menu_price = models.PositiveIntegerField(verbose_name='메뉴 가격')
+    quantity = models.PositiveIntegerField(verbose_name='수량')
+    
+    # 선택된 옵션들 (JSON 필드로 저장)
+    selected_options = models.JSONField(
+        default=dict, blank=True,
+        verbose_name='선택된 옵션들',
+        help_text='옵션명: 선택값 형태로 저장'
+    )
+    options_price = models.PositiveIntegerField(default=0, verbose_name='옵션 가격')
+    
+    # 메타 정보
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성 시간')
+    
+    class Meta:
+        verbose_name = '메뉴 주문 아이템'
+        verbose_name_plural = '메뉴 주문 아이템들'
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['order']),
+            models.Index(fields=['menu']),
+            models.Index(fields=['created_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.order.order_number} - {self.menu_name} x{self.quantity}"
+    
+    @property
+    def unit_price(self):
+        """개당 가격 (메뉴가격 + 옵션가격)"""
+        return (self.menu_price or 0) + (self.options_price or 0)
+    
+    @property
+    def total_price(self):
+        """총 가격 (개당가격 * 수량)"""
+        return self.unit_price * (self.quantity or 0)

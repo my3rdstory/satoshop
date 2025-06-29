@@ -562,10 +562,16 @@ function showPaymentModal() {
                                     <h4 class="text-lg font-semibold text-blue-900 mb-2">라이트닝 결제</h4>
                                     <p class="text-blue-700 text-sm">빠르고 저렴한 비트코인 결제</p>
                                 </div>
-                                <button onclick="generatePaymentInvoice()" 
-                                        class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                    <i class="fas fa-qrcode mr-2"></i>결제 인보이스 생성
-                                </button>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button onclick="goBackToMenuBoard()" 
+                                            class="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
+                                    </button>
+                                    <button onclick="generatePaymentInvoice()" 
+                                            class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-qrcode mr-2"></i>결제 인보이스 생성
+                                    </button>
+                                </div>
                             </div>
                             
                             <!-- 로딩 -->
@@ -593,43 +599,55 @@ function showPaymentModal() {
                                 
                                 <!-- 인보이스 텍스트 -->
                                 <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">인보이스</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">인보이스 텍스트</label>
                                     <div class="relative">
-                                        <textarea id="invoice-text" readonly 
-                                                class="w-full h-20 p-3 border border-gray-300 rounded-lg text-xs font-mono resize-none"></textarea>
+                                        <textarea id="invoice-text" 
+                                                  class="w-full p-3 border border-gray-300 rounded-lg text-xs font-mono bg-gray-50 resize-none" 
+                                                  rows="3" 
+                                                  readonly></textarea>
                                         <button onclick="copyInvoiceText()" 
-                                                class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
-                                            <i class="fas fa-copy"></i>
+                                                class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">
+                                            <i class="fas fa-copy mr-1"></i>복사
                                         </button>
                                     </div>
                                 </div>
                                 
                                 <!-- 취소 버튼 -->
-                                <button onclick="cancelPayment()" 
-                                        class="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                    <i class="fas fa-times mr-2"></i>결제 취소
-                                </button>
+                                <div class="text-center">
+                                    <button onclick="cancelPayment()" 
+                                            class="bg-red-500 hover:bg-red-600 text-white py-2 px-6 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-times mr-2"></i>결제 취소
+                                    </button>
+                                </div>
                             </div>
                             
-                            <!-- 결제 완료 -->
-                            <div id="payment-success" class="hidden text-center py-8">
-                                <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
-                                <h4 class="text-xl font-bold text-green-600 mb-2">결제 완료!</h4>
-                                <p class="text-gray-600 mb-6">주문이 성공적으로 처리되었습니다.</p>
-                                <button onclick="closePaymentView()" 
-                                        class="bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                    확인
+                            <!-- 결제 성공 -->
+                            <div id="payment-success" class="hidden text-center">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                                    <i class="fas fa-check-circle text-green-600 text-4xl mb-4"></i>
+                                    <h4 class="text-xl font-semibold text-green-900 mb-2">결제가 완료되었습니다!</h4>
+                                    <p class="text-green-700 text-sm">주문이 성공적으로 처리되었습니다.</p>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div class="text-blue-600 text-lg font-bold" id="redirect-countdown">10</div>
+                                    <div class="text-blue-500 text-sm">초 후 메뉴판으로 이동합니다</div>
+                                </div>
+                                <button onclick="goBackToMenuBoard()" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-2"></i>지금 메뉴판으로 이동
                                 </button>
                             </div>
                             
                             <!-- 결제 취소됨 -->
-                            <div id="payment-cancelled" class="hidden text-center py-8">
-                                <i class="fas fa-times-circle text-red-500 text-6xl mb-4"></i>
-                                <h4 class="text-xl font-bold text-red-600 mb-2">결제가 취소되었습니다</h4>
-                                <p class="text-gray-600 mb-6">다시 결제하려면 오른쪽 장바구니의 결제하기 버튼을 클릭하세요.</p>
-                                <button onclick="closePaymentView()" 
-                                        class="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                    확인
+                            <div id="payment-cancelled" class="hidden text-center">
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+                                    <i class="fas fa-times-circle text-gray-600 text-4xl mb-4"></i>
+                                    <h4 class="text-xl font-semibold text-gray-900 mb-2">결제가 취소되었습니다</h4>
+                                    <p class="text-gray-700 text-sm">언제든지 다시 결제를 시도하실 수 있습니다.</p>
+                                </div>
+                                <button onclick="goBackToMenuBoard()" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
                                 </button>
                             </div>
                         </div>
@@ -893,6 +911,9 @@ function startPaymentStatusCheck() {
                     // 장바구니 비우기
                     clearCart();
                     
+                    // 10초 후 메뉴판으로 자동 이동
+                    startRedirectCountdown();
+                    
                 } else if (data.status === 'expired') {
                     // 인보이스 만료
                     clearInterval(paymentCheckInterval);
@@ -1020,3 +1041,42 @@ window.addEventListener('storage', function(e) {
         updateAllCartDisplays();
     }
 });
+
+// 메뉴판으로 돌아가기
+function goBackToMenuBoard() {
+    // 결제 관련 인터벌 정리
+    if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+        paymentCheckInterval = null;
+    }
+    
+    if (paymentCountdownInterval) {
+        clearInterval(paymentCountdownInterval);
+        paymentCountdownInterval = null;
+    }
+    
+    // 스토어 ID 가져오기
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    
+    // 메뉴판 첫 화면으로 이동
+    window.location.href = `/menu/${storeId}/list/`;
+}
+
+// 10초 후 메뉴판으로 자동 이동
+function startRedirectCountdown() {
+    const countdownElement = document.getElementById('redirect-countdown');
+    if (countdownElement) {
+        let countdown = 10;
+        countdownElement.textContent = countdown;
+        
+        const redirectInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(redirectInterval);
+                goBackToMenuBoard();
+            }
+        }, 1000);
+    }
+}

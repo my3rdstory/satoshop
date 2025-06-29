@@ -7,8 +7,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.exceptions import PermissionDenied
 from django.db import transaction, IntegrityError
 from django.db import models
+from django.utils import timezone
 from stores.models import Store
-from .models import Menu, MenuCategory, MenuOption, MenuImage
+from .models import Menu, MenuCategory, MenuOption, MenuImage, MenuOrder, MenuOrderItem
 from .forms import MenuForm, MenuCategoryForm
 import json
 import logging
@@ -857,14 +858,87 @@ def create_cart_invoice(request, store_id):
         if not cart_items:
             return JsonResponse({'success': False, 'error': '장바구니가 비어있습니다.'}, status=400)
         
-        # 총 금액 계산
+        # 디버깅을 위한 로그
+        logger.debug(f"장바구니 결제 요청 - 스토어: {store.store_name}, 아이템 수: {len(cart_items)}")
+        for i, item in enumerate(cart_items):
+            logger.debug(f"아이템 {i+1}: {item}")
+        
+        # 메뉴 데이터 검증 및 총 금액 계산
         total_amount = 0
         memo_items = []
+        validated_items = []
         
         for item in cart_items:
-            item_total = item.get('totalPrice', 0) * item.get('quantity', 1)
-            total_amount += item_total
-            memo_items.append(f"{item.get('name', '상품')} x{item.get('quantity', 1)}")
+            try:
+                # 메뉴 ID 검증 및 정리
+                menu_id_raw = item.get('id')
+                if not menu_id_raw:
+                    return JsonResponse({'success': False, 'error': '메뉴 ID가 없습니다.'}, status=400)
+                
+                # 메뉴 ID에서 언더스코어와 그 뒤의 문자들 제거 (옵션 식별자 제거)
+                if isinstance(menu_id_raw, str) and '_' in menu_id_raw:
+                    menu_id = menu_id_raw.split('_')[0]
+                else:
+                    menu_id = menu_id_raw
+                
+                try:
+                    menu_id = int(menu_id)
+                except (ValueError, TypeError):
+                    logger.error(f"메뉴 ID 파싱 실패: menu_id_raw={menu_id_raw}, menu_id={menu_id}")
+                    return JsonResponse({'success': False, 'error': f'올바르지 않은 메뉴 ID입니다: {menu_id_raw}'}, status=400)
+                
+                menu = Menu.objects.get(id=menu_id, store=store, is_active=True)
+                
+                # 수량 검증 및 파싱
+                quantity_raw = item.get('quantity', 1)
+                if isinstance(quantity_raw, str):
+                    try:
+                        quantity = int(quantity_raw)
+                    except ValueError:
+                        logger.error(f"수량 파싱 실패: quantity_raw={quantity_raw}, type={type(quantity_raw)}")
+                        return JsonResponse({'success': False, 'error': f'올바르지 않은 수량 형식입니다: {quantity_raw}'}, status=400)
+                elif isinstance(quantity_raw, (int, float)):
+                    quantity = int(quantity_raw)
+                else:
+                    logger.error(f"수량 타입 오류: quantity_raw={quantity_raw}, type={type(quantity_raw)}")
+                    return JsonResponse({'success': False, 'error': f'올바르지 않은 수량 타입입니다: {type(quantity_raw)}'}, status=400)
+                
+                if quantity <= 0:
+                    return JsonResponse({'success': False, 'error': '수량은 1개 이상이어야 합니다.'}, status=400)
+                
+                # 메뉴 가격 계산 (현재 가격 기준)
+                menu_price = menu.public_discounted_price if menu.is_discounted else menu.public_price
+                options_price = 0
+                
+                # 옵션 가격 계산 (현재는 단순히 전달받은 값 사용)
+                item_total_price = item.get('totalPrice', menu_price)
+                if isinstance(item_total_price, str):
+                    try:
+                        item_total_price = int(float(item_total_price))
+                    except ValueError:
+                        item_total_price = menu_price
+                
+                # 검증된 아이템 정보 저장
+                validated_items.append({
+                    'menu': menu,
+                    'menu_name': menu.name,
+                    'menu_price': menu_price,
+                    'quantity': quantity,
+                    'selected_options': item.get('options', {}),
+                    'options_price': options_price,
+                    'total_price': item_total_price * quantity
+                })
+                
+                total_amount += item_total_price * quantity
+                memo_items.append(f"{menu.name} x{quantity}")
+                
+                logger.debug(f"아이템 검증 완료: {menu.name}, 수량: {quantity}, 가격: {item_total_price}")
+                
+            except Menu.DoesNotExist:
+                return JsonResponse({'success': False, 'error': f'메뉴를 찾을 수 없습니다: {item.get("name", "알 수 없음")}'}, status=400)
+            except Exception as e:
+                logger.error(f"아이템 처리 중 오류: {str(e)}, 아이템: {item}")
+                return JsonResponse({'success': False, 'error': f'아이템 처리 중 오류가 발생했습니다: {str(e)}'}, status=400)
         
         if total_amount <= 0:
             return JsonResponse({'success': False, 'error': '결제 금액이 올바르지 않습니다.'}, status=400)
@@ -895,6 +969,33 @@ def create_cart_invoice(request, store_id):
                 'error': result['error']
             }, status=500)
         
+        # 메뉴 주문 생성 (결제 대기 상태)
+        with transaction.atomic():
+            menu_order = MenuOrder.objects.create(
+                store=store,
+                status='payment_pending',
+                total_amount=total_amount,
+                payment_hash=result['payment_hash'],
+                customer_info={
+                    'user_id': request.user.id if request.user.is_authenticated else None,
+                    'user_agent': request.META.get('HTTP_USER_AGENT', ''),
+                    'ip_address': request.META.get('REMOTE_ADDR', ''),
+                    'created_via': 'menu_board'
+                }
+            )
+            
+            # 메뉴 주문 아이템들 생성
+            for item_data in validated_items:
+                MenuOrderItem.objects.create(
+                    order=menu_order,
+                    menu=item_data['menu'],
+                    menu_name=item_data['menu_name'],
+                    menu_price=item_data['menu_price'],
+                    quantity=item_data['quantity'],
+                    selected_options=item_data['selected_options'],
+                    options_price=item_data['options_price']
+                )
+        
         # 응답 데이터 준비
         response_data = {
             'success': True,
@@ -902,6 +1003,7 @@ def create_cart_invoice(request, store_id):
             'invoice': result['invoice'],
             'amount': total_amount,
             'memo': memo,
+            'order_number': menu_order.order_number,
             'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None,
         }
         
@@ -930,6 +1032,12 @@ def check_cart_payment(request, store_id):
         if not payment_hash:
             return JsonResponse({'success': False, 'error': 'payment_hash가 필요합니다.'}, status=400)
         
+        # 메뉴 주문 조회
+        try:
+            menu_order = MenuOrder.objects.get(payment_hash=payment_hash, store=store)
+        except MenuOrder.DoesNotExist:
+            return JsonResponse({'success': False, 'error': '주문을 찾을 수 없습니다.'}, status=404)
+        
         # BlinkAPIService 초기화
         try:
             from ln_payment.blink_service import get_blink_service_for_store
@@ -947,10 +1055,24 @@ def check_cart_payment(request, store_id):
                 'error': result['error']
             }, status=500)
         
+        # 주문 상태 업데이트
+        with transaction.atomic():
+            if result['status'] == 'paid' and menu_order.status != 'paid':
+                menu_order.status = 'paid'
+                menu_order.paid_at = timezone.now()
+                menu_order.save()
+                
+                logger.info(f"메뉴 주문 결제 완료: {menu_order.order_number}, 금액: {menu_order.total_amount} sats")
+                
+            elif result['status'] == 'expired' and menu_order.status not in ['paid', 'expired']:
+                menu_order.status = 'expired'
+                menu_order.save()
+        
         response_data = {
             'success': True,
             'status': result['status'],  # 'pending', 'paid', 'expired'
             'payment_hash': payment_hash,
+            'order_number': menu_order.order_number,
         }
         
         return JsonResponse(response_data)
