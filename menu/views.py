@@ -771,6 +771,7 @@ def menu_cart(request, store_id):
         'store': store,
         'is_public_view': True,
         'is_cart_view': True,  # 장바구니 화면임을 표시
+        'view_type': 'full_page',  # 독립 페이지로 표시
     }
     return render(request, 'menu/menu_cart.html', context)
 

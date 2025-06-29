@@ -137,11 +137,11 @@
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 -->
-        {% include 'menu/cart_sidebar.html' %}
+        {% include 'menu/menu_cart.html' with view_type='sidebar' %}
     </div>
     
     <!-- 장바구니 전체 페이지 컴포넌트 -->
-    {% include 'menu/cart_page.html' %}
+    {% include 'menu/menu_cart.html' with view_type='overlay' %}
     
     <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
     <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
@@ -150,6 +150,6 @@
     <script src="{% static 'js/menu_filters.js' %}"></script>
     
     <!-- 통합 장바구니 JavaScript -->
-    <script src="{% static 'js/cart_unified.js' %}"></script>
+    <script src="{% static 'js/menu_cart.js' %}"></script>
 </body>
 </html> 

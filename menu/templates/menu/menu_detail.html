@@ -217,7 +217,7 @@
                                     <i class="fas fa-pause mr-1"></i>일시품절
                                 </button>
                                 {% else %}
-                                <button onclick="addToCart()"
+                                <button onclick="addMenuToCart()"
                                         class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-lg font-medium transition-colors">
                                     <i class="fas fa-plus mr-1"></i>장바구니 담기
                                 </button>
@@ -229,7 +229,7 @@
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 -->
-        {% include 'menu/cart_sidebar.html' %}
+        {% include 'menu/menu_cart.html' with view_type='sidebar' %}
     </div>
 
     <!-- JavaScript -->
@@ -288,7 +288,7 @@
                 const checkbox = optionElement.querySelector('.option-checkbox');
                 checkbox.classList.add('bg-blue-600');
                 optionElement.classList.add('bg-blue-50', 'border-blue-500');
-                alert('필수 옵션은 해제할 수 없습니다.');
+                                        // 필수 옵션은 해제할 수 없음 (알림 없음)
                 return;
             }
             
@@ -322,7 +322,7 @@
                     const selectedOption = group.querySelector('.option-choice.bg-blue-50');
                     if (!selectedOption) {
                         const optionLabel = group.querySelector('label').textContent.replace('*', '').trim();
-                        alert(`"${optionLabel}" 옵션을 선택해주세요.`);
+                        // 필수 옵션 미선택 (알림 없음)
                         return false;
                     }
                 }
@@ -331,7 +331,7 @@
         }
 
         // 장바구니 담기 함수
-        function addToCart() {
+        function addMenuToCart() {
             // 필수 옵션 검증
             if (!validateOptions()) {
                 return;
@@ -357,9 +357,14 @@
                 totalPrice += option.price;
             });
 
+            // 고유 ID 생성 (메뉴 ID + 옵션 조합)
+            const optionsString = Object.entries(selectedOptions).map(([key, value]) => `${key}:${value.value}`).sort().join('|');
+            const uniqueId = `{{ menu.id }}_${btoa(optionsString).replace(/[+\/=]/g, '')}`;
+            
             // 장바구니 아이템 생성
             const cartItem = {
-                id: {{ menu.id }},
+                id: uniqueId,
+                menuId: {{ menu.id }},
                 name: '{{ menu.name|escapejs }}',
                 basePrice: basePrice,
                 totalPrice: totalPrice,
@@ -370,9 +375,16 @@
             };
 
             // 통합 장바구니 시스템 사용
-            if (typeof window.addToCart === 'function') {
-                window.addToCart(cartItem);
-            }
+            // 장바구니 시스템이 로드될 때까지 기다리기
+            const tryAddToCart = () => {
+                if (typeof window.addToCart === 'function') {
+                    window.addToCart(cartItem);
+                } else {
+                    setTimeout(tryAddToCart, 100);
+                }
+            };
+            
+            tryAddToCart();
         }
 
 
@@ -384,12 +396,12 @@
     </script>
     
     <!-- 장바구니 전체 페이지 컴포넌트 -->
-    {% include 'menu/cart_page.html' %}
+    {% include 'menu/menu_cart.html' with view_type='overlay' %}
     
     <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
     <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
     
     <!-- 통합 장바구니 JavaScript -->
-    <script src="{% static 'js/cart_unified.js' %}"></script>
+    <script src="{% static 'js/menu_cart.js' %}"></script>
 </body>
 </html> 
