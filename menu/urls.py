@@ -31,4 +31,8 @@ urlpatterns = [
     # 메뉴 상태 관리 API
     path('<str:store_id>/<int:menu_id>/toggle-temporary-out-of-stock/', views.toggle_temporary_out_of_stock, name='toggle_temporary_out_of_stock'),
     path('<str:store_id>/<int:menu_id>/toggle-active/', views.toggle_menu_active, name='toggle_menu_active'),
+    
+    # 장바구니 결제 API
+    path('<str:store_id>/cart/create-invoice/', views.create_cart_invoice, name='create_cart_invoice'),
+    path('<str:store_id>/cart/check-payment/', views.check_cart_payment, name='check_cart_payment'),
 ] 

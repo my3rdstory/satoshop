@@ -838,3 +838,123 @@ def delete_menu(request, store_id, menu_id):
             messages.error(request, '메뉴 삭제 중 오류가 발생했습니다.')
     
     return redirect('menu:menu_list', store_id=store_id)
+
+@csrf_exempt
+@require_POST
+def create_cart_invoice(request, store_id):
+    """장바구니 결제용 인보이스 생성"""
+    try:
+        # 스토어 조회 (비회원도 접근 가능)
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+        
+        # 요청 본문 파싱
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'error': f'JSON 파싱 오류: {str(e)}'}, status=400)
+        
+        cart_items = data.get('cart_items', [])
+        if not cart_items:
+            return JsonResponse({'success': False, 'error': '장바구니가 비어있습니다.'}, status=400)
+        
+        # 총 금액 계산
+        total_amount = 0
+        memo_items = []
+        
+        for item in cart_items:
+            item_total = item.get('totalPrice', 0) * item.get('quantity', 1)
+            total_amount += item_total
+            memo_items.append(f"{item.get('name', '상품')} x{item.get('quantity', 1)}")
+        
+        if total_amount <= 0:
+            return JsonResponse({'success': False, 'error': '결제 금액이 올바르지 않습니다.'}, status=400)
+        
+        # 메모 생성
+        memo = ', '.join(memo_items[:3])
+        if len(memo_items) > 3:
+            memo += f" 외 {len(memo_items) - 3}개"
+        
+        # BlinkAPIService 초기화
+        try:
+            from ln_payment.blink_service import get_blink_service_for_store
+            blink_service = get_blink_service_for_store(store)
+        except Exception as e:
+            logger.error(f"BlinkAPIService 초기화 실패: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'결제 서비스 초기화 실패: {str(e)}'}, status=500)
+        
+        # 인보이스 생성
+        result = blink_service.create_invoice(
+            amount_sats=int(total_amount),
+            memo=memo,
+            expires_in_minutes=15  # 15분 유효
+        )
+        
+        if not result['success']:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            }, status=500)
+        
+        # 응답 데이터 준비
+        response_data = {
+            'success': True,
+            'payment_hash': result['payment_hash'],
+            'invoice': result['invoice'],
+            'amount': total_amount,
+            'memo': memo,
+            'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None,
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"장바구니 인보이스 생성 오류: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'인보이스 생성 중 오류가 발생했습니다: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def check_cart_payment(request, store_id):
+    """장바구니 결제 상태 확인"""
+    try:
+        # 스토어 조회 (비회원도 접근 가능)
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+        
+        # 요청 본문 파싱
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            return JsonResponse({'success': False, 'error': f'JSON 파싱 오류: {str(e)}'}, status=400)
+        
+        payment_hash = data.get('payment_hash')
+        if not payment_hash:
+            return JsonResponse({'success': False, 'error': 'payment_hash가 필요합니다.'}, status=400)
+        
+        # BlinkAPIService 초기화
+        try:
+            from ln_payment.blink_service import get_blink_service_for_store
+            blink_service = get_blink_service_for_store(store)
+        except Exception as e:
+            logger.error(f"BlinkAPIService 초기화 실패: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'결제 서비스 초기화 실패: {str(e)}'}, status=500)
+        
+        # 결제 상태 확인
+        result = blink_service.check_invoice_status(payment_hash)
+        
+        if not result['success']:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            }, status=500)
+        
+        response_data = {
+            'success': True,
+            'status': result['status'],  # 'pending', 'paid', 'expired'
+            'payment_hash': payment_hash,
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"장바구니 결제 상태 확인 오류: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'결제 상태 확인 중 오류가 발생했습니다: {str(e)}'}, status=500)

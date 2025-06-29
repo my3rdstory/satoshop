@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{{ store.store_name }} - 메뉴판</title>
     
     <!-- 파비콘 -->
@@ -16,6 +17,10 @@
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- QR Code 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     
     <!-- 메뉴판 전용 CSS -->
     <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
@@ -147,29 +152,7 @@
                 <!-- 메뉴 상세 내용이 동적으로 로드됩니다 -->
             </div>
             
-            <!-- 결제 뷰 -->
-            <div id="payment-view" class="content-view">
-                <div class="p-6">
-                    <div class="max-w-2xl mx-auto">
-                        <div class="bg-white rounded-xl shadow-lg p-6">
-                            <h2 class="text-2xl font-bold text-gray-900 mb-6">주문 결제</h2>
-                            
-                            <!-- 결제 내용이 여기에 들어갑니다 -->
-                            <div class="text-center py-16">
-                                <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <i class="fas fa-credit-card text-green-500 text-3xl"></i>
-                                </div>
-                                <h3 class="text-xl font-semibold text-gray-900 mb-2">결제 기능 준비 중</h3>
-                                <p class="text-gray-600 mb-6">곧 결제 기능이 추가될 예정입니다</p>
-                                <button onclick="showView('menu-grid')" 
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                                    <i class="fas fa-arrow-left mr-2"></i>메뉴로 돌아가기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- 결제 뷰 (동적으로 생성됨) -->
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 (고정) -->
