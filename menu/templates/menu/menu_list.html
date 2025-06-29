@@ -1,0 +1,128 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - {% if is_public_view %}메뉴 목록{% else %}메뉴 관리{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/menu-list.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-utensils text-white text-xl"></i>
+          </div>
+          <div>
+            {% if is_public_view %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">메뉴 목록</h1>
+            <p class="text-gray-600 dark:text-gray-300">{{ store.store_name }}의 메뉴를 둘러보세요</p>
+            {% else %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">메뉴 관리</h1>
+            <p class="text-gray-600 dark:text-gray-300">오프라인 매장에서 판매하는 메뉴를 관리하세요</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          {% if is_public_view %}
+          <a href="{% url 'stores:store_detail' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            스토어로 돌아가기
+          </a>
+          {% if cart_items_count > 0 %}
+          <a href="{% url 'stores:cart_view' %}" 
+             class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            장바구니 ({{ cart_items_count }})
+          </a>
+          {% endif %}
+          {% else %}
+          <a href="{% url 'menu:category_manage' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-tags mr-2"></i>
+            카테고리 관리
+          </a>
+          <a href="{% url 'menu:add_menu' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            메뉴 추가
+          </a>
+          <a href="{% url 'stores:my_stores' %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            스토어 관리로 돌아가기
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      
+      <!-- 카테고리 필터 (관리자 화면에만 표시) -->
+      {% if not is_public_view %}
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <h3 class="text-sm font-medium text-gray-900 dark:text-white whitespace-nowrap">카테고리 필터:</h3>
+            <div id="categoryFilters" class="flex flex-wrap gap-2">
+              <!-- 카테고리 필터 버튼들이 여기에 동적으로 추가됩니다 -->
+            </div>
+          </div>
+          <button id="clearCategoryFilter" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors whitespace-nowrap self-start sm:self-auto">
+            <i class="fas fa-times mr-1"></i>전체 보기
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+
+
+    <!-- 메뉴 목록 -->
+    {% include 'menu/menu_grid.html' %}
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/menu-list.js' %}{% if debug %}?t={{ 'now'|date:'U' }}{% endif %}"></script>
+{% if not is_public_view %}
+<script>
+// 일시품절 토글 함수
+function toggleTemporaryOutOfStock(menuId, menuName) {
+    const action = document.querySelector(`button[onclick*="${menuId}"] span`).textContent.includes('해제') ? '해제' : '설정';
+    
+    if (confirm(`"${menuName}" 메뉴를 일시품절 ${action}하시겠습니까?`)) {
+        const url = `/menu/{{ store.store_id }}/${menuId}/toggle-temporary-out-of-stock/`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload(); // 페이지 새로고침으로 상태 반영
+            } else {
+                alert('오류가 발생했습니다: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('네트워크 오류가 발생했습니다.');
+        });
+    }
+}
+</script>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,596 @@
+{% load static %}
+{% load menu_extras %}
+{% if not is_ajax %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ menu.name }} - {{ store.store_name }}</title>
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 메뉴판 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
+</head>
+<body class="bg-gray-100">
+    <div class="menu-board-container flex">
+{% endif %}
+        {% if not is_ajax %}
+        <!-- 왼쪽: 카테고리 사이드바 -->
+        <div class="category-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600">메뉴 카테고리</p>
+            </div>
+            
+            <div class="p-2">
+                <!-- 메뉴판으로 돌아가기 -->
+                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-arrow-left mr-3 text-blue-500"></i>
+                        <span class="font-medium">메뉴판으로 돌아가기</span>
+                    </div>
+                </div>
+                
+                <!-- 전체 보기 -->
+                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-gray-500"></i>
+                        <span class="font-medium">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="category-item p-3 rounded-lg mb-1 {% if category in menu.categories.all %}active{% endif %}" 
+                     onclick="location.href='{% url 'menu:menu_board' store.store_id %}#category-{{ category.id }}'">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 {% if category in menu.categories.all %}text-white{% else %}text-gray-500{% endif %}"></i>
+                        <span class="font-medium">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- 가운데: 메뉴 상세 정보 -->
+        <div class="menu-content custom-scrollbar">
+        {% endif %}
+            {% block menu_detail_content %}
+                <!-- 메뉴 상세 정보 -->
+                <div class="bg-white overflow-hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                        <!-- 왼쪽: 메뉴 이미지 -->
+                        <div class="space-y-4">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                                {% if menu.images.exists %}
+                                <img src="{{ menu.images.first.file_url }}" 
+                                     alt="{{ menu.name }}" 
+                                     class="w-full h-full object-cover">
+                                {% else %}
+                                <div class="w-full h-full flex flex-col items-center justify-center">
+                                    <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
+                                    <span class="text-gray-500 text-lg">이미지 없음</span>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 메뉴 설명 오버레이 -->
+                                {% if menu.description %}
+                                <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-black bg-opacity-60 backdrop-blur-sm">
+                                    <div class="h-full p-4 flex flex-col">
+                                        <h4 class="text-white text-sm font-semibold mb-2 flex-shrink-0">메뉴 설명</h4>
+                                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                                            <p class="text-white text-sm leading-relaxed whitespace-pre-line">{{ menu.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 추가 이미지들 (있는 경우) -->
+                            {% if menu.images.count > 1 %}
+                            <div class="grid grid-cols-4 gap-2">
+                                {% for image in menu.images.all %}
+                                {% if not forloop.first %}
+                                <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
+                                     onclick="changeMainImage('{{ image.file_url }}')">
+                                    <img src="{{ image.file_url }}" 
+                                         alt="{{ menu.name }}" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 오른쪽: 메뉴 정보 -->
+                        <div class="space-y-4">
+                            <!-- 메뉴명과 가격 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <h1 class="text-2xl font-bold text-gray-900">{{ menu.name }}</h1>
+                                    <div class="text-right">
+                                        {% if menu.is_discounted %}
+                                        <div class="space-y-1">
+                                            <div class="text-xl font-bold text-red-500" id="current-price">
+                                                {{ menu.public_discounted_price|floatformat:0 }} sats
+                                            </div>
+                                            <div class="text-sm text-gray-500 line-through">
+                                                {{ menu.public_price|floatformat:0 }} sats
+                                            </div>
+                                            <div class="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">
+                                                {{ menu.public_discount_rate }}% 할인
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="text-xl font-bold text-gray-900" id="current-price">
+                                            {{ menu.public_price|floatformat:0 }} sats
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 옵션 선택 -->
+                            {% if menu.options.exists %}
+                            <div class="border-b border-gray-200 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">옵션 선택</h3>
+                                <div class="space-y-3" id="options-container">
+                                    {% for option in menu.options.all %}
+                                    <div class="option-group" data-option-id="{{ option.id }}" data-option-name="{{ option.name }}">
+                                        <label class="block text-lg font-medium text-gray-700 mb-2">
+                                            {{ option.name }}
+                                            {% if option.is_required %}
+                                            <span class="text-red-500">*</span>
+                                            {% endif %}
+                                        </label>
+                                        <div class="grid grid-cols-1 gap-1">
+                                            {% for value in option.values_list %}
+                                            {% with parsed_value=value|split_option_value %}
+                                            <div class="flex items-center justify-between p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors option-choice"
+                                                 data-option-id="{{ option.id }}" 
+                                                 data-option-name="{{ option.name }}"
+                                                 data-option-value="{{ parsed_value.name }}" 
+                                                 data-option-price="{{ parsed_value.price }}"
+                                                 data-is-required="{{ option.is_required|yesno:'true,false' }}"
+                                                 onclick="toggleOption(this)">
+                                                <div class="flex items-center">
+                                                    <div class="w-5 h-5 mr-3 border-2 border-blue-600 rounded flex items-center justify-center option-checkbox">
+                                                        <i class="fas fa-check text-blue-600 text-sm hidden option-check-icon"></i>
+                                                    </div>
+                                                    <span class="text-xl text-gray-900">{{ parsed_value.name }}</span>
+                                                </div>
+                                                {% if parsed_value.price != "0" %}
+                                                <span class="text-sm text-gray-600">+{{ parsed_value.price }} sats</span>
+                                                {% endif %}
+                                            </div>
+                                            {% endwith %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 수량 선택 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 mb-3">수량</h3>
+                                <div class="flex items-center space-x-3">
+                                    <button type="button" onclick="changeQuantity(-1)" 
+                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-minus text-gray-600 text-sm"></i>
+                                    </button>
+                                    <span id="quantity-display" class="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">1</span>
+                                    <button type="button" onclick="changeQuantity(1)" 
+                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-plus text-gray-600 text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 총 가격 표시 -->
+                            <div class="border-b border-gray-200 pb-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-base font-semibold text-gray-900">총 가격</span>
+                                    <span id="total-price" class="text-2xl font-bold text-blue-600">
+                                        {{ menu.public_discounted_price|default:menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- 액션 버튼들 -->
+                            <div class="flex space-x-3">
+                                {% if is_ajax %}
+                                <button onclick="backToMenuGrid()" 
+                                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-1"></i>뒤로가기
+                                </button>
+                                {% else %}
+                                <button onclick="history.back()" 
+                                        class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-1"></i>뒤로가기
+                                </button>
+                                {% endif %}
+                                
+                                {% if menu.is_temporarily_out_of_stock %}
+                                <button class="flex-1 bg-purple-400 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed" disabled>
+                                    <i class="fas fa-pause mr-1"></i>일시품절
+                                </button>
+                                {% else %}
+                                <button onclick="addMenuToCart()"
+                                        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-lg font-medium transition-colors">
+                                    <i class="fas fa-plus mr-1"></i>장바구니 담기
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endblock menu_detail_content %}
+        {% if not is_ajax %}
+        </div>
+        
+        <!-- 오른쪽: 장바구니 사이드바 -->
+        {% include 'menu/menu_cart.html' with view_type='sidebar' %}
+    </div>
+        {% endif %}
+
+    {% if not is_ajax %}
+    <!-- JavaScript -->
+    <script>
+        // 전역 변수
+        let currentQuantity = 1;
+        const basePrice = {{ menu.public_discounted_price|default:menu.public_price }};
+        
+        // 메인 이미지 변경 함수
+        function changeMainImage(imageUrl) {
+            const mainImage = document.querySelector('.aspect-square img');
+            if (mainImage) {
+                mainImage.src = imageUrl;
+            }
+        }
+
+        // 수량 변경 함수
+        function changeQuantity(delta) {
+            const newQuantity = currentQuantity + delta;
+            if (newQuantity >= 1 && newQuantity <= 99) {
+                currentQuantity = newQuantity;
+                document.getElementById('quantity-display').textContent = currentQuantity;
+                updatePrice();
+            }
+        }
+
+        // 옵션 토글 함수
+        function toggleOption(optionElement) {
+            const optionId = optionElement.dataset.optionId;
+            const isRequired = optionElement.dataset.isRequired === 'true';
+            const checkIcon = optionElement.querySelector('.option-check-icon');
+            const isCurrentlySelected = !checkIcon.classList.contains('hidden');
+            
+            // 같은 옵션 그룹의 다른 선택지들 해제
+            const optionGroup = optionElement.closest('.option-group');
+            const allChoicesInGroup = optionGroup.querySelectorAll('.option-choice');
+            allChoicesInGroup.forEach(choice => {
+                const icon = choice.querySelector('.option-check-icon');
+                const checkbox = choice.querySelector('.option-checkbox');
+                icon.classList.add('hidden');
+                checkbox.classList.remove('bg-blue-600');
+                choice.classList.remove('bg-blue-50', 'border-blue-500');
+            });
+            
+            // 현재 선택지가 선택되지 않은 상태였다면 선택
+            if (!isCurrentlySelected) {
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+            }
+            // 필수 옵션이고 현재 선택된 상태라면 해제 불가
+            else if (isRequired) {
+                // 다시 선택 상태로 되돌리기
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                                        // 필수 옵션은 해제할 수 없음 (알림 없음)
+                return;
+            }
+            
+            updatePrice();
+        }
+
+        // 가격 업데이트 함수
+        function updatePrice() {
+            let totalPrice = basePrice;
+            
+            // 선택된 옵션들의 추가 가격 계산
+            const selectedOptions = document.querySelectorAll('.option-choice.bg-blue-50');
+            selectedOptions.forEach(option => {
+                const optionPrice = parseFloat(option.dataset.optionPrice) || 0;
+                totalPrice += optionPrice;
+            });
+            
+            // 수량 적용
+            totalPrice *= currentQuantity;
+            
+            // 가격 표시 업데이트
+            document.getElementById('total-price').textContent = Math.round(totalPrice).toLocaleString() + ' sats';
+        }
+
+        // 선택된 옵션 검증 함수
+        function validateOptions() {
+            const optionGroups = document.querySelectorAll('.option-group');
+            for (let group of optionGroups) {
+                const hasRequiredOption = group.querySelector('[data-is-required="true"]');
+                if (hasRequiredOption) {
+                    const selectedOption = group.querySelector('.option-choice.bg-blue-50');
+                    if (!selectedOption) {
+                        const optionLabel = group.querySelector('label').textContent.replace('*', '').trim();
+                        // 필수 옵션 미선택 (알림 없음)
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // 장바구니 담기 함수
+        function addMenuToCart() {
+            // 필수 옵션 검증
+            if (!validateOptions()) {
+                return;
+            }
+
+            // 선택된 옵션 수집
+            const selectedOptions = {};
+            const selectedChoices = document.querySelectorAll('.option-choice.bg-blue-50');
+            selectedChoices.forEach(choice => {
+                const optionName = choice.dataset.optionName;
+                const optionValue = choice.dataset.optionValue;
+                const optionPrice = parseFloat(choice.dataset.optionPrice) || 0;
+                
+                selectedOptions[optionName] = {
+                    value: optionValue,
+                    price: optionPrice
+                };
+            });
+
+            // 총 가격 계산
+            let totalPrice = basePrice;
+            Object.values(selectedOptions).forEach(option => {
+                totalPrice += option.price;
+            });
+
+            // 고유 ID 생성 (메뉴 ID + 옵션 조합)
+            const optionsString = Object.entries(selectedOptions).map(([key, value]) => `${key}:${value.value}`).sort().join('|');
+            const uniqueId = `{{ menu.id }}_${btoa(unescape(encodeURIComponent(optionsString))).replace(/[+\/=]/g, '')}`;
+            
+            // 장바구니 아이템 생성
+            const cartItem = {
+                id: uniqueId,
+                menuId: {{ menu.id }},
+                name: '{{ menu.name|escapejs }}',
+                basePrice: basePrice,
+                totalPrice: totalPrice,
+                quantity: currentQuantity,
+                options: selectedOptions,
+                storeId: '{{ store.store_id }}',
+                storeName: '{{ store.store_name|escapejs }}'
+            };
+
+            // 통합 장바구니 시스템 사용
+            // 장바구니 시스템이 로드될 때까지 기다리기
+            const tryAddToCart = () => {
+                if (typeof window.addToCart === 'function') {
+                    window.addToCart(cartItem);
+                } else {
+                    setTimeout(tryAddToCart, 100);
+                }
+            };
+            
+            tryAddToCart();
+        }
+
+
+
+        // 페이지 로드 시 초기 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            updatePrice();
+        });
+    </script>
+    
+    <!-- 장바구니 전체 페이지 컴포넌트 -->
+    {% include 'menu/menu_cart.html' with view_type='overlay' %}
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/menu_cart.js' %}"></script>
+</body>
+</html>
+    {% endif %}
+    
+    <!-- AJAX용 JavaScript (항상 포함) -->
+    <script>
+        // 전역 변수 (기존 값이 있으면 유지, 없으면 초기화)
+        if (typeof window.currentQuantity === 'undefined') {
+            window.currentQuantity = 1;
+        } else {
+            window.currentQuantity = 1; // 새 메뉴 로드 시 초기화
+        }
+        
+        if (typeof window.basePrice === 'undefined') {
+            window.basePrice = {{ menu.public_discounted_price|default:menu.public_price }};
+        } else {
+            window.basePrice = {{ menu.public_discounted_price|default:menu.public_price }}; // 새 메뉴 로드 시 업데이트
+        }
+        
+        // 메인 이미지 변경 함수
+        function changeMainImage(imageUrl) {
+            const mainImage = document.querySelector('.aspect-square img');
+            if (mainImage) {
+                mainImage.src = imageUrl;
+            }
+        }
+
+        // 수량 변경 함수
+        window.changeQuantity = function(delta) {
+            const newQuantity = window.currentQuantity + delta;
+            if (newQuantity >= 1 && newQuantity <= 99) {
+                window.currentQuantity = newQuantity;
+                document.getElementById('quantity-display').textContent = window.currentQuantity;
+                updatePrice();
+            }
+        }
+
+        // 옵션 토글 함수
+        window.toggleOption = function(optionElement) {
+            const optionId = optionElement.dataset.optionId;
+            const isRequired = optionElement.dataset.isRequired === 'true';
+            const checkIcon = optionElement.querySelector('.option-check-icon');
+            const isCurrentlySelected = !checkIcon.classList.contains('hidden');
+            
+            // 같은 옵션 그룹의 다른 선택지들 해제
+            const optionGroup = optionElement.closest('.option-group');
+            const allChoicesInGroup = optionGroup.querySelectorAll('.option-choice');
+            allChoicesInGroup.forEach(choice => {
+                const icon = choice.querySelector('.option-check-icon');
+                const checkbox = choice.querySelector('.option-checkbox');
+                icon.classList.add('hidden');
+                checkbox.classList.remove('bg-blue-600');
+                choice.classList.remove('bg-blue-50', 'border-blue-500');
+            });
+            
+            // 현재 선택지가 선택되지 않은 상태였다면 선택
+            if (!isCurrentlySelected) {
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+            }
+            // 필수 옵션이고 현재 선택된 상태라면 해제 불가
+            else if (isRequired) {
+                // 다시 선택 상태로 되돌리기
+                checkIcon.classList.remove('hidden');
+                const checkbox = optionElement.querySelector('.option-checkbox');
+                checkbox.classList.add('bg-blue-600');
+                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                return;
+            }
+            
+            updatePrice();
+        }
+
+        // 가격 업데이트 함수
+        function updatePrice() {
+            let totalPrice = window.basePrice;
+            
+            // 선택된 옵션들의 추가 가격 계산
+            const selectedOptions = document.querySelectorAll('.option-choice.bg-blue-50');
+            selectedOptions.forEach(option => {
+                const optionPrice = parseFloat(option.dataset.optionPrice) || 0;
+                totalPrice += optionPrice;
+            });
+            
+            // 수량 적용
+            totalPrice *= window.currentQuantity;
+            
+            // 가격 표시 업데이트
+            document.getElementById('total-price').textContent = Math.round(totalPrice).toLocaleString() + ' sats';
+        }
+
+        // 선택된 옵션 검증 함수
+        function validateOptions() {
+            const optionGroups = document.querySelectorAll('.option-group');
+            let isValid = true;
+            
+            for (let group of optionGroups) {
+                const hasRequiredOption = group.querySelector('[data-is-required="true"]');
+                if (hasRequiredOption) {
+                    const selectedOption = group.querySelector('.option-choice.bg-blue-50');
+                    if (!selectedOption) {
+                        // 필수 옵션 그룹에 시각적 피드백 추가
+                        const label = group.querySelector('label');
+                        if (label) {
+                            label.style.color = '#ef4444'; // 빨간색으로 변경
+                            setTimeout(() => {
+                                label.style.color = ''; // 3초 후 원래 색상으로 복원
+                            }, 3000);
+                        }
+                        isValid = false;
+                    }
+                }
+            }
+            return isValid;
+        }
+
+        // 장바구니 담기 함수
+        window.addMenuToCart = function() {
+            // 필수 옵션 검증
+            if (!validateOptions()) {
+                return;
+            }
+
+            // 선택된 옵션 수집
+            const selectedOptions = {};
+            const selectedChoices = document.querySelectorAll('.option-choice.bg-blue-50');
+            selectedChoices.forEach(choice => {
+                const optionName = choice.dataset.optionName;
+                const optionValue = choice.dataset.optionValue;
+                const optionPrice = parseFloat(choice.dataset.optionPrice) || 0;
+                
+                selectedOptions[optionName] = {
+                    value: optionValue,
+                    price: optionPrice
+                };
+            });
+
+            // 총 가격 계산
+            let totalPrice = window.basePrice;
+            Object.values(selectedOptions).forEach(option => {
+                totalPrice += option.price;
+            });
+
+            // 고유 ID 생성 (메뉴 ID + 옵션 조합)
+            const optionsString = Object.entries(selectedOptions).map(([key, value]) => `${key}:${value.value}`).sort().join('|');
+            const uniqueId = `{{ menu.id }}_${btoa(unescape(encodeURIComponent(optionsString))).replace(/[+\/=]/g, '')}`;
+            
+            // 장바구니 아이템 생성
+            const cartItem = {
+                id: uniqueId,
+                menuId: {{ menu.id }},
+                name: '{{ menu.name|escapejs }}',
+                basePrice: window.basePrice,
+                totalPrice: totalPrice,
+                quantity: window.currentQuantity,
+                options: selectedOptions,
+                storeId: '{{ store.store_id }}',
+                storeName: '{{ store.store_name|escapejs }}'
+            };
+
+            // 통합 장바구니 시스템 사용
+            if (typeof window.addToCart === 'function') {
+                window.addToCart(cartItem);
+                // SPA에서는 메뉴 그리드로 돌아가기
+                {% if is_ajax %}
+                backToMenuGrid();
+                {% endif %}
+            }
+        }
+
+        // 페이지 로드 시 초기 설정
+        updatePrice();
+    </script> 

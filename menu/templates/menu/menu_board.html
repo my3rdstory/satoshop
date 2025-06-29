@@ -1,0 +1,368 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ store.store_name }} - 메뉴판</title>
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- QR Code 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    
+    <!-- 메뉴판 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
+</head>
+<body class="bg-gray-100">
+    <div class="menu-board-container flex h-screen">
+        <!-- 왼쪽: 카테고리 사이드바 (고정) -->
+        <div class="category-sidebar custom-scrollbar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-lg font-bold text-gray-800 mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600">메뉴 카테고리</p>
+            </div>
+            
+            <div class="p-2">
+                <!-- 전체 보기 -->
+                <div class="category-item p-3 rounded-lg mb-1 active" data-category="all" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-blue-500"></i>
+                        <span class="font-medium">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="category-item p-3 rounded-lg mb-1" data-category="{{ category.id }}" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 text-gray-500"></i>
+                        <span class="font-medium">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- 구분선 -->
+                <div class="border-t border-gray-200 my-3"></div>
+
+            </div>
+        </div>
+        
+        <!-- 가운데: 동적 콘텐츠 영역 -->
+        <div class="menu-content custom-scrollbar flex-1">
+            <!-- 메뉴 그리드 뷰 -->
+            <div id="menu-grid-view" class="content-view active">
+                <div class="p-6">
+                    <!-- 안내 메시지 -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                            <span class="text-sm text-blue-700">메뉴를 선택하여 장바구니에 담으세요.</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 메뉴 그리드 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="menu-grid">
+                        {% for menu in menus %}
+                        <div class="menu-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200" 
+                             data-menu-id="{{ menu.id }}" 
+                             data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
+                            
+                            <!-- 메뉴 이미지 -->
+                            <div class="relative aspect-square cursor-pointer" onclick="showMenuDetail('{{ menu.id }}')">
+                                {% if menu.images.exists %}
+                                <img src="{{ menu.images.first.file_url }}" 
+                                     alt="{{ menu.name }}" 
+                                     class="w-full h-full object-cover hover:scale-105 transition-transform duration-200">
+                                {% else %}
+                                <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
+                                    <i class="fas fa-utensils text-gray-400 text-4xl mb-2"></i>
+                                    <span class="text-gray-500 text-sm">이미지 없음</span>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 할인 태그 -->
+                                {% if menu.is_discounted %}
+                                <div class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                    {{ menu.public_discount_rate }}% 할인
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 품절 태그 -->
+                                {% if menu.is_temporarily_out_of_stock %}
+                                <div class="absolute top-3 right-3 bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                    일시품절
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 메뉴 정보 -->
+                            <div class="p-4">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors" 
+                                    onclick="showMenuDetail('{{ menu.id }}')">{{ menu.name }}</h3>
+                                
+                                <!-- 가격 정보 -->
+                                <div class="mb-4">
+                                    {% if menu.is_discounted %}
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xl font-bold text-red-500">
+                                            {{ menu.public_discounted_price|floatformat:0 }} sats
+                                        </span>
+                                        <span class="text-sm text-gray-500 line-through">
+                                            {{ menu.public_price|floatformat:0 }} sats
+                                        </span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-xl font-bold text-gray-900">
+                                        {{ menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- 메뉴가 없는 경우 -->
+                    {% if not menus %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-utensils text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">등록된 메뉴가 없습니다</h3>
+                        <p class="text-gray-600">아직 판매 중인 메뉴가 없어요</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 메뉴 상세 뷰 -->
+            <div id="menu-detail-view" class="content-view">
+                <!-- 메뉴 상세 내용이 동적으로 로드됩니다 -->
+            </div>
+            
+            <!-- 결제 뷰 (동적으로 생성됨) -->
+        </div>
+        
+        <!-- 오른쪽: 장바구니 사이드바 (고정) -->
+        {% include 'menu/menu_cart.html' with view_type='sidebar' %}
+    </div>
+    
+    <!-- 장바구니 전체 페이지 컴포넌트 -->
+    {% include 'menu/menu_cart.html' with view_type='overlay' %}
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 메뉴 필터링 JavaScript -->
+    <script src="{% static 'js/menu_filters.js' %}"></script>
+    
+    <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/menu_cart.js' %}"></script>
+    
+    <!-- SPA 네비게이션 JavaScript -->
+    <script>
+        // 전역 변수
+        let currentView = 'menu-grid';
+        let currentCategory = 'all';
+        const storeId = '{{ store.store_id }}';
+        
+        // 뷰 전환 함수
+        function showView(viewName, categoryId = null) {
+            // 모든 뷰 숨기기
+            document.querySelectorAll('.content-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            // 선택된 뷰 보이기
+            const targetView = document.getElementById(viewName + '-view');
+            if (targetView) {
+                targetView.classList.add('active');
+                currentView = viewName;
+            }
+            
+            // 카테고리 상태 업데이트
+            if (categoryId !== null) {
+                currentCategory = categoryId;
+                updateCategoryFilter(categoryId);
+            }
+            
+            // 카테고리 아이템 활성화 상태 업데이트
+            updateCategoryActiveState(viewName, categoryId);
+        }
+        
+        // 카테고리 필터 업데이트
+        function updateCategoryFilter(categoryId) {
+            if (currentView === 'menu-grid') {
+                const menuCards = document.querySelectorAll('.menu-card');
+                menuCards.forEach(card => {
+                    if (categoryId === 'all') {
+                        card.style.display = 'block';
+                    } else {
+                        const categories = JSON.parse(card.dataset.categories || '[]');
+                        card.style.display = categories.includes(parseInt(categoryId)) ? 'block' : 'none';
+                    }
+                });
+            }
+        }
+        
+        // 카테고리 아이템 활성화 상태 업데이트
+        function updateCategoryActiveState(viewName, categoryId) {
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            if (viewName === 'menu-grid') {
+                const targetCategory = document.querySelector(`[data-category="${categoryId}"][data-view="menu-grid"]`);
+                if (targetCategory) {
+                    targetCategory.classList.add('active');
+                }
+            } else {
+                const targetView = document.querySelector(`[data-view="${viewName}"]`);
+                if (targetView) {
+                    targetView.classList.add('active');
+                }
+            }
+        }
+        
+        // 메뉴 상세 보기
+        function showMenuDetail(menuId) {
+            // AJAX로 메뉴 상세 정보 로드
+            fetch(`/menu/${storeId}/detail/${menuId}/ajax/`)
+                .then(response => response.text())
+                .then(html => {
+                    const menuDetailView = document.getElementById('menu-detail-view');
+                    menuDetailView.innerHTML = html;
+                    
+                    // 로드된 HTML 내의 스크립트 실행
+                    const scripts = menuDetailView.querySelectorAll('script');
+                    scripts.forEach(oldScript => {
+                        try {
+                            // 새로운 script 엘리먼트 생성하여 실행
+                            const newScript = document.createElement('script');
+                            newScript.textContent = oldScript.textContent;
+                            document.head.appendChild(newScript);
+                            
+                            // 실행 후 제거
+                            setTimeout(() => {
+                                if (document.head.contains(newScript)) {
+                                    document.head.removeChild(newScript);
+                                }
+                            }, 100);
+                        } catch (error) {
+                            console.error('스크립트 실행 오류:', error);
+                        }
+                    });
+                    
+                    showView('menu-detail');
+                })
+                .catch(error => {
+                    console.error('메뉴 상세 로드 오류:', error);
+                });
+        }
+        
+        // 메뉴 그리드로 돌아가기
+        function backToMenuGrid() {
+            showView('menu-grid', currentCategory);
+        }
+        
+        // 전역 함수들 미리 정의 (AJAX 로드 전까지 임시)
+        window.addMenuToCart = function() {
+            console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+        };
+        
+        window.changeQuantity = function(delta) {
+            console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+        };
+        
+        window.toggleOption = function(element) {
+            console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+        };
+        
+        window.changeMainImage = function(url) {
+            console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+        };
+
+        
+        // 카테고리 클릭 이벤트
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const viewType = this.dataset.view;
+                    const categoryId = this.dataset.category;
+                    
+                    if (viewType === 'menu-grid') {
+                        showView('menu-grid', categoryId);
+                    } else {
+                        showView(viewType);
+                    }
+                });
+            });
+            
+            // 초기 상태 설정
+            showView('menu-grid', 'all');
+        });
+    </script>
+    
+    <!-- CSS 스타일 추가 -->
+    <style>
+        .content-view {
+            display: none;
+        }
+        
+        .content-view.active {
+            display: block;
+        }
+        
+        .category-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .category-item:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .category-item.active {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+        }
+        
+        .category-item.active .fas {
+            color: #3b82f6 !important;
+        }
+        
+        .category-item.active span {
+            color: #1f2937 !important;
+        }
+        
+        .menu-board-container {
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .category-sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            overflow-y: auto;
+        }
+        
+        .menu-content {
+            overflow-y: auto;
+        }
+    </style>
+</body>
+</html> 

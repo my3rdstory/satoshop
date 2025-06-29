@@ -89,7 +89,7 @@ class ExchangeRate(models.Model):
         # 1 BTC = 100,000,000 사토시
         btc_amount = krw_amount / float(self.btc_krw_rate)
         sats_amount = btc_amount * 100_000_000
-        return int(sats_amount)
+        return round(sats_amount)
     
     def get_krw_from_sats(self, sats_amount):
         """사토시를 원화 금액으로 변환"""
@@ -99,7 +99,7 @@ class ExchangeRate(models.Model):
         # 1 BTC = 100,000,000 사토시
         btc_amount = sats_amount / 100_000_000
         krw_amount = btc_amount * float(self.btc_krw_rate)
-        return int(krw_amount)
+        return round(krw_amount)
 
 # 환율 데이터 저장 시 텔레그램 즉시 알림
 @receiver(post_save, sender=ExchangeRate)

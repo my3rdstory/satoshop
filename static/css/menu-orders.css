@@ -1,0 +1,177 @@
+/* 메뉴 판매 현황 페이지 스타일 */
+
+.menu-card-inactive {
+    opacity: 0.7;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.dark .stats-card {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+}
+
+/* 메뉴 카드 호버 효과 */
+.menu-card {
+    transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark .menu-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* 통계 카드 애니메이션 */
+.stats-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stats-card:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.stats-card:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.stats-card:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 메뉴 이미지 스타일 */
+.menu-image {
+    transition: transform 0.3s ease;
+}
+
+.menu-card:hover .menu-image {
+    transform: scale(1.05);
+}
+
+/* 비활성화 메뉴 스타일 */
+.menu-card-inactive .menu-image {
+    filter: grayscale(50%);
+}
+
+/* 반응형 그리드 조정 */
+@media (max-width: 768px) {
+    .stats-card {
+        margin-bottom: 1rem;
+    }
+    
+    .menu-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* 빈 상태 스타일 */
+.empty-state {
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 로딩 상태 스타일 */
+.loading-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+
+.dark .loading-skeleton {
+    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* 메뉴 상태 배지 스타일 */
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+.status-inactive {
+    background-color: #6b7280;
+    color: white;
+}
+
+.status-out-of-stock {
+    background-color: #8b5cf6;
+    color: white;
+}
+
+/* 통계 숫자 강조 */
+.stat-number {
+    font-weight: 700;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.dark .stat-label {
+    color: #9ca3af;
+}
+
+/* 헤더 아이콘 스타일 */
+.header-icon {
+    background: linear-gradient(135deg, #f7931a 0%, #ff6b35 100%);
+    color: white;
+    padding: 0.75rem;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(247, 147, 26, 0.3);
+}
+
+/* 카드 헤더 그라데이션 */
+.card-header-gradient {
+    background: linear-gradient(135deg, #f7931a 0%, #ff6b35 100%);
+}
+
+/* 테이블 반응형 스타일 */
+@media (max-width: 640px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .table-responsive th,
+    .table-responsive td {
+        padding: 0.5rem 0.25rem;
+    }
+} 

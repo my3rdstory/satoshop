@@ -1,0 +1,243 @@
+/* 메뉴 추가 폼 스타일 */
+.menu-form-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.menu-form-container {
+    max-width: 4rem;
+    margin: 0 auto;
+}
+
+/* 폼 섹션 스타일 */
+.menu-form-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.dark .menu-form-section {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+/* 섹션 헤더 */
+.menu-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.menu-section-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-right: 1rem;
+}
+
+/* 입력 필드 스타일 */
+.menu-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: white;
+    color: #111827;
+    transition: all 0.2s ease;
+}
+
+.menu-input:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #f59e0b;
+    border-color: transparent;
+}
+
+.dark .menu-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+}
+
+.dark .menu-input::placeholder {
+    color: #9ca3af;
+}
+
+/* 텍스트에리어 */
+.menu-textarea {
+    min-height: 10rem;
+    resize: vertical;
+}
+
+/* 가격 입력 관련 */
+.menu-price-container {
+    position: relative;
+}
+
+.menu-price-unit {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    pointer-events: none;
+}
+
+/* 옵션 관련 */
+.menu-options-container {
+    space-y: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.menu-option-item {
+    padding: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: #f9fafb;
+}
+
+.dark .menu-option-item {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+/* 이미지 업로드 */
+.menu-image-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+    cursor: pointer;
+}
+
+.menu-image-drop-area:hover {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.dark .menu-image-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark .menu-image-drop-area:hover {
+    border-color: #10b981;
+    background: #064e3b;
+}
+
+.menu-image-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.menu-image-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.menu-image-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.menu-image-remove {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+}
+
+/* 버튼 스타일 */
+.menu-btn-primary {
+    background: #f59e0b;
+    color: white;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.menu-btn-primary:hover {
+    background: #d97706;
+}
+
+.menu-btn-secondary {
+    background: white;
+    color: #374151;
+    padding: 0.75rem 2rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.menu-btn-secondary:hover {
+    background: #f9fafb;
+}
+
+.dark .menu-btn-secondary {
+    background: #1f2937;
+    color: #d1d5db;
+    border-color: #374151;
+}
+
+.dark .menu-btn-secondary:hover {
+    background: #374151;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .menu-form-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .menu-section-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .menu-section-icon {
+        margin-right: 0;
+    }
+    
+    .menu-image-preview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+} 

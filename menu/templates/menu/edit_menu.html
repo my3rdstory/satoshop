@@ -1,0 +1,388 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load menu_extras %}
+
+{% block title %}{{ store.store_name }} - 메뉴 수정{% endblock %}
+
+{% block og_title %}{{ store.store_name }} 메뉴 수정 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }}의 메뉴를 수정하고 비트코인 라이트닝 결제로 판매하세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 메뉴 수정 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }}의 메뉴를 수정하고 비트코인 라이트닝 결제로 판매하세요.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit-menu.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<style>
+.menu-form-avatar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+.drag-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+.drag-drop-area:hover {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+.dark .drag-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+.dark .drag-drop-area:hover {
+    border-color: #10b981;
+    background: #064e3b;
+}
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 menu-form-avatar rounded-full mr-3">
+        <i class="fas fa-edit text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">메뉴 수정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ menu.name }} 메뉴를 수정하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'menu:menu_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="menuForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 카테고리 선택 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-tags text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">카테고리</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴가 속할 카테고리를 선택하세요 (선택사항)</p>
+          </div>
+        </div>
+
+        <div id="categorySelection" class="flex flex-wrap gap-3">
+          <!-- 카테고리 체크박스들이 여기에 동적으로 로드됩니다 -->
+          <p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러오는 중...</p>
+        </div>
+      </div>
+
+      <!-- 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 기본적인 정보를 수정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 메뉴명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="name">
+              메뉴명 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="text" id="name" name="name" required placeholder="메뉴명을 입력하세요" value="{{ menu.name }}">
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="description">
+              메뉴 설명 <span class="text-red-500">*</span>
+            </label>
+            <textarea id="description" name="description" rows="10" 
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      placeholder="메뉴에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ menu.description }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-won-sign text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">가격 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴의 가격과 할인 정보를 수정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 가격 표시 방식 -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">가격 표시 방식</label>
+            
+            <!-- 경고 메시지 -->
+            <div class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
+                <span class="text-sm font-medium text-amber-800 dark:text-amber-200">중요: 가격 표시 방식은 메뉴 등록 후 변경할 수 없습니다.</span>
+              </div>
+              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">현재 설정된 방식을 유지합니다.</p>
+            </div>
+            
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="radio" name="price_display" value="sats" 
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if menu.price_display == 'sats' %}checked{% endif %} disabled>
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">사토시 고정</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="price_display" value="krw" 
+                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if menu.price_display == 'krw' %}checked{% endif %} disabled>
+                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">원화 비율 연동</span>
+              </label>
+            </div>
+            <input type="hidden" name="price_display" value="{{ menu.price_display }}">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">가격 표시 방식은 수정할 수 없습니다</p>
+          </div>
+
+          <!-- 가격 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
+              가격 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price" name="price" required min="0" placeholder="메뉴 가격을 입력하세요"
+                     value="{% if menu.price_display == 'krw' and menu.price_krw is not None %}{{ menu.price_krw }}{% else %}{{ menu.price }}{% endif %}"
+                     data-price-krw="{% if menu.price_krw is not None %}{{ menu.price_krw }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if menu.price_display == 'sats' %}sats{% else %}원{% endif %}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 price-help-text">
+                {% if menu.price_display == 'sats' %}가격은 사토시 단위로 입력하세요{% else %}가격은 원화 단위로 입력하세요{% endif %}
+              </p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info {% if menu.price_display == 'sats' %}hidden{% endif %}">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 할인 설정 -->
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="is_discounted" name="is_discounted" 
+                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                     {% if menu.is_discounted %}checked{% endif %}>
+              <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">할인 적용</label>
+            </div>
+          </div>
+
+          <!-- 할인가 -->
+          <div class="mb-6 {% if not menu.is_discounted %}hidden{% endif %}" id="discountSection">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="discounted_price" name="discounted_price" min="1" placeholder="할인가를 입력하세요"
+                     value="{% if menu.price_display == 'krw' and menu.discounted_price_krw is not None %}{{ menu.discounted_price_krw }}{% elif menu.discounted_price is not None %}{{ menu.discounted_price }}{% endif %}"
+                     data-discounted-price-krw="{% if menu.discounted_price_krw is not None %}{{ menu.discounted_price_krw }}{% endif %}">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">{% if menu.price_display == 'sats' %}sats{% else %}원{% endif %}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400 discount-help-text">할인가는 정가보다 낮아야 합니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 discount-exchange-info {% if menu.price_display == 'sats' %}hidden{% endif %}">
+                <span class="discount-converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(업비트 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 옵션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-list text-yellow-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">사이즈, 맵기 정도 등의 옵션을 수정할 수 있습니다</p>
+          </div>
+        </div>
+
+        <div id="optionsContainer" class="space-y-4 mb-6">
+          <!-- 기존 옵션들이 여기에 표시됩니다 -->
+          {% for option in menu.options.all %}
+          <div class="option-section bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4" data-option-index="{{ forloop.counter0 }}">
+            <div class="flex items-center justify-between">
+              <h4 class="text-lg font-semibold text-gray-900 dark:text-white">옵션 {{ forloop.counter }}</h4>
+              <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOption(this.closest('.option-section'))">
+                <i class="fas fa-trash text-sm"></i>
+              </button>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">옵션명</label>
+              <input type="text" name="options[{{ forloop.counter0 }}][name]" 
+                     class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     placeholder="예: 사이즈, 맵기 정도" value="{{ option.name }}" required>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">옵션 선택지</label>
+              <div class="space-y-3">
+                {% for value in option.values_list %}
+                {% with parsed_value=value|split_option_value %}
+                <div class="flex items-center gap-3">
+                  <div class="flex-1">
+                    <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                           type="text" name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][name]" required
+                           placeholder="옵션 종류 (예: 빨강, 파랑)" value="{{ parsed_value.name|default:value }}">
+                  </div>
+                  <div class="w-32">
+                    <input class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 option-price-input"
+                           type="number" name="options[{{ forloop.parentloop.counter0 }}][choices][{{ forloop.counter0 }}][price]" min="0"
+                           placeholder="추가 가격" value="{{ parsed_value.price|default:0 }}">
+                  </div>
+                {% endwith %}
+                  <div class="relative w-16">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 option-price-unit">
+                      {% if menu.price_display == 'krw' %}원{% else %}sats{% endif %}
+                    </span>
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-1 option-exchange-info {% if menu.price_display == 'sats' %}hidden{% endif %}">
+                      <span class="option-converted-amount"></span>
+                    </div>
+                  </div>
+                  <button type="button" class="text-red-500 hover:text-red-700 transition-colors" onclick="removeOptionChoice(this)">
+                    <i class="fas fa-minus-circle text-sm"></i>
+                  </button>
+                </div>
+                {% endfor %}
+              </div>
+              
+              <button type="button" class="mt-3 inline-flex items-center gap-2 px-3 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors text-sm" onclick="addOptionChoice(this.closest('.option-section'))">
+                <i class="fas fa-plus text-xs"></i>
+                <span>선택지 추가</span>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        
+        <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
+          <i class="fas fa-plus text-sm"></i>
+          <span>옵션 추가</span>
+        </button>
+      </div>
+
+      <!-- 메뉴 이미지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-images text-indigo-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">메뉴 이미지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 이미지를 수정하세요 (1:1 비율 권장)</p>
+          </div>
+        </div>
+
+        <!-- 기존 이미지 -->
+        {% if menu.images.exists %}
+        <div class="mb-6">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">현재 이미지</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="existingImages">
+            {% for image in menu.images.all %}
+            <div class="relative aspect-square rounded-lg overflow-hidden border border-gray-200" data-image-id="{{ image.id }}">
+              <img src="{{ image.file_url }}" alt="메뉴 이미지" class="w-full h-full object-cover">
+              <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600" onclick="removeExistingImage({{ image.id }})">
+                <i class="fas fa-times"></i>
+              </button>
+              <input type="hidden" name="keep_image_{{ image.id }}" value="true">
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">새 이미지 추가 (1:1 비율 권장)</label>
+          <div class="drag-drop-area" id="imageDropArea">
+            <div class="text-center">
+              <i class="fas fa-image text-4xl text-gray-400 mb-4"></i>
+              <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 드래그하거나 클릭하여 업로드</p>
+              <p class="text-sm text-gray-500 dark:text-gray-500">최대 10MB, JPG/PNG 형식 (1장만 업로드 가능)</p>
+            </div>
+            <input type="file" id="imageInput" name="images" accept="image/*" class="hidden">
+          </div>
+          <div id="imagePreview" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"></div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'menu:menu_list' store.store_id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          취소
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          메뉴 수정
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// 옵션 카운터 초기화 (기존 옵션 개수 기준)
+window.optionCount = {{ menu.options.count }};
+
+// 현재 메뉴의 카테고리 정보를 JavaScript 변수로 전달
+window.menuCategories = [{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+// 메뉴의 가격 표시 방식 설정
+window.menuPriceDisplay = '{{ menu.price_display }}';
+
+// 기존 이미지 제거 함수
+window.removeExistingImage = function(imageId) {
+    if (confirm('이 이미지를 삭제하시겠습니까?')) {
+        const imageDiv = document.querySelector(`[data-image-id="${imageId}"]`);
+        const keepInput = document.querySelector(`input[name="keep_image_${imageId}"]`);
+        
+        if (imageDiv && keepInput) {
+            imageDiv.style.opacity = '0';
+            imageDiv.style.transform = 'scale(0.9)';
+            keepInput.value = 'false';
+            
+            setTimeout(() => {
+                imageDiv.style.display = 'none';
+            }, 300);
+        }
+    }
+};
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/currency-exchange.js' %}"></script>
+<script src="{% static 'js/edit-menu.js' %}"></script>
+{% endblock %} 
