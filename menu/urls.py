@@ -8,6 +8,7 @@ urlpatterns = [
     path('<str:store_id>/', views.menu_list, name='menu_list'),
     path('<str:store_id>/list/', views.menu_board, name='menu_board'),
     path('<str:store_id>/list/<int:menu_id>/', views.menu_detail, name='menu_detail'),
+    path('<str:store_id>/cart/', views.menu_cart, name='menu_cart'),
     path('<str:store_id>/add/', views.add_menu, name='add_menu'),
     path('<str:store_id>/<int:menu_id>/edit/', views.edit_menu, name='edit_menu'),
     path('<str:store_id>/<int:menu_id>/manage/', views.manage_menu, name='manage_menu'),

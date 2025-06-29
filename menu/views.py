@@ -762,6 +762,18 @@ def menu_board(request, store_id):
     }
     return render(request, 'menu/menu_board.html', context)
 
+def menu_cart(request, store_id):
+    """장바구니 화면 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    context = {
+        'store': store,
+        'is_public_view': True,
+        'is_cart_view': True,  # 장바구니 화면임을 표시
+    }
+    return render(request, 'menu/menu_cart.html', context)
+
 @login_required
 def manage_menu(request, store_id, menu_id):
     """메뉴 관리 페이지"""

@@ -62,20 +62,8 @@
         
         <!-- 가운데: 메뉴 상세 정보 -->
         <div class="menu-content custom-scrollbar">
-            <div class="p-6">
-                <!-- 상단 네비게이션 -->
-                <div class="mb-6">
-                    <nav class="flex items-center text-lg text-gray-600">
-                        <a href="{% url 'menu:menu_board' store.store_id %}" class="hover:text-blue-600 transition-colors">
-                            <i class="fas fa-arrow-left mr-2"></i>메뉴판
-                        </a>
-                        <span class="mx-2">/</span>
-                        <span class="text-gray-900">{{ menu.name }}</span>
-                    </nav>
-                </div>
-
                 <!-- 메뉴 상세 정보 -->
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                <div class="bg-white overflow-hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                         <!-- 왼쪽: 메뉴 이미지 -->
                         <div class="space-y-4">
@@ -238,7 +226,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
         
         <!-- 오른쪽: 장바구니 사이드바 -->
@@ -266,10 +253,16 @@
                     </div>
                     
                     <!-- 주문 버튼 -->
-                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                            onclick="processOrder()">
-                        <i class="fas fa-credit-card mr-2"></i>주문하기
-                    </button>
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                onclick="clearCart()">
+                            <i class="fas fa-trash mr-2"></i>비우기
+                        </button>
+                        <button class="flex-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                onclick="processOrder()">
+                            <i class="fas fa-shopping-cart mr-2"></i>장바구니
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -453,6 +446,36 @@
             
             // 성공 메시지 표시
             alert('장바구니에 추가되었습니다!');
+        }
+
+        // 장바구니 비우기
+        function clearCart() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            if (cart.length === 0) {
+                alert('장바구니가 이미 비어있습니다.');
+                return;
+            }
+            
+            if (confirm('장바구니를 모두 비우시겠습니까?')) {
+                localStorage.removeItem('cart');
+                updateCartDisplay();
+                alert('장바구니가 비워졌습니다.');
+            }
+        }
+
+        // 주문 처리 (장바구니 페이지로 이동)
+        function processOrder() {
+            const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+            
+            if (cart.length === 0) {
+                alert('장바구니가 비어있습니다.');
+                return;
+            }
+            
+            // 장바구니 페이지로 이동
+            const storeId = '{{ store.store_id }}';
+            window.location.href = `/menu/${storeId}/cart/`;
         }
 
         // 페이지 로드 시 초기 설정

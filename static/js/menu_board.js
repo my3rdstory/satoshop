@@ -1,11 +1,9 @@
 // 메뉴판 전용 JavaScript
 
-// 장바구니 데이터
-let cart = [];
-
 // DOM 로드 완료 후 초기화
 document.addEventListener('DOMContentLoaded', function() {
     initializeCategoryFilters();
+    updateCartDisplay();
 });
 
 // 카테고리 필터링 초기화
@@ -42,40 +40,30 @@ function filterMenusByCategory(categoryId) {
     });
 }
 
-// 장바구니에 메뉴 추가
-function addToCart(menuId, menuName, price) {
-    const existingItem = cart.find(item => item.menuId === menuId);
-    
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({
-            menuId: menuId,
-            menuName: menuName,
-            price: price,
-            quantity: 1
-        });
-    }
-    
-    updateCartDisplay();
-}
-
 // 장바구니에서 메뉴 제거
-function removeFromCart(menuId) {
-    cart = cart.filter(item => item.menuId !== menuId);
-    updateCartDisplay();
+function removeFromCart(itemId) {
+    if (confirm('이 메뉴를 장바구니에서 삭제하시겠습니까?')) {
+        let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        cart = cart.filter(item => item.id != itemId);
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay();
+    }
 }
 
 // 수량 업데이트
-function updateQuantity(menuId, quantity) {
-    const item = cart.find(item => item.menuId === menuId);
-    if (item) {
-        if (quantity <= 0) {
-            removeFromCart(menuId);
-        } else {
-            item.quantity = quantity;
-            updateCartDisplay();
-        }
+function updateQuantity(itemId, quantity) {
+    if (quantity < 1) {
+        removeFromCart(itemId);
+        return;
+    }
+    
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const itemIndex = cart.findIndex(item => item.id == itemId);
+    
+    if (itemIndex !== -1) {
+        cart[itemIndex].quantity = quantity;
+        localStorage.setItem('cart', JSON.stringify(cart));
+        updateCartDisplay();
     }
 }
 
@@ -86,68 +74,102 @@ function updateCartDisplay() {
     const cartTotal = document.getElementById('cart-total');
     const totalAmount = document.getElementById('total-amount');
     
+    // 로컬 스토리지에서 장바구니 데이터 가져오기
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
     if (cart.length === 0) {
         // 장바구니가 비어있을 때
-        cartItemsContainer.innerHTML = '<div id="empty-cart" class="text-center py-8"><i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i><p class="text-gray-500 text-sm">장바구니가 비어있습니다</p></div>';
-        cartTotal.classList.add('hidden');
+        if (cartItemsContainer) {
+            cartItemsContainer.innerHTML = '<div id="empty-cart" class="text-center py-8"><i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i><p class="text-gray-500 text-sm">장바구니가 비어있습니다</p></div>';
+        }
+        if (cartTotal) cartTotal.classList.add('hidden');
     } else {
         // 장바구니에 아이템이 있을 때
-        cartTotal.classList.remove('hidden');
+        if (cartTotal) cartTotal.classList.remove('hidden');
         
         let total = 0;
         let cartHTML = '';
         
         cart.forEach(item => {
-            const itemTotal = item.price * item.quantity;
+            const itemTotal = item.totalPrice * item.quantity;
             total += itemTotal;
             
+            // 옵션 문자열 생성
+            let optionsText = '';
+            if (item.options && Object.keys(item.options).length > 0) {
+                const optionStrings = Object.entries(item.options).map(([name, option]) => {
+                    return option.price > 0 ? `${option.value} (+${option.price})` : option.value;
+                });
+                optionsText = optionStrings.join(', ');
+            }
+            
             cartHTML += `
-                <div class="bg-white p-3 rounded-lg border border-gray-200">
+                <div class="bg-white p-3 rounded-lg border border-gray-200 mb-2">
                     <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-medium text-sm">${escapeHtml(item.menuName)}</h4>
-                        <button onclick="removeFromCart(${item.menuId})" class="text-red-500 hover:text-red-700">
-                            <i class="fas fa-times text-xs"></i>
+                        <div>
+                            <h4 class="font-medium text-sm text-gray-900">${escapeHtml(item.name)}</h4>
+                            ${optionsText ? `<p class="text-xs text-gray-600 mt-1">${escapeHtml(optionsText)}</p>` : ''}
+                        </div>
+                        <button onclick="removeFromCart('${item.id}')" 
+                                class="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                                title="삭제">
+                            <i class="fas fa-trash text-xs"></i>
                         </button>
                     </div>
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-2">
-                            <button onclick="updateQuantity(${item.menuId}, ${item.quantity - 1})" 
-                                    class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors">-</button>
-                            <span class="text-sm font-medium">${item.quantity}</span>
-                            <button onclick="updateQuantity(${item.menuId}, ${item.quantity + 1})" 
-                                    class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors">+</button>
+                            <button onclick="updateQuantity('${item.id}', ${item.quantity - 1})" 
+                                    class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <span class="text-sm font-medium min-w-[1.5rem] text-center">${item.quantity}</span>
+                            <button onclick="updateQuantity('${item.id}', ${item.quantity + 1})" 
+                                    class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center">
+                                <i class="fas fa-plus"></i>
+                            </button>
                         </div>
-                        <span class="text-sm font-semibold">${formatNumber(itemTotal)} sats</span>
+                        <span class="text-sm font-semibold text-blue-600">${formatNumber(itemTotal)} sats</span>
                     </div>
                 </div>
             `;
         });
         
-        cartItemsContainer.innerHTML = cartHTML;
-        totalAmount.textContent = `${formatNumber(total)} sats`;
+        if (cartItemsContainer) {
+            cartItemsContainer.innerHTML = cartHTML;
+        }
+        if (totalAmount) {
+            totalAmount.textContent = `${formatNumber(total)} sats`;
+        }
     }
 }
 
 // 주문 처리
 function processOrder() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
     if (cart.length === 0) {
         alert('장바구니가 비어있습니다.');
         return;
     }
     
-    // 주문 확인
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    // 장바구니 페이지로 이동
+    const storeId = window.location.pathname.split('/')[2]; // URL에서 store_id 추출
+    window.location.href = `/menu/${storeId}/cart/`;
+}
+
+// 장바구니 비우기
+function clearCart() {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
     
-    const confirmMessage = `총 ${itemCount}개 메뉴, ${formatNumber(total)} sats를 주문하시겠습니까?`;
+    if (cart.length === 0) {
+        alert('장바구니가 이미 비어있습니다.');
+        return;
+    }
     
-    if (confirm(confirmMessage)) {
-        // 여기에 실제 주문 처리 로직 구현 (나중에)
-        alert('주문 기능은 아직 구현되지 않았습니다.');
-        
-        // 주문 완료 후 장바구니 비우기 (실제 구현 시)
-        // cart = [];
-        // updateCartDisplay();
+    if (confirm('장바구니를 모두 비우시겠습니까?')) {
+        localStorage.removeItem('cart');
+        updateCartDisplay();
+        alert('장바구니가 비워졌습니다.');
     }
 }
 

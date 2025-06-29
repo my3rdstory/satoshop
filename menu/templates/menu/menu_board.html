@@ -161,10 +161,16 @@
                     </div>
                     
                     <!-- 주문 버튼 -->
-                    <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                            onclick="processOrder()">
-                        <i class="fas fa-credit-card mr-2"></i>주문하기
-                    </button>
+                    <div class="flex space-x-2">
+                        <button class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                onclick="clearCart()">
+                            <i class="fas fa-trash mr-2"></i>비우기
+                        </button>
+                        <button class="flex-2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                                onclick="processOrder()">
+                            <i class="fas fa-shopping-cart mr-2"></i>장바구니
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
