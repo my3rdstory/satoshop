@@ -5,10 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeMenuOrdersDetail() {
-    // 통계 카드 애니메이션
-    animateStatCards();
-    
-    // 테이블 기능 초기화
+    // 테이블 기능 초기화 (애니메이션 제거됨)
     initializeTable();
     
     // 페이지네이션 처리
@@ -21,82 +18,15 @@ function initializeMenuOrdersDetail() {
     setupKeyboardShortcuts();
 }
 
-// 통계 카드 애니메이션
-function animateStatCards() {
-    const statCards = document.querySelectorAll('.stat-card, .text-center.p-4');
-    
-    statCards.forEach((card, index) => {
-        // 카드 등장 애니메이션
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-            
-            // 숫자 카운트업 애니메이션
-            const numberElement = card.querySelector('.text-2xl');
-            if (numberElement) {
-                const finalNumber = parseInt(numberElement.textContent.replace(/,/g, ''));
-                if (!isNaN(finalNumber)) {
-                    animateNumber(numberElement, finalNumber, 1000);
-                }
-            }
-        }, index * 150);
-    });
-}
-
-// 숫자 카운트업 애니메이션
-function animateNumber(element, finalNumber, duration) {
-    const startNumber = 0;
-    const startTime = Date.now();
-    
-    function updateNumber() {
-        const currentTime = Date.now();
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // easeOutQuart 이징 함수
-        const easeProgress = 1 - Math.pow(1 - progress, 4);
-        const currentNumber = Math.floor(startNumber + (finalNumber - startNumber) * easeProgress);
-        
-        element.textContent = currentNumber.toLocaleString();
-        
-        if (progress < 1) {
-            requestAnimationFrame(updateNumber);
-        } else {
-            element.textContent = finalNumber.toLocaleString();
-        }
-    }
-    
-    updateNumber();
-}
+// 통계 카드 애니메이션 제거됨
 
 // 테이블 기능 초기화
 function initializeTable() {
-    // 테이블 행 호버 효과
-    setupTableRowHovers();
-    
     // 옵션 표시 토글
     setupOptionToggle();
 }
 
-// 테이블 행 호버 효과
-function setupTableRowHovers() {
-    const tableRows = document.querySelectorAll('table tbody tr');
-    
-    tableRows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.01)';
-            this.style.transition = 'transform 0.2s ease';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1)';
-        });
-    });
-}
+// 테이블 행 호버 효과 제거됨
 
 // 옵션 표시 토글
 function setupOptionToggle() {

@@ -24,12 +24,6 @@
     padding: 1rem;
     border-radius: 0.75rem;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* 테이블 스타일 */

@@ -5,9 +5,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeMenuOrders() {
-    // 통계 카드 애니메이션
-    animateStatsCards();
-    
     // 메뉴 카드 호버 효과
     setupMenuCardHovers();
     
@@ -18,47 +15,7 @@ function initializeMenuOrders() {
     handleResponsive();
 }
 
-// 통계 카드 애니메이션
-function animateStatsCards() {
-    const statsCards = document.querySelectorAll('.stats-card');
-    
-    statsCards.forEach((card, index) => {
-        // 숫자 카운트업 애니메이션
-        const numberElement = card.querySelector('.text-2xl');
-        if (numberElement) {
-            const finalNumber = parseInt(numberElement.textContent.replace(/,/g, ''));
-            if (!isNaN(finalNumber)) {
-                animateNumber(numberElement, finalNumber, 1000 + (index * 200));
-            }
-        }
-    });
-}
-
-// 숫자 카운트업 애니메이션
-function animateNumber(element, finalNumber, duration) {
-    const startNumber = 0;
-    const startTime = Date.now();
-    
-    function updateNumber() {
-        const currentTime = Date.now();
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // easeOutCubic 이징 함수
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        const currentNumber = Math.floor(startNumber + (finalNumber - startNumber) * easeProgress);
-        
-        element.textContent = currentNumber.toLocaleString();
-        
-        if (progress < 1) {
-            requestAnimationFrame(updateNumber);
-        } else {
-            element.textContent = finalNumber.toLocaleString();
-        }
-    }
-    
-    updateNumber();
-}
+// 통계 카드 애니메이션 제거됨
 
 // 메뉴 카드 호버 효과
 function setupMenuCardHovers() {

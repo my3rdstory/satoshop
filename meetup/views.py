@@ -12,6 +12,8 @@ from .forms import MeetupForm
 from ln_payment.blink_service import get_blink_service_for_store
 import json
 import logging
+from django.core.paginator import Paginator
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -812,3 +814,106 @@ def meetup_orders(request, store_id):
     }
     
     return render(request, 'meetup/meetup_orders.html', context)
+
+@login_required
+def meetup_status(request, store_id):
+    """밋업 현황 페이지"""
+    from stores.decorators import store_owner_required
+    from django.db import models
+    
+    # 스토어 소유자 권한 확인
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    
+    # 밋업별 참가 통계 계산
+    meetups_with_orders = []
+    meetups = Meetup.objects.filter(store=store, deleted_at__isnull=True).prefetch_related('images')
+    
+    for meetup in meetups:
+        # 확정된 주문만 집계 (결제 완료된 참가자)
+        confirmed_orders = MeetupOrder.objects.filter(
+            meetup=meetup,
+            status__in=['confirmed', 'completed']
+        )
+        
+        total_participants = confirmed_orders.count()
+        total_revenue = confirmed_orders.aggregate(
+            total=models.Sum('total_price')
+        )['total'] or 0
+        
+        # 통계 정보 추가
+        meetup.total_participants = total_participants
+        meetup.total_revenue = total_revenue
+        meetups_with_orders.append(meetup)
+    
+    # 매출 순으로 정렬
+    meetups_with_orders.sort(key=lambda x: x.total_revenue, reverse=True)
+    
+    # 전체 통계
+    total_meetup_orders = MeetupOrder.objects.filter(
+        meetup__store=store, 
+        status__in=['confirmed', 'completed']
+    ).count()
+    total_meetup_revenue = MeetupOrder.objects.filter(
+        meetup__store=store, 
+        status__in=['confirmed', 'completed']
+    ).aggregate(
+        total=models.Sum('total_price')
+    )['total'] or 0
+    total_participants = MeetupOrder.objects.filter(
+        meetup__store=store, 
+        status__in=['confirmed', 'completed']
+    ).count()
+    
+    context = {
+        'store': store,
+        'meetups_with_orders': meetups_with_orders,
+        'total_meetup_orders': total_meetup_orders,
+        'total_meetup_revenue': total_meetup_revenue,
+        'total_participants': total_participants,
+    }
+    
+    return render(request, 'meetup/meetup_status.html', context)
+
+@login_required
+def meetup_status_detail(request, store_id, meetup_id):
+    """밋업별 참가 현황 상세 페이지"""
+    from stores.decorators import store_owner_required
+    from django.core.paginator import Paginator
+    from django.db import models
+    
+    # 스토어 소유자 권한 확인
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+    
+    # 해당 밋업의 주문들 (확정된 것만)
+    orders = MeetupOrder.objects.filter(
+        meetup=meetup,
+        status__in=['confirmed', 'completed']
+    ).select_related('user').prefetch_related('selected_options').order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(orders, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # 통계 계산
+    total_participants = orders.count()
+    total_revenue = orders.aggregate(
+        total=models.Sum('total_price')
+    )['total'] or 0
+    
+    # 평균 참가비 계산
+    average_price = 0
+    if total_participants > 0:
+        average_price = total_revenue / total_participants
+    
+    context = {
+        'store': store,
+        'meetup': meetup,
+        'page_obj': page_obj,
+        'total_participants': total_participants,
+        'total_revenue': total_revenue,
+        'average_price': average_price,
+    }
+    
+    return render(request, 'meetup/meetup_status_detail.html', context)
