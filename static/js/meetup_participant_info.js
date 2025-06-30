@@ -36,20 +36,55 @@ function initializeMeetupData() {
 
 // 선택된 옵션 적용
 function applySelectedOptions() {
-    Object.entries(selectedOptions).forEach(([optionId, optionData]) => {
-        const choiceElement = document.querySelector(`[data-option-id="${optionId}"][data-choice-id="${optionData.choiceId}"]`);
-        if (choiceElement) {
-            // 시각적으로 선택 상태 적용
-            choiceElement.classList.add('selected');
-            choiceElement.classList.remove('border-gray-200', 'dark:border-gray-600');
-            choiceElement.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-            
-            const indicator = choiceElement.querySelector('.choice-indicator i');
-            if (indicator) {
-                indicator.className = 'fas fa-check-circle text-purple-500';
-            }
+    const selectedOptionsDisplay = document.getElementById('selected-options-display');
+    const noOptionsMessage = document.getElementById('no-options-message');
+    
+    if (!selectedOptionsDisplay) return;
+    
+    // 선택된 옵션이 있는지 확인
+    if (Object.keys(selectedOptions).length === 0) {
+        if (noOptionsMessage) {
+            noOptionsMessage.style.display = 'block';
         }
+        return;
+    }
+    
+    // 선택된 옵션들을 표시
+    let optionsHTML = '';
+    
+    Object.entries(selectedOptions).forEach(([optionId, optionData]) => {
+        // 옵션 정보 가져오기 (서버에서 전달된 데이터 사용)
+        const optionName = optionData.optionName || '옵션';
+        const choiceName = optionData.choiceName || optionData.name || '선택지';
+        const price = optionData.price || 0;
+        
+        optionsHTML += `
+            <div class="p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-xl">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-medium text-gray-900 dark:text-white">${optionName}</div>
+                        <div class="text-sm text-purple-600 dark:text-purple-400 mt-1">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            ${choiceName}
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        ${price > 0 ? 
+                            `<div class="font-medium text-gray-900 dark:text-white">+${price.toLocaleString()} sats</div>` : 
+                            `<div class="text-sm text-green-600 dark:text-green-400">무료</div>`
+                        }
+                    </div>
+                </div>
+            </div>
+        `;
     });
+    
+    selectedOptionsDisplay.innerHTML = optionsHTML;
+    
+    // "선택된 옵션이 없습니다" 메시지 숨기기
+    if (noOptionsMessage) {
+        noOptionsMessage.style.display = 'none';
+    }
     
     // 가격 요약 업데이트
     updatePriceSummary();
@@ -72,51 +107,6 @@ function setupEventListeners() {
     });
 }
 
-// 옵션 선택 함수
-function selectOption(choiceElement) {
-    const optionId = choiceElement.dataset.optionId;
-    const choiceId = choiceElement.dataset.choiceId;
-    const choicePrice = parseFloat(choiceElement.dataset.choicePrice) || 0;
-    const isCurrentlySelected = choiceElement.classList.contains('selected');
-    
-    // 같은 옵션 그룹의 모든 선택지들 비활성화
-    document.querySelectorAll(`[data-option-id="${optionId}"]`).forEach(choice => {
-        choice.classList.remove('selected');
-        choice.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-        choice.classList.add('border-gray-200', 'dark:border-gray-600');
-        
-        const indicator = choice.querySelector('.choice-indicator i');
-        if (indicator) {
-            indicator.className = 'fas fa-circle text-gray-300 dark:text-gray-600';
-        }
-    });
-    
-    // 이미 선택된 옵션이 아니라면 활성화
-    if (!isCurrentlySelected) {
-        choiceElement.classList.add('selected');
-        choiceElement.classList.remove('border-gray-200', 'dark:border-gray-600');
-        choiceElement.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-        
-        const indicator = choiceElement.querySelector('.choice-indicator i');
-        if (indicator) {
-            indicator.className = 'fas fa-check-circle text-purple-500';
-        }
-        
-        // 선택된 옵션 저장
-        selectedOptions[optionId] = {
-            choiceId: choiceId,
-            price: choicePrice
-        };
-    } else {
-        // 토글로 선택 해제
-        delete selectedOptions[optionId];
-    }
-    
-    // 가격 업데이트
-    updatePriceSummary();
-    updateSubmitButton();
-}
-
 // 가격 요약 업데이트
 function updatePriceSummary() {
     const summaryDiv = document.getElementById('selected-options-summary');
@@ -131,23 +121,19 @@ function updatePriceSummary() {
     Object.values(selectedOptions).forEach(option => {
         optionsTotal += option.price;
         
-        const optionElement = document.querySelector(`[data-choice-id="${option.choiceId}"]`);
-        if (optionElement) {
-            const optionGroup = optionElement.closest('.option-group');
-            const optionName = optionGroup ? optionGroup.querySelector('h4').textContent : '';
-            const choiceName = optionElement.querySelector('.option-title').textContent;
-            
-            summaryHTML += `
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-chevron-right mr-2 text-xs"></i>${optionName}: ${choiceName}
-                </span>
-                <span class="font-medium text-gray-900 dark:text-white">
-                  ${option.price > 0 ? '+' + option.price.toLocaleString() + ' sats' : '무료'}
-                </span>
-              </div>
-            `;
-        }
+        const optionName = option.optionName || '옵션';
+        const choiceName = option.choiceName || option.name || '선택지';
+        
+        summaryHTML += `
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">
+              <i class="fas fa-chevron-right mr-2 text-xs"></i>${optionName}: ${choiceName}
+            </span>
+            <span class="font-medium text-gray-900 dark:text-white">
+              ${option.price > 0 ? '+' + option.price.toLocaleString() + ' sats' : '무료'}
+            </span>
+          </div>
+        `;
     });
     
     summaryDiv.innerHTML = summaryHTML;
@@ -172,13 +158,12 @@ function updateSubmitButton() {
     
     if (!submitBtn || !submitIcon || !submitText) return;
     
-    // 필수 옵션 체크
-    const requiredOptions = document.querySelectorAll('[data-required="true"]');
+    // 필수 옵션 체크 (서버에서 전달받은 필수 옵션 ID 목록 사용)
+    const requiredOptionIds = meetupData.requiredOptionIds || [];
     let allRequiredSelected = true;
     
-    for (let option of requiredOptions) {
-        const optionId = option.dataset.optionId;
-        if (!selectedOptions[optionId]) {
+    for (let optionId of requiredOptionIds) {
+        if (!selectedOptions[optionId.toString()]) {
             allRequiredSelected = false;
             break;
         }
@@ -245,11 +230,10 @@ function validateForm(form) {
         }
     });
     
-    // 필수 옵션 체크
-    const requiredOptions = document.querySelectorAll('[data-required="true"]');
-    for (let option of requiredOptions) {
-        const optionId = option.dataset.optionId;
-        if (!selectedOptions[optionId]) {
+    // 필수 옵션 체크 (서버에서 전달받은 필수 옵션 ID 목록 사용)
+    const requiredOptionIds = meetupData.requiredOptionIds || [];
+    for (let optionId of requiredOptionIds) {
+        if (!selectedOptions[optionId.toString()]) {
             showError('필수 옵션을 모두 선택해주세요.');
             isValid = false;
             break;
@@ -354,4 +338,4 @@ function showError(message) {
 }
 
 // 전역 함수로 노출
-window.selectOption = selectOption; 
+// window.selectOption = selectOption; 

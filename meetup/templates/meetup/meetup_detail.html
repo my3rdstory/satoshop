@@ -314,8 +314,15 @@
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">참가 옵션</h3>
           <div class="space-y-4">
             {% for option in meetup_options %}
-            <div class="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
-              <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">{{ option.name }}</div>
+            <div class="option-group bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4" 
+                 data-option-id="{{ option.id }}" 
+                 data-required="{{ option.is_required|yesno:'true,false' }}">
+              <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
+                <h4>{{ option.name }}</h4>
+                {% if option.is_required %}
+                <span class="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-xs rounded-full">필수</span>
+                {% endif %}
+              </div>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {% for choice in option.choices.all %}
                 <div class="option-choice p-3 border-3 border-black dark:border-white rounded-lg text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105" 
@@ -323,7 +330,7 @@
                    data-choice-id="{{ choice.id }}"
                    data-choice-price="{{ choice.additional_price }}"
                    onclick="selectOption(this)">
-                  <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}&nbsp;</div>
+                  <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}</div>
                   {% if choice.additional_price > 0 %}
                     <div class="option-price text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
                        + {{ choice.additional_price|floatformat:0|intcomma }} sats

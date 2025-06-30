@@ -138,6 +138,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const choicePrice = parseFloat(choiceElement.dataset.choicePrice) || 0;
         const isCurrentlySelected = choiceElement.classList.contains('selected');
         
+        // 옵션명과 선택지명 가져오기 (HTML 엔티티 및 공백 제거)
+        const optionGroup = choiceElement.closest('.option-group');
+        const optionName = optionGroup ? optionGroup.querySelector('h4').textContent.trim() : '';
+        const choiceName = choiceElement.querySelector('.option-title').textContent.trim().replace(/\u00A0/g, '');
+        
         // 같은 옵션 그룹의 모든 선택지들 비활성화
         document.querySelectorAll(`[data-option-id="${optionId}"]`).forEach(choice => {
             choice.classList.remove('selected');
@@ -175,10 +180,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 price.classList.remove('text-gray-600', 'dark:text-gray-400');
             }
             
-            // 선택된 옵션 저장
+            // 선택된 옵션 저장 (옵션명과 선택지명 포함)
             selectedOptions[optionId] = {
                 choiceId: choiceId,
-                price: choicePrice
+                price: choicePrice,
+                optionName: optionName,
+                choiceName: choiceName
             };
         } else {
             // 토글로 선택 해제
@@ -187,6 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 총 가격 업데이트
         updateTotalPrice();
+        updateJoinButtonState();
     }
     
     // 총 가격 업데이트

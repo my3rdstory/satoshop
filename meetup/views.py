@@ -326,6 +326,9 @@ def meetup_checkout(request, store_id, meetup_id):
                 # 잘못된 JSON이면 빈 딕셔너리로 초기화
                 selected_options = {}
         
+        # 필수 옵션 정보 수집
+        required_option_ids = list(meetup.options.filter(is_required=True).values_list('id', flat=True))
+        
         # 할인 금액 계산 (조기등록 할인)
         discount_amount = 0
         if meetup.is_early_bird_active:
@@ -334,7 +337,8 @@ def meetup_checkout(request, store_id, meetup_id):
         context = {
             'store': store,
             'meetup': meetup,
-            'selected_options_json': json.dumps(selected_options),
+            'selected_options_json': json.dumps(selected_options) if selected_options else '{}',
+            'required_option_ids': json.dumps(required_option_ids) if required_option_ids else '[]',
             'discount_amount': discount_amount,
         }
         return render(request, 'meetup/meetup_participant_info.html', context)
