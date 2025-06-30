@@ -1,0 +1,110 @@
+/* meetup_participant_info.css */
+
+/* 옵션 선택 스타일 */
+.option-choice {
+    transition: all 0.2s ease-in-out;
+}
+
+.option-choice.selected {
+    border-color: #8b5cf6 !important;
+    background-color: rgba(139, 92, 246, 0.1) !important;
+}
+
+.option-choice.selected .choice-indicator i {
+    color: #8b5cf6 !important;
+}
+
+.option-choice:hover {
+    border-color: #a855f7 !important;
+    background-color: rgba(139, 92, 246, 0.05) !important;
+}
+
+/* 다크모드 옵션 선택 스타일 */
+.dark .option-choice.selected {
+    background-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.dark .option-choice:hover {
+    background-color: rgba(139, 92, 246, 0.1) !important;
+}
+
+/* 가격 요약 애니메이션 */
+#selected-options-summary {
+    transition: all 0.3s ease;
+}
+
+#total-price {
+    transition: all 0.3s ease;
+}
+
+/* 제출 버튼 상태 */
+#submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#submit-btn:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 필수 표시 */
+.required {
+    color: #ef4444;
+}
+
+/* 인풋 포커스 스타일 */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* 정보 박스 스타일 */
+.info-box {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.dark .info-box {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* 반응형 조정 */
+@media (max-width: 640px) {
+    .option-choice {
+        padding: 12px;
+    }
+    
+    .grid.lg\:grid-cols-3 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+    
+    .grid.sm\:grid-cols-2 {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+}
+
+/* 로딩 상태 */
+.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #8b5cf6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+} 
