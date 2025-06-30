@@ -56,10 +56,10 @@ class MeetupAdmin(admin.ModelAdmin):
         """가격 표시"""
         if obj.is_discounted and obj.discounted_price:
             return format_html(
-                '<span style="text-decoration: line-through; color: #999;">{:,} sats</span><br>'
-                '<span style="color: #e74c3c; font-weight: bold;">{:,} sats</span>',
-                obj.price,
-                obj.discounted_price
+                '<span style="text-decoration: line-through; color: #999;">{} sats</span><br>'
+                '<span style="color: #e74c3c; font-weight: bold;">{} sats</span>',
+                f"{obj.price:,}",
+                f"{obj.discounted_price:,}"
             )
         return f"{obj.price:,} sats"
     price_display.short_description = '참가비'
@@ -72,9 +72,9 @@ class MeetupAdmin(admin.ModelAdmin):
                 if remaining == 0:
                     return format_html('<span style="color: #e74c3c;">마감</span>')
                 elif remaining <= 5:
-                    return format_html('<span style="color: #f39c12;">{} 자리</span>', remaining)
+                    return format_html('<span style="color: #f39c12;">{} 자리</span>', str(remaining))
                 else:
-                    return format_html('<span style="color: #27ae60;">{} 자리</span>', remaining)
+                    return format_html('<span style="color: #27ae60;">{} 자리</span>', str(remaining))
         return '무제한'
     remaining_spots_display.short_description = '남은 자리'
     

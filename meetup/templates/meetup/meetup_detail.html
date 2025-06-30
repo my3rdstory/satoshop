@@ -66,26 +66,7 @@
           </div>
           {% endif %}
           
-          <!-- 조기등록 카운트다운 오버레이 -->
-          {% if meetup.is_discounted and meetup.early_bird_end_date %}
-          <div id="countdownOverlay" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50" style="top: 25%; bottom: 25%;">
-            <div class="text-center text-white">
-              <div class="text-sm font-medium mb-2 opacity-90">조기등록 마감까지</div>
-              <div id="countdown" class="text-3xl md:text-4xl lg:text-5xl font-bold tracking-wide">
-                <span id="days">00</span>일 
-                <span id="hours">00</span>시간 
-                <span id="minutes">00</span>분 
-                <span id="seconds">00</span>초
-              </div>
-              <div class="text-sm mt-2 opacity-90">{{ meetup.public_discount_rate }}% 할인 중!</div>
-            </div>
-          </div>
-          <script type="application/json" id="countdown-data">
-          {
-            "endDateTime": "{{ meetup.early_bird_end_datetime|date:'Y-m-d H:i:s' }}"
-          }
-          </script>
-          {% endif %}
+
         </div>
         
         <!-- 썸네일 이미지 -->
@@ -137,7 +118,21 @@
           <div class="space-y-4">
             <!-- 메인 가격 -->
             <div>
-              {% if meetup.is_discounted and meetup.is_early_bird_active %}
+              {% if meetup.current_price == 0 %}
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400">
+                무료
+              </div>
+              {% elif meetup.is_discounted and meetup.is_early_bird_active %}
+              {% if meetup.current_price == 0 %}
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-3xl font-bold text-green-600 dark:text-green-400">
+                  무료
+                </span>
+                <span class="px-3 py-1 bg-red-500 text-white text-sm font-medium rounded-full">
+                  {{ meetup.public_discount_rate }}% 할인
+                </span>
+              </div>
+              {% else %}
               <div class="flex items-center gap-3 mb-2">
                 <span class="text-3xl font-bold text-gray-900 dark:text-white">
                   {{ meetup.current_price|floatformat:0|intcomma }} sats
@@ -146,18 +141,34 @@
                   {{ meetup.public_discount_rate }}% 할인
                 </span>
               </div>
+              {% endif %}
+              {% if meetup.price > 0 %}
               <div class="text-lg text-gray-500 line-through">
                 {{ meetup.price|floatformat:0|intcomma }} sats
               </div>
+              {% endif %}
               {% if meetup.early_bird_end_datetime %}
               <div class="text-sm text-red-600 dark:text-red-400 mt-2">
-                조기등록 마감: {{ meetup.early_bird_end_datetime|date:"m월 d일 H:i" }}까지
+                <span>조기등록 마감: {{ meetup.early_bird_end_datetime|date:"m월 d일 H:i" }}까지</span>
+                <span class="mx-2">/</span>
+                <span id="early-bird-countdown">계산 중...</span>
               </div>
+              <script type="application/json" id="countdown-data">
+              {
+                "endDateTime": "{{ meetup.early_bird_end_datetime|date:'Y-m-d H:i:s' }}"
+              }
+              </script>
               {% endif %}
+              {% else %}
+              {% if meetup.current_price == 0 %}
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400">
+                무료
+              </div>
               {% else %}
               <div class="text-3xl font-bold text-gray-900 dark:text-white">
                 {{ meetup.current_price|floatformat:0|intcomma }} sats
               </div>
+              {% endif %}
               {% endif %}
             </div>
           </div>
@@ -212,12 +223,12 @@
                 <div class="option-choice p-3 border-3 border-black dark:border-white rounded-lg text-center cursor-pointer hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105" 
                    data-option-id="{{ option.id }}" 
                    data-choice-id="{{ choice.id }}"
-                   data-choice-price="{{ choice.price }}"
+                   data-choice-price="{{ choice.additional_price }}"
                    onclick="selectOption(this)">
                   <div class="option-title text-xs font-semibold text-gray-900 dark:text-white">{{ choice.name }}&nbsp;</div>
-                  {% if choice.price > 0 %}
+                  {% if choice.additional_price > 0 %}
                     <div class="option-price text-xs text-gray-600 dark:text-gray-400 mt-1 font-medium">
-                       + {{ choice.price|floatformat:0|intcomma }} sats
+                       + {{ choice.additional_price|floatformat:0|intcomma }} sats
                     </div>
                   {% endif %}
                 </div>

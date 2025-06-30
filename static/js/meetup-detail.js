@@ -43,10 +43,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 카운트다운 실행
     function startCountdown(endDateTime) {
-        const countdownElement = document.getElementById('countdown');
-        const overlayElement = document.getElementById('countdownOverlay');
+        const countdownElement = document.getElementById('early-bird-countdown');
         
-        if (!countdownElement || !overlayElement) return;
+        if (!countdownElement) return;
         
         function updateCountdown() {
             const now = new Date().getTime();
@@ -55,9 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (distance < 0) {
                 // 카운트다운 종료
-                countdownElement.innerHTML = '<span class="text-red-300">할인 마감</span>';
-                overlayElement.classList.add('countdown-expired');
-                overlayElement.querySelector('.text-sm.mt-2').textContent = '조기등록 할인이 종료되었습니다';
+                countdownElement.textContent = '마감됨';
+                countdownElement.className = 'text-gray-500';
                 return;
             }
             
@@ -67,18 +65,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
             
-            // 화면에 표시
-            document.getElementById('days').textContent = String(days).padStart(2, '0');
-            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+            // 텍스트 형태로 표시
+            let timeText = '';
+            if (days > 0) {
+                timeText = `${days}일 ${hours.toString().padStart(2, '0')}시간 ${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
+            } else if (hours > 0) {
+                timeText = `${hours.toString().padStart(2, '0')}시간 ${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
+            } else if (minutes > 0) {
+                timeText = `${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
+            } else {
+                timeText = `${seconds.toString().padStart(2, '0')}초 남음`;
+            }
             
-            // 1분 미만일 때 강조 효과
+            countdownElement.textContent = timeText;
+            
+            // 긴급도에 따른 색상 변경
             if (distance < 60000) { // 1분 미만
-                countdownElement.classList.add('countdown-pulse');
-                overlayElement.style.background = 'rgba(239, 68, 68, 0.7)';
+                countdownElement.className = 'text-red-600 font-bold animate-pulse';
             } else if (distance < 3600000) { // 1시간 미만
-                overlayElement.style.background = 'rgba(245, 158, 11, 0.7)';
+                countdownElement.className = 'text-orange-600 font-medium';
+            } else {
+                countdownElement.className = 'text-red-600';
             }
         }
         
@@ -110,28 +117,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 옵션 선택
+    // 옵션 선택 (토글 방식)
     function selectOption(choiceElement) {
         const optionId = choiceElement.dataset.optionId;
         const choiceId = choiceElement.dataset.choiceId;
         const choicePrice = parseFloat(choiceElement.dataset.choicePrice) || 0;
+        const isCurrentlySelected = choiceElement.classList.contains('selected');
         
-        // 같은 옵션 그룹의 다른 선택지들에서 selected 클래스 제거
-        const optionGroup = choiceElement.closest('.bg-gray-100, .dark\\:bg-gray-700');
-        if (optionGroup) {
-            optionGroup.querySelectorAll('.option-choice').forEach(choice => {
-                choice.classList.remove('selected');
-            });
+        // 같은 옵션 그룹의 모든 선택지들 비활성화
+        document.querySelectorAll(`[data-option-id="${optionId}"]`).forEach(choice => {
+            choice.classList.remove('selected');
+            choice.classList.remove('border-purple-500', 'bg-purple-500', 'text-white');
+            choice.classList.add('border-black', 'dark:border-white');
+            
+            // 제목과 가격 색상 원래대로
+            const title = choice.querySelector('.option-title');
+            const price = choice.querySelector('.option-price');
+            if (title) {
+                title.classList.remove('text-white');
+                title.classList.add('text-gray-900', 'dark:text-white');
+            }
+            if (price) {
+                price.classList.remove('text-white');
+                price.classList.add('text-gray-600', 'dark:text-gray-400');
+            }
+        });
+        
+        // 이미 선택된 옵션이 아니라면 활성화 (토글 효과)
+        if (!isCurrentlySelected) {
+            choiceElement.classList.add('selected');
+            choiceElement.classList.remove('border-black', 'dark:border-white');
+            choiceElement.classList.add('border-purple-500', 'bg-purple-500', 'text-white');
+            
+            // 제목과 가격 색상 흰색으로
+            const title = choiceElement.querySelector('.option-title');
+            const price = choiceElement.querySelector('.option-price');
+            if (title) {
+                title.classList.add('text-white');
+                title.classList.remove('text-gray-900', 'dark:text-white');
+            }
+            if (price) {
+                price.classList.add('text-white');
+                price.classList.remove('text-gray-600', 'dark:text-gray-400');
+            }
+            
+            // 선택된 옵션 저장
+            selectedOptions[optionId] = {
+                choiceId: choiceId,
+                price: choicePrice
+            };
+        } else {
+            // 토글로 선택 해제
+            delete selectedOptions[optionId];
         }
-        
-        // 현재 선택지에 selected 클래스 추가
-        choiceElement.classList.add('selected');
-        
-        // 선택된 옵션 저장
-        selectedOptions[optionId] = {
-            choiceId: choiceId,
-            price: choicePrice
-        };
         
         // 총 가격 업데이트
         updateTotalPrice();
