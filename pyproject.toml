@@ -22,3 +22,8 @@ dependencies = [
     "secp256k1>=0.14.0",
     "bech32>=1.2.0",
 ]
+
+[tool.uv.workspace]
+members = [
+    "meetup-app",
+]

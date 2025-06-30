@@ -1,0 +1,196 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - {% if is_public_view %}밋업 목록{% else %}밋업 관리{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_list.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-users text-white text-xl"></i>
+          </div>
+          <div>
+            {% if is_public_view %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 목록</h1>
+            <p class="text-gray-600 dark:text-gray-300">{{ store.store_name }}의 밋업에 참여하세요</p>
+            {% else %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 관리</h1>
+            <p class="text-gray-600 dark:text-gray-300">커뮤니티 밋업을 개최하고 관리하세요</p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if not is_public_view %}
+        <div class="flex items-center space-x-3">
+          <a href="{% url 'meetup:category_manage' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-tags mr-2"></i>
+            카테고리 관리
+          </a>
+          <a href="{% url 'meetup:add_meetup' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-lg">
+            <i class="fas fa-plus mr-2"></i>
+            밋업 추가
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 카테고리 필터 -->
+      {% if categories %}
+      <div class="border-t border-gray-200 dark:border-gray-600 pt-4">
+        <div class="flex flex-wrap gap-2">
+          <button class="category-filter-btn active" data-category="all">
+            <i class="fas fa-th-large mr-1"></i>
+            전체
+          </button>
+          {% for category in categories %}
+          <button class="category-filter-btn" data-category="{{ category.id }}">
+            <i class="fas fa-tag mr-1"></i>
+            {{ category.name }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- 밋업 목록 -->
+    {% if meetups %}
+    <div class="meetup-grid">
+      {% for meetup in meetups %}
+      <div class="meetup-card" data-categories="[{% for category in meetup.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
+        <!-- 밋업 이미지 -->
+        <div class="meetup-image-container">
+          {% if meetup.images.exists %}
+          <img src="{{ meetup.images.first.file_url }}" 
+               alt="{{ meetup.name }}" 
+               class="meetup-image">
+          {% else %}
+          <div class="meetup-image-placeholder">
+            <i class="fas fa-users"></i>
+          </div>
+          {% endif %}
+
+          <!-- 상태 뱃지 -->
+          <div class="absolute top-3 left-3 flex gap-2">
+            {% if meetup.is_discounted %}
+            <span class="meetup-discount-badge">
+              {{ meetup.public_discount_rate }}% 할인
+            </span>
+            {% endif %}
+            
+            {% if meetup.is_full %}
+            <span class="meetup-status-badge meetup-status-full">
+              마감
+            </span>
+            {% elif meetup.is_temporarily_closed %}
+            <span class="meetup-status-badge meetup-status-closed">
+              일시중단
+            </span>
+            {% else %}
+            <span class="meetup-status-badge meetup-status-available">
+              참가가능
+            </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- 밋업 정보 -->
+        <div class="meetup-info">
+          <h3 class="meetup-name">{{ meetup.name }}</h3>
+          
+          <p class="meetup-description">{{ meetup.description|truncatewords:20 }}</p>
+
+          <!-- 카테고리 -->
+          {% if meetup.categories.exists %}
+          <div class="meetup-category-tags">
+            {% for category in meetup.categories.all %}
+            <span class="meetup-category-tag">{{ category.name }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- 가격 정보 -->
+          <div class="meetup-price-section">
+            <div class="meetup-price">
+              {% if meetup.is_discounted %}
+                <span class="meetup-price-discounted">{{ meetup.discounted_price|floatformat:0|intcomma }} sats</span>
+                <span class="meetup-price-original">{{ meetup.price|floatformat:0|intcomma }} sats</span>
+              {% else %}
+                {{ meetup.price|floatformat:0|intcomma }} sats
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="meetup-actions">
+            {% if is_public_view %}
+            <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+               class="meetup-btn meetup-btn-primary">
+              <i class="fas fa-eye mr-2"></i>
+              자세히 보기
+            </a>
+            {% else %}
+            <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+               class="meetup-btn meetup-btn-secondary">
+              <i class="fas fa-eye mr-2"></i>
+              보기
+            </a>
+            <a href="{% url 'meetup:manage_meetup' store.store_id meetup.id %}" 
+               class="meetup-btn meetup-btn-primary">
+              <i class="fas fa-cog mr-2"></i>
+              관리
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- 빈 상태 -->
+    <div class="meetup-empty-state">
+      <div class="meetup-empty-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <h2 class="meetup-empty-title">
+        {% if is_public_view %}
+        등록된 밋업이 없습니다
+        {% else %}
+        첫 번째 밋업을 만들어보세요
+        {% endif %}
+      </h2>
+      <p class="meetup-empty-description">
+        {% if is_public_view %}
+        아직 등록된 밋업이 없습니다. 곧 새로운 밋업이 추가될 예정입니다.
+        {% else %}
+        밋업을 통해 커뮤니티와 만나고 비트코인으로 참가비를 받아보세요.
+        {% endif %}
+      </p>
+      {% if not is_public_view %}
+      <a href="{% url 'meetup:add_meetup' store.store_id %}" 
+         class="inline-flex items-center px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-lg mt-4">
+        <i class="fas fa-plus mr-2"></i>
+        첫 밋업 만들기
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/meetup_list.js' %}"></script>
+{% endblock %} 

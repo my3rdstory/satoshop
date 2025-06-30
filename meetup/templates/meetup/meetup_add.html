@@ -1,0 +1,258 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 밋업 추가{% endblock %}
+
+{% block og_title %}{{ store.store_name }} 밋업 추가 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }}의 밋업을 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 밋업 추가 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }}의 밋업을 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_add.css' %}">
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<style>
+.meetup-form-avatar {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+.drag-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+.drag-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+.dark .drag-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+.dark .drag-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 meetup-form-avatar rounded-full mr-3">
+        <i class="fas fa-users text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 추가</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}에 새로운 밋업을 등록하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'meetup:meetup_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="meetupForm" class="space-y-8">
+      {% csrf_token %}
+
+      <!-- 카테고리 선택 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-tags text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">카테고리</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업이 속할 카테고리를 선택하세요 (선택사항)</p>
+          </div>
+        </div>
+
+        <div id="categorySelection" class="flex flex-wrap gap-3">
+          <!-- 카테고리 체크박스들이 여기에 동적으로 로드됩니다 -->
+          <p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러오는 중...</p>
+        </div>
+      </div>
+
+      <!-- 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업의 기본적인 정보를 입력하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 밋업명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="name">
+              밋업명 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="text" id="name" name="name" required placeholder="밋업명을 입력하세요">
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="description">
+              밋업 설명 <span class="text-red-500">*</span>
+            </label>
+            <textarea id="description" name="description" rows="10" 
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      placeholder="밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-bitcoin-sign text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가비 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 참가비와 할인 정보를 설정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 가격 표시 방식 (사토시 고정) -->
+          <input type="hidden" name="price_display" value="sats">
+          
+          <!-- 참가비 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
+              참가비 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price" name="price" required min="0" placeholder="밋업 참가비를 입력하세요">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">참가비는 사토시 단위로 입력하세요</p>
+          </div>
+
+          <!-- 할인 설정 -->
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="is_discounted" name="is_discounted" 
+                     class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+              <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">조기등록 할인 적용</label>
+            </div>
+          </div>
+
+          <!-- 할인가 -->
+          <div class="mb-6 hidden" id="discountSection">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">할인가는 정가보다 낮아야 합니다</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 옵션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-list text-yellow-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">참가 유형, 식사 옵션 등을 설정할 수 있습니다</p>
+          </div>
+        </div>
+
+        <div id="optionsContainer" class="space-y-4 mb-6">
+          <!-- 옵션들이 여기에 동적으로 추가됩니다 -->
+        </div>
+        
+        <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
+          <i class="fas fa-plus text-sm"></i>
+          <span>옵션 추가</span>
+        </button>
+      </div>
+
+      <!-- 결제완료 안내 메시지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-message text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가 완료 안내 메시지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">참가 신청 완료 후 참가자에게 보여줄 메시지를 설정하세요</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="completion_message">안내 메시지</label>
+          <textarea class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                    id="completion_message" name="completion_message" rows="4"
+                    placeholder="참가 신청 완료 후 보여줄 메시지를 입력하세요"></textarea>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">밋업 장소, 연락처, 준비물 등을 안내할 수 있습니다</p>
+        </div>
+      </div>
+
+      <!-- 밋업 이미지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-images text-indigo-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">밋업 이미지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 이미지를 업로드하세요 (1:1 비율 권장)</p>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">밋업 이미지 (1:1 비율 권장)</label>
+          <div class="drag-drop-area" id="imageDropArea">
+            <div class="text-center">
+              <i class="fas fa-image text-4xl text-gray-400 mb-4"></i>
+              <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 드래그하거나 클릭하여 업로드</p>
+              <p class="text-sm text-gray-500 dark:text-gray-500">최대 10MB, JPG/PNG 형식 (1장만 업로드 가능)</p>
+            </div>
+            <input type="file" id="imageInput" name="images" accept="image/*" class="hidden">
+          </div>
+          <div id="imagePreview" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"></div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'meetup:meetup_list' store.store_id %}" 
+           class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+          취소
+        </a>
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
+          밋업 등록
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/meetup_add.js' %}"></script>
+{% endblock %} 
