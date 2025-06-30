@@ -50,40 +50,115 @@
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-      <!-- 밋업 이미지 -->
-      <div class="space-y-4">
-        <!-- 메인 이미지 -->
-        <div class="meetup-image-container relative">
-          {% if meetup.images.exists %}
-          <img id="mainImage" src="{{ meetup.images.first.file_url }}" alt="{{ meetup.name }}" 
-               class="w-full h-full object-cover">
-          {% else %}
-          <div class="w-full h-full flex items-center justify-center">
-            <div class="text-center text-purple-400 dark:text-purple-300">
-              <i class="fas fa-users text-6xl mb-4"></i>
-              <div class="text-lg">이미지 없음</div>
+      <!-- 왼쪽: 밋업 이미지, 소개, 주최자 연락처 -->
+      <div class="space-y-6">
+        <!-- 밋업 이미지 -->
+        <div class="space-y-4">
+          <!-- 메인 이미지 -->
+          <div class="meetup-image-container relative">
+            {% if meetup.images.exists %}
+            <img id="mainImage" src="{{ meetup.images.first.file_url }}" alt="{{ meetup.name }}" 
+                 class="w-full h-full object-cover">
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center">
+              <div class="text-center text-purple-400 dark:text-purple-300">
+                <i class="fas fa-users text-6xl mb-4"></i>
+                <div class="text-lg">이미지 없음</div>
+              </div>
             </div>
+            {% endif %}
+            
+            <!-- 조기등록 할인 오버레이 -->
+            {% if meetup.is_discounted and meetup.is_early_bird_active %}
+            <div class="absolute top-0 left-0 right-0 bg-black bg-opacity-70 text-white px-4 py-3">
+              <div class="flex items-center justify-center gap-2">
+                <i class="fas fa-bolt text-yellow-400"></i>
+                <span class="text-lg font-bold">조기등록 {{ meetup.public_discount_rate }}% 할인 밋업</span>
+                <i class="fas fa-fire text-red-400"></i>
+              </div>
+              {% if meetup.early_bird_end_datetime %}
+              <div class="text-center text-sm text-yellow-200 mt-1">
+                <i class="fas fa-clock mr-1"></i>
+                {{ meetup.early_bird_end_datetime|date:"m월 d일 H:i" }}까지 / <span id="early-bird-countdown-overlay">계산 중...</span>
+              </div>
+              <script type="application/json" id="countdown-data">
+              {
+                "endDateTime": "{{ meetup.early_bird_end_datetime|date:'Y-m-d H:i:s' }}"
+              }
+              </script>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- 썸네일 이미지 -->
+          {% if meetup.images.all|length > 1 %}
+          <div class="grid grid-cols-4 gap-3">
+            {% for image in meetup.images.all %}
+            <div class="thumbnail {% if forloop.first %}active{% endif %}" 
+                 onclick="changeMainImage('{{ image.file_url }}', this)">
+              <img src="{{ image.file_url }}" alt="{{ meetup.name }}" 
+                   class="w-full h-full object-cover rounded cursor-pointer hover:opacity-80 transition-opacity">
+            </div>
+            {% endfor %}
           </div>
           {% endif %}
-          
-
         </div>
-        
-        <!-- 썸네일 이미지 -->
-        {% if meetup.images.all|length > 1 %}
-        <div class="grid grid-cols-4 gap-3">
-          {% for image in meetup.images.all %}
-          <div class="thumbnail {% if forloop.first %}active{% endif %}" 
-               onclick="changeMainImage('{{ image.file_url }}', this)">
-            <img src="{{ image.file_url }}" alt="{{ meetup.name }}" 
-                 class="w-full h-full object-cover rounded cursor-pointer hover:opacity-80 transition-opacity">
+
+        <!-- 밋업 소개 -->
+        {% if meetup.description %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 mb-4">
+            <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">밋업 소개</h3>
           </div>
-          {% endfor %}
+          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white">
+            {{ meetup.description }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 주최자 정보 -->
+        {% if meetup.organizer_contact or meetup.organizer_email or meetup.organizer_chat_channel %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 mb-4">
+            <i class="fas fa-user-tie text-purple-500 text-lg"></i>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">주최자 연락처</h3>
+          </div>
+          <div class="space-y-3">
+            {% if meetup.organizer_contact %}
+            <div class="flex items-center gap-3">
+              <i class="fas fa-phone text-gray-500 w-4"></i>
+              <span class="text-gray-900 dark:text-white">{{ meetup.organizer_contact }}</span>
+            </div>
+            {% endif %}
+            {% if meetup.organizer_email %}
+            <div class="flex items-center gap-3">
+              <i class="fas fa-envelope text-gray-500 w-4"></i>
+              <a href="mailto:{{ meetup.organizer_email }}" 
+                 class="text-blue-600 dark:text-blue-400 hover:underline">
+                {{ meetup.organizer_email }}
+              </a>
+            </div>
+            {% endif %}
+            {% if meetup.organizer_chat_channel %}
+            <div class="flex items-center gap-3">
+              <i class="fas fa-comments text-gray-500 w-4"></i>
+              <a href="{{ meetup.organizer_chat_channel }}" 
+                 target="_blank" 
+                 rel="noopener noreferrer"
+                 class="text-blue-600 dark:text-blue-400 hover:underline">
+                소통채널 바로가기
+                <i class="fas fa-external-link-alt text-xs ml-1"></i>
+              </a>
+            </div>
+            {% endif %}
+          </div>
         </div>
         {% endif %}
       </div>
 
-      <!-- 밋업 정보 -->
+      <!-- 오른쪽: 기존 밋업 정보 -->
       <div class="space-y-4">
         <!-- 제목 -->
         <div>
@@ -106,6 +181,31 @@
           <div class="text-lg text-gray-600 dark:text-gray-400">
             {{ meetup.date_time|date:"H:i" }}
           </div>
+        </div>
+        {% endif %}
+
+        <!-- 장소 정보 -->
+        {% if meetup.location_full_address or meetup.special_notes %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 mb-4">
+            <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장소</h3>
+          </div>
+          {% if meetup.location_full_address %}
+          <div class="text-gray-900 dark:text-white mb-3">
+            {{ meetup.location_full_address }}
+          </div>
+          {% endif %}
+          {% if meetup.special_notes %}
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+            <div class="flex items-start gap-2">
+              <i class="fas fa-exclamation-circle text-yellow-600 dark:text-yellow-400 text-sm mt-0.5"></i>
+              <div class="text-sm text-yellow-800 dark:text-yellow-200">
+                <strong>특이사항:</strong> {{ meetup.special_notes }}
+              </div>
+            </div>
+          </div>
+          {% endif %}
         </div>
         {% endif %}
 
@@ -146,18 +246,6 @@
               <div class="text-lg text-gray-500 line-through">
                 {{ meetup.price|floatformat:0|intcomma }} sats
               </div>
-              {% endif %}
-              {% if meetup.early_bird_end_datetime %}
-              <div class="text-sm text-red-600 dark:text-red-400 mt-2">
-                <span>조기등록 마감: {{ meetup.early_bird_end_datetime|date:"m월 d일 H:i" }}까지</span>
-                <span class="mx-2">/</span>
-                <span id="early-bird-countdown">계산 중...</span>
-              </div>
-              <script type="application/json" id="countdown-data">
-              {
-                "endDateTime": "{{ meetup.early_bird_end_datetime|date:'Y-m-d H:i:s' }}"
-              }
-              </script>
               {% endif %}
               {% else %}
               {% if meetup.current_price == 0 %}
@@ -276,20 +364,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 밋업 설명 -->
-    {% if meetup.description %}
-    <div class="mt-16">
-      <div class="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">밋업 소개</h2>
-        <div class="prose max-w-none markdown-content">
-          {{ meetup.description }}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-
   </div>
 </div>
 

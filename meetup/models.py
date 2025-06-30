@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import EmailValidator, RegexValidator
 from stores.models import Store
 
 class Meetup(models.Model):
@@ -7,6 +8,30 @@ class Meetup(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='meetups')
     name = models.CharField(max_length=200, verbose_name="밋업명")
     description = models.TextField(verbose_name="설명", blank=True)
+    
+    # 밋업 일시 및 장소 정보
+    date_time = models.DateTimeField(verbose_name="밋업 일시", null=True, blank=True)
+    location_postal_code = models.CharField(max_length=10, verbose_name="우편번호", blank=True)
+    location_address = models.CharField(max_length=200, verbose_name="기본주소", blank=True)
+    location_detail_address = models.CharField(max_length=200, verbose_name="상세주소", blank=True)
+    special_notes = models.TextField(verbose_name="특이사항", blank=True)
+    
+    # 주최자 정보
+    organizer_contact = models.CharField(
+        max_length=20, 
+        verbose_name="주최자 연락처", 
+        blank=True,
+        validators=[RegexValidator(
+            regex=r'^[\d\-\+\(\)\s]+$',
+            message='올바른 연락처 형식이 아닙니다.',
+        )]
+    )
+    organizer_email = models.EmailField(
+        verbose_name="주최자 이메일", 
+        blank=True,
+        validators=[EmailValidator()]
+    )
+    organizer_chat_channel = models.URLField(verbose_name="주최자 소통채널", blank=True)
     
     # 가격 정보
     price = models.PositiveIntegerField(verbose_name="참가비(satoshi)", default=0)
@@ -35,6 +60,26 @@ class Meetup(models.Model):
     
     def __str__(self):
         return f"{self.store.store_name} - {self.name}"
+    
+    def clean(self):
+        """모델 검증"""
+        from django.core.exceptions import ValidationError
+        
+        # 연락처와 이메일 중 하나는 필수
+        if not self.organizer_contact and not self.organizer_email:
+            raise ValidationError("주최자 연락처 또는 이메일 중 하나는 필수입니다.")
+    
+    @property
+    def location_full_address(self):
+        """전체 주소 반환"""
+        address_parts = []
+        if self.location_postal_code:
+            address_parts.append(f"({self.location_postal_code})")
+        if self.location_address:
+            address_parts.append(self.location_address)
+        if self.location_detail_address:
+            address_parts.append(self.location_detail_address)
+        return " ".join(address_parts)
     
     @property
     def is_deleted(self):

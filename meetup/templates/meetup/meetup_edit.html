@@ -96,6 +96,182 @@
                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       placeholder="밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ meetup.description|default:'' }}</textarea>
           </div>
+
+          <!-- 밋업 일시 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="date_time">
+              밋업 일시
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="datetime-local" id="date_time" name="date_time" value="{{ meetup.date_time|date:'Y-m-d\TH:i'|default:'' }}">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">밋업이 열리는 날짜와 시간을 설정하세요</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 밋업 장소 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">밋업 장소</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업이 열리는 장소를 수정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 우편번호 검색 -->
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label for="location_postal_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                우편번호
+              </label>
+              <input 
+                type="text" 
+                id="location_postal_code" 
+                name="location_postal_code" 
+                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600" 
+                placeholder="클릭하여 주소 검색" 
+                value="{{ meetup.location_postal_code|default:'' }}"
+                readonly
+              >
+            </div>
+            <div class="flex items-end">
+              <button 
+                type="button" 
+                id="location-address-search-btn" 
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg whitespace-nowrap"
+              >
+                <i class="fas fa-search mr-2"></i>
+                주소검색
+              </button>
+            </div>
+          </div>
+          
+          <!-- 기본주소 -->
+          <div>
+            <label for="location_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              기본주소
+            </label>
+            <input 
+              type="text" 
+              id="location_address" 
+              name="location_address" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600" 
+              placeholder="클릭하여 주소 검색" 
+              value="{{ meetup.location_address|default:'' }}"
+              readonly
+            >
+          </div>
+          
+          <!-- 상세주소 -->
+          <div>
+            <label for="location_detail_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              상세주소
+            </label>
+            <input 
+              type="text" 
+              id="location_detail_address" 
+              name="location_detail_address" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="아파트명, 동/호수 등 상세주소를 입력하세요"
+              value="{{ meetup.location_detail_address|default:'' }}"
+            >
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              <i class="fas fa-info-circle mr-1"></i>
+              위에서 주소 검색 후 상세주소(동/호수, 건물명 등)를 입력해주세요.
+            </p>
+          </div>
+
+          <!-- 특이사항 -->
+          <div>
+            <label for="special_notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              특이사항
+            </label>
+            <textarea 
+              id="special_notes" 
+              name="special_notes" 
+              rows="4"
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors resize-vertical" 
+              placeholder="특이사항이 있으면 입력하세요 (선택사항)"
+            >{{ meetup.special_notes|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 주최자 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-user-tie text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">주최자 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">주최자 연락처 정보를 수정하세요 (연락처 또는 이메일 중 하나는 필수)</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 주최자 연락처 -->
+          <div>
+            <label for="organizer_contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              주최자 연락처
+            </label>
+            <input 
+              type="tel" 
+              id="organizer_contact" 
+              name="organizer_contact" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="010-1234-5678"
+              value="{{ meetup.organizer_contact|default:'' }}"
+            >
+          </div>
+
+          <!-- 주최자 이메일 -->
+          <div>
+            <label for="organizer_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              주최자 이메일
+            </label>
+            <input 
+              type="email" 
+              id="organizer_email" 
+              name="organizer_email" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="organizer@example.com"
+              value="{{ meetup.organizer_email|default:'' }}"
+            >
+          </div>
+
+          <!-- 주최자 소통채널 -->
+          <div>
+            <label for="organizer_chat_channel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              주최자 소통채널
+            </label>
+            <input 
+              type="url" 
+              id="organizer_chat_channel" 
+              name="organizer_chat_channel" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="예: https://open.kakao.com/o/abcd1234"
+              value="{{ meetup.organizer_chat_channel|default:'' }}"
+            >
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">카카오톡 오픈채팅, 텔레그램 등의 링크를 입력하세요 (선택사항)</p>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-sm mt-0.5"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>알림:</strong> 주최자 연락처 또는 이메일 중 최소 하나는 필수 입력 항목입니다.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -132,7 +308,7 @@
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="price" name="price" required min="0" placeholder="밋업 참가비를 입력하세요" value="{{ meetup.price|default:'' }}">
+                                           type="number" id="price" name="price" required min="0" placeholder="밋업 참가비를 입력하세요" value="{{ meetup.price|default:'0' }}">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">참가비는 사토시 단위로 입력하세요</p>
@@ -156,7 +332,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
                 <div class="relative">
                   <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                         type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요" value="{{ meetup.discounted_price|default:'' }}">
+                         type="number" id="discounted_price" name="discounted_price" min="0" placeholder="조기등록 할인가를 입력하세요" value="{{ meetup.discounted_price|default:'0' }}">
                   <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
                 </div>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">할인가는 정가보다 낮아야 합니다</p>
@@ -281,6 +457,33 @@
   </div>
 </div>
 
+<!-- 주소검색 모달 -->
+<div id="location-address-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4 sm:p-6">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
+    <!-- 모달 헤더 -->
+    <div class="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-600">
+      <div class="flex items-center">
+        <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+          <i class="fas fa-map-marker-alt text-blue-600 dark:text-blue-400"></i>
+        </div>
+        <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">주소 검색</h3>
+      </div>
+      <button 
+        type="button" 
+        id="close-location-address-modal" 
+        class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+      >
+        <i class="fas fa-times text-gray-500 dark:text-gray-400 text-xl"></i>
+      </button>
+    </div>
+    
+    <!-- 모달 바디 -->
+    <div class="p-4 sm:p-6">
+      <div id="location-address-search-container" class="w-full h-80 sm:h-96"></div>
+    </div>
+  </div>
+</div>
+
 <!-- 기존 옵션 데이터 -->
 <script>
 window.existingOptions = {{ existing_options|safe }};
@@ -288,6 +491,8 @@ window.existingOptions = {{ existing_options|safe }};
 {% endblock %}
 
 {% block extra_js %}
+<!-- Daum 우편번호 API -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script src="{% static 'js/easymde.min.js' %}"></script>
 <script src="{% static 'js/meetup_add.js' %}"></script>
 {% endblock %} 

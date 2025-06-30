@@ -1,0 +1,167 @@
+/* 밋업 디테일 페이지 스타일 */
+
+/* 썸네일 이미지 스타일 */
+.thumbnail {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.thumbnail:hover {
+    border-color: #8b5cf6;
+    transform: scale(1.05);
+}
+
+.thumbnail.active {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* 옵션 선택 스타일 */
+.option-choice {
+    transition: all 0.2s ease;
+    position: relative;
+    background-color: white !important;
+}
+
+.dark .option-choice {
+    background-color: #111827 !important;
+}
+
+.option-choice:hover {
+    transform: translateY(-1px);
+    border-color: #8b5cf6 !important;
+    background: rgba(139, 92, 246, 0.1) !important;
+}
+
+.dark .option-choice:hover {
+    background: rgba(139, 92, 246, 0.2) !important;
+}
+
+.option-choice.selected {
+    background: #8b5cf6 !important;
+    color: white !important;
+    border-color: #8b5cf6 !important;
+    transform: scale(1.02);
+}
+
+.option-choice.selected .option-title,
+.option-choice.selected .option-price {
+    color: white !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .thumbnail {
+        aspect-ratio: 1;
+    }
+    
+    .option-choice {
+        font-size: 0.875rem;
+    }
+}
+
+/* 진행률 바 애니메이션 */
+.progress-bar {
+    transition: width 0.5s ease-in-out;
+}
+
+/* 버튼 호버 효과 */
+.meetup-join-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.meetup-join-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.meetup-join-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* 다크 모드 최적화 (이미 위에서 정의됨) */
+
+/* 카운트다운 오버레이 스타일 */
+#countdownOverlay {
+    backdrop-filter: blur(2px);
+    border-radius: 12px;
+    margin: 1rem;
+}
+
+#countdown {
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    line-height: 1.2;
+}
+
+#countdown span {
+    display: inline-block;
+    margin: 0 2px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+}
+
+/* 카운트다운 애니메이션 */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.countdown-pulse {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* 카운트다운 완료 시 스타일 */
+.countdown-expired {
+    background: rgba(239, 68, 68, 0.9) !important;
+}
+
+.countdown-expired #countdown {
+    color: #fee2e2;
+}
+
+/* 반응형 카운트다운 */
+@media (max-width: 768px) {
+    #countdown {
+        font-size: 1.5rem;
+        line-height: 1.3;
+    }
+    
+    #countdown span {
+        margin: 0 1px;
+        padding: 2px 4px;
+        font-size: 0.9em;
+    }
+    
+    #countdownOverlay {
+        margin: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #countdown {
+        font-size: 1.2rem;
+    }
+    
+    #countdown span {
+        display: block;
+        margin: 2px 0;
+        font-size: 0.8em;
+    }
+} 

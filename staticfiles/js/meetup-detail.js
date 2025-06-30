@@ -44,9 +44,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 카운트다운 실행
     function startCountdown(endDateTime) {
         const countdownElement = document.getElementById('early-bird-countdown');
-        const countdownOverlayElement = document.getElementById('early-bird-countdown-overlay');
         
-        if (!countdownElement && !countdownOverlayElement) return;
+        if (!countdownElement) return;
         
         function updateCountdown() {
             const now = new Date().getTime();
@@ -55,13 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (distance < 0) {
                 // 카운트다운 종료
-                if (countdownElement) {
-                    countdownElement.textContent = '마감됨';
-                    countdownElement.className = 'text-gray-500';
-                }
-                if (countdownOverlayElement) {
-                    countdownOverlayElement.textContent = '마감됨';
-                }
+                countdownElement.textContent = '마감됨';
+                countdownElement.className = 'text-gray-500';
                 return;
             }
             
@@ -83,23 +77,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 timeText = `${seconds.toString().padStart(2, '0')}초 남음`;
             }
             
-            // 기존 카운트다운 요소 업데이트
-            if (countdownElement) {
-                countdownElement.textContent = timeText;
-                
-                // 긴급도에 따른 색상 변경
-                if (distance < 60000) { // 1분 미만
-                    countdownElement.className = 'text-red-600 font-bold animate-pulse';
-                } else if (distance < 3600000) { // 1시간 미만
-                    countdownElement.className = 'text-orange-600 font-medium';
-                } else {
-                    countdownElement.className = 'text-red-600';
-                }
-            }
+            countdownElement.textContent = timeText;
             
-            // 오버레이 카운트다운 요소 업데이트
-            if (countdownOverlayElement) {
-                countdownOverlayElement.textContent = timeText;
+            // 긴급도에 따른 색상 변경
+            if (distance < 60000) { // 1분 미만
+                countdownElement.className = 'text-red-600 font-bold animate-pulse';
+            } else if (distance < 3600000) { // 1시간 미만
+                countdownElement.className = 'text-orange-600 font-medium';
+            } else {
+                countdownElement.className = 'text-red-600';
             }
         }
         

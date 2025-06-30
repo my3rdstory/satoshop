@@ -17,16 +17,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 할인 체크박스 처리
     if (isDiscountedCheckbox) {
+        const earlyBirdEndDate = document.getElementById('early_bird_end_date');
+        const earlyBirdEndTime = document.getElementById('early_bird_end_time');
+        
+        // 초기 로드 시 할인 체크박스 상태에 따라 required 속성 설정
+        if (isDiscountedCheckbox.checked) {
+            if (earlyBirdEndDate) {
+                earlyBirdEndDate.setAttribute('required', 'required');
+            }
+        } else {
+            if (earlyBirdEndDate) {
+                earlyBirdEndDate.removeAttribute('required');
+            }
+        }
+        
         isDiscountedCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 discountSection.classList.remove('hidden');
+                // 할인 적용 시 조기등록 종료일 필수로 설정
+                if (earlyBirdEndDate) {
+                    earlyBirdEndDate.setAttribute('required', 'required');
+                }
             } else {
                 discountSection.classList.add('hidden');
                 discountedPriceInput.value = '';
                 // 조기등록 종료 날짜/시간 필드도 초기화
-                const earlyBirdEndDate = document.getElementById('early_bird_end_date');
-                const earlyBirdEndTime = document.getElementById('early_bird_end_time');
-                if (earlyBirdEndDate) earlyBirdEndDate.value = '';
+                if (earlyBirdEndDate) {
+                    earlyBirdEndDate.value = '';
+                    earlyBirdEndDate.removeAttribute('required');
+                }
                 if (earlyBirdEndTime) earlyBirdEndTime.value = '23:59';
             }
         });
@@ -78,8 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // 마크다운 에디터 초기화
+    let easyMDE = null;
     if (document.getElementById('description')) {
-        const easyMDE = new EasyMDE({
+        easyMDE = new EasyMDE({
             element: document.getElementById('description'),
             placeholder: '밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요...',
             spellChecker: false,
@@ -227,9 +247,47 @@ document.addEventListener('DOMContentLoaded', function() {
         choicesContainer.appendChild(choiceDiv);
     };
 
+    function collectOptionsData() {
+        const optionSections = document.querySelectorAll('.option-section');
+        const options = [];
+        
+        optionSections.forEach((section, optionIndex) => {
+            const optionName = section.querySelector('input[name*="[name]"]').value.trim();
+            if (!optionName) return;
+            
+            const choices = [];
+            const choiceInputs = section.querySelectorAll('.option-choices-container > div');
+            
+            choiceInputs.forEach((choiceDiv, choiceIndex) => {
+                const nameInput = choiceDiv.querySelector('input[name*="[name]"]');
+                const priceInput = choiceDiv.querySelector('input[name*="[price]"]');
+                
+                if (nameInput && nameInput.value.trim()) {
+                    choices.push({
+                        name: nameInput.value.trim(),
+                        additional_price: parseInt(priceInput.value) || 0,
+                        order: choiceIndex
+                    });
+                }
+            });
+            
+            if (choices.length > 0) {
+                options.push({
+                    name: optionName,
+                    is_required: false, // 추후 필요시 체크박스 추가
+                    order: optionIndex,
+                    choices: choices
+                });
+            }
+        });
+        
+        return options;
+    }
+
     function validateForm() {
         const name = document.getElementById('name').value.trim();
-        const description = document.getElementById('description').value.trim();
+        // EasyMDE 에디터에서 값 가져오기
+        const description = easyMDE ? easyMDE.value().trim() : document.getElementById('description').value.trim();
         const price = parseFloat(document.getElementById('price').value);
         
         if (!name) {
@@ -299,5 +357,260 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    // 폼 제출 시 옵션 데이터 전송
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // 옵션 데이터 수집 및 JSON으로 변환
+            const optionsData = collectOptionsData();
+            
+            // 숨겨진 input 필드에 JSON 데이터 저장
+            let optionsInput = document.querySelector('input[name="options_json"]');
+            if (!optionsInput) {
+                optionsInput = document.createElement('input');
+                optionsInput.type = 'hidden';
+                optionsInput.name = 'options_json';
+                form.appendChild(optionsInput);
+            }
+            optionsInput.value = JSON.stringify(optionsData);
+            
+                         console.log('전송될 옵션 데이터:', optionsData); // 디버깅용
+         });
+     }
+
+    // 기존 옵션 로드 함수 (수정 페이지용)
+    function loadExistingOption(option) {
+        const optionSection = document.createElement('div');
+        optionSection.className = 'option-section bg-gray-50 dark:bg-gray-700/50 rounded-lg p-6 space-y-4';
+        
+        // 기본 옵션 구조 생성
+        optionSection.innerHTML = `
+            <div class="flex items-center gap-4">
+                <div class="flex-1">
+                    <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                           type="text" name="options[${optionCount}][name]" required
+                           placeholder="옵션명 (예: 참가 유형, 식사 옵션)" value="${option.name}">
+                </div>
+                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        onclick="this.closest('.option-section').remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="option-choices-container space-y-3">
+            </div>
+            <button type="button" class="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 rounded-lg transition-colors" 
+                    onclick="addOptionChoice(this)">
+                <i class="fas fa-plus text-sm"></i>
+                <span>선택지 추가</span>
+            </button>
+        `;
+        
+        const choicesContainer = optionSection.querySelector('.option-choices-container');
+        
+        // 기존 선택지들 추가
+        option.choices.forEach((choice, choiceIndex) => {
+            const choiceDiv = document.createElement('div');
+            choiceDiv.className = 'flex items-center gap-3';
+            choiceDiv.innerHTML = `
+                <input class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       type="text" name="options[${optionCount}][choices][${choiceIndex}][name]" required
+                       placeholder="선택지명" value="${choice.name}">
+                <div class="relative">
+                    <input class="w-32 px-3 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                           type="number" name="options[${optionCount}][choices][${choiceIndex}][price]" min="0"
+                           placeholder="추가금액" value="${choice.additional_price || 0}">
+                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 text-xs">sats</span>
+                </div>
+                <button type="button" class="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                        onclick="this.closest('.flex').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            choicesContainer.appendChild(choiceDiv);
+        });
+        
+        optionsContainer.appendChild(optionSection);
+        optionCount++;
+    }
+
+    // 기존 옵션 로드 (수정 페이지용)
+    if (window.existingOptions && window.existingOptions.length > 0) {
+        window.existingOptions.forEach(option => {
+            loadExistingOption(option);
+        });
+    }
+
+    // 주소 검색 기능
+    const locationAddressSearchBtn = document.getElementById('location-address-search-btn');
+    const locationAddressModal = document.getElementById('location-address-modal');
+    const closeLocationModalBtn = document.getElementById('close-location-address-modal');
+    const locationPostalCodeField = document.getElementById('location_postal_code');
+    const locationAddressField = document.getElementById('location_address');
+    
+    let currentLocationPostcodeInstance = null;
+    
+    // 모달 열기/닫기 함수
+    function openLocationAddressModal() {
+        if (locationAddressModal) {
+            locationAddressModal.classList.remove('hidden');
+            locationAddressModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function closeLocationAddressModal() {
+        if (locationAddressModal) {
+            locationAddressModal.classList.add('hidden');
+            locationAddressModal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+        
+        setTimeout(() => {
+            const container = document.getElementById('location-address-search-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+            currentLocationPostcodeInstance = null;
+        }, 300);
+    }
+
+    // 주소 검색 기능
+    function execLocationDaumPostcode() {
+        if (!locationAddressModal) {
+            console.error('location-address-modal 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        if (!locationAddressModal.classList.contains('hidden')) {
+            return;
+        }
+        
+        openLocationAddressModal();
+        
+        const container = document.getElementById('location-address-search-container');
+        if (!container) {
+            console.error('location-address-search-container 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        if (currentLocationPostcodeInstance || container.children.length > 0) {
+            container.innerHTML = '';
+            currentLocationPostcodeInstance = null;
+            setTimeout(() => {
+                createLocationPostcodeInstance(container);
+            }, 100);
+        } else {
+            createLocationPostcodeInstance(container);
+        }
+    }
+    
+    function createLocationPostcodeInstance(container) {
+        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                          window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        currentLocationPostcodeInstance = new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = '';
+                var extraAddr = '';
+
+                if (data.userSelectedType === 'R') {
+                    addr = data.roadAddress;
+                } else {
+                    addr = data.jibunAddress;
+                }
+
+                if(data.userSelectedType === 'R'){
+                    if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                        extraAddr += data.bname;
+                    }
+                    if(data.buildingName !== '' && data.apartment === 'Y'){
+                        extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                    }
+                    if(extraAddr !== ''){
+                        extraAddr = ' (' + extraAddr + ')';
+                    }
+                    addr += extraAddr;
+                }
+
+                document.getElementById('location_postal_code').value = data.zonecode;
+                document.getElementById('location_address').value = addr;
+
+                closeLocationAddressModal();
+
+                setTimeout(() => {
+                    const detailField = document.getElementById('location_detail_address');
+                    if (detailField) {
+                        detailField.focus();
+                    }
+                }, 200);
+            },
+            theme: isDarkMode ? {
+                bgColor: "#1F2937",
+                searchBgColor: "#374151",
+                contentBgColor: "#1F2937",
+                pageBgColor: "#111827",
+                textColor: "#F9FAFB",
+                queryTextColor: "#F9FAFB",
+                postcodeTextColor: "#F59E0B",
+                emphTextColor: "#60A5FA",
+                outlineColor: "#4B5563"
+            } : {
+                bgColor: "#FFFFFF",
+                searchBgColor: "#0052CC",
+                contentBgColor: "#FFFFFF",
+                pageBgColor: "#FAFAFA",
+                textColor: "#333333",
+                queryTextColor: "#FFFFFF",
+                postcodeTextColor: "#0052CC",
+                emphTextColor: "#0052CC",
+                outlineColor: "#E0E0E0"
+            },
+            width: '100%',
+            height: '100%',
+            animation: false,
+            hideMapBtn: false,
+            hideEngBtn: false,
+            autoMapping: true,
+            shorthand: true
+        });
+        
+        currentLocationPostcodeInstance.embed(container);
+    }
+    
+    // 이벤트 리스너 등록
+    if (locationAddressSearchBtn) {
+        locationAddressSearchBtn.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (locationPostalCodeField) {
+        locationPostalCodeField.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (locationAddressField) {
+        locationAddressField.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (closeLocationModalBtn) {
+        closeLocationModalBtn.addEventListener('click', closeLocationAddressModal);
+    }
+    
+    if (locationAddressModal) {
+        locationAddressModal.addEventListener('click', function(e) {
+            if (e.target === locationAddressModal) {
+                closeLocationAddressModal();
+            }
+        });
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && locationAddressModal && !locationAddressModal.classList.contains('hidden')) {
+            closeLocationAddressModal();
+        }
+    });
 
 }); 

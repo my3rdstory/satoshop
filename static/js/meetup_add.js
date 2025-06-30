@@ -445,4 +445,172 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // 주소 검색 기능
+    const locationAddressSearchBtn = document.getElementById('location-address-search-btn');
+    const locationAddressModal = document.getElementById('location-address-modal');
+    const closeLocationModalBtn = document.getElementById('close-location-address-modal');
+    const locationPostalCodeField = document.getElementById('location_postal_code');
+    const locationAddressField = document.getElementById('location_address');
+    
+    let currentLocationPostcodeInstance = null;
+    
+    // 모달 열기/닫기 함수
+    function openLocationAddressModal() {
+        if (locationAddressModal) {
+            locationAddressModal.classList.remove('hidden');
+            locationAddressModal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function closeLocationAddressModal() {
+        if (locationAddressModal) {
+            locationAddressModal.classList.add('hidden');
+            locationAddressModal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+        
+        setTimeout(() => {
+            const container = document.getElementById('location-address-search-container');
+            if (container) {
+                container.innerHTML = '';
+            }
+            currentLocationPostcodeInstance = null;
+        }, 300);
+    }
+
+    // 주소 검색 기능
+    function execLocationDaumPostcode() {
+        if (!locationAddressModal) {
+            console.error('location-address-modal 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        if (!locationAddressModal.classList.contains('hidden')) {
+            return;
+        }
+        
+        openLocationAddressModal();
+        
+        const container = document.getElementById('location-address-search-container');
+        if (!container) {
+            console.error('location-address-search-container 요소를 찾을 수 없습니다.');
+            return;
+        }
+        
+        if (currentLocationPostcodeInstance || container.children.length > 0) {
+            container.innerHTML = '';
+            currentLocationPostcodeInstance = null;
+            setTimeout(() => {
+                createLocationPostcodeInstance(container);
+            }, 100);
+        } else {
+            createLocationPostcodeInstance(container);
+        }
+    }
+    
+    function createLocationPostcodeInstance(container) {
+        const isDarkMode = document.documentElement.classList.contains('dark') || 
+                          window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        currentLocationPostcodeInstance = new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = '';
+                var extraAddr = '';
+
+                if (data.userSelectedType === 'R') {
+                    addr = data.roadAddress;
+                } else {
+                    addr = data.jibunAddress;
+                }
+
+                if(data.userSelectedType === 'R'){
+                    if(data.bname !== '' && /[동|로|가]$/g.test(data.bname)){
+                        extraAddr += data.bname;
+                    }
+                    if(data.buildingName !== '' && data.apartment === 'Y'){
+                        extraAddr += (extraAddr !== '' ? ', ' + data.buildingName : data.buildingName);
+                    }
+                    if(extraAddr !== ''){
+                        extraAddr = ' (' + extraAddr + ')';
+                    }
+                    addr += extraAddr;
+                }
+
+                document.getElementById('location_postal_code').value = data.zonecode;
+                document.getElementById('location_address').value = addr;
+
+                closeLocationAddressModal();
+
+                setTimeout(() => {
+                    const detailField = document.getElementById('location_detail_address');
+                    if (detailField) {
+                        detailField.focus();
+                    }
+                }, 200);
+            },
+            theme: isDarkMode ? {
+                bgColor: "#1F2937",
+                searchBgColor: "#374151",
+                contentBgColor: "#1F2937",
+                pageBgColor: "#111827",
+                textColor: "#F9FAFB",
+                queryTextColor: "#F9FAFB",
+                postcodeTextColor: "#F59E0B",
+                emphTextColor: "#60A5FA",
+                outlineColor: "#4B5563"
+            } : {
+                bgColor: "#FFFFFF",
+                searchBgColor: "#0052CC",
+                contentBgColor: "#FFFFFF",
+                pageBgColor: "#FAFAFA",
+                textColor: "#333333",
+                queryTextColor: "#FFFFFF",
+                postcodeTextColor: "#0052CC",
+                emphTextColor: "#0052CC",
+                outlineColor: "#E0E0E0"
+            },
+            width: '100%',
+            height: '100%',
+            animation: false,
+            hideMapBtn: false,
+            hideEngBtn: false,
+            autoMapping: true,
+            shorthand: true
+        });
+        
+        currentLocationPostcodeInstance.embed(container);
+    }
+    
+    // 이벤트 리스너 등록
+    if (locationAddressSearchBtn) {
+        locationAddressSearchBtn.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (locationPostalCodeField) {
+        locationPostalCodeField.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (locationAddressField) {
+        locationAddressField.addEventListener('click', execLocationDaumPostcode);
+    }
+    
+    if (closeLocationModalBtn) {
+        closeLocationModalBtn.addEventListener('click', closeLocationAddressModal);
+    }
+    
+    if (locationAddressModal) {
+        locationAddressModal.addEventListener('click', function(e) {
+            if (e.target === locationAddressModal) {
+                closeLocationAddressModal();
+            }
+        });
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && locationAddressModal && !locationAddressModal.classList.contains('hidden')) {
+            closeLocationAddressModal();
+        }
+    });
+
 }); 
