@@ -78,8 +78,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     // 마크다운 에디터 초기화
+    let easyMDE = null;
     if (document.getElementById('description')) {
-        const easyMDE = new EasyMDE({
+        easyMDE = new EasyMDE({
             element: document.getElementById('description'),
             placeholder: '밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요...',
             spellChecker: false,
@@ -229,7 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateForm() {
         const name = document.getElementById('name').value.trim();
-        const description = document.getElementById('description').value.trim();
+        // EasyMDE 에디터에서 값 가져오기
+        const description = easyMDE ? easyMDE.value().trim() : document.getElementById('description').value.trim();
         const price = parseFloat(document.getElementById('price').value);
         
         if (!name) {
