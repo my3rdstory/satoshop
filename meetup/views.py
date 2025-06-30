@@ -136,9 +136,13 @@ def meetup_detail(request, store_id, meetup_id):
         if not meetup.is_active or meetup.is_temporarily_closed:
             raise Http404("밋업을 찾을 수 없습니다.")
     
+    # 밋업 옵션 조회
+    meetup_options = meetup.options.prefetch_related('choices').order_by('order')
+    
     context = {
         'store': store,
         'meetup': meetup,
+        'meetup_options': meetup_options,
         'meetup_id': meetup_id,
     }
     

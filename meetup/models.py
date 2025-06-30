@@ -1,11 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from stores.models import Store
-import uuid
 
 class Meetup(models.Model):
     """밋업"""
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='meetups')
     name = models.CharField(max_length=200, verbose_name="밋업명")
     description = models.TextField(verbose_name="설명", blank=True)
@@ -67,19 +65,27 @@ class Meetup(models.Model):
         return self.price
     
     @property
+    def early_bird_end_datetime(self):
+        """조기등록 종료 날짜시간"""
+        if not self.early_bird_end_date:
+            return None
+            
+        end_datetime = timezone.datetime.combine(
+            self.early_bird_end_date,
+            self.early_bird_end_time or timezone.time(23, 59)
+        )
+        return timezone.make_aware(end_datetime)
+    
+    @property
     def is_early_bird_active(self):
         """조기등록 할인이 활성화되어 있는지"""
         if not self.early_bird_end_date:
             return False
             
         now = timezone.now()
-        end_datetime = timezone.datetime.combine(
-            self.early_bird_end_date,
-            self.early_bird_end_time or timezone.time(23, 59)
-        )
-        end_datetime = timezone.make_aware(end_datetime)
+        end_datetime = self.early_bird_end_datetime
         
-        return now <= end_datetime
+        return now <= end_datetime if end_datetime else False
     
     @property
     def public_discount_rate(self):
