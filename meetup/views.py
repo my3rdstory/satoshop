@@ -581,7 +581,7 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
         
         # 인보이스 생성
         amount_sats = order.total_price
-        memo = f"밋업 참가비 - {meetup.name}"
+        memo = f"{meetup.name}"
         
         result = blink_service.create_invoice(
             amount_sats=amount_sats,
@@ -749,10 +749,16 @@ def meetup_checkout_complete(request, store_id, meetup_id, order_id):
         status__in=['confirmed', 'completed']
     )
     
+    # 할인 금액 계산 (조기등록 할인)
+    discount_amount = 0
+    if order.is_early_bird and order.original_price:
+        discount_amount = order.original_price - order.base_price
+    
     context = {
         'store': store,
         'meetup': meetup,
         'order': order,
+        'discount_amount': discount_amount,
     }
     
     return render(request, 'meetup/meetup_checkout_complete.html', context)
