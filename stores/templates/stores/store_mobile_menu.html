@@ -49,6 +49,9 @@
     <a href="{% url 'menu:menu_board' store_id=user_active_store.store_id %}" target="_blank" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-clipboard-list mr-2"></i>메뉴판 이동
     </a>
+    <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-users mr-2"></i>밋업 관리
+    </a>
     <div class="border-t border-gray-600 my-1"></div>
     {% else %}
     <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

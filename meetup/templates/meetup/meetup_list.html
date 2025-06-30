@@ -32,11 +32,6 @@
 
         {% if not is_public_view %}
         <div class="flex items-center space-x-3">
-          <a href="{% url 'meetup:category_manage' store.store_id %}" 
-             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-            <i class="fas fa-tags mr-2"></i>
-            카테고리 관리
-          </a>
           <a href="{% url 'meetup:add_meetup' store.store_id %}" 
              class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-lg">
             <i class="fas fa-plus mr-2"></i>

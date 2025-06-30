@@ -1,0 +1,24 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}밋업 상세 - {{ store.store_name }}{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+        밋업 상세 (ID: {{ meetup_id }})
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300 mb-6">
+        현재 밋업 기능을 개발 중입니다.
+      </p>
+      <a href="{% url 'meetup:meetup_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        목록으로 돌아가기
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %} 

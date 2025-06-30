@@ -64,23 +64,7 @@
     <form method="post" enctype="multipart/form-data" id="meetupForm" class="space-y-8">
       {% csrf_token %}
 
-      <!-- 카테고리 선택 -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
-        <div class="flex items-center mb-6">
-          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
-            <i class="fas fa-tags text-purple-500 text-lg"></i>
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">카테고리</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">밋업이 속할 카테고리를 선택하세요 (선택사항)</p>
-          </div>
-        </div>
 
-        <div id="categorySelection" class="flex flex-wrap gap-3">
-          <!-- 카테고리 체크박스들이 여기에 동적으로 로드됩니다 -->
-          <p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러오는 중...</p>
-        </div>
-      </div>
 
       <!-- 기본 정보 -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
@@ -156,13 +140,38 @@
 
           <!-- 할인가 -->
           <div class="mb-6 hidden" id="discountSection">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
-            <div class="relative">
-              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요">
-              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+            <div class="space-y-6">
+              <!-- 할인가 입력 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
+                <div class="relative">
+                  <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                         type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요">
+                  <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">할인가는 정가보다 낮아야 합니다</p>
+              </div>
+
+              <!-- 조기등록 종료 날짜 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="early_bird_end_date">
+                  조기등록 종료 날짜 <span class="text-red-500">*</span>
+                </label>
+                <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       type="date" id="early_bird_end_date" name="early_bird_end_date" required>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">이 날짜 이후에는 정가로 판매됩니다</p>
+              </div>
+
+              <!-- 조기등록 종료 시간 -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="early_bird_end_time">
+                  조기등록 종료 시간
+                </label>
+                <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                       type="time" id="early_bird_end_time" name="early_bird_end_time" value="23:59">
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">지정하지 않으면 해당 날짜의 23:59로 설정됩니다</p>
+              </div>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">할인가는 정가보다 낮아야 합니다</p>
           </div>
         </div>
       </div>

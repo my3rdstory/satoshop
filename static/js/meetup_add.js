@@ -23,6 +23,11 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 discountSection.classList.add('hidden');
                 discountedPriceInput.value = '';
+                // 조기등록 종료 날짜/시간 필드도 초기화
+                const earlyBirdEndDate = document.getElementById('early_bird_end_date');
+                const earlyBirdEndTime = document.getElementById('early_bird_end_time');
+                if (earlyBirdEndDate) earlyBirdEndDate.value = '';
+                if (earlyBirdEndTime) earlyBirdEndTime.value = '23:59';
             }
         });
     }
@@ -70,8 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 카테고리 로드
-    loadCategories();
+
 
     // 마크다운 에디터 초기화
     if (document.getElementById('description')) {
@@ -82,9 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toolbar: [
                 'bold', 'italic', 'heading', '|',
                 'unordered-list', 'ordered-list', '|',
-                'link', 'image', '|',
-                'preview', 'side-by-side', 'fullscreen', '|',
-                'guide'
+                'link', 'image'
             ],
             status: false,
             autofocus: false,
@@ -248,12 +250,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // 할인가 검증
         if (isDiscountedCheckbox.checked) {
             const discountedPrice = parseFloat(discountedPriceInput.value);
+            const earlyBirdEndDate = document.getElementById('early_bird_end_date').value;
+            
             if (isNaN(discountedPrice) || discountedPrice <= 0) {
                 alert('올바른 할인가를 입력해주세요.');
                 return false;
             }
             if (discountedPrice >= price) {
                 alert('할인가는 정가보다 낮아야 합니다.');
+                return false;
+            }
+            if (!earlyBirdEndDate) {
+                alert('조기등록 종료 날짜를 선택해주세요.');
+                return false;
+            }
+            
+            // 조기등록 종료 날짜가 오늘 이전인지 검증
+            const today = new Date().toISOString().split('T')[0];
+            if (earlyBirdEndDate < today) {
+                alert('조기등록 종료 날짜는 오늘 이후여야 합니다.');
                 return false;
             }
         }
@@ -284,48 +299,5 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
-    function loadCategories() {
-        const storeId = getStoreIdFromUrl();
-        if (!storeId) return;
 
-        fetch(`/meetup/${storeId}/categories/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    renderCategorySelection(data.categories);
-                } else {
-                    document.getElementById('categorySelection').innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러올 수 없습니다.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('카테고리 로드 오류:', error);
-                document.getElementById('categorySelection').innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">카테고리를 불러올 수 없습니다.</p>';
-            });
-    }
-
-    function renderCategorySelection(categories) {
-        const container = document.getElementById('categorySelection');
-        
-        if (categories.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm">등록된 카테고리가 없습니다.</p>';
-            return;
-        }
-
-        container.innerHTML = categories.map(category => `
-            <label class="flex items-center">
-                <input type="checkbox" name="categories" value="${category.id}" 
-                       class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">${category.name}</span>
-            </label>
-        `).join('');
-    }
-
-    function getStoreIdFromUrl() {
-        const pathParts = window.location.pathname.split('/');
-        const storeIndex = pathParts.indexOf('store');
-        if (storeIndex !== -1 && storeIndex + 1 < pathParts.length) {
-            return pathParts[storeIndex + 1];
-        }
-        return null;
-    }
 }); 
