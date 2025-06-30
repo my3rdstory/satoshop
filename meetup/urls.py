@@ -6,6 +6,7 @@ app_name = 'meetup'
 urlpatterns = [
     # 밋업 목록 (공개/관리자)
     path('<str:store_id>/', views.meetup_list, name='meetup_list'),
+    path('<str:store_id>/list/', views.public_meetup_list, name='public_meetup_list'),
     
     # 밋업 추가
     path('<str:store_id>/add/', views.add_meetup, name='add_meetup'),

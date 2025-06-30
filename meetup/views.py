@@ -48,6 +48,32 @@ def meetup_list(request, store_id):
     
     return render(request, 'meetup/meetup_list.html', context)
 
+def public_meetup_list(request, store_id):
+    """일반 사용자용 밋업 목록"""
+    try:
+        store = Store.objects.get(store_id=store_id, is_active=True, deleted_at__isnull=True)
+    except Store.DoesNotExist:
+        # 스토어가 존재하지 않는 경우
+        context = {
+            'store_id': store_id,
+            'error_type': 'store_not_found'
+        }
+        return render(request, 'meetup/store_not_found.html', context, status=404)
+    
+    meetups = Meetup.objects.filter(
+        store=store, 
+        is_active=True, 
+        is_temporarily_closed=False,
+        deleted_at__isnull=True
+    ).prefetch_related('images').order_by('-created_at')
+    
+    context = {
+        'store': store,
+        'meetups': meetups,
+        'is_public_view': True,
+    }
+    return render(request, 'meetup/meetup_list.html', context)
+
 @login_required
 def add_meetup(request, store_id):
     """밋업 추가"""

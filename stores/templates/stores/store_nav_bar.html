@@ -41,6 +41,11 @@
           <i class="fas fa-list mr-2 text-xs"></i>
           상품 목록
         </a>
+        <!-- 밋업 목록 버튼 (데스크톱에서만 표시) -->
+        <a href="{% url 'meetup:public_meetup_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+          <i class="fas fa-users mr-2 text-xs"></i>
+          밋업 목록
+        </a>
       </div>
       {% endif %}
     </div>
