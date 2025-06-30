@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const imagePreview = document.getElementById('imagePreview');
     const addOptionBtn = document.getElementById('addOptionBtn');
     const optionsContainer = document.getElementById('optionsContainer');
+    const locationTbdCheckbox = document.getElementById('location_tbd');
+    const locationPostalCode = document.getElementById('location_postal_code');
+    const locationAddress = document.getElementById('location_address');
+    const locationDetailAddress = document.getElementById('location_detail_address');
+    const locationTbdSearchBtn = document.getElementById('location-address-search-btn');
 
     let selectedImages = [];
     let optionCount = 0;
@@ -49,6 +54,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (earlyBirdEndTime) earlyBirdEndTime.value = '23:59';
             }
         });
+    }
+
+    // 장소 추후 공지 체크박스 처리
+    if (locationTbdCheckbox) {
+        const locationFieldsContainer = document.getElementById('location-fields-container');
+        const locationTbdNotice = document.getElementById('location-tbd-notice');
+        
+        locationTbdCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            
+            // 체크되면 장소 관련 필드들 숨김 및 초기화
+            if (isChecked) {
+                if (locationFieldsContainer) {
+                    locationFieldsContainer.classList.add('hidden');
+                }
+                if (locationTbdNotice) {
+                    locationTbdNotice.classList.remove('hidden');
+                }
+                
+                // 장소 관련 필드 값 초기화
+                if (locationPostalCode) {
+                    locationPostalCode.value = '';
+                }
+                if (locationAddress) {
+                    locationAddress.value = '';
+                }
+                if (locationDetailAddress) {
+                    locationDetailAddress.value = '';
+                }
+            } else {
+                // 체크 해제하면 장소 관련 필드들 보이기
+                if (locationFieldsContainer) {
+                    locationFieldsContainer.classList.remove('hidden');
+                }
+                if (locationTbdNotice) {
+                    locationTbdNotice.classList.add('hidden');
+                }
+            }
+        });
+        
+        // 페이지 로드 시 초기 상태 설정
+        if (locationTbdCheckbox.checked) {
+            locationTbdCheckbox.dispatchEvent(new Event('change'));
+        }
     }
 
     // 이미지 업로드 처리
@@ -93,8 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
-
 
     // 마크다운 에디터 초기화
     let easyMDE = null;
@@ -446,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 주소 검색 기능
-    const locationAddressSearchBtn = document.getElementById('location-address-search-btn');
     const locationAddressModal = document.getElementById('location-address-modal');
     const closeLocationModalBtn = document.getElementById('close-location-address-modal');
     const locationPostalCodeField = document.getElementById('location_postal_code');
@@ -583,8 +629,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 이벤트 리스너 등록
-    if (locationAddressSearchBtn) {
-        locationAddressSearchBtn.addEventListener('click', execLocationDaumPostcode);
+    if (locationTbdSearchBtn) {
+        locationTbdSearchBtn.addEventListener('click', execLocationDaumPostcode);
     }
     
     if (locationPostalCodeField) {

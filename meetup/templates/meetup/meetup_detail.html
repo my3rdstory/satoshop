@@ -178,12 +178,12 @@
         {% endif %}
 
         <!-- 장소 정보 -->
-        {% if meetup.location_full_address or meetup.special_notes %}
+        {% if meetup.location_tbd or meetup.location_full_address or meetup.special_notes %}
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3 mb-4">
             <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장소</h3>
-            {% if meetup.location_full_address %}
+            {% if meetup.location_full_address and not meetup.location_tbd %}
             <button onclick="openNaverMap('{{ meetup.location_full_address }}')" 
                     class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
                     title="네이버지도에서 보기">
@@ -192,13 +192,22 @@
             </button>
             {% endif %}
           </div>
-          {% if meetup.location_full_address %}
+          {% if meetup.location_tbd %}
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-sm"></i>
+              <div class="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                장소 추후 공지 예정입니다.
+              </div>
+            </div>
+          </div>
+          {% elif meetup.location_full_address %}
           <div class="text-gray-900 dark:text-white mb-3">
             {{ meetup.location_full_address }}
           </div>
           {% endif %}
           {% if meetup.special_notes %}
-          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 {% if meetup.location_tbd or meetup.location_full_address %}mt-3{% endif %}">
             <div class="flex items-start gap-2">
               <i class="fas fa-exclamation-circle text-yellow-600 dark:text-yellow-400 text-sm mt-0.5"></i>
               <div class="text-sm text-yellow-800 dark:text-yellow-200">

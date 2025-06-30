@@ -16,7 +16,7 @@ class MeetupForm(forms.ModelForm):
         model = Meetup
         fields = [
             'name', 'description', 'date_time', 
-            'location_postal_code', 'location_address', 'location_detail_address', 'special_notes',
+            'location_postal_code', 'location_address', 'location_detail_address', 'location_tbd', 'special_notes',
             'organizer_contact', 'organizer_email', 'organizer_chat_channel',
             'price', 'is_discounted', 'discounted_price',
             'early_bird_end_date', 'early_bird_end_time', 'max_participants',
@@ -47,11 +47,14 @@ class MeetupForm(forms.ModelForm):
                 'readonly': True
             }),
             'location_detail_address': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
+                'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors',
                 'placeholder': '아파트명, 동/호수 등 상세주소를 입력하세요'
             }),
+            'location_tbd': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+            }),
             'special_notes': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
+                'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors',
                 'rows': 4,
                 'placeholder': '특이사항이 있으면 입력하세요 (선택사항)'
             }),

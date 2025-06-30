@@ -326,13 +326,20 @@ def meetup_checkout(request, store_id, meetup_id):
         existing_order = MeetupOrder.objects.filter(
             meetup=meetup,
             user=request.user,
-            status='pending'
+            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
         ).first()
     
     if existing_order:
         # 기존 주문이 30분 이내인 경우 해당 주문으로 이동
         from datetime import timedelta
         if timezone.now() - existing_order.created_at < timedelta(minutes=30):
+            # 취소된 주문은 pending 상태로 복원
+            if existing_order.status == 'cancelled':
+                existing_order.status = 'pending'
+                existing_order.payment_hash = ''
+                existing_order.payment_request = ''
+                existing_order.save()
+            
             # 무료 밋업인 경우 바로 참가 확정 처리
             if existing_order.total_price == 0:
                 existing_order.status = 'confirmed'
@@ -493,7 +500,7 @@ def meetup_checkout_payment(request, store_id, meetup_id, order_id):
         MeetupOrder,
         id=order_id,
         meetup=meetup,
-        status='pending'
+        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
     )
     
     # 주문 생성 후 30분 경과 시 만료
@@ -533,8 +540,12 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
             MeetupOrder,
             id=order_id,
             meetup=meetup,
-            status='pending'
+            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
         )
+        
+        # 취소된 주문은 pending 상태로 복원
+        if order.status == 'cancelled':
+            order.status = 'pending'
         
         # 블링크 서비스 가져오기
         blink_service = get_blink_service_for_store(store)
@@ -543,6 +554,11 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
                 'success': False,
                 'error': '결제 서비스가 설정되지 않았습니다.'
             })
+        
+        # 기존 결제 정보 초기화 (재생성 대비)
+        order.payment_hash = ''
+        order.payment_request = ''
+        order.save()
         
         # 인보이스 생성
         amount_sats = order.total_price
@@ -675,8 +691,10 @@ def cancel_meetup_invoice(request, store_id, meetup_id, order_id):
             payment_hash=payment_hash
         )
         
-        # 주문 취소
+        # 주문 취소 및 결제 정보 초기화
         order.status = 'cancelled'
+        order.payment_hash = ''
+        order.payment_request = ''
         order.save()
         
         return JsonResponse({

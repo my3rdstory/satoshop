@@ -15,6 +15,7 @@ class Meetup(models.Model):
     location_postal_code = models.CharField(max_length=10, verbose_name="우편번호", blank=True)
     location_address = models.CharField(max_length=200, verbose_name="기본주소", blank=True)
     location_detail_address = models.CharField(max_length=200, verbose_name="상세주소", blank=True)
+    location_tbd = models.BooleanField(default=False, verbose_name="장소 추후 공지")
     special_notes = models.TextField(verbose_name="특이사항", blank=True)
     
     # 주최자 정보
