@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice
+from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption
 
 class MeetupImageInline(admin.TabularInline):
     """밋업 이미지 인라인 어드민"""
@@ -187,3 +187,107 @@ class MeetupChoiceAdmin(admin.ModelAdmin):
             return f"{obj.additional_price:,} sats"
         return "무료"
     additional_price_display.short_description = '추가요금'
+
+class MeetupOrderOptionInline(admin.TabularInline):
+    """밋업 주문 옵션 인라인 어드민"""
+    model = MeetupOrderOption
+    extra = 0
+    readonly_fields = ['option', 'choice', 'additional_price']
+    can_delete = False
+    
+    def has_add_permission(self, request, obj=None):
+        return False
+
+@admin.register(MeetupOrder)
+class MeetupOrderAdmin(admin.ModelAdmin):
+    list_display = ['order_number', 'meetup', 'participant_name', 'status_display', 'total_price_display', 'is_early_bird', 'created_at']
+    list_filter = ['status', 'meetup__store', 'is_early_bird', 'created_at', 'paid_at']
+    search_fields = ['order_number', 'participant_name', 'participant_email', 'meetup__name']
+    readonly_fields = ['order_number', 'meetup', 'participant_name', 'participant_email', 'participant_phone', 
+                      'base_price', 'options_price', 'total_price', 'original_price', 'discount_rate',
+                      'is_early_bird', 'payment_hash', 'paid_at', 'created_at', 'updated_at']
+    ordering = ['-created_at']
+    inlines = [MeetupOrderOptionInline]
+    
+    def status_display(self, obj):
+        """상태 표시"""
+        status_colors = {
+            'pending': '#f39c12',     # 주황색
+            'confirmed': '#27ae60',   # 초록색
+            'completed': '#3498db',   # 파란색
+            'cancelled': '#e74c3c',   # 빨간색
+        }
+        status_labels = {
+            'pending': '결제 대기',
+            'confirmed': '참가 확정',
+            'completed': '밋업 완료',
+            'cancelled': '참가 취소',
+        }
+        color = status_colors.get(obj.status, '#95a5a6')
+        label = status_labels.get(obj.status, obj.status)
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color, label
+        )
+    status_display.short_description = '상태'
+    
+    def total_price_display(self, obj):
+        """총 가격 표시"""
+        if obj.is_early_bird and obj.original_price:
+            return format_html(
+                '<span style="text-decoration: line-through; color: #999;">{} sats</span><br>'
+                '<span style="color: #e74c3c; font-weight: bold;">{} sats</span><br>'
+                '<small style="color: #27ae60;">할인 {}%</small>',
+                f"{obj.original_price:,}",
+                f"{obj.total_price:,}",
+                obj.discount_rate
+            )
+        return f"{obj.total_price:,} sats"
+    total_price_display.short_description = '결제금액'
+    
+    fieldsets = (
+        ('주문 정보', {
+            'fields': ('order_number', 'meetup', 'status')
+        }),
+        ('참가자 정보', {
+            'fields': ('participant_name', 'participant_email', 'participant_phone')
+        }),
+        ('가격 정보', {
+            'fields': ('base_price', 'options_price', 'total_price', 'original_price', 'discount_rate', 'is_early_bird')
+        }),
+        ('결제 정보', {
+            'fields': ('payment_hash', 'paid_at')
+        }),
+        ('메타 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """추가 권한 없음 (결제를 통해서만 생성)"""
+        return False
+
+@admin.register(MeetupOrderOption)
+class MeetupOrderOptionAdmin(admin.ModelAdmin):
+    list_display = ['order', 'option', 'choice', 'additional_price_display']
+    list_filter = ['order__meetup__store', 'option', 'order__created_at']
+    search_fields = ['order__order_number', 'order__participant_name', 'option__name', 'choice__name']
+    readonly_fields = ['order', 'option', 'choice', 'additional_price']
+    
+    def additional_price_display(self, obj):
+        """추가요금 표시"""
+        if obj.additional_price > 0:
+            return f"+{obj.additional_price:,} sats"
+        elif obj.additional_price < 0:
+            return f"{obj.additional_price:,} sats"
+        return "무료"
+    additional_price_display.short_description = '추가요금'
+    
+    def has_add_permission(self, request):
+        """추가 권한 없음"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """수정 권한 없음"""
+        return False

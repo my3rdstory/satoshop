@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.core.validators import EmailValidator, RegexValidator
+from django.contrib.auth.models import User
 from stores.models import Store
 
 class Meetup(models.Model):
@@ -86,21 +87,22 @@ class Meetup(models.Model):
         return self.deleted_at is not None
     
     @property
+    def current_participants(self):
+        """현재 참가자 수 (확정된 주문 기준)"""
+        return self.orders.filter(status__in=['confirmed', 'completed']).count()
+    
+    @property
     def is_full(self):
         if not self.max_participants:
             return False
-        # 추후 참가자 수 계산 로직 추가
-        current_participants = 0  # 실제 참가자 수로 교체 필요
-        return current_participants >= self.max_participants
+        return self.current_participants >= self.max_participants
     
     @property
     def remaining_spots(self):
         """남은 자리 수"""
         if not self.max_participants:
             return None
-        # 추후 참가자 수 계산 로직 추가
-        current_participants = 0  # 실제 참가자 수로 교체 필요
-        return max(0, self.max_participants - current_participants)
+        return max(0, self.max_participants - self.current_participants)
     
     @property
     def current_price(self):
@@ -215,3 +217,104 @@ class MeetupChoice(models.Model):
     
     def __str__(self):
         return f"{self.option.name} - {self.name}"
+
+class MeetupOrder(models.Model):
+    """밋업 참가 주문"""
+    STATUS_CHOICES = [
+        ('pending', '결제 대기'),
+        ('confirmed', '참가 확정'),
+        ('cancelled', '참가 취소'),
+        ('completed', '밋업 완료'),
+    ]
+    
+    # 기본 정보
+    meetup = models.ForeignKey(Meetup, on_delete=models.CASCADE, related_name='orders')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='meetup_orders', null=True, blank=True)
+    
+    # 참가자 정보 (비회원도 참가 가능)
+    participant_name = models.CharField(max_length=100, verbose_name="참가자 이름")
+    participant_email = models.EmailField(verbose_name="참가자 이메일")
+    participant_phone = models.CharField(max_length=20, verbose_name="참가자 연락처", blank=True)
+    
+    # 주문 정보
+    order_number = models.CharField(max_length=100, unique=True, verbose_name="주문번호")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="상태")
+    
+    # 가격 정보
+    base_price = models.PositiveIntegerField(verbose_name="기본 참가비(satoshi)")
+    options_price = models.PositiveIntegerField(default=0, verbose_name="옵션 추가비(satoshi)")
+    total_price = models.PositiveIntegerField(verbose_name="총 참가비(satoshi)")
+    
+    # 할인 정보
+    is_early_bird = models.BooleanField(default=False, verbose_name="조기등록 할인 적용")
+    discount_rate = models.PositiveIntegerField(default=0, verbose_name="할인율(%)")
+    original_price = models.PositiveIntegerField(null=True, blank=True, verbose_name="원래 가격(satoshi)")
+    
+    # 결제 정보
+    payment_hash = models.CharField(max_length=255, blank=True, verbose_name="결제 해시")
+    payment_request = models.TextField(blank=True, verbose_name="결제 요청(인보이스)")
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name="결제 완료 시간")
+    
+    # 참가 확정 정보
+    confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="참가 확정 시간")
+    confirmation_message_sent = models.BooleanField(default=False, verbose_name="확정 안내 발송 여부")
+    
+    # 타임스탬프
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "밋업 주문"
+        verbose_name_plural = "밋업 주문"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['meetup', 'status']),
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['order_number']),
+            models.Index(fields=['payment_hash']),
+        ]
+    
+    def __str__(self):
+        return f"{self.meetup.name} - {self.participant_name} ({self.order_number})"
+    
+    def save(self, *args, **kwargs):
+        # 주문번호 자동 생성
+        if not self.order_number:
+            import uuid
+            
+            # 밋업 날짜가 있으면 밋업 날짜를 사용, 없으면 현재 날짜 사용
+            if self.meetup and self.meetup.date_time:
+                date_str = self.meetup.date_time.strftime('%Y%m%d')
+            else:
+                from datetime import datetime
+                date_str = datetime.now().strftime('%Y%m%d')
+            
+            unique_id = str(uuid.uuid4())[:8].upper()
+            self.order_number = f"TICKET-{date_str}-{unique_id}"
+        
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_paid(self):
+        """결제 완료 여부"""
+        return self.status in ['confirmed', 'completed'] and self.paid_at is not None
+    
+    @property
+    def is_confirmed(self):
+        """참가 확정 여부"""
+        return self.status in ['confirmed', 'completed']
+
+class MeetupOrderOption(models.Model):
+    """밋업 주문의 선택된 옵션"""
+    order = models.ForeignKey(MeetupOrder, on_delete=models.CASCADE, related_name='selected_options')
+    option = models.ForeignKey(MeetupOption, on_delete=models.CASCADE)
+    choice = models.ForeignKey(MeetupChoice, on_delete=models.CASCADE)
+    additional_price = models.IntegerField(verbose_name="추가요금(satoshi)")
+    
+    class Meta:
+        verbose_name = "밋업 주문 옵션"
+        verbose_name_plural = "밋업 주문 옵션"
+        unique_together = ['order', 'option']  # 한 주문에서 같은 옵션은 하나만 선택 가능
+    
+    def __str__(self):
+        return f"{self.order.order_number} - {self.option.name}: {self.choice.name}"

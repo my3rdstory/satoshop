@@ -15,6 +15,7 @@
 {% block twitter_image %}{% if meetup.images.exists %}{{ meetup.images.first.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
 
 {% block extra_css %}
+<meta name="csrf-token" content="{{ csrf_token }}">
 <link rel="stylesheet" href="{% static 'css/meetup_detail.css' %}">
 <!-- Markdown Renderer CSS -->
 <link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
@@ -38,17 +39,9 @@
 {% endblock %}
 
 {% block store_content %}
+{% csrf_token %}
 <div class="bg-gray-50 dark:bg-gray-900 py-8">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- 뒤로가기 버튼 -->
-    <div class="mb-6">
-      <a href="{% url 'meetup:meetup_list' store.store_id %}" 
-         class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-        <i class="fas fa-arrow-left text-sm"></i>
-        <span>목록으로 돌아가기</span>
-      </a>
-    </div>
-
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
       <!-- 왼쪽: 밋업 이미지, 소개, 주최자 연락처 -->
       <div class="space-y-6">
@@ -190,6 +183,14 @@
           <div class="flex items-center gap-3 mb-4">
             <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장소</h3>
+            {% if meetup.location_full_address %}
+            <button onclick="openNaverMap('{{ meetup.location_full_address }}')" 
+                    class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
+                    title="네이버지도에서 보기">
+              <i class="fas fa-map text-xs"></i>
+              <span>지도보기</span>
+            </button>
+            {% endif %}
           </div>
           {% if meetup.location_full_address %}
           <div class="text-gray-900 dark:text-white mb-3">
@@ -333,8 +334,13 @@
           {% if meetup.is_active and not meetup.is_full and not meetup.is_temporarily_closed %}
           <button class="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
                   onclick="joinMeetup()">
+            {% if meetup.current_price == 0 %}
+            <i class="fas fa-heart"></i>
+            <span>무료 참가 신청하기</span>
+            {% else %}
             <i class="fas fa-calendar-plus"></i>
             <span>참가 신청하기</span>
+            {% endif %}
           </button>
           <!-- 비회원 참가 가능 안내 -->
           <div class="text-center">
@@ -372,6 +378,7 @@
 {
   "basePrice": {{ meetup.current_price }},
   "meetupId": {{ meetup.id }},
+  "storeId": "{{ store.store_id }}",
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
   "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},
   "loginUrl": "{% url 'accounts:login' %}",
@@ -384,4 +391,18 @@
 <!-- Markdown Renderer -->
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
 <script src="{% static 'js/meetup-detail.js' %}"></script>
+
+<script>
+// 네이버지도로 주소 검색하여 새탭으로 이동
+function openNaverMap(address) {
+  if (!address) {
+    alert('주소 정보가 없습니다.');
+    return;
+  }
+  
+  // 네이버지도 검색 URL (새탭으로 열기)
+  const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(address)}`;
+  window.open(naverMapUrl, '_blank', 'noopener,noreferrer');
+}
+</script>
 {% endblock %} 

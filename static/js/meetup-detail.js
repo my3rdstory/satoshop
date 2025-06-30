@@ -207,34 +207,38 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 밋업 참가 신청
     function joinMeetup() {
-        // 로그인 체크
-        if (!meetupData.isAuthenticated) {
-            if (confirm('로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
-                window.location.href = meetupData.loginUrl;
-            }
+        // 선택한 옵션들을 POST로 전달
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+        
+        // CSRF 토큰 추가
+        const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || 
+                         document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        if (csrfToken) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfToken;
+            form.appendChild(csrfInput);
+        } else {
+            console.error('CSRF 토큰을 찾을 수 없습니다.');
+            alert('보안 토큰을 찾을 수 없습니다. 페이지를 새로고침하고 다시 시도해주세요.');
             return;
         }
         
-        // 필수 옵션 선택 체크
-        const requiredOptions = document.querySelectorAll('[data-required="true"]');
-        for (let option of requiredOptions) {
-            const optionId = option.dataset.optionId;
-            if (!selectedOptions[optionId]) {
-                alert('필수 옵션을 선택해주세요.');
-                return;
-            }
+        // 옵션 정보 추가
+        if (Object.keys(selectedOptions).length > 0) {
+            const optionsInput = document.createElement('input');
+            optionsInput.type = 'hidden';
+            optionsInput.name = 'selected_options';
+            optionsInput.value = JSON.stringify(selectedOptions);
+            form.appendChild(optionsInput);
         }
         
-        // 참가 신청 확인
-        const totalPrice = calculateTotalPrice();
-        const message = `밋업에 참가하시겠습니까?\n\n총 참가비: ${totalPrice.toLocaleString()} sats`;
-        
-        if (confirm(message)) {
-            // TODO: 실제 참가 신청 로직 구현
-            alert('참가 신청 기능을 구현 중입니다.');
-            console.log('Selected options:', selectedOptions);
-            console.log('Total price:', totalPrice);
-        }
+        // 폼을 body에 추가하고 제출
+        document.body.appendChild(form);
+        form.submit();
     }
     
     // 총 가격 계산

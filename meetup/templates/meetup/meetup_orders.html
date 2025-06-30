@@ -1,0 +1,246 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+{% load meetup_extras %}
+
+{% block title %}내 밋업 참가 내역 - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_checkout.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">내 밋업 참가 내역</h1>
+          <p class="text-gray-600 dark:text-gray-400">{{ store.store_name }}에서 참가한 밋업들을 확인하세요.</p>
+        </div>
+        <a href="{% url 'meetup:meetup_list' store.store_id %}" 
+           class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+          <i class="fas fa-calendar-plus"></i>
+          <span>새 밋업 찾기</span>
+        </a>
+      </div>
+    </div>
+
+    {% if orders %}
+    <!-- 주문 목록 -->
+    <div class="space-y-6">
+      {% for order in orders %}
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- 주문 헤더 -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ order.meetup.name }}</h3>
+                <!-- 상태 배지 -->
+                {% if order.status == 'confirmed' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                  <i class="fas fa-check-circle mr-1"></i>
+                  참가 확정
+                </span>
+                {% elif order.status == 'completed' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                  <i class="fas fa-flag-checkered mr-1"></i>
+                  밋업 완료
+                </span>
+                {% elif order.status == 'pending' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                  <i class="fas fa-clock mr-1"></i>
+                  결제 대기
+                </span>
+                {% elif order.status == 'cancelled' %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                  <i class="fas fa-times-circle mr-1"></i>
+                  참가 취소
+                </span>
+                {% endif %}
+              </div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <div>
+                  <span class="font-medium">주문번호:</span>
+                  <span class="font-mono">{{ order.order_number }}</span>
+                </div>
+                <div>
+                  <span class="font-medium">신청일:</span>
+                  <span>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                </div>
+                {% if order.paid_at %}
+                <div>
+                  <span class="font-medium">결제완료:</span>
+                  <span>{{ order.paid_at|date:"Y-m-d H:i" }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-2xl font-bold text-bitcoin mb-1">
+                {{ order.total_price|floatformat:0|intcomma }} sats
+              </div>
+              {% if order.is_early_bird %}
+              <div class="text-sm text-green-600 dark:text-green-400">
+                <i class="fas fa-tag mr-1"></i>
+                조기등록 할인 적용
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 주문 상세 -->
+        <div class="p-6">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 밋업 정보 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">밋업 정보</h4>
+              <div class="space-y-2 text-sm">
+                {% if order.meetup.date_time %}
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-calendar text-gray-400 w-4"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.meetup.date_time|date:"Y년 m월 d일 (l)" }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-clock text-gray-400 w-4"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.meetup.date_time|date:"H:i" }}</span>
+                </div>
+                {% endif %}
+                {% if order.meetup.location_full_address %}
+                <div class="flex items-start gap-2">
+                  <i class="fas fa-map-marker-alt text-gray-400 w-4 mt-0.5"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.meetup.location_full_address }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- 참가자 정보 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가자 정보</h4>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-user text-gray-400 w-4"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.participant_name }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-envelope text-gray-400 w-4"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.participant_email }}</span>
+                </div>
+                {% if order.participant_phone %}
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-phone text-gray-400 w-4"></i>
+                  <span class="text-gray-900 dark:text-white">{{ order.participant_phone }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- 선택된 옵션 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">선택 옵션</h4>
+              {% if order.selected_options.exists %}
+              <div class="space-y-2 text-sm">
+                {% for order_option in order.selected_options.all %}
+                <div class="flex justify-between items-center">
+                  <div>
+                    <span class="text-gray-900 dark:text-white">{{ order_option.option.name }}</span>
+                    <span class="text-gray-600 dark:text-gray-400">: {{ order_option.choice.name }}</span>
+                  </div>
+                  {% if order_option.additional_price > 0 %}
+                  <span class="text-xs text-bitcoin">+{{ order_option.additional_price|floatformat:0|intcomma }}</span>
+                  {% endif %}
+                </div>
+                {% endfor %}
+              </div>
+              {% else %}
+              <div class="text-sm text-gray-500 dark:text-gray-400">선택된 옵션 없음</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- 가격 상세 및 액션 버튼 -->
+          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <!-- 가격 상세 -->
+              <div class="flex-1">
+                <details class="group">
+                  <summary class="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                    <i class="fas fa-chevron-right group-open:rotate-90 transition-transform mr-2"></i>
+                    가격 상세 보기
+                  </summary>
+                  <div class="mt-3 ml-6 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
+                      <span class="text-gray-900 dark:text-white">{{ order.base_price|floatformat:0|intcomma }} sats</span>
+                    </div>
+                    {% if order.options_price > 0 %}
+                    <div class="flex justify-between">
+                      <span class="text-gray-600 dark:text-gray-400">옵션 추가비</span>
+                      <span class="text-gray-900 dark:text-white">{{ order.options_price|floatformat:0|intcomma }} sats</span>
+                    </div>
+                    {% endif %}
+                    {% if order.is_early_bird and order.original_price %}
+                    <div class="flex justify-between">
+                      <span class="text-gray-600 dark:text-gray-400">할인 전 금액</span>
+                      <span class="text-gray-500 line-through">{{ order.original_price|floatformat:0|intcomma }} sats</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-green-600 dark:text-green-400">조기등록 할인 ({{ order.discount_rate }}%)</span>
+                      <span class="text-green-600 dark:text-green-400">-{{ order.original_price|sub:order.total_price|floatformat:0|intcomma }} sats</span>
+                    </div>
+                    {% endif %}
+                    <div class="border-t border-gray-200 dark:border-gray-600 pt-2">
+                      <div class="flex justify-between font-semibold">
+                        <span class="text-gray-900 dark:text-white">총 결제금액</span>
+                        <span class="text-bitcoin">{{ order.total_price|floatformat:0|intcomma }} sats</span>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+              </div>
+
+              <!-- 액션 버튼 -->
+              <div class="flex gap-3">
+                {% if order.status == 'confirmed' or order.status == 'completed' %}
+                <a href="{% url 'meetup:meetup_checkout_complete' store.store_id order.meetup.id order.id %}" 
+                   class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                  <i class="fas fa-receipt"></i>
+                  <span>확정서 보기</span>
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'meetup:meetup_detail' store.store_id order.meetup.id %}" 
+                   class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+                  <i class="fas fa-eye"></i>
+                  <span>밋업 보기</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- 빈 상태 -->
+    <div class="text-center py-16">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full mb-6">
+        <i class="fas fa-calendar-times text-3xl text-gray-400"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">참가한 밋업이 없습니다</h2>
+      <p class="text-gray-600 dark:text-gray-400 mb-8">아직 이 스토어에서 참가한 밋업이 없습니다.<br>관심있는 밋업을 찾아 참가해보세요!</p>
+      <a href="{% url 'meetup:meetup_list' store.store_id %}" 
+         class="px-8 py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl inline-flex items-center gap-2">
+        <i class="fas fa-search"></i>
+        <span>밋업 둘러보기</span>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} 

@@ -18,4 +18,19 @@ urlpatterns = [
     
     # 밋업 관리
     path('<str:store_id>/<str:meetup_id>/manage/', views.manage_meetup, name='manage_meetup'),
+    
+    # 밋업 체크아웃
+    path('<str:store_id>/<str:meetup_id>/checkout/', views.meetup_checkout, name='meetup_checkout'),
+    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/', views.meetup_checkout_payment, name='meetup_checkout_payment'),
+    
+    # 밋업 결제 관련 API
+    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/create_invoice/', views.create_meetup_invoice, name='create_meetup_invoice'),
+    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/check_payment/', views.check_meetup_payment_status, name='check_meetup_payment_status'),
+    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/cancel_invoice/', views.cancel_meetup_invoice, name='cancel_meetup_invoice'),
+    
+    # 밋업 결제 완료
+    path('<str:store_id>/<str:meetup_id>/complete/<int:order_id>/', views.meetup_checkout_complete, name='meetup_checkout_complete'),
+    
+    # 밋업 주문 내역
+    path('<str:store_id>/orders/', views.meetup_orders, name='meetup_orders'),
 ] 
