@@ -1,12 +1,12 @@
 {% extends 'stores/store_base.html' %}
 {% load static %}
 
-{% block title %}{{ store.store_name }} - 밋업 추가{% endblock %}
+{% block title %}{{ store.store_name }} - 밋업 수정{% endblock %}
 
-{% block og_title %}{{ store.store_name }} 밋업 추가 - SatoShop{% endblock %}
-{% block og_description %}{{ store.store_name }}의 밋업을 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
-{% block twitter_title %}{{ store.store_name }} 밋업 추가 - SatoShop{% endblock %}
-{% block twitter_description %}{{ store.store_name }}의 밋업을 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+{% block og_title %}{{ store.store_name }} 밋업 수정 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }}의 밋업을 수정하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 밋업 수정 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }}의 밋업을 수정하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_add.css' %}">
@@ -48,8 +48,8 @@
         <i class="fas fa-users text-3xl text-white"></i>
       </div>
       <div class="text-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 추가</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}에 새로운 밋업을 등록하세요</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 수정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.name }}을 수정하세요</p>
       </div>
     </div>
 
@@ -61,10 +61,9 @@
       </a>
     </div>
 
+    <!-- 밋업 수정 폼 -->
     <form method="post" enctype="multipart/form-data" id="meetupForm" class="space-y-8">
       {% csrf_token %}
-
-
 
       <!-- 기본 정보 -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
@@ -74,7 +73,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">밋업의 기본적인 정보를 입력하세요</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업의 기본적인 정보를 수정하세요</p>
           </div>
         </div>
 
@@ -85,7 +84,7 @@
               밋업명 <span class="text-red-500">*</span>
             </label>
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                   type="text" id="name" name="name" required placeholder="밋업명을 입력하세요">
+                   type="text" id="name" name="name" required placeholder="밋업명을 입력하세요" value="{{ meetup.name|default:'' }}">
           </div>
 
           <!-- 설명 -->
@@ -95,7 +94,7 @@
             </label>
             <textarea id="description" name="description" rows="10" 
                       class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                      placeholder="밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요"></textarea>
+                      placeholder="밋업에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ meetup.description|default:'' }}</textarea>
           </div>
         </div>
       </div>
@@ -108,7 +107,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가비 정보</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 참가비와 할인 정보를 설정하세요</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 참가비와 할인 정보를 수정하세요</p>
           </div>
         </div>
 
@@ -122,7 +121,7 @@
               밋업 정원 <span class="text-red-500">*</span>
             </label>
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                   type="number" id="max_participants" name="max_participants" required min="1" placeholder="최대 참가 가능 인원을 입력하세요">
+                   type="number" id="max_participants" name="max_participants" required min="1" placeholder="최대 참가 가능 인원을 입력하세요" value="{{ meetup.max_participants|default:'' }}">
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">밋업에 참가할 수 있는 최대 인원수를 설정하세요</p>
           </div>
 
@@ -133,7 +132,7 @@
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="price" name="price" required min="0" placeholder="밋업 참가비를 입력하세요">
+                     type="number" id="price" name="price" required min="0" placeholder="밋업 참가비를 입력하세요" value="{{ meetup.price|default:'' }}">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">참가비는 사토시 단위로 입력하세요</p>
@@ -143,20 +142,21 @@
           <div class="mb-6">
             <div class="flex items-center">
               <input type="checkbox" id="is_discounted" name="is_discounted" 
+                     {% if meetup.is_discounted %}checked{% endif %}
                      class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
               <label for="is_discounted" class="ml-2 text-sm text-gray-700 dark:text-gray-300">조기등록 할인 적용</label>
             </div>
           </div>
 
           <!-- 할인가 -->
-          <div class="mb-6 hidden" id="discountSection">
+          <div class="mb-6 {% if not meetup.is_discounted %}hidden{% endif %}" id="discountSection">
             <div class="space-y-6">
               <!-- 할인가 입력 -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="discounted_price">할인가</label>
                 <div class="relative">
                   <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                         type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요">
+                         type="number" id="discounted_price" name="discounted_price" min="1" placeholder="조기등록 할인가를 입력하세요" value="{{ meetup.discounted_price|default:'' }}">
                   <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
                 </div>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">할인가는 정가보다 낮아야 합니다</p>
@@ -168,7 +168,7 @@
                   조기등록 종료 날짜 <span class="text-red-500">*</span>
                 </label>
                 <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                       type="date" id="early_bird_end_date" name="early_bird_end_date" required>
+                       type="date" id="early_bird_end_date" name="early_bird_end_date" required value="{{ meetup.early_bird_end_date|date:'Y-m-d'|default:'' }}">
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">이 날짜 이후에는 정가로 판매됩니다</p>
               </div>
 
@@ -178,7 +178,7 @@
                   조기등록 종료 시간
                 </label>
                 <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                       type="time" id="early_bird_end_time" name="early_bird_end_time" value="23:59">
+                       type="time" id="early_bird_end_time" name="early_bird_end_time" value="{{ meetup.early_bird_end_time|time:'H:i'|default:'23:59' }}">
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">지정하지 않으면 해당 날짜의 23:59로 설정됩니다</p>
               </div>
             </div>
@@ -194,7 +194,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">참가 유형, 식사 옵션 등을 설정할 수 있습니다</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">참가 유형, 식사 옵션 등을 수정할 수 있습니다</p>
           </div>
         </div>
 
@@ -216,7 +216,7 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가 완료 안내 메시지</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">참가 신청 완료 후 참가자에게 보여줄 메시지를 설정하세요</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">참가 신청 완료 후 참가자에게 보여줄 메시지를 수정하세요</p>
           </div>
         </div>
 
@@ -224,7 +224,7 @@
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="completion_message">안내 메시지</label>
           <textarea class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
                     id="completion_message" name="completion_message" rows="4"
-                    placeholder="참가 신청 완료 후 보여줄 메시지를 입력하세요"></textarea>
+                    placeholder="참가 신청 완료 후 보여줄 메시지를 입력하세요">{{ meetup.completion_message|default:'' }}</textarea>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">밋업 장소, 연락처, 준비물 등을 안내할 수 있습니다</p>
         </div>
       </div>
@@ -237,12 +237,23 @@
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">밋업 이미지</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 이미지를 업로드하세요 (1:1 비율 권장)</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">밋업 이미지를 수정하세요 (1:1 비율 권장)</p>
           </div>
         </div>
 
+        <!-- 현재 이미지 표시 -->
+        {% if meetup.images.exists %}
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">현재 이미지</label>
+          <div class="w-32 h-32 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600">
+            <img src="{{ meetup.images.first.file_url }}" alt="{{ meetup.name }}" 
+                 class="w-full h-full object-cover">
+          </div>
+        </div>
+        {% endif %}
+
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">밋업 이미지 (1:1 비율 권장)</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">새 이미지 업로드 (1:1 비율 권장)</label>
           <div class="drag-drop-area" id="imageDropArea">
             <div class="text-center">
               <i class="fas fa-image text-4xl text-gray-400 mb-4"></i>
@@ -263,12 +274,17 @@
         </a>
         <button type="submit" 
                 class="inline-flex items-center justify-center px-8 py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg">
-          밋업 등록
+          밋업 수정
         </button>
       </div>
     </form>
   </div>
 </div>
+
+<!-- 기존 옵션 데이터 -->
+<script>
+window.existingOptions = {{ existing_options|safe }};
+</script>
 {% endblock %}
 
 {% block extra_js %}

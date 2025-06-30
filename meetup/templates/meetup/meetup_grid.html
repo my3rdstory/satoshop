@@ -1,0 +1,231 @@
+{% load humanize %}
+
+<!-- 밋업 목록 그리드 -->
+{% if meetups %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  {% for meetup in meetups %}
+  <!-- 공개 뷰에서는 활성화된 밋업만 표시 -->
+  {% if not is_public_view or meetup.is_active %}
+  <div class="bg-white dark:bg-gray-800 {% if meetup.is_discounted %}border-2 border-red-500 rounded-none{% elif not meetup.is_active %}border-2 border-gray-500 rounded-none opacity-70{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+    <!-- 밋업 이미지 -->
+    <div class="relative aspect-square">
+      <!-- 태그들 (할인, 비활성화, 참가 상태) -->
+      <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+        {% if not meetup.is_active %}
+        <div class="bg-gray-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          비활성화
+        </div>
+        {% elif meetup.is_discounted %}
+        <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {{ meetup.public_discount_rate }}% 할인
+        </div>
+        {% endif %}
+        
+        <!-- 참가 상태 태그 -->
+        {% if not is_public_view %}
+        <!-- 관리자 뷰: 모든 참가 상태 표시 -->
+        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if meetup.is_temporarily_closed %}
+            일시중단
+          {% elif meetup.is_full %}
+            정원마감
+          {% elif meetup.remaining_spots is not None %}
+            남은자리 {{ meetup.remaining_spots|intcomma }}명
+          {% else %}
+            참가가능
+          {% endif %}
+        </div>
+        {% else %}
+        <!-- 공개 뷰: 참가 상태 표시 -->
+        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+          {% if meetup.is_temporarily_closed %}
+            일시중단
+          {% elif meetup.is_full %}
+            정원마감
+          {% elif meetup.remaining_spots is not None %}
+            남은자리 {{ meetup.remaining_spots|intcomma }}명
+          {% else %}
+            참가가능
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      
+      {% if is_public_view %}
+      <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}">
+      {% else %}
+      <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}">
+      {% endif %}
+        {% if meetup.images.exists %}
+        <img src="{{ meetup.images.first.file_url }}" alt="{{ meetup.name }}" 
+             class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+        {% else %}
+        <div class="w-full h-full bg-gradient-to-br from-purple-50 to-indigo-50 dark:bg-gray-700 flex flex-col items-center justify-center">
+          <i class="fas fa-users text-purple-400 dark:text-purple-300 text-4xl mb-2"></i>
+          <span class="text-purple-500 dark:text-purple-400 text-sm">이미지 없음</span>
+        </div>
+        {% endif %}
+      </a>
+    </div>
+
+    <!-- 밋업 정보 -->
+    <div class="p-4">
+      <!-- 밋업 제목 -->
+      <div class="mb-2">
+        {% if is_public_view %}
+        <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+           class="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors line-clamp-2">
+          {{ meetup.name }}
+        </a>
+        {% else %}
+        <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+           class="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors line-clamp-2">
+          {{ meetup.name }}
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- 밋업 설명 -->
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+        {{ meetup.description|truncatewords:15 }}
+      </p>
+
+      <!-- 일정 정보 -->
+      {% if meetup.date_time %}
+      <div class="mb-3 flex items-center gap-2">
+        <i class="fas fa-calendar text-sm text-gray-500"></i>
+        <span class="text-sm text-gray-600 dark:text-gray-400">
+          {{ meetup.date_time|date:"Y년 m월 d일 H:i" }}
+        </span>
+      </div>
+      {% endif %}
+
+      <!-- 가격 정보 -->
+      <div class="mb-3">
+        {% if meetup.is_discounted and meetup.is_early_bird_active %}
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-lg font-bold text-purple-600 dark:text-purple-400">
+            {{ meetup.current_price|floatformat:0|intcomma }} sats
+          </span>
+          <span class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
+            {{ meetup.public_discount_rate }}% 할인
+          </span>
+        </div>
+        <div class="text-sm text-gray-500 line-through">
+          {{ meetup.price|floatformat:0|intcomma }} sats
+        </div>
+        {% else %}
+        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+          {{ meetup.current_price|floatformat:0|intcomma }} sats
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- 참가 상태 정보 -->
+      <div class="mb-3 flex items-center gap-2">
+        <i class="fas fa-users text-sm text-gray-500"></i>
+        <span class="text-sm font-medium {% if meetup.is_temporarily_closed %}text-purple-500{% elif meetup.is_full %}text-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}text-orange-500{% else %}text-green-500{% endif %}">
+          {% if meetup.is_temporarily_closed %}
+            일시 중단
+          {% elif meetup.is_full %}
+            정원 마감
+          {% elif meetup.remaining_spots is not None %}
+            남은자리: {{ meetup.remaining_spots|intcomma }}명
+          {% else %}
+            참가 가능
+          {% endif %}
+        </span>
+      </div>
+
+      <!-- 액션 버튼 -->
+      <div class="flex flex-wrap gap-2">
+        {% if not is_public_view %}
+        <!-- 관리자 전용 버튼들 -->
+        <a href="{% url 'meetup:edit_meetup_unified' store.store_id meetup.id %}" 
+           class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors text-sm">
+          <i class="fas fa-edit mr-1"></i>
+          통합수정
+        </a>
+        <a href="{% url 'meetup:manage_meetup' store.store_id meetup.id %}" 
+           class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors text-sm">
+          <i class="fas fa-cog mr-1"></i>
+          관리
+        </a>
+        
+        <!-- 일시중단 버튼 -->
+        <button onclick="toggleTemporaryClosure({{ meetup.id }}, '{{ meetup.name|escapejs }}')" 
+                class="w-full inline-flex items-center justify-center px-3 py-2 {% if meetup.is_temporarily_closed %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} rounded-lg transition-colors text-sm">
+          <i class="fas {% if meetup.is_temporarily_closed %}fa-play{% else %}fa-pause{% endif %} mr-1"></i>
+          <span>{% if meetup.is_temporarily_closed %}일시중단 해제{% else %}일시중단{% endif %}</span>
+        </button>
+        {% endif %}
+        
+        <!-- 밋업보기 버튼 -->
+        {% if is_public_view %}
+          {% if meetup.is_active and not meetup.is_full and not meetup.is_temporarily_closed %}
+          <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+             class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm">
+            <i class="fas fa-calendar-plus mr-1"></i>
+            참가하기
+          </a>
+          {% elif meetup.is_temporarily_closed %}
+          <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+            <i class="fas fa-pause mr-1"></i>
+            일시중단
+          </button>
+          {% elif meetup.is_full %}
+          <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+            <i class="fas fa-users-slash mr-1"></i>
+            정원마감
+          </button>
+          {% else %}
+          <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed text-sm" disabled>
+            <i class="fas fa-pause mr-1"></i>
+            비활성화
+          </button>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+             class="w-full inline-flex items-center justify-center px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm" target="_blank">
+            <i class="fas fa-eye mr-1"></i>
+            밋업보기
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+</div>
+{% else %}
+<!-- 밋업이 없을 때 -->
+<div class="text-center py-12">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+    <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full mb-4">
+      <i class="fas fa-users text-3xl text-purple-600 dark:text-purple-400"></i>
+    </div>
+    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+      {% if is_public_view %}
+      등록된 밋업이 없습니다
+      {% else %}
+      첫 번째 밋업을 만들어보세요
+      {% endif %}
+    </h3>
+    <p class="text-gray-600 dark:text-gray-400 mb-6">
+      {% if is_public_view %}
+      아직 등록된 밋업이 없습니다. 곧 새로운 밋업이 추가될 예정입니다.
+      {% else %}
+      밋업을 통해 커뮤니티와 만나고 비트코인으로 참가비를 받아보세요.
+      {% endif %}
+    </p>
+    {% if not is_public_view %}
+    <a href="{% url 'meetup:add_meetup' store.store_id %}" 
+       class="inline-flex items-center px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors shadow-lg">
+      <i class="fas fa-plus mr-2"></i>
+      첫 밋업 만들기
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %} 

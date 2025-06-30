@@ -11,14 +11,11 @@ urlpatterns = [
     path('<str:store_id>/add/', views.add_meetup, name='add_meetup'),
     
     # 밋업 상세
-    path('<str:store_id>/<int:meetup_id>/', views.meetup_detail, name='meetup_detail'),
+    path('<str:store_id>/<str:meetup_id>/', views.meetup_detail, name='meetup_detail'),
+    
+    # 밋업 통합수정
+    path('<str:store_id>/<str:meetup_id>/edit/', views.edit_meetup_unified, name='edit_meetup_unified'),
     
     # 밋업 관리
-    path('<str:store_id>/<int:meetup_id>/manage/', views.manage_meetup, name='manage_meetup'),
-    
-    # 카테고리 관리
-    path('<str:store_id>/category/manage/', views.category_manage, name='category_manage'),
-    
-    # API 엔드포인트 (카테고리 목록)
-    path('<str:store_id>/categories/', views.get_categories, name='get_categories'),
+    path('<str:store_id>/<str:meetup_id>/manage/', views.manage_meetup, name='manage_meetup'),
 ] 
