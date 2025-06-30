@@ -44,8 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 카운트다운 실행
     function startCountdown(endDateTime) {
         const countdownElement = document.getElementById('early-bird-countdown');
+        const countdownOverlayElement = document.getElementById('early-bird-countdown-overlay');
         
-        if (!countdownElement) return;
+        if (!countdownElement && !countdownOverlayElement) return;
         
         function updateCountdown() {
             const now = new Date().getTime();
@@ -54,8 +55,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (distance < 0) {
                 // 카운트다운 종료
-                countdownElement.textContent = '마감됨';
-                countdownElement.className = 'text-gray-500';
+                if (countdownElement) {
+                    countdownElement.textContent = '마감됨';
+                    countdownElement.className = 'text-gray-500';
+                }
+                if (countdownOverlayElement) {
+                    countdownOverlayElement.textContent = '마감됨';
+                }
                 return;
             }
             
@@ -77,15 +83,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 timeText = `${seconds.toString().padStart(2, '0')}초 남음`;
             }
             
-            countdownElement.textContent = timeText;
+            // 기존 카운트다운 요소 업데이트
+            if (countdownElement) {
+                countdownElement.textContent = timeText;
+                
+                // 긴급도에 따른 색상 변경
+                if (distance < 60000) { // 1분 미만
+                    countdownElement.className = 'text-red-600 font-bold animate-pulse';
+                } else if (distance < 3600000) { // 1시간 미만
+                    countdownElement.className = 'text-orange-600 font-medium';
+                } else {
+                    countdownElement.className = 'text-red-600';
+                }
+            }
             
-            // 긴급도에 따른 색상 변경
-            if (distance < 60000) { // 1분 미만
-                countdownElement.className = 'text-red-600 font-bold animate-pulse';
-            } else if (distance < 3600000) { // 1시간 미만
-                countdownElement.className = 'text-orange-600 font-medium';
-            } else {
-                countdownElement.className = 'text-red-600';
+            // 오버레이 카운트다운 요소 업데이트
+            if (countdownOverlayElement) {
+                countdownOverlayElement.textContent = timeText;
             }
         }
         
@@ -193,33 +207,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 밋업 참가 신청
     function joinMeetup() {
-        // 로그인 체크
-        if (!meetupData.isAuthenticated) {
-            if (confirm('로그인이 필요합니다. 로그인 페이지로 이동하시겠습니까?')) {
-                window.location.href = meetupData.loginUrl;
-            }
-            return;
-        }
+        // 참가자 정보 입력 페이지로 이동 (GET 요청)
+        const checkoutUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
         
-        // 필수 옵션 선택 체크
-        const requiredOptions = document.querySelectorAll('[data-required="true"]');
-        for (let option of requiredOptions) {
-            const optionId = option.dataset.optionId;
-            if (!selectedOptions[optionId]) {
-                alert('필수 옵션을 선택해주세요.');
-                return;
-            }
-        }
-        
-        // 참가 신청 확인
-        const totalPrice = calculateTotalPrice();
-        const message = `밋업에 참가하시겠습니까?\n\n총 참가비: ${totalPrice.toLocaleString()} sats`;
-        
-        if (confirm(message)) {
-            // TODO: 실제 참가 신청 로직 구현
-            alert('참가 신청 기능을 구현 중입니다.');
-            console.log('Selected options:', selectedOptions);
-            console.log('Total price:', totalPrice);
+        // 선택된 옵션이 있다면 URL 파라미터로 전달
+        if (Object.keys(selectedOptions).length > 0) {
+            const params = new URLSearchParams();
+            params.append('selected_options', JSON.stringify(selectedOptions));
+            window.location.href = `${checkoutUrl}?${params.toString()}`;
+        } else {
+            window.location.href = checkoutUrl;
         }
     }
     

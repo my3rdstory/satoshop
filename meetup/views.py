@@ -297,6 +297,8 @@ def manage_meetup(request, store_id, meetup_id):
 
 def meetup_checkout(request, store_id, meetup_id):
     """밋업 체크아웃 - 바로 주문 생성하고 결제 페이지로"""
+    import json
+    
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     meetup = get_object_or_404(
         Meetup, 
@@ -313,9 +315,27 @@ def meetup_checkout(request, store_id, meetup_id):
     
     # GET 요청인 경우 참가자 정보 입력 페이지 표시
     if request.method == 'GET':
+        # URL 파라미터에서 선택된 옵션 정보 가져오기
+        selected_options_param = request.GET.get('selected_options')
+        selected_options = {}
+        
+        if selected_options_param:
+            try:
+                selected_options = json.loads(selected_options_param)
+            except (json.JSONDecodeError, ValueError):
+                # 잘못된 JSON이면 빈 딕셔너리로 초기화
+                selected_options = {}
+        
+        # 할인 금액 계산 (조기등록 할인)
+        discount_amount = 0
+        if meetup.is_early_bird_active:
+            discount_amount = meetup.price - meetup.current_price
+        
         context = {
             'store': store,
             'meetup': meetup,
+            'selected_options_json': json.dumps(selected_options),
+            'discount_amount': discount_amount,
         }
         return render(request, 'meetup/meetup_participant_info.html', context)
     
@@ -382,7 +402,6 @@ def meetup_checkout(request, store_id, meetup_id):
             
             if options_data:
                 try:
-                    import json
                     selected_options = json.loads(options_data)
                     
                     # 각 옵션의 선택지 가격 계산
@@ -614,7 +633,7 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
             meetup=meetup
         )
         
-        if not order.payment_hash:
+        if not order.payment_hash or order.payment_hash.strip() == '':
             return JsonResponse({
                 'success': False,
                 'error': '결제 정보가 없습니다.'

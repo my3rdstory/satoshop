@@ -81,7 +81,15 @@
                   </span>
                 </div>
                 {% endif %}
-                {% if meetup.location_full_address %}
+                <!-- 장소 정보 -->
+                {% if meetup.location_tbd %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">장소:</span>
+                  <span class="font-medium text-orange-600 dark:text-orange-400">
+                    <i class="fas fa-clock mr-1"></i>장소 추후 공지 예정입니다.
+                  </span>
+                </div>
+                {% elif meetup.location_full_address %}
                 <div class="flex">
                   <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">장소:</span>
                   <span class="font-medium text-gray-900 dark:text-white">{{ meetup.location_full_address }}</span>

@@ -40,7 +40,15 @@
           </div>
         </div>
         {% endif %}
-        {% if meetup.location_full_address %}
+        <!-- 장소 정보 -->
+        {% if meetup.location_tbd %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
+          <div class="font-medium text-orange-600 dark:text-orange-400">
+            <i class="fas fa-clock mr-1"></i>장소 추후 공지 예정입니다.
+          </div>
+        </div>
+        {% elif meetup.location_full_address %}
         <div>
           <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
           <div class="font-medium text-gray-900 dark:text-white">{{ meetup.location_full_address }}</div>
@@ -199,7 +207,7 @@
             <span class="text-green-600 dark:text-green-400">
               <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ meetup.public_discount_rate }}%)
             </span>
-            <span class="text-green-600 dark:text-green-400">-{{ meetup.price|sub:meetup.current_price|floatformat:0|intcomma }} sats</span>
+            <span class="text-green-600 dark:text-green-400">-{{ discount_amount|floatformat:0|intcomma }} sats</span>
           </div>
           {% endif %}
           
@@ -240,7 +248,8 @@
 window.meetupData = {
     basePrice: {{ meetup.current_price }},
     storeId: '{{ store.store_id }}',
-    meetupId: {{ meetup.id }}
+    meetupId: {{ meetup.id }},
+    selectedOptions: {{ selected_options_json|default:'{}' }}
 };
 </script>
 

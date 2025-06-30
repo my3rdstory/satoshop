@@ -207,38 +207,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 밋업 참가 신청
     function joinMeetup() {
-        // 선택한 옵션들을 POST로 전달
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+        // 참가자 정보 입력 페이지로 이동 (GET 요청)
+        const checkoutUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
         
-        // CSRF 토큰 추가
-        const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || 
-                         document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-        if (csrfToken) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfToken;
-            form.appendChild(csrfInput);
-        } else {
-            console.error('CSRF 토큰을 찾을 수 없습니다.');
-            alert('보안 토큰을 찾을 수 없습니다. 페이지를 새로고침하고 다시 시도해주세요.');
-            return;
-        }
-        
-        // 옵션 정보 추가
+        // 선택된 옵션이 있다면 URL 파라미터로 전달
         if (Object.keys(selectedOptions).length > 0) {
-            const optionsInput = document.createElement('input');
-            optionsInput.type = 'hidden';
-            optionsInput.name = 'selected_options';
-            optionsInput.value = JSON.stringify(selectedOptions);
-            form.appendChild(optionsInput);
+            const params = new URLSearchParams();
+            params.append('selected_options', JSON.stringify(selectedOptions));
+            window.location.href = `${checkoutUrl}?${params.toString()}`;
+        } else {
+            window.location.href = checkoutUrl;
         }
-        
-        // 폼을 body에 추가하고 제출
-        document.body.appendChild(form);
-        form.submit();
     }
     
     // 총 가격 계산
