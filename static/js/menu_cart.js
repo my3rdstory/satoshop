@@ -496,7 +496,7 @@ function showPaymentModal() {
     const totalAmount = cartData.reduce((sum, item) => sum + ((item.totalPrice || 0) * item.quantity), 0);
     const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
     
-    if (totalAmount <= 0) {
+    if (totalAmount < 0 || isNaN(totalAmount)) {
         alert('결제 금액이 올바르지 않습니다.');
         return;
     }
@@ -748,7 +748,7 @@ function updatePaymentOrderList() {
 function generatePaymentInvoice() {
     const totalAmount = cartData.reduce((sum, item) => sum + ((item.totalPrice || 0) * item.quantity), 0);
     
-    if (totalAmount <= 0) {
+    if (totalAmount < 0 || isNaN(totalAmount)) {
         alert('결제 금액이 올바르지 않습니다.');
         return;
     }
@@ -771,8 +771,17 @@ function generatePaymentInvoice() {
             cart_items: cartData
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('결제 상태 체크 응답 상태:', response.status);
+        if (!response.ok) {
+            console.error('HTTP 오류:', response.status, response.statusText);
+        }
+        return response.json();
+    })
     .then(data => {
+        // 디버깅용 로그 추가
+        console.log('결제 상태 응답:', data);
+        
         if (data.success) {
             // 인보이스 생성 성공
             currentPaymentHash = data.payment_hash;
@@ -892,6 +901,7 @@ function startPaymentStatusCheck() {
     if (!currentPaymentHash) return;
     
     const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    console.log('결제 상태 체크 시작:', currentPaymentHash, 'Store ID:', storeId);
     
     paymentCheckInterval = setInterval(() => {
         fetch(`/menu/${storeId}/cart/check-payment/`, {
@@ -904,11 +914,23 @@ function startPaymentStatusCheck() {
                 payment_hash: currentPaymentHash
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('결제 상태 체크 응답 상태:', response.status);
+            if (!response.ok) {
+                console.error('HTTP 오류:', response.status, response.statusText);
+            }
+            return response.json();
+        })
         .then(data => {
+            // 디버깅용 로그 추가
+            console.log('결제 상태 응답:', data);
+            
             if (data.success) {
+                console.log('결제 상태:', data.status, '주문 상태:', data.order_status);
+                
                 if (data.status === 'paid') {
                     // 결제 완료
+                    console.log('결제 완료 감지됨!');
                     clearInterval(paymentCheckInterval);
                     clearInterval(paymentCountdownInterval);
                     
@@ -924,6 +946,7 @@ function startPaymentStatusCheck() {
                     
                 } else if (data.status === 'expired') {
                     // 인보이스 만료
+                    console.log('인보이스 만료됨');
                     clearInterval(paymentCheckInterval);
                     clearInterval(paymentCountdownInterval);
                     
@@ -933,6 +956,7 @@ function startPaymentStatusCheck() {
                 // pending인 경우 계속 확인
             } else {
                 console.error('결제 상태 확인 오류:', data.error);
+                console.error('전체 응답 데이터:', data);
             }
         })
         .catch(error => {

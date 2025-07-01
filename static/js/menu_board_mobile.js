@@ -19,6 +19,23 @@ function loadCartFromStorage() {
         console.error('장바구니 데이터 로드 오류:', error);
         mobileCart = [];
     }
+    
+    // 카테고리 아이템 클릭 이벤트 리스너 추가
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoryItems = document.querySelectorAll('.mobile-category-item');
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const categoryId = this.dataset.category;
+                const viewType = this.dataset.view;
+                
+                // 뷰 변경
+                showView(viewType, categoryId);
+                
+                // 햄버거 메뉴 닫기
+                closeMobileMenu();
+            });
+        });
+    });
 }
 
 // 장바구니 데이터를 localStorage에 저장
@@ -118,25 +135,34 @@ function backToMenuGrid() {
     showView('menu-grid', currentCategory);
 }
 
-// 모바일 메뉴 토글 함수
+// 모바일 메뉴 토글
 function toggleMobileMenu() {
     const overlay = document.getElementById('mobile-menu-overlay');
     const menu = document.getElementById('mobile-menu');
     
-    overlay.classList.remove('hidden');
-    setTimeout(() => {
-        menu.classList.remove('translate-x-full');
-    }, 10);
+    if (overlay.classList.contains('hidden')) {
+        // 메뉴 열기
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            menu.classList.remove('translate-x-full');
+            menu.classList.add('translate-x-0');
+        }, 10); // 약간의 지연으로 애니메이션 효과
+    } else {
+        // 메뉴 닫기
+        closeMobileMenu();
+    }
 }
 
+// 모바일 메뉴 닫기
 function closeMobileMenu() {
     const overlay = document.getElementById('mobile-menu-overlay');
     const menu = document.getElementById('mobile-menu');
     
+    menu.classList.remove('translate-x-0');
     menu.classList.add('translate-x-full');
     setTimeout(() => {
         overlay.classList.add('hidden');
-    }, 300);
+    }, 300); // CSS 애니메이션 시간과 동일
 }
 
 // 모바일 장바구니 토글 함수
@@ -171,6 +197,15 @@ function closeMobileCart() {
 
 // 데스크톱 장바구니 시스템과 호환되는 addToCart 함수 (메뉴 상세화면용)
 window.addToCart = function(cartItem) {
+    console.log('addToCart 호출됨:', cartItem);
+    
+    // 가격 검증
+    if (cartItem.totalPrice === null || cartItem.totalPrice === undefined) {
+        console.error('가격 정보가 없습니다:', cartItem.totalPrice);
+        alert('메뉴 가격 정보가 올바르지 않습니다.');
+        return;
+    }
+    
     // 데스크톱 형식의 cartItem을 모바일 형식으로 변환
     const existingIndex = mobileCart.findIndex(item => 
         item.menuId === cartItem.menuId.toString() && 
@@ -192,16 +227,18 @@ window.addToCart = function(cartItem) {
         });
     }
     
+    console.log('모바일 장바구니 업데이트:', mobileCart);
+    
     updateCartDisplay();
     updateCartButton();
     saveCartToStorage();
     
     // 성공 피드백
-    showCartAddedFeedback();
+    showToast('장바구니에 담았습니다!');
 };
 
 // 장바구니 담기 성공 피드백
-function showCartAddedFeedback() {
+function showToast(message) {
     // 기존 피드백이 있으면 제거
     const existingFeedback = document.getElementById('cart-feedback');
     if (existingFeedback) {
@@ -211,8 +248,8 @@ function showCartAddedFeedback() {
     // 새 피드백 생성
     const feedback = document.createElement('div');
     feedback.id = 'cart-feedback';
-    feedback.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
-    feedback.innerHTML = '<i class="fas fa-check mr-2"></i>장바구니에 담았습니다!';
+    feedback.className = 'fixed top-20 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-center transition-opacity duration-300';
+    feedback.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
     
     document.body.appendChild(feedback);
     
@@ -245,6 +282,9 @@ function addToMobileCart(menuId, menuName, price, quantity = 1) {
     updateCartDisplay();
     updateCartButton();
     saveCartToStorage();
+    
+    // 토스트 메시지 표시 (메뉴 상세에서와 동일한 피드백)
+    showToast('장바구니에 담았습니다!');
 }
 
 // 장바구니에서 아이템 제거
@@ -368,22 +408,46 @@ function updateCartButton() {
 
 // 주문 처리
 function processOrderFromMobile() {
+    console.log('processOrderFromMobile 호출됨');
+    console.log('현재 장바구니:', mobileCart);
+    
     if (mobileCart.length === 0) {
         alert('장바구니가 비어있습니다.');
         return;
+    }
+    
+    // 유효하지 않은 아이템 필터링 (가격이 null이나 undefined인 경우만)
+    const validCartItems = mobileCart.filter(item => item.price !== null && item.price !== undefined);
+    console.log('유효한 장바구니 아이템:', validCartItems);
+    
+    if (validCartItems.length === 0) {
+        alert('유효한 상품이 없습니다. 가격 정보를 확인해주세요.');
+        return;
+    }
+    
+    if (validCartItems.length !== mobileCart.length) {
+        console.warn('가격 정보가 없는 아이템이 제거되었습니다:', 
+                     mobileCart.filter(item => item.price === null || item.price === undefined));
+        // 유효한 아이템만으로 장바구니 업데이트
+        mobileCart = validCartItems;
+        updateCartDisplay();
+        updateCartButton();
+        saveCartToStorage();
     }
     
     // 먼저 장바구니 닫기
     closeMobileCart();
     
     // 모바일 장바구니 데이터를 데스크톱 장바구니 형식으로 변환
-    const convertedCartData = mobileCart.map(item => ({
+    const convertedCartData = validCartItems.map(item => ({
         id: `mobile_${item.menuId}_${Date.now()}`, // 고유 ID 생성
         name: item.menuName,
         totalPrice: item.price,
         quantity: item.quantity,
         options: item.options || {} // 옵션 정보도 포함
     }));
+    
+    console.log('변환된 장바구니 데이터:', convertedCartData);
     
     // 전역 cartData 설정 (데스크톱 장바구니 시스템에서 사용)
     window.cartData = convertedCartData;
@@ -407,7 +471,7 @@ function showMobilePaymentModal() {
     const totalAmount = mobileCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = mobileCart.reduce((sum, item) => sum + item.quantity, 0);
     
-    if (totalAmount <= 0) {
+    if (totalAmount < 0 || isNaN(totalAmount)) {
         alert('결제 금액이 올바르지 않습니다.');
         return;
     }
@@ -723,10 +787,26 @@ function syncWithDesktopCart() {
     });
 }
 
+// 장바구니 데이터 정리 (유효하지 않은 아이템 제거)
+function cleanupMobileCart() {
+    const originalLength = mobileCart.length;
+    mobileCart = mobileCart.filter(item => item.price !== null && item.price !== undefined);
+    
+    if (mobileCart.length !== originalLength) {
+        console.warn(`가격 정보가 없는 아이템 ${originalLength - mobileCart.length}개를 제거했습니다.`);
+        updateCartDisplay();
+        updateCartButton();
+        saveCartToStorage();
+    }
+}
+
 // DOM 로드 완료 시 이벤트 바인딩
 document.addEventListener('DOMContentLoaded', function() {
     // localStorage에서 장바구니 데이터 복원
     loadCartFromStorage();
+    
+    // 장바구니 데이터 정리
+    cleanupMobileCart();
     
     document.querySelectorAll('.mobile-category-item').forEach(item => {
         item.addEventListener('click', function() {

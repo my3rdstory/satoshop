@@ -1,5 +1,11 @@
 /* 모바일 장바구니 전용 스타일 */
 
+/* 햄버거 메뉴와 장바구니 애니메이션 통일 */
+#mobile-menu,
+#mobile-cart-sidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
 /* 모바일 바텀 시트 장바구니 */
 #mobile-cart-bottom-sheet {
     max-height: 80vh;

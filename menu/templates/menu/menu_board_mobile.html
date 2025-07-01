@@ -123,12 +123,11 @@
                         </div>
                         
                         <!-- 메뉴 정보 -->
-                        <div class="p-3">
-                            <h3 class="text-sm font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors line-clamp-2" 
-                                onclick="showMenuDetail('{{ menu.id }}')">{{ menu.name }}</h3>
+                        <div class="p-3 cursor-pointer" onclick="showMenuDetail('{{ menu.id }}')">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors line-clamp-2">{{ menu.name }}</h3>
                             
                             <!-- 가격 정보 -->
-                            <div class="mb-3">
+                            <div class="mb-2">
                                 {% if menu.is_discounted %}
                                 <div class="flex flex-col space-y-1">
                                     <span class="text-lg font-bold text-red-500">
@@ -145,11 +144,10 @@
                                 {% endif %}
                             </div>
                             
-                            <!-- 장바구니 담기 버튼 -->
-                            <button onclick="addToMobileCart('{{ menu.id }}', '{{ menu.name|escapejs }}', {% if menu.is_discounted %}{{ menu.public_discounted_price|floatformat:0 }}{% else %}{{ menu.public_price|floatformat:0 }}{% endif %})" 
-                                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
-                                <i class="fas fa-plus mr-1"></i>담기
-                            </button>
+                            <!-- 상세보기 안내 -->
+                            <div class="text-xs text-gray-500 text-center py-2 bg-gray-50 rounded-lg">
+                                <i class="fas fa-touch mr-1"></i>터치하여 상세보기
+                            </div>
                         </div>
                     </div>
                     {% endfor %}

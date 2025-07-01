@@ -496,7 +496,7 @@ function showPaymentModal() {
     const totalAmount = cartData.reduce((sum, item) => sum + ((item.totalPrice || 0) * item.quantity), 0);
     const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
     
-    if (totalAmount <= 0) {
+    if (totalAmount < 0 || isNaN(totalAmount)) {
         alert('결제 금액이 올바르지 않습니다.');
         return;
     }
@@ -748,7 +748,7 @@ function updatePaymentOrderList() {
 function generatePaymentInvoice() {
     const totalAmount = cartData.reduce((sum, item) => sum + ((item.totalPrice || 0) * item.quantity), 0);
     
-    if (totalAmount <= 0) {
+    if (totalAmount < 0 || isNaN(totalAmount)) {
         alert('결제 금액이 올바르지 않습니다.');
         return;
     }

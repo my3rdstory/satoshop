@@ -1,494 +1,833 @@
-/**
- * 모바일 메뉴판 전용 JavaScript
- * 모바일 UI 컴포넌트와 상호작용을 관리합니다.
- */
+/* 모바일 메뉴판 전용 JavaScript */
 
-// 모바일 메뉴 관리
-class MobileMenuManager {
-    constructor() {
-        this.overlay = document.getElementById('mobile-menu-overlay');
-        this.menu = document.getElementById('mobile-menu');
-        this.isOpen = false;
-        
-        this.init();
-    }
-    
-    init() {
-        // 터치 이벤트 리스너 추가
-        this.addTouchListeners();
-        
-        // 키보드 이벤트 리스너 추가
-        this.addKeyboardListeners();
-    }
-    
-    toggle() {
-        if (this.isOpen) {
-            this.close();
-        } else {
-            this.open();
+// 전역 변수
+let currentView = 'menu-grid';
+let currentCategory = 'all';
+let mobileCart = [];
+let cartTotal = 0;
+
+// 페이지 로드 시 장바구니 데이터 복원
+function loadCartFromStorage() {
+    try {
+        const storedCart = localStorage.getItem('mobileCart');
+        if (storedCart) {
+            mobileCart = JSON.parse(storedCart);
+            updateCartDisplay();
+            updateCartButton();
         }
+    } catch (error) {
+        console.error('장바구니 데이터 로드 오류:', error);
+        mobileCart = [];
     }
     
-    open() {
-        this.overlay.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // 스크롤 방지
-        
-        setTimeout(() => {
-            this.menu.classList.remove('translate-x-full');
-            this.isOpen = true;
-        }, 10);
-    }
-    
-    close() {
-        this.menu.classList.add('translate-x-full');
-        document.body.style.overflow = ''; // 스크롤 복원
-        
-        setTimeout(() => {
-            this.overlay.classList.add('hidden');
-            this.isOpen = false;
-        }, 300);
-    }
-    
-    addTouchListeners() {
-        // 스와이프로 메뉴 닫기
-        let startX = 0;
-        let currentX = 0;
-        
-        this.menu.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
+    // 카테고리 아이템 클릭 이벤트 리스너 추가
+    document.addEventListener('DOMContentLoaded', function() {
+        const categoryItems = document.querySelectorAll('.mobile-category-item');
+        categoryItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const categoryId = this.dataset.category;
+                const viewType = this.dataset.view;
+                
+                // 뷰 변경
+                showView(viewType, categoryId);
+                
+                // 햄버거 메뉴 닫기
+                closeMobileMenu();
+            });
         });
-        
-        this.menu.addEventListener('touchmove', (e) => {
-            currentX = e.touches[0].clientX;
-            const diffX = currentX - startX;
-            
-            if (diffX > 0) {
-                this.menu.style.transform = `translateX(${diffX}px)`;
-            }
-        });
-        
-        this.menu.addEventListener('touchend', (e) => {
-            const diffX = currentX - startX;
-            
-            if (diffX > 100) { // 100px 이상 스와이프하면 닫기
-                this.close();
+    });
+}
+
+// 장바구니 데이터를 localStorage에 저장
+function saveCartToStorage() {
+    try {
+        localStorage.setItem('mobileCart', JSON.stringify(mobileCart));
+    } catch (error) {
+        console.error('장바구니 데이터 저장 오류:', error);
+    }
+}
+
+// 뷰 전환 함수
+function showView(viewName, categoryId = null) {
+    document.querySelectorAll('.content-view').forEach(view => {
+        view.classList.remove('active');
+    });
+    
+    const targetView = document.getElementById(viewName + '-view');
+    if (targetView) {
+        targetView.classList.add('active');
+        currentView = viewName;
+    }
+    
+    if (categoryId !== null) {
+        currentCategory = categoryId;
+        updateCategoryFilter(categoryId);
+    }
+    
+    updateCategoryActiveState(viewName, categoryId);
+}
+
+// 카테고리 필터 업데이트
+function updateCategoryFilter(categoryId) {
+    if (currentView === 'menu-grid') {
+        const menuCards = document.querySelectorAll('.menu-card');
+        menuCards.forEach(card => {
+            if (categoryId === 'all') {
+                card.style.display = 'block';
             } else {
-                this.menu.style.transform = '';
-            }
-        });
-    }
-    
-    addKeyboardListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
+                const categories = JSON.parse(card.dataset.categories || '[]');
+                card.style.display = categories.includes(parseInt(categoryId)) ? 'block' : 'none';
             }
         });
     }
 }
 
-// 모바일 장바구니 관리
-class MobileCartManager {
-    constructor() {
-        this.bottomSheet = document.getElementById('mobile-cart-bottom-sheet');
-        this.cartItems = document.getElementById('mobile-cart-items');
-        this.emptyCart = document.getElementById('mobile-empty-cart');
-        this.cartSummary = document.getElementById('mobile-cart-summary');
-        this.cartTotal = document.getElementById('mobile-cart-total');
-        this.cartBadge = document.getElementById('mobile-cart-badge');
-        this.clearCartBtn = document.getElementById('mobile-clear-cart-btn');
-        
-        this.isOpen = false;
-        this.startY = 0;
-        this.currentY = 0;
-        
-        this.init();
-    }
+// 카테고리 아이템 활성화 상태 업데이트
+function updateCategoryActiveState(viewName, categoryId) {
+    document.querySelectorAll('.mobile-category-item').forEach(item => {
+        item.classList.remove('active');
+    });
     
-    init() {
-        this.addTouchListeners();
-        this.addKeyboardListeners();
-    }
-    
-    toggle() {
-        if (this.isOpen) {
-            this.close();
-        } else {
-            this.open();
+    if (viewName === 'menu-grid') {
+        const targetCategory = document.querySelector(`[data-category="${categoryId}"][data-view="menu-grid"]`);
+        if (targetCategory) {
+            targetCategory.classList.add('active');
         }
     }
+}
+
+// 메뉴 상세 보기
+function showMenuDetail(menuId) {
+    const storeId = window.storeId;
     
-    open() {
-        this.bottomSheet.classList.remove('translate-y-full');
-        this.isOpen = true;
-        this.update();
-        
-        // 바디 스크롤 방지
-        document.body.style.overflow = 'hidden';
-    }
-    
-    close() {
-        this.bottomSheet.classList.add('translate-y-full');
-        this.isOpen = false;
-        
-        // 바디 스크롤 복원
-        document.body.style.overflow = '';
-    }
-    
-    update() {
-        if (!window.cartData) return;
-        
-        if (cartData.length === 0) {
-            this.showEmptyState();
-        } else {
-            this.showCartItems();
-        }
-    }
-    
-    showEmptyState() {
-        this.cartItems.innerHTML = '';
-        this.emptyCart.classList.remove('hidden');
-        this.cartSummary.classList.add('hidden');
-        this.cartBadge.classList.add('hidden');
-        this.clearCartBtn.classList.add('hidden');
-    }
-    
-    showCartItems() {
-        this.emptyCart.classList.add('hidden');
-        this.cartSummary.classList.remove('hidden');
-        this.cartBadge.classList.remove('hidden');
-        this.clearCartBtn.classList.remove('hidden');
-        
-        let itemsHTML = '';
-        let totalAmount = 0;
-        let totalItems = 0;
-        
-        cartData.forEach(item => {
-            const itemTotal = (item.totalPrice || 0) * item.quantity;
-            totalAmount += itemTotal;
-            totalItems += item.quantity;
+    fetch(`/menu/${storeId}/detail/${menuId}/ajax/`)
+        .then(response => response.text())
+        .then(html => {
+            const menuDetailView = document.getElementById('menu-detail-view');
+            menuDetailView.innerHTML = html;
             
-            // 옵션 텍스트 생성
-            let optionsText = '';
-            if (item.options && Object.keys(item.options).length > 0) {
-                const optionTexts = Object.entries(item.options).map(([key, value]) => {
-                    return `${key}: ${value.value}`;
-                });
-                optionsText = optionTexts.join(', ');
-            }
-            
-            itemsHTML += this.generateItemHTML(item, optionsText);
-        });
-        
-        this.cartItems.innerHTML = itemsHTML;
-        this.cartTotal.textContent = this.formatNumber(totalAmount) + ' sats';
-        this.cartBadge.textContent = totalItems;
-    }
-    
-    generateItemHTML(item, optionsText) {
-        return `
-            <div class="mobile-cart-item relative overflow-hidden bg-gray-50 rounded-lg mb-2" data-item-id="${item.id}">
-                <div class="flex items-center justify-between p-3">
-                    <div class="flex-1">
-                        <h4 class="font-medium text-gray-900">${this.escapeHtml(item.name)}</h4>
-                        ${optionsText ? `<p class="text-sm text-gray-600">${this.escapeHtml(optionsText)}</p>` : ''}
-                        <p class="text-sm text-blue-600">${this.formatNumber(item.totalPrice || 0)} sats × ${item.quantity}</p>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                                                 <button onclick="updateItemQuantity('${item.id}', ${item.quantity - 1})" 
-                                 class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
-                             <i class="fas fa-minus text-xs"></i>
-                         </button>
-                         <span class="font-medium text-gray-900 w-8 text-center">${item.quantity}</span>
-                         <button onclick="updateItemQuantity('${item.id}', ${item.quantity + 1})" 
-                                 class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
-                             <i class="fas fa-plus text-xs"></i>
-                         </button>
-                         <button onclick="confirmRemoveCartItem('${item.id}', '${this.escapeHtml(item.name)}')" 
-                                 class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center text-red-600 ml-1 transition-colors">
-                             <i class="fas fa-trash text-xs"></i>
-                         </button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-    
-    updateQuantity(itemId, newQuantity) {
-        if (window.updateItemQuantity) {
-            window.updateItemQuantity(itemId, newQuantity);
-            // 장바구니 업데이트 후 모바일 UI 갱신
-            setTimeout(() => {
-                this.update();
-                // 전체 장바구니 디스플레이도 업데이트
-                if (window.updateAllCartDisplays) {
-                    window.updateAllCartDisplays();
-                }
-            }, 100);
-        }
-    }
-    
-    confirmRemoveItem(itemId, itemName) {
-        if (confirm(`"${itemName}"을(를) 장바구니에서 제거하시겠습니까?`)) {
-            if (window.removeCartItem) {
-                window.removeCartItem(itemId);
-                setTimeout(() => {
-                    this.update();
-                    // 전체 장바구니 디스플레이도 업데이트
-                    if (window.updateAllCartDisplays) {
-                        window.updateAllCartDisplays();
-                    }
-                }, 100);
-            }
-        }
-    }
-    
-    confirmClearAll() {
-        if (!window.cartData || cartData.length === 0) return;
-        
-        if (confirm(`장바구니의 모든 상품(${cartData.length}개)을 삭제하시겠습니까?`)) {
-            if (window.clearCart) {
-                window.clearCart();
-                this.update();
-            }
-        }
-    }
-    
-    processOrder() {
-        this.close();
-        if (window.showPaymentModal) {
-            window.showPaymentModal();
-        }
-    }
-    
-    addTouchListeners() {
-        // 드래그 핸들로 장바구니 닫기
-        const handle = this.bottomSheet.querySelector('.w-12.h-1');
-        if (handle) {
-            handle.addEventListener('touchstart', (e) => {
-                this.startY = e.touches[0].clientY;
-            });
-            
-            handle.addEventListener('touchmove', (e) => {
-                this.currentY = e.touches[0].clientY;
-                const diffY = this.currentY - this.startY;
-                
-                if (diffY > 0) {
-                    this.bottomSheet.style.transform = `translateY(${diffY}px)`;
+            const scripts = menuDetailView.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                try {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = oldScript.textContent;
+                    document.head.appendChild(newScript);
+                    
+                    setTimeout(() => {
+                        if (document.head.contains(newScript)) {
+                            document.head.removeChild(newScript);
+                        }
+                    }, 100);
+                } catch (error) {
+                    console.error('스크립트 실행 오류:', error);
                 }
             });
             
-            handle.addEventListener('touchend', (e) => {
-                const diffY = this.currentY - this.startY;
-                
-                if (diffY > 100) { // 100px 이상 드래그하면 닫기
-                    this.close();
-                } else {
-                    this.bottomSheet.style.transform = '';
-                }
-            });
-        }
-    }
-    
-    addKeyboardListeners() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
-            }
+            showView('menu-detail');
+        })
+        .catch(error => {
+            console.error('메뉴 상세 로드 오류:', error);
         });
-    }
-    
-    formatNumber(num) {
-        return Math.round(num).toLocaleString();
-    }
-    
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
 }
 
-// 모바일 카테고리 관리
-class MobileCategoryManager {
-    constructor() {
-        this.categoryItems = document.querySelectorAll('.mobile-category-item');
-        this.init();
-    }
-    
-    init() {
-        this.categoryItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                this.handleCategoryClick(e.currentTarget);
-            });
-        });
-    }
-    
-    handleCategoryClick(item) {
-        const viewType = item.dataset.view;
-        const categoryId = item.dataset.category;
-        
-        // 모바일 메뉴 닫기
-        if (window.mobileMenu) {
-            mobileMenu.close();
-        }
-        
-        // 카테고리 변경
-        if (viewType === 'menu-grid') {
-            if (window.showView) {
-                window.showView('menu-grid', categoryId);
-            }
-        } else {
-            if (window.showView) {
-                window.showView(viewType);
-            }
-        }
-        
-        // 활성화 상태 업데이트
-        this.updateActiveState(item);
-    }
-    
-    updateActiveState(activeItem) {
-        this.categoryItems.forEach(item => {
-            item.classList.remove('active');
-        });
-        activeItem.classList.add('active');
-    }
+// 메뉴 그리드로 돌아가기
+function backToMenuGrid() {
+    showView('menu-grid', currentCategory);
 }
 
-// 전역 변수 및 함수들
-let mobileMenu;
-let mobileCart;
-let mobileCategory;
-
-// 모바일 컴포넌트 초기화
-function initializeMobileComponents() {
-    // 모바일 요소가 존재할 때만 초기화
-    const mobileHeader = document.querySelector('.mobile-header');
-    const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
-    const mobileCartBottomSheet = document.getElementById('mobile-cart-bottom-sheet');
-    
-    if (mobileHeader || mobileMenuOverlay || mobileCartBottomSheet) {
-        try {
-            if (mobileMenuOverlay && !mobileMenu) {
-                mobileMenu = new MobileMenuManager();
-            }
-            if (mobileCartBottomSheet && !mobileCart) {
-                mobileCart = new MobileCartManager();
-            }
-            if (document.querySelectorAll('.mobile-category-item').length > 0 && !mobileCategory) {
-                mobileCategory = new MobileCategoryManager();
-            }
-            
-            console.log('모바일 컴포넌트 초기화 완료');
-        } catch (error) {
-            console.error('모바일 컴포넌트 초기화 오류:', error);
-        }
-    }
-}
-
-// 전역 함수들 (HTML에서 호출)
+// 모바일 메뉴 토글
 function toggleMobileMenu() {
-    if (mobileMenu) {
-        mobileMenu.toggle();
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const menu = document.getElementById('mobile-menu');
+    
+    if (overlay.classList.contains('hidden')) {
+        // 메뉴 열기
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+            menu.classList.remove('translate-x-full');
+            menu.classList.add('translate-x-0');
+        }, 10); // 약간의 지연으로 애니메이션 효과
+    } else {
+        // 메뉴 닫기
+        closeMobileMenu();
     }
 }
 
+// 모바일 메뉴 닫기
 function closeMobileMenu() {
-    if (mobileMenu) {
-        mobileMenu.close();
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const menu = document.getElementById('mobile-menu');
+    
+    menu.classList.remove('translate-x-0');
+    menu.classList.add('translate-x-full');
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+    }, 300); // CSS 애니메이션 시간과 동일
+}
+
+// 모바일 장바구니 토글 함수
+function toggleMobileCart() {
+    const sidebar = document.getElementById('mobile-cart-sidebar');
+    const overlay = document.getElementById('mobile-cart-overlay');
+    
+    if (sidebar.classList.contains('translate-x-0')) {
+        closeMobileCart();
+    } else {
+        openMobileCart();
     }
 }
 
-function toggleMobileCart() {
-    if (mobileCart) {
-        mobileCart.toggle();
-    }
+function openMobileCart() {
+    const sidebar = document.getElementById('mobile-cart-sidebar');
+    const overlay = document.getElementById('mobile-cart-overlay');
+    
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    overlay.classList.remove('hidden');
 }
 
 function closeMobileCart() {
-    if (mobileCart) {
-        mobileCart.close();
+    const sidebar = document.getElementById('mobile-cart-sidebar');
+    const overlay = document.getElementById('mobile-cart-overlay');
+    
+    sidebar.classList.remove('translate-x-0');
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+}
+
+// 데스크톱 장바구니 시스템과 호환되는 addToCart 함수 (메뉴 상세화면용)
+window.addToCart = function(cartItem) {
+    console.log('addToCart 호출됨:', cartItem);
+    
+    // 가격 검증
+    if (cartItem.totalPrice === null || cartItem.totalPrice === undefined) {
+        console.error('가격 정보가 없습니다:', cartItem.totalPrice);
+        alert('메뉴 가격 정보가 올바르지 않습니다.');
+        return;
+    }
+    
+    // 데스크톱 형식의 cartItem을 모바일 형식으로 변환
+    const existingIndex = mobileCart.findIndex(item => 
+        item.menuId === cartItem.menuId.toString() && 
+        JSON.stringify(item.options || {}) === JSON.stringify(cartItem.options || {})
+    );
+    
+    if (existingIndex >= 0) {
+        // 기존 아이템 수량 증가
+        mobileCart[existingIndex].quantity += cartItem.quantity;
+    } else {
+        // 새 아이템 추가
+        mobileCart.push({
+            menuId: cartItem.menuId.toString(),
+            menuName: cartItem.name,
+            price: cartItem.totalPrice,
+            quantity: cartItem.quantity,
+            options: cartItem.options || {},
+            originalCartItem: cartItem // 원본 정보 보관
+        });
+    }
+    
+    console.log('모바일 장바구니 업데이트:', mobileCart);
+    
+    updateCartDisplay();
+    updateCartButton();
+    saveCartToStorage();
+    
+    // 성공 피드백
+    showToast('장바구니에 담았습니다!');
+};
+
+// 장바구니 담기 성공 피드백
+function showToast(message) {
+    // 기존 피드백이 있으면 제거
+    const existingFeedback = document.getElementById('cart-feedback');
+    if (existingFeedback) {
+        existingFeedback.remove();
+    }
+    
+    // 새 피드백 생성
+    const feedback = document.createElement('div');
+    feedback.id = 'cart-feedback';
+    feedback.className = 'fixed top-20 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-center transition-opacity duration-300';
+    feedback.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
+    
+    document.body.appendChild(feedback);
+    
+    // 3초 후 제거
+    setTimeout(() => {
+        feedback.style.opacity = '0';
+        setTimeout(() => {
+            if (document.body.contains(feedback)) {
+                document.body.removeChild(feedback);
+            }
+        }, 300);
+    }, 2000);
+}
+
+// 장바구니에 메뉴 추가 (기존 모바일 전용 함수)
+function addToMobileCart(menuId, menuName, price, quantity = 1) {
+    const existingItem = mobileCart.find(item => item.menuId === menuId);
+    
+    if (existingItem) {
+        existingItem.quantity += quantity;
+    } else {
+        mobileCart.push({
+            menuId: menuId,
+            menuName: menuName,
+            price: price,
+            quantity: quantity
+        });
+    }
+    
+    updateCartDisplay();
+    updateCartButton();
+    saveCartToStorage();
+    
+    // 토스트 메시지 표시 (메뉴 상세에서와 동일한 피드백)
+    showToast('장바구니에 담았습니다!');
+}
+
+// 장바구니에서 아이템 제거
+function removeFromMobileCart(menuId, index = null) {
+    if (index !== null && mobileCart[index] && mobileCart[index].menuId === menuId) {
+        // 특정 인덱스의 아이템 제거
+        mobileCart.splice(index, 1);
+    } else {
+        // menuId로 첫 번째 일치하는 아이템 제거
+        const itemIndex = mobileCart.findIndex(item => item.menuId === menuId);
+        if (itemIndex >= 0) {
+            mobileCart.splice(itemIndex, 1);
+        }
+    }
+    updateCartDisplay();
+    updateCartButton();
+    saveCartToStorage();
+}
+
+// 장바구니 비우기
+function clearMobileCart() {
+    mobileCart = [];
+    updateCartDisplay();
+    updateCartButton();
+    saveCartToStorage();
+}
+
+// 장바구니 표시 업데이트
+function updateCartDisplay() {
+    const cartItemsContainer = document.getElementById('mobile-cart-items');
+    const emptyCartMessage = document.getElementById('mobile-empty-cart');
+    const cartSummary = document.getElementById('mobile-cart-summary');
+    const cartTotalElement = document.getElementById('mobile-cart-total');
+    
+    if (mobileCart.length === 0) {
+        cartItemsContainer.innerHTML = '';
+        emptyCartMessage.classList.remove('hidden');
+        cartSummary.classList.add('hidden');
+        cartTotal = 0;
+    } else {
+        emptyCartMessage.classList.add('hidden');
+        cartSummary.classList.remove('hidden');
+        
+        cartTotal = mobileCart.reduce((total, item) => total + (item.price * item.quantity), 0);
+        cartTotalElement.textContent = `${cartTotal.toLocaleString()} sats`;
+        
+        cartItemsContainer.innerHTML = mobileCart.map((item, index) => {
+            // 옵션 정보 표시 문자열 생성
+            const optionsText = item.options && Object.keys(item.options).length > 0 
+                ? Object.entries(item.options).map(([key, value]) => `${key}: ${value.value}`).join(', ')
+                : '';
+            
+            return `
+                <div class="cart-item flex items-center justify-between p-3 border-b border-gray-100">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">${item.menuName}</h4>
+                        ${optionsText ? `<p class="text-xs text-blue-600">${optionsText}</p>` : ''}
+                        <p class="text-sm text-gray-600">${item.price.toLocaleString()} sats</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="changeCartItemQuantity('${item.menuId}', -1, ${index})" 
+                                class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                            <i class="fas fa-minus text-xs"></i>
+                        </button>
+                        <span class="w-8 text-center">${item.quantity}</span>
+                        <button onclick="changeCartItemQuantity('${item.menuId}', 1, ${index})" 
+                                class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                            <i class="fas fa-plus text-xs"></i>
+                        </button>
+                        <button onclick="removeFromMobileCart('${item.menuId}', ${index})" 
+                                class="ml-2 text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 }
 
-function updateMobileCart() {
-    if (mobileCart) {
-        mobileCart.update();
+// 장바구니 아이템 수량 변경
+function changeCartItemQuantity(menuId, delta, index = null) {
+    // index가 제공된 경우 해당 인덱스의 아이템을 직접 찾기
+    let item;
+    if (index !== null && mobileCart[index] && mobileCart[index].menuId === menuId) {
+        item = mobileCart[index];
+    } else {
+        // index가 없거나 일치하지 않으면 menuId로 찾기 (첫 번째 일치하는 아이템)
+        item = mobileCart.find(item => item.menuId === menuId);
     }
-}
-
-function confirmRemoveCartItem(itemId, itemName) {
-    if (confirm(`"${itemName}"을(를) 장바구니에서 제거하시겠습니까?`)) {
-        if (window.removeCartItem) {
-            window.removeCartItem(itemId);
-            // 모바일 장바구니 업데이트
-            setTimeout(() => {
-                if (mobileCart) {
-                    mobileCart.update();
-                }
-            }, 100);
+    
+    if (item) {
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+            removeFromMobileCart(menuId, index);
+        } else {
+            updateCartDisplay();
+            updateCartButton();
+            saveCartToStorage();
         }
     }
 }
 
-function confirmClearCart() {
-    if (!window.cartData || cartData.length === 0) return;
+// 장바구니 업데이트 함수
+function updateCartButton() {
+    const badge = document.getElementById('mobile-cart-badge');
+    const clearBtn = document.getElementById('mobile-clear-cart-btn');
     
-    if (confirm(`장바구니의 모든 상품(${cartData.length}개)을 삭제하시겠습니까?`)) {
-        if (window.clearCart) {
-            window.clearCart();
-            if (mobileCart) {
-                mobileCart.update();
+    const cartItems = mobileCart.length;
+    const totalQuantity = mobileCart.reduce((total, item) => total + item.quantity, 0);
+    
+    if (cartItems > 0) {
+        badge.textContent = totalQuantity;
+        badge.classList.remove('hidden');
+        clearBtn.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+        clearBtn.classList.add('hidden');
+    }
+}
+
+// 주문 처리
+function processOrderFromMobile() {
+    console.log('processOrderFromMobile 호출됨');
+    console.log('현재 장바구니:', mobileCart);
+    
+    if (mobileCart.length === 0) {
+        alert('장바구니가 비어있습니다.');
+        return;
+    }
+    
+    // 유효하지 않은 아이템 필터링 (가격이 null이나 undefined인 경우만)
+    const validCartItems = mobileCart.filter(item => item.price !== null && item.price !== undefined);
+    console.log('유효한 장바구니 아이템:', validCartItems);
+    
+    if (validCartItems.length === 0) {
+        alert('유효한 상품이 없습니다. 가격 정보를 확인해주세요.');
+        return;
+    }
+    
+    if (validCartItems.length !== mobileCart.length) {
+        console.warn('가격 정보가 없는 아이템이 제거되었습니다:', 
+                     mobileCart.filter(item => item.price === null || item.price === undefined));
+        // 유효한 아이템만으로 장바구니 업데이트
+        mobileCart = validCartItems;
+        updateCartDisplay();
+        updateCartButton();
+        saveCartToStorage();
+    }
+    
+    // 먼저 장바구니 닫기
+    closeMobileCart();
+    
+    // 모바일 장바구니 데이터를 데스크톱 장바구니 형식으로 변환
+    const convertedCartData = validCartItems.map(item => ({
+        id: `mobile_${item.menuId}_${Date.now()}`, // 고유 ID 생성
+        name: item.menuName,
+        totalPrice: item.price,
+        quantity: item.quantity,
+        options: item.options || {} // 옵션 정보도 포함
+    }));
+    
+    console.log('변환된 장바구니 데이터:', convertedCartData);
+    
+    // 전역 cartData 설정 (데스크톱 장바구니 시스템에서 사용)
+    window.cartData = convertedCartData;
+    
+    // localStorage에도 저장 (데스크톱 장바구니와 동기화)
+    localStorage.setItem('cart', JSON.stringify(convertedCartData));
+    
+    // 스토어 ID 설정
+    if (window.storeId) {
+        window.currentStoreId = window.storeId;
+    }
+    
+    // 약간의 딜레이 후 결제 화면 표시 (장바구니 닫힘 애니메이션 완료 대기)
+    setTimeout(() => {
+        showMobilePaymentModal();
+    }, 350);
+}
+
+// 모바일 전용 결제 모달
+function showMobilePaymentModal() {
+    const totalAmount = mobileCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = mobileCart.reduce((sum, item) => sum + item.quantity, 0);
+    
+    if (totalAmount < 0 || isNaN(totalAmount)) {
+        alert('결제 금액이 올바르지 않습니다.');
+        return;
+    }
+    
+    // 메뉴 콘텐츠 영역 찾기 (모바일용)
+    const mobileContent = document.querySelector('.mobile-content');
+    if (!mobileContent) {
+        alert('결제 화면을 표시할 수 없습니다.');
+        return;
+    }
+    
+    // 기존 결제 화면이 있으면 제거
+    const existingPaymentView = document.getElementById('mobile-payment-view');
+    if (existingPaymentView) {
+        existingPaymentView.remove();
+    }
+    
+    // 기존 콘텐츠 숨기기
+    const existingViews = mobileContent.querySelectorAll('.content-view');
+    existingViews.forEach(view => view.classList.remove('active'));
+    
+    // 결제 화면 HTML 생성 (모바일 최적화)
+    const paymentHTML = `
+        <div id="mobile-payment-view" class="content-view active">
+            <div class="p-4">
+                <div class="bg-white rounded-lg shadow-lg">
+                    <!-- 헤더 -->
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-xl font-bold text-gray-900">결제하기</h2>
+                            <button onclick="closeMobilePaymentView()" class="text-gray-400 hover:text-gray-600 text-xl">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 내용 -->
+                    <div class="p-4">
+                        <!-- 주문 목록 -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">주문 내역</h3>
+                            <div class="bg-gray-50 rounded-lg p-3 max-h-64 overflow-y-auto">
+                                <div id="mobile-payment-order-list" class="space-y-2">
+                                    ${mobileCart.map(item => `
+                                        <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                                            <div class="flex-1">
+                                                <div class="font-medium text-sm">${item.menuName}</div>
+                                                <div class="text-xs text-gray-600">${item.price.toLocaleString()} sats × ${item.quantity}</div>
+                                            </div>
+                                            <div class="font-bold text-blue-600">${(item.price * item.quantity).toLocaleString()} sats</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="border-t border-gray-200 mt-3 pt-3">
+                                    <div class="flex justify-between items-center text-lg font-bold">
+                                        <span>총 결제 금액</span>
+                                        <span class="text-blue-600">${totalAmount.toLocaleString()} sats</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 결제 정보 -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">결제 정보</h3>
+                            
+                            <!-- 인보이스 생성 전 -->
+                            <div id="mobile-payment-initial" class="text-center">
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <i class="fas fa-bolt text-blue-600 text-2xl mb-2"></i>
+                                    <h4 class="text-lg font-semibold text-blue-900 mb-1">라이트닝 결제</h4>
+                                    <p class="text-blue-700 text-sm">빠르고 저렴한 비트코인 결제</p>
+                                </div>
+                                <div class="grid grid-cols-1 gap-3">
+                                    <button onclick="generateMobilePaymentInvoice()" 
+                                            class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-qrcode mr-2"></i>결제 인보이스 생성
+                                    </button>
+                                    <button onclick="closeMobilePaymentView()" 
+                                            class="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-arrow-left mr-2"></i>취소
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 로딩 -->
+                            <div id="mobile-payment-loading" class="hidden text-center py-8">
+                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                                <p class="text-gray-600">인보이스를 생성하고 있습니다...</p>
+                            </div>
+                            
+                            <!-- QR 코드 및 인보이스 -->
+                            <div id="mobile-payment-invoice" class="hidden">
+                                <!-- 카운트다운 타이머 -->
+                                <div id="mobile-payment-countdown" class="text-center mb-4">
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                        <div class="text-red-600 text-xl font-bold" id="mobile-countdown-timer">15:00</div>
+                                        <div class="text-red-500 text-sm">인보이스 유효 시간</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- QR 코드 -->
+                                <div class="text-center mb-4">
+                                    <div id="mobile-qr-code-container" class="inline-block p-3 bg-white border-2 border-gray-300 rounded-lg">
+                                        <!-- QR 코드가 여기에 생성됩니다 -->
+                                    </div>
+                                </div>
+                                
+                                <!-- 라이트닝 지갑 열기 버튼 -->
+                                <div class="text-center mb-4">
+                                    <button onclick="openMobileLightningWallet()" 
+                                            class="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-xl font-bold text-base flex items-center justify-center mx-auto transition-all duration-300 hover:shadow-lg w-full">
+                                        <i class="fas fa-bolt mr-2 text-lg"></i>
+                                        라이트닝 지갑 열어 결제하기
+                                    </button>
+                                    <p class="text-xs text-gray-600 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        설치된 라이트닝 지갑이 자동으로 열립니다
+                                    </p>
+                                </div>
+                                
+                                <!-- 인보이스 텍스트 -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">인보이스 텍스트</label>
+                                    <div class="relative">
+                                        <textarea id="mobile-invoice-text" 
+                                                  class="w-full p-2 border border-gray-300 rounded-lg text-xs font-mono bg-gray-50 resize-none" 
+                                                  rows="2" 
+                                                  readonly></textarea>
+                                        <button onclick="copyMobileInvoiceText()" 
+                                                class="absolute top-1 right-1 bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-colors">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 취소 버튼 -->
+                                <div class="text-center">
+                                    <button onclick="cancelMobilePayment()" 
+                                            class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                                        <i class="fas fa-times mr-2"></i>결제 취소
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 결제 성공 -->
+                            <div id="mobile-payment-success" class="hidden text-center">
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                    <i class="fas fa-check-circle text-green-600 text-3xl mb-3"></i>
+                                    <h4 class="text-lg font-semibold text-green-900 mb-2">결제가 완료되었습니다!</h4>
+                                    <p class="text-green-700 text-sm">주문이 성공적으로 처리되었습니다.</p>
+                                </div>
+                                <button onclick="goBackToMobileMenuBoard()" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors w-full">
+                                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 이동
+                                </button>
+                            </div>
+                            
+                            <!-- 결제 취소됨 -->
+                            <div id="mobile-payment-cancelled" class="hidden text-center">
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                                    <i class="fas fa-times-circle text-gray-600 text-3xl mb-3"></i>
+                                    <h4 class="text-lg font-semibold text-gray-900 mb-2">결제가 취소되었습니다</h4>
+                                    <p class="text-gray-700 text-sm">언제든지 다시 결제를 시도하실 수 있습니다.</p>
+                                </div>
+                                <button onclick="goBackToMobileMenuBoard()" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors w-full">
+                                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 결제 화면을 모바일 콘텐츠에 추가
+    mobileContent.insertAdjacentHTML('beforeend', paymentHTML);
+}
+
+// 장바구니 비우기 확인
+function confirmClearCart() {
+    if (confirm('장바구니를 비우시겠습니까?')) {
+        clearMobileCart();
+    }
+}
+
+// 모바일 결제 관련 함수들
+function closeMobilePaymentView() {
+    showView('menu-grid', currentCategory);
+    const paymentView = document.getElementById('mobile-payment-view');
+    if (paymentView) {
+        paymentView.remove();
+    }
+}
+
+function generateMobilePaymentInvoice() {
+    // 데스크톱 함수 재사용, ID만 모바일용으로 수정
+    if (typeof generatePaymentInvoice === 'function') {
+        // 모바일 UI 요소들로 ID 변경
+        const originalIds = {
+            'payment-initial': 'mobile-payment-initial',
+            'payment-loading': 'mobile-payment-loading', 
+            'payment-invoice': 'mobile-payment-invoice',
+            'qr-code-container': 'mobile-qr-code-container',
+            'invoice-text': 'mobile-invoice-text',
+            'countdown-timer': 'mobile-countdown-timer'
+        };
+        
+        // 임시로 ID들을 변경
+        Object.entries(originalIds).forEach(([original, mobile]) => {
+            const element = document.getElementById(mobile);
+            if (element) {
+                element.id = original;
+            }
+        });
+        
+        // 데스크톱 함수 호출
+        generatePaymentInvoice();
+        
+        // ID들을 다시 모바일용으로 복원
+        setTimeout(() => {
+            Object.entries(originalIds).forEach(([original, mobile]) => {
+                const element = document.getElementById(original);
+                if (element) {
+                    element.id = mobile;
+                }
+            });
+        }, 100);
+    } else {
+        alert('결제 시스템을 로드하고 있습니다. 잠시 후 다시 시도해주세요.');
+    }
+}
+
+function openMobileLightningWallet() {
+    if (typeof openLightningWallet === 'function') {
+        openLightningWallet();
+    }
+}
+
+function copyMobileInvoiceText() {
+    const invoiceText = document.getElementById('mobile-invoice-text');
+    if (invoiceText) {
+        invoiceText.select();
+        invoiceText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(invoiceText.value).then(() => {
+            alert('인보이스가 클립보드에 복사되었습니다.');
+        }).catch(() => {
+            alert('복사에 실패했습니다.');
+        });
+    }
+}
+
+function cancelMobilePayment() {
+    if (typeof cancelPayment === 'function') {
+        cancelPayment();
+    }
+    closeMobilePaymentView();
+}
+
+function goBackToMobileMenuBoard() {
+    // 결제 완료 후 모바일 장바구니 비우기
+    clearMobileCart();
+    showView('menu-grid', currentCategory);
+    const paymentView = document.getElementById('mobile-payment-view');
+    if (paymentView) {
+        paymentView.remove();
+    }
+}
+
+// 전역 함수들 노출
+window.showView = showView;
+window.showMenuDetail = showMenuDetail;
+window.backToMenuGrid = backToMenuGrid;
+window.toggleMobileMenu = toggleMobileMenu;
+window.closeMobileMenu = closeMobileMenu;
+window.toggleMobileCart = toggleMobileCart;
+window.openMobileCart = openMobileCart;
+window.closeMobileCart = closeMobileCart;
+window.addToMobileCart = addToMobileCart;
+window.removeFromMobileCart = removeFromMobileCart;
+window.clearMobileCart = clearMobileCart;
+window.changeCartItemQuantity = changeCartItemQuantity;
+window.processOrderFromMobile = processOrderFromMobile;
+window.confirmClearCart = confirmClearCart;
+window.clearMobileCartAfterPayment = clearMobileCartAfterPayment;
+window.showMobilePaymentModal = showMobilePaymentModal;
+window.closeMobilePaymentView = closeMobilePaymentView;
+window.generateMobilePaymentInvoice = generateMobilePaymentInvoice;
+window.openMobileLightningWallet = openMobileLightningWallet;
+window.copyMobileInvoiceText = copyMobileInvoiceText;
+window.cancelMobilePayment = cancelMobilePayment;
+window.goBackToMobileMenuBoard = goBackToMobileMenuBoard;
+
+// 결제 완료 후 장바구니 비우기 (데스크톱 시스템과 동기화)
+function clearMobileCartAfterPayment() {
+    clearMobileCart();
+    // localStorage에서도 제거
+    localStorage.removeItem('cart');
+}
+
+// 데스크톱 장바구니 시스템과 동기화
+function syncWithDesktopCart() {
+    // localStorage에서 장바구니 변경 사항 감지
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'cart') {
+            // 데스크톱에서 장바구니가 비워졌으면 모바일도 비우기
+            if (!e.newValue || e.newValue === '[]') {
+                clearMobileCart();
             }
         }
+    });
+}
+
+// 장바구니 데이터 정리 (유효하지 않은 아이템 제거)
+function cleanupMobileCart() {
+    const originalLength = mobileCart.length;
+    mobileCart = mobileCart.filter(item => item.price !== null && item.price !== undefined);
+    
+    if (mobileCart.length !== originalLength) {
+        console.warn(`가격 정보가 없는 아이템 ${originalLength - mobileCart.length}개를 제거했습니다.`);
+        updateCartDisplay();
+        updateCartButton();
+        saveCartToStorage();
     }
 }
 
-function processOrderFromMobile() {
-    if (mobileCart) {
-        mobileCart.processOrder();
-    }
-}
-
-// 화면 크기 변경 감지
-window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) {
-        // 데스크톱으로 전환 시 모바일 UI 정리
-        if (mobileMenu && mobileMenu.isOpen) {
-            mobileMenu.close();
-        }
-        if (mobileCart && mobileCart.isOpen) {
-            mobileCart.close();
-        }
-    } else if (!mobileMenu || !mobileCart) {
-        // 모바일로 전환 시 컴포넌트 초기화
-        initializeMobileComponents();
-    }
-});
-
-// DOM 로드 완료 시 초기화
-document.addEventListener('DOMContentLoaded', () => {
-    // 약간의 지연을 두고 초기화 (다른 스크립트들이 로드된 후)
-    setTimeout(() => {
-        initializeMobileComponents();
-    }, 100);
-});
-
-// 페이지가 완전히 로드된 후에도 한 번 더 확인
-window.addEventListener('load', () => {
-    if (!mobileMenu || !mobileCart) {
-        setTimeout(() => {
-            initializeMobileComponents();
-        }, 200);
-    }
-});
-
-// 모듈 export (필요한 경우)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        MobileMenuManager,
-        MobileCartManager,
-        MobileCategoryManager
-    };
-} 
+// DOM 로드 완료 시 이벤트 바인딩
+document.addEventListener('DOMContentLoaded', function() {
+    // localStorage에서 장바구니 데이터 복원
+    loadCartFromStorage();
+    
+    // 장바구니 데이터 정리
+    cleanupMobileCart();
+    
+    document.querySelectorAll('.mobile-category-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const viewType = this.dataset.view;
+            const categoryId = this.dataset.category;
+            
+            if (viewType === 'menu-grid') {
+                showView('menu-grid', categoryId);
+            } else {
+                showView(viewType);
+            }
+            
+            closeMobileMenu();
+        });
+    });
+    
+    showView('menu-grid', 'all');
+    
+    // 초기 장바구니 버튼 상태 설정
+    updateCartButton();
+    
+    // 데스크톱 장바구니와 동기화 설정
+    syncWithDesktopCart();
+}); 
