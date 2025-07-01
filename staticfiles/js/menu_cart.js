@@ -1,4 +1,5 @@
-// 통합 장바구니 JavaScript
+// 데스크톱 장바구니 JavaScript
+// 데스크톱 및 태블릿 화면을 위한 장바구니 관리 시스템
 
 // 전역 변수
 let cartData = [];
@@ -100,16 +101,11 @@ function saveCartToStorage() {
     localStorage.setItem('cart', JSON.stringify(cartData));
 }
 
-// 모든 장바구니 디스플레이 업데이트
+// 모든 장바구니 디스플레이 업데이트 (데스크톱 전용)
 function updateAllCartDisplays() {
     updateSidebarCart();
     updatePageCart();
     updateFullPageCart();
-    
-    // 모바일 장바구니 업데이트 (함수가 존재하는 경우에만)
-    if (typeof updateMobileCart === 'function') {
-        updateMobileCart();
-    }
 }
 
 // 사이드바 장바구니 업데이트

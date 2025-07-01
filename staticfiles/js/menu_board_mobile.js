@@ -195,19 +195,19 @@ class MobileCartManager {
                         <p class="text-sm text-blue-600">${this.formatNumber(item.totalPrice || 0)} sats × ${item.quantity}</p>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <button onclick="mobileCart.updateQuantity('${item.id}', ${item.quantity - 1})" 
-                                class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
-                            <i class="fas fa-minus text-xs"></i>
-                        </button>
-                        <span class="font-medium text-gray-900 w-8 text-center">${item.quantity}</span>
-                        <button onclick="mobileCart.updateQuantity('${item.id}', ${item.quantity + 1})" 
-                                class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
-                            <i class="fas fa-plus text-xs"></i>
-                        </button>
-                        <button onclick="mobileCart.confirmRemoveItem('${item.id}', '${this.escapeHtml(item.name)}')" 
-                                class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center text-red-600 ml-1 transition-colors">
-                            <i class="fas fa-trash text-xs"></i>
-                        </button>
+                                                 <button onclick="updateItemQuantity('${item.id}', ${item.quantity - 1})" 
+                                 class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
+                             <i class="fas fa-minus text-xs"></i>
+                         </button>
+                         <span class="font-medium text-gray-900 w-8 text-center">${item.quantity}</span>
+                         <button onclick="updateItemQuantity('${item.id}', ${item.quantity + 1})" 
+                                 class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-600 transition-colors">
+                             <i class="fas fa-plus text-xs"></i>
+                         </button>
+                         <button onclick="confirmRemoveCartItem('${item.id}', '${this.escapeHtml(item.name)}')" 
+                                 class="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-full flex items-center justify-center text-red-600 ml-1 transition-colors">
+                             <i class="fas fa-trash text-xs"></i>
+                         </button>
                     </div>
                 </div>
             </div>
@@ -217,7 +217,14 @@ class MobileCartManager {
     updateQuantity(itemId, newQuantity) {
         if (window.updateItemQuantity) {
             window.updateItemQuantity(itemId, newQuantity);
-            setTimeout(() => this.update(), 100);
+            // 장바구니 업데이트 후 모바일 UI 갱신
+            setTimeout(() => {
+                this.update();
+                // 전체 장바구니 디스플레이도 업데이트
+                if (window.updateAllCartDisplays) {
+                    window.updateAllCartDisplays();
+                }
+            }, 100);
         }
     }
     
@@ -225,7 +232,13 @@ class MobileCartManager {
         if (confirm(`"${itemName}"을(를) 장바구니에서 제거하시겠습니까?`)) {
             if (window.removeCartItem) {
                 window.removeCartItem(itemId);
-                setTimeout(() => this.update(), 100);
+                setTimeout(() => {
+                    this.update();
+                    // 전체 장바구니 디스플레이도 업데이트
+                    if (window.updateAllCartDisplays) {
+                        window.updateAllCartDisplays();
+                    }
+                }, 100);
             }
         }
     }
@@ -350,11 +363,27 @@ let mobileCategory;
 
 // 모바일 컴포넌트 초기화
 function initializeMobileComponents() {
-    // 모바일 화면에서만 초기화
-    if (window.innerWidth <= 768) {
-        mobileMenu = new MobileMenuManager();
-        mobileCart = new MobileCartManager();
-        mobileCategory = new MobileCategoryManager();
+    // 모바일 요소가 존재할 때만 초기화
+    const mobileHeader = document.querySelector('.mobile-header');
+    const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+    const mobileCartBottomSheet = document.getElementById('mobile-cart-bottom-sheet');
+    
+    if (mobileHeader || mobileMenuOverlay || mobileCartBottomSheet) {
+        try {
+            if (mobileMenuOverlay && !mobileMenu) {
+                mobileMenu = new MobileMenuManager();
+            }
+            if (mobileCartBottomSheet && !mobileCart) {
+                mobileCart = new MobileCartManager();
+            }
+            if (document.querySelectorAll('.mobile-category-item').length > 0 && !mobileCategory) {
+                mobileCategory = new MobileCategoryManager();
+            }
+            
+            console.log('모바일 컴포넌트 초기화 완료');
+        } catch (error) {
+            console.error('모바일 컴포넌트 초기화 오류:', error);
+        }
     }
 }
 
@@ -390,14 +419,29 @@ function updateMobileCart() {
 }
 
 function confirmRemoveCartItem(itemId, itemName) {
-    if (mobileCart) {
-        mobileCart.confirmRemoveItem(itemId, itemName);
+    if (confirm(`"${itemName}"을(를) 장바구니에서 제거하시겠습니까?`)) {
+        if (window.removeCartItem) {
+            window.removeCartItem(itemId);
+            // 모바일 장바구니 업데이트
+            setTimeout(() => {
+                if (mobileCart) {
+                    mobileCart.update();
+                }
+            }, 100);
+        }
     }
 }
 
 function confirmClearCart() {
-    if (mobileCart) {
-        mobileCart.confirmClearAll();
+    if (!window.cartData || cartData.length === 0) return;
+    
+    if (confirm(`장바구니의 모든 상품(${cartData.length}개)을 삭제하시겠습니까?`)) {
+        if (window.clearCart) {
+            window.clearCart();
+            if (mobileCart) {
+                mobileCart.update();
+            }
+        }
     }
 }
 
@@ -425,7 +469,19 @@ window.addEventListener('resize', () => {
 
 // DOM 로드 완료 시 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    initializeMobileComponents();
+    // 약간의 지연을 두고 초기화 (다른 스크립트들이 로드된 후)
+    setTimeout(() => {
+        initializeMobileComponents();
+    }, 100);
+});
+
+// 페이지가 완전히 로드된 후에도 한 번 더 확인
+window.addEventListener('load', () => {
+    if (!mobileMenu || !mobileCart) {
+        setTimeout(() => {
+            initializeMobileComponents();
+        }, 200);
+    }
 });
 
 // 모듈 export (필요한 경우)
