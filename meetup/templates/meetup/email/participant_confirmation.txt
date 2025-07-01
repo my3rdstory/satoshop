@@ -22,8 +22,9 @@
 📋 이 이메일을 밋업 당일 참가 확인용으로 사용하실 수 있습니다.
 📱 첨부된 QR코드 이미지도 함께 지참해 주세요.
 💬 밋업 관련 문의사항은 주최자에게 연락해주세요.
-{% if store.owner_phone %}📞 주최자 연락처: {{ store.owner_phone }}{% endif %}
-{% if store.chat_channel %}💬 소통채널: {{ store.chat_channel }}{% endif %}
+{% if meetup.organizer_contact %}📞 주최자 연락처: {{ meetup.organizer_contact }}{% endif %}
+{% if meetup.organizer_email %}📧 주최자 이메일: {{ meetup.organizer_email }}{% endif %}
+{% if meetup.organizer_chat_channel %}💬 소통채널: {{ meetup.organizer_chat_channel }}{% endif %}
 
 ▣ 중요 안내
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
