@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryFilters = document.getElementById('categoryFilters');
     const clearCategoryFilter = document.getElementById('clearCategoryFilter');
     
+    // 카테고리 필터 초기화 버튼 이벤트
+    if (clearCategoryFilter) {
+        clearCategoryFilter.addEventListener('click', clearCategoryFilters);
+    }
+    
     // 카테고리 관련 변수
     let categories = [];
     let selectedCategoryId = null;
@@ -416,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.loadCategories = loadCategories;
 
     function renderCategoryFilters() {
-        
+        const categoryFilters = document.getElementById('categoryFilters');
         if (!categoryFilters) {
             console.error('categoryFilters 요소를 찾을 수 없습니다');
             return;
@@ -510,6 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 초기화
     checkEmptyState();
+    loadCategories(); // 카테고리 로드
     
     // 무한 스크롤 활성화 (옵션)
     // setupInfiniteScroll();

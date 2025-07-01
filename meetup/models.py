@@ -289,6 +289,10 @@ class MeetupOrder(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True, verbose_name="참가 확정 시간")
     confirmation_message_sent = models.BooleanField(default=False, verbose_name="확정 안내 발송 여부")
     
+    # 참석 여부
+    attended = models.BooleanField(default=False, verbose_name="참석 여부")
+    attended_at = models.DateTimeField(null=True, blank=True, verbose_name="참석 체크 시간")
+    
     # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

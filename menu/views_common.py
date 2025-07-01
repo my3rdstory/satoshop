@@ -30,14 +30,19 @@ def menu_list(request, store_id):
     """메뉴 관리 목록"""
     store = get_store_or_404(store_id, request.user)
     
+    # 모든 메뉴 가져오기 (관리자는 모든 메뉴를 볼 수 있음)
+    menus = Menu.objects.filter(store=store).prefetch_related('categories', 'images').order_by('-created_at')
+    
     # 카테고리별 메뉴 목록 가져오기
     categories = MenuCategory.objects.filter(store=store).order_by('order', 'id')
     uncategorized_menus = Menu.objects.filter(store=store, categories__isnull=True).order_by('-created_at')
     
     context = {
         'store': store,
+        'menus': menus,
         'categories': categories,
         'uncategorized_menus': uncategorized_menus,
+        'is_public_view': False,  # 관리자 뷰임을 명시
     }
     
     return render(request, 'menu/menu_list.html', context)

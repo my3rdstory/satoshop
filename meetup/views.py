@@ -972,6 +972,12 @@ def meetup_status_detail(request, store_id, meetup_id):
         total=models.Sum('total_price')
     )['total'] or 0
     
+    # 참석자 통계 계산
+    attended_count = orders.filter(attended=True).count()
+    attendance_rate = 0
+    if total_participants > 0:
+        attendance_rate = (attended_count / total_participants) * 100
+    
     # 평균 참가비 계산
     average_price = 0
     if total_participants > 0:
@@ -984,6 +990,66 @@ def meetup_status_detail(request, store_id, meetup_id):
         'total_participants': total_participants,
         'total_revenue': total_revenue,
         'average_price': average_price,
+        'attended_count': attended_count,
+        'attendance_rate': attendance_rate,
     }
     
     return render(request, 'meetup/meetup_status_detail.html', context)
+
+@login_required
+@require_POST
+@csrf_exempt
+def update_attendance(request, store_id, meetup_id):
+    """참석 여부 업데이트"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        attended = data.get('attended', False)
+        
+        if not order_id:
+            return JsonResponse({
+                'success': False,
+                'error': '주문 ID가 필요합니다.'
+            })
+        
+        # 해당 밋업의 주문인지 확인
+        order = get_object_or_404(
+            MeetupOrder,
+            id=order_id,
+            meetup=meetup,
+            status__in=['confirmed', 'completed']
+        )
+        
+        # 참석 여부 업데이트
+        order.attended = attended
+        if attended:
+            order.attended_at = timezone.now()
+        else:
+            order.attended_at = None
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참석 여부가 업데이트되었습니다.',
+            'attended': order.attended,
+            'attended_at': order.attended_at.isoformat() if order.attended_at else None
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"참석 여부 업데이트 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참석 여부 업데이트 중 오류가 발생했습니다.'
+        })

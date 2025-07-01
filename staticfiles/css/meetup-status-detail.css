@@ -16,7 +16,7 @@
 /* 통계 카드 스타일 */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 1rem;
 }
 
@@ -129,7 +129,21 @@
 }
 
 /* 반응형 디자인 */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+}
+
 @media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+}
+
+@media (max-width: 640px) {
     .stats-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;
