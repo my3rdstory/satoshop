@@ -38,15 +38,25 @@
     <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-shopping-cart mr-2"></i>주문관리
     </a>
+    <div class="border-t border-gray-600 my-1"></div>
     <a href="{% url 'menu:menu_orders' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-line mr-2"></i>메뉴 판매 현황
-    </a>
-    <div class="border-t border-gray-600 my-1"></div>
+    </a>    
     <a href="{% url 'menu:menu_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-utensils mr-2"></i>메뉴 관리
     </a>
-    <a href="{% url 'menu:menu_board' store_id=user_active_store.store_id %}" target="_blank" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-clipboard-list mr-2"></i>메뉴판 이동
+    <a href="{% url 'menu:menu_board_desktop' store_id=user_active_store.store_id %}" target="_blank" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-desktop mr-2"></i>메뉴판 이동(Desktop)
+    </a>
+    <a href="{% url 'menu:menu_board_mobile' store_id=user_active_store.store_id %}" target="_blank" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-mobile-alt mr-2"></i>메뉴판 이동(Mobile)
+    </a>
+    <div class="border-t border-gray-600 my-1"></div>
+    <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-users mr-2"></i>밋업 관리
+    </a>
+    <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-chart-line mr-2"></i>밋업 현황
     </a>
     {% else %}
     <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

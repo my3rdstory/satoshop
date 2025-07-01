@@ -106,8 +106,11 @@
             <a href="{% url 'menu:menu_orders' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <i class="fas fa-chart-line mr-2"></i>메뉴 판매 현황
             </a>
-            <a href="{% url 'menu:menu_board_auto_redirect' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-clipboard-list mr-2"></i>메뉴판 이동
+            <a href="{% url 'menu:menu_board_desktop' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+              <i class="fas fa-desktop mr-2"></i>메뉴판 이동(Desktop)
+            </a>
+            <a href="{% url 'menu:menu_board_mobile' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+              <i class="fas fa-mobile-alt mr-2"></i>메뉴판 이동(Mobile)
             </a>
             <div class="border-t border-gray-600"></div>
             <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
