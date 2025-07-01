@@ -175,6 +175,44 @@
     <!-- 스토어 ID 데이터 -->
     <script>
         window.storeId = '{{ store.store_id }}';
+        
+        // 클라이언트 사이드 모바일 감지 (서버 사이드 감지 보완용)
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const mobileKeywords = [
+                'mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos',
+                'nokia', 'samsung', 'htc', 'motorola', 'opera mini', 'opera mobi',
+                'iemobile', 'windows phone', 'windows mobile', 'palm', 'symbian',
+                'phone', 'tablet', 'fennec', 'firefox mobile', 'mobile safari'
+            ];
+            
+            // User-Agent 기반 검사
+            for (const keyword of mobileKeywords) {
+                if (userAgent.includes(keyword)) {
+                    return true;
+                }
+            }
+            
+            // 화면 크기 기반 검사
+            if (window.screen.width <= 768 || window.innerWidth <= 768) {
+                return true;
+            }
+            
+            // 터치 기능 지원 검사
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // 페이지 로드 시 모바일 감지 후 리다이렉트
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isMobileDevice()) {
+                console.log('모바일 기기 감지됨 - 모바일 메뉴판으로 리다이렉트');
+                window.location.href = `/menu/${window.storeId}/m/`;
+            }
+        });
     </script>
     
 

@@ -4,6 +4,9 @@ from . import views
 app_name = 'menu'
 
 urlpatterns = [
+    # === 기본 메뉴판 진입점 (자동 리다이렉트) ===
+    path('<str:store_id>/menu/', views.menu_board_auto_redirect, name='menu_board_default'),
+    
     # === 관리자용 메뉴 관리 ===
     path('<str:store_id>/', views.menu_list, name='menu_list'),
     path('<str:store_id>/add/', views.add_menu, name='add_menu'),

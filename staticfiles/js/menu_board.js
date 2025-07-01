@@ -107,19 +107,19 @@ function backToMenuGrid() {
 
 // 전역 함수들 미리 정의 (AJAX 로드 전까지 임시)
 window.addMenuToCart = function() {
-    console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+    // 메뉴 상세 정보가 아직 로드되지 않았습니다.
 };
 
 window.changeQuantity = function(delta) {
-    console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+    // 메뉴 상세 정보가 아직 로드되지 않았습니다.
 };
 
 window.toggleOption = function(element) {
-    console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+    // 메뉴 상세 정보가 아직 로드되지 않았습니다.
 };
 
 window.changeMainImage = function(url) {
-    console.warn('메뉴 상세 정보가 아직 로드되지 않았습니다.');
+    // 메뉴 상세 정보가 아직 로드되지 않았습니다.
 };
 
 // 전역 함수들 노출

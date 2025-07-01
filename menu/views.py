@@ -24,10 +24,53 @@ from . import views_mobile
 logger = logging.getLogger(__name__)
 
 def is_mobile_device(request):
-    """모바일 기기 감지 함수"""
+    """모바일 기기 감지 함수 (강화된 버전)"""
     user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
-    mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos']
-    return any(keyword in user_agent for keyword in mobile_keywords)
+    
+    # 디버깅 로그 추가
+    logger.info(f"[모바일감지] User-Agent: {user_agent}")
+    
+    # 모바일 키워드 확장
+    mobile_keywords = [
+        'mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos',
+        'nokia', 'samsung', 'htc', 'motorola', 'opera mini', 'opera mobi',
+        'iemobile', 'windows phone', 'windows mobile', 'palm', 'symbian',
+        'phone', 'tablet', 'fennec', 'firefox mobile', 'mobile safari'
+    ]
+    
+    # 특정 모바일 브라우저 패턴
+    mobile_patterns = [
+        'mobi', 'mobile', 'android', 'iphone', 'ipad', 'ipod',
+        'windows phone', 'blackberry', 'webos', 'opera m',
+        'phone', 'tablet', 'silk/', 'kindle'
+    ]
+    
+    # 키워드 기반 검사
+    for keyword in mobile_keywords:
+        if keyword in user_agent:
+            logger.info(f"[모바일감지] 키워드 매치: {keyword} -> MOBILE")
+            return True
+    
+    # 패턴 기반 검사
+    for pattern in mobile_patterns:
+        if pattern in user_agent:
+            logger.info(f"[모바일감지] 패턴 매치: {pattern} -> MOBILE")
+            return True
+    
+    # 화면 크기 기반 검사 (HTTP_SEC_CH_UA_MOBILE 헤더)
+    mobile_hint = request.META.get('HTTP_SEC_CH_UA_MOBILE')
+    if mobile_hint == '?1':
+        logger.info(f"[모바일감지] 모바일 힌트 헤더 매치 -> MOBILE")
+        return True
+    
+    # 모바일 뷰포트 힌트 검사
+    viewport_width = request.META.get('HTTP_SEC_CH_VIEWPORT_WIDTH')
+    if viewport_width and viewport_width.isdigit() and int(viewport_width) <= 768:
+        logger.info(f"[모바일감지] 뷰포트 너비 매치: {viewport_width} -> MOBILE")
+        return True
+    
+    logger.info(f"[모바일감지] 매치 없음 -> DESKTOP")
+    return False
 
 # === 공통 뷰들 (관리자용) ===
 # 공통 뷰들을 그대로 노출

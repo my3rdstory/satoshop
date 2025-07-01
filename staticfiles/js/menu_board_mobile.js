@@ -197,7 +197,6 @@ function closeMobileCart() {
 
 // 데스크톱 장바구니 시스템과 호환되는 addToCart 함수 (메뉴 상세화면용)
 window.addToCart = function(cartItem) {
-    console.log('addToCart 호출됨:', cartItem);
     
     // 가격 검증
     if (cartItem.totalPrice === null || cartItem.totalPrice === undefined) {
@@ -227,7 +226,6 @@ window.addToCart = function(cartItem) {
         });
     }
     
-    console.log('모바일 장바구니 업데이트:', mobileCart);
     
     updateCartDisplay();
     updateCartButton();
@@ -408,8 +406,6 @@ function updateCartButton() {
 
 // 주문 처리
 function processOrderFromMobile() {
-    console.log('processOrderFromMobile 호출됨');
-    console.log('현재 장바구니:', mobileCart);
     
     if (mobileCart.length === 0) {
         alert('장바구니가 비어있습니다.');
@@ -418,7 +414,6 @@ function processOrderFromMobile() {
     
     // 유효하지 않은 아이템 필터링 (가격이 null이나 undefined인 경우만)
     const validCartItems = mobileCart.filter(item => item.price !== null && item.price !== undefined);
-    console.log('유효한 장바구니 아이템:', validCartItems);
     
     if (validCartItems.length === 0) {
         alert('유효한 상품이 없습니다. 가격 정보를 확인해주세요.');
@@ -426,7 +421,6 @@ function processOrderFromMobile() {
     }
     
     if (validCartItems.length !== mobileCart.length) {
-        console.warn('가격 정보가 없는 아이템이 제거되었습니다:', 
                      mobileCart.filter(item => item.price === null || item.price === undefined));
         // 유효한 아이템만으로 장바구니 업데이트
         mobileCart = validCartItems;
@@ -447,7 +441,6 @@ function processOrderFromMobile() {
         options: item.options || {} // 옵션 정보도 포함
     }));
     
-    console.log('변환된 장바구니 데이터:', convertedCartData);
     
     // 전역 cartData 설정 (데스크톱 장바구니 시스템에서 사용)
     window.cartData = convertedCartData;
@@ -720,14 +713,12 @@ function generateMobilePaymentInvoice() {
         })
     })
     .then(response => {
-        console.log('모바일 결제 상태 체크 응답 상태:', response.status);
         if (!response.ok) {
             console.error('HTTP 오류:', response.status, response.statusText);
         }
         return response.json();
     })
     .then(data => {
-        console.log('모바일 결제 상태 응답:', data);
         
         if (data.success) {
             // 인보이스 생성 성공
@@ -855,7 +846,6 @@ function cleanupMobileCart() {
     mobileCart = mobileCart.filter(item => item.price !== null && item.price !== undefined);
     
     if (mobileCart.length !== originalLength) {
-        console.warn(`가격 정보가 없는 아이템 ${originalLength - mobileCart.length}개를 제거했습니다.`);
         updateCartDisplay();
         updateCartButton();
         saveCartToStorage();
@@ -919,7 +909,6 @@ function generateMobileQRCode(invoice) {
                 level: 'M'
             });
         } catch (error) {
-            console.warn('QRious 라이브러리 오류:', error);
             // fallback으로 API 사용
             generateMobileQRCodeWithAPI(invoice, container);
         }
@@ -973,7 +962,6 @@ function startMobilePaymentStatusCheck() {
     if (!window.currentPaymentHash) return;
     
     const storeId = currentStoreId || window.location.pathname.split('/')[2];
-    console.log('모바일 결제 상태 체크 시작:', window.currentPaymentHash, 'Store ID:', storeId);
     
     window.paymentCheckInterval = setInterval(() => {
         fetch(`/menu/${storeId}/cart/check-payment/`, {
@@ -987,21 +975,17 @@ function startMobilePaymentStatusCheck() {
             })
         })
         .then(response => {
-            console.log('모바일 결제 상태 체크 응답 상태:', response.status);
             if (!response.ok) {
                 console.error('HTTP 오류:', response.status, response.statusText);
             }
             return response.json();
         })
         .then(data => {
-            console.log('모바일 결제 상태 응답:', data);
             
             if (data.success) {
-                console.log('결제 상태:', data.status, '주문 상태:', data.order_status);
                 
                 if (data.status === 'paid') {
                     // 결제 완료
-                    console.log('모바일 결제 완료 감지됨!');
                     clearInterval(window.paymentCheckInterval);
                     clearInterval(window.paymentCountdownInterval);
                     
@@ -1017,7 +1001,6 @@ function startMobilePaymentStatusCheck() {
                     
                 } else if (data.status === 'expired') {
                     // 인보이스 만료
-                    console.log('인보이스 만료됨');
                     clearInterval(window.paymentCheckInterval);
                     clearInterval(window.paymentCountdownInterval);
                     

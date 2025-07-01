@@ -19,7 +19,6 @@ class MobileCartManager {
     init() {
         this.bindEvents();
         this.updateMobileCartDisplay();
-        console.log('MobileCartManager 초기화 완료');
     }
 
     bindEvents() {
@@ -367,7 +366,6 @@ class MobileCartManager {
         if (typeof window.processCheckout === 'function') {
             window.processCheckout(orderData);
         } else {
-            console.log('결제 처리:', orderData);
             alert('결제 기능이 준비 중입니다.');
         }
         
@@ -395,7 +393,6 @@ class MobileCartManager {
         try {
             localStorage.setItem('mobileCart', JSON.stringify(this.cart));
         } catch (error) {
-            console.warn('장바구니 저장 실패:', error);
         }
     }
 
@@ -408,7 +405,6 @@ class MobileCartManager {
                 this.updateMobileCartDisplay();
             }
         } catch (error) {
-            console.warn('장바구니 로드 실패:', error);
             this.cart = {};
         }
     }
@@ -433,6 +429,10 @@ class MobileCartManager {
 
     getTotalPrice() {
         return Object.values(this.cart).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    }
+
+    processPayment(orderData) {
+        // 결제 처리 로직
     }
 }
 
@@ -466,7 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 window.mobileCartManager = new MobileCartManager();
                 window.mobileCartManager.loadCartFromStorage();
-                console.log('모바일 장바구니 시스템 초기화 완료');
             } catch (error) {
                 console.error('모바일 장바구니 초기화 실패:', error);
             }

@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
             JSON.parse(testData); // JSON 파싱 테스트
         }
     } catch (error) {
-        console.warn('손상된 장바구니 데이터를 정리합니다:', error);
         localStorage.removeItem('cart');
     }
     
@@ -53,7 +52,6 @@ function loadCartFromStorage() {
         
         // 데이터가 배열이 아닌 경우 빈 배열로 초기화
         if (!Array.isArray(cartData)) {
-            console.warn('장바구니 데이터가 배열이 아닙니다. 초기화합니다.');
             cartData = [];
             saveCartToStorage();
             return;
@@ -63,19 +61,16 @@ function loadCartFromStorage() {
         cartData = cartData.filter(item => {
             // null이거나 undefined인 아이템 제거
             if (!item || typeof item !== 'object') {
-                console.warn('유효하지 않은 장바구니 아이템을 제거합니다:', item);
                 return false;
             }
             
             // 필수 속성 검증
             if (!item.id || !item.name) {
-                console.warn('필수 속성이 없는 장바구니 아이템을 제거합니다:', item);
                 return false;
             }
             
             // totalPrice 속성 수정
             if (!item.totalPrice && item.totalPrice !== 0) {
-                console.warn('기존 장바구니 아이템에 totalPrice가 없습니다:', item);
                 item.totalPrice = item.price || 0;
             }
             
@@ -136,7 +131,6 @@ function updateSidebarCart() {
     cartData.forEach(item => {
         // 아이템이 유효하지 않은 경우 건너뛰기
         if (!item || typeof item !== 'object' || !item.id || !item.name) {
-            console.warn('유효하지 않은 장바구니 아이템을 건너뜁니다:', item);
             return;
         }
         
@@ -222,7 +216,6 @@ function updatePageCart() {
     cartData.forEach(item => {
         // 아이템이 유효하지 않은 경우 건너뛰기
         if (!item || typeof item !== 'object' || !item.id || !item.name) {
-            console.warn('유효하지 않은 장바구니 아이템을 건너뜁니다:', item);
             return;
         }
         
@@ -325,7 +318,6 @@ function updateFullPageCart() {
     cartData.forEach(item => {
         // 아이템이 유효하지 않은 경우 건너뛰기
         if (!item || typeof item !== 'object' || !item.id || !item.name) {
-            console.warn('유효하지 않은 장바구니 아이템을 건너뜁니다:', item);
             return;
         }
         
@@ -391,7 +383,6 @@ function updateFullPageCart() {
 function addToCart(menuItem) {
     // totalPrice가 없는 경우 기본값 설정
     if (!menuItem.totalPrice && menuItem.totalPrice !== 0) {
-        console.warn('menuItem.totalPrice가 없습니다:', menuItem);
         menuItem.totalPrice = menuItem.price || 0;
     }
     
@@ -772,7 +763,6 @@ function generatePaymentInvoice() {
         })
     })
     .then(response => {
-        console.log('결제 상태 체크 응답 상태:', response.status);
         if (!response.ok) {
             console.error('HTTP 오류:', response.status, response.statusText);
         }
@@ -780,7 +770,6 @@ function generatePaymentInvoice() {
     })
     .then(data => {
         // 디버깅용 로그 추가
-        console.log('결제 상태 응답:', data);
         
         if (data.success) {
             // 인보이스 생성 성공
@@ -847,7 +836,6 @@ function generateQRCode(invoice) {
                 level: 'M'
             });
         } catch (error) {
-            console.warn('QRious 라이브러리 오류:', error);
             // fallback으로 API 사용
             generateQRCodeWithAPI(invoice, container);
         }
@@ -901,7 +889,6 @@ function startPaymentStatusCheck() {
     if (!currentPaymentHash) return;
     
     const storeId = currentStoreId || window.location.pathname.split('/')[2];
-    console.log('결제 상태 체크 시작:', currentPaymentHash, 'Store ID:', storeId);
     
     paymentCheckInterval = setInterval(() => {
         fetch(`/menu/${storeId}/cart/check-payment/`, {
@@ -915,22 +902,15 @@ function startPaymentStatusCheck() {
             })
         })
         .then(response => {
-            console.log('결제 상태 체크 응답 상태:', response.status);
             if (!response.ok) {
                 console.error('HTTP 오류:', response.status, response.statusText);
             }
             return response.json();
         })
         .then(data => {
-            // 디버깅용 로그 추가
-            console.log('결제 상태 응답:', data);
-            
             if (data.success) {
-                console.log('결제 상태:', data.status, '주문 상태:', data.order_status);
-                
                 if (data.status === 'paid') {
                     // 결제 완료
-                    console.log('결제 완료 감지됨!');
                     clearInterval(paymentCheckInterval);
                     clearInterval(paymentCountdownInterval);
                     
@@ -946,7 +926,6 @@ function startPaymentStatusCheck() {
                     
                 } else if (data.status === 'expired') {
                     // 인보이스 만료
-                    console.log('인보이스 만료됨');
                     clearInterval(paymentCheckInterval);
                     clearInterval(paymentCountdownInterval);
                     
@@ -1134,7 +1113,6 @@ function getCsrfToken() {
     }
     
     if (!cookieValue) {
-        console.warn('CSRF 토큰을 찾을 수 없습니다.');
     }
     
     return cookieValue;
