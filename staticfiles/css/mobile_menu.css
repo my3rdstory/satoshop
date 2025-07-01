@@ -40,7 +40,7 @@
 /* 모바일 메뉴 애니메이션 */
 #mobile-menu,
 #store-mobile-menu {
-  transition: all 0.3s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: top;
   /* 화면 높이에서 나브바 높이를 뺀 만큼을 최대 높이로 설정 */
   max-height: calc(100vh - 64px);

@@ -1,0 +1,243 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}참가자 정보 입력 - {{ meetup.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_participant_info.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- 페이지 헤더 -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center mb-4">
+        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full mr-3">
+          <i class="fas fa-user-edit text-2xl text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">참가자 정보 입력</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">{{ meetup.name }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 밋업 정보 요약 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 border border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
+        밋업 정보
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if meetup.date_time %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">일시:</span>
+          <div class="font-medium text-gray-900 dark:text-white">
+            {{ meetup.date_time|date:"Y년 m월 d일 (l) H:i" }}
+          </div>
+        </div>
+        {% endif %}
+        <!-- 장소 정보 -->
+        {% if meetup.location_tbd %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
+          <div class="font-medium text-orange-600 dark:text-orange-400">
+            <i class="fas fa-clock mr-1"></i>장소 추후 공지 예정입니다.
+          </div>
+        </div>
+        {% elif meetup.location_full_address %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
+          <div class="font-medium text-gray-900 dark:text-white">{{ meetup.location_full_address }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">참가비:</span>
+          <div class="font-medium text-gray-900 dark:text-white">
+            {% if meetup.current_price == 0 %}
+              <span class="text-green-600 dark:text-green-400">무료</span>
+            {% else %}
+              {{ meetup.current_price|floatformat:0|intcomma }} sats
+              {% if meetup.is_early_bird_active %}
+                <span class="text-green-600 dark:text-green-400 text-sm ml-2">
+                  (조기등록 {{ meetup.public_discount_rate }}% 할인 적용)
+                </span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 참가자 정보 입력 폼 -->
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+      
+      <!-- 숨겨진 필드: 선택된 옵션 정보 -->
+      <input type="hidden" name="selected_options" id="selected_options" value="">
+
+      <!-- 이메일 안내 문구 -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-envelope text-blue-600 dark:text-blue-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-1">참가 신청 완료 안내</h4>
+            <p class="text-blue-700 dark:text-blue-300 text-sm">
+              참가 신청이 완료되면 입력하신 이메일 주소로 신청 확인 및 상세 정보를 보내드립니다.
+              <br>이메일 주소를 정확하게 입력해 주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-user mr-2 text-blue-600"></i>
+          참가자 정보
+        </h3>
+
+        {% if user.is_authenticated %}
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+            <span class="text-blue-800 dark:text-blue-200 text-sm">
+              로그인된 사용자 정보가 자동으로 입력됩니다. 필요시 수정 가능합니다.
+            </span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- 참가자 이름 -->
+          <div>
+            <label for="participant_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              참가자 이름 <span class="text-red-500">*</span>
+            </label>
+            <input type="text" 
+                   id="participant_name" 
+                   name="participant_name" 
+                   value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}"
+                   required 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="실명을 입력해주세요">
+          </div>
+
+          <!-- 참가자 이메일 -->
+          <div>
+            <label for="participant_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              이메일 <span class="text-red-500">*</span>
+            </label>
+            <input type="email" 
+                   id="participant_email" 
+                   name="participant_email" 
+                   value="{% if user.is_authenticated %}{{ user.email }}{% endif %}"
+                   required 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="이메일 주소를 입력해주세요">
+          </div>
+
+          <!-- 참가자 연락처 -->
+          <div class="md:col-span-2">
+            <label for="participant_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              연락처 (선택)
+            </label>
+            <input type="tel" 
+                   id="participant_phone" 
+                   name="participant_phone" 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="연락처를 입력해주세요 (예: 010-1234-5678)">
+          </div>
+        </div>
+      </div>
+
+      <!-- 밋업 옵션 (있는 경우) -->
+      {% if meetup.options.all %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-cog mr-2 text-green-600"></i>
+          선택된 옵션
+        </h3>
+
+        <div class="space-y-6" id="selected-options-display">
+          <!-- 선택된 옵션들이 JavaScript로 여기에 표시됩니다 -->
+          <div class="text-gray-500 dark:text-gray-400 text-center py-4" id="no-options-message">
+            선택된 옵션이 없습니다.
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 가격 요약 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <i class="fas fa-receipt mr-2 text-green-600"></i>
+          결제 정보 요약
+        </h3>
+        
+        <div class="space-y-3" id="price-summary">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ meetup.current_price|floatformat:0|intcomma }} sats</span>
+          </div>
+          
+          <!-- 조기등록 할인 -->
+          {% if meetup.is_early_bird_active %}
+          <div class="flex justify-between text-sm">
+            <span class="text-green-600 dark:text-green-400">
+              <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ meetup.public_discount_rate }}%)
+            </span>
+            <span class="text-green-600 dark:text-green-400">-{{ discount_amount|floatformat:0|intcomma }} sats</span>
+          </div>
+          {% endif %}
+          
+          <!-- 선택된 옵션들이 여기에 동적으로 추가됩니다 -->
+          <div id="selected-options-summary"></div>
+          
+          <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+            <div class="flex justify-between">
+              <span class="font-bold text-gray-900 dark:text-white">총 참가비</span>
+              <span class="font-bold text-xl text-purple-600 dark:text-purple-400" id="total-price">{{ meetup.current_price|floatformat:0|intcomma }} sats</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+           class="inline-flex items-center justify-center px-8 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl border border-gray-300 dark:border-gray-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          <span>돌아가기</span>
+        </a>
+        
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+                id="submit-btn">
+          <i class="fas fa-credit-card mr-2" id="submit-icon"></i>
+          <span id="submit-text">결제하기</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JavaScript 데이터 전달 -->
+<script>
+// 밋업 데이터를 전역 변수로 설정
+window.meetupData = {
+    basePrice: {{ meetup.current_price }},
+    storeId: '{{ store.store_id }}',
+    meetupId: {{ meetup.id }},
+    selectedOptions: {{ selected_options_json|safe }},
+    requiredOptionIds: {{ required_option_ids|safe }}
+};
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/meetup_participant_info.js' %}"></script>
+{% endblock %} 

@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     'storage',
     'boards',
     'menu',
+    'meetup',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ store.store_name }} - 메뉴판</title>
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- QR Code 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    
+    <!-- Tailwind 다크모드 설정 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    
+    <!-- 데스크톱 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
+    <link rel="stylesheet" href="{% static 'css/menu_cart.css' %}">
+</head>
+  <body class="bg-gray-100 dark:bg-gray-900">
+    <div class="menu-board-container flex h-screen">
+        <!-- 왼쪽: 카테고리 사이드바 -->
+        <div class="category-sidebar custom-scrollbar bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 카테고리</p>
+            </div>
+            
+            <div class="p-2">
+                <!-- 전체 보기 -->
+                <div class="category-item p-3 rounded-lg mb-1 active hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" data-category="all" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-blue-500"></i>
+                        <span class="font-medium text-gray-800 dark:text-gray-200">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="category-item p-3 rounded-lg mb-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" data-category="{{ category.id }}" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium text-gray-800 dark:text-gray-200">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <!-- 구분선 -->
+                <div class="border-t border-gray-200 dark:border-gray-700 my-3"></div>
+                
+                <!-- 라이트/다크 모드 토글 버튼 -->
+                <div class="p-3">
+                    <button onclick="toggleTheme(); return false;" 
+                            class="w-full flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <span class="theme-toggle-menu-item flex items-center w-full">
+                            <i class="fas fa-sun theme-sun-icon mr-3 text-yellow-500" style="display: none;"></i>
+                            <i class="fas fa-moon theme-moon-icon mr-3 text-blue-500"></i>
+                            <span class="theme-text font-medium text-gray-800 dark:text-gray-200">다크 모드로</span>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 가운데: 동적 콘텐츠 영역 -->
+        <div class="menu-content custom-scrollbar flex-1">
+            <!-- 메뉴 그리드 뷰 -->
+            <div id="menu-grid-view" class="content-view active">
+                <div class="p-6">
+                    <!-- 안내 메시지 -->
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-6">
+                        <div class="flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mr-2"></i>
+                            <span class="text-sm text-blue-700 dark:text-blue-300">메뉴를 선택하여 장바구니에 담으세요.</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 메뉴 그리드 -->
+                    <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="menu-grid">
+                        {% for menu in menus %}
+                        <div class="menu-card bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/25 transition-all duration-300" 
+                             data-menu-id="{{ menu.id }}" 
+                             data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
+                            
+                            <!-- 메뉴 이미지 -->
+                            <div class="relative aspect-square cursor-pointer" onclick="showMenuDetail('{{ menu.id }}')">
+                                {% if menu.images.exists %}
+                                <img src="{{ menu.images.first.file_url }}" 
+                                     alt="{{ menu.name }}" 
+                                     class="w-full h-full object-cover hover:scale-105 transition-transform duration-200">
+                                {% else %}
+                                <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                                    <i class="fas fa-utensils text-gray-400 dark:text-gray-500 text-4xl mb-2"></i>
+                                    <span class="text-gray-500 dark:text-gray-400 text-sm">이미지 없음</span>
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 할인 태그 -->
+                                {% if menu.is_discounted %}
+                                <div class="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                    {{ menu.public_discount_rate }}% 할인
+                                </div>
+                                {% endif %}
+                                
+                                <!-- 품절 태그 -->
+                                {% if menu.is_temporarily_out_of_stock %}
+                                <div class="absolute top-3 right-3 bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                    일시품절
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 메뉴 정보 -->
+                            <div class="p-4">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors" 
+                                    onclick="showMenuDetail('{{ menu.id }}')">{{ menu.name }}</h3>
+                                
+                                <!-- 가격 정보 -->
+                                <div class="mb-4">
+                                    {% if menu.is_discounted %}
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-xl font-bold text-red-500">
+                                            {{ menu.public_discounted_price|floatformat:0 }} sats
+                                        </span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
+                                            {{ menu.public_price|floatformat:0 }} sats
+                                        </span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-xl font-bold text-gray-900 dark:text-white">
+                                        {{ menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- 메뉴가 없는 경우 -->
+                    {% if not menus %}
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-utensils text-gray-400 dark:text-gray-500 text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">등록된 메뉴가 없습니다</h3>
+                        <p class="text-gray-600 dark:text-gray-400">아직 판매 중인 메뉴가 없어요</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- 메뉴 상세 뷰 -->
+            <div id="menu-detail-view" class="content-view">
+                <!-- 메뉴 상세 내용이 동적으로 로드됩니다 -->
+            </div>
+            
+            <!-- 결제 뷰 (동적으로 생성됨) -->
+        </div>
+        
+        <!-- 오른쪽: 장바구니 사이드바 -->
+        <div>
+            {% include 'menu/menu_cart.html' with view_type='sidebar' %}
+        </div>
+    </div>
+    
+    <!-- 장바구니 전체 페이지 컴포넌트 -->
+    {% include 'menu/menu_cart.html' with view_type='overlay' %}
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 데스크톱 JavaScript -->
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
+    <script src="{% static 'js/menu_cart.js' %}"></script>
+    <script src="{% static 'js/menu_board.js' %}"></script>
+    
+    <!-- 스토어 ID 데이터 -->
+    <script>
+        window.storeId = '{{ store.store_id }}';
+        
+        // 클라이언트 사이드 모바일 감지 (서버 사이드 감지 보완용)
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const mobileKeywords = [
+                'mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos',
+                'nokia', 'samsung', 'htc', 'motorola', 'opera mini', 'opera mobi',
+                'iemobile', 'windows phone', 'windows mobile', 'palm', 'symbian',
+                'phone', 'tablet', 'fennec', 'firefox mobile', 'mobile safari'
+            ];
+            
+            // User-Agent 기반 검사
+            for (const keyword of mobileKeywords) {
+                if (userAgent.includes(keyword)) {
+                    return true;
+                }
+            }
+            
+            // 화면 크기 기반 검사
+            if (window.screen.width <= 768 || window.innerWidth <= 768) {
+                return true;
+            }
+            
+            // 터치 기능 지원 검사
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // 페이지 로드 시 모바일 감지 후 리다이렉트
+        document.addEventListener('DOMContentLoaded', function() {
+            if (isMobileDevice()) {
+                console.log('모바일 기기 감지됨 - 모바일 메뉴판으로 리다이렉트');
+                window.location.href = `/menu/${window.storeId}/m/`;
+            }
+        });
+    </script>
+    
+
+</body>
+</html> 

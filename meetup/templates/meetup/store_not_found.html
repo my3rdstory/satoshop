@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}스토어를 찾을 수 없습니다{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 py-16">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 text-center">
+      <!-- 404 아이콘 -->
+      <div class="mb-8">
+        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto">
+          <i class="fas fa-store-slash text-gray-400 text-4xl"></i>
+        </div>
+      </div>
+      
+      <!-- 제목 -->
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+        스토어를 찾을 수 없습니다
+      </h1>
+      
+      <!-- 설명 -->
+      <div class="text-gray-600 dark:text-gray-400 mb-8">
+        <p class="text-lg">
+          요청하신 스토어({{ store_id }})가 존재하지 않거나<br>
+          현재 운영이 중단된 스토어입니다.
+        </p>
+      </div>
+      
+      <!-- 안내 메시지 -->
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8">
+        <div class="flex items-center">
+          <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400 mr-3"></i>
+          <div class="text-sm text-yellow-700 dark:text-yellow-300">
+            <p><strong>참고:</strong> 스토어가 일시적으로 비활성화되었거나, URL이 잘못 입력되었을 수 있습니다.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 액션 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'stores:browse_stores' %}" 
+           class="inline-flex items-center px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium">
+          <i class="fas fa-search mr-2"></i>
+          다른 스토어 찾기
+        </a>
+        <a href="{% url 'myshop:home' %}" 
+           class="inline-flex items-center px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors font-medium">
+          <i class="fas fa-home mr-2"></i>
+          홈으로 이동
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

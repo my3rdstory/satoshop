@@ -21,6 +21,13 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Tailwind 다크모드 설정 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
@@ -31,24 +38,24 @@
     <!-- 장바구니 전용 CSS -->
     <link rel="stylesheet" href="{% static 'css/menu_cart.css' %}">
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900">
     <div class="cart-container">
         <!-- 헤더 -->
-        <div class="cart-header bg-white shadow-sm border-b border-gray-200">
+        <div class="cart-header bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <div class="max-w-4xl mx-auto px-4 py-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <button onclick="history.back()" class="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors">
+                        <button onclick="history.back()" class="mr-4 p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                             <i class="fas fa-arrow-left text-xl"></i>
                         </button>
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900">장바구니</h1>
-                            <p class="text-sm text-gray-600">{{ store.store_name }}</p>
+                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">장바구니</h1>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}</p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">총 <span id="item-count">0</span>개 상품</div>
-                        <div class="text-xl font-bold text-blue-600" id="total-amount">0 sats</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">총 <span id="item-count">0</span>개 상품</div>
+                        <div class="text-xl font-bold text-blue-600 dark:text-blue-400" id="total-amount">0 sats</div>
                     </div>
                 </div>
             </div>
@@ -58,56 +65,56 @@
         <div class="cart-content">
             <div class="max-w-4xl mx-auto px-4 py-6">
                 <!-- 장바구니 아이템 목록 -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">주문 메뉴</h2>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 메뉴</h2>
                     </div>
                     
-                    <div id="cart-items-list" class="divide-y divide-gray-200">
+                    <div id="cart-items-list" class="divide-y divide-gray-200 dark:divide-gray-700">
                         <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
                     </div>
                     
                     <!-- 장바구니가 비어있을 때 -->
                     <div id="empty-cart-message" class="p-12 text-center hidden">
-                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fas fa-shopping-cart text-gray-400 text-3xl"></i>
+                        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-shopping-cart text-gray-400 dark:text-gray-500 text-3xl"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">장바구니가 비어있습니다</h3>
-                        <p class="text-gray-600 mb-6">메뉴를 선택하여 장바구니에 담아보세요</p>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">장바구니가 비어있습니다</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">메뉴를 선택하여 장바구니에 담아보세요</p>
                         <button onclick="location.href='{% url 'menu:menu_board' store.store_id %}'" 
-                                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                                class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                             <i class="fas fa-utensils mr-2"></i>메뉴판 보기
                         </button>
                     </div>
                 </div>
 
                 <!-- 주문 요약 -->
-                <div id="order-summary" class="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">주문 요약</h2>
+                <div id="order-summary" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 요약</h2>
                     </div>
                     
                     <div class="p-4 space-y-3">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600">상품 금액</span>
-                            <span id="subtotal-amount" class="font-medium">0 sats</span>
+                            <span class="text-gray-600 dark:text-gray-400">상품 금액</span>
+                            <span id="subtotal-amount" class="font-medium text-gray-900 dark:text-white">0 sats</span>
                         </div>
                         
-                        <div class="flex justify-between items-center border-t border-gray-200 pt-3">
-                            <span class="text-lg font-semibold text-gray-900">총 결제 금액</span>
-                            <span id="final-total-amount" class="text-xl font-bold text-blue-600">0 sats</span>
+                        <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-3">
+                            <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제 금액</span>
+                            <span id="final-total-amount" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>
                         </div>
                     </div>
                     
                     <!-- 주문 버튼 -->
-                    <div class="p-4 border-t border-gray-200">
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex space-x-3">
                             <button onclick="location.href='{% url 'menu:menu_board' store.store_id %}'" 
-                                    class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                                    class="w-1/2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-plus mr-1"></i>메뉴 더 담기
                             </button>
                             <button onclick="processOrder()" 
-                                    class="w-1/2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                    class="w-1/2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-credit-card mr-1"></i>결제하기
                             </button>
                         </div>
@@ -121,6 +128,7 @@
     <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
     
     <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
     <script src="{% static 'js/menu_cart.js' %}"></script>
     
     <script>
@@ -140,10 +148,10 @@
 
 {% elif view_type == 'sidebar' %}
 <!-- 장바구니 사이드바 컴포넌트 -->
-<div class="cart-sidebar custom-scrollbar">
-    <div class="p-4 border-b border-gray-200">
-        <h2 class="text-lg font-bold text-gray-800 mb-2">장바구니</h2>
-        <p class="text-sm text-gray-600">주문할 메뉴</p>
+<div class="cart-sidebar custom-scrollbar bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">장바구니</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">주문할 메뉴</p>
     </div>
     
     <div class="p-4">
@@ -151,25 +159,25 @@
         <div id="cart-items" class="space-y-3 mb-6">
             <!-- 장바구니가 비어있을 때 -->
             <div id="empty-cart" class="text-center py-8">
-                <i class="fas fa-shopping-cart text-gray-400 text-3xl mb-3"></i>
-                <p class="text-gray-500 text-sm">장바구니가 비어있습니다</p>
+                <i class="fas fa-shopping-cart text-gray-400 dark:text-gray-500 text-3xl mb-3"></i>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">장바구니가 비어있습니다</p>
             </div>
         </div>
         
         <!-- 총 금액 -->
-        <div id="cart-total" class="border-t border-gray-200 pt-4 hidden">
+        <div id="cart-total" class="border-t border-gray-200 dark:border-gray-700 pt-4 hidden">
             <div class="flex justify-between items-center mb-4">
-                <span class="text-lg font-semibold">총 금액</span>
-                <span class="text-xl font-bold text-blue-600" id="total-amount">0 sats</span>
+                <span class="text-lg font-semibold text-gray-900 dark:text-white">총 금액</span>
+                <span class="text-xl font-bold text-blue-600 dark:text-blue-400" id="total-amount">0 sats</span>
             </div>
             
             <!-- 주문 버튼 -->
             <div class="flex space-x-2">
-                <button class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                <button class="w-1/2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
                         onclick="clearCart()">
                     <i class="fas fa-trash mr-1"></i>비우기
                 </button>
-                <button class="w-1/2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium transition-colors"
+                <button class="w-1/2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
                         onclick="processOrder()">
                     <i class="fas fa-credit-card mr-1"></i>결제하기
                 </button>
@@ -181,23 +189,23 @@
 {% elif view_type == 'overlay' %}
 <!-- 장바구니 전체 페이지 컴포넌트 -->
 <div id="cart-page-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-    <div class="cart-page-container bg-white h-full overflow-y-auto">
+    <div class="cart-page-container bg-white dark:bg-gray-800 h-full overflow-y-auto">
         <!-- 헤더 -->
-        <div class="cart-header bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+        <div class="cart-header bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
             <div class="max-w-4xl mx-auto px-4 py-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <button onclick="closeCartPage()" class="mr-4 p-2 text-gray-600 hover:text-blue-600 transition-colors">
+                        <button onclick="closeCartPage()" class="mr-4 p-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                             <i class="fas fa-arrow-left text-xl"></i>
                         </button>
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-900">장바구니</h1>
-                            <p class="text-sm text-gray-600">{{ store.store_name }}</p>
+                            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">장바구니</h1>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}</p>
                         </div>
                     </div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">총 <span id="cart-page-item-count">0</span>개 상품</div>
-                        <div class="text-xl font-bold text-blue-600" id="cart-page-total-amount">0 sats</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">총 <span id="cart-page-item-count">0</span>개 상품</div>
+                        <div class="text-xl font-bold text-blue-600 dark:text-blue-400" id="cart-page-total-amount">0 sats</div>
                     </div>
                 </div>
             </div>
@@ -207,56 +215,56 @@
         <div class="cart-content">
             <div class="max-w-4xl mx-auto px-4 py-6">
                 <!-- 장바구니 아이템 목록 -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">주문 메뉴</h2>
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 메뉴</h2>
                     </div>
                     
-                    <div id="cart-page-items-list" class="divide-y divide-gray-200">
+                    <div id="cart-page-items-list" class="divide-y divide-gray-200 dark:divide-gray-700">
                         <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
                     </div>
                     
                     <!-- 장바구니가 비어있을 때 -->
                     <div id="cart-page-empty-cart" class="p-12 text-center hidden">
-                        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <i class="fas fa-shopping-cart text-gray-400 text-3xl"></i>
+                        <div class="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-shopping-cart text-gray-400 dark:text-gray-500 text-3xl"></i>
                         </div>
-                        <h3 class="text-xl font-semibold text-gray-900 mb-2">장바구니가 비어있습니다</h3>
-                        <p class="text-gray-600 mb-6">메뉴를 선택하여 장바구니에 담아보세요</p>
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">장바구니가 비어있습니다</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">메뉴를 선택하여 장바구니에 담아보세요</p>
                         <button onclick="closeCartPage()" 
-                                class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                                class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
                             <i class="fas fa-utensils mr-2"></i>메뉴판 보기
                         </button>
                     </div>
                 </div>
 
                 <!-- 주문 요약 -->
-                <div id="cart-page-order-summary" class="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900">주문 요약</h2>
+                <div id="cart-page-order-summary" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hidden">
+                    <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">주문 요약</h2>
                     </div>
                     
                     <div class="p-4 space-y-3">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-600">상품 금액</span>
-                            <span id="cart-page-subtotal-amount" class="font-medium">0 sats</span>
+                            <span class="text-gray-600 dark:text-gray-400">상품 금액</span>
+                            <span id="cart-page-subtotal-amount" class="font-medium text-gray-900 dark:text-white">0 sats</span>
                         </div>
                         
-                        <div class="flex justify-between items-center border-t border-gray-200 pt-3">
-                            <span class="text-lg font-semibold text-gray-900">총 결제 금액</span>
-                            <span id="cart-page-final-total-amount" class="text-xl font-bold text-blue-600">0 sats</span>
+                        <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-3">
+                            <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제 금액</span>
+                            <span id="cart-page-final-total-amount" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>
                         </div>
                     </div>
                     
                     <!-- 주문 버튼 -->
-                    <div class="p-4 border-t border-gray-200">
+                    <div class="p-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="flex space-x-3">
                             <button onclick="closeCartPage()" 
-                                    class="w-1/2 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition-colors">
+                                    class="w-1/2 bg-gray-500 hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-700 text-white py-3 px-4 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-plus mr-1"></i>메뉴 더 담기
                             </button>
                             <button onclick="processOrderFromPage()" 
-                                    class="w-1/2 bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                    class="w-1/2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors">
                                 <i class="fas fa-credit-card mr-1"></i>결제하기
                             </button>
                         </div>
@@ -266,5 +274,52 @@
         </div>
     </div>
 </div>
+
+{% elif view_type == 'mobile_sidebar' %}
+<!-- 모바일 장바구니 사이드바 -->
+<div id="mobile-cart-sidebar" class="fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
+    <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장바구니</h3>
+        <div class="flex items-center space-x-2">
+            <button id="mobile-clear-cart-btn" onclick="confirmClearCart()" 
+                    class="p-2 text-red-500 hover:text-red-700 hidden">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            <button onclick="closeMobileCart()" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- 장바구니 내용 -->
+    <div class="flex-1 overflow-y-auto p-4" style="height: calc(100vh - 140px);">
+        <div id="mobile-cart-items">
+            <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
+        </div>
+        
+        <!-- 빈 장바구니 메시지 -->
+        <div id="mobile-empty-cart" class="text-center py-16 text-gray-500 dark:text-gray-400">
+            <i class="fas fa-shopping-cart text-4xl mb-4"></i>
+            <p class="text-lg">장바구니가 비어있습니다</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">메뉴를 선택해서 담아보세요</p>
+        </div>
+    </div>
+    
+    <!-- 하단 주문 영역 -->
+    <div id="mobile-cart-footer" class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 hidden">
+        <div class="flex items-center justify-between mb-3">
+            <span class="text-lg font-semibold text-gray-900 dark:text-white">총 금액</span>
+            <span id="mobile-cart-total" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>
+        </div>
+        <button onclick="processOrderFromMobile()" 
+                class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors">
+            <i class="fas fa-credit-card mr-2"></i>결제하기
+        </button>
+    </div>
+</div>
+
+<!-- 모바일 장바구니 오버레이 -->
+<div id="mobile-cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="closeMobileCart()"></div>
 
 {% endif %} 

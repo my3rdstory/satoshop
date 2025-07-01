@@ -1,0 +1,325 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+{% load meetup_extras %}
+
+{% block title %}결제 - {{ meetup.name }} - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_checkout.css' %}">
+<style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .status-pending {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+
+  .status-success {
+    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+
+  .status-error {
+    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+
+  .invoice-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+
+  .invoice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-bolt text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">밋업 참가비 결제</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">{{ meetup.name }}</p>
+        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          주문번호: {{ order.order_number }}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <!-- 왼쪽: 주문 정보 (3/5 너비) -->
+      <div class="lg:col-span-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-users text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">밋업 참가 정보</h2>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- 밋업 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
+                밋업 정보
+              </h3>
+              <div class="space-y-3">
+                {% if meetup.date_time %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">일시:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">
+                    {{ meetup.date_time|date:"Y년 m월 d일 (l) H:i" }}
+                  </span>
+                </div>
+                {% endif %}
+                <!-- 장소 정보 -->
+                {% if meetup.location_tbd %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">장소:</span>
+                  <span class="font-medium text-orange-600 dark:text-orange-400">
+                    <i class="fas fa-clock mr-1"></i>장소 추후 공지 예정입니다.
+                  </span>
+                </div>
+                {% elif meetup.location_full_address %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">장소:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ meetup.location_full_address }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- 참가자 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-user mr-2 text-blue-600"></i>
+                참가자 정보
+              </h3>
+              <div class="space-y-3">
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이름:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_name }}</span>
+                </div>
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이메일:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_email }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 결제 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-receipt mr-2 text-green-600"></i>
+                결제 정보
+              </h3>
+              <div class="space-y-3">
+                <!-- 최초 가격 (할인 적용 전 기본 가격) -->
+                {% if order.is_early_bird %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ order.original_price|floatformat:0|intcomma }} sats</span>
+                </div>
+                
+                <!-- 조기등록 할인 -->
+                <div class="flex justify-between text-sm">
+                  <span class="text-green-600 dark:text-green-400">
+                    <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ order.discount_rate }}%)
+                  </span>
+                  <span class="text-green-600 dark:text-green-400">-{{ order.original_price|sub:order.base_price|floatformat:0|intcomma }} sats</span>
+                </div>
+                {% else %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ order.base_price|floatformat:0|intcomma }} sats</span>
+                </div>
+                {% endif %}
+                
+                <!-- 선택된 옵션들 -->
+                {% if order.selected_options.all %}
+                  <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">선택 옵션:</div>
+                  {% for selected_option in order.selected_options.all %}
+                  <div class="flex justify-between text-sm pl-4">
+                    <span class="text-gray-600 dark:text-gray-400">
+                      <i class="fas fa-chevron-right mr-2 text-xs"></i>{{ selected_option.option.name }}: {{ selected_option.choice.name }}
+                    </span>
+                    <span class="font-medium text-gray-900 dark:text-white">
+                      {% if selected_option.additional_price > 0 %}
+                        +{{ selected_option.additional_price|floatformat:0|intcomma }} sats
+                      {% else %}
+                        무료
+                      {% endif %}
+                    </span>
+                  </div>
+                  {% endfor %}
+                {% endif %}
+                
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                  <div class="flex justify-between">
+                    <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
+                    <span class="font-bold text-xl text-bitcoin">{{ order.total_price|floatformat:0|intcomma }} sats</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 결제 (2/5 너비) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-8">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-credit-card text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">결제 정보</h2>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            {% if not payment_service_available %}
+            <!-- 결제 서비스 미설정 경고 -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-2"></i>
+                <p class="text-yellow-800 dark:text-yellow-200 text-sm">
+                  <strong>주의:</strong> 스토어에서 결제 서비스가 설정되지 않았습니다. 실제 결제가 처리되지 않을 수 있습니다.
+                </p>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- 결제 방법 안내 -->
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <i class="fas fa-bolt text-bitcoin mr-2"></i>
+                <h3 class="font-bold text-gray-900 dark:text-white">결제 방법</h3>
+              </div>
+
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <ol class="list-decimal list-inside space-y-1 ml-2">
+                  <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
+                  <li>생성된 QR 코드를 라이트닝 지갑으로 스캔</li>
+                  <li>결제 완료 후 자동으로 참가가 확정됩니다</li>
+                </ol>
+                
+                <p class="mt-3">
+                  <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
+                </p>
+              </div>
+            </div>
+
+            <!-- 인보이스 생성 버튼 -->
+            <button 
+              class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
+              onclick="generateInvoice()" 
+              id="generateInvoiceBtn"
+            >
+              <i class="fas fa-qrcode mr-3"></i>
+              결제 인보이스 생성
+            </button>
+
+            <!-- QR 코드 및 인보이스 표시 영역 -->
+            <div id="invoiceContainer" class="hidden space-y-4">
+              <!-- QR 코드 -->
+              <div class="text-center">
+                <div id="qrCodeContainer" class="inline-block p-5 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+                  <img id="qrCodeImage" src="" alt="결제 QR 코드" class="max-w-[250px] hidden">
+                  <div id="loadingSpinner" class="hidden">
+                    <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
+                    <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 인보이스 텍스트 -->
+              <div>
+                <label class="block font-semibold mb-2 text-gray-900 dark:text-white">라이트닝 인보이스</label>
+                <textarea 
+                  id="invoiceTextArea" 
+                  readonly 
+                  class="w-full h-32 font-mono text-sm p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  placeholder="인보이스가 여기에 표시됩니다..."
+                ></textarea>
+                <button 
+                  type="button" 
+                  onclick="copyInvoiceToClipboard()" 
+                  class="mt-2 text-bitcoin hover:text-bitcoin/80 text-sm font-medium transition-colors"
+                >
+                  <i class="fas fa-copy mr-1"></i> 인보이스 복사
+                </button>
+              </div>
+
+              <!-- 결제 상태 -->
+              <div id="paymentStatus" class="hidden p-4 rounded-lg border">
+                <div id="paymentMessage"></div>
+              </div>
+
+              <!-- 취소 버튼 -->
+              <div id="cancelContainer" class="hidden">
+                <button 
+                  type="button" 
+                  onclick="cancelInvoice()" 
+                  id="cancelInvoiceBtn" 
+                  class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                >
+                  <i class="fas fa-times mr-2"></i> 결제 취소
+                </button>
+              </div>
+
+              <!-- 결제 안내 -->
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">
+                <p class="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                  <i class="fas fa-info-circle mr-1"></i> 결제 방법:
+                </p>
+                <ol class="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-300 ml-2">
+                  <li>QR 코드를 라이트닝 지갑으로 스캔하거나</li>
+                  <li>인보이스 텍스트를 복사하여 지갑에 붙여넣기</li>
+                  <li>결제 완료 후 자동으로 참가가 확정됩니다</li>
+                </ol>
+                <p class="mt-2 text-blue-700 dark:text-blue-300">
+                  <span class="font-semibold">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 링크 -->
+    <div class="mt-8 text-center">
+      <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+         class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-bitcoin transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        밋업 상세로 돌아가기
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 데이터 전달 -->
+<script type="application/json" id="checkout-data">
+{
+  "meetupId": {{ meetup.id }},
+  "storeId": "{{ store.store_id }}",
+  "orderId": {{ order.id }},
+  "basePrice": {{ order.total_price }},
+  "csrfToken": "{{ csrf_token }}",
+  "isPaymentPage": true
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/meetup_checkout.js' %}"></script>
+{% endblock %} 

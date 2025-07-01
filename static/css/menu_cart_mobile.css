@@ -1,0 +1,406 @@
+/* 모바일 장바구니 전용 스타일 */
+
+/* 햄버거 메뉴와 장바구니 애니메이션 통일 */
+#mobile-menu,
+#mobile-cart-sidebar {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 모바일 바텀 시트 장바구니 */
+#mobile-cart-bottom-sheet {
+    max-height: 80vh;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 드래그 핸들 */
+.mobile-cart-handle {
+    cursor: grab;
+    touch-action: pan-y;
+    transition: background-color 0.2s ease;
+}
+
+.mobile-cart-handle:active {
+    cursor: grabbing;
+    background-color: #9ca3af !important;
+}
+
+/* 모바일 장바구니 아이템 */
+.mobile-cart-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-cart-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+}
+
+.mobile-cart-item:hover::before {
+    left: 100%;
+}
+
+.mobile-cart-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #e5e7eb;
+}
+
+/* 모바일 장바구니 버튼 스타일 */
+.mobile-cart-button {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-cart-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+
+.mobile-cart-button:active::before {
+    width: 200%;
+    height: 200%;
+}
+
+.mobile-cart-button:active {
+    transform: scale(0.95);
+}
+
+/* 수량 조절 버튼 */
+.quantity-button {
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+}
+
+.quantity-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* 삭제 버튼 */
+.delete-button {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.delete-button:hover {
+    background: linear-gradient(135deg, #fecaca, #fca5a5);
+    border-color: #f87171;
+}
+
+/* 전체 삭제 버튼 */
+.clear-all-button {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.clear-all-button:hover {
+    opacity: 1;
+}
+
+/* 장바구니 배지 */
+.cart-badge {
+    animation: pulse 2s infinite;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* 빈 장바구니 상태 */
+.empty-cart-state {
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.empty-cart-state:hover {
+    opacity: 0.8;
+}
+
+/* 장바구니 요약 */
+.cart-summary {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #0ea5e9;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.cart-summary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #0ea5e9, #06b6d4, #0ea5e9);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* 결제 버튼 */
+.checkout-button {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.checkout-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.checkout-button:hover::before {
+    left: 100%;
+}
+
+.checkout-button:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+    transform: translateY(-1px);
+}
+
+.checkout-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* 모바일 반응형 최적화 */
+@media (max-width: 768px) {
+    #mobile-cart-bottom-sheet {
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .mobile-cart-item {
+        margin-bottom: 8px;
+    }
+    
+    .mobile-cart-button {
+        min-width: 36px;
+        min-height: 36px;
+    }
+    
+    .quantity-button {
+        min-width: 36px;
+        min-height: 36px;
+    }
+}
+
+/* 매우 작은 화면 최적화 */
+@media (max-width: 375px) {
+    #mobile-cart-bottom-sheet {
+        max-height: 75vh;
+        border-radius: 12px 12px 0 0;
+    }
+    
+    .mobile-cart-item .p-3 {
+        padding: 0.5rem;
+    }
+    
+    .mobile-cart-button {
+        min-width: 32px;
+        min-height: 32px;
+    }
+    
+    .quantity-button {
+        min-width: 32px;
+        min-height: 32px;
+    }
+}
+
+/* 터치 디바이스 최적화 */
+@media (hover: none) and (pointer: coarse) {
+    .mobile-cart-item:hover {
+        transform: none;
+        box-shadow: none;
+        border-color: transparent;
+    }
+    
+    .mobile-cart-item:hover::before {
+        left: -100%;
+    }
+    
+    .checkout-button:hover::before {
+        left: -100%;
+    }
+    
+    /* 터치 피드백 */
+    .mobile-cart-item:active {
+        transform: scale(0.98);
+        background-color: #f3f4f6;
+    }
+    
+    .mobile-cart-button:active {
+        transform: scale(0.9);
+    }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+    #mobile-cart-bottom-sheet {
+        background-color: #1f2937;
+        border-color: #374151;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+    }
+    
+    .mobile-cart-item {
+        background-color: #374151;
+        border-color: #4b5563;
+    }
+    
+    .mobile-cart-item h4 {
+        color: #f9fafb;
+    }
+    
+    .mobile-cart-item p {
+        color: #d1d5db;
+    }
+    
+    .cart-summary {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border-color: #0ea5e9;
+    }
+    
+    .checkout-button {
+        background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    }
+    
+    .delete-button {
+        background: linear-gradient(135deg, #7f1d1d, #991b1b);
+        color: #fca5a5;
+        border-color: #dc2626;
+    }
+    
+    .delete-button:hover {
+        background: linear-gradient(135deg, #991b1b, #b91c1c);
+        border-color: #ef4444;
+    }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+    .mobile-cart-item,
+    .mobile-cart-button,
+    .checkout-button,
+    #mobile-cart-bottom-sheet {
+        transition: none;
+        animation: none;
+    }
+    
+    .mobile-cart-item::before,
+    .mobile-cart-button::before,
+    .checkout-button::before {
+        display: none;
+    }
+    
+    .cart-badge {
+        animation: none;
+    }
+    
+    .cart-summary::before {
+        animation: none;
+    }
+}
+
+/* 고해상도 디스플레이 최적화 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    #mobile-cart-bottom-sheet {
+        border-width: 0.5px;
+    }
+    
+    .mobile-cart-item {
+        border-width: 0.5px;
+    }
+    
+    .cart-summary {
+        border-width: 0.5px;
+    }
+}
+
+/* 포커스 상태 */
+.mobile-cart-button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.checkout-button:focus {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* 로딩 상태 */
+.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+} 

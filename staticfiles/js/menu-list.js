@@ -1,7 +1,5 @@
 // 메뉴 목록 JavaScript
-console.log('menu-list.js 파일이 로드되었습니다');
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded 이벤트가 발생했습니다');
     // DOM 요소들
     const menuCards = document.querySelectorAll('.menu-card');
     const searchInput = document.getElementById('menuSearch');
@@ -64,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 초기화 - 카테고리 필터를 위해 항상 카테고리 로드
-    console.log('초기화 시작 - loadCategories 호출');
     
     // DOM이 완전히 준비되었는지 확인 후 카테고리 로드
     if (document.readyState === 'complete') {
@@ -388,7 +385,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function loadCategories() {
         const storeId = getStoreIdFromUrl();
-        console.log('loadCategories 호출됨, storeId:', storeId);
         if (!storeId) {
             console.error('storeId를 찾을 수 없습니다');
             return;
@@ -401,14 +397,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            console.log('카테고리 API 응답:', response.status);
             return response.json();
         })
         .then(data => {
-            console.log('카테고리 데이터:', data);
             if (data.success) {
                 categories = data.categories;
-                console.log('카테고리 개수:', categories.length);
                 renderCategoryFilters();
             } else {
                 console.error('카테고리 로드 실패:', data);
@@ -423,9 +416,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.loadCategories = loadCategories;
 
     function renderCategoryFilters() {
-        console.log('renderCategoryFilters 호출됨');
-        console.log('categoryFilters 요소:', categoryFilters);
-        console.log('categories 배열:', categories);
         
         if (!categoryFilters) {
             console.error('categoryFilters 요소를 찾을 수 없습니다');
@@ -435,12 +425,10 @@ document.addEventListener('DOMContentLoaded', function() {
         categoryFilters.innerHTML = '';
         
         if (categories.length === 0) {
-            console.log('카테고리가 없어서 "카테고리 없음" 메시지 표시');
             categoryFilters.innerHTML = '<span class="text-gray-500 dark:text-gray-400 text-sm italic">카테고리 없음</span>';
             return;
         }
         
-        console.log('카테고리 버튼 생성 중...');
         categories.forEach(category => {
             const filterBtn = document.createElement('button');
             filterBtn.className = 'category-filter-btn px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 font-medium';
@@ -448,13 +436,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // category.id가 문자열로 오므로 정수로 변환
             filterBtn.onclick = () => filterByCategory(parseInt(category.id));
             categoryFilters.appendChild(filterBtn);
-            console.log('카테고리 버튼 추가됨:', category.name, '(ID:', category.id, ')');
         });
     }
 
     function filterByCategory(categoryId) {
         selectedCategoryId = categoryId;
-        console.log('filterByCategory 호출됨, categoryId:', categoryId, typeof categoryId);
         
         // 필터 버튼 활성화 상태 업데이트
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
@@ -471,13 +457,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (menuCards && menuCards.length > 0) {
             menuCards.forEach(card => {
                 const menuCategories = JSON.parse(card.dataset.categories || '[]');
-                console.log('메뉴 카테고리:', menuCategories, '필터 카테고리:', categoryId);
                 
                 // 카테고리 ID를 숫자로 변환하여 비교
                 const categoryIdNum = parseInt(categoryId);
                 const shouldShow = !categoryId || menuCategories.includes(categoryIdNum);
                 
-                console.log('메뉴 표시 여부:', shouldShow, '카테고리 포함:', menuCategories.includes(categoryIdNum));
                 
                 if (shouldShow) {
                     card.style.display = 'block';

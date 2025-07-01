@@ -29,6 +29,7 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('ln_payment/', include('ln_payment.urls')),
     path('boards/', include('boards.urls')),
+    path('meetup/', include('meetup.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
     
     # PWA 관련 파일들을 루트에서 제공

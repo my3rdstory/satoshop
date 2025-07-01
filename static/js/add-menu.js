@@ -431,9 +431,7 @@ if (typeof EasyMDE !== 'undefined') {
         toolbar: [
             'bold', 'italic', 'heading', '|',
             'quote', 'unordered-list', 'ordered-list', '|',
-            'link', 'image', '|',
-            'preview', 'side-by-side', 'fullscreen', '|',
-            'guide'
+            'link', 'image'
         ]
     });
 } 
