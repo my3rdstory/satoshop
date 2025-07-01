@@ -670,41 +670,103 @@ function closeMobilePaymentView() {
 }
 
 function generateMobilePaymentInvoice() {
-    // 데스크톱 함수 재사용, ID만 모바일용으로 수정
-    if (typeof generatePaymentInvoice === 'function') {
-        // 모바일 UI 요소들로 ID 변경
-        const originalIds = {
-            'payment-initial': 'mobile-payment-initial',
-            'payment-loading': 'mobile-payment-loading', 
-            'payment-invoice': 'mobile-payment-invoice',
-            'qr-code-container': 'mobile-qr-code-container',
-            'invoice-text': 'mobile-invoice-text',
-            'countdown-timer': 'mobile-countdown-timer'
-        };
-        
-        // 임시로 ID들을 변경
-        Object.entries(originalIds).forEach(([original, mobile]) => {
-            const element = document.getElementById(mobile);
-            if (element) {
-                element.id = original;
-            }
-        });
-        
-        // 데스크톱 함수 호출
-        generatePaymentInvoice();
-        
-        // ID들을 다시 모바일용으로 복원
-        setTimeout(() => {
-            Object.entries(originalIds).forEach(([original, mobile]) => {
-                const element = document.getElementById(original);
-                if (element) {
-                    element.id = mobile;
-                }
-            });
-        }, 100);
-    } else {
-        alert('결제 시스템을 로드하고 있습니다. 잠시 후 다시 시도해주세요.');
+    // 모바일 장바구니가 비어있는지 확인
+    if (mobileCart.length === 0) {
+        alert('장바구니가 비어있습니다.');
+        return;
     }
+    
+    // 유효한 장바구니 아이템 필터링
+    const validCartItems = mobileCart.filter(item => item.price !== null && item.price !== undefined);
+    
+    if (validCartItems.length === 0) {
+        alert('유효한 상품이 장바구니에 없습니다.');
+        return;
+    }
+    
+    // 총 금액 계산
+    const totalAmount = validCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    if (totalAmount < 0 || isNaN(totalAmount)) {
+        alert('결제 금액이 올바르지 않습니다.');
+        return;
+    }
+    
+    // UI 상태 변경
+    document.getElementById('mobile-payment-initial').classList.add('hidden');
+    document.getElementById('mobile-payment-loading').classList.remove('hidden');
+    
+    // 스토어 ID 가져오기
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    
+    // 모바일 장바구니 데이터를 서버 형식으로 변환
+    const convertedCartData = validCartItems.map(item => ({
+        menuId: item.menuId,
+        id: item.menuId,
+        quantity: item.quantity,
+        price: item.price,
+        totalPrice: item.price
+    }));
+    
+    // 서버에 인보이스 생성 요청
+    fetch(`/menu/${storeId}/cart/create-invoice/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            cart_items: convertedCartData
+        })
+    })
+    .then(response => {
+        console.log('모바일 결제 상태 체크 응답 상태:', response.status);
+        if (!response.ok) {
+            console.error('HTTP 오류:', response.status, response.statusText);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('모바일 결제 상태 응답:', data);
+        
+        if (data.success) {
+            // 인보이스 생성 성공
+            window.currentPaymentHash = data.payment_hash;
+            window.paymentExpiresAt = new Date(data.expires_at);
+            
+            // QR 코드 생성
+            generateMobileQRCode(data.invoice);
+            
+            // 인보이스 텍스트 표시
+            document.getElementById('mobile-invoice-text').value = data.invoice;
+            
+            // UI 상태 변경
+            document.getElementById('mobile-payment-loading').classList.add('hidden');
+            document.getElementById('mobile-payment-invoice').classList.remove('hidden');
+            
+            // 카운트다운 시작
+            startMobilePaymentCountdown();
+            
+            // 결제 상태 확인 시작
+            startMobilePaymentStatusCheck();
+            
+        } else {
+            // 인보이스 생성 실패
+            alert('인보이스 생성에 실패했습니다: ' + data.error);
+            
+            // UI 상태 복원
+            document.getElementById('mobile-payment-loading').classList.add('hidden');
+            document.getElementById('mobile-payment-initial').classList.remove('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('모바일 인보이스 생성 오류:', error);
+        alert('인보이스 생성 중 오류가 발생했습니다.');
+        
+        // UI 상태 복원
+        document.getElementById('mobile-payment-loading').classList.add('hidden');
+        document.getElementById('mobile-payment-initial').classList.remove('hidden');
+    });
 }
 
 function openMobileLightningWallet() {
@@ -830,4 +892,190 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 데스크톱 장바구니와 동기화 설정
     syncWithDesktopCart();
-}); 
+});
+
+// 모바일 QR 코드 생성
+function generateMobileQRCode(invoice) {
+    const container = document.getElementById('mobile-qr-code-container');
+    if (!container) return;
+    
+    // QRious 라이브러리 사용
+    if (typeof QRious !== 'undefined') {
+        try {
+            // 기존 내용 지우기
+            container.innerHTML = '';
+            
+            // 캔버스 생성
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+            
+            // QRious 인스턴스 생성
+            const qr = new QRious({
+                element: canvas,
+                value: invoice,
+                size: 256,
+                foreground: '#000000',
+                background: '#ffffff',
+                level: 'M'
+            });
+        } catch (error) {
+            console.warn('QRious 라이브러리 오류:', error);
+            // fallback으로 API 사용
+            generateMobileQRCodeWithAPI(invoice, container);
+        }
+    } else {
+        // QR 코드 API 사용 (fallback)
+        generateMobileQRCodeWithAPI(invoice, container);
+    }
+}
+
+// API를 사용한 모바일 QR 코드 생성
+function generateMobileQRCodeWithAPI(invoice, container) {
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(invoice)}`;
+    container.innerHTML = `<img src="${qrUrl}" alt="QR Code" class="max-w-full h-auto border rounded">`;
+}
+
+// 모바일 카운트다운 시작
+function startMobilePaymentCountdown() {
+    if (!window.paymentExpiresAt) return;
+    
+    window.paymentCountdownInterval = setInterval(() => {
+        const now = new Date();
+        const timeLeft = window.paymentExpiresAt - now;
+        
+        if (timeLeft <= 0) {
+            // 시간 만료
+            clearInterval(window.paymentCountdownInterval);
+            document.getElementById('mobile-countdown-timer').textContent = '00:00';
+            
+            // 결제 상태 확인 중지
+            if (window.paymentCheckInterval) {
+                clearInterval(window.paymentCheckInterval);
+                window.paymentCheckInterval = null;
+            }
+            
+            alert('인보이스가 만료되었습니다. 다시 시도해주세요.');
+            closeMobilePaymentView();
+            return;
+        }
+        
+        // 시간 포맷팅
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        document.getElementById('mobile-countdown-timer').textContent = timeString;
+    }, 1000);
+}
+
+// 모바일 결제 상태 확인 시작
+function startMobilePaymentStatusCheck() {
+    if (!window.currentPaymentHash) return;
+    
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    console.log('모바일 결제 상태 체크 시작:', window.currentPaymentHash, 'Store ID:', storeId);
+    
+    window.paymentCheckInterval = setInterval(() => {
+        fetch(`/menu/${storeId}/cart/check-payment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: window.currentPaymentHash
+            })
+        })
+        .then(response => {
+            console.log('모바일 결제 상태 체크 응답 상태:', response.status);
+            if (!response.ok) {
+                console.error('HTTP 오류:', response.status, response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('모바일 결제 상태 응답:', data);
+            
+            if (data.success) {
+                console.log('결제 상태:', data.status, '주문 상태:', data.order_status);
+                
+                if (data.status === 'paid') {
+                    // 결제 완료
+                    console.log('모바일 결제 완료 감지됨!');
+                    clearInterval(window.paymentCheckInterval);
+                    clearInterval(window.paymentCountdownInterval);
+                    
+                    // UI 상태 변경
+                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+                    document.getElementById('mobile-payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearMobileCart();
+                    
+                    // 10초 후 메뉴판으로 자동 이동
+                    startMobileRedirectCountdown();
+                    
+                } else if (data.status === 'expired') {
+                    // 인보이스 만료
+                    console.log('인보이스 만료됨');
+                    clearInterval(window.paymentCheckInterval);
+                    clearInterval(window.paymentCountdownInterval);
+                    
+                    alert('인보이스가 만료되었습니다.');
+                    closeMobilePaymentView();
+                }
+                // pending인 경우 계속 확인
+            } else {
+                console.error('모바일 결제 상태 확인 오류:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('모바일 결제 상태 확인 중 오류:', error);
+        });
+    }, 3000); // 3초마다 확인
+}
+
+// 모바일 리다이렉트 카운트다운
+function startMobileRedirectCountdown() {
+    let countdown = 10;
+    const countdownElement = document.querySelector('#mobile-payment-success .countdown');
+    
+    if (countdownElement) {
+        countdownElement.textContent = countdown;
+    }
+    
+    const redirectInterval = setInterval(() => {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        
+        if (countdown <= 0) {
+            clearInterval(redirectInterval);
+            goBackToMobileMenuBoard();
+        }
+    }, 1000);
+}
+
+// CSRF 토큰 가져오기
+function getCsrfToken() {
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) {
+        return token.value;
+    }
+    
+    // 쿠키에서 CSRF 토큰 찾기
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+} 
