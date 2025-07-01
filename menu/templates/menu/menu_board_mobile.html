@@ -1,0 +1,237 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{{ store.store_name }} - 메뉴판</title>
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- QR Code 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    
+    <!-- 모바일 전용 CSS -->
+    <link rel="stylesheet" href="{% static 'css/menu_board_mobile.css' %}">
+    <link rel="stylesheet" href="{% static 'css/menu_cart_mobile.css' %}">
+</head>
+<body class="bg-gray-100">
+    <!-- 모바일 헤더 -->
+    <div class="mobile-header fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between p-4">
+            <!-- 장바구니 버튼 -->
+            <button onclick="toggleMobileCart()" class="relative p-2 text-gray-600 hover:text-gray-900">
+                <i class="fas fa-shopping-cart text-xl"></i>
+                <span id="mobile-cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
+            </button>
+            
+            <div>
+                <h1 class="text-lg font-bold text-gray-800">{{ store.store_name }}</h1>
+            </div>
+            
+            <!-- 햄버거 메뉴 -->
+            <button onclick="toggleMobileMenu()" class="p-2 text-gray-600 hover:text-gray-900">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 모바일 카테고리 메뉴 -->
+    <div id="mobile-menu-overlay" class="fixed inset-0 z-40 hidden">
+        <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeMobileMenu()"></div>
+        <div class="fixed top-0 right-0 w-64 h-full bg-white shadow-lg transform translate-x-full transition-transform duration-300" id="mobile-menu">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">카테고리</h3>
+                    <button onclick="closeMobileMenu()" class="p-1 text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-2">
+                <!-- 전체 보기 -->
+                <div class="mobile-category-item p-3 rounded-lg mb-1 active" data-category="all" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-th-large mr-3 text-blue-500"></i>
+                        <span class="font-medium">전체 메뉴</span>
+                    </div>
+                </div>
+                
+                <!-- 카테고리 목록 -->
+                {% for category in categories %}
+                <div class="mobile-category-item p-3 rounded-lg mb-1" data-category="{{ category.id }}" data-view="menu-grid">
+                    <div class="flex items-center">
+                        <i class="fas fa-tag mr-3 text-gray-500"></i>
+                        <span class="font-medium">{{ category.name }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <div class="mobile-content pt-16 overflow-y-auto">
+        <!-- 메뉴 그리드 뷰 -->
+        <div id="menu-grid-view" class="content-view active">
+            <div class="p-4">
+                
+                <!-- 메뉴 그리드 -->
+                <div class="grid grid-cols-2 gap-4" id="menu-grid">
+                    {% for menu in menus %}
+                    <div class="menu-card bg-white rounded-xl shadow-md overflow-hidden border border-gray-200" 
+                         data-menu-id="{{ menu.id }}" 
+                         data-categories="[{% for category in menu.categories.all %}{{ category.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]">
+                        
+                        <!-- 메뉴 이미지 -->
+                        <div class="relative aspect-square cursor-pointer" onclick="showMenuDetail('{{ menu.id }}')">
+                            {% if menu.images.exists %}
+                            <img src="{{ menu.images.first.file_url }}" 
+                                 alt="{{ menu.name }}" 
+                                 class="w-full h-full object-cover">
+                            {% else %}
+                            <div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center">
+                                <i class="fas fa-utensils text-gray-400 text-2xl mb-1"></i>
+                                <span class="text-gray-500 text-xs">이미지 없음</span>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- 할인 태그 -->
+                            {% if menu.is_discounted %}
+                            <div class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                {{ menu.public_discount_rate }}% 할인
+                            </div>
+                            {% endif %}
+                            
+                            <!-- 품절 태그 -->
+                            {% if menu.is_temporarily_out_of_stock %}
+                            <div class="absolute top-2 right-2 bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+                                일시품절
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- 메뉴 정보 -->
+                        <div class="p-3">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-2 cursor-pointer hover:text-blue-600 transition-colors line-clamp-2" 
+                                onclick="showMenuDetail('{{ menu.id }}')">{{ menu.name }}</h3>
+                            
+                            <!-- 가격 정보 -->
+                            <div class="mb-3">
+                                {% if menu.is_discounted %}
+                                <div class="flex flex-col space-y-1">
+                                    <span class="text-lg font-bold text-red-500">
+                                        {{ menu.public_discounted_price|floatformat:0 }} sats
+                                    </span>
+                                    <span class="text-xs text-gray-500 line-through">
+                                        {{ menu.public_price|floatformat:0 }} sats
+                                    </span>
+                                </div>
+                                {% else %}
+                                <span class="text-lg font-bold text-gray-900">
+                                    {{ menu.public_price|floatformat:0 }} sats
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- 장바구니 담기 버튼 -->
+                            <button onclick="addToMobileCart('{{ menu.id }}', '{{ menu.name|escapejs }}', {% if menu.is_discounted %}{{ menu.public_discounted_price|floatformat:0 }}{% else %}{{ menu.public_price|floatformat:0 }}{% endif %})" 
+                                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition-colors">
+                                <i class="fas fa-plus mr-1"></i>담기
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- 메뉴가 없는 경우 -->
+                {% if not menus %}
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-utensils text-gray-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">등록된 메뉴가 없습니다</h3>
+                    <p class="text-gray-600">아직 판매 중인 메뉴가 없어요</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 메뉴 상세 뷰 -->
+        <div id="menu-detail-view" class="content-view">
+            <!-- 메뉴 상세 내용이 동적으로 로드됩니다 -->
+        </div>
+    </div>
+    
+        <!-- 모바일 장바구니 사이드바 -->
+    <div id="mobile-cart-sidebar" class="fixed top-0 left-0 h-full w-80 bg-white shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
+        <!-- 헤더 -->
+        <div class="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">장바구니</h3>
+            <div class="flex items-center space-x-2">
+                <button id="mobile-clear-cart-btn" onclick="confirmClearCart()" 
+                        class="p-2 text-red-500 hover:text-red-700 hidden">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+                <button onclick="closeMobileCart()" class="p-2 text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 장바구니 내용 -->
+        <div class="flex-1 overflow-y-auto p-4" style="height: calc(100vh - 140px);">
+            <div id="mobile-cart-items">
+                <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
+            </div>
+            
+            <!-- 빈 장바구니 메시지 -->
+            <div id="mobile-empty-cart" class="text-center py-16 text-gray-500">
+                <i class="fas fa-shopping-cart text-4xl mb-4"></i>
+                <p class="text-lg">장바구니가 비어있습니다</p>
+                <p class="text-sm text-gray-400 mt-2">메뉴를 선택해서 담아보세요</p>
+            </div>
+        </div>
+        
+        <!-- 하단 주문 영역 -->
+        <div id="mobile-cart-summary" class="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 hidden">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-lg font-semibold text-gray-900">총 금액</span>
+                <span id="mobile-cart-total" class="text-xl font-bold text-blue-600">0 sats</span>
+            </div>
+            <button onclick="processOrderFromMobile()" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                <i class="fas fa-credit-card mr-2"></i>결제하기
+            </button>
+        </div>
+    </div>
+
+    <!-- 오버레이 -->
+    <div id="mobile-cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="closeMobileCart()"></div>
+    
+    <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
+    <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
+    
+    <!-- 모바일 전용 JavaScript -->
+    <script src="{% static 'js/menu_cart.js' %}"></script>
+    <script src="{% static 'js/menu_board_mobile.js' %}"></script>
+    
+    <!-- 스토어 ID 데이터 -->
+    <script>
+        window.storeId = '{{ store.store_id }}';
+    </script>
+    
+
+</body>
+</html> 

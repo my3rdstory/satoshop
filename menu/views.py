@@ -782,7 +782,17 @@ def menu_board(request, store_id):
         'is_public_view': True,
         'is_menu_board': True,  # 메뉴판 화면임을 표시
     }
-    return render(request, 'menu/menu_board.html', context)
+    
+    # 모바일 디바이스 감지
+    def is_mobile_device(request):
+        user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+        mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos']
+        return any(keyword in user_agent for keyword in mobile_keywords)
+    
+    # 모바일이면 모바일 전용 템플릿 사용
+    template_name = 'menu/menu_board_mobile.html' if is_mobile_device(request) else 'menu/menu_board.html'
+    
+    return render(request, template_name, context)
 
 def menu_cart(request, store_id):
     """장바구니 화면 (공개, 비회원 접근 가능)"""
