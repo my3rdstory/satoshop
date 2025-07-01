@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption
 
 class MeetupImageInline(admin.TabularInline):
@@ -200,8 +201,8 @@ class MeetupOrderOptionInline(admin.TabularInline):
 
 @admin.register(MeetupOrder)
 class MeetupOrderAdmin(admin.ModelAdmin):
-    list_display = ['order_number', 'meetup', 'participant_name', 'status_display', 'total_price_display', 'is_early_bird', 'created_at']
-    list_filter = ['status', 'meetup__store', 'is_early_bird', 'created_at', 'paid_at']
+    list_display = ['order_number', 'meetup', 'participant_name', 'status_display', 'attended_display', 'total_price_display', 'is_early_bird', 'created_at']
+    list_filter = ['status', 'attended', 'meetup__store', 'is_early_bird', 'created_at', 'paid_at', 'attended_at']
     search_fields = ['order_number', 'participant_name', 'participant_email', 'meetup__name']
     readonly_fields = ['order_number', 'meetup', 'participant_name', 'participant_email', 'participant_phone', 
                       'base_price', 'options_price', 'total_price', 'original_price', 'discount_rate',
@@ -231,6 +232,20 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         )
     status_display.short_description = '상태'
     
+    def attended_display(self, obj):
+        """참석 여부 표시"""
+        if obj.attended:
+            if obj.attended_at:
+                return mark_safe(
+                    f'<span style="color: #27ae60; font-weight: bold;">✓ 참석</span><br>'
+                    f'<small style="color: #7f8c8d;">{obj.attended_at.strftime("%m/%d %H:%M")}</small>'
+                )
+            else:
+                return mark_safe('<span style="color: #27ae60; font-weight: bold;">✓ 참석</span>')
+        else:
+            return mark_safe('<span style="color: #95a5a6;">미참석</span>')
+    attended_display.short_description = '참석 여부'
+    
     def total_price_display(self, obj):
         """총 가격 표시"""
         if obj.is_early_bird and obj.original_price:
@@ -251,6 +266,10 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         }),
         ('참가자 정보', {
             'fields': ('participant_name', 'participant_email', 'participant_phone')
+        }),
+        ('참석 정보', {
+            'fields': ('attended', 'attended_at'),
+            'description': '밋업 당일 참석 여부를 확인할 수 있습니다.'
         }),
         ('가격 정보', {
             'fields': ('base_price', 'options_price', 'total_price', 'original_price', 'discount_rate', 'is_early_bird')

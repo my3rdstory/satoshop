@@ -14,6 +14,7 @@ urlpatterns = [
     # 밋업 현황 (구체적인 패턴을 먼저 배치)
     path('<str:store_id>/status/', views.meetup_status, name='meetup_status'),
     path('<str:store_id>/status/<str:meetup_id>/', views.meetup_status_detail, name='meetup_status_detail'),
+    path('<str:store_id>/status/<str:meetup_id>/update_attendance/', views.update_attendance, name='update_attendance'),
     
     # 밋업 주문 내역
     path('<str:store_id>/orders/', views.meetup_orders, name='meetup_orders'),
