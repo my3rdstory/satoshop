@@ -53,7 +53,7 @@
                 <!-- 카테고리 목록 -->
                 {% for category in categories %}
                 <div class="category-item p-3 rounded-lg mb-1 {% if category in menu.categories.all %}active{% endif %}" 
-                     onclick="location.href='{% url 'menu:menu_board' store.store_id %}#category-{{ category.id }}'">
+                     onclick="location.href='{% url 'menu:menu_board_desktop' store.store_id %}#category-{{ category.id }}'">
                     <div class="flex items-center">
                         <i class="fas fa-tag mr-3 {% if category in menu.categories.all %}text-white{% else %}text-gray-500{% endif %}"></i>
                         <span class="font-medium">{{ category.name }}</span>

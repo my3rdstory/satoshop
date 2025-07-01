@@ -761,8 +761,10 @@ def toggle_menu_active(request, store_id, menu_id):
         logger.error(f"메뉴 활성화 상태 변경 오류: {e}")
         return JsonResponse({'success': False, 'error': '서버 오류가 발생했습니다.'}, status=500)
 
-def menu_board(request, store_id):
-    """메뉴판 화면 (공개, 비회원 접근 가능)"""
+# === 기기별 메뉴판 뷰 함수들 ===
+
+def menu_board_desktop(request, store_id):
+    """데스크톱 메뉴판 화면 (공개, 비회원 접근 가능)"""
     # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
     
@@ -780,19 +782,53 @@ def menu_board(request, store_id):
         'menus': menus,
         'categories': categories,
         'is_public_view': True,
-        'is_menu_board': True,  # 메뉴판 화면임을 표시
+        'is_menu_board': True,
+        'device_type': 'desktop',
     }
     
-    # 모바일 디바이스 감지
+    return render(request, 'menu/menu_board.html', context)
+
+def menu_board_mobile(request, store_id):
+    """모바일 메뉴판 화면 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menus = Menu.objects.filter(
+        store=store, 
+        is_active=True
+    ).prefetch_related('categories', 'images')
+    
+    # 카테고리 조회 (순서대로)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menus': menus,
+        'categories': categories,
+        'is_public_view': True,
+        'is_menu_board': True,
+        'device_type': 'mobile',
+    }
+    
+    return render(request, 'menu/menu_board_mobile.html', context)
+
+def menu_board_auto_redirect(request, store_id):
+    """기기에 따라 자동으로 적절한 메뉴판으로 리다이렉트 (하위 호환성)"""
     def is_mobile_device(request):
         user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
         mobile_keywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'webos']
         return any(keyword in user_agent for keyword in mobile_keywords)
     
-    # 모바일이면 모바일 전용 템플릿 사용
-    template_name = 'menu/menu_board_mobile.html' if is_mobile_device(request) else 'menu/menu_board.html'
-    
-    return render(request, template_name, context)
+    if is_mobile_device(request):
+        return redirect('menu:menu_board_mobile', store_id=store_id)
+    else:
+        return redirect('menu:menu_board_desktop', store_id=store_id)
+
+# === 기존 함수 (하위 호환성 유지) ===
+def menu_board(request, store_id):
+    """기존 메뉴판 화면 - 자동 리다이렉트로 변경"""
+    return menu_board_auto_redirect(request, store_id)
 
 def menu_cart(request, store_id):
     """장바구니 화면 (공개, 비회원 접근 가능)"""
@@ -1184,3 +1220,117 @@ def menu_orders_detail(request, store_id, menu_id):
     }
     
     return render(request, 'menu/menu_orders_detail.html', context)
+
+# === 기기별 메뉴 상세 뷰 ===
+
+def menu_detail_desktop(request, store_id, menu_id):
+    """데스크톱 메뉴 상세 페이지 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
+    
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'categories': categories,
+        'is_public_view': True,
+        'device_type': 'desktop',
+    }
+    return render(request, 'menu/menu_detail.html', context)
+
+def menu_detail_mobile(request, store_id, menu_id):
+    """모바일 메뉴 상세 페이지 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
+    
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'categories': categories,
+        'is_public_view': True,
+        'device_type': 'mobile',
+    }
+    return render(request, 'menu/menu_detail_mobile.html', context)
+
+def menu_detail_ajax_desktop(request, store_id, menu_id):
+    """데스크톱 메뉴 상세 페이지 AJAX 버전 (SPA용)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
+    
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'categories': categories,
+        'is_public_view': True,
+        'is_ajax': True,  # AJAX 요청임을 표시
+        'device_type': 'desktop',
+    }
+    return render(request, 'menu/menu_detail.html', context)
+
+def menu_detail_ajax_mobile(request, store_id, menu_id):
+    """모바일 메뉴 상세 페이지 AJAX 버전 (SPA용)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    # 활성화된 메뉴만 조회
+    menu = get_object_or_404(Menu, id=menu_id, store=store, is_active=True)
+    
+    # 카테고리 목록 조회 (사이드바 표시용)
+    categories = MenuCategory.objects.filter(store=store).order_by('order', 'name')
+    
+    context = {
+        'store': store,
+        'menu': menu,
+        'categories': categories,
+        'is_public_view': True,
+        'is_ajax': True,  # AJAX 요청임을 표시
+        'device_type': 'mobile',
+    }
+    return render(request, 'menu/menu_detail_mobile.html', context)
+
+# === 기기별 장바구니 뷰 ===
+
+def menu_cart_desktop(request, store_id):
+    """데스크톱 장바구니 화면 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    context = {
+        'store': store,
+        'is_public_view': True,
+        'is_cart_view': True,  # 장바구니 화면임을 표시
+        'view_type': 'full_page',  # 독립 페이지로 표시
+        'device_type': 'desktop',
+    }
+    return render(request, 'menu/menu_cart.html', context)
+
+def menu_cart_mobile(request, store_id):
+    """모바일 장바구니 화면 (공개, 비회원 접근 가능)"""
+    # 스토어 조회 (비회원도 접근 가능하므로 소유자 확인 안함)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
+    
+    context = {
+        'store': store,
+        'is_public_view': True,
+        'is_cart_view': True,  # 장바구니 화면임을 표시
+        'view_type': 'full_page',  # 독립 페이지로 표시
+        'device_type': 'mobile',
+    }
+    return render(request, 'menu/menu_cart_mobile.html', context)
