@@ -151,27 +151,27 @@ function updateSidebarCart() {
         }
 
         cartHTML += `
-            <div class="bg-white p-3 rounded-lg border border-gray-200 cart-item" data-item-id="${item.id}">
+            <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 cart-item" data-item-id="${item.id}">
                 <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-medium text-sm">${escapeHtml(item.name)}</h4>
+                    <h4 class="font-medium text-sm text-gray-900 dark:text-white">${escapeHtml(item.name)}</h4>
                     <button onclick="removeCartItem('${item.id}')" class="text-red-500 hover:text-red-700 transition-colors">
                         <i class="fas fa-times text-xs"></i>
                     </button>
                 </div>
-                ${optionsText ? `<div class="text-xs text-gray-600 mb-2">${escapeHtml(optionsText)}</div>` : ''}
+                ${optionsText ? `<div class="text-xs text-gray-600 dark:text-gray-400 mb-2">${escapeHtml(optionsText)}</div>` : ''}
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-2">
                         <button onclick="updateItemQuantity('${item.id}', ${itemQuantity - 1})" 
-                                class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center">
+                                class="w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors flex items-center justify-center text-gray-700 dark:text-gray-200">
                             <i class="fas fa-minus"></i>
                         </button>
-                        <span class="text-sm font-medium min-w-[1.5rem] text-center">${itemQuantity}</span>
+                        <span class="text-sm font-medium min-w-[1.5rem] text-center text-gray-900 dark:text-white">${itemQuantity}</span>
                         <button onclick="updateItemQuantity('${item.id}', ${itemQuantity + 1})" 
-                                class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300 transition-colors flex items-center justify-center">
+                                class="w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors flex items-center justify-center text-gray-700 dark:text-gray-200">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
-                    <span class="text-sm font-semibold text-blue-600">${formatNumber(itemTotal)} sats</span>
+                    <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">${formatNumber(itemTotal)} sats</span>
                 </div>
             </div>
         `;

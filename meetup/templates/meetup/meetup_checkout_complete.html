@@ -321,10 +321,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 페이지 로드 후 2초 뒤에 자동 다운로드 시작
         setTimeout(function() {
-            downloadParticipantInfo();
+            downloadParticipantInfo(); // TXT 파일 먼저 다운로드
             setTimeout(function() {
-                downloadQRCode();
-            }, 1000); // QR코드는 1초 뒤에 다운로드
+                downloadQRCode(); // 3초 후 PNG 파일 다운로드
+            }, 3000); // QR코드는 3초 뒤에 다운로드
         }, 2000);
         
     } else {

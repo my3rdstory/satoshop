@@ -16,47 +16,54 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Tailwind 다크모드 설정 -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- 메뉴판 전용 CSS -->
     <link rel="stylesheet" href="{% static 'css/menu_board.css' %}">
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900">
     <div class="menu-board-container flex">
 {% endif %}
         {% if not is_ajax %}
         <!-- 왼쪽: 카테고리 사이드바 -->
-        <div class="category-sidebar custom-scrollbar">
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-lg font-bold text-gray-800 mb-2">{{ store.store_name }}</h2>
-                <p class="text-sm text-gray-600">메뉴 카테고리</p>
+        <div class="category-sidebar custom-scrollbar bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">{{ store.store_name }}</h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">메뉴 카테고리</p>
             </div>
             
             <div class="p-2">
                 <!-- 메뉴판으로 돌아가기 -->
-                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                <div class="category-item p-3 rounded-lg mb-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
                     <div class="flex items-center">
                         <i class="fas fa-arrow-left mr-3 text-blue-500"></i>
-                        <span class="font-medium">메뉴판으로 돌아가기</span>
+                        <span class="font-medium text-gray-800 dark:text-gray-200">메뉴판으로 돌아가기</span>
                     </div>
                 </div>
                 
                 <!-- 전체 보기 -->
-                <div class="category-item p-3 rounded-lg mb-1" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
+                <div class="category-item p-3 rounded-lg mb-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" onclick="location.href='{% url 'menu:menu_board' store.store_id %}'">
                     <div class="flex items-center">
-                        <i class="fas fa-th-large mr-3 text-gray-500"></i>
-                        <span class="font-medium">전체 메뉴</span>
+                        <i class="fas fa-th-large mr-3 text-gray-500 dark:text-gray-400"></i>
+                        <span class="font-medium text-gray-800 dark:text-gray-200">전체 메뉴</span>
                     </div>
                 </div>
                 
                 <!-- 카테고리 목록 -->
                 {% for category in categories %}
-                <div class="category-item p-3 rounded-lg mb-1 {% if category in menu.categories.all %}active{% endif %}" 
+                <div class="category-item p-3 rounded-lg mb-1 {% if category in menu.categories.all %}active{% endif %} hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" 
                      onclick="location.href='{% url 'menu:menu_board_desktop' store.store_id %}#category-{{ category.id }}'">
                     <div class="flex items-center">
-                        <i class="fas fa-tag mr-3 {% if category in menu.categories.all %}text-white{% else %}text-gray-500{% endif %}"></i>
-                        <span class="font-medium">{{ category.name }}</span>
+                        <i class="fas fa-tag mr-3 {% if category in menu.categories.all %}text-white{% else %}text-gray-500 dark:text-gray-400{% endif %}"></i>
+                        <span class="font-medium {% if category in menu.categories.all %}text-white{% else %}text-gray-800 dark:text-gray-200{% endif %}">{{ category.name }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -64,23 +71,23 @@
         </div>
         
         <!-- 가운데: 메뉴 상세 정보 -->
-        <div class="menu-content custom-scrollbar">
+        <div class="menu-content custom-scrollbar bg-white dark:bg-gray-800">
         {% endif %}
             {% block menu_detail_content %}
                 <!-- 메뉴 상세 정보 -->
-                <div class="bg-white overflow-hidden">
+                <div class="bg-white dark:bg-gray-800 overflow-hidden">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                         <!-- 왼쪽: 메뉴 이미지 -->
                         <div class="space-y-4">
-                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 relative">
+                            <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 relative">
                                 {% if menu.images.exists %}
                                 <img src="{{ menu.images.first.file_url }}" 
                                      alt="{{ menu.name }}" 
                                      class="w-full h-full object-cover">
                                 {% else %}
                                 <div class="w-full h-full flex flex-col items-center justify-center">
-                                    <i class="fas fa-utensils text-gray-400 text-6xl mb-4"></i>
-                                    <span class="text-gray-500 text-lg">이미지 없음</span>
+                                    <i class="fas fa-utensils text-gray-400 dark:text-gray-500 text-6xl mb-4"></i>
+                                    <span class="text-gray-500 dark:text-gray-400 text-lg">이미지 없음</span>
                                 </div>
                                 {% endif %}
                                 
@@ -102,7 +109,7 @@
                             <div class="grid grid-cols-4 gap-2">
                                 {% for image in menu.images.all %}
                                 {% if not forloop.first %}
-                                <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
+                                <div class="aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity"
                                      onclick="changeMainImage('{{ image.file_url }}')">
                                     <img src="{{ image.file_url }}" 
                                          alt="{{ menu.name }}" 
@@ -117,24 +124,24 @@
                         <!-- 오른쪽: 메뉴 정보 -->
                         <div class="space-y-4">
                             <!-- 메뉴명과 가격 -->
-                            <div class="border-b border-gray-200 pb-4">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
                                 <div class="flex items-start justify-between mb-3">
-                                    <h1 class="text-2xl font-bold text-gray-900">{{ menu.name }}</h1>
+                                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ menu.name }}</h1>
                                     <div class="text-right">
                                         {% if menu.is_discounted %}
                                         <div class="space-y-1">
                                             <div class="text-xl font-bold text-red-500" id="current-price">
                                                 {{ menu.public_discounted_price|floatformat:0 }} sats
                                             </div>
-                                            <div class="text-sm text-gray-500 line-through">
+                                            <div class="text-sm text-gray-500 dark:text-gray-400 line-through">
                                                 {{ menu.public_price|floatformat:0 }} sats
                                             </div>
-                                            <div class="inline-block bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs font-medium">
+                                            <div class="inline-block bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 px-2 py-1 rounded-lg text-xs font-medium">
                                                 {{ menu.public_discount_rate }}% 할인
                                             </div>
                                         </div>
                                         {% else %}
-                                        <div class="text-xl font-bold text-gray-900" id="current-price">
+                                        <div class="text-xl font-bold text-gray-900 dark:text-white" id="current-price">
                                             {{ menu.public_price|floatformat:0 }} sats
                                         </div>
                                         {% endif %}
@@ -144,12 +151,12 @@
 
                             <!-- 옵션 선택 -->
                             {% if menu.options.exists %}
-                            <div class="border-b border-gray-200 pb-4">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-3">옵션 선택</h3>
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">옵션 선택</h3>
                                 <div class="space-y-3" id="options-container">
                                     {% for option in menu.options.all %}
                                     <div class="option-group" data-option-id="{{ option.id }}" data-option-name="{{ option.name }}">
-                                        <label class="block text-lg font-medium text-gray-700 mb-2">
+                                        <label class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
                                             {{ option.name }}
                                             {% if option.is_required %}
                                             <span class="text-red-500">*</span>
@@ -158,7 +165,7 @@
                                         <div class="grid grid-cols-1 gap-1">
                                             {% for value in option.values_list %}
                                             {% with parsed_value=value|split_option_value %}
-                                            <div class="flex items-center justify-between p-2 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors option-choice"
+                                            <div class="flex items-center justify-between p-2 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors option-choice"
                                                  data-option-id="{{ option.id }}" 
                                                  data-option-name="{{ option.name }}"
                                                  data-option-value="{{ parsed_value.name }}" 
@@ -166,13 +173,13 @@
                                                  data-is-required="{{ option.is_required|yesno:'true,false' }}"
                                                  onclick="toggleOption(this)">
                                                 <div class="flex items-center">
-                                                    <div class="w-5 h-5 mr-3 border-2 border-blue-600 rounded flex items-center justify-center option-checkbox">
-                                                        <i class="fas fa-check text-blue-600 text-sm hidden option-check-icon"></i>
+                                                    <div class="w-5 h-5 mr-3 border-2 border-blue-600 dark:border-blue-400 rounded flex items-center justify-center option-checkbox">
+                                                        <i class="fas fa-check text-blue-600 dark:text-blue-400 text-sm hidden option-check-icon"></i>
                                                     </div>
-                                                    <span class="text-xl text-gray-900">{{ parsed_value.name }}</span>
+                                                    <span class="text-xl text-gray-900 dark:text-white">{{ parsed_value.name }}</span>
                                                 </div>
                                                 {% if parsed_value.price != "0" %}
-                                                <span class="text-sm text-gray-600">+{{ parsed_value.price }} sats</span>
+                                                <span class="text-sm text-gray-600 dark:text-gray-400">+{{ parsed_value.price }} sats</span>
                                                 {% endif %}
                                             </div>
                                             {% endwith %}
@@ -185,26 +192,26 @@
                             {% endif %}
 
                             <!-- 수량 선택 -->
-                            <div class="border-b border-gray-200 pb-4">
-                                <h3 class="text-sm font-semibold text-gray-900 mb-3">수량</h3>
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">수량</h3>
                                 <div class="flex items-center space-x-3">
                                     <button type="button" onclick="changeQuantity(-1)" 
-                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
-                                        <i class="fas fa-minus text-gray-600 text-sm"></i>
+                                            class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-minus text-gray-600 dark:text-gray-200 text-sm"></i>
                                     </button>
-                                    <span id="quantity-display" class="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">1</span>
+                                    <span id="quantity-display" class="text-lg font-semibold text-gray-900 dark:text-white min-w-[2rem] text-center">1</span>
                                     <button type="button" onclick="changeQuantity(1)" 
-                                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center transition-colors">
-                                        <i class="fas fa-plus text-gray-600 text-sm"></i>
+                                            class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center transition-colors">
+                                        <i class="fas fa-plus text-gray-600 dark:text-gray-200 text-sm"></i>
                                     </button>
                                 </div>
                             </div>
 
                             <!-- 총 가격 표시 -->
-                            <div class="border-b border-gray-200 pb-4">
+                            <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
                                 <div class="flex items-center justify-between">
-                                    <span class="text-base font-semibold text-gray-900">총 가격</span>
-                                    <span id="total-price" class="text-2xl font-bold text-blue-600">
+                                    <span class="text-base font-semibold text-gray-900 dark:text-white">총 가격</span>
+                                    <span id="total-price" class="text-2xl font-bold text-blue-600 dark:text-blue-400">
                                         {{ menu.public_discounted_price|default:menu.public_price|floatformat:0 }} sats
                                     </span>
                                 </div>
@@ -286,25 +293,25 @@
                 const icon = choice.querySelector('.option-check-icon');
                 const checkbox = choice.querySelector('.option-checkbox');
                 icon.classList.add('hidden');
-                checkbox.classList.remove('bg-blue-600');
-                choice.classList.remove('bg-blue-50', 'border-blue-500');
+                checkbox.classList.remove('bg-blue-600', 'dark:bg-blue-400');
+                choice.classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
             });
             
             // 현재 선택지가 선택되지 않은 상태였다면 선택
             if (!isCurrentlySelected) {
                 checkIcon.classList.remove('hidden');
                 const checkbox = optionElement.querySelector('.option-checkbox');
-                checkbox.classList.add('bg-blue-600');
-                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                checkbox.classList.add('bg-blue-600', 'dark:bg-blue-400');
+                optionElement.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
             }
             // 필수 옵션이고 현재 선택된 상태라면 해제 불가
             else if (isRequired) {
                 // 다시 선택 상태로 되돌리기
                 checkIcon.classList.remove('hidden');
                 const checkbox = optionElement.querySelector('.option-checkbox');
-                checkbox.classList.add('bg-blue-600');
-                optionElement.classList.add('bg-blue-50', 'border-blue-500');
-                                        // 필수 옵션은 해제할 수 없음 (알림 없음)
+                checkbox.classList.add('bg-blue-600', 'dark:bg-blue-400');
+                optionElement.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
+                // 필수 옵션은 해제할 수 없음 (알림 없음)
                 return;
             }
             
@@ -418,6 +425,7 @@
     <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
     
     <!-- 통합 장바구니 JavaScript -->
+    <script src="{% static 'js/theme-toggle.js' %}"></script>
     <script src="{% static 'js/menu_cart.js' %}"></script>
 </body>
 </html>
@@ -470,24 +478,25 @@
                 const icon = choice.querySelector('.option-check-icon');
                 const checkbox = choice.querySelector('.option-checkbox');
                 icon.classList.add('hidden');
-                checkbox.classList.remove('bg-blue-600');
-                choice.classList.remove('bg-blue-50', 'border-blue-500');
+                checkbox.classList.remove('bg-blue-600', 'dark:bg-blue-400');
+                choice.classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
             });
             
             // 현재 선택지가 선택되지 않은 상태였다면 선택
             if (!isCurrentlySelected) {
                 checkIcon.classList.remove('hidden');
                 const checkbox = optionElement.querySelector('.option-checkbox');
-                checkbox.classList.add('bg-blue-600');
-                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                checkbox.classList.add('bg-blue-600', 'dark:bg-blue-400');
+                optionElement.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
             }
             // 필수 옵션이고 현재 선택된 상태라면 해제 불가
             else if (isRequired) {
                 // 다시 선택 상태로 되돌리기
                 checkIcon.classList.remove('hidden');
                 const checkbox = optionElement.querySelector('.option-checkbox');
-                checkbox.classList.add('bg-blue-600');
-                optionElement.classList.add('bg-blue-50', 'border-blue-500');
+                checkbox.classList.add('bg-blue-600', 'dark:bg-blue-400');
+                optionElement.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-blue-500', 'dark:border-blue-400');
+                // 필수 옵션은 해제할 수 없음 (알림 없음)
                 return;
             }
             

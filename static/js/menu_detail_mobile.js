@@ -205,29 +205,29 @@ function renderMobileCartItems() {
         }
         
         cartHTML += `
-            <div class="cart-item bg-white rounded-lg p-4 border border-gray-200">
+            <div class="cart-item bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-medium text-gray-900">${item.name}</h4>
-                    <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 ml-2">
+                    <h4 class="font-medium text-gray-900 dark:text-white">${item.name}</h4>
+                    <button onclick="removeFromCart(${index})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 ml-2">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
                 
-                ${optionsText ? `<p class="text-sm text-gray-600 mb-2">${optionsText}</p>` : ''}
+                ${optionsText ? `<p class="text-sm text-gray-600 dark:text-gray-400 mb-2">${optionsText}</p>` : ''}
                 
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-2">
                         <button onclick="updateCartItemQuantity(${index}, -1)" 
-                                class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-sm">
-                            <i class="fas fa-minus"></i>
+                                class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center text-sm">
+                            <i class="fas fa-minus text-gray-600 dark:text-gray-200"></i>
                         </button>
-                        <span class="w-8 text-center font-medium">${item.quantity}</span>
+                        <span class="w-8 text-center font-medium text-gray-900 dark:text-white">${item.quantity}</span>
                         <button onclick="updateCartItemQuantity(${index}, 1)" 
-                                class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-sm">
-                            <i class="fas fa-plus"></i>
+                                class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center text-sm">
+                            <i class="fas fa-plus text-gray-600 dark:text-gray-200"></i>
                         </button>
                     </div>
-                    <span class="font-semibold text-gray-900">${item.totalPrice.toLocaleString()} sats</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">${item.totalPrice.toLocaleString()} sats</span>
                 </div>
             </div>
         `;

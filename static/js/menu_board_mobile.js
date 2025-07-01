@@ -334,24 +334,24 @@ function updateCartDisplay() {
                 : '';
             
             return `
-                <div class="cart-item flex items-center justify-between p-3 border-b border-gray-100">
+                <div class="cart-item flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-600">
                     <div class="flex-1">
-                        <h4 class="font-medium text-gray-900">${item.menuName}</h4>
-                        ${optionsText ? `<p class="text-xs text-blue-600">${optionsText}</p>` : ''}
-                        <p class="text-sm text-gray-600">${item.price.toLocaleString()} sats</p>
+                        <h4 class="font-medium text-gray-900 dark:text-white">${item.menuName}</h4>
+                        ${optionsText ? `<p class="text-xs text-blue-600 dark:text-blue-400">${optionsText}</p>` : ''}
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${item.price.toLocaleString()} sats</p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <button onclick="changeCartItemQuantity('${item.menuId}', -1, ${index})" 
-                                class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <i class="fas fa-minus text-xs"></i>
+                                class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center">
+                            <i class="fas fa-minus text-xs text-gray-600 dark:text-gray-200"></i>
                         </button>
-                        <span class="w-8 text-center">${item.quantity}</span>
+                        <span class="w-8 text-center text-gray-900 dark:text-white">${item.quantity}</span>
                         <button onclick="changeCartItemQuantity('${item.menuId}', 1, ${index})" 
-                                class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                                class="w-8 h-8 bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full flex items-center justify-center">
                             <i class="fas fa-plus text-xs"></i>
                         </button>
                         <button onclick="removeFromMobileCart('${item.menuId}', ${index})" 
-                                class="ml-2 text-red-500 hover:text-red-700">
+                                class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>

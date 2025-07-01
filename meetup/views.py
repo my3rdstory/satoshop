@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.utils import timezone
+from django.conf import settings
 from stores.models import Store
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption
 from .forms import MeetupForm
@@ -399,6 +400,29 @@ def meetup_checkout(request, store_id, meetup_id):
                 existing_order.confirmed_at = timezone.now()
                 existing_order.save()
                 
+                # 🎉 무료 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
+                try:
+                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
+                    
+                    # 주인장에게 알림 이메일
+                    owner_email_sent = send_meetup_notification_email(existing_order)
+                    if owner_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 성공: {existing_order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 조건 미충족: {existing_order.order_number}")
+                    
+                    # 참가자에게 확인 이메일
+                    participant_email_sent = send_meetup_participant_confirmation_email(existing_order)
+                    if participant_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 성공: {existing_order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 조건 미충족: {existing_order.order_number}")
+                        
+                except Exception as e:
+                    # 이메일 발송 실패해도 주문 처리는 계속 진행
+                    logger.error(f"[MEETUP_EMAIL] 무료 밋업 이메일 발송 오류: {existing_order.order_number}, {str(e)}")
+                    pass
+                
                 messages.success(request, f'"{meetup.name}" 밋업 참가 신청이 완료되었습니다!')
                 return redirect('meetup:meetup_checkout_complete', 
                               store_id=store_id, meetup_id=meetup_id, order_id=existing_order.id)
@@ -514,6 +538,29 @@ def meetup_checkout(request, store_id, meetup_id):
                 order.paid_at = timezone.now()
                 order.confirmed_at = timezone.now()
                 order.save()
+                
+                # 🎉 무료 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
+                try:
+                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
+                    
+                    # 주인장에게 알림 이메일
+                    owner_email_sent = send_meetup_notification_email(order)
+                    if owner_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 성공: {order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 조건 미충족: {order.order_number}")
+                    
+                    # 참가자에게 확인 이메일
+                    participant_email_sent = send_meetup_participant_confirmation_email(order)
+                    if participant_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 성공: {order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 조건 미충족: {order.order_number}")
+                        
+                except Exception as e:
+                    # 이메일 발송 실패해도 주문 처리는 계속 진행
+                    logger.error(f"[MEETUP_EMAIL] 무료 밋업 이메일 발송 오류: {order.order_number}, {str(e)}")
+                    pass
                 
                 messages.success(request, f'"{meetup.name}" 밋업 참가 신청이 완료되었습니다!')
                 return redirect('meetup:meetup_checkout_complete', 
@@ -690,6 +737,29 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
                     order.paid_at = timezone.now()
                     order.confirmed_at = timezone.now()
                     order.save()
+                
+                # 🎉 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
+                try:
+                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
+                    
+                    # 주인장에게 알림 이메일
+                    owner_email_sent = send_meetup_notification_email(order)
+                    if owner_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 성공: {order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 조건 미충족: {order.order_number}")
+                    
+                    # 참가자에게 확인 이메일
+                    participant_email_sent = send_meetup_participant_confirmation_email(order)
+                    if participant_email_sent:
+                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 성공: {order.order_number}")
+                    else:
+                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 조건 미충족: {order.order_number}")
+                        
+                except Exception as e:
+                    # 이메일 발송 실패해도 주문 처리는 계속 진행
+                    logger.error(f"[MEETUP_EMAIL] 밋업 이메일 발송 오류: {order.order_number}, {str(e)}")
+                    pass
                 
                 return JsonResponse({
                     'success': True,

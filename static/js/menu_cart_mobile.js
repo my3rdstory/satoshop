@@ -252,7 +252,7 @@ class MobileCartManager {
     // 모바일 장바구니 아이템 요소 생성
     createMobileCartItemElement(key, item) {
         const div = document.createElement('div');
-        div.className = 'mobile-cart-item bg-white rounded-lg p-3 shadow-sm';
+        div.className = 'mobile-cart-item bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700';
         
         const optionsText = Object.keys(item.options).length > 0 
             ? Object.entries(item.options).map(([k, v]) => `${k}: ${v}`).join(', ')
@@ -261,23 +261,23 @@ class MobileCartManager {
         div.innerHTML = `
             <div class="flex items-center justify-between">
                 <div class="flex-1 min-w-0">
-                    <h4 class="font-medium text-gray-900 truncate">${item.name}</h4>
-                    ${optionsText ? `<p class="text-sm text-gray-500 truncate">${optionsText}</p>` : ''}
-                    <p class="text-lg font-bold text-blue-600">${item.price.toLocaleString()}원</p>
+                    <h4 class="font-medium text-gray-900 dark:text-white truncate">${item.name}</h4>
+                    ${optionsText ? `<p class="text-sm text-gray-500 dark:text-gray-400 truncate">${optionsText}</p>` : ''}
+                    <p class="text-lg font-bold text-blue-600 dark:text-blue-400">${item.price.toLocaleString()}원</p>
                 </div>
                 <div class="flex items-center space-x-2 ml-4">
                     <button onclick="window.mobileCartManager.updateQuantity('${key}', -1)" 
-                            class="mobile-cart-button quantity-button bg-gray-100 text-gray-600 rounded-full w-8 h-8 flex items-center justify-center"
+                            class="mobile-cart-button quantity-button bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-200 rounded-full w-8 h-8 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
                             ${item.quantity <= 1 ? 'disabled' : ''}>
                         <i class="fas fa-minus text-xs"></i>
                     </button>
-                    <span class="mx-2 min-w-[2rem] text-center font-semibold">${item.quantity}</span>
+                    <span class="mx-2 min-w-[2rem] text-center font-semibold text-gray-900 dark:text-white">${item.quantity}</span>
                     <button onclick="window.mobileCartManager.updateQuantity('${key}', 1)" 
-                            class="mobile-cart-button quantity-button bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                            class="mobile-cart-button quantity-button bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors">
                         <i class="fas fa-plus text-xs"></i>
                     </button>
                     <button onclick="window.mobileCartManager.removeFromCart('${key}')" 
-                            class="mobile-cart-button delete-button ml-2 rounded-lg px-2 py-1">
+                            class="mobile-cart-button delete-button ml-2 rounded-lg px-2 py-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors">
                         <i class="fas fa-trash text-sm"></i>
                     </button>
                 </div>
@@ -312,18 +312,18 @@ class MobileCartManager {
         }
 
         summaryContainer.innerHTML = `
-            <div class="cart-summary p-4 mb-4">
+            <div class="cart-summary p-4 mb-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-gray-600">총 수량</span>
-                    <span class="font-semibold">${totalItems}개</span>
+                    <span class="text-gray-600 dark:text-gray-400">총 수량</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">${totalItems}개</span>
                 </div>
                 <div class="flex justify-between items-center text-lg font-bold">
-                    <span>총 금액</span>
-                    <span class="text-blue-600">${totalPrice.toLocaleString()}원</span>
+                    <span class="text-gray-900 dark:text-white">총 금액</span>
+                    <span class="text-blue-600 dark:text-blue-400">${totalPrice.toLocaleString()}원</span>
                 </div>
             </div>
             <button onclick="window.mobileCartManager.proceedToCheckout()" 
-                    class="checkout-button w-full bg-blue-500 text-white py-4 rounded-lg font-semibold text-lg">
+                    class="checkout-button w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-4 rounded-lg font-semibold text-lg transition-colors">
                 <i class="fas fa-credit-card mr-2"></i>
                 결제하기
             </button>
