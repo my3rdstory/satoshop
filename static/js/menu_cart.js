@@ -597,6 +597,19 @@ function showPaymentModal() {
                                     </div>
                                 </div>
                                 
+                                <!-- 라이트닝 지갑 열기 버튼 -->
+                                <div class="text-center mb-6">
+                                    <button onclick="openLightningWallet()" 
+                                            class="bg-orange-500 hover:bg-orange-600 text-white py-4 px-8 rounded-xl font-bold text-lg flex items-center justify-center mx-auto transition-all duration-300 hover:shadow-lg transform hover:scale-105 min-w-[280px]">
+                                        <i class="fas fa-bolt mr-3 text-xl"></i>
+                                        라이트닝 지갑 열어 결제하기
+                                    </button>
+                                    <p class="text-sm text-gray-600 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        설치된 라이트닝 지갑이 자동으로 열립니다
+                                    </p>
+                                </div>
+                                
                                 <!-- 인보이스 텍스트 -->
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-gray-700 mb-2">인보이스 텍스트</label>
@@ -954,6 +967,99 @@ function cancelPayment() {
     paymentExpiresAt = null;
 }
 
+// 라이트닝 지갑 열기
+function openLightningWallet() {
+    const invoiceText = document.getElementById('invoice-text');
+    if (!invoiceText || !invoiceText.value) {
+        alert('인보이스가 생성되지 않았습니다.');
+        return;
+    }
+    
+    const invoice = invoiceText.value.trim();
+    
+    try {
+        // 버튼 상태 변경
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-3 text-xl"></i>지갑 앱 열기 시도 중...';
+        button.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+        button.classList.add('bg-green-500');
+        
+        // 표준 라이트닝 URL로 먼저 시도
+        const lightningUrl = `lightning:${invoice}`;
+        
+        // 새 창으로 열기 시도 (모바일에서 더 잘 작동)
+        const newWindow = window.open(lightningUrl, '_blank');
+        
+        // 새 창이 열리지 않으면 현재 창에서 시도
+        if (!newWindow || newWindow.closed) {
+            window.location.href = lightningUrl;
+        }
+        
+        // 지갑이 열렸는지 확인하기 위한 타이머
+        let walletOpened = false;
+        
+        // 페이지가 숨겨지면 (앱이 열리면) 지갑이 열린 것으로 간주
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                walletOpened = true;
+                // 버튼 상태를 성공으로 변경
+                button.innerHTML = '<i class="fas fa-check mr-3 text-xl"></i>지갑 앱이 열렸습니다!';
+                button.classList.remove('bg-green-500');
+                button.classList.add('bg-emerald-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-emerald-500');
+                    button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                }, 2000);
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // 3초 후에도 지갑이 열리지 않았으면 fallback 실행
+        setTimeout(() => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            
+            if (!walletOpened) {
+                // 지갑이 열리지 않았으므로 인보이스 복사로 대체
+                copyInvoiceText();
+                
+                // 버튼 상태 변경
+                button.innerHTML = '<i class="fas fa-copy mr-3 text-xl"></i>인보이스가 복사되었습니다';
+                button.classList.remove('bg-green-500');
+                button.classList.add('bg-blue-500');
+                
+                // 사용자에게 안내
+                alert('라이트닝 지갑을 자동으로 열 수 없어 인보이스를 복사했습니다.\n지갑 앱을 직접 열고 붙여넣어 주세요.');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-blue-500');
+                    button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                }, 3000);
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('라이트닝 지갑 열기 실패:', error);
+        
+        // 실패 시 인보이스 복사로 대체
+        copyInvoiceText();
+        alert('지갑 앱을 자동으로 열 수 없습니다. 인보이스가 복사되었으니 지갑 앱에서 직접 붙여넣어 주세요.');
+        
+        // 버튼 원상복구
+        const button = event.target.closest('button');
+        if (button) {
+            const originalText = '<i class="fas fa-bolt mr-3 text-xl"></i>라이트닝 지갑 열어 결제하기';
+            button.innerHTML = originalText;
+            button.classList.remove('bg-green-500');
+            button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+        }
+    }
+}
+
 // 인보이스 텍스트 복사
 function copyInvoiceText() {
     const textarea = document.getElementById('invoice-text');
@@ -963,12 +1069,14 @@ function copyInvoiceText() {
         
         // 복사 완료 알림
         const button = event.target.closest('button');
-        const originalIcon = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-check text-green-500"></i>';
-        
-        setTimeout(() => {
-            button.innerHTML = originalIcon;
-        }, 2000);
+        if (button) {
+            const originalIcon = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+            
+            setTimeout(() => {
+                button.innerHTML = originalIcon;
+            }, 2000);
+        }
     }
 }
 
