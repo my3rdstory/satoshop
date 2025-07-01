@@ -761,8 +761,94 @@ function generateMobilePaymentInvoice() {
 }
 
 function openMobileLightningWallet() {
-    if (typeof openLightningWallet === 'function') {
-        openLightningWallet();
+    const invoiceText = document.getElementById('mobile-invoice-text');
+    if (!invoiceText || !invoiceText.value) {
+        alert('인보이스가 생성되지 않았습니다.');
+        return;
+    }
+    
+    const invoice = invoiceText.value.trim();
+    
+    try {
+        // 버튼 상태 변경
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-lg"></i>지갑 앱 열기 시도 중...';
+        button.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+        button.classList.add('bg-green-500');
+        
+        // 표준 라이트닝 URL로 먼저 시도
+        const lightningUrl = `lightning:${invoice}`;
+        
+        // 새 창으로 열기 시도 (모바일에서 더 잘 작동)
+        const newWindow = window.open(lightningUrl, '_blank');
+        
+        // 새 창이 열리지 않으면 현재 창에서 시도
+        if (!newWindow || newWindow.closed) {
+            window.location.href = lightningUrl;
+        }
+        
+        // 지갑이 열렸는지 확인하기 위한 타이머
+        let walletOpened = false;
+        
+        // 페이지가 숨겨지면 (앱이 열리면) 지갑이 열린 것으로 간주
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                walletOpened = true;
+                // 버튼 상태를 성공으로 변경
+                button.innerHTML = '<i class="fas fa-check mr-2 text-lg"></i>지갑 앱이 열렸습니다!';
+                button.classList.remove('bg-green-500');
+                button.classList.add('bg-emerald-500');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-emerald-500');
+                    button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                }, 2000);
+            }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // 3초 후에도 지갑이 열리지 않았으면 fallback 실행
+        setTimeout(() => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            
+            if (!walletOpened) {
+                // 지갑이 열리지 않았으므로 인보이스 복사로 대체
+                copyMobileInvoiceText();
+                
+                // 버튼 상태 변경
+                button.innerHTML = '<i class="fas fa-copy mr-2 text-lg"></i>인보이스가 복사되었습니다';
+                button.classList.remove('bg-green-500');
+                button.classList.add('bg-blue-500');
+                
+                // 사용자에게 안내
+                alert('라이트닝 지갑을 자동으로 열 수 없어 인보이스를 복사했습니다.\n지갑 앱을 직접 열고 붙여넣어 주세요.');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('bg-blue-500');
+                    button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                }, 3000);
+            }
+        }, 3000);
+        
+    } catch (error) {
+        console.error('모바일 라이트닝 지갑 열기 실패:', error);
+        
+        // 실패 시 인보이스 복사로 대체
+        copyMobileInvoiceText();
+        alert('지갑 앱을 자동으로 열 수 없습니다. 인보이스가 복사되었으니 지갑 앱에서 직접 붙여넣어 주세요.');
+        
+        // 버튼 원상복구
+        const button = event.target.closest('button');
+        if (button) {
+            const originalText = '<i class="fas fa-bolt mr-2 text-lg"></i>라이트닝 지갑 열어 결제하기';
+            button.innerHTML = originalText;
+            button.classList.remove('bg-green-500');
+            button.classList.add('bg-orange-500', 'hover:bg-orange-600');
+        }
     }
 }
 
@@ -774,16 +860,41 @@ function copyMobileInvoiceText() {
         navigator.clipboard.writeText(invoiceText.value).then(() => {
             alert('인보이스가 클립보드에 복사되었습니다.');
         }).catch(() => {
-            alert('복사에 실패했습니다.');
+            // clipboard API가 실패하면 기존 방법 시도
+            try {
+                document.execCommand('copy');
+                alert('인보이스가 클립보드에 복사되었습니다.');
+            } catch (err) {
+                alert('복사에 실패했습니다.');
+            }
         });
     }
 }
 
 function cancelMobilePayment() {
-    if (typeof cancelPayment === 'function') {
-        cancelPayment();
+    if (!confirm('정말로 결제를 취소하시겠습니까?')) {
+        return;
     }
-    closeMobilePaymentView();
+    
+    // 결제 상태 확인 중지
+    if (window.paymentCheckInterval) {
+        clearInterval(window.paymentCheckInterval);
+        window.paymentCheckInterval = null;
+    }
+    
+    // 카운트다운 중지
+    if (window.paymentCountdownInterval) {
+        clearInterval(window.paymentCountdownInterval);
+        window.paymentCountdownInterval = null;
+    }
+    
+    // UI 상태 변경
+    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+    document.getElementById('mobile-payment-cancelled').classList.remove('hidden');
+    
+    // 결제 관련 변수 초기화
+    window.currentPaymentHash = null;
+    window.paymentExpiresAt = null;
 }
 
 function goBackToMobileMenuBoard() {
