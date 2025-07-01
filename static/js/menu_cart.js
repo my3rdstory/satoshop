@@ -105,6 +105,11 @@ function updateAllCartDisplays() {
     updateSidebarCart();
     updatePageCart();
     updateFullPageCart();
+    
+    // 모바일 장바구니 업데이트 (함수가 존재하는 경우에만)
+    if (typeof updateMobileCart === 'function') {
+        updateMobileCart();
+    }
 }
 
 // 사이드바 장바구니 업데이트
