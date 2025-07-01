@@ -15,6 +15,14 @@ class MenuCategory(models.Model):
         verbose_name_plural = '메뉴 카테고리'
         unique_together = ['store', 'name']  # 같은 스토어 내에서 카테고리명 중복 방지
         ordering = ['order', 'name']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['store']),           # 스토어별 카테고리 조회용
+            models.Index(fields=['order']),           # 정렬용
+            models.Index(fields=['store', 'order']),  # 스토어별 카테고리 정렬용
+            models.Index(fields=['created_at']),      # 관리자 필터링용
+            models.Index(fields=['updated_at']),      # 관리자 정렬용
+        ]
 
     def __str__(self):
         return f"{self.store.store_name} - {self.name}"
@@ -53,6 +61,18 @@ class Menu(models.Model):
         verbose_name = '메뉴'
         verbose_name_plural = '메뉴'
         ordering = ['-created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['store']),                    # 스토어별 메뉴 조회용
+            models.Index(fields=['is_active']),               # 활성 메뉴 필터링용
+            models.Index(fields=['store', 'is_active']),      # 스토어의 활성 메뉴 조회용
+            models.Index(fields=['created_at']),              # 정렬용
+            models.Index(fields=['updated_at']),              # 관리자 정렬용
+            models.Index(fields=['price_display']),           # 가격 표시 방식별 조회용
+            models.Index(fields=['is_discounted']),           # 할인 상품 조회용
+            models.Index(fields=['is_temporarily_out_of_stock']), # 품절 상품 조회용
+            models.Index(fields=['store', 'is_active', 'created_at']),  # 스토어 메뉴 목록용
+        ]
 
     def __str__(self):
         return f"{self.store.store_name} - {self.name}"
@@ -183,6 +203,14 @@ class MenuOption(models.Model):
         verbose_name = '메뉴 옵션'
         verbose_name_plural = '메뉴 옵션'
         ordering = ['order', 'created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['menu']),            # 메뉴별 옵션 조회용
+            models.Index(fields=['order']),           # 정렬용
+            models.Index(fields=['menu', 'order']),   # 메뉴 옵션 정렬용
+            models.Index(fields=['is_required']),     # 필수 옵션 조회용
+            models.Index(fields=['created_at']),      # 관리자 필터링용
+        ]
 
     def __str__(self):
         return f"{self.menu.name} - {self.name}"

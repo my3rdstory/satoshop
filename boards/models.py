@@ -23,6 +23,12 @@ class Notice(models.Model):
         indexes = [
             models.Index(fields=['is_active', '-created_at']),
             models.Index(fields=['is_pinned', '-created_at']),
+            models.Index(fields=['sequence_number']),
+            models.Index(fields=['author']),
+            models.Index(fields=['views']),
+            models.Index(fields=['is_active', 'is_pinned', 'created_at']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['updated_at']),
         ]
 
     def __str__(self):

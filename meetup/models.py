@@ -59,6 +59,19 @@ class Meetup(models.Model):
         verbose_name = "밋업"
         verbose_name_plural = "밋업"
         ordering = ['-created_at']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['store']),                    # 스토어별 밋업 조회용
+            models.Index(fields=['is_active']),               # 활성 밋업 필터링용
+            models.Index(fields=['date_time']),               # 날짜별 정렬용
+            models.Index(fields=['store', 'is_active']),      # 스토어의 활성 밋업 조회용
+            models.Index(fields=['store', 'date_time']),      # 스토어별 날짜 정렬용
+            models.Index(fields=['deleted_at']),              # 소프트 삭제 조회용
+            models.Index(fields=['store', 'deleted_at']),     # 스토어별 활성 밋업용
+            models.Index(fields=['created_at']),              # 정렬용
+            models.Index(fields=['updated_at']),              # 관리자 정렬용
+            models.Index(fields=['is_temporarily_closed']),   # 일시중단 밋업 조회용
+        ]
     
     def __str__(self):
         return f"{self.store.store_name} - {self.name}"
@@ -199,6 +212,14 @@ class MeetupOption(models.Model):
         verbose_name = "밋업 옵션"
         verbose_name_plural = "밋업 옵션"
         ordering = ['order']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['meetup']),            # 밋업별 옵션 조회용
+            models.Index(fields=['order']),             # 정렬용
+            models.Index(fields=['meetup', 'order']),   # 밋업 옵션 정렬용
+            models.Index(fields=['is_required']),       # 필수 옵션 조회용
+            models.Index(fields=['created_at']),        # 관리자 필터링용
+        ]
     
     def __str__(self):
         return f"{self.meetup.name} - {self.name}"
@@ -215,6 +236,14 @@ class MeetupChoice(models.Model):
         verbose_name = "밋업 선택지"
         verbose_name_plural = "밋업 선택지"
         ordering = ['order']
+        # 성능 최적화를 위한 인덱스 추가
+        indexes = [
+            models.Index(fields=['option']),             # 옵션별 선택지 조회용
+            models.Index(fields=['order']),              # 정렬용
+            models.Index(fields=['option', 'order']),    # 옵션 선택지 정렬용
+            models.Index(fields=['additional_price']),   # 가격 기반 조회용
+            models.Index(fields=['created_at']),         # 관리자 필터링용
+        ]
     
     def __str__(self):
         return f"{self.option.name} - {self.name}"
