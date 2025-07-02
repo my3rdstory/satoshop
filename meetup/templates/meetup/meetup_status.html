@@ -101,8 +101,11 @@
                   <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-500 text-white">
                     비활성화
                   </span>
-                  {% endif %}
-                  {% if meetup.is_temporarily_closed %}
+                  {% elif meetup.is_expired %}
+                  <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-600 text-white">
+                    종료
+                  </span>
+                  {% elif meetup.is_temporarily_closed %}
                   <span class="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-500 text-white">
                     일시중단
                   </span>

@@ -138,12 +138,276 @@
 <!-- 상품 목록 -->
 <section id="products-section" class="py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-8 flex items-center">
-      <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>
-      상품 목록
-    </h2>
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>
+        상품 목록
+      </h2>
+      <a href="{% url 'products:public_product_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
+    </div>
 
-    {% include 'products/product_grid.html' with is_public_view=True %}
+    <!-- 상품 그리드 (1줄만 표시) -->
+    {% if products %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for product in products|slice:":4" %}
+      <!-- 공개 뷰에서는 활성화된 상품만 표시 -->
+      {% if product.is_active %}
+      <div class="bg-white dark:bg-gray-800 {% if product.is_discounted %}border-2 border-red-500 rounded-none{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <!-- 상품 이미지 -->
+        <div class="relative aspect-square">
+          <!-- 태그들 (할인, 재고 상태) -->
+          <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            {% if product.is_discounted %}
+            <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              {{ product.public_discount_rate }}% 할인
+            </div>
+            {% endif %}
+            
+            <!-- 재고 상태 태그 -->
+            <div class="{% if product.is_temporarily_out_of_stock %}bg-purple-500{% elif product.stock_quantity == 0 %}bg-red-500{% elif product.stock_quantity <= 5 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+              {% if product.is_temporarily_out_of_stock %}
+                일시품절
+              {% elif product.stock_quantity == 0 %}
+                품절
+              {% else %}
+                재고 {{ product.stock_quantity|intcomma }}개
+              {% endif %}
+            </div>
+          </div>
+          
+          <a href="{% url 'stores:product_detail' store.store_id product.id %}">
+            {% if product.images.exists %}
+            <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" 
+                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+            {% else %}
+            <div class="w-full h-full bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center">
+              <i class="fas fa-image text-gray-400 text-4xl mb-2"></i>
+              <span class="text-gray-500 dark:text-gray-400 text-sm">이미지 없음</span>
+            </div>
+            {% endif %}
+          </a>
+        </div>
+
+        <div class="p-4">
+          <div class="mb-4">
+            <a href="{% url 'stores:product_detail' store.store_id product.id %}" class="block hover:text-orange-500 transition-colors">
+              <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                {{ product.title }}
+              </h4>
+            </a>
+
+            <!-- 가격 정보 -->
+            <div class="mb-3">
+              {% if product.is_discounted %}
+              <div class="flex items-center space-x-2 mb-1">
+                <span class="text-xl font-bold text-red-500">
+                  {{ product.public_discounted_price|floatformat:0|intcomma }} sats
+                </span>
+                <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
+                  {{ product.public_price|floatformat:0|intcomma }} sats
+                </span>
+              </div>
+              {% else %}
+              <div class="flex items-center">
+                <span class="text-xl font-bold text-gray-900 dark:text-white">
+                  {{ product.public_price|floatformat:0|intcomma }} sats
+                </span>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- 액션 버튼 -->
+            <div class="flex gap-2">
+              {% if product.is_active and product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
+              <a href="{% url 'stores:product_detail' store.store_id product.id %}" 
+                 class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
+                <i class="fas fa-eye mr-1"></i>
+                상품보기
+              </a>
+              {% elif product.is_temporarily_out_of_stock %}
+              <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+                <i class="fas fa-pause mr-1"></i>
+                일시품절
+              </button>
+              {% elif product.stock_quantity == 0 %}
+              <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+                <i class="fas fa-times mr-1"></i>
+                품절
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- 상품이 없을 때 -->
+    <div class="text-center py-12">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-full mb-4">
+          <i class="fas fa-shopping-bag text-3xl text-orange-600 dark:text-orange-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">등록된 상품이 없습니다</h3>
+        <p class="text-gray-600 dark:text-gray-400">아직 등록된 상품이 없습니다. 곧 새로운 상품이 추가될 예정입니다.</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- 밋업 목록 -->
+<section id="meetups-section" class="py-8 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-users text-purple-500 mr-3"></i>
+        밋업 목록
+      </h2>
+      <a href="{% url 'meetup:public_meetup_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
+    </div>
+
+    <!-- 밋업 그리드 (1줄만 표시) -->
+    {% if meetups %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for meetup in meetups|slice:":4" %}
+      <!-- 활성화된 밋업만 표시 -->
+      {% if meetup.is_active %}
+      <div class="bg-white dark:bg-gray-800 {% if meetup.is_discounted %}border-2 border-red-500 rounded-none{% else %}rounded-2xl{% endif %} shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <!-- 밋업 이미지 -->
+        <div class="relative aspect-square">
+          <!-- 태그들 (할인, 참가 상태) -->
+          <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            {% if meetup.is_discounted %}
+            <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              {{ meetup.public_discount_rate }}% 할인
+            </div>
+            {% endif %}
+            
+            <!-- 참가 상태 태그 -->
+            {% if meetup.is_full %}
+            <div class="bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              정원마감
+            </div>
+            {% elif meetup.is_temporarily_closed %}
+            <div class="bg-purple-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              일시중단
+            </div>
+            {% else %}
+            <div class="bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-medium">
+              참가가능
+            </div>
+            {% endif %}
+          </div>
+          
+          <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}">
+            {% if meetup.images.exists %}
+            <img src="{{ meetup.images.first.file_url }}" alt="{{ meetup.name }}" 
+                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+            {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-purple-50 to-indigo-50 dark:bg-gray-700 flex flex-col items-center justify-center">
+              <i class="fas fa-users text-purple-400 dark:text-purple-300 text-4xl mb-2"></i>
+              <span class="text-purple-500 dark:text-purple-400 text-sm">이미지 없음</span>
+            </div>
+            {% endif %}
+          </a>
+        </div>
+
+        <!-- 밋업 정보 -->
+        <div class="p-4">
+          <!-- 밋업 제목 -->
+          <div class="mb-2">
+            <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+               class="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 transition-colors line-clamp-2">
+              {{ meetup.name }}
+            </a>
+          </div>
+
+          <!-- 일정 정보 -->
+          {% if meetup.date_time %}
+          <div class="mb-3 flex items-center gap-2">
+            <i class="fas fa-calendar text-sm text-gray-500"></i>
+            <span class="text-sm text-gray-600 dark:text-gray-400">
+              {{ meetup.date_time|date:"Y년 m월 d일 H:i" }}
+            </span>
+          </div>
+          {% endif %}
+
+          <!-- 가격 정보 -->
+          <div class="mb-3">
+            {% if meetup.is_discounted %}
+            <div class="flex items-center space-x-2">
+              <span class="text-lg font-bold text-red-500">
+                {{ meetup.public_discounted_price|floatformat:0|intcomma }} sats
+              </span>
+              <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
+                {{ meetup.public_price|floatformat:0|intcomma }} sats
+              </span>
+            </div>
+            {% else %}
+            <div class="flex items-center">
+              <span class="text-lg font-bold text-gray-900 dark:text-white">
+                {% if meetup.price == 0 %}
+                  무료
+                {% else %}
+                  {{ meetup.public_price|floatformat:0|intcomma }} sats
+                {% endif %}
+              </span>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="flex gap-2">
+            {% if meetup.can_participate %}
+            <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm">
+              <i class="fas fa-calendar-plus mr-1"></i>
+              참가하기
+            </a>
+            {% elif meetup.is_expired %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-calendar-times mr-1"></i>
+              종료
+            </button>
+            {% elif meetup.is_temporarily_closed %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-pause mr-1"></i>
+              일시중단
+            </button>
+            {% elif meetup.is_full %}
+            <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-red-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+              <i class="fas fa-users-slash mr-1"></i>
+              정원마감
+            </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <!-- 밋업이 없을 때 -->
+    <div class="text-center py-12">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full mb-4">
+          <i class="fas fa-users text-3xl text-purple-600 dark:text-purple-400"></i>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">등록된 밋업이 없습니다</h3>
+        <p class="text-gray-600 dark:text-gray-400">아직 등록된 밋업이 없습니다. 곧 새로운 밋업이 추가될 예정입니다.</p>
+      </div>
+    </div>
+    {% endif %}
   </div>
 </section>
 

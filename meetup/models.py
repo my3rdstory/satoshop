@@ -154,6 +154,50 @@ class Meetup(models.Model):
         if not self.is_discounted or not self.discounted_price:
             return 0
         return int((1 - self.discounted_price / self.price) * 100)
+    
+    @property
+    def is_expired(self):
+        """밋업 일정이 지났는지 확인"""
+        if not self.date_time:
+            return False
+        return timezone.now() > self.date_time
+    
+    @property
+    def can_participate(self):
+        """참가 신청이 가능한지 확인"""
+        # 활성화되지 않았거나 일시중단된 경우
+        if not self.is_active or self.is_temporarily_closed:
+            return False
+        
+        # 일정이 지난 경우
+        if self.is_expired:
+            return False
+        
+        # 정원이 찬 경우
+        if self.is_full:
+            return False
+        
+        return True
+    
+    @property
+    def status_display(self):
+        """상태 표시용 문자열"""
+        if not self.is_active:
+            return "비활성화"
+        
+        if self.is_temporarily_closed:
+            return "일시중단"
+        
+        if self.is_expired:
+            return "종료"
+        
+        if self.is_full:
+            return "정원마감"
+        
+        if self.remaining_spots and self.remaining_spots <= 5:
+            return f"마감임박 ({self.remaining_spots}자리)"
+        
+        return "참가가능"
 
 class MeetupImage(models.Model):
     """밋업 이미지"""
