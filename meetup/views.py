@@ -166,9 +166,10 @@ def meetup_detail(request, store_id, meetup_id):
         deleted_at__isnull=True
     )
     
-    # 공개 뷰에서는 참가할 수 없는 밋업 접근 차단
+    # 공개 뷰에서는 비활성화되거나 일시중단된 밋업만 접근 차단
+    # 종료된 밋업이나 정원마감된 밋업은 상세 페이지 접근 허용
     if request.user != store.owner:
-        if not meetup.can_participate:
+        if not meetup.is_active or meetup.is_temporarily_closed:
             raise Http404("밋업을 찾을 수 없습니다.")
     
     # 밋업 옵션 조회
