@@ -23,14 +23,13 @@ def send_meetup_notification_email(meetup_order):
         bool: 발송 성공 여부
     """
     try:
-        # 🛡️ 중복 이메일 발송 방지: 같은 payment_hash로 이미 이메일을 발송했는지 확인
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_email_sent_{meetup_order.payment_hash}_{meetup_order.meetup.store.id}"
-            
-            if cache.get(email_cache_key):
-                logger.debug(f"밋업 {meetup_order.order_number}: 같은 결제ID({meetup_order.payment_hash})로 이미 이메일 발송됨")
-                return False
+        # 🛡️ 중복 이메일 발송 방지: 주문번호 기반으로 확실하게 방지
+        from django.core.cache import cache
+        email_cache_key = f"meetup_owner_email_sent_{meetup_order.order_number}"
+        
+        if cache.get(email_cache_key):
+            logger.debug(f"밋업 주인장 이메일 {meetup_order.order_number}: 이미 발송됨")
+            return False
         
         # 스토어 이메일 설정 확인
         store = meetup_order.meetup.store
@@ -128,10 +127,9 @@ SatoShop 팀"""
         email.send()
         
         # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_email_sent_{meetup_order.payment_hash}_{meetup_order.meetup.store.id}"
-            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
+        from django.core.cache import cache
+        email_cache_key = f"meetup_owner_email_sent_{meetup_order.order_number}"
+        cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
         logger.info(f"밋업 알림 이메일 발송 성공 - 주문: {meetup_order.order_number}, 수신: {store.owner_email}")
         return True
@@ -158,14 +156,13 @@ def send_meetup_participant_confirmation_email(meetup_order):
             logger.debug(f"밋업 {meetup_order.order_number}: 참가자 이메일 주소가 없음")
             return False
         
-        # 🛡️ 중복 이메일 발송 방지
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_participant_email_sent_{meetup_order.payment_hash}_{meetup_order.id}"
-            
-            if cache.get(email_cache_key):
-                logger.debug(f"밋업 참가자 이메일 {meetup_order.order_number}: 이미 발송됨")
-                return False
+        # 🛡️ 중복 이메일 발송 방지: 주문번호 기반으로 확실하게 방지
+        from django.core.cache import cache
+        email_cache_key = f"meetup_participant_email_sent_{meetup_order.order_number}"
+        
+        if cache.get(email_cache_key):
+            logger.debug(f"밋업 참가자 이메일 {meetup_order.order_number}: 이미 발송됨")
+            return False
         
         # 스토어 이메일 설정 확인
         store = meetup_order.meetup.store
@@ -253,10 +250,9 @@ def send_meetup_participant_confirmation_email(meetup_order):
         email.send()
         
         # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_participant_email_sent_{meetup_order.payment_hash}_{meetup_order.id}"
-            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
+        from django.core.cache import cache
+        email_cache_key = f"meetup_participant_email_sent_{meetup_order.order_number}"
+        cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
         logger.info(f"밋업 참가자 확인 이메일 발송 성공 - 주문: {meetup_order.order_number}, 수신: {meetup_order.participant_email}")
         return True
@@ -264,4 +260,229 @@ def send_meetup_participant_confirmation_email(meetup_order):
     except Exception as e:
         # 이메일 발송 실패 시 로그 기록 (주문 처리는 계속 진행)
         logger.error(f"밋업 참가자 확인 이메일 발송 실패 - 주문: {meetup_order.order_number}, 오류: {str(e)}")
+        return False
+
+
+def create_temporary_reservation(meetup, user, countdown_seconds=None):
+    """
+    밋업 임시 예약 생성 (정원 차감)
+    
+    Args:
+        meetup: Meetup 인스턴스
+        user: User 인스턴스
+        countdown_seconds: 예약 유효시간 (초), None이면 사이트 설정값 사용
+    
+    Returns:
+        tuple: (success: bool, message: str, order: MeetupOrder or None)
+    """
+    from django.utils import timezone
+    from django.db import transaction
+    from .models import MeetupOrder
+    from myshop.models import SiteSettings
+    
+    try:
+        with transaction.atomic():
+            # 기존 대기중인 주문 확인
+            existing_order = MeetupOrder.objects.filter(
+                meetup=meetup,
+                user=user,
+                status='pending'
+            ).first()
+            
+            if existing_order:
+                # 기존 주문이 아직 유효한지 확인
+                if existing_order.reservation_expires_at and timezone.now() < existing_order.reservation_expires_at:
+                    return True, "이미 진행 중인 신청이 있습니다.", existing_order
+                else:
+                    # 만료된 기존 주문은 취소
+                    existing_order.status = 'cancelled'
+                    existing_order.auto_cancelled_reason = '예약 시간 만료'
+                    existing_order.is_temporary_reserved = False
+                    existing_order.save()
+            
+            # 정원 확인 (임시 예약 포함) - 트랜잭션 내에서 최신 상태로 직접 계산
+            if meetup.max_participants:
+                now = timezone.now()
+                # 확정된 주문 수
+                confirmed_count = meetup.orders.filter(status__in=['confirmed', 'completed']).count()
+                # 유효한 임시 예약 수
+                temp_reserved_count = meetup.orders.filter(
+                    status='pending',
+                    is_temporary_reserved=True,
+                    reservation_expires_at__gt=now
+                ).count()
+                
+                current_reserved = confirmed_count + temp_reserved_count
+                if current_reserved >= meetup.max_participants:
+                    return False, "아쉽게도 조금 전에 밋업 신청이 마감되었습니다. 혹시 취소되는 신청 건이 있는지 추후에 확인해 주세요. 고맙습니다.", None
+            
+            # 카운트다운 시간 설정
+            if countdown_seconds is None:
+                site_settings = SiteSettings.get_settings()
+                countdown_seconds = site_settings.meetup_countdown_seconds
+            
+            # 예약 만료 시간 설정
+            expires_at = timezone.now() + timezone.timedelta(seconds=countdown_seconds)
+            
+            # 임시 주문 생성 (정원 차감)
+            order = MeetupOrder.objects.create(
+                meetup=meetup,
+                user=user,
+                participant_name=user.get_full_name() or user.username,
+                participant_email=user.email or '',
+                status='pending',
+                is_temporary_reserved=True,
+                reservation_expires_at=expires_at,
+                base_price=meetup.current_price,
+                total_price=meetup.current_price,
+                is_early_bird=meetup.is_discounted and meetup.is_early_bird_active,
+                discount_rate=meetup.public_discount_rate if meetup.is_early_bird_active else 0,
+                original_price=meetup.price if meetup.is_early_bird_active else None,
+            )
+            
+            logger.info(f"임시 예약 생성 성공 - 밋업: {meetup.name}, 사용자: {user.username}, 주문: {order.order_number}")
+            return True, "임시 예약이 생성되었습니다.", order
+            
+    except Exception as e:
+        logger.error(f"임시 예약 생성 실패 - 밋업: {meetup.name}, 사용자: {user.username}, 오류: {str(e)}")
+        return False, "예약 처리 중 오류가 발생했습니다.", None
+
+
+def extend_reservation(order, additional_seconds=None):
+    """
+    임시 예약 시간 연장
+    
+    Args:
+        order: MeetupOrder 인스턴스
+        additional_seconds: 추가 연장 시간 (초), None이면 사이트 설정값 사용
+    
+    Returns:
+        bool: 연장 성공 여부
+    """
+    from django.utils import timezone
+    from myshop.models import SiteSettings
+    
+    try:
+        if not order.is_temporary_reserved or order.status != 'pending':
+            return False
+        
+        if additional_seconds is None:
+            site_settings = SiteSettings.get_settings()
+            additional_seconds = site_settings.meetup_countdown_seconds
+        
+        # 예약 시간 연장
+        order.reservation_expires_at = timezone.now() + timezone.timedelta(seconds=additional_seconds)
+        order.save()
+        
+        logger.info(f"예약 시간 연장 - 주문: {order.order_number}, 새 만료시간: {order.reservation_expires_at}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"예약 시간 연장 실패 - 주문: {order.order_number}, 오류: {str(e)}")
+        return False
+
+
+def cancel_expired_reservations():
+    """
+    만료된 임시 예약들을 자동 취소
+    
+    Returns:
+        int: 취소된 예약 수
+    """
+    from django.utils import timezone
+    from .models import MeetupOrder
+    
+    try:
+        now = timezone.now()
+        expired_orders = MeetupOrder.objects.filter(
+            status='pending',
+            is_temporary_reserved=True,
+            reservation_expires_at__lt=now
+        )
+        
+        cancelled_count = 0
+        for order in expired_orders:
+            order.status = 'cancelled'
+            order.auto_cancelled_reason = '예약 시간 만료'
+            order.is_temporary_reserved = False
+            order.save()
+            cancelled_count += 1
+            logger.info(f"만료된 예약 자동 취소 - 주문: {order.order_number}")
+        
+        if cancelled_count > 0:
+            logger.info(f"총 {cancelled_count}개의 만료된 예약을 자동 취소했습니다.")
+        
+        return cancelled_count
+        
+    except Exception as e:
+        logger.error(f"만료된 예약 자동 취소 실패 - 오류: {str(e)}")
+        return 0
+
+
+def confirm_reservation(order):
+    """
+    임시 예약을 확정 상태로 변경
+    
+    Args:
+        order: MeetupOrder 인스턴스
+    
+    Returns:
+        bool: 확정 성공 여부
+    """
+    from django.utils import timezone
+    
+    try:
+        logger.info(f"예약 확정 시작 - 주문: {order.order_number}, 상태: {order.status}, 임시예약: {order.is_temporary_reserved}")
+        
+        if order.status != 'pending':
+            logger.error(f"예약 확정 실패 - 잘못된 주문 상태: {order.status} (주문: {order.order_number})")
+            return False
+        
+        if not order.is_temporary_reserved:
+            logger.error(f"예약 확정 실패 - 임시예약 상태가 아님: {order.is_temporary_reserved} (주문: {order.order_number})")
+            return False
+        
+        # 예약 확정
+        order.status = 'confirmed'
+        order.is_temporary_reserved = False
+        order.confirmed_at = timezone.now()
+        order.paid_at = timezone.now()
+        order.reservation_expires_at = None  # 확정되면 만료시간 제거
+        order.save()
+        
+        logger.info(f"예약 확정 완료 - 주문: {order.order_number}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"예약 확정 실패 - 주문: {order.order_number}, 오류: {str(e)}", exc_info=True)
+        return False
+
+
+def release_reservation(order, reason="사용자 취소"):
+    """
+    임시 예약 해제 (정원 반납)
+    
+    Args:
+        order: MeetupOrder 인스턴스
+        reason: 취소 사유
+    
+    Returns:
+        bool: 해제 성공 여부
+    """
+    try:
+        if order.status != 'pending' or not order.is_temporary_reserved:
+            return False
+        
+        # 예약 해제
+        order.status = 'cancelled'
+        order.auto_cancelled_reason = reason
+        order.is_temporary_reserved = False
+        order.reservation_expires_at = None
+        order.save()
+        
+        logger.info(f"예약 해제 완료 - 주문: {order.order_number}, 사유: {reason}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"예약 해제 실패 - 주문: {order.order_number}, 오류: {str(e)}")
         return False 

@@ -6,6 +6,104 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_participant_info.css' %}">
+<style>
+  /* 플로팅 카운트다운 스타일 */
+  .floating-countdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .floating-countdown.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .floating-countdown.urgent {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    animation: pulse-red 1s infinite;
+  }
+  
+  /* 결제 모드 스타일 */
+  .floating-countdown.payment-mode {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .floating-countdown.payment-mode .countdown-label::before {
+    content: "💳 ";
+  }
+  
+  /* 예약 모드 스타일 */
+  .floating-countdown.reservation-mode {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+  }
+  
+  .floating-countdown.reservation-mode .countdown-label::before {
+    content: "⏰ ";
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  @keyframes pulse-orange {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(245, 158, 11, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  .floating-countdown.payment-mode.urgent {
+    animation: pulse-orange 1s infinite;
+  }
+  
+  .countdown-time {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .countdown-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  
+  /* 모바일에서 위치 조정 */
+  @media (max-width: 640px) {
+    .floating-countdown {
+      bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+    }
+    
+    .floating-countdown.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
 {% endblock %}
 
 {% block store_content %}
@@ -79,6 +177,22 @@
       <!-- 숨겨진 필드: 선택된 옵션 정보 -->
       <input type="hidden" name="selected_options" id="selected_options" value="">
 
+      <!-- 에러 발생 시 재시도 안내 -->
+      {% if error_occurred %}
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-yellow-800 dark:text-yellow-200 font-medium mb-1">재시도 안내</h4>
+            <p class="text-yellow-700 dark:text-yellow-300 text-sm">
+              일시적인 오류가 발생했지만, 임시예약 상태는 유지되고 있습니다.
+              <br>정보를 다시 확인하고 "결제하기" 버튼을 다시 눌러주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- 이메일 안내 문구 -->
       <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
         <div class="flex items-start">
@@ -92,6 +206,55 @@
           </div>
         </div>
       </div>
+
+      <!-- 기존 참가 이력 (있는 경우만 표시) -->
+      {% if existing_orders %}
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-history text-blue-600 dark:text-blue-400 mr-3 mt-1"></i>
+          <div class="flex-1">
+            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-2">이전 참가 내역</h4>
+            <p class="text-blue-700 dark:text-blue-300 text-sm mb-3">
+              이전에 이 밋업에 참가하신 기록이 있습니다. 밋업은 하나의 ID로 여러 번 신청할 수 있습니다.
+            </p>
+            
+            <div class="space-y-2">
+              {% for order in existing_orders|slice:":3" %}
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                      {{ order.participant_name }} ({{ order.participant_email }})
+                    </p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                      참가 확정: {{ order.confirmed_at|date:"Y.m.d H:i" }}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full">
+                      <i class="fas fa-check mr-1"></i>
+                      참가 완료
+                    </span>
+                    {% if order.total_price > 0 %}
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {{ order.total_price|floatformat:0 }} sats
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+              
+              {% if existing_orders|length > 3 %}
+              <p class="text-xs text-blue-600 dark:text-blue-400 text-center">
+                외 {{ existing_orders|length|add:"-3" }}개 더...
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
@@ -180,11 +343,11 @@
         <div class="space-y-3" id="price-summary">
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ meetup.current_price|floatformat:0|intcomma }} sats</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ meetup.price|floatformat:0|intcomma }} sats</span>
           </div>
           
           <!-- 조기등록 할인 -->
-          {% if meetup.is_early_bird_active %}
+          {% if meetup.is_early_bird_active and discount_amount > 0 %}
           <div class="flex justify-between text-sm">
             <span class="text-green-600 dark:text-green-400">
               <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ meetup.public_discount_rate }}%)
@@ -228,16 +391,65 @@
 <script>
 // 밋업 데이터를 전역 변수로 설정
 window.meetupData = {
-    basePrice: {{ meetup.current_price }},
+    basePrice: {{ meetup.current_price }},  // 할인이 적용된 후의 최종 기본 가격 (옵션 제외)
+    originalPrice: {{ meetup.price }},      // 할인 전 원래 가격
     storeId: '{{ store.store_id }}',
     meetupId: {{ meetup.id }},
-    selectedOptions: {{ selected_options_json|safe }},
-    requiredOptionIds: {{ required_option_ids|safe }}
+    requiredOptionIds: {{ required_option_ids|safe }},  // 필수 옵션 ID 목록
+    isFree: false  // 유료 밋업
 };
+
+// 밋업 옵션 데이터
+window.meetupOptions = [
+    {% for option in meetup_options %}
+    {
+        id: {{ option.id }},
+        name: "{{ option.name|escapejs }}",
+        isRequired: {{ option.is_required|yesno:"true,false" }},
+        choices: [
+            {% for choice in option.choices.all %}
+            {
+                id: {{ choice.id }},
+                name: "{{ choice.name|escapejs }}",
+                additionalPrice: {{ choice.additional_price }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// URL 파라미터로 전달된 선택된 옵션 데이터
+window.preSelectedOptions = {% if selected_options_data %}{{ selected_options_data|safe }}{% else %}{}{% endif %};
 </script>
 
-{% endblock %}
-
-{% block extra_js %}
+<!-- 참가자 정보 스크립트 -->
 <script src="{% static 'js/meetup_participant_info.js' %}"></script>
+
+<script>
+// DOM 로드 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 참가자 정보 페이지 DOMContentLoaded');
+    
+    // 폼 제출 시 처리
+    const participantForm = document.querySelector('form[method="post"]');
+    if (participantForm) {
+        console.log('📝 참가자 정보 폼 이벤트 리스너 등록');
+        
+        participantForm.addEventListener('submit', function(event) {
+            console.log('📤 참가자 정보 폼 제출됨');
+            
+            // 제출 버튼 상태 변경
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
+            }
+            
+            console.log('📝 폼 제출 계속 진행');
+        });
+    }
+});
+</script>
+
 {% endblock %} 

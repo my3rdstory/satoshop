@@ -36,6 +36,7 @@ class Meetup(models.Model):
     organizer_chat_channel = models.URLField(verbose_name="주최자 소통채널", blank=True)
     
     # 가격 정보
+    is_free = models.BooleanField(default=False, verbose_name="무료 밋업")
     price = models.PositiveIntegerField(verbose_name="참가비(satoshi)", default=0)
     is_discounted = models.BooleanField(default=False, verbose_name="할인 적용")
     discounted_price = models.PositiveIntegerField(verbose_name="할인가(satoshi)", null=True, blank=True)
@@ -121,6 +122,10 @@ class Meetup(models.Model):
     @property
     def current_price(self):
         """현재 적용되는 가격"""
+        # 무료 밋업이면 항상 0
+        if self.is_free:
+            return 0
+        # 할인 적용 중이면 할인가
         if self.is_discounted and self.is_early_bird_active:
             return self.discounted_price or self.price
         return self.price
@@ -314,6 +319,11 @@ class MeetupOrder(models.Model):
     order_number = models.CharField(max_length=100, unique=True, verbose_name="주문번호")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="상태")
     
+    # 임시 예약 정보 (정원 오버북킹 방지용)
+    is_temporary_reserved = models.BooleanField(default=True, verbose_name="임시 예약 상태")
+    reservation_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="예약 만료 시간")
+    auto_cancelled_reason = models.CharField(max_length=100, blank=True, verbose_name="자동 취소 사유")
+    
     # 가격 정보
     base_price = models.PositiveIntegerField(verbose_name="기본 참가비(satoshi)")
     options_price = models.PositiveIntegerField(default=0, verbose_name="옵션 추가비(satoshi)")
@@ -381,6 +391,13 @@ class MeetupOrder(models.Model):
     def is_confirmed(self):
         """참가 확정 여부"""
         return self.status in ['confirmed', 'completed']
+    
+    @property
+    def discount_amount(self):
+        """할인 금액 계산"""
+        if self.is_early_bird and self.original_price:
+            return self.original_price - self.total_price
+        return 0
 
 class MeetupOrderOption(models.Model):
     """밋업 주문의 선택된 옵션"""

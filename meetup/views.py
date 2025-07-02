@@ -2,15 +2,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, Http404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.utils import timezone
-from django.conf import settings
 from stores.models import Store
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption
 from .forms import MeetupForm
-from ln_payment.blink_service import get_blink_service_for_store
 import json
 import logging
 from django.core.paginator import Paginator
@@ -327,9 +325,7 @@ def manage_meetup(request, store_id, meetup_id):
 
 @login_required
 def meetup_checkout(request, store_id, meetup_id):
-    """밋업 체크아웃 - 바로 주문 생성하고 결제 페이지로"""
-    import json
-    
+    """밋업 체크아웃 라우팅 - 무료/유료에 따라 적절한 뷰로 리다이렉트"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     meetup = get_object_or_404(
         Meetup, 
@@ -339,528 +335,53 @@ def meetup_checkout(request, store_id, meetup_id):
         is_active=True
     )
     
-    # 참가 신청이 불가능한 밋업은 체크아웃 불가
-    if not meetup.can_participate:
-        if meetup.is_expired:
-            messages.error(request, '이미 종료된 밋업입니다.')
-        elif meetup.is_temporarily_closed:
-            messages.error(request, '일시중단된 밋업입니다.')
-        elif meetup.is_full:
-            messages.error(request, '정원이 마감된 밋업입니다.')
-        else:
-            messages.error(request, '현재 참가 신청이 불가능한 밋업입니다.')
-        return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-    
-    # GET 요청인 경우 참가자 정보 입력 페이지 표시
-    if request.method == 'GET':
-        # URL 파라미터에서 선택된 옵션 정보 가져오기
-        selected_options_param = request.GET.get('selected_options')
-        selected_options = {}
+    # 무료 밋업인 경우 무료 체크아웃으로 리다이렉트
+    if meetup.is_free:
+        from .views_free import meetup_free_checkout
+        return meetup_free_checkout(request, store_id, meetup_id)
+    else:
+        # 유료 밋업인 경우 유료 체크아웃으로 리다이렉트
+        from .views_paid import meetup_checkout as paid_checkout
+        return paid_checkout(request, store_id, meetup_id)
+
+# 유료 밋업 결제 관련 뷰들은 views_paid.py로 분리됨
+
+def meetup_checkout_complete(request, store_id, meetup_id, order_id):
+    """밋업 결제 완료"""
+    try:
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
         
-        if selected_options_param:
-            try:
-                selected_options = json.loads(selected_options_param)
-            except (json.JSONDecodeError, ValueError):
-                # 잘못된 JSON이면 빈 딕셔너리로 초기화
-                selected_options = {}
+        meetup = get_object_or_404(
+            Meetup, 
+            id=meetup_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
         
-        # 필수 옵션 정보 수집
-        required_option_ids = list(meetup.options.filter(is_required=True).values_list('id', flat=True))
+        order = get_object_or_404(
+            MeetupOrder,
+            id=order_id,
+            meetup=meetup,
+            status__in=['confirmed', 'completed']
+        )
         
         # 할인 금액 계산 (조기등록 할인)
         discount_amount = 0
-        if meetup.is_early_bird_active:
-            discount_amount = meetup.price - meetup.current_price
+        if order.is_early_bird and order.original_price:
+            discount_amount = order.original_price - order.base_price
         
         context = {
             'store': store,
             'meetup': meetup,
-            'selected_options_json': json.dumps(selected_options) if selected_options else '{}',
-            'required_option_ids': json.dumps(required_option_ids) if required_option_ids else '[]',
+            'order': order,
             'discount_amount': discount_amount,
         }
-        return render(request, 'meetup/meetup_participant_info.html', context)
+        
+        return render(request, 'meetup/meetup_checkout_complete.html', context)
     
-    # POST 요청인 경우 주문 생성 처리
-    # 기존 대기중인 주문 확인
-    existing_order = MeetupOrder.objects.filter(
-        meetup=meetup,
-        user=request.user,
-        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
-    ).first()
-    
-    if existing_order:
-        # 기존 주문이 30분 이내인 경우 해당 주문으로 이동
-        from datetime import timedelta
-        if timezone.now() - existing_order.created_at < timedelta(minutes=30):
-            # 취소된 주문은 pending 상태로 복원
-            if existing_order.status == 'cancelled':
-                existing_order.status = 'pending'
-                existing_order.payment_hash = ''
-                existing_order.payment_request = ''
-                existing_order.save()
-            
-            # 무료 밋업인 경우 바로 참가 확정 처리
-            if existing_order.total_price == 0:
-                existing_order.status = 'confirmed'
-                existing_order.paid_at = timezone.now()
-                existing_order.confirmed_at = timezone.now()
-                existing_order.save()
-                
-                # 🎉 무료 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
-                try:
-                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
-                    
-                    # 주인장에게 알림 이메일
-                    owner_email_sent = send_meetup_notification_email(existing_order)
-                    if owner_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 성공: {existing_order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 조건 미충족: {existing_order.order_number}")
-                    
-                    # 참가자에게 확인 이메일
-                    participant_email_sent = send_meetup_participant_confirmation_email(existing_order)
-                    if participant_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 성공: {existing_order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 조건 미충족: {existing_order.order_number}")
-                        
-                except Exception as e:
-                    # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"[MEETUP_EMAIL] 무료 밋업 이메일 발송 오류: {existing_order.order_number}, {str(e)}")
-                    pass
-                
-                messages.success(request, f'"{meetup.name}" 밋업 참가 신청이 완료되었습니다!')
-                return redirect('meetup:meetup_checkout_complete', 
-                              store_id=store_id, meetup_id=meetup_id, order_id=existing_order.id)
-            
-            # 유료 밋업인 경우 결제 페이지로
-            # 블링크 서비스 연결 확인
-            blink_service = get_blink_service_for_store(store)
-            payment_service_available = blink_service is not None
-            
-            context = {
-                'store': store,
-                'meetup': meetup,
-                'order': existing_order,
-                'payment_service_available': payment_service_available,
-            }
-            
-            return render(request, 'meetup/meetup_checkout.html', context)
-        else:
-            # 만료된 주문은 취소
-            existing_order.status = 'cancelled'
-            existing_order.save()
-    
-    # 새 주문 생성
-    try:
-        with transaction.atomic():
-            # 기본 가격 계산
-            base_price = meetup.current_price
-            options_price = 0
-            
-            # 선택한 옵션 처리 (POST 데이터에서)
-            options_data = request.POST.get('selected_options')
-            selected_option_choices = []
-            
-            if options_data:
-                try:
-                    selected_options = json.loads(options_data)
-                    
-                    # 각 옵션의 선택지 가격 계산
-                    for option_id, choice_info in selected_options.items():
-                        choice_id = choice_info.get('choiceId')
-                        choice_price = choice_info.get('price', 0)
-                        
-                        # 실제 옵션 선택지 검증
-                        try:
-                            choice = MeetupChoice.objects.get(
-                                id=choice_id,
-                                option__meetup=meetup,
-                                option__id=option_id
-                            )
-                            # 가격 검증 (보안을 위해)
-                            if choice.additional_price == choice_price:
-                                options_price += choice_price
-                                selected_option_choices.append(choice)
-                        except MeetupChoice.DoesNotExist:
-                            # 잘못된 선택지는 무시
-                            pass
-                            
-                except (json.JSONDecodeError, KeyError, ValueError):
-                    # 잘못된 옵션 데이터는 무시
-                    pass
-            
-            total_price = base_price + options_price
-            
-            # 할인 정보
-            is_early_bird = meetup.is_discounted and meetup.is_early_bird_active
-            discount_rate = meetup.public_discount_rate if is_early_bird else 0
-            original_price = meetup.price if is_early_bird else None
-            
-            # 참가자 정보 가져오기 (회원만 가능)
-            participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
-            participant_email = request.POST.get('participant_email') or request.user.email
-            
-            participant_phone = request.POST.get('participant_phone', '').strip()
-            
-            # 주문 생성
-            order = MeetupOrder.objects.create(
-                meetup=meetup,
-                user=request.user,
-                participant_name=participant_name,
-                participant_email=participant_email,
-                participant_phone=participant_phone,
-                base_price=base_price,
-                options_price=options_price,
-                total_price=total_price,
-                is_early_bird=is_early_bird,
-                discount_rate=discount_rate,
-                original_price=original_price,
-                status='pending'
-            )
-            
-            # 선택한 옵션들을 주문에 연결
-            for choice in selected_option_choices:
-                MeetupOrderOption.objects.create(
-                    order=order,
-                    option=choice.option,
-                    choice=choice,
-                    additional_price=choice.additional_price
-                )
-            
-            # 무료 밋업인 경우 바로 참가 확정 처리
-            if total_price == 0:
-                order.status = 'confirmed'
-                order.paid_at = timezone.now()
-                order.confirmed_at = timezone.now()
-                order.save()
-                
-                # 🎉 무료 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
-                try:
-                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
-                    
-                    # 주인장에게 알림 이메일
-                    owner_email_sent = send_meetup_notification_email(order)
-                    if owner_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 주인장 알림 이메일 발송 조건 미충족: {order.order_number}")
-                    
-                    # 참가자에게 확인 이메일
-                    participant_email_sent = send_meetup_participant_confirmation_email(order)
-                    if participant_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 무료 밋업 참가자 확인 이메일 발송 조건 미충족: {order.order_number}")
-                        
-                except Exception as e:
-                    # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"[MEETUP_EMAIL] 무료 밋업 이메일 발송 오류: {order.order_number}, {str(e)}")
-                    pass
-                
-                messages.success(request, f'"{meetup.name}" 밋업 참가 신청이 완료되었습니다!')
-                return redirect('meetup:meetup_checkout_complete', 
-                              store_id=store_id, meetup_id=meetup_id, order_id=order.id)
-            
-            # 유료 밋업인 경우 결제 페이지로
-            # 블링크 서비스 연결 확인
-            blink_service = get_blink_service_for_store(store)
-            payment_service_available = blink_service is not None
-            
-            context = {
-                'store': store,
-                'meetup': meetup,
-                'order': order,
-                'payment_service_available': payment_service_available,
-            }
-            
-            return render(request, 'meetup/meetup_checkout.html', context)
-            
-    except Exception as e:
-        logger.error(f"밋업 주문 생성 오류: {e}", exc_info=True)
-        messages.error(request, '주문 생성 중 오류가 발생했습니다.')
+    except Exception:
+        messages.error(request, '결제 완료 페이지를 불러오는 중 오류가 발생했습니다.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-
-def meetup_checkout_payment(request, store_id, meetup_id, order_id):
-    """밋업 결제 페이지"""
-    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-    meetup = get_object_or_404(
-        Meetup, 
-        id=meetup_id, 
-        store=store, 
-        deleted_at__isnull=True
-    )
-    order = get_object_or_404(
-        MeetupOrder,
-        id=order_id,
-        meetup=meetup,
-        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
-    )
-    
-    # 주문 생성 후 30분 경과 시 만료
-    from datetime import timedelta
-    if timezone.now() - order.created_at > timedelta(minutes=30):
-        order.status = 'cancelled'
-        order.save()
-        messages.error(request, '주문이 만료되었습니다. 다시 신청해주세요.')
-        return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-    
-    # 블링크 서비스 연결 확인
-    blink_service = get_blink_service_for_store(store)
-    payment_service_available = blink_service is not None
-    
-    context = {
-        'store': store,
-        'meetup': meetup,
-        'order': order,
-        'payment_service_available': payment_service_available,
-    }
-    
-    return render(request, 'meetup/meetup_checkout.html', context)
-
-@require_POST
-@csrf_exempt
-def create_meetup_invoice(request, store_id, meetup_id, order_id):
-    """밋업 결제 인보이스 생성"""
-    try:
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        order = get_object_or_404(
-            MeetupOrder,
-            id=order_id,
-            meetup=meetup,
-            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
-        )
-        
-        # 취소된 주문은 pending 상태로 복원
-        if order.status == 'cancelled':
-            order.status = 'pending'
-        
-        # 블링크 서비스 가져오기
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 기존 결제 정보 초기화 (재생성 대비)
-        order.payment_hash = ''
-        order.payment_request = ''
-        order.save()
-        
-        # 인보이스 생성
-        amount_sats = order.total_price
-        memo = f"{meetup.name}"
-        
-        result = blink_service.create_invoice(
-            amount_sats=amount_sats,
-            memo=memo,
-            expires_in_minutes=15
-        )
-        
-        if result['success']:
-            # 주문에 인보이스 정보 저장
-            order.payment_hash = result['payment_hash']
-            order.payment_request = result['invoice']
-            order.save()
-            
-            return JsonResponse({
-                'success': True,
-                'payment_hash': result['payment_hash'],
-                'invoice': result['invoice'],
-                'amount_sats': order.total_price,
-                'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', '인보이스 생성에 실패했습니다.')
-            })
-            
-    except Exception as e:
-        logger.error(f"밋업 인보이스 생성 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '인보이스 생성 중 오류가 발생했습니다.'
-        })
-
-@require_POST
-@csrf_exempt
-def check_meetup_payment_status(request, store_id, meetup_id, order_id):
-    """밋업 결제 상태 확인"""
-    try:
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        order = get_object_or_404(
-            MeetupOrder,
-            id=order_id,
-            meetup=meetup
-        )
-        
-        if not order.payment_hash or order.payment_hash.strip() == '':
-            return JsonResponse({
-                'success': False,
-                'error': '결제 정보가 없습니다.'
-            })
-        
-        # 블링크 서비스 가져오기
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 결제 상태 확인
-        result = blink_service.check_invoice_status(order.payment_hash)
-        
-        if result['success']:
-            if result['status'] == 'paid':
-                # 결제 완료 처리
-                with transaction.atomic():
-                    order.status = 'confirmed'
-                    order.paid_at = timezone.now()
-                    order.confirmed_at = timezone.now()
-                    order.save()
-                
-                # 🎉 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
-                try:
-                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
-                    
-                    # 주인장에게 알림 이메일
-                    owner_email_sent = send_meetup_notification_email(order)
-                    if owner_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 조건 미충족: {order.order_number}")
-                    
-                    # 참가자에게 확인 이메일
-                    participant_email_sent = send_meetup_participant_confirmation_email(order)
-                    if participant_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 조건 미충족: {order.order_number}")
-                        
-                except Exception as e:
-                    # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"[MEETUP_EMAIL] 밋업 이메일 발송 오류: {order.order_number}, {str(e)}")
-                    pass
-                
-                return JsonResponse({
-                    'success': True,
-                    'paid': True,
-                    'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
-                })
-            else:
-                return JsonResponse({
-                    'success': True,
-                    'paid': False
-                })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', '결제 상태 확인에 실패했습니다.')
-            })
-            
-    except Exception as e:
-        logger.error(f"밋업 결제 상태 확인 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '결제 상태 확인 중 오류가 발생했습니다.'
-        })
-
-@require_POST
-@csrf_exempt
-def cancel_meetup_invoice(request, store_id, meetup_id, order_id):
-    """밋업 인보이스 취소"""
-    try:
-        data = json.loads(request.body)
-        payment_hash = data.get('payment_hash')
-        
-        if not payment_hash:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 해시가 필요합니다.'
-            })
-        
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        order = get_object_or_404(
-            MeetupOrder,
-            id=order_id,
-            meetup=meetup,
-            payment_hash=payment_hash
-        )
-        
-        # 주문 취소 및 결제 정보 초기화
-        order.status = 'cancelled'
-        order.payment_hash = ''
-        order.payment_request = ''
-        order.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': '결제가 취소되었습니다.'
-        })
-        
-    except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': '잘못된 요청 형식입니다.'
-        })
-    except Exception as e:
-        logger.error(f"밋업 인보이스 취소 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '취소 처리 중 오류가 발생했습니다.'
-        })
-
-def meetup_checkout_complete(request, store_id, meetup_id, order_id):
-    """밋업 결제 완료"""
-    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-    meetup = get_object_or_404(
-        Meetup, 
-        id=meetup_id, 
-        store=store, 
-        deleted_at__isnull=True
-    )
-    order = get_object_or_404(
-        MeetupOrder,
-        id=order_id,
-        meetup=meetup,
-        status__in=['confirmed', 'completed']
-    )
-    
-    # 할인 금액 계산 (조기등록 할인)
-    discount_amount = 0
-    if order.is_early_bird and order.original_price:
-        discount_amount = order.original_price - order.base_price
-    
-    context = {
-        'store': store,
-        'meetup': meetup,
-        'order': order,
-        'discount_amount': discount_amount,
-    }
-    
-    return render(request, 'meetup/meetup_checkout_complete.html', context)
 
 def meetup_orders(request, store_id):
     """밋업 주문 내역 (사용자별)"""
@@ -1082,8 +603,11 @@ def cancel_participation(request, store_id, meetup_id):
             status='confirmed'
         )
         
-        # 주문 상태를 취소로 변경
+        # 주문 상태를 취소로 변경 및 임시 예약 플래그 정리
         order.status = 'cancelled'
+        order.is_temporary_reserved = False  # 임시 예약 해제
+        order.reservation_expires_at = None  # 예약 만료 시간 제거
+        order.auto_cancelled_reason = '관리자에 의한 참가 취소'  # 취소 사유 기록
         order.save()
         
         logger.info(f"밋업 참가 취소: {order.order_number} - {order.participant_name}")
@@ -1104,3 +628,131 @@ def cancel_participation(request, store_id, meetup_id):
             'success': False,
             'error': '참가 취소 중 오류가 발생했습니다.'
         })
+
+@require_POST
+@csrf_exempt
+def release_meetup_reservation(request, store_id, meetup_id):
+    """밋업 임시 예약 해제 (사용자가 페이지를 벗어날 때)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': '로그인이 필요합니다.'
+            })
+        
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+        meetup = get_object_or_404(
+            Meetup, 
+            id=meetup_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
+        
+        # 현재 사용자의 임시 예약 찾기
+        order = MeetupOrder.objects.filter(
+            meetup=meetup,
+            user=request.user,
+            status='pending',
+            is_temporary_reserved=True
+        ).first()
+        
+        if not order:
+            return JsonResponse({
+                'success': False,
+                'error': '해제할 예약이 없습니다.'
+            })
+        
+        # 예약 해제
+        reason = request.POST.get('reason', '사용자 취소')
+        from .services import release_reservation
+        success = release_reservation(order, reason)
+        
+        if success:
+            logger.info(f"사용자 요청으로 예약 해제 - 주문: {order.order_number}, 사유: {reason}")
+            return JsonResponse({
+                'success': True,
+                'message': '예약이 해제되었습니다.'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': '예약 해제에 실패했습니다.'
+            })
+            
+    except Exception as e:
+        logger.error(f"예약 해제 API 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '예약 해제 중 오류가 발생했습니다.'
+        })
+
+@login_required
+@require_POST
+@csrf_exempt
+def toggle_temporary_closure(request, store_id, meetup_id):
+    """밋업 일시중단 토글"""
+    import json
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        # 현재 일시중단 상태 토글
+        meetup.is_temporarily_closed = not meetup.is_temporarily_closed
+        meetup.save()
+        
+        action = "일시중단" if meetup.is_temporarily_closed else "일시중단 해제"
+        message = f'"{meetup.name}" 밋업이 {action}되었습니다.'
+        
+        logger.info(f"밋업 일시중단 상태 변경: {meetup.name} - {action} (사용자: {request.user.username})")
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'is_temporarily_closed': meetup.is_temporarily_closed
+        })
+        
+    except Exception as e:
+        logger.error(f"밋업 일시중단 토글 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '일시중단 상태 변경 중 오류가 발생했습니다.'
+        })
+
+@require_http_methods(["GET"])
+def meetup_capacity_status(request, store_id, meetup_id):
+    """밋업 정원 상태 API (AJAX용)"""
+    try:
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+        meetup = get_object_or_404(
+            Meetup, 
+            id=meetup_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
+        
+        # 공개 뷰에서는 비활성화되거나 일시중단된 밋업만 접근 차단
+        if request.user != store.owner:
+            if not meetup.is_active or meetup.is_temporarily_closed:
+                return JsonResponse({'error': '밋업을 찾을 수 없습니다.'}, status=404)
+        
+        # 현재 정원 상태 계산
+        data = {
+            'current_participants': meetup.current_participants,
+            'reserved_participants': meetup.reserved_participants,
+            'max_participants': meetup.max_participants,
+            'remaining_spots': meetup.remaining_spots,
+            'is_full': meetup.is_full,
+            'can_participate': meetup.can_participate,
+            'is_expired': meetup.is_expired,
+            'is_temporarily_closed': meetup.is_temporarily_closed,
+            'status_display': meetup.status_display,
+        }
+        
+        return JsonResponse(data)
+        
+    except Exception as e:
+        return JsonResponse({'error': '정원 정보를 가져올 수 없습니다.'}, status=500)
+
+# 무료 밋업 체크아웃 뷰는 views_free.py로 분리됨

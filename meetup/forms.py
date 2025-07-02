@@ -18,7 +18,7 @@ class MeetupForm(forms.ModelForm):
             'name', 'description', 'date_time', 
             'location_postal_code', 'location_address', 'location_detail_address', 'location_tbd', 'special_notes',
             'organizer_contact', 'organizer_email', 'organizer_chat_channel',
-            'price', 'is_discounted', 'discounted_price',
+            'is_free', 'price', 'is_discounted', 'discounted_price',
             'early_bird_end_date', 'early_bird_end_time', 'max_participants',
             'completion_message'
         ]
@@ -70,6 +70,9 @@ class MeetupForm(forms.ModelForm):
                 'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
                 'placeholder': '예: https://open.kakao.com/o/abcd1234'
             }),
+            'is_free': forms.CheckboxInput(attrs={
+                'class': 'w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin focus:ring-2 dark:bg-gray-700 dark:border-gray-600'
+            }),
             'price': forms.NumberInput(attrs={
                 'class': 'w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400',
                 'placeholder': '0',
@@ -106,6 +109,7 @@ class MeetupForm(forms.ModelForm):
     
     def clean(self):
         cleaned_data = super().clean()
+        is_free = cleaned_data.get('is_free')
         price = cleaned_data.get('price')
         is_discounted = cleaned_data.get('is_discounted')
         discounted_price = cleaned_data.get('discounted_price')
@@ -122,18 +126,22 @@ class MeetupForm(forms.ModelForm):
             cleaned_data['discounted_price'] = 0
             discounted_price = 0
         
-        # 할인 관련 검증 (가격이 0인 경우 할인 검증 스킵)
-        if is_discounted and price > 0:
-            if discounted_price is None or discounted_price < 0:
-                raise ValidationError('할인을 적용하려면 유효한 할인가를 입력해야 합니다.')
-            if not early_bird_end_date:
-                raise ValidationError('할인을 적용하려면 조기등록 종료일을 입력해야 합니다.')
-            if discounted_price >= price:
-                raise ValidationError('할인가는 정가보다 낮아야 합니다.')
-        elif is_discounted and price == 0:
-            # 무료 밋업에서 할인이 체크되어 있으면 할인 해제
+        # 무료 밋업인 경우 가격 관련 필드들 초기화
+        if is_free:
+            cleaned_data['price'] = 0
             cleaned_data['is_discounted'] = False
             cleaned_data['discounted_price'] = 0
+            cleaned_data['early_bird_end_date'] = None
+            cleaned_data['early_bird_end_time'] = None
+        else:
+            # 유료 밋업에서 할인 관련 검증
+            if is_discounted and price > 0:
+                if discounted_price is None or discounted_price < 0:
+                    raise ValidationError('할인을 적용하려면 유효한 할인가를 입력해야 합니다.')
+                if not early_bird_end_date:
+                    raise ValidationError('할인을 적용하려면 조기등록 종료일을 입력해야 합니다.')
+                if discounted_price >= price:
+                    raise ValidationError('할인가는 정가보다 낮아야 합니다.')
         
         # 주최자 연락처 검증 (연락처나 이메일 중 하나는 필수)
         if not organizer_contact and not organizer_email:

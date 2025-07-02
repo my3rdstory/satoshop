@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_free, views_paid
 
 app_name = 'meetup'
 
@@ -13,31 +13,46 @@ urlpatterns = [
     
     # 밋업 현황 (구체적인 패턴을 먼저 배치)
     path('<str:store_id>/status/', views.meetup_status, name='meetup_status'),
-    path('<str:store_id>/status/<str:meetup_id>/', views.meetup_status_detail, name='meetup_status_detail'),
-    path('<str:store_id>/status/<str:meetup_id>/update_attendance/', views.update_attendance, name='update_attendance'),
-    path('<str:store_id>/<str:meetup_id>/cancel_participation/', views.cancel_participation, name='cancel_participation'),
+    path('<str:store_id>/status/<int:meetup_id>/', views.meetup_status_detail, name='meetup_status_detail'),
+    path('<str:store_id>/status/<int:meetup_id>/update_attendance/', views.update_attendance, name='update_attendance'),
+    path('<str:store_id>/<int:meetup_id>/cancel_participation/', views.cancel_participation, name='cancel_participation'),
     
     # 밋업 주문 내역
     path('<str:store_id>/orders/', views.meetup_orders, name='meetup_orders'),
     
     # 밋업 상세 (일반적인 패턴을 나중에 배치)
-    path('<str:store_id>/<str:meetup_id>/', views.meetup_detail, name='meetup_detail'),
+    path('<str:store_id>/<int:meetup_id>/', views.meetup_detail, name='meetup_detail'),
+    
+    # 밋업 정원 상태 API
+    path('<str:store_id>/<int:meetup_id>/capacity-status/', views.meetup_capacity_status, name='meetup_capacity_status'),
     
     # 밋업 통합수정
-    path('<str:store_id>/<str:meetup_id>/edit/', views.edit_meetup_unified, name='edit_meetup_unified'),
+    path('<str:store_id>/<int:meetup_id>/edit/', views.edit_meetup_unified, name='edit_meetup_unified'),
     
     # 밋업 관리
-    path('<str:store_id>/<str:meetup_id>/manage/', views.manage_meetup, name='manage_meetup'),
+    path('<str:store_id>/<int:meetup_id>/manage/', views.manage_meetup, name='manage_meetup'),
     
-    # 밋업 체크아웃
-    path('<str:store_id>/<str:meetup_id>/checkout/', views.meetup_checkout, name='meetup_checkout'),
-    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/', views.meetup_checkout_payment, name='meetup_checkout_payment'),
+    # 밋업 일시중단 토글
+    path('<str:store_id>/<int:meetup_id>/toggle-temporary-closure/', views.toggle_temporary_closure, name='toggle_temporary_closure'),
+    
+    # 무료 밋업 전용 (구체적인 패턴을 먼저 배치)
+    path('<str:store_id>/<int:meetup_id>/free_participant_info/', views_free.meetup_free_participant_info, name='meetup_free_participant_info'),
+    
+    # 밋업 체크아웃 (라우팅 뷰)
+    path('<str:store_id>/<int:meetup_id>/checkout/', views.meetup_checkout, name='meetup_checkout'),
+    path('<str:store_id>/<int:meetup_id>/checkout/<int:order_id>/', views_paid.meetup_checkout_payment, name='meetup_checkout_payment'),
     
     # 밋업 결제 관련 API
-    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/create_invoice/', views.create_meetup_invoice, name='create_meetup_invoice'),
-    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/check_payment/', views.check_meetup_payment_status, name='check_meetup_payment_status'),
-    path('<str:store_id>/<str:meetup_id>/checkout/<int:order_id>/cancel_invoice/', views.cancel_meetup_invoice, name='cancel_meetup_invoice'),
+    path('<str:store_id>/<int:meetup_id>/checkout/<int:order_id>/create_invoice/', views_paid.create_meetup_invoice, name='create_meetup_invoice'),
+    path('<str:store_id>/<int:meetup_id>/checkout/<int:order_id>/check_payment/', views_paid.check_meetup_payment_status, name='check_meetup_payment_status'),
+    path('<str:store_id>/<int:meetup_id>/checkout/<int:order_id>/cancel_invoice/', views_paid.cancel_meetup_invoice, name='cancel_meetup_invoice'),
     
     # 밋업 결제 완료
-    path('<str:store_id>/<str:meetup_id>/complete/<int:order_id>/', views.meetup_checkout_complete, name='meetup_checkout_complete'),
+    path('<str:store_id>/<int:meetup_id>/complete/<int:order_id>/', views.meetup_checkout_complete, name='meetup_checkout_complete'),
+    
+    # 밋업 참가 취소
+    path('<str:store_id>/<int:meetup_id>/cancel_participation/', views.cancel_participation, name='cancel_participation'),
+    
+    # 밋업 임시 예약 해제 (페이지 벗어날 때)
+    path('<str:store_id>/<int:meetup_id>/release_reservation/', views.release_meetup_reservation, name='release_reservation'),
 ] 

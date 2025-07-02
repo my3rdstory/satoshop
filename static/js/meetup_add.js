@@ -6,6 +6,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const discountedPriceInput = document.getElementById('discounted_price');
     const isDiscountedCheckbox = document.getElementById('is_discounted');
     const discountSection = document.getElementById('discountSection');
+    const isFreeCheckbox = document.getElementById('is_free');
+    const priceSection = document.getElementById('priceSection');
+    const priceWarning = document.getElementById('priceWarning');
+    const discountCheckSection = document.getElementById('discountCheckSection');
+    const optionsOuterSection = document.getElementById('optionsOuterSection');
+    const optionsInnerSection = document.getElementById('optionsInnerSection');
+    const optionsDisabledNote = document.getElementById('optionsDisabledNote');
     const imageDropArea = document.getElementById('imageDropArea');
     const imageInput = document.getElementById('imageInput');
     const imagePreview = document.getElementById('imagePreview');
@@ -19,6 +26,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedImages = [];
     let optionCount = 0;
+
+    // 무료 밋업 체크박스 처리
+    if (isFreeCheckbox) {
+        // 초기 로드 시 상태 설정
+        toggleFreeMode(isFreeCheckbox.checked);
+        
+        isFreeCheckbox.addEventListener('change', function() {
+            toggleFreeMode(this.checked);
+        });
+    }
+
+    // 참가비 입력 필드 변경 감지 (0원 입력 시 경고 표시)
+    if (priceInput) {
+        priceInput.addEventListener('input', function() {
+            const price = parseInt(this.value) || 0;
+            
+            if (price === 0 && !isFreeCheckbox.checked) {
+                priceWarning.classList.remove('hidden');
+            } else {
+                priceWarning.classList.add('hidden');
+            }
+        });
+    }
 
     // 할인 체크박스 처리
     if (isDiscountedCheckbox) {
@@ -331,6 +361,64 @@ document.addEventListener('DOMContentLoaded', function() {
         return options;
     }
 
+    function toggleFreeMode(isFree) {
+        if (isFree) {
+            // 무료 모드 활성화
+            // 1. 참가비를 0으로 설정하고 비활성화
+            if (priceInput) {
+                priceInput.value = '0';
+                priceInput.setAttribute('readonly', true);
+                priceInput.classList.add('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
+            }
+            
+            // 2. 참가비 경고 숨김
+            if (priceWarning) {
+                priceWarning.classList.add('hidden');
+            }
+            
+            // 3. 할인 섹션 숨김 및 비활성화
+            if (discountCheckSection) {
+                discountCheckSection.classList.add('hidden');
+            }
+            if (discountSection) {
+                discountSection.classList.add('hidden');
+            }
+            if (isDiscountedCheckbox) {
+                isDiscountedCheckbox.checked = false;
+                isDiscountedCheckbox.dispatchEvent(new Event('change'));
+            }
+            
+            // 4. 옵션 섹션 비활성화
+            if (optionsInnerSection) {
+                optionsInnerSection.classList.add('opacity-50', 'pointer-events-none');
+            }
+            if (optionsDisabledNote) {
+                optionsDisabledNote.classList.remove('hidden');
+            }
+            
+        } else {
+            // 무료 모드 비활성화
+            // 1. 참가비 입력 활성화
+            if (priceInput) {
+                priceInput.removeAttribute('readonly');
+                priceInput.classList.remove('bg-gray-100', 'dark:bg-gray-600', 'cursor-not-allowed');
+            }
+            
+            // 2. 할인 섹션 보이기
+            if (discountCheckSection) {
+                discountCheckSection.classList.remove('hidden');
+            }
+            
+            // 3. 옵션 섹션 활성화
+            if (optionsInnerSection) {
+                optionsInnerSection.classList.remove('opacity-50', 'pointer-events-none');
+            }
+            if (optionsDisabledNote) {
+                optionsDisabledNote.classList.add('hidden');
+            }
+        }
+    }
+
     function validateForm() {
         const name = document.getElementById('name').value.trim();
         // EasyMDE 에디터에서 값 가져오기
@@ -426,7 +514,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             optionsInput.value = JSON.stringify(optionsData);
             
-                         console.log('전송될 옵션 데이터:', optionsData); // 디버깅용
          });
      }
 
@@ -528,7 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 주소 검색 기능
     function execLocationDaumPostcode() {
         if (!locationAddressModal) {
-            console.error('location-address-modal 요소를 찾을 수 없습니다.');
             return;
         }
         
@@ -540,7 +626,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const container = document.getElementById('location-address-search-container');
         if (!container) {
-            console.error('location-address-search-container 요소를 찾을 수 없습니다.');
             return;
         }
         
@@ -659,4 +744,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-}); 
+});
+
+// 전역 함수들 (HTML에서 호출)
+function removeImage(index) {
+    // 이미지 제거 로직은 여기서 구현하지만 실제로는 파일에서 이미 구현되어 있어야 함
+}

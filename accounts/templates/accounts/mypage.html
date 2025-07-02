@@ -215,6 +215,20 @@
               <i class="fas fa-store mr-2"></i>
               스토어 둘러보기
             </a>
+            <a 
+              href="{% url 'accounts:my_purchases' %}" 
+              class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg"
+            >
+              <i class="fas fa-shopping-bag mr-2"></i>
+              구매 내역
+            </a>
+            <a 
+              href="{% url 'accounts:my_meetup_orders' %}" 
+              class="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors shadow-lg"
+            >
+              <i class="fas fa-users mr-2"></i>
+              밋업 참가내역
+            </a>
             {% if not user_has_active_store %}
             <a 
               href="{% url 'stores:create_store' %}" 

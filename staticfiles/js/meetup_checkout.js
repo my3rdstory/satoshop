@@ -1,13 +1,18 @@
-// 밋업 체크아웃 JavaScript
-let currentPaymentHash = null;
-let currentInvoice = null;
+// meetup_checkout.js
+
+let currentPaymentHash = '';
+let currentInvoice = '';
 let paymentCheckInterval = null;
+let meetupCountdown = null; // 카운트다운 인스턴스
+let paymentExpiresAt = null;
+let isInvoiceGenerated = false;
+
 
 document.addEventListener('DOMContentLoaded', function() {
+    
     // 체크아웃 데이터 로드
     const checkoutDataElement = document.getElementById('checkout-data');
     if (!checkoutDataElement) {
-        console.error('체크아웃 데이터를 찾을 수 없습니다.');
         return;
     }
     
@@ -16,6 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 전역 변수
     window.checkoutData = checkoutData;
     window.selectedOptions = {};
+    
+    // 디버깅 로그
     
     // 페이지 초기화
     if (checkoutData.isPaymentPage) {
@@ -45,10 +52,57 @@ function initCheckoutPage() {
 
 // 결제 페이지 초기화
 function initPaymentPage() {
+    
     // 인보이스 생성 버튼 스타일 설정
     const generateBtn = document.getElementById('generateInvoiceBtn');
     if (generateBtn) {
         generateBtn.classList.add('invoice-btn');
+    }
+    
+    // 카운트다운 초기화
+    if (window.checkoutData.reservationExpiresAt) {
+        meetupCountdown = new MeetupCountdown({
+            storeId: window.checkoutData.storeId,
+            meetupId: window.checkoutData.meetupId,
+            reservationExpiresAt: window.checkoutData.reservationExpiresAt
+        });
+        
+        // 전역에서 접근 가능하도록 저장
+        window.meetupCountdownInstance = meetupCountdown;
+    }
+    
+    // 무료 참가 신청 폼 이벤트 리스너 추가
+    const freeParticipationForm = document.getElementById('free-participation-form');
+    
+    if (freeParticipationForm) {
+        
+        freeParticipationForm.addEventListener('submit', function(event) {
+            
+            // 카운트다운 중지
+            if (window.meetupCountdownInstance) {
+                try {
+                    window.meetupCountdownInstance.stopAndHide();
+                } catch (error) {
+                }
+            } else {
+            }
+            
+            // 버튼 상태 변경
+            const submitBtn = document.getElementById('freeParticipationBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        <span>처리 중...</span>
+                    </div>
+                `;
+            } else {
+            }
+            
+            // 폼 제출은 계속 진행 (event.preventDefault() 호출하지 않음)
+        });
+    } else {
     }
 }
 
@@ -96,6 +150,14 @@ function generateInvoice() {
             currentPaymentHash = data.payment_hash;
             currentInvoice = data.invoice;
             
+            // 인보이스 만료 시간으로 카운트다운 업데이트 (보통 15분)
+            if (data.expires_at && window.meetupCountdownInstance) {
+                try {
+                    window.meetupCountdownInstance.switchToPaymentMode(data.expires_at);
+                } catch (error) {
+                }
+            }
+            
             // QR 코드 생성
             generateQRCode(data.invoice);
             
@@ -137,7 +199,6 @@ function generateInvoice() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showPaymentStatus('인보이스 생성 중 오류가 발생했습니다.', 'error');
         
         // 버튼 복원
@@ -164,7 +225,6 @@ function generateQRCode(invoice) {
             level: 'M'
         });
     } catch (error) {
-        console.error('QR 코드 생성 오류:', error);
         // QR 코드 생성 실패 시 대체 텍스트 표시
         document.getElementById('qrCodeImage').alt = 'QR 코드 생성 실패';
     }
@@ -225,10 +285,20 @@ function checkPaymentStatus() {
         if (data.success) {
             if (data.paid) {
                 // 결제 완료
+                
                 if (paymentCheckInterval) {
                     clearInterval(paymentCheckInterval);
                     paymentCheckInterval = null;
                 }
+                
+                // 카운트다운 중지
+                if (window.meetupCountdownInstance) {
+                    try {
+                        window.meetupCountdownInstance.stopAndHide();
+                    } catch (error) {
+                    }
+                }
+                
                 showPaymentStatus('결제가 완료되었습니다! 참가 확정 페이지로 이동합니다...', 'success');
                 
                 // 2초 후 결제 완료 페이지로 이동
@@ -238,7 +308,6 @@ function checkPaymentStatus() {
             }
             // 결제 대기 중이면 계속 확인
         } else {
-            console.error('결제 상태 확인 오류:', data.error);
             // 에러가 발생하면 상태 확인 중지
             if (paymentCheckInterval) {
                 clearInterval(paymentCheckInterval);
@@ -247,7 +316,6 @@ function checkPaymentStatus() {
         }
     })
     .catch(error => {
-        console.error('결제 상태 확인 중 오류:', error);
         // 네트워크 에러가 발생하면 상태 확인 중지
         if (paymentCheckInterval) {
             clearInterval(paymentCheckInterval);
@@ -302,6 +370,14 @@ function cancelInvoice() {
             currentPaymentHash = null;
             currentInvoice = null;
             
+            // 카운트다운을 원본 예약 시간으로 복원
+            if (window.meetupCountdownInstance) {
+                try {
+                    window.meetupCountdownInstance.switchToReservationMode();
+                } catch (error) {
+                }
+            }
+            
             // 성공 메시지 표시
             showPaymentStatus('결제가 취소되었습니다.', 'error');
             
@@ -326,7 +402,6 @@ function cancelInvoice() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showPaymentStatus('취소 처리 중 오류가 발생했습니다.', 'error');
         
         // 취소 버튼 복원
@@ -477,7 +552,6 @@ async function handleCheckoutSubmit(event) {
             alert(result.error || '주문 생성에 실패했습니다.');
         }
     } catch (error) {
-        console.error('체크아웃 오류:', error);
         alert('주문 처리 중 오류가 발생했습니다.');
     } finally {
         // 버튼 복원

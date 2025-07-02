@@ -1,0 +1,162 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .reservation-item {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 10px;
+    }
+    .reservation-header {
+        font-weight: bold;
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    .reservation-details {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+    .warning-box {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    .warning-icon {
+        color: #856404;
+        font-size: 1.2em;
+        margin-right: 8px;
+    }
+    .action-buttons {
+        margin-top: 20px;
+        text-align: right;
+    }
+    .btn {
+        display: inline-block;
+        padding: 8px 16px;
+        margin: 0 5px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        font-size: 14px;
+    }
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    .btn-danger:hover {
+        background-color: #c82333;
+        color: white;
+    }
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    .btn-secondary:hover {
+        background-color: #5a6268;
+        color: white;
+    }
+    .stats-box {
+        background: #e9ecef;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .more-items {
+        text-align: center;
+        padding: 15px;
+        background: #f1f3f4;
+        border-radius: 5px;
+        margin-top: 10px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<div class="stats-box">
+    <h3><i class="fas fa-exclamation-triangle warning-icon"></i>삭제될 항목 통계</h3>
+    <p><strong>총 {{ total_count }}개</strong>의 하루 이상 된 임시예약이 삭제됩니다.</p>
+</div>
+
+<div class="warning-box">
+    <i class="fas fa-exclamation-triangle warning-icon"></i>
+    <strong>주의:</strong> 이 작업은 되돌릴 수 없습니다. 선택된 임시예약들이 영구적으로 삭제됩니다.
+</div>
+
+<h3>삭제 예정 항목 (최대 20개 미리보기)</h3>
+
+{% for order in orders %}
+<div class="reservation-item">
+    <div class="reservation-header">
+        {{ order.order_number }} - {{ order.participant_name }}
+    </div>
+    <div class="reservation-details">
+        <div><strong>밋업:</strong> {{ order.meetup.name }}</div>
+        <div><strong>스토어:</strong> {{ order.meetup.store.store_name }}</div>
+        <div><strong>이메일:</strong> {{ order.participant_email|default:"없음" }}</div>
+        <div><strong>생성일시:</strong> {{ order.created_at|date:"Y-m-d H:i:s" }}</div>
+        {% if order.reservation_expires_at %}
+        <div><strong>예약 만료:</strong> {{ order.reservation_expires_at|date:"Y-m-d H:i:s" }}</div>
+        {% endif %}
+        <div><strong>가격:</strong> {{ order.total_price|floatformat:0 }} sats</div>
+    </div>
+</div>
+{% endfor %}
+
+{% if total_count > 20 %}
+<div class="more-items">
+    <i class="fas fa-ellipsis-h"></i>
+    <strong>{{ total_count|add:"-20" }}개의 추가 항목이 더 있습니다.</strong>
+</div>
+{% endif %}
+
+<form method="post" action="{{ action_url }}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="{{ action_name }}">
+    <input type="hidden" name="confirm_delete" value="1">
+    
+    <!-- 선택된 항목들의 ID를 hidden으로 전송 -->
+    {% for order in orders %}
+    <input type="hidden" name="_selected_action" value="{{ order.pk }}">
+    {% endfor %}
+    
+    <div class="action-buttons">
+        <a href="{% url 'admin:meetup_temporaryreservation_changelist' %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i> 취소
+        </a>
+        <button type="submit" class="btn btn-danger" onclick="return confirm('정말로 {{ total_count }}개의 임시예약을 삭제하시겠습니까?')">
+            <i class="fas fa-trash"></i> {{ total_count }}개 삭제 확인
+        </button>
+    </div>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 삭제 버튼에 확인 이벤트 추가
+    const deleteBtn = document.querySelector('.btn-danger');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function(e) {
+            const confirmed = confirm(
+                `정말로 {{ total_count }}개의 하루 이상 된 임시예약을 삭제하시겠습니까?\n\n` +
+                '이 작업은 되돌릴 수 없습니다.'
+            );
+            if (!confirmed) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %} 

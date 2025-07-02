@@ -6,6 +6,8 @@ app_name = 'stores'
 urlpatterns = [
     # 스토어 탐색
     path('browse/', views.browse_stores, name='browse_stores'),
+    path('browse/recent/', views.browse_recent_stores, name='browse_recent_stores'),
+    path('browse/active/', views.browse_active_stores, name='browse_active_stores'),
     
     # 스토어 생성 관련
     path('create/', views.create_store, name='create_store'),

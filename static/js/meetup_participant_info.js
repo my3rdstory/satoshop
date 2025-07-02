@@ -1,6 +1,10 @@
 // meetup_participant_info.js
+console.log('🚀 meetup_participant_info.js 파일이 로드되었습니다!');
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 DOMContentLoaded 이벤트 발생');
+    console.log('🔍 window.meetupData:', window.meetupData);
+    
     // 밋업 데이터 초기화
     initializeMeetupData();
     
@@ -10,11 +14,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 이벤트 리스너 설정
     setupEventListeners();
+    
+    // 카운트다운 초기화
+    initializeCountdown();
 });
 
 // 밋업 데이터
 let meetupData = {};
 let selectedOptions = {};
+let countdownInterval = null;
 
 // 밋업 데이터 초기화
 function initializeMeetupData() {
@@ -22,9 +30,29 @@ function initializeMeetupData() {
     if (typeof window.meetupData !== 'undefined') {
         meetupData = window.meetupData;
         
-        // 전달받은 선택된 옵션이 있다면 적용
-        if (meetupData.selectedOptions && typeof meetupData.selectedOptions === 'object') {
-            selectedOptions = { ...meetupData.selectedOptions };
+        // URL 파라미터로 전달된 미리 선택된 옵션이 있다면 적용
+        if (typeof window.preSelectedOptions !== 'undefined' && window.preSelectedOptions) {
+            console.log('🎯 미리 선택된 옵션 발견:', window.preSelectedOptions);
+            
+            // 미리 선택된 옵션을 현재 선택된 옵션으로 설정
+            selectedOptions = { ...window.preSelectedOptions };
+            
+            // 옵션 정보 보완 (옵션명, 선택지명 추가)
+            if (typeof window.meetupOptions !== 'undefined') {
+                Object.keys(selectedOptions).forEach(optionId => {
+                    const option = window.meetupOptions.find(opt => opt.id.toString() === optionId);
+                    if (option) {
+                        const choice = option.choices.find(ch => ch.id.toString() === selectedOptions[optionId].choiceId);
+                        if (choice) {
+                            selectedOptions[optionId].optionName = option.name;
+                            selectedOptions[optionId].choiceName = choice.name;
+                            selectedOptions[optionId].price = choice.additionalPrice;
+                        }
+                    }
+                });
+            }
+            
+            console.log('✅ 보완된 선택된 옵션:', selectedOptions);
             
             // DOM이 로드된 후 옵션 선택 상태 적용
             setTimeout(() => {
@@ -97,6 +125,24 @@ function setupEventListeners() {
     const form = document.querySelector('form');
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
+        
+        // 폼 내에서 엔터키 입력 시 제출 버튼 클릭으로 처리
+        form.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.ctrlKey && !event.metaKey) {
+                event.preventDefault();
+                
+                // 현재 포커스된 요소가 텍스트 입력 필드인지 확인
+                const activeElement = document.activeElement;
+                if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+                    // 제출 버튼이 활성화되어 있는지 확인
+                    const submitBtn = document.getElementById('submit-btn');
+                    if (submitBtn && !submitBtn.disabled) {
+                        console.log('⌨️ 엔터키로 폼 제출 트리거');
+                        submitBtn.click();
+                    }
+                }
+            }
+        });
     }
     
     // 입력 필드 변경 시 실시간 유효성 검사
@@ -150,6 +196,13 @@ function updatePriceSummary() {
     }
 }
 
+// 총 가격 계산
+function calculateTotalPrice() {
+    const basePrice = meetupData.basePrice || 0;
+    const optionsPrice = Object.values(selectedOptions).reduce((sum, opt) => sum + opt.price, 0);
+    return basePrice + optionsPrice;
+}
+
 // 제출 버튼 업데이트
 function updateSubmitButton() {
     const submitBtn = document.getElementById('submit-btn');
@@ -170,9 +223,7 @@ function updateSubmitButton() {
     }
     
     // 총 가격 확인
-    const basePrice = meetupData.basePrice || 0;
-    const optionsPrice = Object.values(selectedOptions).reduce((sum, opt) => sum + opt.price, 0);
-    const totalPrice = basePrice + optionsPrice;
+    const totalPrice = calculateTotalPrice();
     
     if (allRequiredSelected) {
         submitBtn.disabled = false;
@@ -193,30 +244,88 @@ function updateSubmitButton() {
     }
 }
 
+// 카운트다운 중지 및 숨기기
+function stopAndHideCountdown() {
+    console.log('🛑 카운트다운 중지 및 숨기기 함수 호출됨');
+    console.log('🔍 window.meetupCountdownInstance 존재 여부:', !!window.meetupCountdownInstance);
+    
+    // 새로운 MeetupCountdown 클래스 인스턴스가 있는지 확인
+    if (window.meetupCountdownInstance) {
+        console.log('🔄 MeetupCountdown 인스턴스로 카운트다운 중지 시도');
+        try {
+            window.meetupCountdownInstance.stopAndHide();
+            console.log('✅ MeetupCountdown.stopAndHide() 호출 완료');
+        } catch (error) {
+            console.error('❌ MeetupCountdown.stopAndHide() 호출 실패:', error);
+        }
+        return;
+    }
+    
+    console.log('🔄 기존 방식으로 카운트다운 중지 시도');
+    
+    // 기존 방식 (호환성을 위해 유지)
+    // 카운트다운 인터벌 중지
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+        console.log('⏹️ 카운트다운 인터벌 중지됨');
+    } else {
+        console.log('⚠️ countdownInterval이 없음');
+    }
+    
+    // 플로팅 카운트다운 숨기기
+    const floatingCountdown = document.getElementById('floating-countdown');
+    if (floatingCountdown) {
+        floatingCountdown.classList.remove('show');
+        floatingCountdown.classList.add('hidden');
+        console.log('👻 플로팅 카운트다운 숨김 완료');
+    } else {
+        console.log('⚠️ floating-countdown 요소를 찾을 수 없음');
+    }
+}
+
 // 폼 제출 처리
 function handleFormSubmit(event) {
+    event.preventDefault();
+    
     const form = event.target;
-    const submitBtn = document.getElementById('submit-btn');
+    const submitButton = form.querySelector('#submit-btn');
+    const totalPrice = calculateTotalPrice();
     
-    // 유효성 검사
+    console.log('📋 폼 제출 시작');
+    console.log('💰 총 가격:', totalPrice);
+    console.log('🎯 meetupData.basePrice:', meetupData.basePrice);
+    console.log('📊 selectedOptions:', selectedOptions);
+    console.log('🌍 window.meetupCountdownInstance:', window.meetupCountdownInstance);
+    
+    // 폼 유효성 검사
     if (!validateForm(form)) {
-        event.preventDefault();
-        return false;
+        console.log('❌ 폼 유효성 검사 실패');
+        return;
     }
     
-    // 제출 버튼 로딩 상태
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.classList.add('loading');
-        
-        const submitText = document.getElementById('submit-text');
-        const submitIcon = document.getElementById('submit-icon');
-        
-        if (submitText) submitText.textContent = '처리 중...';
-        if (submitIcon) submitIcon.className = 'fas fa-spinner fa-spin mr-2';
+    // 무료 밋업인 경우에만 카운트다운 중지 및 숨기기
+    if (totalPrice === 0) {
+        console.log('🆓 무료 밋업 감지 - 카운트다운 중지 시작');
+        stopAndHideCountdown();
+    } else {
+        console.log('💳 유료 밋업 - 카운트다운 유지 (결제 페이지로 이동 후 연장)');
+        // 유료 밋업에서는 카운트다운을 유지하고, 서버에서 예약 시간을 연장함
     }
     
-    return true;
+    // 버튼 상태 변경
+    submitButton.disabled = true;
+    submitButton.innerHTML = `
+        <div class="flex items-center">
+            <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+            <span>처리 중...</span>
+        </div>
+    `;
+    
+    // 폼 제출
+    setTimeout(() => {
+        form.submit();
+    }, 500);
 }
 
 // 폼 유효성 검사
@@ -335,6 +444,181 @@ function showError(message) {
             errorDiv.remove();
         }
     }, 3000);
+}
+
+// 카운트다운 초기화
+function initializeCountdown() {
+    console.log('📅 카운트다운 초기화 시작');
+    console.log('📅 meetupData:', meetupData);
+    console.log('📅 reservationExpiresAt:', meetupData.reservationExpiresAt);
+    
+    if (!meetupData.reservationExpiresAt) {
+        console.log('⏰ 예약 만료 시간이 없어서 카운트다운을 표시하지 않음');
+        return; // 예약 만료 시간이 없으면 카운트다운을 표시하지 않음
+    }
+    
+    const floatingCountdown = document.getElementById('floating-countdown');
+    console.log('🎈 플로팅 카운트다운 요소:', floatingCountdown);
+    
+    if (!floatingCountdown) {
+        console.error('❌ floating-countdown 요소를 찾을 수 없음');
+        return;
+    }
+    
+    console.log('✅ 카운트다운 표시 시작');
+    
+    // 카운트다운 표시
+    setTimeout(() => {
+        floatingCountdown.classList.add('show');
+        console.log('🎈 카운트다운 show 클래스 추가됨');
+    }, 1000);
+    
+    // 카운트다운 시작
+    startCountdown();
+}
+
+// 카운트다운 시작
+function startCountdown() {
+    const countdownDisplay = document.getElementById('countdown-display');
+    const floatingCountdown = document.getElementById('floating-countdown');
+    
+    if (!countdownDisplay || !floatingCountdown) return;
+    
+    countdownInterval = setInterval(() => {
+        const now = new Date();
+        const expiresAt = new Date(meetupData.reservationExpiresAt);
+        const timeLeft = expiresAt - now;
+        
+        if (timeLeft <= 0) {
+            // 시간 만료
+            clearInterval(countdownInterval);
+            countdownDisplay.textContent = '00:00';
+            floatingCountdown.classList.add('urgent');
+            
+            // 페이지 새로고침 또는 리다이렉트
+            setTimeout(() => {
+                alert('예약 시간이 만료되었습니다. 다시 시도해주세요.');
+                window.location.href = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/`;
+            }, 2000);
+            return;
+        }
+        
+        // 시간 계산
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        
+        // 시간 표시 형식
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        countdownDisplay.textContent = timeString;
+        
+        // 1분 미만일 때 긴급 스타일 적용
+        if (timeLeft < 60000) {
+            floatingCountdown.classList.add('urgent');
+        } else {
+            floatingCountdown.classList.remove('urgent');
+        }
+        
+        // 30초 미만일 때 추가 경고
+        if (timeLeft < 30000 && timeLeft > 25000) {
+            showWarningNotification('예약 시간이 30초 남았습니다!');
+        }
+        
+    }, 1000);
+}
+
+// 경고 알림 표시
+function showWarningNotification(message) {
+    // 기존 알림이 있으면 제거
+    const existingNotification = document.getElementById('warning-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // 새로운 알림 생성
+    const notification = document.createElement('div');
+    notification.id = 'warning-notification';
+    notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 3초 후 자동 제거
+    setTimeout(() => {
+        if (notification && notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// 페이지 언로드 시 정리
+window.addEventListener('beforeunload', function(event) {
+    // 카운트다운 정리
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+    }
+    
+    // 임시 예약이 있는 경우 서버에 해제 요청
+    if (meetupData.reservationExpiresAt && window.navigator.sendBeacon) {
+        const releaseUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/release_reservation/`;
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', getCsrfToken());
+        formData.append('reason', '사용자가 페이지를 벗어남');
+        
+        // 백그라운드에서 비동기 요청 (페이지가 닫혀도 실행됨)
+        window.navigator.sendBeacon(releaseUrl, formData);
+    }
+});
+
+// 페이지 숨김 이벤트 (모바일 앱 전환, 탭 변경 등에도 대응)
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden && meetupData.reservationExpiresAt) {
+        // 페이지가 숨겨질 때도 예약 해제
+        releaseReservation('사용자가 페이지를 벗어남');
+    }
+});
+
+// CSRF 토큰 가져오기
+function getCsrfToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue || '';
+}
+
+// 예약 해제 함수
+function releaseReservation(reason = '사용자 취소') {
+    if (!meetupData.reservationExpiresAt) return;
+    
+    const releaseUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/release_reservation/`;
+    
+    // sendBeacon 사용 (페이지가 닫혀도 전송됨)
+    if (window.navigator.sendBeacon) {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', getCsrfToken());
+        formData.append('reason', reason);
+        
+        window.navigator.sendBeacon(releaseUrl, formData);
+    } else {
+        // sendBeacon을 지원하지 않는 브라우저의 경우 동기 요청
+        try {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', releaseUrl, false); // 동기 요청
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
+            xhr.send(`reason=${encodeURIComponent(reason)}`);
+        } catch (e) {
+            console.log('예약 해제 요청 실패:', e);
+        }
+    }
+    
+    // 예약 해제됨을 표시
+    meetupData.reservationExpiresAt = null;
 }
 
 // 전역 함수로 노출

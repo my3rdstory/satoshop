@@ -1,0 +1,231 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} - SatoShop{% endblock %}
+
+<!-- Open Graph Meta Tags -->
+{% block og_title %}{{ page_title }} - SatoShop{% endblock %}
+{% block og_description %}{{ page_description }}{% endblock %}
+{% block og_type %}website{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 전체보기 페이지 스타일 */
+.list-hero {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 페이지 헤더 -->
+<section class="list-hero py-16">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold text-white mb-4">
+        {% if store_type == 'recent' %}
+        <i class="fas fa-star text-yellow-500 mr-3"></i>{{ page_title }}
+        {% elif store_type == 'active' %}
+        <i class="fas fa-fire text-red-500 mr-3"></i>{{ page_title }}
+        {% endif %}
+      </h1>
+      <p class="text-lg text-gray-300">
+        {{ page_description }}
+      </p>
+      <div class="mt-6">
+        <a 
+          href="{% url 'stores:browse_stores' %}" 
+          class="inline-flex items-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>
+          스토어 탐색으로 돌아가기
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 스토어 목록 -->
+<section class="bg-gray-50 dark:bg-gray-900 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if page_obj.object_list %}
+    <!-- 결과 정보 -->
+    <div class="mb-8 text-center">
+      <p class="text-gray-600 dark:text-gray-400">
+        총 <span class="font-semibold text-gray-900 dark:text-white">{{ page_obj.paginator.count }}개</span>의 스토어
+        {% if page_obj.paginator.num_pages > 1 %}
+        ({{ page_obj.number }}/{{ page_obj.paginator.num_pages }} 페이지)
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- 스토어 그리드 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+      {% for store in page_obj.object_list %}
+      <a 
+        href="{% url 'stores:store_detail' store.store_id %}" 
+        class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+      >
+        <!-- 스토어 이미지 -->
+        <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
+          {% if store.images.exists %}
+          <img 
+            src="{{ store.images.first.file_url }}" 
+            alt="{{ store.store_name }}"
+            class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          >
+          {% else %}
+          <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center group-hover:from-bitcoin/10 group-hover:to-orange-500/10 transition-all duration-300">
+            <i class="fas fa-store text-4xl text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 스토어 정보 -->
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-bitcoin transition-colors">
+            {{ store.store_name }}
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+            {% if store.store_description %}
+              {{ store.store_description|truncatechars:80 }}
+            {% else %}
+              멋진 상품들을 판매하는 스토어입니다.
+            {% endif %}
+          </p>
+          
+          <!-- 스토어 메타 정보 -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+              <i class="fas fa-user mr-2"></i>
+              <span>{{ store.owner_name }}</span>
+            </div>
+            {% if store_type == 'recent' %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+              <div class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></div>
+              신규
+            </span>
+            {% elif store_type == 'active' %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+              <div class="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
+              인기
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+              <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+              활성화
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-center">
+      <nav class="flex items-center space-x-2">
+        <!-- 이전 페이지 -->
+        {% if page_obj.has_previous %}
+        <a 
+          href="?page={{ page_obj.previous_page_number }}" 
+          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-400 rounded-lg">
+          <i class="fas fa-chevron-left"></i>
+        </span>
+        {% endif %}
+
+        <!-- 페이지 번호들 -->
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="px-3 py-2 text-sm bg-bitcoin text-white border border-bitcoin rounded-lg">
+            {{ num }}
+          </span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a 
+            href="?page={{ num }}" 
+            class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            {{ num }}
+          </a>
+          {% endif %}
+        {% endfor %}
+
+        <!-- 다음 페이지 -->
+        {% if page_obj.has_next %}
+        <a 
+          href="?page={{ page_obj.next_page_number }}" 
+          class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-400 rounded-lg">
+          <i class="fas fa-chevron-right"></i>
+        </span>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 스토어가 없는 경우 -->
+    <div class="text-center py-16">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <i class="fas fa-store text-3xl text-gray-400"></i>
+      </div>
+      <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        {% if store_type == 'recent' %}
+        최근 개설된 스토어가 없습니다
+        {% elif store_type == 'active' %}
+        주문이 활발한 스토어가 없습니다
+        {% else %}
+        스토어가 없습니다
+        {% endif %}
+      </h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+        {% if store_type == 'recent' %}
+        아직 새로 등록된 스토어가 없습니다.
+        {% elif store_type == 'active' %}
+        최근 30일 내 주문이 있는 스토어가 없습니다.
+        {% else %}
+        조건에 맞는 스토어가 없습니다.
+        {% endif %}
+      </p>
+      {% if user.is_authenticated %}
+      <a 
+        href="{% url 'stores:create_store' %}" 
+        class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+      >
+        <i class="fas fa-plus mr-2"></i>
+        스토어 만들기
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // 스토어 카드 호버 효과
+  const storeCards = document.querySelectorAll('.group');
+  storeCards.forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-4px)';
+    });
+    
+    card.addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0)';
+    });
+  });
+});
+</script>
+{% endblock %} 

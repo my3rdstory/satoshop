@@ -103,7 +103,13 @@
 
       <!-- 가격 정보 -->
       <div class="mb-3">
-        {% if meetup.is_discounted and meetup.is_early_bird_active %}
+        {% if meetup.is_free %}
+        <!-- 무료 밋업 -->
+        <div class="text-lg font-bold text-green-600 dark:text-green-400">
+          <i class="fas fa-gift mr-1"></i>무료
+        </div>
+        {% elif meetup.is_discounted and meetup.is_early_bird_active %}
+        <!-- 할인된 유료 밋업 -->
         <div class="flex items-center gap-2 mb-1">
           <span class="text-lg font-bold text-purple-600 dark:text-purple-400">
             {{ meetup.current_price|floatformat:0|intcomma }} sats
@@ -116,6 +122,7 @@
           {{ meetup.price|floatformat:0|intcomma }} sats
         </div>
         {% else %}
+        <!-- 일반 유료 밋업 -->
         <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
           {{ meetup.current_price|floatformat:0|intcomma }} sats
         </div>
