@@ -86,6 +86,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('gmail_help_url',),
             'description': '스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크'
         }),
+        ('밋업 설정', {
+            'fields': ('meetup_countdown_seconds',),
+            'description': '밋업 신청 과정에서의 제한시간 설정'
+        }),
 
         ('고급 설정', {
             'fields': ('created_at', 'updated_at'),

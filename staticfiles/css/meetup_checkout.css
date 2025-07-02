@@ -301,6 +301,70 @@
 }
 
 .dark .warning-box {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%);
-    border-color: rgba(245, 158, 11, 0.4);
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border-color: #d97706;
+    color: #78350f;
+}
+
+/* 플로팅 카운트다운 스타일 */
+.floating-countdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.floating-countdown.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.floating-countdown.urgent {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+    0%, 100% { 
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+        box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+        transform: scale(1.02);
+    }
+}
+
+.countdown-time {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+}
+
+.countdown-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+/* 모바일에서 위치 조정 */
+@media (max-width: 640px) {
+    .floating-countdown {
+        bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+    }
+    
+    .floating-countdown.show {
+        transform: translateX(-50%) translateY(0);
+    }
 } 

@@ -4,115 +4,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const meetupDataElement = document.getElementById('meetup-data');
     const meetupData = meetupDataElement ? JSON.parse(meetupDataElement.textContent) : {};
     
-    // 선택된 옵션들
+    // 선택된 옵션들 저장
     let selectedOptions = {};
     
     // 마크다운 렌더링
-    if (typeof marked !== 'undefined' && typeof renderMarkdown === 'function') {
-        renderMarkdown();
-    }
+    initializeMarkdownRendering();
     
-    // 이벤트 리스너 설정
+    // 이벤트 리스너 초기화
     initializeEventListeners();
     
     // 카운트다운 초기화
     initializeCountdown();
     
     function initializeEventListeners() {
-        // 전역 함수로 노출
-        window.changeMainImage = changeMainImage;
-        window.selectOption = selectOption;
-        window.joinMeetup = joinMeetup;
+        // 이미지 썸네일 클릭 이벤트
+        document.querySelectorAll('.thumbnail').forEach(thumbnail => {
+            thumbnail.addEventListener('click', function() {
+                const img = this.querySelector('img');
+                if (img && img.src) {
+                    changeMainImage(img.src, this);
+                }
+            });
+        });
     }
     
-    // 카운트다운 초기화 및 시작
-    function initializeCountdown() {
-        const countdownDataElement = document.getElementById('countdown-data');
-        if (!countdownDataElement) return;
+    function initializeMarkdownRendering() {
+        // 설명 마크다운 렌더링
+        const descriptionElement = document.getElementById('meetup-description');
+        if (descriptionElement) {
+            const markdownText = descriptionElement.textContent;
+            if (markdownText.trim()) {
+                const htmlContent = marked.parse(markdownText);
+                descriptionElement.innerHTML = htmlContent;
+            }
+        }
         
-        try {
-            const countdownData = JSON.parse(countdownDataElement.textContent);
-            const endDateTime = new Date(countdownData.endDateTime);
-            
-            // 카운트다운 시작
-            startCountdown(endDateTime);
-        } catch (error) {
-            console.error('카운트다운 데이터 파싱 오류:', error);
+        // 특이사항 마크다운 렌더링
+        const notesElement = document.getElementById('special-notes');
+        if (notesElement) {
+            const markdownText = notesElement.textContent;
+            if (markdownText.trim()) {
+                const htmlContent = marked.parse(markdownText);
+                notesElement.innerHTML = htmlContent;
+            }
         }
     }
     
-    // 카운트다운 실행
+    function initializeCountdown() {
+        // 카운트다운 시작
+        const countdownElement = document.querySelector('.countdown-timer');
+        if (countdownElement) {
+            const endDateTime = countdownElement.dataset.endDateTime;
+            if (endDateTime) {
+                startCountdown(endDateTime);
+            }
+        }
+    }
+    
     function startCountdown(endDateTime) {
-        const countdownElement = document.getElementById('early-bird-countdown');
-        const countdownOverlayElement = document.getElementById('early-bird-countdown-overlay');
-        
-        if (!countdownElement && !countdownOverlayElement) return;
+        const countdownInterval = setInterval(() => {
+            updateCountdown();
+        }, 1000);
         
         function updateCountdown() {
             const now = new Date().getTime();
-            const endTime = endDateTime.getTime();
-            const distance = endTime - now;
+            const end = new Date(endDateTime).getTime();
+            const timeLeft = end - now;
             
-            if (distance < 0) {
-                // 카운트다운 종료
-                if (countdownElement) {
-                    countdownElement.textContent = '마감됨';
-                    countdownElement.className = 'text-gray-500';
-                }
-                if (countdownOverlayElement) {
-                    countdownOverlayElement.textContent = '마감됨';
-                }
-                return;
-            }
-            
-            // 시간 계산
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            
-            // 텍스트 형태로 표시
-            let timeText = '';
-            if (days > 0) {
-                timeText = `${days}일 ${hours.toString().padStart(2, '0')}시간 ${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
-            } else if (hours > 0) {
-                timeText = `${hours.toString().padStart(2, '0')}시간 ${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
-            } else if (minutes > 0) {
-                timeText = `${minutes.toString().padStart(2, '0')}분 ${seconds.toString().padStart(2, '0')}초 남음`;
-            } else {
-                timeText = `${seconds.toString().padStart(2, '0')}초 남음`;
-            }
-            
-            // 기존 카운트다운 요소 업데이트
-            if (countdownElement) {
-                countdownElement.textContent = timeText;
-                
-                // 긴급도에 따른 색상 변경
-                if (distance < 60000) { // 1분 미만
-                    countdownElement.className = 'text-red-600 font-bold animate-pulse';
-                } else if (distance < 3600000) { // 1시간 미만
-                    countdownElement.className = 'text-orange-600 font-medium';
-                } else {
-                    countdownElement.className = 'text-red-600';
-                }
-            }
-            
-            // 오버레이 카운트다운 요소 업데이트
-            if (countdownOverlayElement) {
-                countdownOverlayElement.textContent = timeText;
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
             }
         }
-        
-        // 즉시 실행
-        updateCountdown();
-        
-        // 1초마다 업데이트
-        const countdownInterval = setInterval(updateCountdown, 1000);
-        
-        // 페이지 언로드 시 인터벌 정리
-        window.addEventListener('beforeunload', () => {
-            clearInterval(countdownInterval);
-        });
     }
     
     // 메인 이미지 변경
@@ -213,18 +175,122 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 밋업 참가 신청
+    // 밋업 참가 신청 (AJAX로 변경)
     function joinMeetup() {
-        // 참가자 정보 입력 페이지로 이동 (GET 요청)
-        const checkoutUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+        const joinButton = document.querySelector('[onclick="joinMeetup()"]');
+        if (!joinButton) return;
         
-        // 선택된 옵션이 있다면 URL 파라미터로 전달
+        // 버튼 비활성화 및 로딩 상태
+        joinButton.disabled = true;
+        joinButton.innerHTML = `
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>신청 처리 중...</span>
+        `;
+        
+        // 무료 밋업인지 확인 - isFree 필드로 명확하게 구분
+        const isFree = meetupData.isFree;
+        console.log('💰 밋업 기본 가격:', meetupData.basePrice, '무료 여부:', isFree);
+        
+        // 임시예약 생성 API 호출 - 무료/유료에 따라 다른 URL
+        const checkoutUrl = isFree 
+            ? `/meetup/${meetupData.storeId}/${meetupData.meetupId}/free_checkout/`
+            : `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+        
+        console.log('🎯 이동할 URL:', checkoutUrl);
+        
+        // 선택된 옵션을 URL 파라미터로 전달
+        const params = new URLSearchParams();
         if (Object.keys(selectedOptions).length > 0) {
-            const params = new URLSearchParams();
             params.append('selected_options', JSON.stringify(selectedOptions));
-            window.location.href = `${checkoutUrl}?${params.toString()}`;
-        } else {
-            window.location.href = checkoutUrl;
+        }
+        
+        const fullUrl = Object.keys(selectedOptions).length > 0 ? 
+            `${checkoutUrl}?${params.toString()}` : checkoutUrl;
+        
+        console.log('🚀 최종 이동 URL:', fullUrl);
+        
+        // 페이지 이동
+        window.location.href = fullUrl;
+    }
+    
+    // 정원 상태 업데이트 (필요시에만 호출)
+    function updateCapacityStatus() {
+        return new Promise((resolve, reject) => {
+            if (!meetupData.storeId || !meetupData.meetupId) {
+                reject('meetup 정보 없음');
+                return;
+            }
+            
+            const url = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/capacity-status/`;
+            
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    reject(data.error);
+                    return;
+                }
+                
+                // UI 업데이트
+                updateCapacityUI(data);
+                resolve(data);
+            })
+            .catch(error => {
+                reject(error);
+            });
+        });
+    }
+    
+    // 정원 상태 UI 업데이트
+    function updateCapacityUI(data) {
+        // 남은 자리 수 업데이트
+        const remainingSpotsElement = document.querySelector('.text-sm.font-medium');
+        if (remainingSpotsElement) {
+            let statusText = '';
+            let statusClass = '';
+            
+            if (data.is_temporarily_closed) {
+                statusText = '일시 중단';
+                statusClass = 'text-purple-500';
+            } else if (data.is_expired) {
+                statusText = '종료';
+                statusClass = 'text-gray-500';
+            } else if (data.is_full) {
+                statusText = '정원 마감';
+                statusClass = 'text-red-500';
+            } else if (data.remaining_spots !== null) {
+                statusText = `남은자리: ${data.remaining_spots.toLocaleString()}명`;
+                if (data.remaining_spots <= 5 && data.remaining_spots > 0) {
+                    statusClass = 'text-orange-500';
+                } else {
+                    statusClass = 'text-green-500';
+                }
+            } else {
+                statusText = '참가 가능';
+                statusClass = 'text-green-500';
+            }
+            
+            // 클래스 업데이트
+            remainingSpotsElement.className = `text-sm font-medium ${statusClass}`;
+            remainingSpotsElement.textContent = statusText;
+        }
+        
+        // 현재 참가자 수 업데이트
+        const participantCountElement = document.querySelector('.flex.justify-between.text-sm span:last-child');
+        if (participantCountElement && data.max_participants) {
+            participantCountElement.textContent = `${data.current_participants || 0}명 / ${data.max_participants}명`;
+        }
+        
+        // 진행률 바 업데이트
+        const progressBar = document.querySelector('.progress-bar');
+        if (progressBar && data.max_participants) {
+            const percentage = Math.min(100, (data.current_participants || 0) / data.max_participants * 100);
+            progressBar.style.width = `${percentage}%`;
         }
     }
     
@@ -303,6 +369,10 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(updateJoinButtonState, 100);
         }
     });
+    
+    // 전역 함수로 노출
+    window.joinMeetup = joinMeetup;
+    window.selectOption = selectOption;
 });
 
 // 전역에서 접근 가능하도록 노출

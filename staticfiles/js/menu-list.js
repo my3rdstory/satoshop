@@ -67,7 +67,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 초기화 - 카테고리 필터를 위해 항상 카테고리 로드
-    
     // DOM이 완전히 준비되었는지 확인 후 카테고리 로드
     if (document.readyState === 'complete') {
         loadCategories();
@@ -417,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 전역으로 함수 노출 (디버깅용)
+    // 전역으로 함수 노출
     window.loadCategories = loadCategories;
 
     function renderCategoryFilters() {
@@ -428,57 +427,37 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         categoryFilters.innerHTML = '';
-        
-        if (categories.length === 0) {
-            categoryFilters.innerHTML = '<span class="text-gray-500 dark:text-gray-400 text-sm italic">카테고리 없음</span>';
+
+        if (!categories || categories.length === 0) {
+            categoryFilters.innerHTML = '<p class="text-gray-500">카테고리 없음</p>';
             return;
         }
-        
+
         categories.forEach(category => {
-            const filterBtn = document.createElement('button');
-            filterBtn.className = 'category-filter-btn px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-300 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 font-medium';
-            filterBtn.textContent = category.name;
-            // category.id가 문자열로 오므로 정수로 변환
-            filterBtn.onclick = () => filterByCategory(parseInt(category.id));
-            categoryFilters.appendChild(filterBtn);
+            const button = document.createElement('button');
+            button.className = 'category-btn bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors';
+            button.textContent = category.name;
+            button.onclick = () => filterByCategory(category.id);
+            categoryFilters.appendChild(button);
         });
     }
 
     function filterByCategory(categoryId) {
-        selectedCategoryId = categoryId;
+        const menuCards = document.querySelectorAll('.menu-card');
         
-        // 필터 버튼 활성화 상태 업데이트
-        document.querySelectorAll('.category-filter-btn').forEach(btn => {
-            btn.classList.remove('bg-blue-500', 'text-white', 'border-blue-500');
-            btn.classList.add('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-600');
+        menuCards.forEach(card => {
+            const menuCategories = JSON.parse(card.dataset.categories || '[]');
+            const categoryIdNum = parseInt(categoryId);
+            
+            let shouldShow = false;
+            if (categoryId === 'all') {
+                shouldShow = true;
+            } else {
+                shouldShow = menuCategories.includes(categoryIdNum);
+            }
+            
+            card.style.display = shouldShow ? 'block' : 'none';
         });
-        
-        if (categoryId && event.target) {
-            event.target.classList.remove('bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-600');
-            event.target.classList.add('bg-blue-500', 'text-white', 'border-blue-500');
-        }
-
-        // 메뉴 카드 필터링 (menuCards가 존재하는 경우에만)
-        if (menuCards && menuCards.length > 0) {
-            menuCards.forEach(card => {
-                const menuCategories = JSON.parse(card.dataset.categories || '[]');
-                
-                // 카테고리 ID를 숫자로 변환하여 비교
-                const categoryIdNum = parseInt(categoryId);
-                const shouldShow = !categoryId || menuCategories.includes(categoryIdNum);
-                
-                
-                if (shouldShow) {
-                    card.style.display = 'block';
-                    card.style.opacity = '1';
-                } else {
-                    card.style.display = 'none';
-                    card.style.opacity = '0';
-                }
-            });
-        }
-
-        checkEmptyState();
     }
 
     function clearCategoryFilters() {
@@ -503,9 +482,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 전역 함수로 노출
     window.clearCategoryFilters = clearCategoryFilters;
-
-
-
 
     function getStoreIdFromUrl() {
         const pathParts = window.location.pathname.split('/');

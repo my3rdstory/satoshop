@@ -433,6 +433,13 @@ class SiteSettings(models.Model):
         help_text="스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크"
     )
     
+    # 밋업 관련 설정
+    meetup_countdown_seconds = models.PositiveIntegerField(
+        default=180,
+        verbose_name="밋업 신청 카운트다운 시간(초)",
+        help_text="밋업 신청 과정에서 각 단계별 제한시간 (초 단위, 기본값 180초)"
+    )
+    
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")

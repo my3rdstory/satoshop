@@ -329,8 +329,20 @@
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">밋업에 참가할 수 있는 최대 인원수를 설정하세요</p>
           </div>
 
+          <!-- 무료 밋업 체크 -->
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="is_free" name="is_free" 
+                     class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 dark:focus:ring-green-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+              <label for="is_free" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-medium text-green-600 dark:text-green-400">무료 밋업</span>
+                <span class="text-gray-500 dark:text-gray-400 ml-1">(체크 시 참가비 0원, 할인 및 옵션 비활성화)</span>
+              </label>
+            </div>
+          </div>
+
           <!-- 참가비 -->
-          <div>
+          <div id="priceSection">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
               참가비 <span class="text-red-500">*</span>
             </label>
@@ -340,10 +352,18 @@
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">참가비는 사토시 단위로 입력하세요</p>
+            <div id="priceWarning" class="hidden mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>
+                <span class="text-sm text-amber-700 dark:text-amber-300">
+                  참가비가 0원입니다. <span class="font-medium">무료 밋업</span>을 체크해주세요.
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- 할인 설정 -->
-          <div class="mb-6">
+          <div class="mb-6" id="discountCheckSection">
             <div class="flex items-center">
               <input type="checkbox" id="is_discounted" name="is_discounted" 
                      class="w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
@@ -390,25 +410,30 @@
       </div>
 
       <!-- 옵션 -->
-      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+      <div id="optionsOuterSection" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
         <div class="flex items-center mb-6">
           <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
             <i class="fas fa-list text-yellow-500 text-lg"></i>
           </div>
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">옵션</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">참가 유형, 식사 옵션 등을 설정할 수 있습니다</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              참가 유형, 식사 옵션 등을 설정할 수 있습니다
+              <span id="optionsDisabledNote" class="hidden text-amber-600 dark:text-amber-400 font-medium"> (무료 밋업은 옵션 사용 불가)</span>
+            </p>
           </div>
         </div>
 
-        <div id="optionsContainer" class="space-y-4 mb-6">
-          <!-- 옵션들이 여기에 동적으로 추가됩니다 -->
+        <div id="optionsInnerSection">
+          <div id="optionsContainer" class="space-y-4 mb-6">
+            <!-- 옵션들이 여기에 동적으로 추가됩니다 -->
+          </div>
+          
+          <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
+            <i class="fas fa-plus text-sm"></i>
+            <span>옵션 추가</span>
+          </button>
         </div>
-        
-        <button type="button" id="addOptionBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin border border-bitcoin/20 rounded-lg transition-colors">
-          <i class="fas fa-plus text-sm"></i>
-          <span>옵션 추가</span>
-        </button>
       </div>
 
       <!-- 결제완료 안내 메시지 -->

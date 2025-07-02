@@ -1,0 +1,91 @@
+/* 무료 밋업 체크아웃 전용 스타일 */
+
+/* 플로팅 카운트다운 스타일 */
+.floating-countdown {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.floating-countdown.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.floating-countdown.urgent {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { 
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+  }
+  50% { 
+    box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+    transform: scale(1.02);
+  }
+}
+
+.countdown-time {
+  font-size: 1.2rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  line-height: 1;
+}
+
+/* 무료 체크아웃 페이지 전용 스타일 */
+.free-checkout-container {
+  min-height: screen;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  padding: 2rem 0;
+}
+
+.dark .free-checkout-container {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+.free-participation-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  transition: all 0.3s ease;
+}
+
+.free-participation-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.free-info-card {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1px solid #a7f3d0;
+}
+
+.dark .free-info-card {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+  border: 1px solid #047857;
+}
+
+.back-button {
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  transform: translateX(-2px);
+} 

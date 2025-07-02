@@ -33,6 +33,69 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
   }
+
+  /* 플로팅 카운트다운 스타일 */
+  .floating-countdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .floating-countdown.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .floating-countdown.urgent {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    animation: pulse-red 1s infinite;
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  .countdown-time {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .countdown-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  
+  /* 모바일에서 위치 조정 */
+  @media (max-width: 640px) {
+    .floating-countdown {
+      bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+    }
+    
+    .floating-countdown.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
 </style>
 {% endblock %}
 
@@ -203,9 +266,32 @@
             <div class="space-y-4">
               <div class="flex items-center">
                 <i class="fas fa-bolt text-bitcoin mr-2"></i>
-                <h3 class="font-bold text-gray-900 dark:text-white">결제 방법</h3>
+                <h3 class="font-bold text-gray-900 dark:text-white">
+                  {% if order.total_price == 0 %}
+                  무료 참가
+                  {% else %}
+                  결제 방법
+                  {% endif %}
+                </h3>
               </div>
 
+              {% if order.total_price == 0 %}
+              <!-- 무료 밋업 안내 -->
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div class="flex items-center">
+                    <i class="fas fa-gift text-green-600 dark:text-green-400 mr-2"></i>
+                    <p class="text-green-800 dark:text-green-200 text-sm font-medium">
+                      이 밋업은 무료로 참가할 수 있습니다!
+                    </p>
+                  </div>
+                </div>
+                <p class="mt-3">
+                  아래 버튼을 클릭하여 참가 신청을 완료해주세요.
+                </p>
+              </div>
+              {% else %}
+              <!-- 유료 밋업 안내 -->
               <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                 <ol class="list-decimal list-inside space-y-1 ml-2">
                   <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
@@ -217,8 +303,23 @@
                   <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
                 </p>
               </div>
+              {% endif %}
             </div>
 
+            {% if order.total_price == 0 %}
+            <!-- 무료 참가 신청 버튼 -->
+            <form method="post" action="{% url 'meetup:meetup_checkout' store.store_id meetup.id %}" id="free-participation-form">
+              {% csrf_token %}
+              <button 
+                type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg"
+                id="freeParticipationBtn"
+              >
+                <i class="fas fa-check mr-3"></i>
+                무료 참가 신청 완료하기
+              </button>
+            </form>
+            {% else %}
             <!-- 인보이스 생성 버튼 -->
             <button 
               class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
@@ -228,6 +329,7 @@
               <i class="fas fa-qrcode mr-3"></i>
               결제 인보이스 생성
             </button>
+            {% endif %}
 
             <!-- QR 코드 및 인보이스 표시 영역 -->
             <div id="invoiceContainer" class="hidden space-y-4">
@@ -308,6 +410,19 @@
   </div>
 </div>
 
+<!-- 플로팅 카운트다운 -->
+<div id="floating-countdown" class="floating-countdown">
+  <div class="flex items-center space-x-3">
+    <div class="flex-shrink-0">
+      <i class="fas fa-clock text-lg"></i>
+    </div>
+    <div>
+      <div class="countdown-time" id="countdown-display">03:00</div>
+      <div class="countdown-label">예약 시간 남음</div>
+    </div>
+  </div>
+</div>
+
 <!-- 데이터 전달 -->
 <script type="application/json" id="checkout-data">
 {
@@ -316,10 +431,75 @@
   "orderId": {{ order.id }},
   "basePrice": {{ order.total_price }},
   "csrfToken": "{{ csrf_token }}",
-  "isPaymentPage": true
+  "isPaymentPage": true,
+  "countdownSeconds": {{ countdown_seconds }},
+  "reservationExpiresAt": {% if reservation_expires_at %}"{{ reservation_expires_at }}"{% else %}null{% endif %}
 }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/meetup_countdown.js' %}"></script>
 <script src="{% static 'js/meetup_checkout.js' %}"></script>
+
+<!-- 무료 밋업 카운트다운 중지 처리 (인라인) -->
+<script>
+console.log('🚀 인라인 스크립트 시작');
+
+// DOM 로드 완료 시 실행
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 인라인 스크립트 DOMContentLoaded');
+    
+    // 체크아웃 데이터 파싱
+    const checkoutDataElement = document.getElementById('checkout-data');
+    if (checkoutDataElement) {
+        const checkoutData = JSON.parse(checkoutDataElement.textContent);
+        window.checkoutData = checkoutData;
+        console.log('✅ 체크아웃 데이터 로드:', checkoutData);
+        
+        // 카운트다운 초기화
+        if (checkoutData.reservationExpiresAt && window.MeetupCountdown) {
+            console.log('🕒 카운트다운 초기화 시작');
+            window.meetupCountdownInstance = new MeetupCountdown({
+                storeId: checkoutData.storeId,
+                meetupId: checkoutData.meetupId,
+                reservationExpiresAt: checkoutData.reservationExpiresAt
+            });
+            console.log('✅ 카운트다운 초기화 완료');
+        }
+    }
+    
+    // 무료 참가 신청 폼 이벤트 리스너
+    const freeForm = document.getElementById('free-participation-form');
+    console.log('🔍 무료 참가 폼:', freeForm);
+    
+    if (freeForm) {
+        console.log('📝 무료 참가 폼 이벤트 리스너 등록');
+        
+        freeForm.addEventListener('submit', function(event) {
+            console.log('🆓 무료 참가 폼 제출됨!');
+            
+            // 카운트다운 중지
+            if (window.meetupCountdownInstance) {
+                console.log('🛑 카운트다운 중지 시도');
+                try {
+                    window.meetupCountdownInstance.stopAndHide();
+                    console.log('✅ 카운트다운 중지 성공');
+                } catch (error) {
+                    console.error('❌ 카운트다운 중지 실패:', error);
+                }
+            }
+            
+            // 버튼 상태 변경
+            const btn = document.getElementById('freeParticipationBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
+            }
+            
+            console.log('📤 폼 제출 계속 진행');
+            // event.preventDefault() 호출하지 않음 - 폼이 정상적으로 제출되도록 함
+        });
+    }
+});
+</script>
 {% endblock %} 

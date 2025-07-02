@@ -36,6 +36,7 @@ class Meetup(models.Model):
     organizer_chat_channel = models.URLField(verbose_name="주최자 소통채널", blank=True)
     
     # 가격 정보
+    is_free = models.BooleanField(default=False, verbose_name="무료 밋업")
     price = models.PositiveIntegerField(verbose_name="참가비(satoshi)", default=0)
     is_discounted = models.BooleanField(default=False, verbose_name="할인 적용")
     discounted_price = models.PositiveIntegerField(verbose_name="할인가(satoshi)", null=True, blank=True)
@@ -106,14 +107,37 @@ class Meetup(models.Model):
         return self.orders.filter(status__in=['confirmed', 'completed']).count()
     
     @property
+    def reserved_participants(self):
+        """임시 예약 포함 참가자 수 (정원 차감용)"""
+        from django.utils import timezone
+        now = timezone.now()
+        
+        # 확정된 주문 + 유효한 임시 예약
+        confirmed = self.orders.filter(status__in=['confirmed', 'completed']).count()
+        temp_reserved = self.orders.filter(
+            status='pending',
+            is_temporary_reserved=True,
+            reservation_expires_at__gt=now
+        ).count()
+        
+        return confirmed + temp_reserved
+    
+    @property
     def is_full(self):
         if not self.max_participants:
             return False
-        return self.current_participants >= self.max_participants
+        return self.reserved_participants >= self.max_participants
     
     @property
     def remaining_spots(self):
-        """남은 자리 수"""
+        """남은 자리 수 (임시 예약 고려)"""
+        if not self.max_participants:
+            return None
+        return max(0, self.max_participants - self.reserved_participants)
+    
+    @property
+    def actual_remaining_spots(self):
+        """실제 남은 자리 수 (확정된 주문만 고려)"""
         if not self.max_participants:
             return None
         return max(0, self.max_participants - self.current_participants)
@@ -121,6 +145,10 @@ class Meetup(models.Model):
     @property
     def current_price(self):
         """현재 적용되는 가격"""
+        # 무료 밋업이면 항상 0
+        if self.is_free:
+            return 0
+        # 할인 적용 중이면 할인가
         if self.is_discounted and self.is_early_bird_active:
             return self.discounted_price or self.price
         return self.price
@@ -313,6 +341,11 @@ class MeetupOrder(models.Model):
     # 주문 정보
     order_number = models.CharField(max_length=100, unique=True, verbose_name="주문번호")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name="상태")
+    
+    # 임시 예약 정보 (정원 오버북킹 방지용)
+    is_temporary_reserved = models.BooleanField(default=True, verbose_name="임시 예약 상태")
+    reservation_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="예약 만료 시간")
+    auto_cancelled_reason = models.CharField(max_length=100, blank=True, verbose_name="자동 취소 사유")
     
     # 가격 정보
     base_price = models.PositiveIntegerField(verbose_name="기본 참가비(satoshi)")

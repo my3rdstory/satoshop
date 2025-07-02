@@ -6,6 +6,70 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_participant_info.css' %}">
+<style>
+  /* 플로팅 카운트다운 스타일 */
+  .floating-countdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .floating-countdown.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .floating-countdown.urgent {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    animation: pulse-red 1s infinite;
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  .countdown-time {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .countdown-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  
+  /* 모바일에서 위치 조정 */
+  @media (max-width: 640px) {
+    .floating-countdown {
+      bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+    }
+    
+    .floating-countdown.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
 {% endblock %}
 
 {% block store_content %}
@@ -224,6 +288,19 @@
   </div>
 </div>
 
+<!-- 플로팅 카운트다운 -->
+<div id="floating-countdown" class="floating-countdown">
+  <div class="flex items-center space-x-3">
+    <div class="flex-shrink-0">
+      <i class="fas fa-clock text-lg"></i>
+    </div>
+    <div>
+      <div class="countdown-time" id="countdown-display">03:00</div>
+      <div class="countdown-label">예약 시간 남음</div>
+    </div>
+  </div>
+</div>
+
 <!-- JavaScript 데이터 전달 -->
 <script>
 // 밋업 데이터를 전역 변수로 설정
@@ -232,12 +309,29 @@ window.meetupData = {
     storeId: '{{ store.store_id }}',
     meetupId: {{ meetup.id }},
     selectedOptions: {{ selected_options_json|safe }},
-    requiredOptionIds: {{ required_option_ids|safe }}
+    requiredOptionIds: {{ required_option_ids|safe }},
+    countdownSeconds: {{ countdown_seconds }},
+    reservationExpiresAt: {% if reservation_expires_at %}'{{ reservation_expires_at }}'{% else %}null{% endif %}
 };
 </script>
 
-{% endblock %}
-
-{% block extra_js %}
+<!-- 공통 카운트다운 스크립트 -->
+<script src="{% static 'js/meetup_countdown.js' %}"></script>
+<!-- 참가자 정보 스크립트 -->
 <script src="{% static 'js/meetup_participant_info.js' %}"></script>
+
+<script>
+// DOM 로드 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    // 카운트다운 초기화
+    if (window.meetupData && window.MeetupCountdown) {
+        window.meetupCountdownInstance = new MeetupCountdown({
+            storeId: window.meetupData.storeId,
+            meetupId: window.meetupData.meetupId,
+            reservationExpiresAt: window.meetupData.reservationExpiresAt
+        });
+    }
+});
+</script>
+
 {% endblock %} 
