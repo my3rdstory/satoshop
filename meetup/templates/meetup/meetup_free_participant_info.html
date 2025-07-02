@@ -1,0 +1,312 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}무료 밋업 참가자 정보 입력 - {{ meetup.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_participant_info.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- 페이지 헤더 -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center mb-4">
+        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-full mr-3">
+          <i class="fas fa-gift text-2xl text-green-600 dark:text-green-400"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">무료 밋업 참가자 정보 입력</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">{{ meetup.name }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 밋업 정보 요약 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 border border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+        <i class="fas fa-calendar-alt mr-2 text-green-600"></i>
+        밋업 정보
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% if meetup.date_time %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">일시:</span>
+          <div class="font-medium text-gray-900 dark:text-white">
+            {{ meetup.date_time|date:"Y년 m월 d일 (l) H:i" }}
+          </div>
+        </div>
+        {% endif %}
+        <!-- 장소 정보 -->
+        {% if meetup.location_tbd %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
+          <div class="font-medium text-orange-600 dark:text-orange-400">
+            <i class="fas fa-clock mr-1"></i>장소 추후 공지 예정입니다.
+          </div>
+        </div>
+        {% elif meetup.location_full_address %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">장소:</span>
+          <div class="font-medium text-gray-900 dark:text-white">{{ meetup.location_full_address }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <span class="text-sm text-gray-600 dark:text-gray-400">참가비:</span>
+          <div class="font-medium text-green-600 dark:text-green-400 text-lg">
+            <i class="fas fa-gift mr-1"></i>무료
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 참가자 정보 입력 폼 -->
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+
+      <!-- 에러 발생 시 재시도 안내 -->
+      {% if error_occurred %}
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-yellow-800 dark:text-yellow-200 font-medium mb-1">재시도 안내</h4>
+            <p class="text-yellow-700 dark:text-yellow-300 text-sm">
+              일시적인 오류가 발생했습니다. 정보를 다시 확인하고 "무료 참가 신청하기" 버튼을 다시 눌러주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- 이메일 안내 문구 -->
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-envelope text-blue-600 dark:text-blue-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-1">참가 신청 완료 안내</h4>
+            <p class="text-blue-700 dark:text-blue-300 text-sm">
+              참가 신청이 완료되면 입력하신 이메일 주소로 신청 확인 및 상세 정보를 보내드립니다.
+              <br>이메일 주소를 정확하게 입력해 주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 무료 밋업 안내 -->
+      <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-gift text-green-600 dark:text-green-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-green-800 dark:text-green-200 font-medium mb-1">무료 밋업</h4>
+            <p class="text-green-700 dark:text-green-300 text-sm">
+              이 밋업은 무료로 참가할 수 있습니다. 참가자 정보를 입력하고 "참가 신청 완료하기" 버튼을 누르면 즉시 참가 신청이 완료됩니다.
+              {% if existing_orders %}
+              <br><strong>무료 밋업은 여러 번 참가할 수 있습니다.</strong>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기존 참가 이력 (있는 경우만 표시) -->
+      {% if existing_orders %}
+      <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-history text-blue-600 dark:text-blue-400 mr-3 mt-1"></i>
+          <div class="flex-1">
+            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-2">이전 참가 이력</h4>
+            <p class="text-blue-700 dark:text-blue-300 text-sm mb-3">
+              이 밋업에 이미 {{ existing_orders.count }}번 참가하셨습니다.
+            </p>
+            <div class="space-y-2">
+              {% for order in existing_orders|slice:":3" %}
+              <div class="bg-white dark:bg-gray-700 rounded-lg p-3 text-sm">
+                <div class="flex justify-between items-center">
+                  <span class="text-gray-900 dark:text-white font-medium">
+                    {{ order.participant_name }}
+                  </span>
+                  <span class="text-gray-500 dark:text-gray-400">
+                    {{ order.confirmed_at|date:"Y-m-d H:i" }}
+                  </span>
+                </div>
+                <div class="text-gray-600 dark:text-gray-300 mt-1">
+                  {{ order.participant_email }}
+                </div>
+              </div>
+              {% endfor %}
+              {% if existing_orders.count > 3 %}
+              <div class="text-center">
+                <span class="text-blue-600 dark:text-blue-400 text-sm">
+                  외 {{ existing_orders.count|add:"-3" }}건 더
+                </span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+          <i class="fas fa-user mr-2 text-green-600"></i>
+          참가자 정보
+        </h3>
+
+        {% if user.is_authenticated %}
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <div class="flex items-center">
+            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+            <span class="text-blue-800 dark:text-blue-200 text-sm">
+              로그인된 사용자 정보가 자동으로 입력됩니다. 필요시 수정 가능합니다.
+            </span>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- 참가자 이름 -->
+          <div>
+            <label for="participant_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              참가자 이름 <span class="text-red-500">*</span>
+            </label>
+            <input type="text" 
+                   id="participant_name" 
+                   name="participant_name" 
+                   value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}"
+                   required 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="실명을 입력해주세요">
+          </div>
+
+          <!-- 참가자 이메일 -->
+          <div>
+            <label for="participant_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              이메일 <span class="text-red-500">*</span>
+            </label>
+            <input type="email" 
+                   id="participant_email" 
+                   name="participant_email" 
+                   value="{% if user.is_authenticated %}{{ user.email }}{% endif %}"
+                   required 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="이메일 주소를 입력해주세요">
+          </div>
+
+          <!-- 참가자 연락처 -->
+          <div class="md:col-span-2">
+            <label for="participant_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              연락처 (선택)
+            </label>
+            <input type="tel" 
+                   id="participant_phone" 
+                   name="participant_phone" 
+                   class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   placeholder="연락처를 입력해주세요 (예: 010-1234-5678)">
+          </div>
+        </div>
+      </div>
+
+      <!-- 참가비 요약 -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <i class="fas fa-receipt mr-2 text-green-600"></i>
+          참가 정보 요약
+        </h3>
+        
+        <div class="space-y-3">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">참가비</span>
+            <span class="font-bold text-xl text-green-600 dark:text-green-400">
+              <i class="fas fa-gift mr-1"></i>무료
+            </span>
+          </div>
+          
+          <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+            <div class="flex justify-between">
+              <span class="font-bold text-gray-900 dark:text-white">총 참가비</span>
+              <span class="font-bold text-xl text-green-600 dark:text-green-400">
+                <i class="fas fa-gift mr-1"></i>무료
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+           class="inline-flex items-center justify-center px-8 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl border border-gray-300 dark:border-gray-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          <span>돌아가기</span>
+        </a>
+        
+        <button type="submit" 
+                class="inline-flex items-center justify-center px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl"
+                id="submit-btn">
+          <i class="fas fa-check mr-2" id="submit-icon"></i>
+          <span id="submit-text">참가 신청 완료하기</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- JavaScript 데이터 전달 -->
+<script>
+// 무료 밋업 데이터를 전역 변수로 설정
+window.meetupData = {
+    basePrice: 0,
+    storeId: '{{ store.store_id }}',
+    meetupId: {{ meetup.id }},
+    isFree: true
+};
+</script>
+
+<script>
+// DOM 로드 후 실행
+document.addEventListener('DOMContentLoaded', function() {
+    // 폼 제출 시 처리
+    const participantForm = document.querySelector('form[method="post"]');
+    if (participantForm) {
+        participantForm.addEventListener('submit', function(event) {
+            // 폼 유효성 검사
+            const participantName = document.getElementById('participant_name').value.trim();
+            const participantEmail = document.getElementById('participant_email').value.trim();
+            
+            if (!participantName) {
+                alert('참가자 이름을 입력해주세요.');
+                event.preventDefault();
+                return;
+            }
+            
+            if (!participantEmail) {
+                alert('이메일을 입력해주세요.');
+                event.preventDefault();
+                return;
+            }
+            
+            // 이메일 형식 검사
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(participantEmail)) {
+                alert('올바른 이메일 주소를 입력해주세요.');
+                event.preventDefault();
+                return;
+            }
+            
+            // 제출 버튼 상태 변경
+            const submitBtn = document.getElementById('submit-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %} 

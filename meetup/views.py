@@ -348,11 +348,8 @@ def meetup_checkout(request, store_id, meetup_id):
 
 def meetup_checkout_complete(request, store_id, meetup_id, order_id):
     """밋업 결제 완료"""
-    logger.info(f"결제 완료 페이지 접근 - store_id: {store_id}, meetup_id: {meetup_id}, order_id: {order_id}")
-    
     try:
         store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        logger.info(f"스토어 조회 성공 - {store.store_name}")
         
         meetup = get_object_or_404(
             Meetup, 
@@ -360,7 +357,6 @@ def meetup_checkout_complete(request, store_id, meetup_id, order_id):
             store=store, 
             deleted_at__isnull=True
         )
-        logger.info(f"밋업 조회 성공 - {meetup.name}")
         
         order = get_object_or_404(
             MeetupOrder,
@@ -368,7 +364,6 @@ def meetup_checkout_complete(request, store_id, meetup_id, order_id):
             meetup=meetup,
             status__in=['confirmed', 'completed']
         )
-        logger.info(f"주문 조회 성공 - {order.order_number}, 상태: {order.status}")
         
         # 할인 금액 계산 (조기등록 할인)
         discount_amount = 0
@@ -382,11 +377,9 @@ def meetup_checkout_complete(request, store_id, meetup_id, order_id):
             'discount_amount': discount_amount,
         }
         
-        logger.info(f"결제 완료 페이지 렌더링 성공 - 주문: {order.order_number}")
         return render(request, 'meetup/meetup_checkout_complete.html', context)
     
-    except Exception as e:
-        logger.error(f"결제 완료 페이지 오류: {e}", exc_info=True)
+    except Exception:
         messages.error(request, '결제 완료 페이지를 불러오는 중 오류가 발생했습니다.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
 

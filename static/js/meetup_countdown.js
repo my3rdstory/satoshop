@@ -21,12 +21,10 @@ class MeetupCountdown {
     
     init() {
         if (!this.reservationExpiresAt) {
-            console.log('예약 만료 시간이 없어서 카운트다운을 표시하지 않음');
             return;
         }
         
         if (!this.countdownDisplay || !this.floatingCountdown) {
-            console.log('카운트다운 DOM 요소를 찾을 수 없음');
             return;
         }
         
@@ -34,7 +32,6 @@ class MeetupCountdown {
         this.originalReservationExpiresAt = this.reservationExpiresAt;
         this.currentExpiresAt = this.originalReservationExpiresAt;
         
-        console.log('카운트다운 초기화:', {
             reservationExpiresAt: this.reservationExpiresAt,
             originalReservationExpiresAt: this.originalReservationExpiresAt,
             currentExpiresAt: this.currentExpiresAt
@@ -58,10 +55,8 @@ class MeetupCountdown {
     }
     
     startCountdown() {
-        console.log('카운트다운 시작:', this.currentExpiresAt);
         
         if (!this.countdownDisplay || !this.floatingCountdown || !this.currentExpiresAt) {
-            console.log('카운트다운 시작 실패 - 필수 요소 누락');
             return;
         }
         
@@ -114,7 +109,6 @@ class MeetupCountdown {
     
     // 카운트다운 만료 시간 업데이트 (인보이스 생성/취소 시 사용)
     updateExpiration(newExpiresAt) {
-        console.log('카운트다운 만료 시간 업데이트:', newExpiresAt);
         this.currentExpiresAt = newExpiresAt;
         
         // 카운트다운 재시작
@@ -135,13 +129,11 @@ class MeetupCountdown {
     
     // 원본 예약 시간으로 복원 (인보이스 취소 시 사용)
     resetToOriginalExpiration() {
-        console.log('원본 예약 시간으로 복원');
         this.updateExpiration(this.originalReservationExpiresAt);
     }
     
     // 인보이스 생성 시 카운트다운을 결제 시간으로 변경
     switchToPaymentMode(paymentExpiresAt) {
-        console.log('🔄 결제 모드로 전환:', paymentExpiresAt);
         
         // 부드러운 전환을 위해 잠깐 숨기기
         this.hide();
@@ -168,7 +160,6 @@ class MeetupCountdown {
     
     // 인보이스 취소 시 카운트다운을 예약 시간으로 복원
     switchToReservationMode() {
-        console.log('🔄 예약 모드로 복원');
         
         // 부드러운 전환을 위해 잠깐 숨기기
         this.hide();
@@ -195,21 +186,17 @@ class MeetupCountdown {
     
     // 카운트다운 표시
     show() {
-        console.log('👁️ 카운트다운 표시');
         if (this.floatingCountdown) {
             this.floatingCountdown.classList.remove('hidden');
             this.floatingCountdown.classList.add('show');
-            console.log('✅ 카운트다운 표시 완료');
         }
     }
     
     // 카운트다운 숨기기 (완전히 숨김)
     hide() {
-        console.log('👻 카운트다운 숨기기');
         if (this.floatingCountdown) {
             this.floatingCountdown.classList.remove('show');
             this.floatingCountdown.classList.add('hidden');
-            console.log('✅ 카운트다운 숨기기 완료');
         }
     }
     
@@ -282,7 +269,6 @@ class MeetupCountdown {
                 xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 xhr.send(`csrfmiddlewaretoken=${this.getCsrfToken()}`);
             } catch (e) {
-                console.log('예약 해제 요청 실패:', e);
             }
         }
     }
@@ -326,20 +312,17 @@ class MeetupCountdown {
     
     // 카운트다운 중지 및 숨기기 (무료 밋업 결제 시 사용)
     stopAndHide() {
-        console.log('🛑 카운트다운 중지 및 숨기기');
         
         // 카운트다운 인터벌 중지
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
             this.countdownInterval = null;
-            console.log('⏹️ 카운트다운 인터벌 중지됨');
         }
         
         // 플로팅 카운트다운 숨기기
         if (this.floatingCountdown) {
             this.floatingCountdown.classList.remove('show');
             this.floatingCountdown.classList.add('hidden');
-            console.log('👻 플로팅 카운트다운 숨김');
         }
     }
 }

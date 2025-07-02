@@ -514,7 +514,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             optionsInput.value = JSON.stringify(optionsData);
             
-                         console.log('전송될 옵션 데이터:', optionsData); // 디버깅용
          });
      }
 
@@ -616,7 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // 주소 검색 기능
     function execLocationDaumPostcode() {
         if (!locationAddressModal) {
-            console.error('location-address-modal 요소를 찾을 수 없습니다.');
             return;
         }
         
@@ -628,7 +626,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const container = document.getElementById('location-address-search-container');
         if (!container) {
-            console.error('location-address-search-container 요소를 찾을 수 없습니다.');
             return;
         }
         
@@ -752,5 +749,4 @@ document.addEventListener('DOMContentLoaded', function() {
 // 전역 함수들 (HTML에서 호출)
 function removeImage(index) {
     // 이미지 제거 로직은 여기서 구현하지만 실제로는 파일에서 이미 구현되어 있어야 함
-    console.log('removeImage called with index:', index);
 }

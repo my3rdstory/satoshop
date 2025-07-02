@@ -189,14 +189,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 무료 밋업인지 확인 - isFree 필드로 명확하게 구분
         const isFree = meetupData.isFree;
-        console.log('💰 밋업 기본 가격:', meetupData.basePrice, '무료 여부:', isFree);
         
-        // 임시예약 생성 API 호출 - 무료/유료에 따라 다른 URL
+        // 무료/유료에 따라 다른 URL - 무료 밋업은 참가자 정보 입력 페이지로 먼저 이동
         const checkoutUrl = isFree 
-            ? `/meetup/${meetupData.storeId}/${meetupData.meetupId}/free_checkout/`
+            ? `/meetup/${meetupData.storeId}/${meetupData.meetupId}/free_participant_info/`
             : `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
-        
-        console.log('🎯 이동할 URL:', checkoutUrl);
         
         // 선택된 옵션을 URL 파라미터로 전달
         const params = new URLSearchParams();
@@ -207,14 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fullUrl = Object.keys(selectedOptions).length > 0 ? 
             `${checkoutUrl}?${params.toString()}` : checkoutUrl;
         
-        console.log('🚀 최종 이동 URL:', fullUrl);
-        
-        // 페이지 이동 전 현재 상태 로그
-        console.log('📍 현재 URL:', window.location.href);
-        console.log('⏰ 이동 시간:', new Date().toISOString());
-        
         // 페이지 이동
-        console.log('🏃‍♂️ window.location.href로 이동 시작...');
         window.location.href = fullUrl;
     }
     

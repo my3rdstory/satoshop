@@ -461,54 +461,35 @@
 <script src="{% static 'js/meetup_checkout.js' %}"></script>
 
 <script>
-console.log('🚀 결제 페이지 스크립트 시작');
-
 // DOM 로드 완료 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 결제 페이지 DOMContentLoaded');
-    
     // 체크아웃 데이터 파싱
     const checkoutDataElement = document.getElementById('checkout-data');
     if (checkoutDataElement) {
         const checkoutData = JSON.parse(checkoutDataElement.textContent);
         window.checkoutData = checkoutData;
-        console.log('✅ 체크아웃 데이터 로드:', checkoutData);
         
         // 카운트다운 초기화
         if (checkoutData.reservationExpiresAt && window.MeetupCountdown) {
-            console.log('🕒 결제 페이지 카운트다운 초기화 시작');
-            console.log('📅 예약 만료 시간:', checkoutData.reservationExpiresAt);
             window.meetupCountdownInstance = new MeetupCountdown({
                 storeId: checkoutData.storeId,
                 meetupId: checkoutData.meetupId,
                 reservationExpiresAt: checkoutData.reservationExpiresAt
             });
-            console.log('✅ 결제 페이지 카운트다운 초기화 완료');
-        } else {
-            console.log('⚠️ 카운트다운 정보가 없거나 MeetupCountdown 클래스가 로드되지 않음');
-            console.log('reservationExpiresAt:', checkoutData.reservationExpiresAt);
-            console.log('MeetupCountdown:', window.MeetupCountdown);
         }
     }
     
     // 무료 참가 신청 폼 이벤트 리스너
     const freeForm = document.getElementById('free-participation-form');
-    console.log('🔍 무료 참가 폼:', freeForm);
     
     if (freeForm) {
-        console.log('📝 무료 참가 폼 이벤트 리스너 등록');
-        
         freeForm.addEventListener('submit', function(event) {
-            console.log('🆓 무료 참가 폼 제출됨!');
-            
             // 카운트다운 중지
             if (window.meetupCountdownInstance) {
-                console.log('🛑 카운트다운 중지 시도');
                 try {
                     window.meetupCountdownInstance.stopAndHide();
-                    console.log('✅ 카운트다운 중지 성공');
                 } catch (error) {
-                    console.error('❌ 카운트다운 중지 실패:', error);
+                    // 무시
                 }
             }
             
@@ -519,7 +500,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
             }
             
-            console.log('📤 폼 제출 계속 진행');
             // event.preventDefault() 호출하지 않음 - 폼이 정상적으로 제출되도록 함
         });
     }
@@ -528,8 +508,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (window.generateInvoice) {
         const originalGenerateInvoice = window.generateInvoice;
         window.generateInvoice = function() {
-            console.log('💳 인보이스 생성 시작 - 카운트다운 일시 중지');
-            
             // 원래 함수 실행
             originalGenerateInvoice();
         };

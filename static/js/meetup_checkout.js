@@ -1,5 +1,4 @@
 // meetup_checkout.js
-console.log('🚀 meetup_checkout.js 파일이 로드되었습니다!');
 
 let currentPaymentHash = '';
 let currentInvoice = '';
@@ -8,16 +7,12 @@ let meetupCountdown = null; // 카운트다운 인스턴스
 let paymentExpiresAt = null;
 let isInvoiceGenerated = false;
 
-console.log('🔧 meetup_checkout.js 변수 초기화 완료');
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('�� meetup_checkout.js DOMContentLoaded 이벤트 발생');
-    console.log('🌍 window.checkoutData:', window.checkoutData);
     
     // 체크아웃 데이터 로드
     const checkoutDataElement = document.getElementById('checkout-data');
     if (!checkoutDataElement) {
-        console.error('체크아웃 데이터를 찾을 수 없습니다.');
         return;
     }
     
@@ -28,8 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.selectedOptions = {};
     
     // 디버깅 로그
-    console.log('checkoutData:', window.checkoutData);
-    console.log('reservationExpiresAt:', window.checkoutData.reservationExpiresAt);
     
     // 페이지 초기화
     if (checkoutData.isPaymentPage) {
@@ -59,8 +52,6 @@ function initCheckoutPage() {
 
 // 결제 페이지 초기화
 function initPaymentPage() {
-    console.log('결제 페이지 초기화');
-    console.log('체크아웃 데이터:', window.checkoutData);
     
     // 인보이스 생성 버튼 스타일 설정
     const generateBtn = document.getElementById('generateInvoiceBtn');
@@ -82,32 +73,23 @@ function initPaymentPage() {
     
     // 무료 참가 신청 폼 이벤트 리스너 추가
     const freeParticipationForm = document.getElementById('free-participation-form');
-    console.log('🔍 무료 참가 신청 폼 요소:', freeParticipationForm);
     
     if (freeParticipationForm) {
-        console.log('✅ 무료 참가 신청 폼 이벤트 리스너 등록됨');
         
         freeParticipationForm.addEventListener('submit', function(event) {
-            console.log('🆓 무료 참가 신청 폼 제출됨 - 카운트다운 중지 시작');
-            console.log('🌍 window.meetupCountdownInstance:', window.meetupCountdownInstance);
             
             // 카운트다운 중지
             if (window.meetupCountdownInstance) {
-                console.log('🛑 카운트다운 중지 시도');
                 try {
                     window.meetupCountdownInstance.stopAndHide();
-                    console.log('✅ 카운트다운 중지 완료');
                 } catch (error) {
-                    console.error('❌ 카운트다운 중지 실패:', error);
                 }
             } else {
-                console.log('⚠️ meetupCountdownInstance가 없음');
             }
             
             // 버튼 상태 변경
             const submitBtn = document.getElementById('freeParticipationBtn');
             if (submitBtn) {
-                console.log('🔄 버튼 상태 변경');
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = `
                     <div class="flex items-center">
@@ -116,14 +98,11 @@ function initPaymentPage() {
                     </div>
                 `;
             } else {
-                console.log('⚠️ freeParticipationBtn 요소를 찾을 수 없음');
             }
             
-            console.log('📝 폼 제출 계속 진행');
             // 폼 제출은 계속 진행 (event.preventDefault() 호출하지 않음)
         });
     } else {
-        console.log('⚠️ 무료 참가 신청 폼을 찾을 수 없음 - 아마도 유료 밋업');
     }
 }
 
@@ -173,12 +152,9 @@ function generateInvoice() {
             
             // 인보이스 만료 시간으로 카운트다운 업데이트 (보통 15분)
             if (data.expires_at && window.meetupCountdownInstance) {
-                console.log('🕒 인보이스 만료 시간으로 카운트다운 업데이트:', data.expires_at);
                 try {
                     window.meetupCountdownInstance.switchToPaymentMode(data.expires_at);
-                    console.log('✅ 카운트다운이 결제 모드로 전환됨');
                 } catch (error) {
-                    console.error('❌ 카운트다운 모드 전환 실패:', error);
                 }
             }
             
@@ -223,7 +199,6 @@ function generateInvoice() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showPaymentStatus('인보이스 생성 중 오류가 발생했습니다.', 'error');
         
         // 버튼 복원
@@ -250,7 +225,6 @@ function generateQRCode(invoice) {
             level: 'M'
         });
     } catch (error) {
-        console.error('QR 코드 생성 오류:', error);
         // QR 코드 생성 실패 시 대체 텍스트 표시
         document.getElementById('qrCodeImage').alt = 'QR 코드 생성 실패';
     }
@@ -311,7 +285,6 @@ function checkPaymentStatus() {
         if (data.success) {
             if (data.paid) {
                 // 결제 완료
-                console.log('💰 결제 완료 - 카운트다운 중지');
                 
                 if (paymentCheckInterval) {
                     clearInterval(paymentCheckInterval);
@@ -320,12 +293,9 @@ function checkPaymentStatus() {
                 
                 // 카운트다운 중지
                 if (window.meetupCountdownInstance) {
-                    console.log('🛑 결제 완료로 인한 카운트다운 중지');
                     try {
                         window.meetupCountdownInstance.stopAndHide();
-                        console.log('✅ 카운트다운 중지 완료');
                     } catch (error) {
-                        console.error('❌ 카운트다운 중지 실패:', error);
                     }
                 }
                 
@@ -338,7 +308,6 @@ function checkPaymentStatus() {
             }
             // 결제 대기 중이면 계속 확인
         } else {
-            console.error('결제 상태 확인 오류:', data.error);
             // 에러가 발생하면 상태 확인 중지
             if (paymentCheckInterval) {
                 clearInterval(paymentCheckInterval);
@@ -347,7 +316,6 @@ function checkPaymentStatus() {
         }
     })
     .catch(error => {
-        console.error('결제 상태 확인 중 오류:', error);
         // 네트워크 에러가 발생하면 상태 확인 중지
         if (paymentCheckInterval) {
             clearInterval(paymentCheckInterval);
@@ -404,12 +372,9 @@ function cancelInvoice() {
             
             // 카운트다운을 원본 예약 시간으로 복원
             if (window.meetupCountdownInstance) {
-                console.log('🔄 카운트다운을 원본 예약 시간으로 복원');
                 try {
                     window.meetupCountdownInstance.switchToReservationMode();
-                    console.log('✅ 카운트다운이 예약 모드로 복원됨');
                 } catch (error) {
-                    console.error('❌ 카운트다운 모드 복원 실패:', error);
                 }
             }
             
@@ -437,7 +402,6 @@ function cancelInvoice() {
         }
     })
     .catch(error => {
-        console.error('Error:', error);
         showPaymentStatus('취소 처리 중 오류가 발생했습니다.', 'error');
         
         // 취소 버튼 복원
@@ -588,7 +552,6 @@ async function handleCheckoutSubmit(event) {
             alert(result.error || '주문 생성에 실패했습니다.');
         }
     } catch (error) {
-        console.error('체크아웃 오류:', error);
         alert('주문 처리 중 오류가 발생했습니다.');
     } finally {
         // 버튼 복원

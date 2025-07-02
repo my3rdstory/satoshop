@@ -35,8 +35,8 @@ urlpatterns = [
     # 밋업 일시중단 토글
     path('<str:store_id>/<int:meetup_id>/toggle-temporary-closure/', views.toggle_temporary_closure, name='toggle_temporary_closure'),
     
-    # 무료 밋업 전용 체크아웃 (구체적인 패턴을 먼저 배치)
-    path('<str:store_id>/<int:meetup_id>/free_checkout/', views_free.meetup_free_checkout, name='meetup_free_checkout'),
+    # 무료 밋업 전용 (구체적인 패턴을 먼저 배치)
+    path('<str:store_id>/<int:meetup_id>/free_participant_info/', views_free.meetup_free_participant_info, name='meetup_free_participant_info'),
     
     # 밋업 체크아웃 (라우팅 뷰)
     path('<str:store_id>/<int:meetup_id>/checkout/', views.meetup_checkout, name='meetup_checkout'),

@@ -11,12 +11,10 @@ function initializeMeetupStatus() {
     // 밋업 카드 호버 효과 초기화
     initializeMeetupCards();
     
-    console.log('밋업 현황 페이지가 초기화되었습니다.');
 }
 
 function initializeStatsCards() {
     // 통계 카드 애니메이션 효과 제거됨
-    console.log('통계 카드 초기화 완료 (애니메이션 없음)');
 }
 
 function initializeMeetupCards() {

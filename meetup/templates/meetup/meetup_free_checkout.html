@@ -78,13 +78,20 @@
           <div class="space-y-3">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">참가자:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ user.get_full_name|default:user.username }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant_info.participant_name }}</span>
             </div>
             
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">이메일:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant_info.participant_email }}</span>
             </div>
+            
+            {% if participant_info.participant_phone %}
+            <div class="flex justify-between">
+              <span class="text-gray-600 dark:text-gray-400">연락처:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant_info.participant_phone }}</span>
+            </div>
+            {% endif %}
             
             <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
               <div class="flex justify-between font-bold text-lg">
@@ -135,6 +142,17 @@
                 무료 참가 신청 완료하기
               </button>
             </form>
+
+            <!-- 참가자 정보 수정 링크 -->
+            <div class="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-600 rounded-lg p-4 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-gray-700 dark:text-gray-300">참가자 정보가 올바른지 확인해주세요</span>
+                <a href="{% url 'meetup:meetup_free_participant_info' store.store_id meetup.id %}" 
+                   class="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 font-medium">
+                  <i class="fas fa-edit mr-1"></i>정보 수정
+                </a>
+              </div>
+            </div>
 
             <!-- 안내 사항 -->
             <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">

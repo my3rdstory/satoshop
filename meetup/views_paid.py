@@ -28,14 +28,12 @@ def meetup_checkout(request, store_id, meetup_id):
         is_active=True
     )
     
-    # 무료 밋업인 경우 무료 체크아웃으로 리다이렉트
+    # 무료 밋업인 경우 무료 참가자 정보 입력으로 리다이렉트
     if meetup.is_free:
-        logger.info(f"무료 밋업 감지 - 무료 체크아웃으로 리다이렉트: {meetup_id}")
-        return redirect('meetup:meetup_free_checkout', store_id=store_id, meetup_id=meetup_id)
+        return redirect('meetup:meetup_free_participant_info', store_id=store_id, meetup_id=meetup_id)
     
     # 정원 확인
     if meetup.max_participants and meetup.current_participants >= meetup.max_participants:
-        logger.warning(f"유료 밋업 정원 마감 - 밋업: {meetup_id}")
         messages.error(request, '밋업 신청이 마감되었습니다.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
     
@@ -57,7 +55,6 @@ def meetup_checkout(request, store_id, meetup_id):
             with transaction.atomic():
                 # 정원 재확인 (동시성 이슈 방지)
                 if meetup.max_participants and meetup.current_participants >= meetup.max_participants:
-                    logger.warning(f"유료 밋업 정원 마감 (재확인) - 밋업: {meetup_id}")
                     messages.error(request, '죄송합니다. 방금 전에 밋업 신청이 마감되었습니다.')
                     return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
                 
@@ -141,13 +138,10 @@ def meetup_checkout(request, store_id, meetup_id):
                         additional_price=selected_option['price']
                     )
                 
-                logger.info(f"유료 밋업 주문 생성 완료 - 주문: {order.order_number}")
-                
                 # 결제 페이지로 리다이렉트
                 return redirect('meetup:meetup_checkout_payment', store_id=store_id, meetup_id=meetup_id, order_id=order.id)
                 
-        except Exception as e:
-            logger.error(f"유료 밋업 주문 생성 오류: {e}", exc_info=True)
+        except Exception:
             
             messages.error(request, '주문 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
             return render(request, 'meetup/meetup_participant_info.html', {
@@ -271,8 +265,7 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
                 'error': result.get('error', '인보이스 생성에 실패했습니다.')
             })
             
-    except Exception as e:
-        logger.error(f"밋업 인보이스 생성 오류: {e}", exc_info=True)
+    except Exception:
         return JsonResponse({
             'success': False,
             'error': '인보이스 생성 중 오류가 발생했습니다.'
@@ -324,29 +317,18 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
                     order.confirmed_at = timezone.now()
                     order.save()
                     
-                logger.info(f"밋업 결제 완료 및 예약 확정 - 주문: {order.order_number}")
-                
                 # 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
                 try:
                     from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
                     
                     # 주인장에게 알림 이메일
-                    owner_email_sent = send_meetup_notification_email(order)
-                    if owner_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 알림 이메일 발송 조건 미충족: {order.order_number}")
+                    send_meetup_notification_email(order)
                     
                     # 참가자에게 확인 이메일
-                    participant_email_sent = send_meetup_participant_confirmation_email(order)
-                    if participant_email_sent:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 성공: {order.order_number}")
-                    else:
-                        logger.info(f"[MEETUP_EMAIL] 밋업 참가자 확인 이메일 발송 조건 미충족: {order.order_number}")
+                    send_meetup_participant_confirmation_email(order)
                         
-                except Exception as e:
+                except Exception:
                     # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"[MEETUP_EMAIL] 밋업 이메일 발송 오류: {order.order_number}, {str(e)}")
                     pass
                 
                 return JsonResponse({
@@ -365,8 +347,7 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
                 'error': result.get('error', '결제 상태 확인에 실패했습니다.')
             })
             
-    except Exception as e:
-        logger.error(f"밋업 결제 상태 확인 오류: {e}", exc_info=True)
+    except Exception:
         return JsonResponse({
             'success': False,
             'error': '결제 상태 확인 중 오류가 발생했습니다.'

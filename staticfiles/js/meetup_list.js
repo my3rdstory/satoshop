@@ -193,5 +193,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    console.log('밋업 목록 JavaScript 로드 완료');
 }); 

@@ -164,7 +164,13 @@
               <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
                 <div class="flex justify-between">
                   <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
+                  {% if order.total_price == 0 %}
+                  <span class="font-bold text-xl text-green-600 dark:text-green-400">
+                    <i class="fas fa-gift mr-1"></i>무료
+                  </span>
+                  {% else %}
                   <span class="font-bold text-xl text-bitcoin">{{ order.total_price|floatformat:0|intcomma }} sats</span>
+                  {% endif %}
                 </div>
               </div>
               <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -317,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         qrCodeCanvas = canvas;
-        console.log('QR 코드 생성 완료:', orderNumber);
         
         // 페이지 로드 후 2초 뒤에 자동 다운로드 시작
         setTimeout(function() {
@@ -327,8 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 3000); // QR코드는 3초 뒤에 다운로드
         }, 2000);
         
-    } else {
-        console.error('QR 코드 생성 실패: canvas 또는 주문번호가 없습니다.');
     }
 });
 
