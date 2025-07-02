@@ -440,6 +440,13 @@ class SiteSettings(models.Model):
         help_text="밋업 신청 과정에서 각 단계별 제한시간 (초 단위, 기본값 180초)"
     )
     
+    # 스토어 탐색 페이지 설정
+    excluded_active_store_ids = models.TextField(
+        blank=True,
+        verbose_name="주문 활발한 스토어에서 제외할 스토어 ID",
+        help_text="주문이 활발한 스토어 목록에서 제외할 스토어 ID들을 쉼표로 구분하여 입력하세요 (예: demo,test,sample)"
+    )
+    
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")

@@ -4,12 +4,29 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils import timezone
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.db import models
 from django.db.models import Count, Q
 from datetime import timedelta
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption, Store
 
+
+class HasParticipantsFilter(admin.SimpleListFilter):
+    """참가자 유무 필터"""
+    title = '참가자 유무'
+    parameter_name = 'has_participants'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', '참가자 있음'),
+            ('no', '참가자 없음'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.filter(orders__status__in=['confirmed', 'completed']).distinct()
+        if self.value() == 'no':
+            return queryset.exclude(orders__status__in=['confirmed', 'completed']).distinct()
 
 
 class MeetupImageInline(admin.TabularInline):
@@ -58,9 +75,10 @@ class MeetupOptionInline(admin.TabularInline):
 class MeetupAdmin(admin.ModelAdmin):
     list_display = [
         'name', 'store', 'price_display', 'is_free', 'is_active', 'is_discounted', 
-        'participants_display', 'remaining_spots_display', 'cancelled_orders_count', 'created_at'
+        'participants_display', 'remaining_spots_display', 'cancelled_orders_count', 
+        'view_participants_button', 'created_at'
     ]
-    list_filter = ['store', 'is_free', 'is_active', 'is_discounted', 'is_temporarily_closed', 'created_at']
+    list_filter = ['store', 'is_free', 'is_active', 'is_discounted', 'is_temporarily_closed', HasParticipantsFilter, 'created_at']
     search_fields = ['name', 'description', 'store__store_name']
     readonly_fields = [
         'id', 'created_at', 'updated_at', 'current_price', 'is_early_bird_active', 
@@ -69,7 +87,7 @@ class MeetupAdmin(admin.ModelAdmin):
     inlines = [MeetupImageInline, MeetupOptionInline]
     
     # 액션 추가
-    actions = ['cleanup_expired_reservations', 'export_participants']
+    actions = ['cleanup_expired_reservations', 'export_participants', 'view_all_participants']
     
     def price_display(self, obj):
         """가격 표시"""
@@ -124,6 +142,84 @@ class MeetupAdmin(admin.ModelAdmin):
         """취소된 주문 수"""
         return obj.orders.filter(status='cancelled').count()
     cancelled_orders_count.short_description = '취소된 주문'
+    
+    def view_participants_button(self, obj):
+        """참가자 목록 보기 버튼"""
+        participants_count = obj.orders.filter(status__in=['confirmed', 'completed']).count()
+        if participants_count > 0:
+            url = reverse('admin:meetup_participants', args=[obj.pk])
+            return format_html(
+                '<a href="{}" class="button" style="background-color: #007cba; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px;">'
+                '<i class="fas fa-users"></i> 참가자 ({})명</a>',
+                url, participants_count
+            )
+        else:
+            return format_html('<span style="color: #999;">참가자 없음</span>')
+    view_participants_button.short_description = '참가자 관리'
+    view_participants_button.allow_tags = True
+    
+    def get_urls(self):
+        """커스텀 URL 추가"""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<int:meetup_id>/participants/',
+                self.admin_site.admin_view(self.meetup_participants_view),
+                name='meetup_participants',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def meetup_participants_view(self, request, meetup_id):
+        """밋업 참가자 목록 뷰"""
+        meetup = get_object_or_404(Meetup, pk=meetup_id)
+        
+        # 참가자 목록 (확정된 주문만)
+        participants = MeetupOrder.objects.filter(
+            meetup=meetup,
+            status__in=['confirmed', 'completed']
+        ).select_related('user').prefetch_related('selected_options__option', 'selected_options__choice').order_by('-created_at')
+        
+        # 통계 계산
+        total_participants = participants.count()
+        total_revenue = sum(order.total_price for order in participants)
+        attended_count = participants.filter(attended=True).count()
+        attendance_rate = (attended_count / total_participants * 100) if total_participants > 0 else 0
+        
+        # 참석 체크 액션 처리
+        if request.method == 'POST' and 'action' in request.POST:
+            if request.POST['action'] == 'toggle_attendance':
+                order_id = request.POST.get('order_id')
+                try:
+                    order = MeetupOrder.objects.get(id=order_id, meetup=meetup)
+                    order.attended = not order.attended
+                    if order.attended:
+                        order.attended_at = timezone.now()
+                    else:
+                        order.attended_at = None
+                    order.save()
+                    messages.success(request, f'{order.participant_name}님의 참석 상태가 변경되었습니다.')
+                except MeetupOrder.DoesNotExist:
+                    messages.error(request, '해당 주문을 찾을 수 없습니다.')
+                
+                # 페이지 새로고침을 위해 리다이렉트
+                return HttpResponseRedirect(request.path)
+        
+        context = {
+            'title': f'{meetup.name} - 참가자 목록',
+            'meetup': meetup,
+            'participants': participants,
+            'total_participants': total_participants,
+            'total_revenue': total_revenue,
+            'attended_count': attended_count,
+            'attendance_rate': attendance_rate,
+            'opts': self.model._meta,
+            'has_change_permission': self.has_change_permission(request),
+            'has_view_permission': self.has_view_permission(request),
+            'original': meetup,
+        }
+        
+        return render(request, 'admin/meetup/meetup_participants.html', context)
     
     # 커스텀 액션들
     def cleanup_expired_reservations(self, request, queryset):
@@ -187,6 +283,19 @@ class MeetupAdmin(admin.ModelAdmin):
         
         return response
     export_participants.short_description = '선택된 밋업의 참가자 명단 CSV 내보내기'
+    
+    def view_all_participants(self, request, queryset):
+        """선택된 밋업들의 모든 참가자를 하나의 페이지에서 보기"""
+        if queryset.count() == 1:
+            # 밋업이 하나만 선택된 경우 해당 밋업의 참가자 페이지로 리다이렉트
+            meetup = queryset.first()
+            return HttpResponseRedirect(reverse('admin:meetup_participants', args=[meetup.pk]))
+        elif queryset.count() > 1:
+            # 여러 밋업이 선택된 경우 통합 뷰로 이동 (필요시 구현)
+            self.message_user(request, '한 번에 하나의 밋업만 선택해주세요.')
+        else:
+            self.message_user(request, '밋업을 선택해주세요.')
+    view_all_participants.short_description = '선택된 밋업의 참가자 목록 보기'
     
     fieldsets = (
         ('기본 정보', {

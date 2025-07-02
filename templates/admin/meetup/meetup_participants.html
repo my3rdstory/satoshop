@@ -1,0 +1,338 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+<style>
+.participants-stats {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dee2e6;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.stat-card {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.participants-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.participants-table table {
+    width: 100%;
+    margin: 0;
+}
+
+.participants-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+    padding: 12px 8px;
+}
+
+.participants-table td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #f1f3f5;
+    vertical-align: top;
+}
+
+.participants-table tr:hover {
+    background: #f8f9fa;
+}
+
+.attendance-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.attended {
+    background: #28a745;
+    color: white;
+}
+
+.not-attended {
+    background: #6c757d;
+    color: white;
+}
+
+.attendance-btn:hover {
+    opacity: 0.8;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-confirmed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-completed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.options-list {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.option-item {
+    margin-bottom: 2px;
+}
+
+.breadcrumbs {
+    margin-bottom: 20px;
+}
+
+.meetup-info {
+    background: white;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+.meetup-info h2 {
+    margin: 0 0 10px 0;
+    color: #495057;
+}
+
+.meetup-meta {
+    color: #6c757d;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='meetup' %}">Meetup</a>
+    &rsaquo; <a href="{% url 'admin:meetup_meetup_changelist' %}">밋업</a>
+    &rsaquo; {{ meetup.name }} 참가자 목록
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<!-- 밋업 정보 -->
+<div class="meetup-info">
+    <h2>{{ meetup.name }}</h2>
+    <div class="meetup-meta">
+        <strong>주최:</strong> {{ meetup.store.store_name }} | 
+        <strong>일시:</strong> {% if meetup.date_time %}{{ meetup.date_time|date:"Y년 m월 d일 H:i" }}{% else %}미정{% endif %} |
+        <strong>참가비:</strong> 
+        {% if meetup.is_free %}
+            무료
+        {% else %}
+            {{ meetup.current_price|floatformat:0 }} sats
+            {% if meetup.is_early_bird_active %}
+                <span style="color: #28a745;">(조기등록 {{ meetup.public_discount_rate }}% 할인 적용)</span>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- 통계 요약 -->
+<div class="participants-stats">
+    <h3 style="margin-top: 0;">참가 통계</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" style="color: #007bff;">{{ total_participants }}</div>
+            <div class="stat-label">총 참가자</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #28a745;">{{ total_revenue|floatformat:0 }}</div>
+            <div class="stat-label">총 매출 (sats)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #17a2b8;">{{ attended_count }}</div>
+            <div class="stat-label">실제 참석자</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="color: #ffc107;">{{ attendance_rate|floatformat:1 }}%</div>
+            <div class="stat-label">참석률</div>
+        </div>
+    </div>
+</div>
+
+{% if participants %}
+<!-- 참가자 목록 테이블 -->
+<div class="participants-table">
+    <table>
+        <thead>
+            <tr>
+                <th>참가자 정보</th>
+                <th>연락처</th>
+                <th>참가비</th>
+                <th>상태</th>
+                <th>참가일시</th>
+                <th>선택 옵션</th>
+                <th>참석 여부</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for participant in participants %}
+            <tr>
+                <!-- 참가자 정보 -->
+                <td>
+                    <strong>{{ participant.participant_name }}</strong><br>
+                    <small style="color: #6c757d;">{{ participant.participant_email }}</small><br>
+                    <small style="color: #6c757d;">주문번호: {{ participant.order_number }}</small>
+                </td>
+                
+                <!-- 연락처 -->
+                <td>
+                    {% if participant.participant_phone %}
+                        {{ participant.participant_phone }}
+                    {% else %}
+                        <span style="color: #6c757d;">-</span>
+                    {% endif %}
+                </td>
+                
+                <!-- 참가비 -->
+                <td>
+                    {% if participant.is_early_bird and participant.original_price %}
+                        <span style="text-decoration: line-through; color: #999;">{{ participant.original_price|floatformat:0 }} sats</span><br>
+                        <strong style="color: #e74c3c;">{{ participant.total_price|floatformat:0 }} sats</strong><br>
+                        <small style="color: #28a745;">할인 {{ participant.discount_rate }}%</small>
+                    {% else %}
+                        <strong>{{ participant.total_price|floatformat:0 }} sats</strong>
+                    {% endif %}
+                </td>
+                
+                <!-- 상태 -->
+                <td>
+                    {% if participant.status == 'confirmed' %}
+                        <span class="status-badge status-confirmed">참가 확정</span>
+                    {% elif participant.status == 'completed' %}
+                        <span class="status-badge status-completed">밋업 완료</span>
+                    {% endif %}
+                </td>
+                
+                <!-- 참가일시 -->
+                <td>
+                    <small>{{ participant.created_at|date:"m/d H:i" }}</small>
+                    {% if participant.paid_at %}
+                        <br><small style="color: #28a745;">결제: {{ participant.paid_at|date:"m/d H:i" }}</small>
+                    {% endif %}
+                </td>
+                
+                <!-- 선택 옵션 -->
+                <td>
+                    {% if participant.selected_options.all %}
+                        <div class="options-list">
+                            {% for selected_option in participant.selected_options.all %}
+                                <div class="option-item">
+                                    <strong>{{ selected_option.option.name }}:</strong> {{ selected_option.choice.name }}
+                                    {% if selected_option.additional_price > 0 %}
+                                        (+{{ selected_option.additional_price|floatformat:0 }} sats)
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <span style="color: #6c757d;">없음</span>
+                    {% endif %}
+                </td>
+                
+                <!-- 참석 여부 -->
+                <td style="text-align: center;">
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_attendance">
+                        <input type="hidden" name="order_id" value="{{ participant.id }}">
+                        <button type="submit" class="attendance-btn {% if participant.attended %}attended{% else %}not-attended{% endif %}">
+                            {% if participant.attended %}
+                                ✓ 참석
+                            {% else %}
+                                미참석
+                            {% endif %}
+                        </button>
+                    </form>
+                    {% if participant.attended_at %}
+                        <br><small style="color: #6c757d;">{{ participant.attended_at|date:"m/d H:i" }}</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div style="text-align: center; padding: 40px; color: #6c757d;">
+    <h3>참가자가 없습니다</h3>
+    <p>아직 확정된 참가자가 없습니다.</p>
+</div>
+{% endif %}
+
+<!-- 액션 버튼 -->
+<div style="margin-top: 20px; text-align: center;">
+    <a href="{% url 'admin:meetup_meetup_changelist' %}" class="button default">밋업 목록으로 돌아가기</a>
+    {% if participants %}
+        <a href="{% url 'admin:meetup_meetup_change' meetup.id %}" class="button">밋업 수정</a>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 참석 버튼 클릭 시 확인
+    document.querySelectorAll('.attendance-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            const isAttended = this.classList.contains('attended');
+            const action = isAttended ? '미참석으로 변경' : '참석으로 변경';
+            if (!confirm(`정말로 ${action}하시겠습니까?`)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

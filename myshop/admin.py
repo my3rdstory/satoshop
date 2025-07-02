@@ -90,6 +90,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('meetup_countdown_seconds',),
             'description': '밋업 신청 과정에서의 제한시간 설정'
         }),
+        ('스토어 탐색 페이지 설정', {
+            'fields': ('excluded_active_store_ids',),
+            'description': '스토어 탐색 페이지에서 특정 스토어들을 제외하는 설정'
+        }),
 
         ('고급 설정', {
             'fields': ('created_at', 'updated_at'),

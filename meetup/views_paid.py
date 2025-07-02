@@ -147,11 +147,17 @@ def meetup_checkout(request, store_id, meetup_id):
                 'error_occurred': True
             })
     
+    # 할인 금액 계산 (조기등록 할인)
+    discount_amount = 0
+    if meetup.is_discounted and meetup.is_early_bird_active and meetup.discounted_price:
+        discount_amount = meetup.price - meetup.discounted_price
+    
     # GET 요청 처리 (참가자 정보 입력 페이지 표시)
     context = {
         'store': store,
         'meetup': meetup,
         'existing_orders': existing_orders,  # 기존 참가 이력 전달
+        'discount_amount': discount_amount,  # 할인 금액 전달
     }
     
     return render(request, 'meetup/meetup_participant_info.html', context)

@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
 from django.db import transaction, models
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Max
 import json
 import qrcode
 import io
@@ -34,29 +34,138 @@ def browse_stores(request):
     search_query = request.GET.get('q', '').strip()
     
     # 활성화된 스토어만 가져오기
-    stores = Store.objects.filter(
+    active_stores = Store.objects.filter(
         is_active=True, 
         deleted_at__isnull=True
     ).select_related('owner')
     
     # 검색 쿼리가 있으면 필터링
     if search_query:
-        stores = stores.filter(
+        stores = active_stores.filter(
             Q(store_name__icontains=search_query) |
             Q(store_description__icontains=search_query) |
             Q(owner_name__icontains=search_query)
-        )
-    
-    # 최신순으로 정렬하고 12개만 가져오기
-    stores = stores.order_by('-created_at')[:12]
-    
-    context = {
-        'stores': stores,
-        'search_query': search_query,
-        'total_count': len(stores)
-    }
+        ).order_by('-created_at')[:16]  # 검색 결과는 16개까지
+        
+        context = {
+            'stores': stores,
+            'search_query': search_query,
+            'total_count': len(stores),
+            'recent_stores': None,
+            'active_stores': None,
+        }
+    else:
+        # 최근 개설된 스토어 8개 (생성일 기준)
+        recent_stores = active_stores.order_by('-created_at')[:8]
+        
+        # 주문이 활발한 스토어 8개 (최근 주문 기준)
+        from orders.models import Order
+        from django.db.models import Max
+        from myshop.models import SiteSettings
+        
+        # 최근 30일 내 주문이 있는 스토어들을 최근 주문일 순으로 정렬
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        
+        # 제외할 스토어 ID 목록 가져오기
+        site_settings = SiteSettings.get_settings()
+        excluded_store_ids = []
+        if site_settings.excluded_active_store_ids:
+            excluded_store_ids = [
+                store_id.strip() 
+                for store_id in site_settings.excluded_active_store_ids.split(',')
+                if store_id.strip()
+            ]
+        
+        active_order_stores = active_stores.filter(
+            orders__created_at__gte=thirty_days_ago
+        ).exclude(
+            store_id__in=excluded_store_ids
+        ).annotate(
+            latest_order=Max('orders__created_at')
+        ).order_by('-latest_order')[:8]
+        
+        context = {
+            'stores': None,
+            'search_query': search_query,
+            'total_count': 0,
+            'recent_stores': recent_stores,
+            'active_stores': active_order_stores,
+        }
     
     return render(request, 'stores/browse_stores.html', context)
+
+
+def browse_recent_stores(request):
+    """최근 개설된 스토어 전체보기"""
+    # 활성화된 스토어만 가져오기
+    stores = Store.objects.filter(
+        is_active=True, 
+        deleted_at__isnull=True
+    ).select_related('owner').order_by('-created_at')
+    
+    # 페이지네이션
+    from django.core.paginator import Paginator
+    paginator = Paginator(stores, 16)  # 한 페이지에 16개씩
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'page_title': '최근 개설된 스토어',
+        'page_description': '새롭게 문을 연 스토어들을 모두 확인해보세요',
+        'store_type': 'recent',
+    }
+    
+    return render(request, 'stores/browse_stores_list.html', context)
+
+
+def browse_active_stores(request):
+    """주문이 활발한 스토어 전체보기"""
+    from orders.models import Order
+    from django.db.models import Max
+    from myshop.models import SiteSettings
+    
+    # 활성화된 스토어만 가져오기
+    active_stores = Store.objects.filter(
+        is_active=True, 
+        deleted_at__isnull=True
+    ).select_related('owner')
+    
+    # 최근 30일 내 주문이 있는 스토어들을 최근 주문일 순으로 정렬
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    
+    # 제외할 스토어 ID 목록 가져오기
+    site_settings = SiteSettings.get_settings()
+    excluded_store_ids = []
+    if site_settings.excluded_active_store_ids:
+        excluded_store_ids = [
+            store_id.strip() 
+            for store_id in site_settings.excluded_active_store_ids.split(',')
+            if store_id.strip()
+        ]
+    
+    stores = active_stores.filter(
+        orders__created_at__gte=thirty_days_ago
+    ).exclude(
+        store_id__in=excluded_store_ids
+    ).annotate(
+        latest_order=Max('orders__created_at')
+    ).order_by('-latest_order')
+    
+    # 페이지네이션
+    from django.core.paginator import Paginator
+    paginator = Paginator(stores, 16)  # 한 페이지에 16개씩
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'page_title': '주문이 활발한 스토어',
+        'page_description': '최근 주문이 많은 인기 스토어들을 모두 만나보세요',
+        'store_type': 'active',
+    }
+    
+    return render(request, 'stores/browse_stores_list.html', context)
 
 @login_required
 def create_store(request):

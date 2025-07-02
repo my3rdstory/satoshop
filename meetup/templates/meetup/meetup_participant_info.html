@@ -343,11 +343,11 @@
         <div class="space-y-3" id="price-summary">
           <div class="flex justify-between">
             <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ meetup.current_price|floatformat:0|intcomma }} sats</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ meetup.price|floatformat:0|intcomma }} sats</span>
           </div>
           
           <!-- 조기등록 할인 -->
-          {% if meetup.is_early_bird_active %}
+          {% if meetup.is_early_bird_active and discount_amount > 0 %}
           <div class="flex justify-between text-sm">
             <span class="text-green-600 dark:text-green-400">
               <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ meetup.public_discount_rate }}%)
@@ -391,7 +391,8 @@
 <script>
 // 밋업 데이터를 전역 변수로 설정
 window.meetupData = {
-    basePrice: {{ meetup.current_price }},
+    basePrice: {{ meetup.current_price }},  // 할인이 적용된 후의 최종 기본 가격 (옵션 제외)
+    originalPrice: {{ meetup.price }},      // 할인 전 원래 가격
     storeId: '{{ store.store_id }}',
     meetupId: {{ meetup.id }}
 };
