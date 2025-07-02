@@ -67,6 +67,7 @@
 /* 진행률 바 애니메이션 */
 .progress-bar {
     transition: width 0.5s ease-in-out;
+    max-width: 100% !important;
 }
 
 /* 버튼 호버 효과 */

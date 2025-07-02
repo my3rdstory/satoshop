@@ -166,9 +166,9 @@ def meetup_detail(request, store_id, meetup_id):
         deleted_at__isnull=True
     )
     
-    # 공개 뷰에서는 비활성화된 밋업 접근 차단
+    # 공개 뷰에서는 참가할 수 없는 밋업 접근 차단
     if request.user != store.owner:
-        if not meetup.is_active or meetup.is_temporarily_closed:
+        if not meetup.can_participate:
             raise Http404("밋업을 찾을 수 없습니다.")
     
     # 밋업 옵션 조회
@@ -337,9 +337,16 @@ def meetup_checkout(request, store_id, meetup_id):
         is_active=True
     )
     
-    # 일시중단 또는 마감된 밋업은 체크아웃 불가
-    if meetup.is_temporarily_closed or meetup.is_full:
-        messages.error(request, '현재 참가 신청이 불가능한 밋업입니다.')
+    # 참가 신청이 불가능한 밋업은 체크아웃 불가
+    if not meetup.can_participate:
+        if meetup.is_expired:
+            messages.error(request, '이미 종료된 밋업입니다.')
+        elif meetup.is_temporarily_closed:
+            messages.error(request, '일시중단된 밋업입니다.')
+        elif meetup.is_full:
+            messages.error(request, '정원이 마감된 밋업입니다.')
+        else:
+            messages.error(request, '현재 참가 신청이 불가능한 밋업입니다.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
     
     # GET 요청인 경우 참가자 정보 입력 페이지 표시

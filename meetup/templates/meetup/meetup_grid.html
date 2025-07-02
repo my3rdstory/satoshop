@@ -24,9 +24,11 @@
         <!-- 참가 상태 태그 -->
         {% if not is_public_view %}
         <!-- 관리자 뷰: 모든 참가 상태 표시 -->
-        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_expired %}bg-gray-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
           {% if meetup.is_temporarily_closed %}
             일시중단
+          {% elif meetup.is_expired %}
+            종료
           {% elif meetup.is_full %}
             정원마감
           {% elif meetup.remaining_spots is not None %}
@@ -37,9 +39,11 @@
         </div>
         {% else %}
         <!-- 공개 뷰: 참가 상태 표시 -->
-        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
+        <div class="{% if meetup.is_temporarily_closed %}bg-purple-500{% elif meetup.is_expired %}bg-gray-500{% elif meetup.is_full %}bg-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}bg-orange-500{% else %}bg-green-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
           {% if meetup.is_temporarily_closed %}
             일시중단
+          {% elif meetup.is_expired %}
+            종료
           {% elif meetup.is_full %}
             정원마감
           {% elif meetup.remaining_spots is not None %}
@@ -121,9 +125,11 @@
       <!-- 참가 상태 정보 -->
       <div class="mb-3 flex items-center gap-2">
         <i class="fas fa-users text-sm text-gray-500"></i>
-        <span class="text-sm font-medium {% if meetup.is_temporarily_closed %}text-purple-500{% elif meetup.is_full %}text-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}text-orange-500{% else %}text-green-500{% endif %}">
+        <span class="text-sm font-medium {% if meetup.is_temporarily_closed %}text-purple-500{% elif meetup.is_expired %}text-gray-500{% elif meetup.is_full %}text-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}text-orange-500{% else %}text-green-500{% endif %}">
           {% if meetup.is_temporarily_closed %}
             일시 중단
+          {% elif meetup.is_expired %}
+            종료
           {% elif meetup.is_full %}
             정원 마감
           {% elif meetup.remaining_spots is not None %}
@@ -159,12 +165,17 @@
         
         <!-- 밋업보기 버튼 -->
         {% if is_public_view %}
-          {% if meetup.is_active and not meetup.is_full and not meetup.is_temporarily_closed %}
+          {% if meetup.can_participate %}
           <a href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
              class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm">
             <i class="fas fa-calendar-plus mr-1"></i>
             참가하기
           </a>
+          {% elif meetup.is_expired %}
+          <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
+            <i class="fas fa-calendar-times mr-1"></i>
+            종료
+          </button>
           {% elif meetup.is_temporarily_closed %}
           <button class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-400 text-white rounded-lg cursor-not-allowed text-sm" disabled>
             <i class="fas fa-pause mr-1"></i>

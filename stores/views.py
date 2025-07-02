@@ -402,12 +402,20 @@ def store_detail(request, store_id):
     
     if store.is_active:
         # 활성화된 스토어는 정상적으로 표시
-        # 상품 목록도 함께 가져오기
-        products = store.products.filter(is_active=True).order_by('-created_at')
+        # 상품 목록도 함께 가져오기 (최대 4개만)
+        products = store.products.filter(is_active=True).order_by('-created_at')[:4]
+        
+        # 밋업 목록도 함께 가져오기 (최대 4개만)
+        from meetup.models import Meetup
+        meetups = Meetup.objects.filter(
+            store=store, 
+            is_active=True
+        ).order_by('-created_at')[:4]
         
         return render(request, 'stores/store_detail.html', {
             'store': store,
             'products': products,
+            'meetups': meetups,
         })
     else:
         # 비활성화된 스토어는 안내 페이지 표시

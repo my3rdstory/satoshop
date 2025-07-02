@@ -281,9 +281,11 @@
             </div>
             <div class="flex items-center gap-2">
               <i class="fas fa-user-friends text-sm text-gray-500"></i>
-              <span class="text-sm font-medium {% if meetup.is_temporarily_closed %}text-purple-500{% elif meetup.is_full %}text-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}text-orange-500{% else %}text-green-500{% endif %}">
+              <span class="text-sm font-medium {% if meetup.is_temporarily_closed %}text-purple-500{% elif meetup.is_expired %}text-gray-500{% elif meetup.is_full %}text-red-500{% elif meetup.remaining_spots <= 5 and meetup.remaining_spots > 0 %}text-orange-500{% else %}text-green-500{% endif %}">
                 {% if meetup.is_temporarily_closed %}
                   일시 중단
+                {% elif meetup.is_expired %}
+                  종료
                 {% elif meetup.is_full %}
                   정원 마감
                 {% elif meetup.remaining_spots is not None %}
@@ -302,7 +304,7 @@
               <span>{{ meetup.current_participants|default:0 }}명 / {{ meetup.max_participants }}명</span>
             </div>
             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div class="bg-purple-500 h-2 rounded-full" style="width: {% widthratio meetup.current_participants|default:0 meetup.max_participants 100 %}%"></div>
+              <div class="bg-purple-500 h-2 rounded-full progress-bar" style="width: {% widthratio meetup.current_participants|default:0 meetup.max_participants 100 %}%; max-width: 100%;"></div>
             </div>
           </div>
           {% endif %}
@@ -347,7 +349,7 @@
 
         <!-- 참가 신청 버튼 -->
         <div class="space-y-3">
-          {% if meetup.is_active and not meetup.is_full and not meetup.is_temporarily_closed %}
+          {% if meetup.can_participate %}
           <button class="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
                   onclick="joinMeetup()">
             {% if meetup.current_price == 0 %}
@@ -363,6 +365,18 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
               <i class="fas fa-user-plus mr-1"></i>비회원 참가 가능
             </span>
+          </div>
+          {% elif meetup.is_expired %}
+          <button class="w-full py-4 bg-gray-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 
+                  disabled>
+            <i class="fas fa-calendar-times"></i>
+            <span>밋업 종료</span>
+          </button>
+          <div class="bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+            <div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+              <i class="fas fa-info-circle text-gray-500"></i>
+              <span class="text-sm">이미 종료된 밋업입니다. 다음 밋업을 기다려주세요!</span>
+            </div>
           </div>
           {% elif meetup.is_temporarily_closed %}
           <button class="w-full py-4 bg-purple-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 
