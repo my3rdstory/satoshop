@@ -350,22 +350,36 @@
         <!-- 참가 신청 버튼 -->
         <div class="space-y-3">
           {% if meetup.can_participate %}
-          <button class="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                  onclick="joinMeetup()">
-            {% if meetup.current_price == 0 %}
-            <i class="fas fa-heart"></i>
-            <span>무료 참가 신청하기</span>
+            {% if user.is_authenticated %}
+            <button class="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                    onclick="joinMeetup()">
+              {% if meetup.current_price == 0 %}
+              <i class="fas fa-heart"></i>
+              <span>무료 참가 신청하기</span>
+              {% else %}
+              <i class="fas fa-calendar-plus"></i>
+              <span>참가 신청하기</span>
+              {% endif %}
+            </button>
+            <!-- 회원 참가 가능 안내 -->
+            <div class="text-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                <i class="fas fa-user-check mr-1"></i>회원 로그인 완료
+              </span>
+            </div>
             {% else %}
-            <i class="fas fa-calendar-plus"></i>
-            <span>참가 신청하기</span>
+            <a href="{% url 'accounts:lightning_login' %}?next={% url 'meetup:meetup_detail' store.store_id meetup.id %}" 
+               class="w-full py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+              <i class="fas fa-bolt"></i>
+              <span>라이트닝 로그인 후 참가 신청하기</span>
+            </a>
+            <!-- 로그인 필요 안내 -->
+            <div class="text-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                <i class="fas fa-lock mr-1"></i>회원만 참가 가능
+              </span>
+            </div>
             {% endif %}
-          </button>
-          <!-- 비회원 참가 가능 안내 -->
-          <div class="text-center">
-            <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-              <i class="fas fa-user-plus mr-1"></i>비회원 참가 가능
-            </span>
-          </div>
           {% elif meetup.is_expired %}
           <button class="w-full py-4 bg-gray-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 
                   disabled>

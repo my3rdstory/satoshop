@@ -325,6 +325,7 @@ def manage_meetup(request, store_id, meetup_id):
     
     return render(request, 'meetup/meetup_manage.html', context)
 
+@login_required
 def meetup_checkout(request, store_id, meetup_id):
     """밋업 체크아웃 - 바로 주문 생성하고 결제 페이지로"""
     import json
@@ -381,14 +382,12 @@ def meetup_checkout(request, store_id, meetup_id):
         return render(request, 'meetup/meetup_participant_info.html', context)
     
     # POST 요청인 경우 주문 생성 처리
-    # 로그인한 사용자의 경우 기존 대기중인 주문 확인
-    existing_order = None
-    if request.user.is_authenticated:
-        existing_order = MeetupOrder.objects.filter(
-            meetup=meetup,
-            user=request.user,
-            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
-        ).first()
+    # 기존 대기중인 주문 확인
+    existing_order = MeetupOrder.objects.filter(
+        meetup=meetup,
+        user=request.user,
+        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
+    ).first()
     
     if existing_order:
         # 기존 주문이 30분 이내인 경우 해당 주문으로 이동
@@ -499,26 +498,16 @@ def meetup_checkout(request, store_id, meetup_id):
             discount_rate = meetup.public_discount_rate if is_early_bird else 0
             original_price = meetup.price if is_early_bird else None
             
-            # 참가자 정보 가져오기
-            if request.user.is_authenticated:
-                # 로그인한 사용자: 사용자 정보 우선, POST 데이터로 덮어쓰기 가능
-                participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
-                participant_email = request.POST.get('participant_email') or request.user.email
-            else:
-                # 비회원: POST 데이터에서 필수로 가져오기
-                participant_name = request.POST.get('participant_name', '').strip()
-                participant_email = request.POST.get('participant_email', '').strip()
-                
-                if not participant_name or not participant_email:
-                    messages.error(request, '참가자 이름과 이메일을 입력해주세요.')
-                    return redirect('meetup:meetup_checkout', store_id=store_id, meetup_id=meetup_id)
+            # 참가자 정보 가져오기 (회원만 가능)
+            participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
+            participant_email = request.POST.get('participant_email') or request.user.email
             
             participant_phone = request.POST.get('participant_phone', '').strip()
             
             # 주문 생성
             order = MeetupOrder.objects.create(
                 meetup=meetup,
-                user=request.user if request.user.is_authenticated else None,
+                user=request.user,
                 participant_name=participant_name,
                 participant_email=participant_email,
                 participant_phone=participant_phone,
