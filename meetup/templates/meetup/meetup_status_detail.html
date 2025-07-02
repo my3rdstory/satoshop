@@ -147,9 +147,9 @@
                     <div class="ml-4">
                       <div class="text-sm font-medium text-gray-900 dark:text-white">
                         {{ order.participant_name }}
-                        {% if order.user %}
-                          <span class="text-xs text-purple-600 dark:text-purple-400 ml-2">({{ order.user.username }})</span>
-                        {% endif %}
+                        {% comment %} {% if order.user %} {% endcomment %}
+                          {% comment %} <span class="text-xs text-purple-600 dark:text-purple-400 ml-2">({{ order.user.username }})</span> {% endcomment %}
+                        {% comment %} {% endif %} {% endcomment %}
                       </div>
                       <div class="text-sm text-gray-500 dark:text-gray-400">
                         <div>{{ order.participant_email }}</div>
