@@ -77,17 +77,41 @@ def meetup_checkout(request, store_id, meetup_id):
                         'error_occurred': True
                     })
                 
-                # 선택된 옵션 처리
+                # 선택된 옵션 처리 (JSON 형태로 전달됨)
                 selected_options = []
                 options_price = 0
                 
-                for key, value in request.POST.items():
-                    if key.startswith('option_'):
+                selected_options_json = request.POST.get('selected_options', '{}')
+                try:
+                    import json
+                    selected_options_data = json.loads(selected_options_json)
+                    
+                    for option_id_str, option_data in selected_options_data.items():
                         try:
-                            option_id = int(key.replace('option_', ''))
+                            option_id = int(option_id_str)
                             option = MeetupOption.objects.get(id=option_id, meetup=meetup)
                             
-                            if option.option_type == 'select':
+                            choice_id = option_data.get('choiceId')
+                            if choice_id:
+                                choice = MeetupChoice.objects.get(id=choice_id, option=option)
+                                selected_options.append({
+                                    'option': option,
+                                    'choice': choice,
+                                    'price': choice.additional_price
+                                })
+                                options_price += choice.additional_price
+                        
+                        except (ValueError, MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
+                            continue
+                            
+                except json.JSONDecodeError:
+                    # JSON 파싱 실패 시 기존 방식으로 폴백
+                    for key, value in request.POST.items():
+                        if key.startswith('option_'):
+                            try:
+                                option_id = int(key.replace('option_', ''))
+                                option = MeetupOption.objects.get(id=option_id, meetup=meetup)
+                                
                                 choice_id = value
                                 if choice_id:
                                     choice = MeetupChoice.objects.get(id=choice_id, option=option)
@@ -98,16 +122,8 @@ def meetup_checkout(request, store_id, meetup_id):
                                     })
                                     options_price += choice.additional_price
                             
-                            elif option.option_type == 'checkbox' and value == 'on':
-                                selected_options.append({
-                                    'option': option,
-                                    'choice': None,
-                                    'price': option.additional_price or 0
-                                })
-                                options_price += option.additional_price or 0
-                        
-                        except (ValueError, MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
-                            continue
+                            except (ValueError, MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
+                                continue
                 
                 # 주문 생성 (pending 상태로)
                 order = MeetupOrder.objects.create(
@@ -152,12 +168,28 @@ def meetup_checkout(request, store_id, meetup_id):
     if meetup.is_discounted and meetup.is_early_bird_active and meetup.discounted_price:
         discount_amount = meetup.price - meetup.discounted_price
     
+    # URL 파라미터로 전달된 선택된 옵션 처리
+    selected_options_data = None
+    if request.GET.get('selected_options'):
+        try:
+            import json
+            selected_options_data = json.loads(request.GET.get('selected_options'))
+        except json.JSONDecodeError:
+            selected_options_data = None
+    
+    # 밋업 옵션 조회 (필수 옵션 정보와 함께)
+    meetup_options = meetup.options.prefetch_related('choices').order_by('order')
+    required_option_ids = [option.id for option in meetup_options if option.is_required]
+    
     # GET 요청 처리 (참가자 정보 입력 페이지 표시)
     context = {
         'store': store,
         'meetup': meetup,
+        'meetup_options': meetup_options,  # 밋업 옵션 추가
         'existing_orders': existing_orders,  # 기존 참가 이력 전달
         'discount_amount': discount_amount,  # 할인 금액 전달
+        'selected_options_data': selected_options_data,  # 선택된 옵션 데이터 전달
+        'required_option_ids': required_option_ids,  # 필수 옵션 ID 목록 전달
     }
     
     return render(request, 'meetup/meetup_participant_info.html', context)

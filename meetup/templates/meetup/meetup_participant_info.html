@@ -394,8 +394,33 @@ window.meetupData = {
     basePrice: {{ meetup.current_price }},  // 할인이 적용된 후의 최종 기본 가격 (옵션 제외)
     originalPrice: {{ meetup.price }},      // 할인 전 원래 가격
     storeId: '{{ store.store_id }}',
-    meetupId: {{ meetup.id }}
+    meetupId: {{ meetup.id }},
+    requiredOptionIds: {{ required_option_ids|safe }},  // 필수 옵션 ID 목록
+    isFree: false  // 유료 밋업
 };
+
+// 밋업 옵션 데이터
+window.meetupOptions = [
+    {% for option in meetup_options %}
+    {
+        id: {{ option.id }},
+        name: "{{ option.name|escapejs }}",
+        isRequired: {{ option.is_required|yesno:"true,false" }},
+        choices: [
+            {% for choice in option.choices.all %}
+            {
+                id: {{ choice.id }},
+                name: "{{ choice.name|escapejs }}",
+                additionalPrice: {{ choice.additional_price }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// URL 파라미터로 전달된 선택된 옵션 데이터
+window.preSelectedOptions = {% if selected_options_data %}{{ selected_options_data|safe }}{% else %}{}{% endif %};
 </script>
 
 <!-- 참가자 정보 스크립트 -->

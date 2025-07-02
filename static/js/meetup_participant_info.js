@@ -30,9 +30,29 @@ function initializeMeetupData() {
     if (typeof window.meetupData !== 'undefined') {
         meetupData = window.meetupData;
         
-        // 전달받은 선택된 옵션이 있다면 적용
-        if (meetupData.selectedOptions && typeof meetupData.selectedOptions === 'object') {
-            selectedOptions = { ...meetupData.selectedOptions };
+        // URL 파라미터로 전달된 미리 선택된 옵션이 있다면 적용
+        if (typeof window.preSelectedOptions !== 'undefined' && window.preSelectedOptions) {
+            console.log('🎯 미리 선택된 옵션 발견:', window.preSelectedOptions);
+            
+            // 미리 선택된 옵션을 현재 선택된 옵션으로 설정
+            selectedOptions = { ...window.preSelectedOptions };
+            
+            // 옵션 정보 보완 (옵션명, 선택지명 추가)
+            if (typeof window.meetupOptions !== 'undefined') {
+                Object.keys(selectedOptions).forEach(optionId => {
+                    const option = window.meetupOptions.find(opt => opt.id.toString() === optionId);
+                    if (option) {
+                        const choice = option.choices.find(ch => ch.id.toString() === selectedOptions[optionId].choiceId);
+                        if (choice) {
+                            selectedOptions[optionId].optionName = option.name;
+                            selectedOptions[optionId].choiceName = choice.name;
+                            selectedOptions[optionId].price = choice.additionalPrice;
+                        }
+                    }
+                });
+            }
+            
+            console.log('✅ 보완된 선택된 옵션:', selectedOptions);
             
             // DOM이 로드된 후 옵션 선택 상태 적용
             setTimeout(() => {
