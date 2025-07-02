@@ -215,17 +215,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 밋업 참가 신청
     function joinMeetup() {
-        // 참가자 정보 입력 페이지로 이동 (GET 요청)
-        const checkoutUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+        const button = document.getElementById('join-meetup-btn');
+        const icon = document.getElementById('join-icon');
+        const text = document.getElementById('join-text');
         
-        // 선택된 옵션이 있다면 URL 파라미터로 전달
-        if (Object.keys(selectedOptions).length > 0) {
-            const params = new URLSearchParams();
-            params.append('selected_options', JSON.stringify(selectedOptions));
-            window.location.href = `${checkoutUrl}?${params.toString()}`;
-        } else {
-            window.location.href = checkoutUrl;
-        }
+        if (!button || button.disabled) return;
+        
+        // 로딩 상태로 변경
+        button.disabled = true;
+        button.classList.add('opacity-70');
+        icon.className = 'fas fa-spinner fa-spin';
+        text.textContent = '처리 중...';
+        
+        // 약간의 지연 후 페이지 이동 (사용자가 로딩 상태를 볼 수 있도록)
+        setTimeout(() => {
+            const checkoutUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/checkout/`;
+            
+            // 선택된 옵션이 있다면 URL 파라미터로 전달
+            if (Object.keys(selectedOptions).length > 0) {
+                const params = new URLSearchParams();
+                params.append('selected_options', JSON.stringify(selectedOptions));
+                window.location.href = `${checkoutUrl}?${params.toString()}`;
+            } else {
+                window.location.href = checkoutUrl;
+            }
+        }, 300);
     }
     
     // 총 가격 계산
