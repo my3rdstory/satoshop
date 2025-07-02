@@ -105,7 +105,7 @@
             <p class="text-green-700 dark:text-green-300 text-sm">
               이 밋업은 무료로 참가할 수 있습니다. 참가자 정보를 입력하고 "참가 신청 완료하기" 버튼을 누르면 즉시 참가 신청이 완료됩니다.
               {% if existing_orders %}
-              <br><strong>무료 밋업은 여러 번 참가할 수 있습니다.</strong>
+              <br><strong>밋업은 하나의 ID로 여러 번 신청할 수 있습니다.</strong>
               {% endif %}
             </p>
           </div>
@@ -118,32 +118,37 @@
         <div class="flex items-start">
           <i class="fas fa-history text-blue-600 dark:text-blue-400 mr-3 mt-1"></i>
           <div class="flex-1">
-            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-2">이전 참가 이력</h4>
+            <h4 class="text-blue-800 dark:text-blue-200 font-medium mb-2">이전 참가 내역</h4>
             <p class="text-blue-700 dark:text-blue-300 text-sm mb-3">
-              이 밋업에 이미 {{ existing_orders.count }}번 참가하셨습니다.
+              이 밋업에 이미 {{ existing_orders.count }}번 참가하셨습니다. 밋업은 하나의 ID로 여러 번 신청할 수 있습니다.
             </p>
+            
             <div class="space-y-2">
               {% for order in existing_orders|slice:":3" %}
-              <div class="bg-white dark:bg-gray-700 rounded-lg p-3 text-sm">
-                <div class="flex justify-between items-center">
-                  <span class="text-gray-900 dark:text-white font-medium">
-                    {{ order.participant_name }}
-                  </span>
-                  <span class="text-gray-500 dark:text-gray-400">
-                    {{ order.confirmed_at|date:"Y-m-d H:i" }}
-                  </span>
-                </div>
-                <div class="text-gray-600 dark:text-gray-300 mt-1">
-                  {{ order.participant_email }}
+              <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-blue-200 dark:border-blue-700">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                      {{ order.participant_name }} ({{ order.participant_email }})
+                    </p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                      참가 확정: {{ order.confirmed_at|date:"Y.m.d H:i" }}
+                    </p>
+                  </div>
+                  <div class="text-right">
+                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full">
+                      <i class="fas fa-gift mr-1"></i>
+                      무료 참가
+                    </span>
+                  </div>
                 </div>
               </div>
               {% endfor %}
+              
               {% if existing_orders.count > 3 %}
-              <div class="text-center">
-                <span class="text-blue-600 dark:text-blue-400 text-sm">
-                  외 {{ existing_orders.count|add:"-3" }}건 더
-                </span>
-              </div>
+              <p class="text-xs text-blue-600 dark:text-blue-400 text-center">
+                외 {{ existing_orders.count|add:"-3" }}개 더...
+              </p>
               {% endif %}
             </div>
           </div>

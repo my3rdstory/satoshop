@@ -37,17 +37,14 @@ def meetup_checkout(request, store_id, meetup_id):
         messages.error(request, '밋업 신청이 마감되었습니다.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
     
-    # 기존 주문 확인
-    existing_order = MeetupOrder.objects.filter(
+    # 기존 주문 확인 (유료 밋업도 반복 구매 허용)
+    existing_orders = MeetupOrder.objects.filter(
         meetup=meetup,
         user=request.user,
         status__in=['confirmed', 'completed']
-    ).first()
+    ).order_by('-created_at')
     
-    # 이미 확정된 주문인 경우
-    if existing_order:
-        messages.info(request, '이미 참가 신청이 완료된 밋업입니다.')
-        return redirect('meetup:meetup_checkout_complete', store_id=store_id, meetup_id=meetup_id, order_id=existing_order.id)
+    # 기존 참가 이력이 있어도 반복 구매 허용 (유료 밋업도 무료 밋업처럼 처리)
     
     # POST 요청 처리 (참가자 정보 업데이트 후 결제 페이지로)
     if request.method == 'POST':
@@ -154,6 +151,7 @@ def meetup_checkout(request, store_id, meetup_id):
     context = {
         'store': store,
         'meetup': meetup,
+        'existing_orders': existing_orders,  # 기존 참가 이력 전달
     }
     
     return render(request, 'meetup/meetup_participant_info.html', context)
@@ -308,6 +306,14 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         
         if result['success']:
             if result['status'] == 'paid':
+                # 이미 확정된 주문인지 확인 (중복 처리 방지)
+                if order.status == 'confirmed':
+                    return JsonResponse({
+                        'success': True,
+                        'paid': True,
+                        'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
+                    })
+                
                 # 결제 완료 처리 - 임시예약을 확정으로 변경
                 with transaction.atomic():
                     order.status = 'confirmed'
@@ -317,7 +323,7 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
                     order.confirmed_at = timezone.now()
                     order.save()
                     
-                # 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게)
+                # 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게) - 한 번만 발송
                 try:
                     from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
                     

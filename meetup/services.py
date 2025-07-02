@@ -23,14 +23,13 @@ def send_meetup_notification_email(meetup_order):
         bool: 발송 성공 여부
     """
     try:
-        # 🛡️ 중복 이메일 발송 방지: 같은 payment_hash로 이미 이메일을 발송했는지 확인
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_email_sent_{meetup_order.payment_hash}_{meetup_order.meetup.store.id}"
-            
-            if cache.get(email_cache_key):
-                logger.debug(f"밋업 {meetup_order.order_number}: 같은 결제ID({meetup_order.payment_hash})로 이미 이메일 발송됨")
-                return False
+        # 🛡️ 중복 이메일 발송 방지: 주문번호 기반으로 확실하게 방지
+        from django.core.cache import cache
+        email_cache_key = f"meetup_owner_email_sent_{meetup_order.order_number}"
+        
+        if cache.get(email_cache_key):
+            logger.debug(f"밋업 주인장 이메일 {meetup_order.order_number}: 이미 발송됨")
+            return False
         
         # 스토어 이메일 설정 확인
         store = meetup_order.meetup.store
@@ -128,10 +127,9 @@ SatoShop 팀"""
         email.send()
         
         # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_email_sent_{meetup_order.payment_hash}_{meetup_order.meetup.store.id}"
-            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
+        from django.core.cache import cache
+        email_cache_key = f"meetup_owner_email_sent_{meetup_order.order_number}"
+        cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
         logger.info(f"밋업 알림 이메일 발송 성공 - 주문: {meetup_order.order_number}, 수신: {store.owner_email}")
         return True
@@ -158,14 +156,13 @@ def send_meetup_participant_confirmation_email(meetup_order):
             logger.debug(f"밋업 {meetup_order.order_number}: 참가자 이메일 주소가 없음")
             return False
         
-        # 🛡️ 중복 이메일 발송 방지
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_participant_email_sent_{meetup_order.payment_hash}_{meetup_order.id}"
-            
-            if cache.get(email_cache_key):
-                logger.debug(f"밋업 참가자 이메일 {meetup_order.order_number}: 이미 발송됨")
-                return False
+        # 🛡️ 중복 이메일 발송 방지: 주문번호 기반으로 확실하게 방지
+        from django.core.cache import cache
+        email_cache_key = f"meetup_participant_email_sent_{meetup_order.order_number}"
+        
+        if cache.get(email_cache_key):
+            logger.debug(f"밋업 참가자 이메일 {meetup_order.order_number}: 이미 발송됨")
+            return False
         
         # 스토어 이메일 설정 확인
         store = meetup_order.meetup.store
@@ -253,10 +250,9 @@ def send_meetup_participant_confirmation_email(meetup_order):
         email.send()
         
         # 🛡️ 이메일 발송 성공 기록 (중복 방지용)
-        if meetup_order.payment_hash:
-            from django.core.cache import cache
-            email_cache_key = f"meetup_participant_email_sent_{meetup_order.payment_hash}_{meetup_order.id}"
-            cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
+        from django.core.cache import cache
+        email_cache_key = f"meetup_participant_email_sent_{meetup_order.order_number}"
+        cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
         logger.info(f"밋업 참가자 확인 이메일 발송 성공 - 주문: {meetup_order.order_number}, 수신: {meetup_order.participant_email}")
         return True
