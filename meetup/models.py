@@ -107,37 +107,14 @@ class Meetup(models.Model):
         return self.orders.filter(status__in=['confirmed', 'completed']).count()
     
     @property
-    def reserved_participants(self):
-        """임시 예약 포함 참가자 수 (정원 차감용)"""
-        from django.utils import timezone
-        now = timezone.now()
-        
-        # 확정된 주문 + 유효한 임시 예약
-        confirmed = self.orders.filter(status__in=['confirmed', 'completed']).count()
-        temp_reserved = self.orders.filter(
-            status='pending',
-            is_temporary_reserved=True,
-            reservation_expires_at__gt=now
-        ).count()
-        
-        return confirmed + temp_reserved
-    
-    @property
     def is_full(self):
         if not self.max_participants:
             return False
-        return self.reserved_participants >= self.max_participants
+        return self.current_participants >= self.max_participants
     
     @property
     def remaining_spots(self):
-        """남은 자리 수 (임시 예약 고려)"""
-        if not self.max_participants:
-            return None
-        return max(0, self.max_participants - self.reserved_participants)
-    
-    @property
-    def actual_remaining_spots(self):
-        """실제 남은 자리 수 (확정된 주문만 고려)"""
+        """남은 자리 수"""
         if not self.max_participants:
             return None
         return max(0, self.max_participants - self.current_participants)

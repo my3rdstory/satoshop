@@ -78,35 +78,13 @@
           <div class="space-y-3">
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">참가자:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_name }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ user.get_full_name|default:user.username }}</span>
             </div>
             
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">이메일:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_email }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
             </div>
-            
-            {% if order.participant_phone %}
-            <div class="flex justify-between">
-              <span class="text-gray-600 dark:text-gray-400">연락처:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_phone }}</span>
-            </div>
-            {% endif %}
-            
-            <!-- 선택된 옵션들 -->
-            {% if order.options.all %}
-            <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
-              <span class="text-sm text-gray-600 dark:text-gray-400 mb-2 block">선택된 옵션:</span>
-              {% for order_option in order.options.all %}
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-700 dark:text-gray-300">{{ order_option.choice.choice_text }}</span>
-                {% if order_option.additional_price > 0 %}
-                <span class="text-gray-600 dark:text-gray-400">+{{ order_option.additional_price|floatformat:0|intcomma }} sats</span>
-                {% endif %}
-              </div>
-              {% endfor %}
-            </div>
-            {% endif %}
             
             <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
               <div class="flex justify-between font-bold text-lg">
@@ -185,32 +163,5 @@
   </div>
 </div>
 
-<!-- 플로팅 카운트다운 -->
-<div id="floating-countdown" class="floating-countdown">
-  <div class="flex items-center space-x-3">
-    <div class="flex-shrink-0">
-      <i class="fas fa-clock text-lg"></i>
-    </div>
-    <div>
-      <div class="countdown-time" id="countdown-display">03:00</div>
-      <div class="countdown-label">예약 시간 남음</div>
-    </div>
-  </div>
-</div>
 
-<!-- 데이터 전달 -->
-<script type="application/json" id="free-checkout-data">
-{
-  "meetupId": {{ meetup.id }},
-  "storeId": "{{ store.store_id }}",
-  "orderId": {{ order.id }},
-  "csrfToken": "{{ csrf_token }}",
-  "countdownSeconds": {{ countdown_seconds }},
-  "reservationExpiresAt": {% if reservation_expires_at %}"{{ reservation_expires_at }}"{% else %}null{% endif %}
-}
-</script>
-
-<!-- 무료 밋업 전용 스크립트 -->
-<script src="{% static 'js/meetup_countdown.js' %}"></script>
-<script src="{% static 'js/meetup_free_checkout.js' %}"></script>
 {% endblock %} 

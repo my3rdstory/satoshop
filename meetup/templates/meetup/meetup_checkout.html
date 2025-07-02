@@ -445,18 +445,6 @@
 </div>
 
 <!-- 플로팅 카운트다운 -->
-<div id="floating-countdown" class="floating-countdown">
-  <div class="flex items-center space-x-3">
-    <div class="flex-shrink-0">
-      <i class="fas fa-clock text-lg"></i>
-    </div>
-    <div>
-      <div class="countdown-time" id="countdown-display">03:00</div>
-      <div class="countdown-label">예약 시간 남음</div>
-    </div>
-  </div>
-</div>
-
 <!-- 데이터 전달 -->
 <script type="application/json" id="checkout-data">
 {
@@ -465,19 +453,15 @@
   "orderId": {{ order.id }},
   "basePrice": {{ order.total_price }},
   "csrfToken": "{{ csrf_token }}",
-  "isPaymentPage": true,
-  "countdownSeconds": {{ countdown_seconds }},
-  "reservationExpiresAt": {% if reservation_expires_at %}"{{ reservation_expires_at }}"{% else %}null{% endif %}
+  "isPaymentPage": true
 }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
-<script src="{% static 'js/meetup_countdown.js' %}"></script>
 <script src="{% static 'js/meetup_checkout.js' %}"></script>
 
-<!-- 유료/무료 밋업 카운트다운 처리 (인라인) -->
 <script>
-console.log('🚀 결제 페이지 인라인 스크립트 시작');
+console.log('🚀 결제 페이지 스크립트 시작');
 
 // DOM 로드 완료 시 실행
 document.addEventListener('DOMContentLoaded', function() {

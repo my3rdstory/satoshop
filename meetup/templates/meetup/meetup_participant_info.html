@@ -338,35 +338,16 @@
   </div>
 </div>
 
-<!-- 플로팅 카운트다운 -->
-<div id="floating-countdown" class="floating-countdown">
-  <div class="flex items-center space-x-3">
-    <div class="flex-shrink-0">
-      <i class="fas fa-clock text-lg"></i>
-    </div>
-    <div>
-      <div class="countdown-time" id="countdown-display">03:00</div>
-      <div class="countdown-label">예약 시간 남음</div>
-    </div>
-  </div>
-</div>
-
 <!-- JavaScript 데이터 전달 -->
 <script>
 // 밋업 데이터를 전역 변수로 설정
 window.meetupData = {
     basePrice: {{ meetup.current_price }},
     storeId: '{{ store.store_id }}',
-    meetupId: {{ meetup.id }},
-    selectedOptions: {{ selected_options_json|safe }},
-    requiredOptionIds: {{ required_option_ids|safe }},
-    countdownSeconds: {{ countdown_seconds }},
-    reservationExpiresAt: {% if reservation_expires_at %}'{{ reservation_expires_at }}'{% else %}null{% endif %}
+    meetupId: {{ meetup.id }}
 };
 </script>
 
-<!-- 공통 카운트다운 스크립트 -->
-<script src="{% static 'js/meetup_countdown.js' %}"></script>
 <!-- 참가자 정보 스크립트 -->
 <script src="{% static 'js/meetup_participant_info.js' %}"></script>
 
@@ -375,22 +356,7 @@ window.meetupData = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎯 참가자 정보 페이지 DOMContentLoaded');
     
-    // 카운트다운 초기화
-    if (window.meetupData && window.MeetupCountdown) {
-        console.log('🕒 카운트다운 초기화 시작');
-        window.meetupCountdownInstance = new MeetupCountdown({
-            storeId: window.meetupData.storeId,
-            meetupId: window.meetupData.meetupId,
-            reservationExpiresAt: window.meetupData.reservationExpiresAt
-        });
-        console.log('✅ 카운트다운 초기화 완료');
-    } else {
-        console.log('⚠️ 카운트다운 정보가 없거나 MeetupCountdown 클래스가 로드되지 않음');
-        console.log('meetupData:', window.meetupData);
-        console.log('MeetupCountdown:', window.MeetupCountdown);
-    }
-    
-    // 폼 제출 시 카운트다운 중지
+    // 폼 제출 시 처리
     const participantForm = document.querySelector('form[method="post"]');
     if (participantForm) {
         console.log('📝 참가자 정보 폼 이벤트 리스너 등록');
@@ -405,11 +371,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
             }
             
-            // 유료 밋업의 경우 카운트다운은 유지하고, 무료 밋업의 경우에만 중지
-            // 실제 카운트다운 중지는 meetup_participant_info.js의 handleFormSubmit에서 처리됨
-            
             console.log('📝 폼 제출 계속 진행');
-            // 폼 제출은 계속 진행
         });
     }
 });

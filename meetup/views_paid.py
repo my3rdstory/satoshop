@@ -17,8 +17,7 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def meetup_checkout(request, store_id, meetup_id):
-    """밋업 체크아웃 - 임시 예약 생성 후 참가자 정보 입력 페이지로"""
-    from .services import create_temporary_reservation, release_reservation, extend_reservation
+    """밋업 체크아웃 - 참가자 정보 입력 후 결제 페이지로"""
     
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     meetup = get_object_or_404(
@@ -34,253 +33,136 @@ def meetup_checkout(request, store_id, meetup_id):
         logger.info(f"무료 밋업 감지 - 무료 체크아웃으로 리다이렉트: {meetup_id}")
         return redirect('meetup:meetup_free_checkout', store_id=store_id, meetup_id=meetup_id)
     
-    # 기존 진행 중인 주문 확인
+    # 정원 확인
+    if meetup.max_participants and meetup.current_participants >= meetup.max_participants:
+        logger.warning(f"유료 밋업 정원 마감 - 밋업: {meetup_id}")
+        messages.error(request, '밋업 신청이 마감되었습니다.')
+        return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
+    
+    # 기존 주문 확인
     existing_order = MeetupOrder.objects.filter(
         meetup=meetup,
         user=request.user,
-        status='pending',
-        is_temporary_reserved=True
+        status__in=['confirmed', 'completed']
     ).first()
     
+    # 이미 확정된 주문인 경우
     if existing_order:
-        # 기존 예약이 아직 유효한지 확인
-        if existing_order.reservation_expires_at and timezone.now() < existing_order.reservation_expires_at:
-            # 유효한 기존 예약이 있으면 해당 페이지로 진행
-            logger.info(f"유효한 기존 임시 예약 발견 - 주문: {existing_order.order_number}, 만료시간: {existing_order.reservation_expires_at}")
-        else:
-            # 만료된 예약은 취소
-            logger.info(f"만료된 임시 예약 취소 - 주문: {existing_order.order_number}")
-            release_reservation(existing_order, "예약 시간 만료")
-            existing_order = None
+        messages.info(request, '이미 참가 신청이 완료된 밋업입니다.')
+        return redirect('meetup:meetup_checkout_complete', store_id=store_id, meetup_id=meetup_id, order_id=existing_order.id)
     
-    # 새로운 임시 예약 생성 (GET 요청인 경우)
-    if request.method == 'GET' and not existing_order:
-        success, message, order = create_temporary_reservation(meetup, request.user)
-        
-        if not success:
-            # 정원이 마감된 경우 특별 메시지 표시
-            if "마감되었습니다" in message:
-                context = {
-                    'store': store,
-                    'meetup': meetup,
-                    'is_full_message': True,
-                    'message': message
-                }
-                return render(request, 'meetup/meetup_full.html', context)
-            else:
-                messages.error(request, message)
-                return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-        
-        existing_order = order
-    
-    # GET 요청인 경우 참가자 정보 입력 페이지 표시
-    if request.method == 'GET':
-        # URL 파라미터에서 선택된 옵션 정보 가져오기
-        selected_options_param = request.GET.get('selected_options')
-        selected_options = {}
-        
-        if selected_options_param:
-            try:
-                selected_options = json.loads(selected_options_param)
-            except (json.JSONDecodeError, ValueError):
-                # 잘못된 JSON이면 빈 딕셔너리로 초기화
-                selected_options = {}
-        
-        # 필수 옵션 정보 수집
-        required_option_ids = list(meetup.options.filter(is_required=True).values_list('id', flat=True))
-        
-        # 할인 금액 계산 (조기등록 할인)
-        discount_amount = 0
-        if meetup.is_early_bird_active:
-            discount_amount = meetup.price - meetup.current_price
-        
-        # 사이트 설정에서 카운트다운 시간 가져오기
-        from myshop.models import SiteSettings
-        site_settings = SiteSettings.get_settings()
-        countdown_seconds = site_settings.meetup_countdown_seconds
-        
-        context = {
-            'store': store,
-            'meetup': meetup,
-            'order': existing_order,
-            'selected_options_json': json.dumps(selected_options) if selected_options else '{}',
-            'required_option_ids': json.dumps(required_option_ids) if required_option_ids else '[]',
-            'discount_amount': discount_amount,
-            'countdown_seconds': countdown_seconds,
-            'reservation_expires_at': existing_order.reservation_expires_at.isoformat() if existing_order and existing_order.reservation_expires_at else None,
-        }
-        return render(request, 'meetup/meetup_participant_info.html', context)
-    
-    # POST 요청인 경우 참가자 정보 업데이트 후 결제 페이지로
+    # POST 요청 처리 (참가자 정보 업데이트 후 결제 페이지로)
     if request.method == 'POST':
-        # 유효한 임시 예약이 있는지 확인
-        if not existing_order or not existing_order.is_temporary_reserved:
-            messages.error(request, '유효한 예약이 없습니다. 다시 신청해 주세요.')
-            return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-        
-        # 예약 시간이 만료되었는지 확인
-        if existing_order.reservation_expires_at and timezone.now() > existing_order.reservation_expires_at:
-            release_reservation(existing_order, "참가자 정보 입력 시간 초과")
-            messages.error(request, '신청 시간이 초과되어 자동으로 취소되었습니다. 다시 신청해 주세요.')
-            return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-    
-        # 기존 예약 주문 업데이트
         try:
             with transaction.atomic():
-                # 기본 가격 재계산 (현재 가격 기준)
-                base_price = meetup.current_price
-                options_price = 0
+                # 정원 재확인 (동시성 이슈 방지)
+                if meetup.max_participants and meetup.current_participants >= meetup.max_participants:
+                    logger.warning(f"유료 밋업 정원 마감 (재확인) - 밋업: {meetup_id}")
+                    messages.error(request, '죄송합니다. 방금 전에 밋업 신청이 마감되었습니다.')
+                    return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
                 
-                # 선택한 옵션 처리 (POST 데이터에서)
-                options_data = request.POST.get('selected_options')
-                selected_option_choices = []
-                
-                if options_data:
-                    try:
-                        selected_options = json.loads(options_data)
-                        
-                        # 각 옵션의 선택지 가격 계산
-                        for option_id, choice_info in selected_options.items():
-                            choice_id = choice_info.get('choiceId')
-                            choice_price = choice_info.get('price', 0)
-                            
-                            # 실제 옵션 선택지 검증
-                            try:
-                                choice = MeetupChoice.objects.get(
-                                    id=choice_id,
-                                    option__meetup=meetup,
-                                    option__id=option_id
-                                )
-                                # 가격 검증 (보안을 위해)
-                                if choice.additional_price == choice_price:
-                                    options_price += choice_price
-                                    selected_option_choices.append(choice)
-                            except MeetupChoice.DoesNotExist:
-                                # 잘못된 선택지는 무시
-                                pass
-                                
-                    except (json.JSONDecodeError, KeyError, ValueError):
-                        # 잘못된 옵션 데이터는 무시
-                        pass
-                
-                total_price = base_price + options_price
-                
-                # 할인 정보
-                is_early_bird = meetup.is_discounted and meetup.is_early_bird_active
-                discount_rate = meetup.public_discount_rate if is_early_bird else 0
-                original_price = meetup.price if is_early_bird else None
-                
-                # 참가자 정보 업데이트
-                participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
-                participant_email = request.POST.get('participant_email') or request.user.email
+                # 참가자 정보 수집
+                participant_name = request.POST.get('participant_name', '').strip()
+                participant_email = request.POST.get('participant_email', '').strip()
                 participant_phone = request.POST.get('participant_phone', '').strip()
                 
-                # 기존 주문 정보 업데이트
-                existing_order.participant_name = participant_name
-                existing_order.participant_email = participant_email
-                existing_order.participant_phone = participant_phone
-                existing_order.base_price = base_price
-                existing_order.options_price = options_price
-                existing_order.total_price = total_price
-                existing_order.is_early_bird = is_early_bird
-                existing_order.discount_rate = discount_rate
-                existing_order.original_price = original_price
+                # 필수 정보 검증
+                if not participant_name:
+                    messages.error(request, '참가자 이름을 입력해주세요.')
+                    return render(request, 'meetup/meetup_participant_info.html', {
+                        'store': store,
+                        'meetup': meetup,
+                        'error_occurred': True
+                    })
                 
-                # 예약 시간을 다음 단계(결제)로 연장
-                extend_reservation(existing_order)
+                if not participant_email:
+                    messages.error(request, '이메일을 입력해주세요.')
+                    return render(request, 'meetup/meetup_participant_info.html', {
+                        'store': store,
+                        'meetup': meetup,
+                        'error_occurred': True
+                    })
                 
-                existing_order.save()
+                # 선택된 옵션 처리
+                selected_options = []
+                options_price = 0
                 
-                # 기존 옵션 선택 삭제 후 새로 생성
-                existing_order.selected_options.all().delete()
-                for choice in selected_option_choices:
+                for key, value in request.POST.items():
+                    if key.startswith('option_'):
+                        try:
+                            option_id = int(key.replace('option_', ''))
+                            option = MeetupOption.objects.get(id=option_id, meetup=meetup)
+                            
+                            if option.option_type == 'select':
+                                choice_id = value
+                                if choice_id:
+                                    choice = MeetupChoice.objects.get(id=choice_id, option=option)
+                                    selected_options.append({
+                                        'option': option,
+                                        'choice': choice,
+                                        'price': choice.additional_price
+                                    })
+                                    options_price += choice.additional_price
+                            
+                            elif option.option_type == 'checkbox' and value == 'on':
+                                selected_options.append({
+                                    'option': option,
+                                    'choice': None,
+                                    'price': option.additional_price or 0
+                                })
+                                options_price += option.additional_price or 0
+                        
+                        except (ValueError, MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
+                            continue
+                
+                # 주문 생성 (pending 상태로)
+                order = MeetupOrder.objects.create(
+                    meetup=meetup,
+                    user=request.user,
+                    participant_name=participant_name,
+                    participant_email=participant_email,
+                    participant_phone=participant_phone,
+                    status='pending',
+                    is_temporary_reserved=False,
+                    base_price=meetup.current_price,
+                    options_price=options_price,
+                    total_price=meetup.current_price + options_price,
+                    is_early_bird=meetup.is_discounted and meetup.is_early_bird_active,
+                    discount_rate=meetup.public_discount_rate if meetup.is_early_bird_active else 0,
+                    original_price=meetup.price if meetup.is_early_bird_active else None,
+                )
+                
+                # 선택된 옵션 저장
+                for selected_option in selected_options:
                     MeetupOrderOption.objects.create(
-                        order=existing_order,
-                        option=choice.option,
-                        choice=choice,
-                        additional_price=choice.additional_price
+                        order=order,
+                        option=selected_option['option'],
+                        choice=selected_option['choice'],
+                        additional_price=selected_option['price']
                     )
                 
-                # 블링크 서비스 연결 확인
-                blink_service = get_blink_service_for_store(store)
-                payment_service_available = blink_service is not None
+                logger.info(f"유료 밋업 주문 생성 완료 - 주문: {order.order_number}")
                 
-                # 사이트 설정에서 카운트다운 시간 가져오기
-                from myshop.models import SiteSettings
-                site_settings = SiteSettings.get_settings()
-                countdown_seconds = site_settings.meetup_countdown_seconds
-                
-                context = {
-                    'store': store,
-                    'meetup': meetup,
-                    'order': existing_order,
-                    'payment_service_available': payment_service_available,
-                    'countdown_seconds': countdown_seconds,
-                    'reservation_expires_at': existing_order.reservation_expires_at.isoformat() if existing_order.reservation_expires_at else None,
-                }
-                
-                return render(request, 'meetup/meetup_checkout.html', context)
+                # 결제 페이지로 리다이렉트
+                return redirect('meetup:meetup_checkout_payment', store_id=store_id, meetup_id=meetup_id, order_id=order.id)
                 
         except Exception as e:
-            logger.error(f"밋업 주문 업데이트 오류: {e}", exc_info=True)
+            logger.error(f"유료 밋업 주문 생성 오류: {e}", exc_info=True)
             
-            # 예외 종류별 상세 처리
-            import traceback
-            logger.error(f"밋업 주문 업데이트 상세 오류: {traceback.format_exc()}")
-            
-            # 임시예약 상태 유지하면서 에러 처리
-            # 예약 시간 연장 (에러 복구를 위한 시간 확보)
-            try:
-                if existing_order and existing_order.is_temporary_reserved:
-                    extend_reservation(existing_order)
-                    existing_order.save()
-                    logger.info(f"오류 발생으로 인한 예약 시간 연장: {existing_order.order_number}")
-            except Exception as extend_error:
-                logger.error(f"예약 시간 연장 실패: {extend_error}")
-            
-            # 사용자에게 구체적인 오류 메시지 제공
-            if "order_number" in str(e).lower():
-                messages.error(request, '주문번호 생성 중 오류가 발생했습니다. 임시예약 상태는 유지됩니다.')
-            elif "confirm_reservation" in str(e).lower():
-                messages.error(request, '참가 확정 처리 중 오류가 발생했습니다. 임시예약 상태는 유지됩니다.')
-            elif "email" in str(e).lower():
-                messages.error(request, '이메일 발송 중 오류가 발생했지만 참가 신청은 완료되었습니다.')
-            else:
-                messages.error(request, '처리 중 일시적인 오류가 발생했습니다. 임시예약 상태는 유지되며, 다시 시도해주세요.')
-            
-            # 오류 발생 시 참가자 정보 입력 페이지로 다시 이동 (임시예약 유지)
-            # URL 파라미터에서 선택된 옵션 정보 가져오기
-            selected_options_param = request.POST.get('selected_options', '{}')
-            try:
-                selected_options = json.loads(selected_options_param)
-            except (json.JSONDecodeError, ValueError):
-                selected_options = {}
-            
-            # 필수 옵션 정보 수집
-            required_option_ids = list(meetup.options.filter(is_required=True).values_list('id', flat=True))
-            
-            # 할인 금액 계산 (조기등록 할인)
-            discount_amount = 0
-            if meetup.is_early_bird_active:
-                discount_amount = meetup.price - meetup.current_price
-            
-            # 사이트 설정에서 카운트다운 시간 가져오기
-            from myshop.models import SiteSettings
-            site_settings = SiteSettings.get_settings()
-            countdown_seconds = site_settings.meetup_countdown_seconds
-            
-            context = {
+            messages.error(request, '주문 처리 중 오류가 발생했습니다. 다시 시도해주세요.')
+            return render(request, 'meetup/meetup_participant_info.html', {
                 'store': store,
                 'meetup': meetup,
-                'order': existing_order,
-                'selected_options_json': json.dumps(selected_options) if selected_options else '{}',
-                'required_option_ids': json.dumps(required_option_ids) if required_option_ids else '[]',
-                'discount_amount': discount_amount,
-                'countdown_seconds': countdown_seconds,
-                'reservation_expires_at': existing_order.reservation_expires_at.isoformat() if existing_order and existing_order.reservation_expires_at else None,
-                'error_occurred': True  # 에러 발생 플래그
-            }
-            return render(request, 'meetup/meetup_participant_info.html', context)
+                'error_occurred': True
+            })
+    
+    # GET 요청 처리 (참가자 정보 입력 페이지 표시)
+    context = {
+        'store': store,
+        'meetup': meetup,
+    }
+    
+    return render(request, 'meetup/meetup_participant_info.html', context)
 
 def meetup_checkout_payment(request, store_id, meetup_id, order_id):
     """밋업 결제 페이지"""
@@ -295,30 +177,13 @@ def meetup_checkout_payment(request, store_id, meetup_id, order_id):
         MeetupOrder,
         id=order_id,
         meetup=meetup,
-        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
+        status='pending'
     )
     
-    # 임시 예약 상태가 아니거나 예약 시간이 만료된 경우 처리
-    if order.status == 'pending':
-        if not order.is_temporary_reserved:
-            messages.error(request, '유효한 예약이 아닙니다. 다시 신청해 주세요.')
-            return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-        
-        # 예약 시간 만료 확인
-        if order.reservation_expires_at and timezone.now() > order.reservation_expires_at:
-            from .services import release_reservation
-            release_reservation(order, "결제 페이지 접근 시 예약 시간 만료")
-            messages.error(request, '예약 시간이 만료되었습니다. 다시 신청해 주세요.')
-            return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-    
-    # 주문 생성 후 30분 경과 시 만료 (기존 로직 유지)
+    # 주문 생성 후 30분 경과 시 만료
     if timezone.now() - order.created_at > timedelta(minutes=30):
-        if order.status == 'pending' and order.is_temporary_reserved:
-            from .services import release_reservation
-            release_reservation(order, "주문 생성 후 30분 경과")
-        else:
-            order.status = 'cancelled'
-            order.save()
+        order.status = 'cancelled'
+        order.save()
         messages.error(request, '주문이 만료되었습니다. 다시 신청해주세요.')
         return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
     
@@ -337,7 +202,6 @@ def meetup_checkout_payment(request, store_id, meetup_id, order_id):
         'order': order,
         'payment_service_available': payment_service_available,
         'countdown_seconds': countdown_seconds,
-        'reservation_expires_at': order.reservation_expires_at.isoformat() if order.reservation_expires_at else None,
     }
     
     return render(request, 'meetup/meetup_checkout.html', context)

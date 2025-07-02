@@ -10,13 +10,7 @@ from django.db.models import Count, Q
 from datetime import timedelta
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption, Store
 
-# 임시예약 전용 프록시 모델
-class TemporaryReservation(MeetupOrder):
-    """임시예약 전용 프록시 모델"""
-    class Meta:
-        proxy = True
-        verbose_name = "임시 예약"
-        verbose_name_plural = "임시 예약 관리"
+
 
 class MeetupImageInline(admin.TabularInline):
     """밋업 이미지 인라인 어드민"""
@@ -64,14 +58,13 @@ class MeetupOptionInline(admin.TabularInline):
 class MeetupAdmin(admin.ModelAdmin):
     list_display = [
         'name', 'store', 'price_display', 'is_free', 'is_active', 'is_discounted', 
-        'participants_display', 'remaining_spots_display', 'reservation_stats_display', 'created_at'
+        'participants_display', 'remaining_spots_display', 'cancelled_orders_count', 'created_at'
     ]
     list_filter = ['store', 'is_free', 'is_active', 'is_discounted', 'is_temporarily_closed', 'created_at']
     search_fields = ['name', 'description', 'store__store_name']
     readonly_fields = [
         'id', 'created_at', 'updated_at', 'current_price', 'is_early_bird_active', 
-        'public_discount_rate', 'current_participants', 'reserved_participants', 
-        'actual_remaining_spots', 'pending_reservations_count'
+        'public_discount_rate', 'current_participants'
     ]
     inlines = [MeetupImageInline, MeetupOptionInline]
     
@@ -96,22 +89,20 @@ class MeetupAdmin(admin.ModelAdmin):
         """참가자 현황 표시"""
         if obj.max_participants:
             confirmed = obj.current_participants
-            reserved = obj.reserved_participants
             max_participants = obj.max_participants
             
-            # 확정된 참가자 / 총 예약 (임시 포함) / 최대 정원
+            # 확정된 참가자 / 최대 정원
             return format_html(
-                '<strong>{}</strong> / {} / {}<br>'
-                '<small style="color: #7f8c8d;">확정 / 예약 / 정원</small>',
-                confirmed, reserved, max_participants
+                '<strong>{}</strong> / {}<br>'
+                '<small style="color: #7f8c8d;">확정 / 정원</small>',
+                confirmed, max_participants
             )
         else:
             confirmed = obj.current_participants
-            reserved = obj.reserved_participants
             return format_html(
-                '<strong>{}</strong> / {}<br>'
-                '<small style="color: #7f8c8d;">확정 / 예약 (무제한)</small>',
-                confirmed, reserved
+                '<strong>{}</strong><br>'
+                '<small style="color: #7f8c8d;">확정 (무제한)</small>',
+                confirmed
             )
     participants_display.short_description = '참가자 현황'
     
@@ -129,49 +120,10 @@ class MeetupAdmin(admin.ModelAdmin):
         return format_html('<span style="color: #3498db;">♾️ 무제한</span>')
     remaining_spots_display.short_description = '남은 자리'
     
-    def reservation_stats_display(self, obj):
-        """예약 통계 표시"""
-        from django.utils import timezone
-        
-        # 대기 중인 임시 예약 수
-        pending_reservations = obj.orders.filter(
-            status='pending',
-            is_temporary_reserved=True,
-            reservation_expires_at__gt=timezone.now()
-        ).count()
-        
-        # 만료된 예약 수
-        expired_reservations = obj.orders.filter(
-            status='pending',
-            is_temporary_reserved=True,
-            reservation_expires_at__lt=timezone.now()
-        ).count()
-        
-        # 취소된 주문 수
-        cancelled_orders = obj.orders.filter(status='cancelled').count()
-        
-        if pending_reservations > 0 or expired_reservations > 0 or cancelled_orders > 0:
-            return format_html(
-                '<div style="font-size: 11px;">'
-                '⏳ 대기: <strong style="color: #f39c12;">{}</strong><br>'
-                '⏱ 만료: <strong style="color: #e74c3c;">{}</strong><br>'
-                '❌ 취소: <strong style="color: #95a5a6;">{}</strong>'
-                '</div>',
-                pending_reservations, expired_reservations, cancelled_orders
-            )
-        return format_html('<span style="color: #27ae60;">✨ 깔끔</span>')
-    reservation_stats_display.short_description = '예약 통계'
-    
-    def pending_reservations_count(self, obj):
-        """대기 중인 임시 예약 수"""
-        from django.utils import timezone
-        
-        return obj.orders.filter(
-            status='pending',
-            is_temporary_reserved=True,
-            reservation_expires_at__gt=timezone.now()
-        ).count()
-    pending_reservations_count.short_description = '대기 중인 임시 예약'
+    def cancelled_orders_count(self, obj):
+        """취소된 주문 수"""
+        return obj.orders.filter(status='cancelled').count()
+    cancelled_orders_count.short_description = '취소된 주문'
     
     # 커스텀 액션들
     def cleanup_expired_reservations(self, request, queryset):
@@ -609,294 +561,7 @@ class MeetupOrderOptionAdmin(admin.ModelAdmin):
         """수정 권한 없음"""
         return False
 
-# 임시예약 전용 어드민
-@admin.register(TemporaryReservation)
-class TemporaryReservationAdmin(admin.ModelAdmin):
-    """임시예약 전용 관리 어드민"""
-    
-    def get_queryset(self, request):
-        """임시예약만 표시"""
-        return super().get_queryset(request).filter(
-            is_temporary_reserved=True,
-            status='pending'
-        )
-    
-    list_display = [
-        'order_number', 'meetup', 'participant_name', 'reservation_status_display', 
-        'reservation_time_left', 'created_at', 'age_display'
-    ]
-    
-    list_filter = [
-        'meetup__store', 'created_at', 'reservation_expires_at',
-        ('reservation_expires_at', admin.DateFieldListFilter),
-        ('created_at', admin.DateFieldListFilter),
-    ]
-    
-    search_fields = [
-        'order_number', 'participant_name', 'participant_email', 
-        'meetup__name', 'meetup__store__store_name'
-    ]
-    
-    readonly_fields = [
-        'order_number', 'meetup', 'participant_name', 'participant_email', 
-        'participant_phone', 'status', 'base_price', 'total_price', 
-        'created_at', 'updated_at', 'reservation_expires_at', 'reservation_time_left',
-        'age_display', 'is_expired'
-    ]
-    
-    ordering = ['-created_at']
-    
-    # 액션 추가
-    actions = [
-        'delete_old_reservations', 
-        'extend_selected_reservations', 
-        'confirm_selected_reservations',
-        'cancel_selected_reservations'
-    ]
-    
-    def reservation_status_display(self, obj):
-        """예약 상태 표시"""
-        from django.utils import timezone
-        
-        if not obj.reservation_expires_at:
-            return format_html('<span style="color: #f39c12; font-weight: bold;">⏳ 임시예약 (시간 없음)</span>')
-        
-        now = timezone.now()
-        if now > obj.reservation_expires_at:
-            return format_html(
-                '<span style="color: #e74c3c; font-weight: bold;">⏱ 만료</span><br>'
-                '<small style="color: #7f8c8d;">{}</small>',
-                obj.reservation_expires_at.strftime("%m/%d %H:%M")
-            )
-        else:
-            time_left = obj.reservation_expires_at - now
-            minutes_left = int(time_left.total_seconds() / 60)
-            if minutes_left < 5:
-                color = '#e74c3c'  # 빨간색 (위험)
-                status = '⚠️ 곧 만료'
-            elif minutes_left < 15:
-                color = '#f39c12'  # 주황색 (주의)
-                status = '⏳ 임시예약'
-            else:
-                color = '#27ae60'  # 초록색 (안전)
-                status = '⏳ 임시예약'
-                
-            return format_html(
-                '<span style="color: {}; font-weight: bold;">{}</span><br>'
-                '<small style="color: {};">{} ({}분 남음)</small>',
-                color, status, color,
-                obj.reservation_expires_at.strftime("%m/%d %H:%M"),
-                minutes_left
-            )
-    reservation_status_display.short_description = '예약 상태'
-    
-    def reservation_time_left(self, obj):
-        """예약 남은 시간"""
-        if not obj.reservation_expires_at:
-            return format_html('<span style="color: #95a5a6;">-</span>')
-        
-        from django.utils import timezone
-        now = timezone.now()
-        
-        if now > obj.reservation_expires_at:
-            return format_html('<span style="color: #e74c3c; font-weight: bold;">만료됨</span>')
-        
-        time_left = obj.reservation_expires_at - now
-        hours = int(time_left.total_seconds() // 3600)
-        minutes = int((time_left.total_seconds() % 3600) // 60)
-        seconds = int(time_left.total_seconds() % 60)
-        
-        if hours > 0:
-            time_str = f"{hours}시간 {minutes}분"
-        elif minutes > 0:
-            time_str = f"{minutes}분 {seconds}초"
-        else:
-            time_str = f"{seconds}초"
-        
-        if time_left.total_seconds() < 300:  # 5분 미만
-            color = '#e74c3c'
-        elif time_left.total_seconds() < 900:  # 15분 미만
-            color = '#f39c12'
-        else:
-            color = '#27ae60'
-            
-        return format_html(
-            '<span style="color: {}; font-weight: bold;">{}</span>',
-            color, time_str
-        )
-    reservation_time_left.short_description = '남은 시간'
-    
-    def age_display(self, obj):
-        """생성된 지 얼마나 되었는지 표시"""
-        from django.utils import timezone
-        
-        now = timezone.now()
-        age = now - obj.created_at
-        
-        days = age.days
-        hours = int(age.total_seconds() // 3600)
-        minutes = int((age.total_seconds() % 3600) // 60)
-        
-        if days > 0:
-            age_str = f"{days}일 전"
-            color = '#e74c3c' if days >= 1 else '#f39c12'
-        elif hours > 0:
-            age_str = f"{hours}시간 전"
-            color = '#f39c12' if hours >= 12 else '#3498db'
-        else:
-            age_str = f"{minutes}분 전"
-            color = '#27ae60'
-        
-        return format_html(
-            '<span style="color: {};">{}</span>',
-            color, age_str
-        )
-    age_display.short_description = '생성된 지'
-    
-    def is_expired(self, obj):
-        """만료 여부"""
-        if not obj.reservation_expires_at:
-            return False
-        
-        from django.utils import timezone
-        return timezone.now() > obj.reservation_expires_at
-    is_expired.short_description = '만료됨'
-    is_expired.boolean = True
-    
-    # 커스텀 액션들
-    def delete_old_reservations(self, request, queryset):
-        """하루 이상 된 임시예약 일괄 삭제"""
-        from django.utils import timezone
-        from django.http import HttpResponseRedirect
-        from django.urls import reverse
-        
-        one_day_ago = timezone.now() - timedelta(days=1)
-        
-        # 전체 임시예약에서 하루 이상 된 것들 찾기 (queryset 무시하고 전체에서)
-        old_reservations = self.get_queryset(request).filter(created_at__lt=one_day_ago)
-        
-        if not old_reservations.exists():
-            self.message_user(request, '하루 이상 된 임시예약이 없습니다.', level=messages.WARNING)
-            return HttpResponseRedirect(request.get_full_path())
-        
-        count = old_reservations.count()
-        
-        # 삭제 확인 페이지 표시
-        if request.POST.get('confirm_delete'):
-            # 실제 삭제 실행
-            deleted_count = 0
-            for order in old_reservations:
-                order.delete()
-                deleted_count += 1
-            
-            message = f'{deleted_count}개의 하루 이상 된 임시예약을 삭제했습니다.'
-            self.message_user(request, message, level=messages.SUCCESS)
-            return HttpResponseRedirect(reverse('admin:meetup_temporaryreservation_changelist'))
-        
-        # 삭제 확인 페이지 렌더링
-        context = {
-            'title': '하루 이상 된 임시예약 일괄 삭제',
-            'orders': list(old_reservations.select_related('meetup', 'meetup__store')[:20]),  # 미리보기용 20개만
-            'total_count': count,
-            'action_url': request.get_full_path(),
-            'action_name': 'delete_old_reservations',
-        }
-        
-        return render(request, 'admin/meetup/confirm_delete_reservations.html', context)
-    
-    delete_old_reservations.short_description = '하루 이상 된 임시예약 일괄 삭제'
-    
-    def extend_selected_reservations(self, request, queryset):
-        """선택된 예약들의 시간을 연장"""
-        from .services import extend_reservation
-        
-        # 유효한 임시예약만 필터링
-        valid_reservations = queryset.filter(
-            is_temporary_reserved=True,
-            status='pending'
-        )
-        
-        extended_count = 0
-        for order in valid_reservations:
-            if extend_reservation(order):
-                extended_count += 1
-        
-        if extended_count > 0:
-            self.message_user(request, f'{extended_count}개의 예약 시간이 180초 연장되었습니다.', level=messages.SUCCESS)
-        else:
-            self.message_user(request, '연장할 수 있는 유효한 예약이 없습니다.', level=messages.WARNING)
-    
-    extend_selected_reservations.short_description = '선택된 예약 시간 연장 (180초)'
-    
-    def confirm_selected_reservations(self, request, queryset):
-        """선택된 임시예약을 확정으로 변경"""
-        from .services import confirm_reservation
-        
-        valid_reservations = queryset.filter(
-            is_temporary_reserved=True,
-            status='pending'
-        )
-        
-        confirmed_count = 0
-        for order in valid_reservations:
-            if confirm_reservation(order):
-                confirmed_count += 1
-        
-        if confirmed_count > 0:
-            self.message_user(request, f'{confirmed_count}개의 임시예약이 확정되었습니다.', level=messages.SUCCESS)
-        else:
-            self.message_user(request, '확정할 수 있는 유효한 임시예약이 없습니다.', level=messages.WARNING)
-    
-    confirm_selected_reservations.short_description = '선택된 임시예약을 확정으로 변경'
-    
-    def cancel_selected_reservations(self, request, queryset):
-        """선택된 임시예약을 취소"""
-        from .services import release_reservation
-        
-        valid_reservations = queryset.filter(
-            is_temporary_reserved=True,
-            status='pending'
-        )
-        
-        cancelled_count = 0
-        for order in valid_reservations:
-            if release_reservation(order, "관리자 수동 취소"):
-                cancelled_count += 1
-        
-        if cancelled_count > 0:
-            self.message_user(request, f'{cancelled_count}개의 임시예약이 취소되었습니다.', level=messages.SUCCESS)
-        else:
-            self.message_user(request, '취소할 수 있는 유효한 임시예약이 없습니다.', level=messages.WARNING)
-    
-    cancel_selected_reservations.short_description = '선택된 임시예약을 취소'
-    
-    fieldsets = (
-        ('주문 정보', {
-            'fields': ('order_number', 'meetup', 'status')
-        }),
-        ('참가자 정보', {
-            'fields': ('participant_name', 'participant_email', 'participant_phone')
-        }),
-        ('임시 예약 정보', {
-            'fields': ('reservation_expires_at', 'reservation_time_left', 'is_expired', 'age_display'),
-            'description': '임시 예약의 상태와 시간 정보를 확인할 수 있습니다.'
-        }),
-        ('가격 정보', {
-            'fields': ('base_price', 'total_price'),
-            'classes': ('collapse',)
-        }),
-        ('메타 정보', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def has_add_permission(self, request):
-        """추가 권한 없음 (결제를 통해서만 생성)"""
-        return False
-    
-    def has_change_permission(self, request, obj=None):
-        """수정 권한 제한"""
-        return False
+
+
 
 
