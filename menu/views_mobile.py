@@ -157,7 +157,7 @@ def create_cart_invoice_mobile(request, store_id):
             return JsonResponse({'success': False, 'error': '결제 금액이 올바르지 않습니다.'}, status=400)
         
         # 메모 생성
-        memo = '[모바일] ' + ', '.join(memo_items[:3])
+        memo = ', '.join(memo_items[:3])
         if len(memo_items) > 3:
             memo += f' 외 {len(memo_items) - 3}개'
         

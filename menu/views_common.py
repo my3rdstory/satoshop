@@ -397,47 +397,42 @@ def delete_menu(request, store_id, menu_id):
 
 @login_required
 def menu_orders(request, store_id):
-    """메뉴 주문 현황"""
+    """메뉴 판매 현황"""
     store = get_store_or_404(store_id, request.user)
     
-    # 검색 및 필터링
-    search_query = request.GET.get('search', '')
-    status_filter = request.GET.get('status', '')
+    # 메뉴별 판매 통계 계산
+    from django.db.models import F
     
-    orders = MenuOrder.objects.filter(store=store)
+    menus = Menu.objects.filter(store=store).annotate(
+        total_orders=Count('menuorderitem__order', distinct=True, filter=Q(menuorderitem__order__status='paid')),
+        total_quantity=Sum('menuorderitem__quantity', filter=Q(menuorderitem__order__status='paid')),
+        total_revenue=Sum(F('menuorderitem__menu_price') * F('menuorderitem__quantity'), filter=Q(menuorderitem__order__status='paid'))
+    ).filter(total_orders__gt=0).order_by('-total_revenue')
     
-    if search_query:
-        orders = orders.filter(
-            Q(order_number__icontains=search_query) |
-            Q(customer_info__icontains=search_query)
-        )
+    # 전체 통계
+    total_menu_orders = MenuOrderItem.objects.filter(
+        order__store=store,
+        order__status='paid'
+    ).values('order').distinct().count()
     
-    if status_filter:
-        orders = orders.filter(status=status_filter)
+    total_menu_items = MenuOrderItem.objects.filter(
+        order__store=store,
+        order__status='paid'
+    ).aggregate(total=Sum('quantity'))['total'] or 0
     
-    orders = orders.order_by('-created_at')
-    
-    # 페이지네이션
-    paginator = Paginator(orders, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # 통계
-    total_orders = MenuOrder.objects.filter(store=store).count()
-    paid_orders = MenuOrder.objects.filter(store=store, status='paid').count()
-    total_revenue = MenuOrder.objects.filter(
-        store=store, 
-        status='paid'
-    ).aggregate(total=Sum('total_amount'))['total'] or 0
+    total_menu_revenue = MenuOrderItem.objects.filter(
+        order__store=store,
+        order__status='paid'
+    ).aggregate(
+        total=Sum(F('menu_price') * F('quantity'))
+    )['total'] or 0
     
     context = {
         'store': store,
-        'page_obj': page_obj,
-        'search_query': search_query,
-        'status_filter': status_filter,
-        'total_orders': total_orders,
-        'paid_orders': paid_orders,
-        'total_revenue': total_revenue,
+        'menus_with_orders': menus,
+        'total_menu_orders': total_menu_orders,
+        'total_menu_items': total_menu_items,
+        'total_menu_revenue': total_menu_revenue,
     }
     
     return render(request, 'menu/menu_orders.html', context)
@@ -446,6 +441,8 @@ def menu_orders(request, store_id):
 @login_required
 def menu_orders_detail(request, store_id, menu_id):
     """특정 메뉴의 주문 현황"""
+    from django.db.models import F
+    
     store = get_store_or_404(store_id, request.user)
     menu = get_object_or_404(Menu, id=menu_id, store=store)
     
@@ -472,7 +469,7 @@ def menu_orders_detail(request, store_id, menu_id):
         order__store=store,
         order__status='paid'
     ).aggregate(
-        total=Sum(Max('menu_price') * Max('quantity'))
+        total=Sum(F('menu_price') * F('quantity'))
     )['total'] or 0
     
     context = {
