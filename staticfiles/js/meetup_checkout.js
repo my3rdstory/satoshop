@@ -175,10 +175,10 @@ function generateInvoice() {
             if (data.expires_at && window.meetupCountdownInstance) {
                 console.log('🕒 인보이스 만료 시간으로 카운트다운 업데이트:', data.expires_at);
                 try {
-                    window.meetupCountdownInstance.updateExpiration(data.expires_at, '결제 시간 남음');
-                    console.log('✅ 카운트다운 시간 업데이트 완료');
+                    window.meetupCountdownInstance.switchToPaymentMode(data.expires_at);
+                    console.log('✅ 카운트다운이 결제 모드로 전환됨');
                 } catch (error) {
-                    console.error('❌ 카운트다운 시간 업데이트 실패:', error);
+                    console.error('❌ 카운트다운 모드 전환 실패:', error);
                 }
             }
             
@@ -406,10 +406,10 @@ function cancelInvoice() {
             if (window.meetupCountdownInstance) {
                 console.log('🔄 카운트다운을 원본 예약 시간으로 복원');
                 try {
-                    window.meetupCountdownInstance.resetToOriginalExpiration();
-                    console.log('✅ 카운트다운 복원 완료');
+                    window.meetupCountdownInstance.switchToReservationMode();
+                    console.log('✅ 카운트다운이 예약 모드로 복원됨');
                 } catch (error) {
-                    console.error('❌ 카운트다운 복원 실패:', error);
+                    console.error('❌ 카운트다운 모드 복원 실패:', error);
                 }
             }
             

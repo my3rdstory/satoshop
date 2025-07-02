@@ -477,7 +477,7 @@ function startCountdown() {
             // 페이지 새로고침 또는 리다이렉트
             setTimeout(() => {
                 alert('예약 시간이 만료되었습니다. 다시 시도해주세요.');
-                window.location.href = `/stores/${meetupData.storeId}/meetups/${meetupData.meetupId}/`;
+                window.location.href = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/`;
             }, 2000);
             return;
         }
@@ -543,7 +543,7 @@ window.addEventListener('beforeunload', function(event) {
     
     // 임시 예약이 있는 경우 서버에 해제 요청
     if (meetupData.reservationExpiresAt && window.navigator.sendBeacon) {
-        const releaseUrl = `/stores/${meetupData.storeId}/meetups/${meetupData.meetupId}/release_reservation/`;
+        const releaseUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/release_reservation/`;
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', getCsrfToken());
         formData.append('reason', '사용자가 페이지를 벗어남');
@@ -574,7 +574,7 @@ function getCsrfToken() {
 function releaseReservation(reason = '사용자 취소') {
     if (!meetupData.reservationExpiresAt) return;
     
-    const releaseUrl = `/stores/${meetupData.storeId}/meetups/${meetupData.meetupId}/release_reservation/`;
+    const releaseUrl = `/meetup/${meetupData.storeId}/${meetupData.meetupId}/release_reservation/`;
     
     // sendBeacon 사용 (페이지가 닫혀도 전송됨)
     if (window.navigator.sendBeacon) {
