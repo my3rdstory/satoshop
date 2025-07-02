@@ -40,6 +40,11 @@ class MeetupCountdown {
             currentExpiresAt: this.currentExpiresAt
         });
         
+        // 기본적으로 예약 모드로 설정
+        if (this.floatingCountdown) {
+            this.floatingCountdown.classList.add('reservation-mode');
+        }
+        
         // 카운트다운 표시
         setTimeout(() => {
             this.floatingCountdown.classList.add('show');
@@ -132,6 +137,80 @@ class MeetupCountdown {
     resetToOriginalExpiration() {
         console.log('원본 예약 시간으로 복원');
         this.updateExpiration(this.originalReservationExpiresAt);
+    }
+    
+    // 인보이스 생성 시 카운트다운을 결제 시간으로 변경
+    switchToPaymentMode(paymentExpiresAt) {
+        console.log('🔄 결제 모드로 전환:', paymentExpiresAt);
+        
+        // 부드러운 전환을 위해 잠깐 숨기기
+        this.hide();
+        
+        setTimeout(() => {
+            // 결제 시간으로 업데이트
+            this.updateExpiration(paymentExpiresAt);
+            
+            // 스타일 변경 (결제 모드 표시)
+            if (this.floatingCountdown) {
+                this.floatingCountdown.classList.add('payment-mode');
+                this.floatingCountdown.classList.remove('reservation-mode');
+            }
+            
+            // 라벨 변경
+            if (this.countdownLabel) {
+                this.countdownLabel.textContent = '결제 시간 남음';
+            }
+            
+            // 다시 표시
+            this.show();
+        }, 300); // 300ms 후 결제 모드로 전환하여 표시
+    }
+    
+    // 인보이스 취소 시 카운트다운을 예약 시간으로 복원
+    switchToReservationMode() {
+        console.log('🔄 예약 모드로 복원');
+        
+        // 부드러운 전환을 위해 잠깐 숨기기
+        this.hide();
+        
+        setTimeout(() => {
+            // 원래 예약 시간으로 복원
+            this.updateExpiration(this.originalReservationExpiresAt);
+            
+            // 스타일 변경 (예약 모드 표시)
+            if (this.floatingCountdown) {
+                this.floatingCountdown.classList.add('reservation-mode');
+                this.floatingCountdown.classList.remove('payment-mode');
+            }
+            
+            // 라벨 변경
+            if (this.countdownLabel) {
+                this.countdownLabel.textContent = '예약 시간 남음';
+            }
+            
+            // 다시 표시
+            this.show();
+        }, 300); // 300ms 후 예약 모드로 전환하여 표시
+    }
+    
+    // 카운트다운 표시
+    show() {
+        console.log('👁️ 카운트다운 표시');
+        if (this.floatingCountdown) {
+            this.floatingCountdown.classList.remove('hidden');
+            this.floatingCountdown.classList.add('show');
+            console.log('✅ 카운트다운 표시 완료');
+        }
+    }
+    
+    // 카운트다운 숨기기 (완전히 숨김)
+    hide() {
+        console.log('👻 카운트다운 숨기기');
+        if (this.floatingCountdown) {
+            this.floatingCountdown.classList.remove('show');
+            this.floatingCountdown.classList.add('hidden');
+            console.log('✅ 카운트다운 숨기기 완료');
+        }
     }
     
     // 경고 알림 표시

@@ -209,7 +209,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('🚀 최종 이동 URL:', fullUrl);
         
+        // 페이지 이동 전 현재 상태 로그
+        console.log('📍 현재 URL:', window.location.href);
+        console.log('⏰ 이동 시간:', new Date().toISOString());
+        
         // 페이지 이동
+        console.log('🏃‍♂️ window.location.href로 이동 시작...');
         window.location.href = fullUrl;
     }
     

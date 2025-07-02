@@ -172,8 +172,14 @@ function generateInvoice() {
             currentInvoice = data.invoice;
             
             // 인보이스 만료 시간으로 카운트다운 업데이트 (보통 15분)
-            if (data.expires_at && meetupCountdown) {
-                meetupCountdown.updateExpiration(data.expires_at);
+            if (data.expires_at && window.meetupCountdownInstance) {
+                console.log('🕒 인보이스 만료 시간으로 카운트다운 업데이트:', data.expires_at);
+                try {
+                    window.meetupCountdownInstance.updateExpiration(data.expires_at, '결제 시간 남음');
+                    console.log('✅ 카운트다운 시간 업데이트 완료');
+                } catch (error) {
+                    console.error('❌ 카운트다운 시간 업데이트 실패:', error);
+                }
             }
             
             // QR 코드 생성
@@ -305,10 +311,24 @@ function checkPaymentStatus() {
         if (data.success) {
             if (data.paid) {
                 // 결제 완료
+                console.log('💰 결제 완료 - 카운트다운 중지');
+                
                 if (paymentCheckInterval) {
                     clearInterval(paymentCheckInterval);
                     paymentCheckInterval = null;
                 }
+                
+                // 카운트다운 중지
+                if (window.meetupCountdownInstance) {
+                    console.log('🛑 결제 완료로 인한 카운트다운 중지');
+                    try {
+                        window.meetupCountdownInstance.stopAndHide();
+                        console.log('✅ 카운트다운 중지 완료');
+                    } catch (error) {
+                        console.error('❌ 카운트다운 중지 실패:', error);
+                    }
+                }
+                
                 showPaymentStatus('결제가 완료되었습니다! 참가 확정 페이지로 이동합니다...', 'success');
                 
                 // 2초 후 결제 완료 페이지로 이동
@@ -383,8 +403,14 @@ function cancelInvoice() {
             currentInvoice = null;
             
             // 카운트다운을 원본 예약 시간으로 복원
-            if (meetupCountdown) {
-                meetupCountdown.resetToOriginalExpiration();
+            if (window.meetupCountdownInstance) {
+                console.log('🔄 카운트다운을 원본 예약 시간으로 복원');
+                try {
+                    window.meetupCountdownInstance.resetToOriginalExpiration();
+                    console.log('✅ 카운트다운 복원 완료');
+                } catch (error) {
+                    console.error('❌ 카운트다운 복원 실패:', error);
+                }
             }
             
             // 성공 메시지 표시

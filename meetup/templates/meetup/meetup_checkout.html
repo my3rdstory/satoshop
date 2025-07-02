@@ -62,6 +62,26 @@
     animation: pulse-red 1s infinite;
   }
   
+  /* 결제 모드 스타일 */
+  .floating-countdown.payment-mode {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .floating-countdown.payment-mode .countdown-label::before {
+    content: "💳 ";
+  }
+  
+  /* 예약 모드 스타일 */
+  .floating-countdown.reservation-mode {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+  }
+  
+  .floating-countdown.reservation-mode .countdown-label::before {
+    content: "⏰ ";
+  }
+  
   @keyframes pulse-red {
     0%, 100% { 
       box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
@@ -70,6 +90,20 @@
       box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
       transform: scale(1.02);
     }
+  }
+  
+  @keyframes pulse-orange {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(245, 158, 11, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  .floating-countdown.payment-mode.urgent {
+    animation: pulse-orange 1s infinite;
   }
   
   .countdown-time {
@@ -441,13 +475,13 @@
 <script src="{% static 'js/meetup_countdown.js' %}"></script>
 <script src="{% static 'js/meetup_checkout.js' %}"></script>
 
-<!-- 무료 밋업 카운트다운 중지 처리 (인라인) -->
+<!-- 유료/무료 밋업 카운트다운 처리 (인라인) -->
 <script>
-console.log('🚀 인라인 스크립트 시작');
+console.log('🚀 결제 페이지 인라인 스크립트 시작');
 
 // DOM 로드 완료 시 실행
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 인라인 스크립트 DOMContentLoaded');
+    console.log('🎯 결제 페이지 DOMContentLoaded');
     
     // 체크아웃 데이터 파싱
     const checkoutDataElement = document.getElementById('checkout-data');
@@ -458,13 +492,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 카운트다운 초기화
         if (checkoutData.reservationExpiresAt && window.MeetupCountdown) {
-            console.log('🕒 카운트다운 초기화 시작');
+            console.log('🕒 결제 페이지 카운트다운 초기화 시작');
+            console.log('📅 예약 만료 시간:', checkoutData.reservationExpiresAt);
             window.meetupCountdownInstance = new MeetupCountdown({
                 storeId: checkoutData.storeId,
                 meetupId: checkoutData.meetupId,
                 reservationExpiresAt: checkoutData.reservationExpiresAt
             });
-            console.log('✅ 카운트다운 초기화 완료');
+            console.log('✅ 결제 페이지 카운트다운 초기화 완료');
+        } else {
+            console.log('⚠️ 카운트다운 정보가 없거나 MeetupCountdown 클래스가 로드되지 않음');
+            console.log('reservationExpiresAt:', checkoutData.reservationExpiresAt);
+            console.log('MeetupCountdown:', window.MeetupCountdown);
         }
     }
     
@@ -499,6 +538,17 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('📤 폼 제출 계속 진행');
             // event.preventDefault() 호출하지 않음 - 폼이 정상적으로 제출되도록 함
         });
+    }
+    
+    // 유료 밋업 인보이스 생성 시 카운트다운 연장 처리
+    if (window.generateInvoice) {
+        const originalGenerateInvoice = window.generateInvoice;
+        window.generateInvoice = function() {
+            console.log('💳 인보이스 생성 시작 - 카운트다운 일시 중지');
+            
+            // 원래 함수 실행
+            originalGenerateInvoice();
+        };
     }
 });
 </script>
