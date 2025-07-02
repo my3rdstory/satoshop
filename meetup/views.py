@@ -325,8 +325,9 @@ def manage_meetup(request, store_id, meetup_id):
     
     return render(request, 'meetup/meetup_manage.html', context)
 
+@login_required
 def meetup_checkout(request, store_id, meetup_id):
-    """밋업 체크아웃 - 참가자 정보 입력 및 주문 생성"""
+    """밋업 체크아웃 - 바로 주문 생성하고 결제 페이지로"""
     import json
     
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
@@ -381,14 +382,12 @@ def meetup_checkout(request, store_id, meetup_id):
         return render(request, 'meetup/meetup_participant_info.html', context)
     
     # POST 요청인 경우 주문 생성 처리
-    # 로그인한 사용자의 경우 기존 대기중인 주문 확인
-    existing_order = None
-    if request.user.is_authenticated:
-        existing_order = MeetupOrder.objects.filter(
-            meetup=meetup,
-            user=request.user,
-            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
-        ).first()
+    # 기존 대기중인 주문 확인
+    existing_order = MeetupOrder.objects.filter(
+        meetup=meetup,
+        user=request.user,
+        status__in=['pending', 'cancelled']  # 취소된 주문도 포함
+    ).first()
     
     if existing_order:
         # 기존 주문이 30분 이내인 경우 해당 주문으로 이동
@@ -456,28 +455,6 @@ def meetup_checkout(request, store_id, meetup_id):
     # 새 주문 생성
     try:
         with transaction.atomic():
-            # 🔒 SELECT FOR UPDATE로 밋업 레코드 락 설정 및 정원 재확인
-            locked_meetup = Meetup.objects.select_for_update().get(
-                id=meetup_id, 
-                store=store, 
-                deleted_at__isnull=True,
-                is_active=True
-            )
-            
-            # 🛡️ 정원 확인 (락된 상태에서 재확인)
-            if locked_meetup.max_participants:
-                current_confirmed_count = locked_meetup.orders.filter(
-                    status__in=['confirmed', 'completed']
-                ).count()
-                
-                if current_confirmed_count >= locked_meetup.max_participants:
-                    messages.error(
-                        request, 
-                        f'😔 죄송합니다. 방금 전에 "{meetup.name}" 밋업의 정원({locked_meetup.max_participants}명)이 마감되었습니다. '
-                        f'다른 밋업을 확인해보시거나, 주최자에게 문의해주세요.'
-                    )
-                    return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
-            
             # 기본 가격 계산
             base_price = meetup.current_price
             options_price = 0
@@ -521,26 +498,16 @@ def meetup_checkout(request, store_id, meetup_id):
             discount_rate = meetup.public_discount_rate if is_early_bird else 0
             original_price = meetup.price if is_early_bird else None
             
-            # 참가자 정보 가져오기
-            if request.user.is_authenticated:
-                # 로그인한 사용자: 사용자 정보 우선, POST 데이터로 덮어쓰기 가능
-                participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
-                participant_email = request.POST.get('participant_email') or request.user.email
-            else:
-                # 비회원: POST 데이터에서 필수로 가져오기
-                participant_name = request.POST.get('participant_name', '').strip()
-                participant_email = request.POST.get('participant_email', '').strip()
-                
-                if not participant_name or not participant_email:
-                    messages.error(request, '참가자 이름과 이메일을 입력해주세요.')
-                    return redirect('meetup:meetup_checkout', store_id=store_id, meetup_id=meetup_id)
+            # 참가자 정보 가져오기 (회원만 가능)
+            participant_name = request.POST.get('participant_name') or request.user.get_full_name() or request.user.username
+            participant_email = request.POST.get('participant_email') or request.user.email
             
             participant_phone = request.POST.get('participant_phone', '').strip()
             
             # 주문 생성
             order = MeetupOrder.objects.create(
                 meetup=meetup,
-                user=request.user if request.user.is_authenticated else None,
+                user=request.user,
                 participant_name=participant_name,
                 participant_email=participant_email,
                 participant_phone=participant_phone,
@@ -761,35 +728,8 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         
         if result['success']:
             if result['status'] == 'paid':
-                # 결제 완료 처리 (정원 재확인 포함)
+                # 결제 완료 처리
                 with transaction.atomic():
-                    # 🔒 SELECT FOR UPDATE로 밋업 레코드 락 설정 및 정원 재확인
-                    locked_meetup = Meetup.objects.select_for_update().get(
-                        id=meetup.id,
-                        store=store,
-                        deleted_at__isnull=True,
-                        is_active=True
-                    )
-                    
-                    # 🛡️ 정원 확인 (락된 상태에서 재확인)
-                    if locked_meetup.max_participants:
-                        current_confirmed_count = locked_meetup.orders.filter(
-                            status__in=['confirmed', 'completed']
-                        ).count()
-                        
-                        if current_confirmed_count >= locked_meetup.max_participants:
-                            # 정원이 초과된 경우 주문을 취소로 변경
-                            order.status = 'cancelled'
-                            order.save()
-                            
-                            return JsonResponse({
-                                'success': False,
-                                'error': f'😔 죄송합니다. 결제 처리 중 "{meetup.name}" 밋업의 정원({locked_meetup.max_participants}명)이 마감되었습니다. '
-                                        f'결제는 자동으로 취소되었으며, 결제 금액은 환불됩니다. '
-                                        f'다른 밋업을 확인해보시거나 주최자에게 문의해주세요.'
-                            })
-                    
-                    # 정원에 문제없으면 확정 처리
                     order.status = 'confirmed'
                     order.paid_at = timezone.now()
                     order.confirmed_at = timezone.now()
@@ -1012,10 +952,10 @@ def meetup_status_detail(request, store_id, meetup_id):
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
     
-    # 해당 밋업의 주문들 (확정된 것만)
+    # 해당 밋업의 주문들 (확정된 것과 취소된 것 포함)
     orders = MeetupOrder.objects.filter(
         meetup=meetup,
-        status__in=['confirmed', 'completed']
+        status__in=['confirmed', 'completed', 'cancelled']
     ).select_related('user').prefetch_related('selected_options').order_by('-created_at')
     
     # 페이지네이션
@@ -1023,14 +963,15 @@ def meetup_status_detail(request, store_id, meetup_id):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # 통계 계산
-    total_participants = orders.count()
-    total_revenue = orders.aggregate(
+    # 통계 계산 (확정된 주문만)
+    confirmed_orders = orders.filter(status__in=['confirmed', 'completed'])
+    total_participants = confirmed_orders.count()
+    total_revenue = confirmed_orders.aggregate(
         total=models.Sum('total_price')
     )['total'] or 0
     
     # 참석자 통계 계산
-    attended_count = orders.filter(attended=True).count()
+    attended_count = confirmed_orders.filter(attended=True).count()
     attendance_rate = 0
     if total_participants > 0:
         attendance_rate = (attended_count / total_participants) * 100
@@ -1109,4 +1050,57 @@ def update_attendance(request, store_id, meetup_id):
         return JsonResponse({
             'success': False,
             'error': '참석 여부 업데이트 중 오류가 발생했습니다.'
+        })
+
+@login_required
+@require_POST
+@csrf_exempt
+def cancel_participation(request, store_id, meetup_id):
+    """참가 취소"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        
+        if not order_id:
+            return JsonResponse({
+                'success': False,
+                'error': '주문 ID가 필요합니다.'
+            })
+        
+        # 해당 밋업의 확정된 주문인지 확인
+        order = get_object_or_404(
+            MeetupOrder,
+            id=order_id,
+            meetup=meetup,
+            status='confirmed'
+        )
+        
+        # 주문 상태를 취소로 변경
+        order.status = 'cancelled'
+        order.save()
+        
+        logger.info(f"밋업 참가 취소: {order.order_number} - {order.participant_name}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참가가 성공적으로 취소되었습니다.'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"참가 취소 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참가 취소 중 오류가 발생했습니다.'
         })

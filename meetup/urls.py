@@ -15,6 +15,7 @@ urlpatterns = [
     path('<str:store_id>/status/', views.meetup_status, name='meetup_status'),
     path('<str:store_id>/status/<str:meetup_id>/', views.meetup_status_detail, name='meetup_status_detail'),
     path('<str:store_id>/status/<str:meetup_id>/update_attendance/', views.update_attendance, name='update_attendance'),
+    path('<str:store_id>/<str:meetup_id>/cancel_participation/', views.cancel_participation, name='cancel_participation'),
     
     # 밋업 주문 내역
     path('<str:store_id>/orders/', views.meetup_orders, name='meetup_orders'),

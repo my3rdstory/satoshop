@@ -105,13 +105,6 @@ class Meetup(models.Model):
         """현재 참가자 수 (확정된 주문 기준)"""
         return self.orders.filter(status__in=['confirmed', 'completed']).count()
     
-    def get_current_participants_with_lock(self):
-        """락을 사용한 현재 참가자 수 조회 (동시성 안전)"""
-        from django.db import transaction
-        with transaction.atomic():
-            locked_meetup = Meetup.objects.select_for_update().get(id=self.id)
-            return locked_meetup.orders.filter(status__in=['confirmed', 'completed']).count()
-    
     @property
     def is_full(self):
         if not self.max_participants:
