@@ -1,0 +1,291 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}밋업 참가 내역 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 밋업 참가 내역 페이지 스타일 */
+.meetup-icon {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 meetup-icon rounded-full mr-3">
+        <i class="fas fa-users text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">밋업 참가 내역</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">참가한 모든 밋업을 확인하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'accounts:mypage' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>마이페이지로 돌아가기</span>
+      </a>
+    </div>
+
+    {% if meetup_orders %}
+    <div class="space-y-6">
+      {% for order in meetup_orders %}
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <!-- 밋업 정보 헤더 -->
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+              <!-- 주문번호 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">주문번호</p>
+                <p class="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center mt-1">
+                  <i class="fas fa-receipt mr-2 text-xs"></i>
+                  {{ order.order_number }}
+                </p>
+              </div>
+              
+              <!-- 스토어 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">스토어</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center mt-1">
+                  <i class="fas fa-store mr-2 text-xs text-gray-400"></i>
+                  {{ order.meetup.store.store_name }}
+                </p>
+              </div>
+              
+              <!-- 신청일시 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">신청일시</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
+                  <i class="fas fa-clock mr-2 text-xs text-gray-400"></i>
+                  {{ order.created_at|date:'m월 d일 H:i' }}
+                </p>
+              </div>
+            </div>
+            
+            <!-- 상태 배지 -->
+            <div class="flex items-center gap-3">
+              <!-- 밋업 타입 -->
+              {% if order.meetup.is_free %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                <i class="fas fa-gift mr-1"></i>
+                무료 밋업
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                <i class="fas fa-coins mr-1"></i>
+                유료 밋업
+              </span>
+              {% endif %}
+              
+              <!-- 참가 상태 -->
+              {% if order.status == 'confirmed' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                <i class="fas fa-check mr-1"></i>
+                참가 확정
+              </span>
+              {% elif order.status == 'pending' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+                <i class="fas fa-clock mr-1"></i>
+                대기중
+              </span>
+              {% elif order.status == 'cancelled' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                <i class="fas fa-times mr-1"></i>
+                취소됨
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 밋업 상세 정보 -->
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 밋업 정보 -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                <i class="fas fa-users mr-2 text-purple-600 dark:text-purple-400"></i>
+                {{ order.meetup.title }}
+              </h3>
+              
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-calendar-alt mr-2 w-4"></i>
+                  <span>{{ order.meetup.event_date|date:'Y년 m월 d일 (l)' }}</span>
+                </div>
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-clock mr-2 w-4"></i>
+                  <span>{{ order.meetup.start_time|time:'H:i' }} - {{ order.meetup.end_time|time:'H:i' }}</span>
+                </div>
+                {% if order.meetup.location %}
+                <div class="flex items-start text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-map-marker-alt mr-2 w-4 mt-1"></i>
+                  <span>{{ order.meetup.location }}</span>
+                </div>
+                {% endif %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-user-friends mr-2 w-4"></i>
+                  <span>{{ order.meetup.current_participants }}명 / {{ order.meetup.max_participants }}명 참가중</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 참가자 정보 및 결제 정보 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가자 정보</h4>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">참가자명</span>
+                  <span class="text-gray-900 dark:text-white font-medium">{{ order.participant_name }}</span>
+                </div>
+                {% if order.participant_phone %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">연락처</span>
+                  <span class="text-gray-900 dark:text-white">{{ order.participant_phone }}</span>
+                </div>
+                {% endif %}
+                {% if order.participant_email %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">이메일</span>
+                  <span class="text-gray-900 dark:text-white">{{ order.participant_email }}</span>
+                </div>
+                {% endif %}
+                
+                {% if not order.meetup.is_free %}
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                  <div class="flex justify-between items-center">
+                    <span class="text-gray-600 dark:text-gray-400">참가비</span>
+                    <span class="text-lg font-semibold text-bitcoin">
+                      {{ order.total_amount|floatformat:0 }} sats
+                    </span>
+                  </div>
+                  {% if order.paid_at %}
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-500 dark:text-gray-400">결제일시</span>
+                    <span class="text-green-600 dark:text-green-400">{{ order.paid_at|date:'m월 d일 H:i' }}</span>
+                  </div>
+                  {% endif %}
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- 선택된 옵션들 -->
+          {% if order.selected_options.exists %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">선택 옵션</h4>
+            <div class="flex flex-wrap gap-2">
+              {% for option in order.selected_options.all %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                {{ option.option_name }}: {{ option.option_value }}
+              </span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+                     <!-- 액션 버튼들 -->
+           <div class="mt-6 flex flex-wrap gap-3">
+             <a 
+               href="{% url 'meetup:meetup_list' order.meetup.store.store_id %}" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+             >
+               <i class="fas fa-calendar-alt mr-2"></i>
+               {{ order.meetup.store.store_name }} 밋업 목록
+             </a>
+            
+            {% if order.meetup.is_upcoming %}
+            <a 
+              href="{% url 'meetup:meetup_detail' order.meetup.store.store_id order.meetup.id %}" 
+              class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-info-circle mr-2"></i>
+              밋업 상세보기
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+      <nav class="flex items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-bitcoin transition-colors">
+          <i class="fas fa-chevron-left mr-1"></i>이전
+        </a>
+        {% endif %}
+        
+        <div class="flex items-center space-x-1">
+          {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="px-3 py-2 text-sm font-medium text-white bg-bitcoin rounded-lg">
+            {{ num }}
+          </span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a href="?page={{ num }}" class="px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:text-bitcoin transition-colors">
+            {{ num }}
+          </a>
+          {% endif %}
+          {% endfor %}
+        </div>
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-bitcoin transition-colors">
+          다음<i class="fas fa-chevron-right ml-1"></i>
+        </a>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 빈 상태 -->
+    <div class="text-center py-16">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-6">
+        <i class="fas fa-users text-4xl text-gray-400"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">아직 참가한 밋업이 없습니다</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+        다양한 스토어에서 열리는 흥미로운 밋업에 참가해보세요!
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a 
+          href="{% url 'stores:browse_stores' %}" 
+          class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+        >
+          <i class="fas fa-search mr-2"></i>
+          밋업 찾아보기
+        </a>
+        <a 
+          href="{% url 'accounts:mypage' %}" 
+          class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>
+          마이페이지로 돌아가기
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 필요시 추가 JavaScript 기능
+</script>
+{% endblock %} 

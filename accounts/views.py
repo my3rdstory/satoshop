@@ -176,6 +176,33 @@ def purchase_detail(request, order_number):
 
 
 @login_required
+def my_meetup_orders(request):
+    """내 밋업 참가 내역 (모든 스토어 통합)"""
+    from meetup.models import MeetupOrder
+    from django.core.paginator import Paginator
+    
+    # 사용자의 모든 밋업 주문 조회
+    meetup_orders = MeetupOrder.objects.filter(
+        user=request.user
+    ).select_related(
+        'meetup', 'meetup__store'
+    ).prefetch_related(
+        'selected_options'
+    ).order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(meetup_orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'meetup_orders': page_obj.object_list,
+    }
+    return render(request, 'accounts/my_meetup_orders.html', context)
+
+
+@login_required
 def download_order_txt(request, order_number):
     """주문서 TXT 파일 다운로드"""
     order = get_object_or_404(Order, order_number=order_number, user=request.user)

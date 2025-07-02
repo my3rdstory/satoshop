@@ -16,6 +16,9 @@ urlpatterns = [
     path('purchase/<str:order_number>/', views.purchase_detail, name='purchase_detail'),
     path('purchase/<str:order_number>/download/', views.download_order_txt, name='download_order_txt'),
     
+    # 밋업 참가 내역
+    path('my-meetup-orders/', views.my_meetup_orders, name='my_meetup_orders'),
+    
     # LNURL-auth (lnauth-django 호환)
     path('ln-auth-get-url/', views.create_lnurl_auth, name='ln_auth_url_provider'),
     path('ln-auth/', views.lnurl_auth_callback, name='lnurl_auth_callback'),
