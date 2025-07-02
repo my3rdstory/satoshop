@@ -952,10 +952,10 @@ def meetup_status_detail(request, store_id, meetup_id):
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
     
-    # 해당 밋업의 주문들 (확정된 것만)
+    # 해당 밋업의 주문들 (확정된 것과 취소된 것 포함)
     orders = MeetupOrder.objects.filter(
         meetup=meetup,
-        status__in=['confirmed', 'completed']
+        status__in=['confirmed', 'completed', 'cancelled']
     ).select_related('user').prefetch_related('selected_options').order_by('-created_at')
     
     # 페이지네이션
@@ -963,14 +963,15 @@ def meetup_status_detail(request, store_id, meetup_id):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # 통계 계산
-    total_participants = orders.count()
-    total_revenue = orders.aggregate(
+    # 통계 계산 (확정된 주문만)
+    confirmed_orders = orders.filter(status__in=['confirmed', 'completed'])
+    total_participants = confirmed_orders.count()
+    total_revenue = confirmed_orders.aggregate(
         total=models.Sum('total_price')
     )['total'] or 0
     
     # 참석자 통계 계산
-    attended_count = orders.filter(attended=True).count()
+    attended_count = confirmed_orders.filter(attended=True).count()
     attendance_rate = 0
     if total_participants > 0:
         attendance_rate = (attended_count / total_participants) * 100
@@ -1049,4 +1050,57 @@ def update_attendance(request, store_id, meetup_id):
         return JsonResponse({
             'success': False,
             'error': '참석 여부 업데이트 중 오류가 발생했습니다.'
+        })
+
+@login_required
+@require_POST
+@csrf_exempt
+def cancel_participation(request, store_id, meetup_id):
+    """참가 취소"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        
+        if not order_id:
+            return JsonResponse({
+                'success': False,
+                'error': '주문 ID가 필요합니다.'
+            })
+        
+        # 해당 밋업의 확정된 주문인지 확인
+        order = get_object_or_404(
+            MeetupOrder,
+            id=order_id,
+            meetup=meetup,
+            status='confirmed'
+        )
+        
+        # 주문 상태를 취소로 변경
+        order.status = 'cancelled'
+        order.save()
+        
+        logger.info(f"밋업 참가 취소: {order.order_number} - {order.participant_name}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참가가 성공적으로 취소되었습니다.'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"참가 취소 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참가 취소 중 오류가 발생했습니다.'
         })
