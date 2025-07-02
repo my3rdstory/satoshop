@@ -326,7 +326,7 @@ def manage_meetup(request, store_id, meetup_id):
     return render(request, 'meetup/meetup_manage.html', context)
 
 def meetup_checkout(request, store_id, meetup_id):
-    """밋업 체크아웃 - 바로 주문 생성하고 결제 페이지로"""
+    """밋업 체크아웃 - 참가자 정보 입력 및 주문 생성"""
     import json
     
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
@@ -456,6 +456,28 @@ def meetup_checkout(request, store_id, meetup_id):
     # 새 주문 생성
     try:
         with transaction.atomic():
+            # 🔒 SELECT FOR UPDATE로 밋업 레코드 락 설정 및 정원 재확인
+            locked_meetup = Meetup.objects.select_for_update().get(
+                id=meetup_id, 
+                store=store, 
+                deleted_at__isnull=True,
+                is_active=True
+            )
+            
+            # 🛡️ 정원 확인 (락된 상태에서 재확인)
+            if locked_meetup.max_participants:
+                current_confirmed_count = locked_meetup.orders.filter(
+                    status__in=['confirmed', 'completed']
+                ).count()
+                
+                if current_confirmed_count >= locked_meetup.max_participants:
+                    messages.error(
+                        request, 
+                        f'😔 죄송합니다. 방금 전에 "{meetup.name}" 밋업의 정원({locked_meetup.max_participants}명)이 마감되었습니다. '
+                        f'다른 밋업을 확인해보시거나, 주최자에게 문의해주세요.'
+                    )
+                    return redirect('meetup:meetup_detail', store_id=store_id, meetup_id=meetup_id)
+            
             # 기본 가격 계산
             base_price = meetup.current_price
             options_price = 0
@@ -739,8 +761,35 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         
         if result['success']:
             if result['status'] == 'paid':
-                # 결제 완료 처리
+                # 결제 완료 처리 (정원 재확인 포함)
                 with transaction.atomic():
+                    # 🔒 SELECT FOR UPDATE로 밋업 레코드 락 설정 및 정원 재확인
+                    locked_meetup = Meetup.objects.select_for_update().get(
+                        id=meetup.id,
+                        store=store,
+                        deleted_at__isnull=True,
+                        is_active=True
+                    )
+                    
+                    # 🛡️ 정원 확인 (락된 상태에서 재확인)
+                    if locked_meetup.max_participants:
+                        current_confirmed_count = locked_meetup.orders.filter(
+                            status__in=['confirmed', 'completed']
+                        ).count()
+                        
+                        if current_confirmed_count >= locked_meetup.max_participants:
+                            # 정원이 초과된 경우 주문을 취소로 변경
+                            order.status = 'cancelled'
+                            order.save()
+                            
+                            return JsonResponse({
+                                'success': False,
+                                'error': f'😔 죄송합니다. 결제 처리 중 "{meetup.name}" 밋업의 정원({locked_meetup.max_participants}명)이 마감되었습니다. '
+                                        f'결제는 자동으로 취소되었으며, 결제 금액은 환불됩니다. '
+                                        f'다른 밋업을 확인해보시거나 주최자에게 문의해주세요.'
+                            })
+                    
+                    # 정원에 문제없으면 확정 처리
                     order.status = 'confirmed'
                     order.paid_at = timezone.now()
                     order.confirmed_at = timezone.now()
