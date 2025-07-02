@@ -109,33 +109,83 @@
 
         <!-- 밋업 상세 정보 -->
         <div class="px-6 py-5">
+          <!-- 밋업 이미지 (있는 경우) -->
+          {% if order.meetup.images.exists %}
+          <div class="mb-4">
+            <img src="{{ order.meetup.images.first.file_url }}" 
+                 alt="{{ order.meetup.name }}" 
+                 class="w-full h-48 object-cover rounded-lg">
+          </div>
+          {% endif %}
+          
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 밋업 정보 -->
             <div>
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
                 <i class="fas fa-users mr-2 text-purple-600 dark:text-purple-400"></i>
-                {{ order.meetup.title }}
+                {{ order.meetup.name }}
               </h3>
               
               <div class="space-y-2 text-sm">
+                {% if order.meetup.date_time %}
                 <div class="flex items-center text-gray-600 dark:text-gray-400">
                   <i class="fas fa-calendar-alt mr-2 w-4"></i>
-                  <span>{{ order.meetup.event_date|date:'Y년 m월 d일 (l)' }}</span>
-                </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-clock mr-2 w-4"></i>
-                  <span>{{ order.meetup.start_time|time:'H:i' }} - {{ order.meetup.end_time|time:'H:i' }}</span>
-                </div>
-                {% if order.meetup.location %}
-                <div class="flex items-start text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-map-marker-alt mr-2 w-4 mt-1"></i>
-                  <span>{{ order.meetup.location }}</span>
+                  <span>{{ order.meetup.date_time|date:'Y년 m월 d일 (l) H:i' }}</span>
                 </div>
                 {% endif %}
+                
+                {% if order.meetup.location_full_address %}
+                <div class="flex items-start text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-map-marker-alt mr-2 w-4 mt-1"></i>
+                  <span>{{ order.meetup.location_full_address }}</span>
+                </div>
+                {% elif order.meetup.location_tbd %}
+                <div class="flex items-start text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-map-marker-alt mr-2 w-4 mt-1"></i>
+                  <span class="text-yellow-600 dark:text-yellow-400">장소 추후 공지</span>
+                </div>
+                {% endif %}
+                
+                {% if order.meetup.max_participants %}
                 <div class="flex items-center text-gray-600 dark:text-gray-400">
                   <i class="fas fa-user-friends mr-2 w-4"></i>
                   <span>{{ order.meetup.current_participants }}명 / {{ order.meetup.max_participants }}명 참가중</span>
                 </div>
+                {% else %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-user-friends mr-2 w-4"></i>
+                  <span>{{ order.meetup.current_participants }}명 참가중</span>
+                </div>
+                {% endif %}
+                
+                {% if order.meetup.organizer_contact %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-phone mr-2 w-4"></i>
+                  <span>{{ order.meetup.organizer_contact }}</span>
+                </div>
+                {% endif %}
+                
+                {% if order.meetup.organizer_email %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-envelope mr-2 w-4"></i>
+                  <span>{{ order.meetup.organizer_email }}</span>
+                </div>
+                {% endif %}
+                
+                {% if order.meetup.organizer_chat_channel %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-comments mr-2 w-4"></i>
+                  <a href="{{ order.meetup.organizer_chat_channel }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                    소통채널 바로가기
+                  </a>
+                </div>
+                {% endif %}
+                
+                {% if order.meetup.description %}
+                <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <p class="text-gray-600 dark:text-gray-400 text-sm">{{ order.meetup.description|truncatewords:20 }}</p>
+                </div>
+                {% endif %}
               </div>
             </div>
 
@@ -160,14 +210,33 @@
                 </div>
                 {% endif %}
                 
+                {% if order.confirmed_at %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">참가 확정일</span>
+                  <span class="text-green-600 dark:text-green-400 font-medium">{{ order.confirmed_at|date:'m월 d일 H:i' }}</span>
+                </div>
+                {% endif %}
+                
                 {% if not order.meetup.is_free %}
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
                   <div class="flex justify-between items-center">
                     <span class="text-gray-600 dark:text-gray-400">참가비</span>
                     <span class="text-lg font-semibold text-bitcoin">
-                      {{ order.total_amount|floatformat:0 }} sats
+                      {{ order.total_price|floatformat:0 }} sats
                     </span>
                   </div>
+                  
+                  {% if order.is_early_bird and order.original_price %}
+                  <div class="flex justify-between text-xs">
+                    <span class="text-gray-500 dark:text-gray-400">원가</span>
+                    <span class="text-gray-500 dark:text-gray-400 line-through">{{ order.original_price|floatformat:0 }} sats</span>
+                  </div>
+                  <div class="flex justify-between text-xs">
+                    <span class="text-green-600 dark:text-green-400">조기등록 할인 ({{ order.discount_rate }}%)</span>
+                    <span class="text-green-600 dark:text-green-400">-{{ order.discount_amount|floatformat:0 }} sats</span>
+                  </div>
+                  {% endif %}
+                  
                   {% if order.paid_at %}
                   <div class="flex justify-between text-xs">
                     <span class="text-gray-500 dark:text-gray-400">결제일시</span>
@@ -185,12 +254,26 @@
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
             <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">선택 옵션</h4>
             <div class="flex flex-wrap gap-2">
-              {% for option in order.selected_options.all %}
+              {% for selected_option in order.selected_options.all %}
               <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                {{ option.option_name }}: {{ option.option_value }}
+                {{ selected_option.option.name }}: {{ selected_option.choice.name }}
+                {% if selected_option.additional_price > 0 %}
+                  (+{{ selected_option.additional_price }} sats)
+                {% endif %}
               </span>
               {% endfor %}
             </div>
+          </div>
+          {% endif %}
+          
+          <!-- 특이사항 -->
+          {% if order.meetup.special_notes %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">특이사항</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-2"></i>
+              {{ order.meetup.special_notes }}
+            </p>
           </div>
           {% endif %}
 
@@ -204,7 +287,7 @@
                {{ order.meetup.store.store_name }} 밋업 목록
              </a>
             
-            {% if order.meetup.is_upcoming %}
+            {% if not order.meetup.is_expired %}
             <a 
               href="{% url 'meetup:meetup_detail' order.meetup.store.store_id order.meetup.id %}" 
               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"

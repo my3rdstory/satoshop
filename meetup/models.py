@@ -391,6 +391,13 @@ class MeetupOrder(models.Model):
     def is_confirmed(self):
         """참가 확정 여부"""
         return self.status in ['confirmed', 'completed']
+    
+    @property
+    def discount_amount(self):
+        """할인 금액 계산"""
+        if self.is_early_bird and self.original_price:
+            return self.original_price - self.total_price
+        return 0
 
 class MeetupOrderOption(models.Model):
     """밋업 주문의 선택된 옵션"""
