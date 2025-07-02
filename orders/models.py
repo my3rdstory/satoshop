@@ -103,8 +103,12 @@ class CartItem(models.Model):
         if self.frozen_product_price_sats is not None:
             return self.frozen_product_price_sats + self.frozen_options_price_sats
         
-        # 고정된 가격이 없으면 실시간 가격 사용 (기존 로직)
-        base_price = self.product.public_price
+        # 고정된 가격이 없으면 실시간 가격 사용 (할인 적용)
+        # 할인 상품인 경우 할인가를 사용, 그렇지 않으면 정가 사용
+        if self.product.is_discounted and self.product.public_discounted_price:
+            base_price = self.product.public_discounted_price
+        else:
+            base_price = self.product.public_price
         
         # 옵션 가격도 환율 적용
         options_total = 0

@@ -211,8 +211,12 @@ class CartService:
                 exchange_rate = ExchangeRate.objects.latest('created_at')
                 frozen_data['frozen_exchange_rate'] = float(exchange_rate.btc_krw_rate)
                 
-                # 상품 가격 고정
-                frozen_data['frozen_product_price_sats'] = product.public_price
+                # 상품 가격 고정 (할인 적용)
+                # 할인 상품인 경우 할인가를 고정, 그렇지 않으면 정가 고정
+                if product.is_discounted and product.public_discounted_price:
+                    frozen_data['frozen_product_price_sats'] = product.public_discounted_price
+                else:
+                    frozen_data['frozen_product_price_sats'] = product.public_price
                 
                 # 옵션 가격 고정
                 options_price_sats = 0
@@ -414,32 +418,12 @@ class CartService:
                             'choice_price': frozen_price
                         })
                 else:
-                    # 고정된 가격이 없으면 실시간 가격 사용
-                    if item_data.get('selected_options'):
-                        for option_id, choice_id in item_data['selected_options'].items():
-                            try:
-                                option = ProductOption.objects.get(id=option_id)
-                                choice = ProductOptionChoice.objects.get(id=choice_id)
-                                options_display.append({
-                                    'option_name': option.name,
-                                    'choice_name': choice.name,
-                                    'choice_price': choice.public_price
-                                })
-                            except:
-                                pass
-                
-                # 상품 이미지 URL
-                product_image_url = None
-                if product.images.first():
-                    product_image_url = product.images.first().file_url
-                
-                # 가격 계산 (고정된 가격이 있으면 사용)
-                if item_data.get('frozen_product_price_sats') is not None:
-                    # 환율 고정: 고정된 가격 사용
-                    unit_price = item_data['frozen_product_price_sats'] + item_data.get('frozen_options_price_sats', 0)
-                else:
-                    # 실시간 가격 사용
-                    base_price = product.public_price
+                    # 고정된 가격이 없으면 실시간 가격 사용 (할인 적용)
+                    # 할인 상품인 경우 할인가를 사용, 그렇지 않으면 정가 사용
+                    if product.is_discounted and product.public_discounted_price:
+                        base_price = product.public_discounted_price
+                    else:
+                        base_price = product.public_price
                     
                     # 옵션 가격도 환율 적용 (public_price 사용)
                     options_total = 0
@@ -459,7 +443,7 @@ class CartService:
                     'id': item_data['id'],
                     'product_id': product.id,
                     'product_title': product.title,
-                    'product_image_url': product_image_url,
+                    'product_image_url': product.images.first().file_url if product.images.first() else None,
                     'quantity': item_data['quantity'],
                     'unit_price': unit_price,
                     'total_price': total_price,
@@ -548,17 +532,24 @@ class CartService:
                     if item.get('frozen_product_price_sats') is not None:
                         unit_price = item['frozen_product_price_sats'] + item.get('frozen_options_price_sats', 0)
                     else:
-                        # 실시간 가격 사용
-                        options_price = 0
+                        # 실시간 가격 사용 (할인 적용)
+                        # 할인 상품인 경우 할인가를 사용, 그렇지 않으면 정가 사용
+                        if product.is_discounted and product.public_discounted_price:
+                            base_price = product.public_discounted_price
+                        else:
+                            base_price = product.public_price
+                        
+                        # 옵션 가격도 환율 적용 (public_price 사용)
+                        options_total = 0
                         if item.get('selected_options'):
                             for option_id, choice_id in item['selected_options'].items():
                                 try:
                                     choice = ProductOptionChoice.objects.get(id=choice_id)
-                                    options_price += choice.public_price
+                                    options_total += choice.public_price
                                 except:
                                     pass
                         
-                        unit_price = product.public_price + options_price
+                        unit_price = base_price + options_total
                     
                     total_price = unit_price * quantity
                     
@@ -628,7 +619,7 @@ def send_order_notification_email(order):
             logger.debug(f"주문 {order.order_number}: Gmail 설정 불완전 (이메일: {bool(store.email_host_user)}, 비밀번호: {bool(store.email_host_password_encrypted)})")
             return False
             
-        # 🔥 중요: 수신 이메일 주소 확인 (주인장 이메일)
+        # 🛡️ 중요: 수신 이메일 주소 확인 (주인장 이메일)
         if not store.owner_email:
             logger.debug(f"주문 {order.order_number}: 스토어 주인장 이메일 주소가 설정되지 않음")
             return False
