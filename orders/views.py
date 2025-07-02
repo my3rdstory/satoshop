@@ -1651,7 +1651,14 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                 
                 # 기존 로직 호환을 위해 상품 가격과 옵션 가격 분리
                 # 하지만 총합은 장바구니의 고정된 가격을 사용
-                base_product_price = product.final_price if not hasattr(item, 'frozen_product_price_sats') else item.get('frozen_product_price_sats', product.final_price)
+                # 할인 상품인 경우 할인가를 사용
+                if hasattr(item, 'frozen_product_price_sats') and item.get('frozen_product_price_sats'):
+                    base_product_price = item.get('frozen_product_price_sats')
+                elif product.is_discounted and product.public_discounted_price:
+                    base_product_price = product.public_discounted_price
+                else:
+                    base_product_price = product.public_price
+                
                 options_price = unit_price - base_product_price if unit_price > base_product_price else 0
                 
                 order_item = OrderItem.objects.create(
@@ -1819,11 +1826,17 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                     except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                         continue
                 
+                # 할인 상품인 경우 할인가를 사용
+                if item.product.is_discounted and item.product.public_discounted_price:
+                    product_price = item.product.public_discounted_price
+                else:
+                    product_price = item.product.public_price
+                
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=item.product,
                     product_title=item.product.title,
-                    product_price=item.product.final_price,
+                    product_price=product_price,
                     quantity=item.quantity,
                     selected_options=options_display,
                     options_price=item.options_price
