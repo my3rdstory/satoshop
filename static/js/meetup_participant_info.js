@@ -284,12 +284,13 @@ function handleFormSubmit(event) {
         return;
     }
     
-    // 무료 밋업인 경우 카운트다운 중지 및 숨기기
+    // 무료 밋업인 경우에만 카운트다운 중지 및 숨기기
     if (totalPrice === 0) {
         console.log('🆓 무료 밋업 감지 - 카운트다운 중지 시작');
         stopAndHideCountdown();
     } else {
-        console.log('💳 유료 밋업 - 카운트다운 유지');
+        console.log('💳 유료 밋업 - 카운트다운 유지 (결제 페이지로 이동 후 연장)');
+        // 유료 밋업에서는 카운트다운을 유지하고, 서버에서 예약 시간을 연장함
     }
     
     // 버튼 상태 변경

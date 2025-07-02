@@ -177,6 +177,22 @@
       <!-- 숨겨진 필드: 선택된 옵션 정보 -->
       <input type="hidden" name="selected_options" id="selected_options" value="">
 
+      <!-- 에러 발생 시 재시도 안내 -->
+      {% if error_occurred %}
+      <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-1"></i>
+          <div>
+            <h4 class="text-yellow-800 dark:text-yellow-200 font-medium mb-1">재시도 안내</h4>
+            <p class="text-yellow-700 dark:text-yellow-300 text-sm">
+              일시적인 오류가 발생했지만, 임시예약 상태는 유지되고 있습니다.
+              <br>정보를 다시 확인하고 "결제하기" 버튼을 다시 눌러주세요.
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- 이메일 안내 문구 -->
       <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
         <div class="flex items-start">
@@ -380,18 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('📝 참가자 정보 폼 이벤트 리스너 등록');
         
         participantForm.addEventListener('submit', function(event) {
-            console.log('📤 참가자 정보 폼 제출됨 - 카운트다운 중지');
-            
-            // 카운트다운 중지
-            if (window.meetupCountdownInstance) {
-                console.log('🛑 카운트다운 중지 시도');
-                try {
-                    window.meetupCountdownInstance.stopAndHide();
-                    console.log('✅ 카운트다운 중지 완료');
-                } catch (error) {
-                    console.error('❌ 카운트다운 중지 실패:', error);
-                }
-            }
+            console.log('📤 참가자 정보 폼 제출됨');
             
             // 제출 버튼 상태 변경
             const submitBtn = document.getElementById('submit-btn');
@@ -399,6 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
             }
+            
+            // 유료 밋업의 경우 카운트다운은 유지하고, 무료 밋업의 경우에만 중지
+            // 실제 카운트다운 중지는 meetup_participant_info.js의 handleFormSubmit에서 처리됨
             
             console.log('📝 폼 제출 계속 진행');
             // 폼 제출은 계속 진행
