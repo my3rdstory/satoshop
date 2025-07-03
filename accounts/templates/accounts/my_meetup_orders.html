@@ -110,13 +110,13 @@
         <!-- 밋업 상세 정보 -->
         <div class="px-6 py-5">
           <!-- 밋업 이미지 (있는 경우) -->
-          {% if order.meetup.images.exists %}
+          {% comment %} {% if order.meetup.images.exists %}
           <div class="mb-4">
             <img src="{{ order.meetup.images.first.file_url }}" 
                  alt="{{ order.meetup.name }}" 
                  class="w-full h-48 object-cover rounded-lg">
           </div>
-          {% endif %}
+          {% endif %} {% endcomment %}
           
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 밋업 정보 -->
