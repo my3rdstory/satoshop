@@ -1,5 +1,5 @@
 from django.contrib import admin, messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -27,6 +27,24 @@ class HasParticipantsFilter(admin.SimpleListFilter):
             return queryset.filter(orders__status__in=['confirmed', 'completed']).distinct()
         if self.value() == 'no':
             return queryset.exclude(orders__status__in=['confirmed', 'completed']).distinct()
+
+
+class PaymentHashFilter(admin.SimpleListFilter):
+    """결제해시 유무 필터"""
+    title = '결제해시 유무'
+    parameter_name = 'payment_hash_exists'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', '결제해시 있음'),
+            ('no', '결제해시 없음'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.exclude(payment_hash__isnull=True).exclude(payment_hash='')
+        if self.value() == 'no':
+            return queryset.filter(Q(payment_hash__isnull=True) | Q(payment_hash=''))
 
 
 class MeetupImageInline(admin.TabularInline):
@@ -146,14 +164,19 @@ class MeetupAdmin(admin.ModelAdmin):
     cancelled_orders_count.short_description = '취소된 주문'
     
     def view_participants_button(self, obj):
-        """참가자 목록 보기 버튼"""
+        """참가자 목록 보기 버튼 - 어드민 내에서 밋업 주문 목록으로 이동"""
         participants_count = obj.orders.filter(status__in=['confirmed', 'completed']).count()
         if participants_count > 0:
-            url = reverse('meetup:meetup_status_detail', args=[obj.store.store_id, obj.pk])
+            # 장고 어드민의 MeetupOrder 목록으로 이동하면서 현재 밋업 필터 적용
+            from django.urls import reverse
+            admin_url = reverse('admin:meetup_meetuporder_changelist')
+            # 쿼리 파라미터로 밋업 필터 추가
+            filter_url = f"{admin_url}?meetup__id__exact={obj.pk}"
+            
             return format_html(
-                '<a href="{}" class="button" style="background-color: #007cba; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px;">'
+                '<a href="{}" class="button" style="background-color: #007cba; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px;" target="_blank">'
                 '<i class="fas fa-users"></i> 참가자 ({})명</a>',
-                url, participants_count
+                filter_url, participants_count
             )
         else:
             return format_html('<span style="color: #999;">참가자 없음</span>')
@@ -180,7 +203,7 @@ class MeetupAdmin(admin.ModelAdmin):
             'description': '무료 밋업 체크 시 가격 및 할인 설정이 비활성화됩니다.'
         }),
         ('참가자 관리', {
-            'fields': ('max_participants', 'current_participants', 'reserved_participants', 'actual_remaining_spots', 'pending_reservations_count', 'completion_message'),
+            'fields': ('max_participants', 'current_participants', 'completion_message'),
             'description': '정원 관리와 참가 완료 후 안내 메시지를 설정합니다.'
         }),
         ('상태 정보', {
@@ -299,13 +322,13 @@ class MeetupOrderOptionInline(admin.TabularInline):
 class MeetupOrderAdmin(admin.ModelAdmin):
     list_display = [
         'order_number', 'meetup', 'participant_name', 'status_display', 
-        'reservation_status_display', 'attended_display', 'total_price_display', 
+        'payment_hash_display', 'reservation_status_display', 'attended_display', 'total_price_display', 
         'is_early_bird', 'created_at'
     ]
     list_filter = [
         'status', 'is_temporary_reserved', 'attended', 'meetup__store', 
         'is_early_bird', 'created_at', 'paid_at', 'attended_at',
-        'reservation_expires_at'
+        'reservation_expires_at', PaymentHashFilter
     ]
     search_fields = [
         'order_number', 'participant_name', 'participant_email', 
@@ -321,7 +344,22 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     inlines = [MeetupOrderOptionInline]
     
     # 액션 추가
-    actions = ['mark_as_confirmed', 'cancel_expired_reservations', 'extend_reservations']
+    actions = ['confirm_paid_reservations', 'mark_as_confirmed', 'cancel_expired_reservations', 'extend_reservations']
+
+    def get_queryset(self, request):
+        """queryset에 결제해시 유무 어노테이션 추가"""
+        queryset = super().get_queryset(request)
+        from django.db.models import Case, When, Value, BooleanField
+        
+        queryset = queryset.annotate(
+            has_payment_hash=Case(
+                When(payment_hash__isnull=True, then=Value(False)),
+                When(payment_hash='', then=Value(False)),
+                default=Value(True),
+                output_field=BooleanField()
+            )
+        )
+        return queryset
     
     def status_display(self, obj):
         """상태 표시"""
@@ -344,6 +382,19 @@ class MeetupOrderAdmin(admin.ModelAdmin):
             color, label
         )
     status_display.short_description = '상태'
+    
+    def payment_hash_display(self, obj):
+        """결제해시 표시"""
+        if obj.payment_hash and obj.payment_hash.strip():
+            return format_html(
+                '<span style="color: #28a745; font-weight: bold;">✓ 있음</span><br>'
+                '<small style="font-family: monospace; color: #6c757d;">{}</small>',
+                obj.payment_hash[:16] + '...' if len(obj.payment_hash) > 16 else obj.payment_hash
+            )
+        else:
+            return format_html('<span style="color: #6c757d;">없음</span>')
+    payment_hash_display.short_description = '결제해시'
+    payment_hash_display.admin_order_field = 'has_payment_hash'
     
     def reservation_status_display(self, obj):
         """예약 상태 표시 (임시 예약 및 만료 시간 포함)"""
@@ -449,6 +500,55 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     total_price_display.short_description = '결제금액'
     
     # 커스텀 액션들
+    def confirm_paid_reservations(self, request, queryset):
+        """결제해시가 있는 결제대기 주문들을 참가확정으로 변경"""
+        from django.utils import timezone
+        
+        # 결제해시가 있는 pending 상태 주문들만 필터링
+        eligible_orders = queryset.filter(
+            status='pending'
+        ).exclude(
+            payment_hash__isnull=True
+        ).exclude(
+            payment_hash=''
+        )
+        
+        if not eligible_orders.exists():
+            self.message_user(request, '결제해시가 있는 결제대기 주문이 없습니다.', level=messages.WARNING)
+            return
+        
+        confirmed_count = 0
+        failed_count = 0
+        
+        for order in eligible_orders:
+            try:
+                # 상태를 confirmed로 변경
+                order.status = 'confirmed'
+                order.is_temporary_reserved = False
+                order.confirmed_at = timezone.now()
+                order.paid_at = timezone.now()
+                order.reservation_expires_at = None  # 확정되면 만료시간 제거
+                order.save()
+                confirmed_count += 1
+            except Exception as e:
+                failed_count += 1
+        
+        if confirmed_count > 0:
+            self.message_user(
+                request, 
+                f'{confirmed_count}개의 주문이 참가확정으로 변경되었습니다.',
+                level=messages.SUCCESS
+            )
+        
+        if failed_count > 0:
+            self.message_user(
+                request,
+                f'{failed_count}개의 주문 처리 중 오류가 발생했습니다.',
+                level=messages.ERROR
+            )
+    
+    confirm_paid_reservations.short_description = '결제해시가 있는 결제대기 주문을 참가확정으로 변경'
+    
     def mark_as_confirmed(self, request, queryset):
         """선택된 주문들을 확정 상태로 변경"""
         from .services import confirm_reservation
@@ -480,9 +580,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         
         self.message_user(request, f'{extended_count}개의 예약 시간이 연장되었습니다.')
     extend_reservations.short_description = '선택된 예약 시간 연장 (180초)'
-    
 
-    
     fieldsets = (
         ('주문 정보', {
             'fields': ('order_number', 'meetup', 'status')
