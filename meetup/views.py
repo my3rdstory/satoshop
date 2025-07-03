@@ -473,7 +473,7 @@ def meetup_status_detail(request, store_id, meetup_id):
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
     
-    # 해당 밋업의 주문들 (확정된 것과 취소된 것 포함)
+    # 해당 밋업의 주문들 (확정된 것, 취소된 것 포함)
     orders = MeetupOrder.objects.filter(
         meetup=meetup,
         status__in=['confirmed', 'completed', 'cancelled']
