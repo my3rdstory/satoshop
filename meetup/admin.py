@@ -955,6 +955,281 @@ class MeetupParticipant(User):
         verbose_name_plural = "밋업 참가자 목록"
 
 
+# 밋업별 참가자 관리를 위한 새로운 모델
+class MeetupParticipantEntry(MeetupOrder):
+    """밋업별 참가자 항목을 위한 프록시 모델"""
+    class Meta:
+        proxy = True
+        verbose_name = "밋업 참가자 항목"
+        verbose_name_plural = "밋업 참가자 관리"
+
+
+@admin.register(MeetupParticipantEntry)
+class MeetupParticipantEntryAdmin(admin.ModelAdmin):
+    """밋업별 참가자 관리 어드민 - 주문 데이터 기반으로 참가자 목록 관리"""
+    list_display = [
+        'participant_name', 'participant_email', 'meetup_name_display', 
+        'store_display', 'order_status_display', 'attended', 'attendance_status_display',
+        'participant_phone_display', 'created_at_display', 'payment_status_display'
+    ]
+    list_filter = [
+        'meetup__store', 'meetup', 'status', 'attended', 
+        'is_early_bird', 'created_at', 'attended_at'
+    ]
+    search_fields = [
+        'participant_name', 'participant_email', 'participant_phone',
+        'meetup__name', 'order_number', 'user__username'
+    ]
+    list_editable = ['attended']  # 참석 여부를 목록에서 바로 수정 가능
+    
+    fieldsets = (
+        ('밋업 정보', {
+            'fields': ('meetup', 'order_number')
+        }),
+        ('참가자 정보', {
+            'fields': ('participant_name', 'participant_email', 'participant_phone', 'user')
+        }),
+        ('주문 상태', {
+            'fields': ('status', 'payment_hash', 'paid_at', 'created_at')
+        }),
+        ('참석 관리', {
+            'fields': ('attended', 'attended_at'),
+            'description': '밋업 당일 참석 여부를 관리할 수 있습니다.'
+        }),
+        ('가격 정보', {
+            'fields': ('base_price', 'options_price', 'total_price'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = [
+        'meetup', 'order_number', 'user', 'base_price', 'options_price', 
+        'total_price', 'payment_hash', 'paid_at', 'created_at'
+    ]
+    
+    ordering = ['-created_at']
+    list_per_page = 10
+    
+    # 액션 추가
+    actions = ['export_participant_entries_csv', 'mark_as_attended', 'mark_as_not_attended']
+    
+    def get_queryset(self, request):
+        """확정된 주문만 조회 (참가자 목록)"""
+        return super().get_queryset(request).filter(
+            status__in=['confirmed', 'completed']
+        ).select_related(
+            'meetup', 'meetup__store', 'user'
+        )
+    
+    def meetup_name_display(self, obj):
+        """밋업명 표시"""
+        return format_html(
+            '<strong style="color: #495057;">{}</strong>',
+            obj.meetup.name
+        )
+    meetup_name_display.short_description = '밋업명'
+    meetup_name_display.admin_order_field = 'meetup__name'
+    
+    def store_display(self, obj):
+        """스토어명 표시"""
+        return obj.meetup.store.store_name
+    store_display.short_description = '스토어'
+    store_display.admin_order_field = 'meetup__store__store_name'
+    
+    def order_status_display(self, obj):
+        """주문 상태 표시"""
+        status_colors = {
+            'confirmed': '#27ae60',   # 초록색
+            'completed': '#3498db',   # 파란색
+        }
+        status_labels = {
+            'confirmed': '참가 확정',
+            'completed': '밋업 완료',
+        }
+        color = status_colors.get(obj.status, '#95a5a6')
+        label = status_labels.get(obj.status, obj.status)
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">● {}</span>',
+            color, label
+        )
+    order_status_display.short_description = '주문 상태'
+    order_status_display.admin_order_field = 'status'
+    
+    def attendance_status_display(self, obj):
+        """참석 상태 표시"""
+        if obj.attended:
+            return format_html(
+                '<span style="color: #27ae60; font-weight: bold; background: #d4edda; padding: 4px 8px; border-radius: 4px;">✓ 참석</span>'
+            )
+        else:
+            return format_html(
+                '<span style="color: #6c757d; background: #f8f9fa; padding: 4px 8px; border-radius: 4px;">미참석</span>'
+            )
+    attendance_status_display.short_description = '참석 상태'
+    attendance_status_display.admin_order_field = 'attended'
+    
+    def participant_phone_display(self, obj):
+        """참가자 연락처 표시"""
+        return obj.participant_phone or '-'
+    participant_phone_display.short_description = '연락처'
+    
+    def created_at_display(self, obj):
+        """신청일시 표시"""
+        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+    created_at_display.short_description = '신청일시'
+    created_at_display.admin_order_field = 'created_at'
+    
+    def payment_status_display(self, obj):
+        """결제 상태 표시"""
+        if obj.total_price == 0:
+            return format_html('<span style="color: #28a745;">무료</span>')
+        elif obj.payment_hash:
+            return format_html('<span style="color: #28a745;">✓ 결제완료</span>')
+        else:
+            return format_html('<span style="color: #ffc107;">미결제</span>')
+    payment_status_display.short_description = '결제 상태'
+    
+    def save_model(self, request, obj, form, change):
+        """참석 상태 변경시 attended_at 자동 설정"""
+        from django.utils import timezone
+        
+        if change and 'attended' in form.changed_data:
+            if obj.attended:
+                if not obj.attended_at:
+                    obj.attended_at = timezone.now()
+            else:
+                obj.attended_at = None
+        
+        super().save_model(request, obj, form, change)
+    
+    def has_add_permission(self, request):
+        """추가 권한 없음 (주문을 통해서만 생성)"""
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """삭제 권한 없음"""
+        return False
+    
+    def export_participant_entries_csv(self, request, queryset):
+        """선택된 참가자 항목들을 CSV로 다운로드"""
+        import csv
+        from django.http import HttpResponse
+        from django.utils import timezone
+        
+        # CSV 응답 생성
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="meetup_participant_entries_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        response.write('\ufeff'.encode('utf8'))  # BOM for Excel
+        
+        writer = csv.writer(response)
+        
+        # 헤더 작성
+        headers = [
+            '참가자명', '이메일', '연락처', '밋업명', '스토어명', 
+            '주문번호', '주문상태', '참석여부', '참석체크일시',
+            '기본참가비', '옵션금액', '총참가비', '결제상태', '결제해시',
+            '신청일시', '확정일시', '결제일시', '조기등록여부',
+            '사용자ID', '선택옵션'
+        ]
+        writer.writerow(headers)
+        
+        # 데이터 작성
+        orders = queryset.select_related(
+            'meetup', 'meetup__store', 'user'
+        ).prefetch_related(
+            'selected_options__option', 'selected_options__choice'
+        )
+        
+        for order in orders:
+            # 선택 옵션 정보 수집
+            selected_options = []
+            for selected_option in order.selected_options.all():
+                option_text = f"{selected_option.option.name}: {selected_option.choice.name}"
+                if selected_option.additional_price > 0:
+                    option_text += f" (+{selected_option.additional_price:,} sats)"
+                elif selected_option.additional_price < 0:
+                    option_text += f" ({selected_option.additional_price:,} sats)"
+                selected_options.append(option_text)
+            
+            options_text = " | ".join(selected_options) if selected_options else "없음"
+            
+            # 상태 텍스트 변환
+            status_text = {
+                'confirmed': '참가확정',
+                'completed': '밋업완료',
+                'pending': '결제대기',
+                'cancelled': '참가취소'
+            }.get(order.status, order.status)
+            
+            # 결제 상태
+            if order.total_price == 0:
+                payment_status = '무료'
+            elif order.payment_hash:
+                payment_status = '결제완료'
+            else:
+                payment_status = '미결제'
+            
+            row = [
+                order.participant_name,
+                order.participant_email,
+                order.participant_phone or '',
+                order.meetup.name,
+                order.meetup.store.store_name,
+                order.order_number,
+                status_text,
+                "참석" if order.attended else "미참석",
+                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                f"{order.base_price:,}",
+                f"{order.options_price:,}",
+                f"{order.total_price:,}",
+                payment_status,
+                order.payment_hash or '',
+                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                "예" if order.is_early_bird else "아니오",
+                order.user.username if order.user else '비회원',
+                options_text
+            ]
+            writer.writerow(row)
+        
+        # 메시지 표시
+        self.message_user(request, f'{queryset.count()}개의 참가자 항목이 CSV로 다운로드되었습니다.')
+        return response
+    
+    export_participant_entries_csv.short_description = '선택된 참가자 항목을 CSV로 다운로드'
+    
+    def mark_as_attended(self, request, queryset):
+        """선택된 참가자들을 참석으로 표시"""
+        from django.utils import timezone
+        
+        updated_count = 0
+        for order in queryset:
+            if not order.attended:
+                order.attended = True
+                order.attended_at = timezone.now()
+                order.save()
+                updated_count += 1
+        
+        self.message_user(request, f'{updated_count}명의 참가자가 참석으로 표시되었습니다.')
+    
+    mark_as_attended.short_description = '선택된 참가자를 참석으로 표시'
+    
+    def mark_as_not_attended(self, request, queryset):
+        """선택된 참가자들을 미참석으로 표시"""
+        updated_count = 0
+        for order in queryset:
+            if order.attended:
+                order.attended = False
+                order.attended_at = None
+                order.save()
+                updated_count += 1
+        
+        self.message_user(request, f'{updated_count}명의 참가자가 미참석으로 표시되었습니다.')
+    
+    mark_as_not_attended.short_description = '선택된 참가자를 미참석으로 표시'
+
+
 @admin.register(MeetupParticipant)
 class MeetupParticipantAdmin(admin.ModelAdmin):
     """밋업 신청 내역이 있는 사용자들만 관리하는 어드민"""
@@ -969,7 +1244,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         'username', 'email', 'first_name', 'last_name', 
         'date_joined', 'last_login', 'meetup_orders_detail'
     ]
-    list_per_page = 20
+    list_per_page = 10
     
     # 액션 추가
     actions = ['export_participants_csv']
@@ -1281,9 +1556,6 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                         "참석" if order.attended else "미참석",
                         order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
-                        "예" if order.is_temporary_reserved else "아니오",
-                        order.reservation_expires_at.strftime('%Y-%m-%d %H:%M:%S') if order.reservation_expires_at else '',
-                        order.auto_cancelled_reason or '',
                         options_text
                     ]
                     writer.writerow(row)

@@ -363,6 +363,21 @@
               <i class="fas fa-qrcode mr-3"></i>
               결제 인보이스 생성
             </button>
+            
+            <!-- 결제 주의사항 박스 -->
+            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mt-4">
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <p class="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
+                    라이트닝 지갑에서 결제 후 결제 화면으로 꼭 되돌아와 주세요.
+                  </p>
+                  <p class="text-yellow-700 dark:text-yellow-300 text-xs mt-1">
+                    결제 완료 후 이 페이지로 돌아와야 참가 확정이 처리됩니다.
+                  </p>
+                </div>
+              </div>
+            </div>
             {% endif %}
 
             <!-- QR 코드 및 인보이스 표시 영역 -->
@@ -375,6 +390,21 @@
                     <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
                     <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
                   </div>
+                </div>
+                
+                <!-- 라이트닝 지갑 열기 버튼 -->
+                <div id="lightningWalletButton" class="hidden mt-4">
+                  <button 
+                    type="button" 
+                    onclick="openLightningWallet()" 
+                    class="inline-flex items-center px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    <i class="fas fa-bolt mr-2"></i>
+                    라이트닝 지갑 열기
+                  </button>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    모바일에서 지갑 앱을 바로 열어 결제할 수 있습니다. 결제 후 이 페이지로 꼭 되돌아와 주세요.
+                  </p>
                 </div>
               </div>
 
