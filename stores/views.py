@@ -64,7 +64,7 @@ def browse_stores(request):
         from myshop.models import SiteSettings
         
         # 최근 30일 내 주문이 있는 스토어들을 최근 주문일 순으로 정렬
-        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
         
         # 제외할 스토어 ID 목록 가져오기
         site_settings = SiteSettings.get_settings()
@@ -132,7 +132,7 @@ def browse_active_stores(request):
     ).select_related('owner')
     
     # 최근 30일 내 주문이 있는 스토어들을 최근 주문일 순으로 정렬
-    thirty_days_ago = datetime.now() - timedelta(days=30)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
     
     # 제외할 스토어 ID 목록 가져오기
     site_settings = SiteSettings.get_settings()
