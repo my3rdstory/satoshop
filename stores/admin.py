@@ -141,10 +141,23 @@ class StoreAdmin(admin.ModelAdmin):
     
     def get_store_link(self, obj):
         if obj.store_id:
-            url = reverse('stores:store_detail', args=[obj.store_id])
-            return format_html('<a href="{}" target="_blank">스토어 보기</a>', url)
+            # 여러 관리 페이지 링크 제공
+            management_url = reverse('stores:manage_store', args=[obj.store_id]) + "?admin_access=true"
+            products_url = reverse('stores:product_list', args=[obj.store_id]) + "?admin_access=true"
+            orders_url = reverse('orders:order_management', args=[obj.store_id]) + "?admin_access=true"
+            meetups_url = reverse('meetup:meetup_list', args=[obj.store_id]) + "?admin_access=true"
+            
+            return format_html(
+                '<div style="white-space: nowrap;">'
+                '<a href="{}" target="_blank" style="color: #007cba; font-weight: bold; margin-right: 8px;">관리</a>'
+                '<a href="{}" target="_blank" style="color: #28a745; margin-right: 8px;">상품</a>'
+                '<a href="{}" target="_blank" style="color: #dc3545; margin-right: 8px;">주문</a>'
+                '<a href="{}" target="_blank" style="color: #6f42c1;">밋업</a>'
+                '</div>',
+                management_url, products_url, orders_url, meetups_url
+            )
         return "-"
-    get_store_link.short_description = "스토어 링크"
+    get_store_link.short_description = "관리자 접속"
     
     def email_status_display(self, obj):
         """이메일 발송 설정 상태 표시"""
