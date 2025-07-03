@@ -186,26 +186,14 @@
             <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장소</h3>
             {% if meetup.location_address and not meetup.location_tbd %}
-            <div class="flex gap-1">
-              <a href="https://map.naver.com/v5/search/{{ meetup.location_address|urlencode }}" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
-                 title="네이버지도에서 보기">
-                <i class="fas fa-map text-xs"></i>
-                <span>지도보기</span>
-              </a>
-              {% if meetup.location_detail_address %}
-              <a href="https://map.naver.com/v5/search/{{ meetup.location_full_address|urlencode }}" 
-                 target="_blank" 
-                 rel="noopener noreferrer"
-                 class="flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
-                 title="상세주소 포함 지도 검색">
-                <i class="fas fa-map-marker-alt text-xs"></i>
-                <span>상세위치</span>
-              </a>
-              {% endif %}
-            </div>
+            <a href="https://map.naver.com/v5/search/{{ meetup.location_address|urlencode }}" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
+               title="네이버지도에서 보기">
+              <i class="fas fa-map text-xs"></i>
+              <span>지도보기</span>
+            </a>
             {% endif %}
           </div>
           {% if meetup.location_tbd %}
