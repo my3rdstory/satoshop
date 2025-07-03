@@ -4,6 +4,12 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
 from django.db.models import Sum
+from django.shortcuts import render, redirect
+from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+import csv
+import io
+import uuid
 from ..models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder
 from .filters import HasParticipantsFilter
 
@@ -66,10 +72,13 @@ class MeetupAdmin(admin.ModelAdmin):
         'id', 'created_at', 'updated_at', 'current_price', 'is_early_bird_active', 
         'public_discount_rate', 'current_participants'
     ]
-    inlines = [MeetupImageInline, MeetupOptionInline]
+    # inlines = [MeetupImageInline, MeetupOptionInline]  # 밋업 이미지와 옵션 인라인 비활성화
     
     # 액션 추가
-    actions = ['cleanup_expired_reservations', 'export_participants', 'view_all_participants', 'export_participants_csv']
+    actions = [
+        'cleanup_expired_reservations', 'export_participants', 'view_all_participants', 'export_participants_csv',
+        'download_participant_csv_sample', 'add_participants_csv'
+    ]
     
     def price_display(self, obj):
         """가격 표시"""
@@ -135,7 +144,7 @@ class MeetupAdmin(admin.ModelAdmin):
             filter_url = f"{admin_url}?meetup__id__exact={obj.pk}"
             
             return format_html(
-                '<a href="{}" class="button" style="background-color: #007cba; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px;" target="_blank">'
+                '<a href="{}" class="button" style="background-color: #007cba; color: white; text-decoration: none; padding: 5px 10px; border-radius: 3px;">'
                 '<i class="fas fa-users"></i> 참가자 ({})명</a>',
                 filter_url, participants_count
             )
@@ -143,6 +152,8 @@ class MeetupAdmin(admin.ModelAdmin):
             return format_html('<span style="color: #999;">참가자 없음</span>')
     view_participants_button.short_description = '참가자 관리'
     view_participants_button.allow_tags = True
+    
+
     
     fieldsets = (
         ('기본 정보', {
@@ -266,4 +277,43 @@ class MeetupAdmin(admin.ModelAdmin):
         )
         return response
     
-    export_participants_csv.short_description = '선택된 밋업의 참가자들을 CSV로 다운로드' 
+    export_participants_csv.short_description = '선택된 밋업의 참가자들을 CSV로 다운로드'
+
+    def download_participant_csv_sample(self, request, queryset):
+        """참가자 추가용 CSV 샘플 파일 다운로드"""
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="participant_sample.csv"'
+        response.write('\ufeff'.encode('utf8'))  # BOM for Excel
+        
+        writer = csv.writer(response)
+        
+        # 헤더 작성
+        headers = [
+            '참가자명(필수)', '이메일(필수)', '연락처(선택)', '사용자명(선택)', '비고'
+        ]
+        writer.writerow(headers)
+        
+        # 샘플 데이터 작성
+        sample_data = [
+            ['홍길동', 'hong@example.com', '010-1234-5678', 'hong123', '수동 추가된 참가자'],
+            ['김철수', 'kim@example.com', '010-9876-5432', '', '연락처만 있는 참가자'],
+            ['이영희', 'lee@example.com', '', 'lee456', '최소 정보만 있는 참가자']
+        ]
+        
+        for row in sample_data:
+            writer.writerow(row)
+        
+        messages.success(request, 'CSV 샘플 파일이 다운로드되었습니다. 파일을 편집한 후 "CSV로 참가자 추가" 액션을 사용하세요.')
+        return response
+    download_participant_csv_sample.short_description = '📥 CSV 샘플 다운로드'
+
+    def add_participants_csv(self, request, queryset):
+        """CSV로 참가자 일괄 추가 - 새로운 페이지로 리다이렉트"""
+        if queryset.count() != 1:
+            messages.error(request, '참가자 추가는 한 번에 하나의 밋업에만 가능합니다.')
+            return redirect(request.get_full_path())
+        
+        meetup = queryset.first()
+        # 새로운 URL로 리다이렉트
+        return redirect(f'/meetup/admin/csv-upload/{meetup.id}/')
+    add_participants_csv.short_description = '📤 CSV로 참가자 추가' 

@@ -21,31 +21,36 @@ class MeetupOrderOptionInline(admin.TabularInline):
 
 @admin.register(MeetupOrder)
 class MeetupOrderAdmin(admin.ModelAdmin):
+    """밋업 주문 어드민"""
     list_display = [
-        'order_number', 'meetup', 'participant_name', 'status_display', 
-        'payment_hash_display', 'reservation_status_display', 'attended_display', 'total_price_display', 
-        'is_early_bird', 'created_at'
+        'order_number', 'meetup_name_display', 'store_display', 'participant_name', 
+        'order_status_display', 'payment_status_display', 'attended_status_display',
+        'total_price_display', 'reservation_status_display', 'created_at_display'
     ]
     list_filter = [
-        'status', 'is_temporary_reserved', 'attended', 'meetup__store', 
-        'is_early_bird', 'created_at', 'paid_at', 'attended_at',
-        'reservation_expires_at', PaymentHashFilter
+        'meetup__store', 'meetup', 'status', 'attended', 'is_early_bird', 
+        'is_temporary_reserved', PaymentHashFilter, 'created_at'
     ]
     search_fields = [
         'order_number', 'participant_name', 'participant_email', 
-        'meetup__name', 'auto_cancelled_reason'
+        'meetup__name', 'participant_phone'
     ]
     readonly_fields = [
-        'order_number', 'meetup', 'participant_name', 'participant_email', 
+        'order_number', 'meetup', 'user', 'participant_name', 'participant_email', 
         'participant_phone', 'base_price', 'options_price', 'total_price', 
         'original_price', 'discount_rate', 'is_early_bird', 'payment_hash', 
-        'paid_at', 'created_at', 'updated_at', 'reservation_time_left'
+        'paid_at', 'is_temporary_reserved', 'reservation_expires_at', 
+        'reservation_time_left', 'auto_cancelled_reason', 'created_at', 'updated_at'
     ]
     ordering = ['-created_at']
+    list_per_page = 10
     inlines = [MeetupOrderOptionInline]
     
     # 액션 추가
-    actions = ['confirm_paid_reservations', 'mark_as_confirmed', 'cancel_expired_reservations', 'extend_reservations', 'export_orders_csv', 'export_all_orders_csv']
+    actions = [
+        'export_orders_csv', 'export_all_orders_csv',
+        'mark_as_attended', 'mark_as_not_attended'
+    ]
 
     def get_queryset(self, request):
         """queryset에 결제해시 유무 어노테이션 추가"""
@@ -60,6 +65,82 @@ class MeetupOrderAdmin(admin.ModelAdmin):
             )
         )
         return queryset
+    
+    def meetup_name_display(self, obj):
+        """밋업명 표시"""
+        return format_html(
+            '<strong style="color: #495057;">{}</strong>',
+            obj.meetup.name
+        )
+    meetup_name_display.short_description = '밋업명'
+    meetup_name_display.admin_order_field = 'meetup__name'
+    
+    def store_display(self, obj):
+        """스토어명 표시"""
+        return obj.meetup.store.store_name
+    store_display.short_description = '스토어'
+    store_display.admin_order_field = 'meetup__store__store_name'
+    
+    def order_status_display(self, obj):
+        """주문 상태 표시"""
+        status_colors = {
+            'pending': '#f39c12',     # 주황색
+            'confirmed': '#27ae60',   # 초록색
+            'completed': '#3498db',   # 파란색
+            'cancelled': '#e74c3c',   # 빨간색
+        }
+        status_labels = {
+            'pending': '결제 대기',
+            'confirmed': '참가 확정',
+            'completed': '밋업 완료',
+            'cancelled': '참가 취소',
+        }
+        color = status_colors.get(obj.status, '#95a5a6')
+        label = status_labels.get(obj.status, obj.status)
+        
+        # 취소된 경우 취소 사유도 표시
+        if obj.status == 'cancelled' and obj.auto_cancelled_reason:
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">● {}</span><br>'
+                '<small style="color: #6c757d;">{}</small>',
+                color, label, obj.auto_cancelled_reason
+            )
+        
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">● {}</span>',
+            color, label
+        )
+    order_status_display.short_description = '상태'
+    order_status_display.admin_order_field = 'status'
+    
+    def payment_status_display(self, obj):
+        """결제 상태 표시"""
+        if obj.total_price == 0:
+            return format_html('<span style="color: #28a745;">무료</span>')
+        elif obj.payment_hash:
+            return format_html('<span style="color: #28a745;">✓ 결제완료</span>')
+        else:
+            return format_html('<span style="color: #ffc107;">미결제</span>')
+    payment_status_display.short_description = '결제 상태'
+    
+    def attended_status_display(self, obj):
+        """참석 상태 표시"""
+        if obj.attended:
+            return format_html(
+                '<span style="color: #27ae60; font-weight: bold; background: #d4edda; padding: 4px 8px; border-radius: 4px;">✓ 참석</span>'
+            )
+        else:
+            return format_html(
+                '<span style="color: #6c757d; background: #f8f9fa; padding: 4px 8px; border-radius: 4px;">미참석</span>'
+            )
+    attended_status_display.short_description = '참석 상태'
+    attended_status_display.admin_order_field = 'attended'
+    
+    def created_at_display(self, obj):
+        """신청일시 표시"""
+        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+    created_at_display.short_description = '신청일시'
+    created_at_display.admin_order_field = 'created_at'
     
     def status_display(self, obj):
         """상태 표시"""
@@ -198,115 +279,34 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     total_price_display.short_description = '결제금액'
     
     # 커스텀 액션들
-    def confirm_paid_reservations(self, request, queryset):
-        """결제해시가 있는 결제대기 주문들을 참가확정으로 변경"""
-        # 결제해시가 있는 pending 상태 주문들만 필터링
-        eligible_orders = queryset.filter(
-            status='pending'
-        ).exclude(
-            payment_hash__isnull=True
-        ).exclude(
-            payment_hash=''
-        )
-        
-        if not eligible_orders.exists():
-            self.message_user(request, '결제해시가 있는 결제대기 주문이 없습니다.', level=messages.WARNING)
-            return
-        
-        confirmed_count = 0
-        failed_count = 0
-        
-        for order in eligible_orders:
-            try:
-                # 상태를 confirmed로 변경
-                order.status = 'confirmed'
-                order.is_temporary_reserved = False
-                order.confirmed_at = timezone.now()
-                order.paid_at = timezone.now()
-                order.reservation_expires_at = None  # 확정되면 만료시간 제거
+
+    def mark_as_attended(self, request, queryset):
+        """선택된 주문들의 참가자를 참석으로 표시"""
+        updated_count = 0
+        for order in queryset:
+            if not order.attended:
+                order.attended = True
+                order.attended_at = timezone.now()
                 order.save()
-                confirmed_count += 1
-            except Exception as e:
-                failed_count += 1
+                updated_count += 1
         
-        if confirmed_count > 0:
-            self.message_user(
-                request, 
-                f'{confirmed_count}개의 주문이 참가확정으로 변경되었습니다.',
-                level=messages.SUCCESS
-            )
-        
-        if failed_count > 0:
-            self.message_user(
-                request,
-                f'{failed_count}개의 주문 처리 중 오류가 발생했습니다.',
-                level=messages.ERROR
-            )
+        self.message_user(request, f'{updated_count}개의 주문이 참석으로 표시되었습니다.')
     
-    confirm_paid_reservations.short_description = '결제해시가 있는 결제대기 주문을 참가확정으로 변경'
+    mark_as_attended.short_description = '선택된 주문을 참석으로 표시'
     
-    def mark_as_confirmed(self, request, queryset):
-        """선택된 주문들을 확정 상태로 변경"""
-        # services 모듈이 있다면 사용, 없다면 직접 처리
-        try:
-            from ..services import confirm_reservation
-            confirmed_count = 0
-            for order in queryset.filter(status='pending', is_temporary_reserved=True):
-                if confirm_reservation(order):
-                    confirmed_count += 1
-        except ImportError:
-            confirmed_count = 0
-            for order in queryset.filter(status='pending'):
-                order.status = 'confirmed'
-                order.is_temporary_reserved = False
-                order.confirmed_at = timezone.now()
+    def mark_as_not_attended(self, request, queryset):
+        """선택된 주문들의 참가자를 미참석으로 표시"""
+        updated_count = 0
+        for order in queryset:
+            if order.attended:
+                order.attended = False
+                order.attended_at = None
                 order.save()
-                confirmed_count += 1
+                updated_count += 1
         
-        self.message_user(request, f'{confirmed_count}개의 주문이 확정되었습니다.')
-    mark_as_confirmed.short_description = '선택된 임시예약을 확정으로 변경'
+        self.message_user(request, f'{updated_count}개의 주문이 미참석으로 표시되었습니다.')
     
-    def cancel_expired_reservations(self, request, queryset):
-        """만료된 예약들을 취소"""
-        try:
-            from ..services import cancel_expired_reservations
-            cancelled_count = cancel_expired_reservations()
-        except ImportError:
-            # services 모듈이 없으면 직접 처리
-            now = timezone.now()
-            expired_orders = MeetupOrder.objects.filter(
-                status='pending',
-                is_temporary_reserved=True,
-                reservation_expires_at__lt=now
-            )
-            cancelled_count = expired_orders.count()
-            expired_orders.update(
-                status='cancelled',
-                auto_cancelled_reason='예약 시간 만료로 자동 취소'
-            )
-        
-        self.message_user(request, f'{cancelled_count}개의 만료된 예약이 취소되었습니다.')
-    cancel_expired_reservations.short_description = '만료된 예약 자동 취소'
-    
-    def extend_reservations(self, request, queryset):
-        """선택된 예약들의 시간을 연장"""
-        try:
-            from ..services import extend_reservation
-            extended_count = 0
-            for order in queryset.filter(status='pending', is_temporary_reserved=True):
-                if extend_reservation(order):
-                    extended_count += 1
-        except ImportError:
-            # services 모듈이 없으면 직접 처리
-            extended_count = 0
-            for order in queryset.filter(status='pending', is_temporary_reserved=True):
-                if order.reservation_expires_at:
-                    order.reservation_expires_at = timezone.now() + timezone.timedelta(seconds=180)
-                    order.save()
-                    extended_count += 1
-        
-        self.message_user(request, f'{extended_count}개의 예약 시간이 연장되었습니다.')
-    extend_reservations.short_description = '선택된 예약 시간 연장 (180초)'
+    mark_as_not_attended.short_description = '선택된 주문을 미참석으로 표시'
 
     def export_orders_csv(self, request, queryset):
         """선택된 밋업 주문들을 CSV로 다운로드"""
@@ -497,26 +497,26 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(MeetupOrderOption)
-class MeetupOrderOptionAdmin(admin.ModelAdmin):
-    list_display = ['order', 'option', 'choice', 'additional_price_display']
-    list_filter = ['order__meetup__store', 'option', 'order__created_at']
-    search_fields = ['order__order_number', 'order__participant_name', 'option__name', 'choice__name']
-    readonly_fields = ['order', 'option', 'choice', 'additional_price']
-    
-    def additional_price_display(self, obj):
-        """추가요금 표시"""
-        if obj.additional_price > 0:
-            return f"+{obj.additional_price:,} sats"
-        elif obj.additional_price < 0:
-            return f"{obj.additional_price:,} sats"
-        return "무료"
-    additional_price_display.short_description = '추가요금'
-    
-    def has_add_permission(self, request):
-        """추가 권한 없음"""
-        return False
-    
-    def has_change_permission(self, request, obj=None):
-        """수정 권한 없음"""
-        return False 
+# @admin.register(MeetupOrderOption)
+# class MeetupOrderOptionAdmin(admin.ModelAdmin):
+#     list_display = ['order', 'option', 'choice', 'additional_price_display']
+#     list_filter = ['order__meetup__store', 'option', 'order__created_at']
+#     search_fields = ['order__order_number', 'order__participant_name', 'option__name', 'choice__name']
+#     readonly_fields = ['order', 'option', 'choice', 'additional_price']
+#     
+#     def additional_price_display(self, obj):
+#         """추가요금 표시"""
+#         if obj.additional_price > 0:
+#             return f"+{obj.additional_price:,} sats"
+#         elif obj.additional_price < 0:
+#             return f"{obj.additional_price:,} sats"
+#         return "무료"
+#     additional_price_display.short_description = '추가요금'
+#     
+#     def has_add_permission(self, request):
+#         """추가 권한 없음"""
+#         return False
+#     
+#     def has_change_permission(self, request, obj=None):
+#         """수정 권한 없음"""
+#         return False 
