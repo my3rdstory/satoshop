@@ -108,7 +108,7 @@ class MeetupAdmin(admin.ModelAdmin):
     inlines = [MeetupImageInline, MeetupOptionInline]
     
     # 액션 추가
-    actions = ['cleanup_expired_reservations', 'export_participants', 'view_all_participants']
+    actions = ['cleanup_expired_reservations', 'export_participants', 'view_all_participants', 'export_participants_csv']
     
     def price_display(self, obj):
         """가격 표시"""
@@ -217,6 +217,101 @@ class MeetupAdmin(admin.ModelAdmin):
             'description': '시스템 정보입니다.'
         }),
     )
+    
+    def export_participants_csv(self, request, queryset):
+        """선택된 밋업들의 참가자 목록을 CSV로 다운로드"""
+        import csv
+        from django.http import HttpResponse
+        from django.utils import timezone
+        
+        # CSV 응답 생성
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        response.write('\ufeff'.encode('utf8'))  # BOM for Excel
+        
+        writer = csv.writer(response)
+        
+        # 헤더 작성
+        headers = [
+            '밋업명', '스토어명', '밋업일시', '사용자명', '이메일', '가입일',
+            '참가자명', '참가자이메일', '참가자연락처', '주문번호', '상태',
+            '기본참가비', '옵션금액', '총참가비', '원가격', '할인율', '조기등록여부',
+            '결제해시', '결제일시', '참가신청일시', '참가확정일시',
+            '참석여부', '참석체크일시', '선택옵션'
+        ]
+        writer.writerow(headers)
+        
+        # 선택된 밋업들의 모든 주문 조회
+        orders = MeetupOrder.objects.filter(
+            meetup__in=queryset,
+            status__in=['confirmed', 'completed']
+        ).select_related(
+            'meetup', 'meetup__store', 'user'
+        ).prefetch_related(
+            'selected_options__option', 'selected_options__choice'
+        ).order_by('meetup__name', '-created_at')
+        
+        for order in orders:
+            # 선택 옵션 정보 수집
+            selected_options = []
+            for selected_option in order.selected_options.all():
+                option_text = f"{selected_option.option.name}: {selected_option.choice.name}"
+                if selected_option.additional_price > 0:
+                    option_text += f" (+{selected_option.additional_price:,} sats)"
+                elif selected_option.additional_price < 0:
+                    option_text += f" ({selected_option.additional_price:,} sats)"
+                selected_options.append(option_text)
+            
+            options_text = " | ".join(selected_options) if selected_options else "없음"
+            
+            # 상태 텍스트 변환
+            status_text = {
+                'confirmed': '참가확정',
+                'completed': '밋업완료',
+                'pending': '결제대기',
+                'cancelled': '참가취소'
+            }.get(order.status, order.status)
+            
+            row = [
+                order.meetup.name,
+                order.meetup.store.store_name,
+                order.meetup.date_time.strftime('%Y-%m-%d %H:%M') if order.meetup.date_time else '미정',
+                order.user.username if order.user else '비회원',
+                order.user.email if order.user else '',
+                order.user.date_joined.strftime('%Y-%m-%d') if order.user else '',
+                order.participant_name,
+                order.participant_email,
+                order.participant_phone or '',
+                order.order_number,
+                status_text,
+                f"{order.base_price:,}",
+                f"{order.options_price:,}",
+                f"{order.total_price:,}",
+                f"{order.original_price:,}" if order.original_price else '',
+                f"{order.discount_rate}%" if order.discount_rate else '',
+                "예" if order.is_early_bird else "아니오",
+                order.payment_hash or '',
+                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                "참석" if order.attended else "미참석",
+                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                options_text
+            ]
+            writer.writerow(row)
+        
+        # 메시지 표시
+        total_orders = orders.count()
+        total_meetups = queryset.count()
+        
+        self.message_user(
+            request, 
+            f'{total_meetups}개 밋업의 {total_orders}개 참가 내역이 CSV로 다운로드되었습니다.',
+            level=messages.SUCCESS
+        )
+        return response
+    
+    export_participants_csv.short_description = '선택된 밋업의 참가자들을 CSV로 다운로드'
 
 @admin.register(MeetupImage)
 class MeetupImageAdmin(admin.ModelAdmin):
@@ -824,6 +919,9 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     ]
     list_per_page = 20
     
+    # 액션 추가
+    actions = ['export_participants_csv']
+    
     fieldsets = (
         ('사용자 정보', {
             'fields': ('username', 'email', 'first_name', 'last_name')
@@ -978,6 +1076,126 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """삭제 권한 없음"""
         return False
+    
+    def export_participants_csv(self, request, queryset):
+        """밋업 참가자들의 상세 참가 내역을 CSV로 다운로드"""
+        import csv
+        from django.http import HttpResponse
+        from django.utils import timezone
+        
+        # CSV 응답 생성
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        response.write('\ufeff'.encode('utf8'))  # BOM for Excel
+        
+        writer = csv.writer(response)
+        
+        # 헤더 작성
+        headers = [
+            '사용자명', '이메일', '이름', '성', '가입일', '최종로그인',
+            '밋업명', '스토어명', '참가자명', '참가자이메일', '참가자연락처',
+            '주문번호', '상태', '기본참가비', '옵션금액', '총참가비', 
+            '원가격', '할인율', '조기등록여부', '결제해시', '결제일시',
+            '참가신청일시', '참가확정일시', '참석여부', '참석체크일시',
+            '임시예약여부', '예약만료시간', '자동취소사유', '선택옵션'
+        ]
+        writer.writerow(headers)
+        
+        # 데이터 작성
+        for participant in queryset.select_related('lightning_profile'):
+            # 각 참가자의 모든 밋업 주문 조회
+            orders = MeetupOrder.objects.filter(
+                user=participant,
+                status__in=['confirmed', 'completed']
+            ).select_related(
+                'meetup', 'meetup__store'
+            ).prefetch_related(
+                'selected_options__option', 'selected_options__choice'
+            ).order_by('-created_at')
+            
+            if not orders.exists():
+                # 참가 내역이 없는 경우에도 사용자 정보는 포함
+                row = [
+                    participant.username,
+                    participant.email,
+                    participant.first_name or '',
+                    participant.last_name or '',
+                    participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                    participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                    '참가 내역 없음', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+                ]
+                writer.writerow(row)
+            else:
+                # 각 밋업 참가 내역별로 행 생성
+                for order in orders:
+                    # 선택 옵션 정보 수집
+                    selected_options = []
+                    for selected_option in order.selected_options.all():
+                        option_text = f"{selected_option.option.name}: {selected_option.choice.name}"
+                        if selected_option.additional_price > 0:
+                            option_text += f" (+{selected_option.additional_price:,} sats)"
+                        elif selected_option.additional_price < 0:
+                            option_text += f" ({selected_option.additional_price:,} sats)"
+                        selected_options.append(option_text)
+                    
+                    options_text = " | ".join(selected_options) if selected_options else "없음"
+                    
+                    # 상태 텍스트 변환
+                    status_text = {
+                        'confirmed': '참가확정',
+                        'completed': '밋업완료',
+                        'pending': '결제대기',
+                        'cancelled': '참가취소'
+                    }.get(order.status, order.status)
+                    
+                    row = [
+                        participant.username,
+                        participant.email,
+                        participant.first_name or '',
+                        participant.last_name or '',
+                        participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                        participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                        order.meetup.name,
+                        order.meetup.store.store_name,
+                        order.participant_name,
+                        order.participant_email,
+                        order.participant_phone or '',
+                        order.order_number,
+                        status_text,
+                        f"{order.base_price:,}",
+                        f"{order.options_price:,}",
+                        f"{order.total_price:,}",
+                        f"{order.original_price:,}" if order.original_price else '',
+                        f"{order.discount_rate}%" if order.discount_rate else '',
+                        "예" if order.is_early_bird else "아니오",
+                        order.payment_hash or '',
+                        order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                        order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                        order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                        "참석" if order.attended else "미참석",
+                        order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                        "예" if order.is_temporary_reserved else "아니오",
+                        order.reservation_expires_at.strftime('%Y-%m-%d %H:%M:%S') if order.reservation_expires_at else '',
+                        order.auto_cancelled_reason or '',
+                        options_text
+                    ]
+                    writer.writerow(row)
+        
+        # 메시지 표시
+        total_participants = queryset.count()
+        total_orders = MeetupOrder.objects.filter(
+            user__in=queryset,
+            status__in=['confirmed', 'completed']
+        ).count()
+        
+        self.message_user(
+            request, 
+            f'{total_participants}명의 참가자와 {total_orders}개의 참가 내역이 CSV로 다운로드되었습니다.',
+            level=messages.SUCCESS
+        )
+        return response
+    
+    export_participants_csv.short_description = '선택된 참가자들의 밋업 참가 내역을 CSV로 다운로드'
 
 
 
