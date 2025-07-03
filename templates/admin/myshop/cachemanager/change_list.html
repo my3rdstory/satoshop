@@ -5,19 +5,21 @@
     <h1>캐시 관리</h1>
 {% endblock %}
 
-{% block object-tools-items %}
-    <li>
-        <a href="{{ clear_site_settings_url }}" class="addlink" style="background: #17a2b8; border-color: #17a2b8;" 
-           onclick="return confirm('사이트 설정 캐시를 클리어하시겠습니까?');">
-            <i class="fas fa-broom"></i> 사이트 설정 캐시 클리어
-        </a>
-    </li>
-    <li>
-        <a href="{{ clear_all_cache_url }}" class="addlink" style="background: #dc3545; border-color: #dc3545;" 
-           onclick="return confirm('⚠️ 전체 캐시를 클리어하시겠습니까? 이 작업은 사이트 성능에 일시적인 영향을 줄 수 있습니다.');">
-            <i class="fas fa-trash-alt"></i> 전체 캐시 클리어
-        </a>
-    </li>
+{% block object-tools %}
+    <ul class="object-tools">
+        <li>
+            <a href="{{ clear_site_settings_url }}" class="addlink" style="background: #17a2b8; border-color: #17a2b8;" 
+               onclick="return confirm('사이트 설정 캐시를 클리어하시겠습니까?');">
+                <i class="fas fa-broom"></i> 사이트 설정 캐시 클리어
+            </a>
+        </li>
+        <li>
+            <a href="{{ clear_all_cache_url }}" class="addlink" style="background: #dc3545; border-color: #dc3545;" 
+               onclick="return confirm('⚠️ 전체 캐시를 클리어하시겠습니까? 이 작업은 사이트 성능에 일시적인 영향을 줄 수 있습니다.');">
+                <i class="fas fa-trash-alt"></i> 전체 캐시 클리어
+            </a>
+        </li>
+    </ul>
 {% endblock %}
 
 {% block extrahead %}
@@ -92,6 +94,29 @@
 {% endblock %}
 
 {% block content %}
+    <!-- 캐시 관리 버튼들 -->
+    <div style="margin-bottom: 20px; padding: 20px; background: #ffffff; border: 2px solid #007cba; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #007cba; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-tools"></i> 캐시 관리 도구
+        </h3>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <a href="{{ clear_site_settings_url }}" 
+               style="background: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: bold; transition: all 0.3s; border: none; cursor: pointer;"
+               onclick="return confirm('사이트 설정 캐시를 클리어하시겠습니까?');"
+               onmouseover="this.style.background='#138496'"
+               onmouseout="this.style.background='#17a2b8'">
+                <i class="fas fa-broom"></i> 사이트 설정 캐시 클리어
+            </a>
+            <a href="{{ clear_all_cache_url }}" 
+               style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: bold; transition: all 0.3s; border: none; cursor: pointer;"
+               onclick="return confirm('⚠️ 전체 캐시를 클리어하시겠습니까? 이 작업은 사이트 성능에 일시적인 영향을 줄 수 있습니다.');"
+               onmouseover="this.style.background='#c82333'"
+               onmouseout="this.style.background='#dc3545'">
+                <i class="fas fa-trash-alt"></i> 전체 캐시 클리어
+            </a>
+        </div>
+    </div>
+
     <div class="cache-info">
         <i class="fas fa-info-circle"></i>
         <strong>캐시 시스템 정보:</strong> 사이트 성능 향상을 위해 다양한 데이터가 캐시됩니다. 

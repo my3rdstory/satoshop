@@ -172,6 +172,10 @@ class CacheManagerAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
     
+    def get_queryset(self, request):
+        """빈 쿼리셋 반환 (실제 테이블이 없으므로)"""
+        return CacheManager.objects.none()
+    
     def get_urls(self):
         """커스텀 URL 추가"""
         urls = super().get_urls()
