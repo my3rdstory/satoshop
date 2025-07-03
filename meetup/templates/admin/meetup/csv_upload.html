@@ -1,0 +1,187 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }} | Django 관리{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">홈</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='meetup' %}">Meetup</a>
+    &rsaquo; <a href="{% url 'admin:meetup_meetup_changelist' %}">밋업</a>
+    &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px;">
+    
+    {% if queryset.count == 1 %}
+        {% for meetup in queryset %}
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #007cba;">{{ meetup.name }}</h3>
+            <p><strong>스토어:</strong> {{ meetup.store.store_name }}</p>
+            <p><strong>현재 참가자:</strong> {{ meetup.current_participants }}명
+            {% if meetup.max_participants %}
+                / {{ meetup.max_participants }}명 (남은 자리: {{ meetup.remaining_spots }}명)
+            {% else %}
+                (무제한)
+            {% endif %}
+            </p>
+            {% if meetup.date_time %}
+            <p><strong>일시:</strong> {{ meetup.date_time|date:"Y년 m월 d일 H:i" }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #856404;"><i class="fas fa-info-circle"></i> 사용 방법</h4>
+        <ol style="margin: 0;">
+            <li>먼저 <strong>"CSV 샘플 다운로드"</strong> 액션으로 샘플 파일을 받으세요.</li>
+            <li>샘플 파일을 편집하여 추가할 참가자 정보를 입력하세요.</li>
+            <li>아래 폼에서 편집한 CSV 파일을 업로드하세요.</li>
+            <li>수동 추가된 참가자는 <strong>무료</strong>로 처리되며 즉시 확정됩니다.</li>
+            <li>각 참가자에게는 자동으로 <strong>티켓번호</strong>가 발급되고 확인 이메일이 발송됩니다.</li>
+        </ol>
+    </div>
+    
+    <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+        <h4 style="margin-top: 0; color: #0c5460;"><i class="fas fa-table"></i> CSV 파일 형식</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background: #e9ecef;">
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">참가자명(필수)</th>
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">이메일(필수)</th>
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">연락처(선택)</th>
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">사용자명(선택)</th>
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">가격(선택)</th>
+                    <th style="border: 1px solid #dee2e6; padding: 8px;">비고</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">홍길동</td>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">hong@example.com</td>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">010-1234-5678</td>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">hong123</td>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">10000</td>
+                    <td style="border: 1px solid #dee2e6; padding: 8px;">수동 추가</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="margin-top: 10px; margin-bottom: 0; font-size: 14px; color: #6c757d;">            
+            * 같은 밋업에서 이메일이 중복되면 건너뜁니다.<br>
+            * 가격은 satoshi 단위로 입력하세요. 빈 값이면 0원(무료)로 처리됩니다.
+        </p>
+    </div>
+    
+    <!-- 로딩 상태 표시 (초기에는 숨김) -->
+    <div id="loading-state" style="display: none; background: white; border: 1px solid #dee2e6; border-radius: 5px; padding: 30px; margin-bottom: 20px; text-align: center;">
+        <div style="margin-bottom: 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #007cba;"></i>
+        </div>
+        <h4 style="margin: 0 0 10px 0; color: #007cba;">CSV 파일 처리 중...</h4>
+        <p style="color: #6c757d; margin: 0; font-size: 16px;">
+            참가자 정보를 검증하고 등록하고 있습니다.<br>
+            잠시만 기다려주세요.
+        </p>
+        <div style="margin-top: 20px;">
+            <small style="color: #856404;">
+                <i class="fas fa-info-circle"></i> 
+                참가자 수에 따라 시간이 걸릴 수 있습니다.
+            </small>
+        </div>
+    </div>
+
+    <form id="csv-upload-form" method="post" enctype="multipart/form-data" style="background: white; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_participants_csv">
+        
+        {% for obj in queryset %}
+        <input type="hidden" name="_selected_action" value="{{ obj.pk }}">
+        {% endfor %}
+        
+        <div style="margin-bottom: 20px;">
+            <label for="csv_file" style="display: block; font-weight: bold; margin-bottom: 5px;">
+                <i class="fas fa-file-csv"></i> CSV 파일 선택
+            </label>
+            <input type="file" 
+                   id="csv_file" 
+                   name="csv_file" 
+                   accept=".csv" 
+                   required
+                   style="display: block; width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <small style="color: #6c757d;">CSV 파일만 업로드 가능합니다.</small>
+        </div>
+        
+        <div style="border-top: 1px solid #dee2e6; padding-top: 15px;">
+            <button type="submit" 
+                    id="upload-btn"
+                    name="apply" 
+                    value="apply"
+                    style="background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                <i class="fas fa-upload"></i> CSV 파일 업로드 및 참가자 추가
+            </button>
+            <a href="{% url 'admin:meetup_meetup_changelist' %}" 
+               id="cancel-btn"
+               style="background: #6c757d; color: white; text-decoration: none; padding: 10px 20px; border-radius: 4px;">
+                <i class="fas fa-times"></i> 취소
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// 파일 유효성 검사
+document.getElementById('csv_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && !file.name.endsWith('.csv')) {
+        alert('CSV 파일만 선택해주세요.');
+        e.target.value = '';
+    }
+});
+
+// 폼 제출 시 로딩 상태 표시
+document.getElementById('csv-upload-form').addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('csv_file');
+    const file = fileInput.files[0];
+    
+    // 파일이 선택되지 않은 경우
+    if (!file) {
+        alert('CSV 파일을 선택해주세요.');
+        e.preventDefault();
+        return;
+    }
+    
+    // CSV 파일 확장자 재검증
+    if (!file.name.endsWith('.csv')) {
+        alert('CSV 파일만 업로드할 수 있습니다.');
+        e.preventDefault();
+        return;
+    }
+    
+    // 로딩 상태 표시
+    showLoadingState();
+});
+
+function showLoadingState() {
+    // 폼 숨기기
+    document.getElementById('csv-upload-form').style.display = 'none';
+    
+    // 로딩 상태 표시
+    document.getElementById('loading-state').style.display = 'block';
+    
+    // 버튼 비활성화
+    const uploadBtn = document.getElementById('upload-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    
+    uploadBtn.disabled = true;
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 처리 중...';
+    uploadBtn.style.background = '#6c757d';
+    uploadBtn.style.cursor = 'not-allowed';
+    
+    cancelBtn.style.pointerEvents = 'none';
+    cancelBtn.style.opacity = '0.5';
+}
+</script>
+{% endblock %} 

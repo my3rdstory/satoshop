@@ -283,104 +283,104 @@ class OrderAdmin(admin.ModelAdmin):
     items_summary.short_description = '주문 아이템 상세'
 
 
-@admin.register(OrderItem)
-class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'product_title', 'quantity', 'product_price', 'options_price', 'total_price']
-    list_filter = ['order__store', 'created_at']
-    search_fields = ['order__order_number', 'product_title']
-    readonly_fields = ['unit_price', 'total_price', 'created_at']
-    list_per_page = 10
+# @admin.register(OrderItem)
+# class OrderItemAdmin(admin.ModelAdmin):
+#     list_display = ['order', 'product_title', 'quantity', 'product_price', 'options_price', 'total_price']
+#     list_filter = ['order__store', 'created_at']
+#     search_fields = ['order__order_number', 'product_title']
+#     readonly_fields = ['unit_price', 'total_price', 'created_at']
+#     list_per_page = 10
 
 
-@admin.register(PurchaseHistory)
-class PurchaseHistoryAdmin(admin.ModelAdmin):
-    list_display = ['user', 'store_name', 'total_amount', 'purchase_date', 'auto_delete_at', 'order_link']
-    list_filter = ['purchase_date', 'auto_delete_at']
-    search_fields = ['user__username', 'store_name', 'order__order_number']
-    readonly_fields = ['purchase_date', 'auto_delete_at', 'order_link', 'order_items_display']
-    list_per_page = 10
-    
-    fieldsets = (
-        ('구매 정보', {
-            'fields': ('user', 'order_link', 'store_name', 'total_amount', 'purchase_date')
-        }),
-        ('주문 아이템들', {
-            'fields': ('order_items_display',),
-        }),
-        ('시스템 정보', {
-            'fields': ('auto_delete_at',),
-            'classes': ('collapse',)
-        })
-    )
-    
-    def order_link(self, obj):
-        """주문 링크"""
-        if obj.order:
-            url = reverse('admin:orders_order_change', args=[obj.order.id])
-            return format_html('<a href="{}">{}</a>', url, obj.order.order_number)
-        return '-'
-    order_link.short_description = '주문'
-    
-    def order_items_display(self, obj):
-        """주문 아이템들 표시"""
-        if not obj.order:
-            return '-'
-        
-        items = obj.order.items.all()
-        if not items:
-            return '주문 아이템이 없습니다.'
-        
-        html_parts = []
-        html_parts.append('<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">')
-        html_parts.append('''
-            <thead>
-                <tr style="background-color: #f8f9fa;">
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">상품명</th>
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">수량</th>
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">상품가격</th>
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">옵션가격</th>
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">총가격</th>
-                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">선택옵션</th>
-                </tr>
-            </thead>
-            <tbody>
-        ''')
-        
-        for item in items:
-            # 상품 링크 생성
-            if item.product:
-                try:
-                    product_url = reverse('admin:products_product_change', args=[item.product.pk])
-                    product_link = f'<a href="{product_url}">{item.product_title}</a>'
-                except:
-                    product_link = item.product_title
-            else:
-                product_link = item.product_title
-            
-            # 선택된 옵션들 표시
-            options_display = '-'
-            if item.selected_options:
-                options_list = []
-                for option_name, choice_name in item.selected_options.items():
-                    options_list.append(f"{option_name}: {choice_name}")
-                options_display = '<br>'.join(options_list)
-            
-            html_parts.append(f'''
-                <tr>
-                    <td style="border: 1px solid #dee2e6; padding: 8px;">{product_link}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">{item.quantity}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">{item.product_price:,} sats</td>
-                    <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">{item.options_price:,} sats</td>
-                    <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>{item.total_price:,} sats</strong></td>
-                    <td style="border: 1px solid #dee2e6; padding: 8px;">{options_display}</td>
-                </tr>
-            ''')
-        
-        html_parts.append('</tbody></table>')
-        
-        return format_html(''.join(html_parts))
-    
-    order_items_display.short_description = '주문 아이템들'
+# @admin.register(PurchaseHistory)
+# class PurchaseHistoryAdmin(admin.ModelAdmin):
+#     list_display = ['user', 'store_name', 'total_amount', 'purchase_date', 'auto_delete_at', 'order_link']
+#     list_filter = ['purchase_date', 'auto_delete_at']
+#     search_fields = ['user__username', 'store_name', 'order__order_number']
+#     readonly_fields = ['purchase_date', 'auto_delete_at', 'order_link', 'order_items_display']
+#     list_per_page = 10
+#     
+#     fieldsets = (
+#         ('구매 정보', {
+#             'fields': ('user', 'order_link', 'store_name', 'total_amount', 'purchase_date')
+#         }),
+#         ('주문 아이템들', {
+#             'fields': ('order_items_display',),
+#         }),
+#         ('시스템 정보', {
+#             'fields': ('auto_delete_at',),
+#             'classes': ('collapse',)
+#         })
+#     )
+#     
+#     def order_link(self, obj):
+#         """주문 링크"""
+#         if obj.order:
+#             url = reverse('admin:orders_order_change', args=[obj.order.id])
+#             return format_html('<a href="{}">{}</a>', url, obj.order.order_number)
+#         return '-'
+#     order_link.short_description = '주문'
+#     
+#     def order_items_display(self, obj):
+#         """주문 아이템들 표시"""
+#         if not obj.order:
+#             return '-'
+#         
+#         items = obj.order.items.all()
+#         if not items:
+#             return '주문 아이템이 없습니다.'
+#         
+#         html_parts = []
+#         html_parts.append('<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">')
+#         html_parts.append('''
+#             <thead>
+#                 <tr style="background-color: #f8f9fa;">
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">상품명</th>
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">수량</th>
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">상품가격</th>
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">옵션가격</th>
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">총가격</th>
+#                     <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">선택옵션</th>
+#                 </tr>
+#             </thead>
+#             <tbody>
+#         ''')
+#         
+#         for item in items:
+#             # 상품 링크 생성
+#             if item.product:
+#                 try:
+#                     product_url = reverse('admin:products_product_change', args=[item.product.pk])
+#                     product_link = f'<a href="{product_url}">{item.product_title}</a>'
+#                 except:
+#                     product_link = item.product_title
+#             else:
+#                 product_link = item.product_title
+#             
+#             # 선택된 옵션들 표시
+#             options_display = '-'
+#             if item.selected_options:
+#                 options_list = []
+#                 for option_name, choice_name in item.selected_options.items():
+#                     options_list.append(f"{option_name}: {choice_name}")
+#                 options_display = '<br>'.join(options_list)
+#             
+#             html_parts.append(f'''
+#                 <tr>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px;">{product_link}</td>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px; text-align: center;">{item.quantity}</td>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">{item.product_price:,} sats</td>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">{item.options_price:,} sats</td>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;"><strong>{item.total_price:,} sats</strong></td>
+#                     <td style="border: 1px solid #dee2e6; padding: 8px;">{options_display}</td>
+#                 </tr>
+#             ''')
+#         
+#         html_parts.append('</tbody></table>')
+#         
+#         return format_html(''.join(html_parts))
+#     
+#     order_items_display.short_description = '주문 아이템들'
 
 
 @admin.register(Invoice)

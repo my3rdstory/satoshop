@@ -77,73 +77,73 @@ class MenuAdmin(admin.ModelAdmin):
         }),
     )
 
-@admin.register(MenuImage)
-class MenuImageAdmin(admin.ModelAdmin):
-    """메뉴 이미지 어드민"""
-    list_display = ('menu', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
-    list_filter = ('uploaded_at', 'menu__store')
-    search_fields = ('menu__name', 'menu__store__store_name', 'original_name')
-    readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
-    ordering = ('menu', 'order', 'uploaded_at')
-    list_per_page = 10
-    
-    fieldsets = (
-        ('기본 정보', {
-            'fields': ('menu', 'original_name', 'order')
-        }),
-        ('이미지 정보', {
-            'fields': ('image_preview', 'width', 'height', 'file_size_display')
-        }),
-        ('파일 정보', {
-            'fields': ('file_url', 'file_path'),
-            'classes': ('collapse',)
-        }),
-        ('메타 정보', {
-            'fields': ('uploaded_at', 'uploaded_by'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def view_image_button(self, obj):
-        """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
-        if obj and obj.file_url:
-            return format_html(
-                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
-                '<i class="fas fa-eye"></i>'
-                '</button>',
-                obj.file_url,
-                obj.original_name
-            )
-        return "이미지 없음"
-    view_image_button.short_description = '이미지'
-    
-    def file_size_display(self, obj):
-        """파일 크기 표시"""
-        if obj:
-            return obj.get_file_size_display()
-        return ""
-    file_size_display.short_description = '파일 크기'
-    
-    def image_preview(self, obj):
-        """이미지 미리보기"""
-        if obj and obj.file_url:
-            return format_html(
-                '<img src="{}" alt="{}" style="max-width: 200px; max-height: 200px; object-fit: contain;" onclick="showImageModal(\'{}\', \'{}\')" style="cursor: pointer;">',
-                obj.file_url,
-                obj.original_name,
-                obj.file_url,
-                obj.original_name
-            )
-        return "이미지 없음"
-    image_preview.short_description = '이미지 미리보기'
+# @admin.register(MenuImage)
+# class MenuImageAdmin(admin.ModelAdmin):
+#     """메뉴 이미지 어드민"""
+#     list_display = ('menu', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
+#     list_filter = ('uploaded_at', 'menu__store')
+#     search_fields = ('menu__name', 'menu__store__store_name', 'original_name')
+#     readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
+#     ordering = ('menu', 'order', 'uploaded_at')
+#     list_per_page = 10
+#     
+#     fieldsets = (
+#         ('기본 정보', {
+#             'fields': ('menu', 'original_name', 'order')
+#         }),
+#         ('이미지 정보', {
+#             'fields': ('image_preview', 'width', 'height', 'file_size_display')
+#         }),
+#         ('파일 정보', {
+#             'fields': ('file_url', 'file_path'),
+#             'classes': ('collapse',)
+#         }),
+#         ('메타 정보', {
+#             'fields': ('uploaded_at', 'uploaded_by'),
+#             'classes': ('collapse',)
+#         }),
+#     )
+#     
+#     def view_image_button(self, obj):
+#         """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
+#         if obj and obj.file_url:
+#             return format_html(
+#                 '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
+#                 '<i class="fas fa-eye"></i>'
+#                 '</button>',
+#                 obj.file_url,
+#                 obj.original_name
+#             )
+#         return "이미지 없음"
+#     view_image_button.short_description = '이미지'
+#     
+#     def file_size_display(self, obj):
+#         """파일 크기 표시"""
+#         if obj:
+#             return obj.get_file_size_display()
+#         return ""
+#     file_size_display.short_description = '파일 크기'
+#     
+#     def image_preview(self, obj):
+#         """이미지 미리보기"""
+#         if obj and obj.file_url:
+#             return format_html(
+#                 '<img src="{}" alt="{}" style="max-width: 200px; max-height: 200px; object-fit: contain;" onclick="showImageModal(\'{}\', \'{}\')" style="cursor: pointer;">',
+#                 obj.file_url,
+#                 obj.original_name,
+#                 obj.file_url,
+#                 obj.original_name
+#             )
+#         return "이미지 없음"
+#     image_preview.short_description = '이미지 미리보기'
 
-@admin.register(MenuOption)
-class MenuOptionAdmin(admin.ModelAdmin):
-    list_display = ['menu', 'name', 'is_required', 'order', 'created_at']
-    list_filter = ['menu__store', 'is_required', 'created_at']
-    search_fields = ['menu__name', 'name']
-    readonly_fields = ['id', 'created_at']
-    ordering = ['menu', 'order']
+# @admin.register(MenuOption)
+# class MenuOptionAdmin(admin.ModelAdmin):
+#     list_display = ['menu', 'name', 'is_required', 'order', 'created_at']
+#     list_filter = ['menu__store', 'is_required', 'created_at']
+#     search_fields = ['menu__name', 'name']
+#     readonly_fields = ['id', 'created_at']
+#     ordering = ['menu', 'order']
 
 class MenuOrderItemInline(admin.TabularInline):
     """메뉴 주문 아이템 인라인 어드민"""
@@ -295,15 +295,15 @@ class MenuOrderAdmin(admin.ModelAdmin):
     items_summary.short_description = '주문 아이템 상세'
 
 
-@admin.register(MenuOrderItem)
-class MenuOrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'menu_name', 'quantity', 'menu_price', 'options_price', 'total_price_display']
-    list_filter = ['order__store', 'created_at']
-    search_fields = ['order__order_number', 'menu_name']
-    readonly_fields = ['unit_price', 'total_price', 'created_at']
-    list_per_page = 10
-    
-    def total_price_display(self, obj):
-        """총 가격 표시"""
-        return f"{obj.total_price:,} sats"
-    total_price_display.short_description = '총 가격'
+# @admin.register(MenuOrderItem)
+# class MenuOrderItemAdmin(admin.ModelAdmin):
+#     list_display = ['order', 'menu_name', 'quantity', 'menu_price', 'options_price', 'total_price_display']
+#     list_filter = ['order__store', 'created_at']
+#     search_fields = ['order__order_number', 'menu_name']
+#     readonly_fields = ['unit_price', 'total_price', 'created_at']
+#     list_per_page = 10
+#     
+#     def total_price_display(self, obj):
+#         """총 가격 표시"""
+#         return f"{obj.total_price:,} sats"
+#     total_price_display.short_description = '총 가격'

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views, views_free, views_paid
+from .admin import admin_views
 
 app_name = 'meetup'
 
@@ -56,4 +57,8 @@ urlpatterns = [
     
     # 밋업 임시 예약 해제 (페이지 벗어날 때)
     path('<str:store_id>/<int:meetup_id>/release_reservation/', views.release_meetup_reservation, name='release_reservation'),
+    
+    # Admin 전용 URL
+    path('admin/csv-upload/<int:meetup_id>/', admin_views.csv_upload_view, name='admin_csv_upload'),
+    path('admin/csv-progress/<str:task_id>/', admin_views.get_progress, name='admin_csv_progress'),
 ] 

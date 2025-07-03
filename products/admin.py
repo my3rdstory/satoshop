@@ -182,19 +182,19 @@ class ProductAdmin(admin.ModelAdmin):
     get_options_display.short_description = '옵션 및 선택지'
 
 
-@admin.register(ProductOption)
-class ProductOptionAdmin(admin.ModelAdmin):
-    list_display = ['product', 'name', 'get_choices_count', 'order', 'created_at']
-    list_filter = ['product__store', 'created_at']
-    search_fields = ['name', 'product__title']
-    list_per_page = 10
-    
-    inlines = [ProductOptionChoiceInline]
-    
-    def get_choices_count(self, obj):
-        """옵션의 선택지 개수 표시"""
-        return obj.choices.count()
-    get_choices_count.short_description = '선택지 개수'
+# @admin.register(ProductOption)
+# class ProductOptionAdmin(admin.ModelAdmin):
+#     list_display = ['product', 'name', 'get_choices_count', 'order', 'created_at']
+#     list_filter = ['product__store', 'created_at']
+#     search_fields = ['name', 'product__title']
+#     list_per_page = 10
+#     
+#     inlines = [ProductOptionChoiceInline]
+#     
+#     def get_choices_count(self, obj):
+#         """옵션의 선택지 개수 표시"""
+#         return obj.choices.count()
+#     get_choices_count.short_description = '선택지 개수'
 
 
 # ProductOptionChoice는 별도 admin 메뉴로 등록하지 않음 (인라인으로만 관리)
@@ -215,68 +215,68 @@ class ProductOptionChoiceAdmin(admin.ModelAdmin):
     get_option_name.short_description = '옵션'
 
 
-@admin.register(ProductImage)
-class ProductImageAdmin(admin.ModelAdmin):
-    """상품 이미지 어드민"""
-    list_display = ('product', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
-    list_filter = ('uploaded_at', 'product__store')
-    search_fields = ('product__title', 'product__store__store_name', 'original_name')
-    readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
-    ordering = ('product', 'order', 'uploaded_at')
-    list_per_page = 10
-    
-    fieldsets = (
-        ('기본 정보', {
-            'fields': ('product', 'original_name', 'order')
-        }),
-        ('이미지 정보', {
-            'fields': ('image_preview', 'width', 'height', 'file_size_display')
-        }),
-        ('파일 정보', {
-            'fields': ('file_url', 'file_path'),
-            'classes': ('collapse',)
-        }),
-        ('메타 정보', {
-            'fields': ('uploaded_at', 'uploaded_by'),
-            'classes': ('collapse',)
-        }),
-    )
-    
-    def view_image_button(self, obj):
-        """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
-        if obj and obj.file_url:
-            return format_html(
-                '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
-                '<i class="fas fa-eye"></i>'
-                '</button>',
-                obj.file_url,
-                obj.original_name
-            )
-        return "이미지 없음"
-    view_image_button.short_description = '이미지'
-    
-    def image_preview(self, obj):
-        """이미지 미리보기 (상세 페이지에서만 사용)"""
-        if obj and obj.file_url:
-            return format_html(
-                '<img src="{}" style="max-width: 300px; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd;" />',
-                obj.file_url
-            )
-        return "이미지 없음"
-    image_preview.short_description = '이미지 미리보기'
-    
-    def file_size_display(self, obj):
-        """파일 크기 표시"""
-        if obj:
-            return obj.get_file_size_display()
-        return ""
-    file_size_display.short_description = '파일 크기'
-    
-    class Media:
-        js = ('admin/js/product_image_modal.js',)
-        css = {
-            'all': ('admin/css/product_image_modal.css',)
-        }
+# @admin.register(ProductImage)
+# class ProductImageAdmin(admin.ModelAdmin):
+#     """상품 이미지 어드민"""
+#     list_display = ('product', 'original_name', 'view_image_button', 'file_size_display', 'width', 'height', 'order', 'uploaded_at')
+#     list_filter = ('uploaded_at', 'product__store')
+#     search_fields = ('product__title', 'product__store__store_name', 'original_name')
+#     readonly_fields = ('image_preview', 'file_url', 'file_path', 'file_size', 'width', 'height', 'uploaded_at', 'uploaded_by')
+#     ordering = ('product', 'order', 'uploaded_at')
+#     list_per_page = 10
+#     
+#     fieldsets = (
+#         ('기본 정보', {
+#             'fields': ('product', 'original_name', 'order')
+#         }),
+#         ('이미지 정보', {
+#             'fields': ('image_preview', 'width', 'height', 'file_size_display')
+#         }),
+#         ('파일 정보', {
+#             'fields': ('file_url', 'file_path'),
+#             'classes': ('collapse',)
+#         }),
+#         ('메타 정보', {
+#             'fields': ('uploaded_at', 'uploaded_by'),
+#             'classes': ('collapse',)
+#         }),
+#     )
+#     
+#     def view_image_button(self, obj):
+#         """이미지 보기 버튼 (모달 방식) - 아이콘만 표시"""
+#         if obj and obj.file_url:
+#             return format_html(
+#                 '<button type="button" class="button" onclick="showImageModal(\'{}\', \'{}\')" style="background-color: #007cba; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;" title="이미지 보기">'
+#                 '<i class="fas fa-eye"></i>'
+#                 '</button>',
+#                 obj.file_url,
+#                 obj.original_name
+#             )
+#         return "이미지 없음"
+#     view_image_button.short_description = '이미지'
+#     
+#     def image_preview(self, obj):
+#         """이미지 미리보기 (상세 페이지에서만 사용)"""
+#         if obj and obj.file_url:
+#             return format_html(
+#                 '<img src="{}" style="max-width: 300px; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd;" />',
+#                 obj.file_url
+#             )
+#         return "이미지 없음"
+#     image_preview.short_description = '이미지 미리보기'
+#     
+#     def file_size_display(self, obj):
+#         """파일 크기 표시"""
+#         if obj:
+#             return obj.get_file_size_display()
+#         return ""
+#     file_size_display.short_description = '파일 크기'
+#     
+#     class Media:
+#         js = ('admin/js/product_image_modal.js',)
+#         css = {
+#             'all': ('admin/css/product_image_modal.css',)
+#         }
 
 
 # Admin 사이트 커스터마이징
