@@ -89,8 +89,22 @@ def csv_upload_view(request, meetup_id):
                 participant_email = row[1].strip()
                 participant_phone = row[2].strip() if len(row) > 2 else ''
                 username = row[3].strip() if len(row) > 3 else ''
+                price_str = row[4].strip() if len(row) > 4 else ''
+                notes = row[5].strip() if len(row) > 5 else ''
                 
-                print(f"DEBUG: Parsed data - Name: '{participant_name}', Email: '{participant_email}', Phone: '{participant_phone}', Username: '{username}'")
+                # 가격 처리 및 검증
+                try:
+                    price = int(price_str) if price_str else 0
+                    if price < 0:
+                        print(f"DEBUG: Negative price found: {price}")
+                        error_messages.append(f'행 {row_num}: 가격은 0 이상이어야 합니다.')
+                        continue
+                except ValueError:
+                    print(f"DEBUG: Invalid price format: {price_str}")
+                    error_messages.append(f'행 {row_num}: 가격은 숫자만 입력 가능합니다. ({price_str})')
+                    continue
+                
+                print(f"DEBUG: Parsed data - Name: '{participant_name}', Email: '{participant_email}', Phone: '{participant_phone}', Username: '{username}', Price: {price}, Notes: '{notes}'")
                 
                 if not participant_name or not participant_email:
                     print(f"DEBUG: Empty required fields - Name: '{participant_name}', Email: '{participant_email}'")
@@ -124,16 +138,16 @@ def csv_upload_view(request, meetup_id):
                 
                 try:
                     print(f"DEBUG: Attempting to create order for {participant_name}")
-                    # 참가자 추가 (수동 추가이므로 무료로 처리)
+                    # 참가자 추가 (CSV에서 받은 가격 사용)
                     order = MeetupOrder.objects.create(
                         meetup=meetup,
                         user=user,
                         participant_name=participant_name,
                         participant_email=participant_email,
                         participant_phone=participant_phone,
-                        base_price=0,  # 수동 추가는 무료
+                        base_price=price,  # CSV에서 받은 가격 사용
                         options_price=0,
-                        total_price=0,
+                        total_price=price,
                         status='confirmed',
                         is_temporary_reserved=False,
                         confirmed_at=timezone.now(),

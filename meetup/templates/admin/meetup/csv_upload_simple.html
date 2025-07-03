@@ -14,46 +14,59 @@
 
 {% block content %}
 <div style="padding: 20px;">
-    <h1>{{ title }}</h1>
     
-    <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-        <h3 style="margin-top: 0; color: #007cba;">{{ meetup.name }}</h3>
-        <p><strong>스토어:</strong> {{ meetup.store.store_name }}</p>
-        <p><strong>현재 참가자:</strong> {{ meetup.current_participants }}명
-        {% if meetup.max_participants %}
-            / {{ meetup.max_participants }}명 (남은 자리: {{ meetup.remaining_spots }}명)
-        {% else %}
-            (무제한)
-        {% endif %}
-        </p>
-        {% if meetup.date_time %}
-        <p><strong>일시:</strong> {{ meetup.date_time|date:"Y년 m월 d일 H:i" }}</p>
-        {% endif %}
-    </div>
-    
-    <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-        <h4 style="margin-top: 0; color: #856404;"><i class="fas fa-info-circle"></i> 사용 방법</h4>
-        <ol style="margin: 0;">
-            <li>아래 텍스트 영역에 CSV 형식으로 참가자 정보를 입력하세요.</li>
-            <li>한 줄에 한 명씩, 쉼표로 구분해서 입력합니다.</li>
-            <li>엑셀에서 복사해서 붙여넣기도 가능합니다.</li>
-            <li>수동 추가된 참가자는 <strong>무료</strong>로 처리되며 즉시 확정됩니다.</li>
-            <li>각 참가자에게는 자동으로 <strong>티켓번호</strong>가 발급되고 확인 이메일이 발송됩니다.</li>
-        </ol>
-    </div>
-    
-    <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-        <h4 style="margin-top: 0; color: #0c5460;"><i class="fas fa-edit"></i> 입력 형식</h4>
-        <p style="margin: 10px 0; font-weight: bold;">형식: 참가자명, 이메일, 연락처, 사용자명, 비고</p>
-        <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 14px;">
-            홍길동, hong@example.com, 010-1234-5678, hong123, 수동추가<br>
-            김철수, kim@example.com, 010-9876-5432, , 연락처만<br>
-            이영희, lee@example.com, , lee456, 최소정보
+    <!-- 밋업 정보와 사용 방법을 나란히 배치 -->
+    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <!-- 왼쪽: 밋업 정보 -->
+        <div style="flex: 1;">
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 15px;">
+                <h3 style="margin-top: 0; color: #007cba;">{{ meetup.name }}</h3>
+                <p><strong>스토어:</strong> {{ meetup.store.store_name }}</p>
+                <p><strong>현재 참가자:</strong> {{ meetup.current_participants }}명
+                {% if meetup.max_participants %}
+                    / {{ meetup.max_participants }}명 (남은 자리: {{ meetup.remaining_spots }}명)
+                {% else %}
+                    (정원 제한 없음)
+                {% endif %}
+                </p>
+                {% if meetup.date_time %}
+                <p><strong>일시:</strong> {{ meetup.date_time|date:"Y년 m월 d일 H:i" }}</p>
+                {% else %}
+                <p><strong>일시:</strong> 추후 공지</p>
+                {% endif %}
+            </div>
         </div>
-        <p style="margin-top: 10px; margin-bottom: 0; font-size: 14px; color: #6c757d;">
-            <strong>참고:</strong> 참가자명과 이메일은 필수, 나머지는 선택사항입니다. 빈 값은 빈칸으로 두세요.<br>
-            * 같은 밋업에서 이메일이 중복되면 건너뜁니다.
-        </p>
+        
+        <!-- 가운데: 사용 방법 -->
+        <div style="flex: 1;">
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px;">
+                <h4 style="margin-top: 0; color: #856404;"><i class="fas fa-info-circle"></i> 사용 방법</h4>
+                <ol style="margin: 0;">
+                    <li>아래 텍스트 영역에 CSV 형식으로 참가자 정보를 입력하세요.</li>
+                    <li>한 줄에 한 명씩, 쉼표로 구분해서 입력합니다.</li>
+                    <li>엑셀에서 복사해서 붙여넣기도 가능합니다.</li>
+                    <li>수동 추가된 참가자는 설정한 <strong>가격</strong>으로 처리되며 즉시 확정됩니다.</li>
+                    <li>각 참가자에게는 자동으로 <strong>티켓번호</strong>가 발급되고 확인 이메일이 발송됩니다.</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- 오른쪽: 입력 형식 -->
+        <div style="flex: 1;">
+            <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; padding: 15px;">
+                <h4 style="margin-top: 0; color: #0c5460;"><i class="fas fa-edit"></i> 입력 형식</h4>
+                <p style="margin: 10px 0; font-weight: bold;">형식: 참가자명, 이메일, 연락처, 사용자명, 가격, 비고</p>
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 3px; font-family: monospace; font-size: 12px;">
+                    홍길동, hong@example.com, 010-1234-5678, hong123, 10000, 수동추가<br>
+                    김철수, kim@example.com, 010-9876-5432, , 5000, 연락처만<br>
+                    이영희, lee@example.com, , lee456, , 최소정보
+                </div>
+                <p style="margin-top: 10px; margin-bottom: 0; font-size: 12px; color: #6c757d;">
+                    <strong>참고:</strong> 참가자명과 이메일은 필수, 나머지는 선택사항입니다.<br>
+                    * 가격은 satoshi 단위로 입력하세요. 빈 값이면 0원(무료)로 처리됩니다.
+                </p>
+            </div>
+        </div>
     </div>
     
     <!-- 로딩 상태 표시 (초기에는 숨김) -->
@@ -95,9 +108,9 @@
                 name="csv_data" 
                 required
                 rows="10"
-                placeholder="홍길동, hong@example.com, 010-1234-5678, hong123, 수동추가
-김철수, kim@example.com, 010-9876-5432, , 연락처만
-이영희, lee@example.com, , lee456, 최소정보"
+                placeholder="홍길동, hong@example.com, 010-1234-5678, hong123, 10000, 수동추가
+김철수, kim@example.com, 010-9876-5432, , 5000, 연락처만
+이영희, lee@example.com, , lee456, , 최소정보"
                 style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; font-size: 14px; resize: vertical;"></textarea>
             <small style="color: #6c757d;">한 줄에 한 명씩 입력하세요. 엑셀에서 복사-붙여넣기 가능합니다.</small>
         </div>
