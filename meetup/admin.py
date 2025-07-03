@@ -857,10 +857,14 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     
     def meetup_count(self, obj):
         """밋업 참가 횟수"""
-        count = MeetupOrder.objects.filter(
-            user=obj,
-            status__in=['confirmed', 'completed']
-        ).count()
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            count = len(obj._prefetched_objects_cache['meetup_orders'])
+        else:
+            count = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).count()
         return format_html(
             '<span style="color: #007cba; font-weight: bold;">{} 회</span>',
             count
@@ -869,10 +873,15 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     
     def latest_meetup(self, obj):
         """최근 참가한 밋업"""
-        latest_order = MeetupOrder.objects.filter(
-            user=obj,
-            status__in=['confirmed', 'completed']
-        ).select_related('meetup', 'meetup__store').order_by('-created_at').first()
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+            latest_order = orders[0] if orders else None
+        else:
+            latest_order = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).select_related('meetup', 'meetup__store').order_by('-created_at').first()
         
         if latest_order:
             return format_html(
@@ -890,10 +899,15 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     
     def total_meetup_spent(self, obj):
         """총 밋업 참가비 지출"""
-        total = MeetupOrder.objects.filter(
-            user=obj,
-            status__in=['confirmed', 'completed']
-        ).aggregate(total=Sum('total_price'))['total'] or 0
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+            total = sum(order.total_price for order in orders)
+        else:
+            total = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).aggregate(total=Sum('total_price'))['total'] or 0
         
         if total > 0:
             return format_html(
@@ -905,10 +919,14 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     
     def meetup_orders_detail(self, obj):
         """밋업 주문 상세 내역"""
-        orders = MeetupOrder.objects.filter(
-            user=obj,
-            status__in=['confirmed', 'completed']
-        ).select_related('meetup', 'meetup__store').order_by('-created_at')
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+        else:
+            orders = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).select_related('meetup', 'meetup__store').order_by('-created_at')
         
         if not orders:
             return '참가 내역이 없습니다.'
