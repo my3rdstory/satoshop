@@ -168,6 +168,12 @@ function generateInvoice() {
             loadingSpinner.classList.add('hidden');
             qrCodeImage.classList.remove('hidden');
             
+            // 라이트닝 지갑 열기 버튼 표시
+            const lightningWalletButton = document.getElementById('lightningWalletButton');
+            if (lightningWalletButton) {
+                lightningWalletButton.classList.remove('hidden');
+            }
+            
             // 결제 상태 확인 시작
             startPaymentStatusCheck();
             
@@ -190,6 +196,12 @@ function generateInvoice() {
             
             // 로딩 숨기기
             loadingSpinner.classList.add('hidden');
+            
+            // 라이트닝 지갑 버튼 숨기기
+            const lightningWalletButton = document.getElementById('lightningWalletButton');
+            if (lightningWalletButton) {
+                lightningWalletButton.classList.add('hidden');
+            }
             
             // 취소 버튼 숨기기 및 초기화
             document.getElementById('cancelContainer').classList.add('hidden');
@@ -392,6 +404,12 @@ function cancelInvoice() {
             // 인보이스 컨테이너 숨기기
             document.getElementById('invoiceContainer').classList.add('hidden');
             
+            // 라이트닝 지갑 버튼 숨기기
+            const lightningWalletButton = document.getElementById('lightningWalletButton');
+            if (lightningWalletButton) {
+                lightningWalletButton.classList.add('hidden');
+            }
+            
         } else {
             // 실패 메시지 표시
             showPaymentStatus('취소 중 오류가 발생했습니다: ' + data.error, 'error');
@@ -557,5 +575,62 @@ async function handleCheckoutSubmit(event) {
         // 버튼 복원
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalText;
+    }
+}
+
+// 라이트닝 지갑 열기 함수
+function openLightningWallet() {
+    if (!currentInvoice) {
+        showPaymentStatus('먼저 인보이스를 생성해주세요.', 'error');
+        return;
+    }
+    
+    // Lightning URL 스킴 생성
+    const lightningUrl = `lightning:${currentInvoice}`;
+    
+    try {
+        // 모바일 디바이스 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            // 모바일에서는 즉시 라이트닝 URL로 이동
+            window.location.href = lightningUrl;
+            
+            // 사용자에게 안내 메시지 표시
+            showPaymentStatus('라이트닝 지갑이 열렸습니다. 결제 완료 후 이 페이지로 돌아와주세요.', 'info');
+        } else {
+            // 데스크톱에서는 새 탭으로 열기 시도
+            const newWindow = window.open(lightningUrl, '_blank');
+            
+            // 새 창이 차단된 경우 대체 방법 제공
+            if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+                // 클립보드에 복사하고 안내
+                copyInvoiceToClipboard();
+                showPaymentStatus('팝업이 차단되었습니다. 인보이스가 클립보드에 복사되었으니 라이트닝 지갑에 직접 붙여넣어주세요.', 'warning');
+            } else {
+                showPaymentStatus('라이트닝 지갑이 열렸습니다. 결제 완료 후 이 페이지로 돌아와주세요.', 'info');
+            }
+        }
+        
+        // 버튼 임시 비활성화 (사용자 경험 개선)
+        const walletButton = document.querySelector('#lightningWalletButton button');
+        if (walletButton) {
+            const originalText = walletButton.innerHTML;
+            walletButton.disabled = true;
+            walletButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>지갑 열기 중...';
+            
+            // 3초 후 버튼 복원
+            setTimeout(() => {
+                walletButton.disabled = false;
+                walletButton.innerHTML = originalText;
+            }, 3000);
+        }
+        
+    } catch (error) {
+        console.error('라이트닝 지갑 열기 실패:', error);
+        
+        // 오류 발생 시 클립보드 복사로 대체
+        copyInvoiceToClipboard();
+        showPaymentStatus('지갑 열기에 실패했습니다. 인보이스가 클립보드에 복사되었으니 직접 붙여넣어주세요.', 'warning');
     }
 } 
