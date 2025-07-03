@@ -5,19 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components.css' %}">
-<style>
-  .inactive-product-notice {
-    background-color: #fef3c7;
-    border: 1px solid #f59e0b;
-    color: #92400e;
-  }
-
-  .dark .inactive-product-notice {
-    background-color: rgba(245, 158, 11, 0.2);
-    border-color: rgba(245, 158, 11, 0.4);
-    color: #fbbf24;
-  }
-</style>
+<link rel="stylesheet" href="{% static 'css/product_orders.css' %}">
 {% endblock %}
 
 {% block store_content %}
@@ -68,7 +56,7 @@
     {% endif %}
 
     <!-- 상품 정보 -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+    {% comment %} <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
       <div class="flex items-center mb-6">
         <div class="p-2 bg-bitcoin/10 rounded-lg mr-3">
           <i class="fas fa-box text-bitcoin"></i>
@@ -76,65 +64,184 @@
         <h2 class="text-xl font-bold text-gray-900 dark:text-white">상품 정보</h2>
       </div>
       
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex items-center space-x-6 mb-6 lg:mb-0">
-          <!-- 상품 이미지 -->
-          <div class="flex-shrink-0">
-            {% if product.images.first %}
-            <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" class="w-32 h-32 rounded-xl object-cover">
-            {% else %}
-            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">
-              <i class="fas fa-image text-4xl text-gray-400"></i>
-            </div>
-            {% endif %}
+      <div class="flex items-center space-x-6">
+        <!-- 상품 이미지 -->
+        <div class="flex-shrink-0">
+          {% if product.images.first %}
+          <img src="{{ product.images.first.file_url }}" alt="{{ product.title }}" class="w-32 h-32 rounded-xl object-cover">
+          {% else %}
+          <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-xl flex items-center justify-center">
+            <i class="fas fa-image text-4xl text-gray-400"></i>
           </div>
-          
-          <!-- 상품 상세 -->
-          <div>
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">{{ product.title }}</h3>
-            <div class="space-y-2 text-sm">
-              <p><span class="font-medium text-gray-700 dark:text-gray-300">가격:</span> <span class="text-bitcoin font-semibold">{{ product.price|floatformat:0 }} sats</span></p>
-              <p><span class="font-medium text-gray-700 dark:text-gray-300">등록일:</span> <span class="text-gray-900 dark:text-white">{{ product.created_at|date:"Y년 m월 d일" }}</span></p>
-              <p><span class="font-medium text-gray-700 dark:text-gray-300">상태:</span> 
-                {% if product.is_active %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                  활성화
-                </span>
-                {% else %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                  비활성화
-                </span>
-                {% endif %}
-              </p>
-            </div>
+          {% endif %}
+        </div>
+        
+        <!-- 상품 상세 -->
+        <div>
+          <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">{{ product.title }}</h3>
+          <div class="space-y-2 text-sm">
+            <p><span class="font-medium text-gray-700 dark:text-gray-300">가격:</span> <span class="text-bitcoin font-semibold">{{ product.price|floatformat:0 }} sats</span></p>
+            <p><span class="font-medium text-gray-700 dark:text-gray-300">등록일:</span> <span class="text-gray-900 dark:text-white">{{ product.created_at|date:"Y년 m월 d일" }}</span></p>
+            <p><span class="font-medium text-gray-700 dark:text-gray-300">상태:</span> 
+              {% if product.is_active %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                활성화
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                비활성화
+              </span>
+              {% endif %}
+            </p>
           </div>
+        </div>
+      </div>
+    </div> {% endcomment %}
+
+    <!-- 날짜 필터링 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
+          <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg mr-3">
+            <i class="fas fa-filter text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">주문 필터</h2>
         </div>
         
         <!-- CSV 다운로드 버튼 -->
         <div class="flex-shrink-0">
           <a 
+            id="csv-download-btn"
             href="{% url 'orders:export_product_orders_csv' store.store_id product.id %}" 
             class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors shadow-lg"
           >
             <i class="fas fa-download mr-2"></i>
-            배송정보 포함 CSV 다운로드
+            현재 화면 CSV 다운로드
           </a>
         </div>
       </div>
+
+      <form method="get" id="filter-form" class="space-y-4">
+        <!-- 빠른 필터 버튼들 -->
+        <div class="flex flex-wrap gap-3">
+          <button 
+            type="button" 
+            onclick="setFilter('all')"
+            class="filter-btn px-4 py-2 rounded-lg border transition-colors {% if filter_type == 'all' %}bg-blue-600 text-white border-blue-600{% else %}bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600{% endif %}"
+          >
+            <i class="fas fa-list mr-2"></i>전체
+          </button>
+          
+          <button 
+            type="button" 
+            onclick="setFilter('last_month')"
+            class="filter-btn px-4 py-2 rounded-lg border transition-colors {% if filter_type == 'last_month' %}bg-blue-600 text-white border-blue-600{% else %}bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600{% endif %}"
+          >
+            <i class="fas fa-calendar-minus mr-2"></i>{{ last_month_name }} {% if last_month_year != current_year %}{{ last_month_year }}{% endif %}
+          </button>
+          
+          <button 
+            type="button" 
+            onclick="setFilter('this_month')"
+            class="filter-btn px-4 py-2 rounded-lg border transition-colors {% if filter_type == 'this_month' %}bg-blue-600 text-white border-blue-600{% else %}bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600{% endif %}"
+          >
+            <i class="fas fa-calendar-alt mr-2"></i>{{ current_month_name }}
+          </button>
+          
+          <button 
+            type="button" 
+            onclick="toggleCustomDate()"
+            class="filter-btn px-4 py-2 rounded-lg border transition-colors {% if filter_type == 'custom' %}bg-blue-600 text-white border-blue-600{% else %}bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600{% endif %}"
+          >
+            <i class="fas fa-calendar-check mr-2"></i>기간 선택
+          </button>
+        </div>
+
+        <!-- 커스텀 날짜 범위 -->
+        <div id="custom-date-range" class="{% if filter_type != 'custom' %}hidden{% endif %} grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <div>
+            <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">시작일</label>
+            <input 
+              type="date" 
+              id="start_date" 
+              name="start_date" 
+              value="{{ start_date|default:'' }}"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+          </div>
+          
+          <div>
+            <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">종료일</label>
+            <input 
+              type="date" 
+              id="end_date" 
+              name="end_date" 
+              value="{{ end_date|default:'' }}"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+            >
+          </div>
+          
+          <div class="flex items-end">
+            <button 
+              type="button" 
+              onclick="applyCustomFilter()"
+              class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-search mr-2"></i>적용
+            </button>
+          </div>
+        </div>
+
+        <input type="hidden" id="filter" name="filter" value="{{ filter_type }}">
+      </form>
+
+      <!-- 필터링 결과 통계 -->
+      {% if filtered_stats.total_orders > 0 %}
+      <div id="filter-stats" class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ filtered_stats.total_orders|default:0 }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">주문 건수</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ filtered_stats.total_quantity|default:0 }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">총 판매 수량</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ filtered_stats.total_revenue|floatformat:0|default:0 }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400">총 매출 (sats)</div>
+            <div class="text-xs text-gray-500 dark:text-gray-500">* 배송비 제외</div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
 
     <!-- 주문 내역 -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div id="orders-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <!-- 헤더 -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
-        <div class="flex items-center">
-          <i class="fas fa-clipboard-list text-xl mr-3"></i>
-          <h2 class="text-xl font-bold">주문 내역</h2>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="fas fa-clipboard-list text-xl mr-3"></i>
+            <h2 class="text-xl font-bold">주문 내역</h2>
+          </div>
+          {% if filter_type != 'all' %}
+          <div class="text-blue-100 text-sm">
+            {% if filter_type == 'this_month' %}
+              {{ current_month_name }} 주문
+            {% elif filter_type == 'last_month' %}
+              {{ last_month_name }} {% if last_month_year != current_year %}{{ last_month_year }}{% endif %} 주문
+            {% elif filter_type == 'custom' and start_date and end_date %}
+              {{ start_date }} ~ {{ end_date }} 주문
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
       </div>
 
       <div class="p-6">
-        {% if page_obj %}
+        {% if page_obj or order_items %}
         <!-- 테이블 -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -150,7 +257,7 @@
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {% for item in page_obj %}
+              {% for item in page_obj|default:order_items %}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number }}</span>
@@ -186,53 +293,101 @@
           </table>
         </div>
 
-        <!-- 페이지네이션 -->
-        {% if page_obj.has_other_pages %}
-        <div class="flex items-center justify-between mt-6">
-          <div class="flex items-center space-x-2">
+        <!-- 페이지네이션 (전체 필터일 때만 표시) -->
+        {% if page_obj and page_obj.has_other_pages %}
+        <div class="flex items-center justify-center mt-6">
+          <div class="flex items-center space-x-1">
+            <!-- 맨 앞으로 -->
+            {% if page_obj.number > 1 %}
+            <a 
+              href="?page=1&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+              class="pagination-link inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              title="맨 앞으로"
+            >
+              <i class="fas fa-angle-double-left"></i>
+            </a>
+            {% else %}
+            <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+              <i class="fas fa-angle-double-left"></i>
+            </span>
+            {% endif %}
+
+            <!-- 이전 페이지 -->
             {% if page_obj.has_previous %}
             <a 
-              href="?page={{ page_obj.previous_page_number }}" 
-              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              href="?page={{ page_obj.previous_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+              class="pagination-link inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              이전
+              <i class="fas fa-angle-left mr-1"></i>이전
             </a>
             {% else %}
             <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
-              이전
+              <i class="fas fa-angle-left mr-1"></i>이전
             </span>
             {% endif %}
 
+            <!-- 페이지 번호들 (항상 5개 표시) -->
+            {% for num in page_numbers %}
+              {% if num == page_obj.number %}
+                <!-- 현재 페이지 -->
+                <span class="inline-flex items-center px-3 py-2 border border-bitcoin bg-bitcoin text-white rounded-md text-sm font-medium">
+                  {{ num }}
+                </span>
+              {% else %}
+                <!-- 다른 페이지 -->
+                <a 
+                  href="?page={{ num }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+                  class="pagination-link inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  {{ num }}
+                </a>
+              {% endif %}
+            {% endfor %}
+
+            <!-- 다음 페이지 -->
             {% if page_obj.has_next %}
             <a 
-              href="?page={{ page_obj.next_page_number }}" 
-              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              href="?page={{ page_obj.next_page_number }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+              class="pagination-link inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              다음
+              다음<i class="fas fa-angle-right ml-1"></i>
             </a>
             {% else %}
             <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
-              다음
+              다음<i class="fas fa-angle-right ml-1"></i>
             </span>
             {% endif %}
-          </div>
 
-          <div class="flex items-center space-x-1">
-            {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <span class="inline-flex items-center px-3 py-2 border border-bitcoin bg-bitcoin text-white rounded-md text-sm font-medium">
-              {{ num }}
-            </span>
-            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <!-- 맨 끝으로 -->
+            {% if page_obj.number < page_obj.paginator.num_pages %}
             <a 
-              href="?page={{ num }}" 
-              class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              href="?page={{ page_obj.paginator.num_pages }}&filter={{ filter_type }}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}" 
+              class="pagination-link inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+              title="맨 끝으로"
             >
-              {{ num }}
+              <i class="fas fa-angle-double-right"></i>
             </a>
+            {% else %}
+            <span class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 cursor-not-allowed">
+              <i class="fas fa-angle-double-right"></i>
+            </span>
             {% endif %}
-            {% endfor %}
           </div>
+        </div>
+        
+        <!-- 페이지 정보 표시 -->
+        {% if page_obj %}
+        <div class="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
+          {{ page_obj.start_index }}-{{ page_obj.end_index }} / 총 {{ page_obj.paginator.count }}개 
+          ({{ page_obj.number }}/{{ page_obj.paginator.num_pages }} 페이지)
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        <!-- 필터링된 전체 데이터 개수 표시 (페이지네이션이 없을 때) -->
+        {% if order_items and not page_obj %}
+        <div class="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
+          총 {{ order_items.count }}개 주문
         </div>
         {% endif %}
         {% else %}
@@ -253,4 +408,5 @@
 
 {% block extra_js %}
 <script src="{% static 'js/common.js' %}"></script>
+<script src="{% static 'js/product_orders.js' %}"></script>
 {% endblock %}

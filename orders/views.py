@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
@@ -348,7 +348,7 @@ def order_management(request, store_id):
         'products_with_orders': products_with_orders,
         'current_year': year,
         'current_month': month,
-        'current_month_name': calendar.month_name[month],
+        'current_month_name': f'{month}월',
         'prev_year': prev_year,
         'prev_month': prev_month,
         'next_year': next_year,
@@ -363,21 +363,130 @@ def order_management(request, store_id):
 @store_owner_required
 def product_orders(request, store_id, product_id):
     """특정 상품의 주문 목록"""
+    import calendar
+    from datetime import datetime, timedelta
+    from dateutil.relativedelta import relativedelta
+    
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     product = get_object_or_404(Product, id=product_id, store=store)
     
+    # 기본 쿼리셋
     order_items = OrderItem.objects.filter(
         product=product
-    ).select_related('order').order_by('-order__created_at')
+    ).select_related('order')
     
-    paginator = Paginator(order_items, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    # 현재 날짜 정보
+    now = timezone.now()
+    current_year = now.year
+    current_month = now.month
+    
+    # 이번달 범위
+    current_month_start = datetime(current_year, current_month, 1)
+    if current_month == 12:
+        current_month_end = datetime(current_year + 1, 1, 1)
+    else:
+        current_month_end = datetime(current_year, current_month + 1, 1)
+    
+    # 지난달 범위
+    last_month_date = now - relativedelta(months=1)
+    last_month_year = last_month_date.year
+    last_month_month = last_month_date.month
+    last_month_start = datetime(last_month_year, last_month_month, 1)
+    if last_month_month == 12:
+        last_month_end = datetime(last_month_year + 1, 1, 1)
+    else:
+        last_month_end = datetime(last_month_year, last_month_month + 1, 1)
+    
+    # 필터 파라미터 처리 (기본값을 현재 월로 설정)
+    filter_type = request.GET.get('filter', 'this_month')  # all, this_month, last_month, custom
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # 날짜 필터링 적용
+    if filter_type == 'this_month':
+        order_items = order_items.filter(
+            order__created_at__gte=current_month_start,
+            order__created_at__lt=current_month_end
+        )
+    elif filter_type == 'last_month':
+        order_items = order_items.filter(
+            order__created_at__gte=last_month_start,
+            order__created_at__lt=last_month_end
+        )
+    elif filter_type == 'custom' and start_date and end_date:
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # 종료일 포함
+            order_items = order_items.filter(
+                order__created_at__gte=start_datetime,
+                order__created_at__lt=end_datetime
+            )
+        except ValueError:
+            # 날짜 형식이 잘못된 경우 전체 조회
+            pass
+    
+    # 정렬 적용 (최신순)
+    order_items = order_items.order_by('-order__created_at')
+    
+    # 페이지네이션 (전체 필터일 때만 적용)
+    page_obj = None
+    page_numbers = []
+    if filter_type == 'all':
+        paginator = Paginator(order_items, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        # 페이지네이션을 위한 페이지 번호 리스트 계산 (항상 5개)
+        def get_page_numbers(current_page, total_pages):
+            """현재 페이지를 중심으로 5개의 페이지 번호 리스트 반환"""
+            if total_pages <= 5:
+                return list(range(1, total_pages + 1))
+            
+            # 현재 페이지를 중심으로 ±2 범위
+            start = max(1, current_page - 2)
+            end = min(total_pages, current_page + 2)
+            
+            # 시작이나 끝에 치우쳐있을 때 조정
+            if end - start < 4:  # 5개가 되도록 조정
+                if start == 1:
+                    end = min(total_pages, start + 4)
+                elif end == total_pages:
+                    start = max(1, end - 4)
+            
+            return list(range(start, end + 1))
+        
+        page_numbers = get_page_numbers(page_obj.number, page_obj.paginator.num_pages) if page_obj.has_other_pages() else []
+    
+    # 필터링된 결과의 통계 계산 (페이지네이션이 적용된 경우와 아닌 경우 모두 전체 데이터 기준)
+    if filter_type == 'all' and page_obj:
+        # 전체 필터일 때는 전체 데이터 기준으로 통계 계산
+        filtered_stats = order_items.aggregate(
+            total_orders=Count('order', distinct=True),
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum(F('quantity') * (F('product_price') + F('options_price')))
+        )
+    else:
+        # 다른 필터일 때는 필터링된 전체 데이터 기준으로 통계 계산
+        filtered_stats = order_items.aggregate(
+            total_orders=Count('order', distinct=True),
+            total_quantity=Sum('quantity'),
+            total_revenue=Sum(F('quantity') * (F('product_price') + F('options_price')))
+        )
     
     context = {
         'store': store,
         'product': product,
         'page_obj': page_obj,
+        'page_numbers': page_numbers,
+        'order_items': order_items if filter_type != 'all' else None,  # 페이지네이션이 없을 때 전체 데이터
+        'filter_type': filter_type,
+        'start_date': start_date,
+        'end_date': end_date,
+        'current_month_name': f'{current_month}월',
+        'current_year': current_year,
+        'last_month_name': f'{last_month_month}월',
+        'last_month_year': last_month_year,
+        'filtered_stats': filtered_stats,
     }
     return render(request, 'orders/product_orders.html', context)
 
@@ -501,138 +610,14 @@ def export_orders_csv(request, store_id):
 @login_required
 @store_owner_required
 def export_product_orders_csv(request, store_id, product_id):
-    """특정 상품의 주문 데이터 엑셀 내보내기 (배송 정보 포함)"""
+    """특정 상품의 주문 데이터 CSV 다운로드 (현재 화면 필터 반영)"""
+    from .products_orders_csv_download import export_product_orders_csv as export_csv
+    
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     product = get_object_or_404(Product, id=product_id, store=store)
     
-    try:
-        import openpyxl
-        from openpyxl.styles import Font, Alignment, PatternFill
-        from openpyxl.utils import get_column_letter
-        import io
-        
-        # 워크북 생성
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = f"{product.title} 주문목록"
-        
-        # 헤더 스타일
-        header_font = Font(bold=True, color="FFFFFF")
-        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
-        header_alignment = Alignment(horizontal="center", vertical="center")
-        
-        # 헤더 작성
-        headers = [
-            '주문번호', '주문자', '수량', '단가', '옵션가격', '총액', '주문일시', '상태', '선택옵션',
-            '연락처', '이메일', '우편번호', '주소', '상세주소', '요청사항'
-        ]
-        
-        for col, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col, value=header)
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = header_alignment
-        
-        # 데이터 조회
-        order_items = OrderItem.objects.filter(
-            product=product
-        ).select_related('order').order_by('-order__created_at')
-        
-        # 데이터 작성
-        for row, item in enumerate(order_items, 2):
-            order = item.order
-            
-            # 선택된 옵션을 문자열로 변환
-            options_str = ''
-            if item.selected_options:
-                options_list = []
-                for key, value in item.selected_options.items():
-                    options_list.append(f"{key}: {value}")
-                options_str = ', '.join(options_list)
-            
-            ws.cell(row=row, column=1, value=order.order_number)
-            ws.cell(row=row, column=2, value=order.buyer_name)
-            ws.cell(row=row, column=3, value=item.quantity)
-            ws.cell(row=row, column=4, value=item.product_price)
-            ws.cell(row=row, column=5, value=item.options_price)
-            ws.cell(row=row, column=6, value=item.total_price)
-            ws.cell(row=row, column=7, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
-            ws.cell(row=row, column=8, value=order.get_status_display())
-            ws.cell(row=row, column=9, value=options_str)
-            ws.cell(row=row, column=10, value=order.buyer_phone)
-            ws.cell(row=row, column=11, value=order.buyer_email)
-            ws.cell(row=row, column=12, value=order.shipping_postal_code)
-            ws.cell(row=row, column=13, value=order.shipping_address)
-            ws.cell(row=row, column=14, value=order.shipping_detail_address)
-            ws.cell(row=row, column=15, value=order.order_memo)
-        
-        # 열 너비 자동 조정
-        for col in range(1, len(headers) + 1):
-            column_letter = get_column_letter(col)
-            ws.column_dimensions[column_letter].width = 15
-        
-        # 메모리에 엑셀 파일 저장
-        excel_buffer = io.BytesIO()
-        wb.save(excel_buffer)
-        excel_buffer.seek(0)
-        
-        # HTTP 응답 생성
-        response = HttpResponse(
-            excel_buffer.getvalue(),
-            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-        response['Content-Disposition'] = f'attachment; filename="{store.store_id}_{product.title}_orders_with_shipping.xlsx"'
-        
-        return response
-    
-    except ImportError:
-        # openpyxl이 없으면 기존 CSV 방식 사용
-        logger.warning("openpyxl 라이브러리가 없어 CSV로 다운로드됩니다.")
-        
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="{store.store_id}_{product.title}_orders.csv"'
-        response.write('\ufeff')  # UTF-8 BOM for Excel
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            '주문번호', '주문자', '수량', '단가', '옵션가격', '총액', '주문일시', '상태', '선택옵션',
-            '연락처', '이메일', '우편번호', '주소', '상세주소', '요청사항'
-        ])
-        
-        order_items = OrderItem.objects.filter(
-            product=product
-        ).select_related('order').order_by('-order__created_at')
-        
-        for item in order_items:
-            order = item.order
-            
-            # 선택된 옵션을 문자열로 변환
-            options_str = ''
-            if item.selected_options:
-                options_list = []
-                for key, value in item.selected_options.items():
-                    options_list.append(f"{key}: {value}")
-                options_str = ', '.join(options_list)
-            
-            writer.writerow([
-                order.order_number,
-                order.buyer_name,
-                item.quantity,
-                item.product_price,
-                item.options_price,
-                item.total_price,
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                order.get_status_display(),
-                options_str,
-                order.buyer_phone,
-                order.buyer_email,
-                order.shipping_postal_code,
-                order.shipping_address,
-                order.shipping_detail_address,
-                order.order_memo,
-            ])
-        
-        return response
+    # 새로운 모듈의 함수를 사용하여 CSV 다운로드
+    return export_csv(request, store, product)
 
 
 @login_required

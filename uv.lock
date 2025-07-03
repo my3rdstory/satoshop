@@ -300,6 +300,18 @@ boto3 = [
 ]
 
 [[package]]
+name = "faker"
+version = "37.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tzdata" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/65/f9/66af4019ee952fc84b8fe5b523fceb7f9e631ed8484417b6f1e3092f8290/faker-37.4.0.tar.gz", hash = "sha256:7f69d579588c23d5ce671f3fa872654ede0e67047820255f43a4aa1925b89780", size = 1901976, upload-time = "2025-06-11T17:59:30.818Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/78/5e/c8c3c5ea0896ab747db2e2889bf5a6f618ed291606de6513df56ad8670a8/faker-37.4.0-py3-none-any.whl", hash = "sha256:cb81c09ebe06c32a10971d1bbdb264bb0e22b59af59548f011ac4809556ce533", size = 1942992, upload-time = "2025-06-11T17:59:28.698Z" },
+]
+
+[[package]]
 name = "frozenlist"
 version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -832,6 +844,7 @@ dependencies = [
     { name = "dj-database-url" },
     { name = "django" },
     { name = "django-storages", extra = ["boto3"] },
+    { name = "faker" },
     { name = "gunicorn" },
     { name = "markdown" },
     { name = "pillow" },
@@ -852,6 +865,7 @@ requires-dist = [
     { name = "dj-database-url", specifier = ">=3.0.0" },
     { name = "django", specifier = ">=5.2.2" },
     { name = "django-storages", extras = ["boto3"], specifier = ">=1.14.4" },
+    { name = "faker", specifier = ">=37.4.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "markdown", specifier = ">=3.8" },
     { name = "pillow", specifier = ">=11.2.1" },
