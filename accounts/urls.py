@@ -19,6 +19,10 @@ urlpatterns = [
     # 밋업 참가 내역
     path('my-meetup-orders/', views.my_meetup_orders, name='my_meetup_orders'),
     
+    # 밋업 참가자 관리 (어드민)
+    path('admin/meetup-participants/', views.meetup_participants_admin, name='meetup_participants_admin'),
+    path('admin/meetup-participant/<int:user_id>/', views.meetup_participant_detail, name='meetup_participant_detail'),
+    
     # LNURL-auth (lnauth-django 호환)
     path('ln-auth-get-url/', views.create_lnurl_auth, name='ln_auth_url_provider'),
     path('ln-auth/', views.lnurl_auth_callback, name='lnurl_auth_callback'),

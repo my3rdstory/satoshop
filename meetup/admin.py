@@ -6,8 +6,9 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
 from datetime import timedelta
+from django.contrib.auth.models import User
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption, Store
 
 
@@ -795,6 +796,187 @@ class MeetupOrderOptionAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         """수정 권한 없음"""
+        return False
+
+
+# 밋업 참가자만 보는 별도 어드민 클래스 추가
+class MeetupParticipant(User):
+    """밋업 참가 내역이 있는 사용자들만 보여주는 프록시 모델"""
+    class Meta:
+        proxy = True
+        verbose_name = "밋업 참가자"
+        verbose_name_plural = "밋업 참가자 목록"
+
+
+@admin.register(MeetupParticipant)
+class MeetupParticipantAdmin(admin.ModelAdmin):
+    """밋업 신청 내역이 있는 사용자들만 관리하는 어드민"""
+    list_display = [
+        'username', 'email', 'first_name', 'last_name', 
+        'meetup_count', 'latest_meetup', 'total_meetup_spent', 
+        'date_joined', 'last_login'
+    ]
+    list_filter = ['date_joined', 'last_login', 'is_active']
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    readonly_fields = [
+        'username', 'email', 'first_name', 'last_name', 
+        'date_joined', 'last_login', 'meetup_orders_detail'
+    ]
+    list_per_page = 20
+    
+    fieldsets = (
+        ('사용자 정보', {
+            'fields': ('username', 'email', 'first_name', 'last_name')
+        }),
+        ('계정 정보', {
+            'fields': ('date_joined', 'last_login', 'is_active')
+        }),
+        ('밋업 참가 내역', {
+            'fields': ('meetup_orders_detail',),
+        }),
+    )
+    
+    def get_queryset(self, request):
+        """밋업 참가 내역이 있는 사용자만 조회"""
+        # 확정된 밋업 주문이 있는 사용자들만 조회 (인덱스 최적화된 쿼리)
+        user_ids_with_meetups = MeetupOrder.objects.filter(
+            status__in=['confirmed', 'completed']
+        ).values_list('user_id', flat=True).distinct()
+        
+        # prefetch_related를 사용하여 밋업 주문 정보를 미리 로드
+        return super().get_queryset(request).filter(
+            id__in=user_ids_with_meetups
+        ).select_related('lightning_profile').prefetch_related(
+            models.Prefetch(
+                'meetup_orders',
+                queryset=MeetupOrder.objects.filter(
+                    status__in=['confirmed', 'completed']
+                ).select_related('meetup', 'meetup__store').order_by('-created_at')
+            )
+        )
+    
+    def meetup_count(self, obj):
+        """밋업 참가 횟수"""
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            count = len(obj._prefetched_objects_cache['meetup_orders'])
+        else:
+            count = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).count()
+        return format_html(
+            '<span style="color: #007cba; font-weight: bold;">{} 회</span>',
+            count
+        )
+    meetup_count.short_description = '참가 횟수'
+    
+    def latest_meetup(self, obj):
+        """최근 참가한 밋업"""
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+            latest_order = orders[0] if orders else None
+        else:
+            latest_order = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).select_related('meetup', 'meetup__store').order_by('-created_at').first()
+        
+        if latest_order:
+            return format_html(
+                '<div style="max-width: 200px;">'
+                '<div style="font-weight: bold; color: #495057;">{}</div>'
+                '<div style="font-size: 12px; color: #6c757d;">{}</div>'
+                '<div style="font-size: 11px; color: #868e96;">{}</div>'
+                '</div>',
+                latest_order.meetup.name[:30] + ('...' if len(latest_order.meetup.name) > 30 else ''),
+                latest_order.meetup.store.store_name,
+                latest_order.created_at.strftime('%Y.%m.%d')
+            )
+        return '-'
+    latest_meetup.short_description = '최근 참가 밋업'
+    
+    def total_meetup_spent(self, obj):
+        """총 밋업 참가비 지출"""
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+            total = sum(order.total_price for order in orders)
+        else:
+            total = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).aggregate(total=Sum('total_price'))['total'] or 0
+        
+        if total > 0:
+            return format_html(
+                '<span style="color: #28a745; font-weight: bold;">{} sats</span>',
+                f"{total:,}"
+            )
+        return format_html('<span style="color: #6c757d;">무료 참가</span>')
+    total_meetup_spent.short_description = '총 지출'
+    
+    def meetup_orders_detail(self, obj):
+        """밋업 주문 상세 내역"""
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
+            orders = obj._prefetched_objects_cache['meetup_orders']
+        else:
+            orders = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).select_related('meetup', 'meetup__store').order_by('-created_at')
+        
+        if not orders:
+            return '참가 내역이 없습니다.'
+        
+        html_parts = [
+            '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">',
+            '<thead>',
+            '<tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">',
+            '<th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">밋업명</th>',
+            '<th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">스토어</th>',
+            '<th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">참가자명</th>',
+            '<th style="padding: 8px; text-align: center; border: 1px solid #dee2e6;">상태</th>',
+            '<th style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">참가비</th>',
+            '<th style="padding: 8px; text-align: center; border: 1px solid #dee2e6;">참가일시</th>',
+            '</tr>',
+            '</thead>',
+            '<tbody>'
+        ]
+        
+        for order in orders:
+            status_color = '#28a745' if order.status == 'completed' else '#007cba'
+            price_display = f'{order.total_price:,} sats' if order.total_price > 0 else '무료'
+            
+            html_parts.append(
+                f'<tr style="border-bottom: 1px solid #dee2e6;">'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; font-weight: bold; color: #495057;">{order.meetup.name}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; color: #6c757d;">{order.meetup.store.store_name}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; color: #6c757d;">{order.participant_name}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">'
+                f'<span style="color: {status_color}; font-weight: bold;">● {order.get_status_display()}</span></td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; color: #28a745;">{price_display}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{order.created_at.strftime("%Y.%m.%d %H:%M")}</td>'
+                f'</tr>'
+            )
+        
+        html_parts.extend(['</tbody>', '</table>'])
+        
+        return format_html(''.join(html_parts))
+    meetup_orders_detail.short_description = '참가 내역 상세'
+    
+    def has_add_permission(self, request):
+        """추가 권한 없음 (기존 사용자만 조회)"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """수정 권한 제한 (읽기 전용)"""
+        return True
+    
+    def has_delete_permission(self, request, obj=None):
+        """삭제 권한 없음"""
         return False
 
 

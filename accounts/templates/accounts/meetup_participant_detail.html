@@ -1,0 +1,375 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ participant.username }} 밋업 참가 내역 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+.participant-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.detail-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.detail-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.dark .detail-card {
+    background: #1f2937;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark .detail-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.meetup-order-card {
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #8b5cf6;
+    transition: all 0.2s ease;
+}
+
+.meetup-order-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark .meetup-order-card {
+    background: #1f2937;
+    border-left-color: #a78bfa;
+}
+
+.dark .meetup-order-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-confirmed {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.status-completed {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.dark .status-confirmed {
+    background-color: #1e3a8a;
+    color: #93c5fd;
+}
+
+.dark .status-completed {
+    background-color: #166534;
+    color: #86efac;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- 헤더 -->
+  <div class="participant-header text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-6">
+          <div class="flex-shrink-0">
+            <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+              <i class="fas fa-user text-2xl text-white"></i>
+            </div>
+          </div>
+          <div>
+            <h1 class="text-3xl font-bold mb-2">
+              {{ participant.username }}의 밋업 참가 내역
+              {% if participant.lightning_profile %}
+              <span class="ml-3 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-100">
+                <i class="fas fa-bolt mr-1"></i>Lightning 사용자
+              </span>
+              {% endif %}
+            </h1>
+            <p class="text-blue-100">
+              {% if participant.email %}{{ participant.email }}{% else %}이메일 정보 없음{% endif %}
+              {% if participant.first_name or participant.last_name %}
+              • {{ participant.first_name }} {{ participant.last_name }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'accounts:meetup_participants_admin' %}" 
+             class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            참가자 목록으로
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="detail-card p-6 text-center">
+        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+          {{ total_meetups }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">총 참가 밋업</div>
+      </div>
+      <div class="detail-card p-6 text-center">
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+          {{ total_spent|intcomma }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">총 지출 (sats)</div>
+      </div>
+      <div class="detail-card p-6 text-center">
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+          {{ unique_stores|length }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">참가한 스토어</div>
+      </div>
+      <div class="detail-card p-6 text-center">
+        <div class="text-3xl font-bold text-orange-600 dark:text-orange-400 mb-2">
+          {{ participant.date_joined|date:"Y.m" }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">가입 시기</div>
+      </div>
+    </div>
+
+    <!-- 참가한 스토어 목록 -->
+    {% if unique_stores %}
+    <div class="detail-card p-6 mb-8">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-store mr-2 text-blue-500"></i>
+        참가한 스토어 ({{ unique_stores|length }}곳)
+      </h3>
+      <div class="flex flex-wrap gap-2">
+        {% for store in unique_stores %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+          {{ store }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- 사용자 정보 -->
+    <div class="detail-card p-6 mb-8">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-user mr-2 text-purple-500"></i>
+        사용자 정보
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">기본 정보</h4>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">사용자명:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant.username }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">이메일:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant.email|default:"없음" }}</span>
+            </div>
+            {% if participant.first_name or participant.last_name %}
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">이름:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant.first_name }} {{ participant.last_name }}</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">계정 정보</h4>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">가입일:</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ participant.date_joined|date:"Y년 m월 d일" }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">최근 로그인:</span>
+              <span class="font-medium text-gray-900 dark:text-white">
+                {% if participant.last_login %}
+                {{ participant.last_login|date:"Y.m.d H:i" }}
+                {% else %}
+                기록 없음
+                {% endif %}
+              </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-700 dark:text-gray-300">계정 상태:</span>
+              <span class="font-medium {{ participant.is_active|yesno:'text-green-600,text-red-600' }}">
+                {{ participant.is_active|yesno:"활성,비활성" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 밋업 참가 내역 -->
+    <div class="detail-card p-6">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          <i class="fas fa-calendar-alt mr-2 text-green-500"></i>
+          밋업 참가 내역 ({{ page_obj.paginator.count }}건)
+        </h3>
+      </div>
+
+      {% if meetup_orders %}
+      <div class="space-y-4">
+        {% for order in meetup_orders %}
+        <div class="meetup-order-card p-6 shadow-sm">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {{ order.meetup.name }}
+                </h4>
+                <span class="status-badge status-{{ order.status }}">
+                  {{ order.get_status_display }}
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">스토어</div>
+                  <div class="font-medium text-gray-900 dark:text-white">{{ order.meetup.store.store_name }}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">참가자명</div>
+                  <div class="font-medium text-gray-900 dark:text-white">{{ order.participant_name }}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">참가비</div>
+                  <div class="font-medium text-gray-900 dark:text-white">
+                    {% if order.total_price > 0 %}
+                    {{ order.total_price|intcomma }} sats
+                    {% else %}
+                    <span class="text-green-600 dark:text-green-400">무료</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">신청일시</div>
+                  <div class="font-medium text-gray-900 dark:text-white">{{ order.created_at|date:"Y.m.d H:i" }}</div>
+                </div>
+              </div>
+              
+              {% if order.participant_email %}
+              <div class="mb-3">
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">이메일</div>
+                <div class="text-gray-700 dark:text-gray-300">{{ order.participant_email }}</div>
+              </div>
+              {% endif %}
+              
+              {% if order.participant_phone %}
+              <div class="mb-3">
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-1">연락처</div>
+                <div class="text-gray-700 dark:text-gray-300">{{ order.participant_phone }}</div>
+              </div>
+              {% endif %}
+              
+              {% if order.selected_options.exists %}
+              <div class="mb-3">
+                <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">선택 옵션</div>
+                <div class="flex flex-wrap gap-2">
+                  {% for selected_option in order.selected_options.all %}
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                    {{ selected_option.option.name }}: {{ selected_option.choice.name }}
+                  </span>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endif %}
+              
+              <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                <div>주문번호: {{ order.order_number }}</div>
+                {% if order.paid_at %}
+                <div>결제일시: {{ order.paid_at|date:"Y.m.d H:i" }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- 페이지네이션 -->
+      {% if page_obj.has_other_pages %}
+      <div class="mt-8 flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ page_obj.paginator.count }}건 표시 중
+        </div>
+        <div class="flex space-x-2">
+          {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" 
+             class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            이전
+          </a>
+          {% endif %}
+          
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="px-3 py-2 border border-purple-500 bg-purple-500 text-white rounded-md text-sm">
+              {{ num }}
+            </span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              {{ num }}
+            </a>
+            {% endif %}
+          {% endfor %}
+          
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" 
+             class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            다음
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+      {% else %}
+      <!-- 참가 내역이 없을 때 -->
+      <div class="text-center py-12">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+          <i class="fas fa-calendar-times text-3xl text-gray-400"></i>
+        </div>
+        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+          아직 밋업 참가 내역이 없습니다
+        </h4>
+        <p class="text-gray-600 dark:text-gray-400">
+          이 사용자의 밋업 참가 기록이 생기면 여기에 표시됩니다.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 필요시 추가 JavaScript 기능
+document.addEventListener('DOMContentLoaded', function() {
+    // 카드 애니메이션 등 추가 기능
+    console.log('밋업 참가자 상세 페이지 로드됨');
+});
+</script>
+{% endblock %} 
