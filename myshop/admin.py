@@ -3,7 +3,7 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.urls import path, reverse
 from django.utils.html import format_html
-from .models import SiteSettings, ExchangeRate, DocumentContent
+from .models import SiteSettings, ExchangeRate, DocumentContent, CacheManager
 from .services import UpbitExchangeService
 
 # Register your models here.
@@ -157,6 +157,76 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['site_settings'] = SiteSettings.get_settings()
         return super().add_view(request, form_url, extra_context)
+
+
+@admin.register(CacheManager)
+class CacheManagerAdmin(admin.ModelAdmin):
+    """캐시 관리 어드민"""
+    
+    def has_add_permission(self, request):
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        return False
+    
+    def get_urls(self):
+        """커스텀 URL 추가"""
+        urls = super().get_urls()
+        custom_urls = [
+            path('clear-site-settings/', self.admin_site.admin_view(self.clear_site_settings_cache), name='clear_site_settings_cache'),
+            path('clear-all-cache/', self.admin_site.admin_view(self.clear_all_cache), name='clear_all_cache'),
+        ]
+        return custom_urls + urls
+    
+    def clear_site_settings_cache(self, request):
+        """사이트 설정 캐시 클리어"""
+        try:
+            from django.core.cache import cache
+            cache.delete('site_settings_singleton')
+            
+            messages.success(
+                request, 
+                "✅ 사이트 설정 캐시가 성공적으로 클리어되었습니다."
+            )
+        except Exception as e:
+            messages.error(request, f"캐시 클리어 중 오류가 발생했습니다: {str(e)}")
+        
+        return HttpResponseRedirect(reverse('admin:myshop_cachemanager_changelist'))
+    
+    def clear_all_cache(self, request):
+        """전체 캐시 클리어"""
+        try:
+            from django.core.cache import cache
+            cache.clear()
+            
+            messages.success(
+                request, 
+                "✅ 전체 캐시가 성공적으로 클리어되었습니다."
+            )
+        except Exception as e:
+            messages.error(request, f"캐시 클리어 중 오류가 발생했습니다: {str(e)}")
+        
+        return HttpResponseRedirect(reverse('admin:myshop_cachemanager_changelist'))
+    
+    def changelist_view(self, request, extra_context=None):
+        """캐시 관리 페이지"""
+        extra_context = extra_context or {}
+        extra_context['clear_site_settings_url'] = reverse('admin:clear_site_settings_cache')
+        extra_context['clear_all_cache_url'] = reverse('admin:clear_all_cache')
+        
+        # 캐시 상태 정보 추가
+        from django.core.cache import cache
+        try:
+            # 사이트 설정 캐시 상태 확인
+            site_settings_cached = cache.get('site_settings_singleton') is not None
+            extra_context['site_settings_cached'] = site_settings_cached
+        except:
+            extra_context['site_settings_cached'] = False
+            
+        return super().changelist_view(request, extra_context)
 
 
 @admin.register(ExchangeRate)

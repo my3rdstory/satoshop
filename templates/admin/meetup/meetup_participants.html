@@ -156,7 +156,6 @@
 {% endblock %}
 
 {% block content %}
-<h1>{{ title }}</h1>
 
 <!-- 밋업 정보 -->
 <div class="meetup-info">
@@ -178,7 +177,14 @@
 
 <!-- 통계 요약 -->
 <div class="participants-stats">
-    <h3 style="margin-top: 0;">참가 통계</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;">참가 통계</h3>
+        {% if participants %}
+            <a href="{% url 'admin:export_meetup_participants_csv' meetup.id %}" class="button" style="background: #28a745; border-color: #28a745; color: white; font-size: 12px; padding: 6px 12px;">
+                <i class="fas fa-download"></i> CSV 다운로드
+            </a>
+        {% endif %}
+    </div>
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-value" style="color: #007bff;">{{ total_participants }}</div>
@@ -314,6 +320,9 @@
     <a href="{% url 'admin:meetup_meetup_changelist' %}" class="button default">밋업 목록으로 돌아가기</a>
     {% if participants %}
         <a href="{% url 'admin:meetup_meetup_change' meetup.id %}" class="button">밋업 수정</a>
+        <a href="{% url 'admin:export_meetup_participants_csv' meetup.id %}" class="button" style="background: #28a745; border-color: #28a745; color: white;">
+            <i class="fas fa-download"></i> CSV 다운로드
+        </a>
     {% endif %}
 </div>
 
