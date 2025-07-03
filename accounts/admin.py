@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.utils.html import format_html
+from django.urls import reverse
+from django.db import models
 from .models import LightningUser
 
 
@@ -34,12 +37,26 @@ class LightningUserAdmin(admin.ModelAdmin):
 # 기본 User 모델에 라이트닝 정보 추가
 class LightningUserInline(admin.StackedInline):
     model = LightningUser
-    can_delete = False
-    verbose_name_plural = '라이트닝 프로필'
-    readonly_fields = ['public_key', 'created_at', 'last_login_at']
+    extra = 0
+    readonly_fields = ('public_key', 'last_login_at', 'created_at')
+    
+    fieldsets = (
+        ('라이트닝 정보', {
+            'fields': ('public_key', 'last_login_at', 'created_at'),
+        }),
+    )
     
     def has_add_permission(self, request, obj=None):
+        """수동으로 라이트닝 프로필 추가는 불가능"""
         return False
+    
+    def has_change_permission(self, request, obj=None):
+        """라이트닝 프로필 변경은 불가능"""
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """삭제는 가능 (계정 연동 해제용)"""
+        return True
 
 
 # User 어드민 확장
@@ -51,7 +68,7 @@ class CustomUserAdmin(UserAdmin):
     list_per_page = 10  # 페이지당 10개씩 표시
     
     # 기존 list_display에 라이트닝 연동 상태 추가
-    list_display = UserAdmin.list_display + ('lightning_status',)
+    list_display = UserAdmin.list_display + ('lightning_status', 'meetup_participation_count')
     
     def lightning_status(self, obj):
         """라이트닝 연동 상태 표시"""
@@ -67,6 +84,25 @@ class CustomUserAdmin(UserAdmin):
     lightning_status.short_description = '라이트닝 연동'
     lightning_status.admin_order_field = 'lightning_profile'
     
+    def meetup_participation_count(self, obj):
+        """밋업 참가 횟수 표시"""
+        from meetup.models import MeetupOrder
+        count = MeetupOrder.objects.filter(
+            user=obj,
+            status__in=['confirmed', 'completed']
+        ).count()
+        if count > 0:
+            return format_html(
+                '<span style="color: #28a745; font-weight: bold;">📅 {}회</span>',
+                count
+            )
+        return format_html('<span style="color: #6c757d;">참가 내역 없음</span>')
+    
+    meetup_participation_count.short_description = '밋업 참가'
+    
     def get_queryset(self, request):
         """쿼리 최적화 - 라이트닝 프로필 정보를 미리 로드"""
         return super().get_queryset(request).select_related('lightning_profile')
+
+
+

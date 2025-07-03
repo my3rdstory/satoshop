@@ -356,10 +356,29 @@ class MeetupOrder(models.Model):
         verbose_name_plural = "밋업 주문"
         ordering = ['-created_at']
         indexes = [
+            # 기존 인덱스들
             models.Index(fields=['meetup', 'status']),
             models.Index(fields=['user', 'status']),
             models.Index(fields=['order_number']),
             models.Index(fields=['payment_hash']),
+            
+            # 밋업 참가자 목록 조회 최적화를 위한 추가 인덱스들
+            models.Index(fields=['status', 'user']),           # 상태별 사용자 조회용
+            models.Index(fields=['user', 'created_at']),       # 사용자별 참가 내역 시간순 조회용
+            models.Index(fields=['status', 'created_at']),     # 상태별 시간순 조회용
+            models.Index(fields=['user', 'status', 'created_at']), # 복합 쿼리 최적화
+            
+            # 관리자 페이지 성능 최적화
+            models.Index(fields=['is_temporary_reserved']),    # 임시예약 필터링용
+            models.Index(fields=['attended']),                # 참석 여부 필터링용
+            models.Index(fields=['reservation_expires_at']),  # 예약 만료 조회용
+            models.Index(fields=['paid_at']),                 # 결제일시 필터링용
+            models.Index(fields=['confirmed_at']),            # 확정일시 필터링용
+            models.Index(fields=['attended_at']),             # 참석체크일시 필터링용
+            
+            # 집계 쿼리 최적화
+            models.Index(fields=['user', 'total_price']),     # 사용자별 총 지출 집계용
+            models.Index(fields=['meetup', 'user']),          # 밋업별 참가자 조회용
         ]
     
     def __str__(self):

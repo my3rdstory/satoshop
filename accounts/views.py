@@ -831,3 +831,127 @@ def delete_account(request):
             'success': False,
             'error': f'오류가 발생했습니다: {str(e)}'
         }, status=500)
+
+
+@login_required
+def meetup_participants_admin(request):
+    """밋업 참가자 관리 어드민 페이지 (스태프만 접근 가능)"""
+    from meetup.models import MeetupOrder
+    from django.core.paginator import Paginator
+    from django.contrib.auth.models import User
+    from django.db.models import Count, Sum, Q
+    
+    # 스태프 권한 확인
+    if not request.user.is_staff:
+        messages.error(request, '관리자 권한이 필요합니다.')
+        return redirect('accounts:mypage')
+    
+    # 검색 및 필터 처리
+    search_query = request.GET.get('search', '').strip()
+    store_filter = request.GET.get('store', '').strip()
+    
+    # 밋업 참가 내역이 있는 사용자들 조회
+    user_ids_with_meetups = MeetupOrder.objects.filter(
+        status__in=['confirmed', 'completed']
+    ).values_list('user_id', flat=True).distinct()
+    
+    users_queryset = User.objects.filter(
+        id__in=user_ids_with_meetups
+    ).annotate(
+        meetup_count=Count('meetuporder', filter=Q(meetuporder__status__in=['confirmed', 'completed'])),
+        total_spent=Sum('meetuporder__total_price', filter=Q(meetuporder__status__in=['confirmed', 'completed']))
+    ).select_related('lightning_profile').order_by('-meetup_count', '-date_joined')
+    
+    # 검색 필터 적용
+    if search_query:
+        users_queryset = users_queryset.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
+    
+    # 스토어 필터 적용
+    if store_filter:
+        users_with_store_meetups = MeetupOrder.objects.filter(
+            status__in=['confirmed', 'completed'],
+            meetup__store__store_id=store_filter
+        ).values_list('user_id', flat=True).distinct()
+        users_queryset = users_queryset.filter(id__in=users_with_store_meetups)
+    
+    # 페이지네이션
+    paginator = Paginator(users_queryset, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # 스토어 목록 (필터용)
+    from stores.models import Store
+    stores_with_meetups = Store.objects.filter(
+        meetups__meetuporder__status__in=['confirmed', 'completed']
+    ).distinct().order_by('store_name')
+    
+    # 통계 정보
+    total_participants = User.objects.filter(id__in=user_ids_with_meetups).count()
+    total_meetup_orders = MeetupOrder.objects.filter(status__in=['confirmed', 'completed']).count()
+    total_revenue = MeetupOrder.objects.filter(
+        status__in=['confirmed', 'completed']
+    ).aggregate(total=Sum('total_price'))['total'] or 0
+    
+    context = {
+        'page_obj': page_obj,
+        'users': page_obj.object_list,
+        'search_query': search_query,
+        'store_filter': store_filter,
+        'stores_with_meetups': stores_with_meetups,
+        'total_participants': total_participants,
+        'total_meetup_orders': total_meetup_orders,
+        'total_revenue': total_revenue,
+    }
+    return render(request, 'accounts/meetup_participants_admin.html', context)
+
+
+@login_required
+def meetup_participant_detail(request, user_id):
+    """특정 사용자의 밋업 참가 상세 내역 (스태프만 접근 가능)"""
+    from meetup.models import MeetupOrder
+    from django.core.paginator import Paginator
+    from django.contrib.auth.models import User
+    from django.db.models import Sum
+    
+    # 스태프 권한 확인
+    if not request.user.is_staff:
+        messages.error(request, '관리자 권한이 필요합니다.')
+        return redirect('accounts:mypage')
+    
+    # 사용자 정보 조회
+    participant = get_object_or_404(User, id=user_id)
+    
+    # 사용자의 밋업 주문 내역 조회
+    meetup_orders = MeetupOrder.objects.filter(
+        user=participant,
+        status__in=['confirmed', 'completed']
+    ).select_related(
+        'meetup', 'meetup__store'
+    ).prefetch_related(
+        'selected_options__option', 'selected_options__choice'
+    ).order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(meetup_orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # 통계 정보
+    total_meetups = meetup_orders.count()
+    total_spent = meetup_orders.aggregate(total=Sum('total_price'))['total'] or 0
+    unique_stores = meetup_orders.values_list('meetup__store__store_name', flat=True).distinct()
+    
+    context = {
+        'participant': participant,
+        'page_obj': page_obj,
+        'meetup_orders': page_obj.object_list,
+        'total_meetups': total_meetups,
+        'total_spent': total_spent,
+        'unique_stores': list(unique_stores),
+    }
+    return render(request, 'accounts/meetup_participant_detail.html', context)
