@@ -484,6 +484,10 @@ class SiteSettings(models.Model):
             self.footer_copyright = get_current_year_copyright()
         
         super().save(*args, **kwargs)
+        
+        # 설정이 변경되면 캐시 무효화
+        from django.core.cache import cache
+        cache.delete('site_settings_singleton')
     
     def __str__(self):
         return f"사이트 설정 ({self.updated_at.strftime('%Y-%m-%d %H:%M')})"
@@ -491,7 +495,19 @@ class SiteSettings(models.Model):
     @classmethod
     def get_settings(cls):
         """현재 사이트 설정 가져오기"""
-        settings, created = cls.objects.get_or_create(pk=1)
+        from django.core.cache import cache
+        
+        # 캐시 키 정의
+        cache_key = 'site_settings_singleton'
+        
+        # 캐시에서 먼저 확인
+        settings = cache.get(cache_key)
+        if settings is None:
+            # 캐시에 없으면 DB에서 가져와서 캐시에 저장
+            settings, created = cls.objects.get_or_create(pk=1)
+            # 1시간 캐시 (3600초)
+            cache.set(cache_key, settings, 3600)
+        
         return settings
     
     def get_youtube_embed_url(self):
@@ -638,3 +654,12 @@ class DocumentContent(models.Model):
         )
         
         return html
+
+
+class CacheManager(models.Model):
+    """캐시 관리를 위한 프록시 모델"""
+    
+    class Meta:
+        managed = False  # 실제 테이블을 생성하지 않음
+        verbose_name = "캐시 관리"
+        verbose_name_plural = "캐시 관리"

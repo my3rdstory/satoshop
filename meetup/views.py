@@ -516,6 +516,84 @@ def meetup_status_detail(request, store_id, meetup_id):
     return render(request, 'meetup/meetup_status_detail.html', context)
 
 @login_required
+def export_meetup_participants_csv(request, store_id, meetup_id):
+    """프론트엔드용 밋업 참가자 정보 CSV 내보내기"""
+    import csv
+    from django.http import HttpResponse
+    from django.utils import timezone
+    
+    # 스토어 소유자 권한 확인
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+    
+    # 참가자 목록 (확정된 주문만)
+    participants = MeetupOrder.objects.filter(
+        meetup=meetup,
+        status__in=['confirmed', 'completed']
+    ).select_related('user').prefetch_related('selected_options__option', 'selected_options__choice').order_by('-created_at')
+    
+    # CSV 응답 생성
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{meetup.name}_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+    response.write('\ufeff'.encode('utf8'))  # BOM for Excel
+    
+    writer = csv.writer(response)
+    
+    # 헤더 작성
+    headers = [
+        '밋업명', '스토어명', '참가자명', '이메일', '연락처', '주문번호',
+        '상태', '기본참가비', '옵션금액', '총참가비', '원가격', '할인율', '조기등록여부',
+        '결제해시', '결제일시', '참가신청일시', '참석여부', '참석체크일시',
+        '선택옵션'
+    ]
+    writer.writerow(headers)
+    
+    # 데이터 작성
+    for participant in participants:
+        # 선택 옵션 정보 수집
+        selected_options = []
+        for selected_option in participant.selected_options.all():
+            option_text = f"{selected_option.option.name}: {selected_option.choice.name}"
+            if selected_option.additional_price > 0:
+                option_text += f" (+{selected_option.additional_price:,} sats)"
+            selected_options.append(option_text)
+        
+        options_text = " | ".join(selected_options) if selected_options else "없음"
+        
+        # 상태 텍스트 변환
+        status_text = {
+            'confirmed': '참가확정',
+            'completed': '밋업완료',
+            'pending': '결제대기',
+            'cancelled': '참가취소'
+        }.get(participant.status, participant.status)
+        
+        row = [
+            meetup.name,
+            meetup.store.store_name,
+            participant.participant_name,
+            participant.participant_email,
+            participant.participant_phone or '',
+            participant.order_number,
+            status_text,
+            f"{participant.base_price:,}",
+            f"{participant.options_price:,}",
+            f"{participant.total_price:,}",
+            f"{participant.original_price:,}" if participant.original_price else '',
+            f"{participant.discount_rate}%" if participant.discount_rate else '',
+            "예" if participant.is_early_bird else "아니오",
+            participant.payment_hash or '',
+            participant.paid_at.strftime('%Y-%m-%d %H:%M:%S') if participant.paid_at else '',
+            participant.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "참석" if participant.attended else "미참석",
+            participant.attended_at.strftime('%Y-%m-%d %H:%M:%S') if participant.attended_at else '',
+            options_text
+        ]
+        writer.writerow(row)
+    
+    return response
+
+@login_required
 @require_POST
 @csrf_exempt
 def update_attendance(request, store_id, meetup_id):

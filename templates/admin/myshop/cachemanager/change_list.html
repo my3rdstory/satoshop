@@ -1,0 +1,183 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block content_title %}
+    <h1>캐시 관리</h1>
+{% endblock %}
+
+{% block object-tools %}
+    <ul class="object-tools">
+        <li>
+            <a href="{{ clear_site_settings_url }}" class="addlink" style="background: #17a2b8; border-color: #17a2b8;" 
+               onclick="return confirm('사이트 설정 캐시를 클리어하시겠습니까?');">
+                <i class="fas fa-broom"></i> 사이트 설정 캐시 클리어
+            </a>
+        </li>
+        <li>
+            <a href="{{ clear_all_cache_url }}" class="addlink" style="background: #dc3545; border-color: #dc3545;" 
+               onclick="return confirm('⚠️ 전체 캐시를 클리어하시겠습니까? 이 작업은 사이트 성능에 일시적인 영향을 줄 수 있습니다.');">
+                <i class="fas fa-trash-alt"></i> 전체 캐시 클리어
+            </a>
+        </li>
+    </ul>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .addlink i {
+            margin-right: 5px;
+        }
+        .cache-status {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .cache-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .cache-item:last-child {
+            border-bottom: none;
+        }
+        .cache-name {
+            font-weight: bold;
+            color: #495057;
+        }
+        .cache-status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .cache-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        .cache-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .cache-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #0c5460;
+        }
+        .cache-info i {
+            color: #17a2b8;
+            margin-right: 8px;
+        }
+        .cache-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 14px;
+            color: #856404;
+        }
+        .cache-warning i {
+            color: #ffc107;
+            margin-right: 8px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- 캐시 관리 버튼들 -->
+    <div style="margin-bottom: 20px; padding: 20px; background: #ffffff; border: 2px solid #007cba; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #007cba; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-tools"></i> 캐시 관리 도구
+        </h3>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <a href="{{ clear_site_settings_url }}" 
+               style="background: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: bold; transition: all 0.3s; border: none; cursor: pointer;"
+               onclick="return confirm('사이트 설정 캐시를 클리어하시겠습니까?');"
+               onmouseover="this.style.background='#138496'"
+               onmouseout="this.style.background='#17a2b8'">
+                <i class="fas fa-broom"></i> 사이트 설정 캐시 클리어
+            </a>
+            <a href="{{ clear_all_cache_url }}" 
+               style="background: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-weight: bold; transition: all 0.3s; border: none; cursor: pointer;"
+               onclick="return confirm('⚠️ 전체 캐시를 클리어하시겠습니까? 이 작업은 사이트 성능에 일시적인 영향을 줄 수 있습니다.');"
+               onmouseover="this.style.background='#c82333'"
+               onmouseout="this.style.background='#dc3545'">
+                <i class="fas fa-trash-alt"></i> 전체 캐시 클리어
+            </a>
+        </div>
+    </div>
+
+    <div class="cache-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>캐시 시스템 정보:</strong> 사이트 성능 향상을 위해 다양한 데이터가 캐시됩니다. 
+        설정 변경 후 즉시 반영이 필요한 경우 해당 캐시를 클리어하세요.
+    </div>
+
+    <div class="cache-warning">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>주의사항:</strong> 전체 캐시 클리어는 사이트 성능에 일시적인 영향을 줄 수 있습니다. 
+        가능한 한 특정 캐시만 클리어하는 것을 권장합니다.
+    </div>
+
+    <div class="cache-status">
+        <h3 style="margin-top: 0; color: #495057;">
+            <i class="fas fa-chart-line"></i> 캐시 상태
+        </h3>
+        
+        <div class="cache-item">
+            <div class="cache-name">
+                <i class="fas fa-cog"></i> 사이트 설정 캐시
+            </div>
+            <div>
+                {% if site_settings_cached %}
+                    <span class="cache-status-badge cache-active">활성</span>
+                {% else %}
+                    <span class="cache-status-badge cache-inactive">비활성</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="cache-item">
+            <div class="cache-name">
+                <i class="fas fa-database"></i> 캐시 백엔드
+            </div>
+            <div>
+                <span class="cache-status-badge cache-active">locmem</span>
+            </div>
+        </div>
+        
+        <div class="cache-item">
+            <div class="cache-name">
+                <i class="fas fa-clock"></i> 사이트 설정 캐시 시간
+            </div>
+            <div>
+                <span class="cache-status-badge cache-active">1시간</span>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+        <h4 style="color: #495057; margin-top: 0;">
+            <i class="fas fa-lightbulb"></i> 캐시 관리 가이드
+        </h4>
+        <ul style="margin-bottom: 0; color: #6c757d;">
+            <li><strong>사이트 설정 캐시:</strong> 사이트 설정 변경 후 즉시 반영이 필요할 때 사용</li>
+            <li><strong>전체 캐시:</strong> 시스템 전체 문제 해결이나 대규모 업데이트 후 사용</li>
+            <li><strong>자동 무효화:</strong> 설정 변경 시 관련 캐시는 자동으로 무효화됩니다</li>
+        </ul>
+    </div>
+
+    <div style="display: none;">
+        {{ block.super }}
+    </div>
+{% endblock %} 
