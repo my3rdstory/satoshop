@@ -1015,6 +1015,7 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         """모든 상태의 주문을 조회 (참가자 목록 - pending, confirmed, cancelled, completed 모두 포함)"""
+        # 모든 상태의 주문을 포함하도록 필터링 제거
         return super().get_queryset(request).select_related(
             'meetup', 'meetup__store', 'user'
         )
@@ -1273,39 +1274,32 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     )
     
     def get_queryset(self, request):
-        """밋업 참가 내역이 있는 사용자만 조회"""
-        # 확정된 밋업 주문이 있는 사용자들만 조회 (인덱스 최적화된 쿼리)
-        user_ids_with_meetups = MeetupOrder.objects.filter(
-            status__in=['confirmed', 'completed']
-        ).values_list('user_id', flat=True).distinct()
+        """밋업 신청 내역이 있는 사용자만 조회 (모든 상태 포함)"""
+        # 모든 상태의 밋업 주문이 있는 사용자들 조회 (인덱스 최적화된 쿼리)
+        user_ids_with_meetups = MeetupOrder.objects.values_list('user_id', flat=True).distinct()
         
-        # prefetch_related를 사용하여 밋업 주문 정보를 미리 로드
+        # prefetch_related를 사용하여 밋업 주문 정보를 미리 로드 (모든 상태 포함)
         return super().get_queryset(request).filter(
             id__in=user_ids_with_meetups
         ).select_related('lightning_profile').prefetch_related(
             models.Prefetch(
                 'meetup_orders',
-                queryset=MeetupOrder.objects.filter(
-                    status__in=['confirmed', 'completed']
-                ).select_related('meetup', 'meetup__store').order_by('-created_at')
+                queryset=MeetupOrder.objects.select_related('meetup', 'meetup__store').order_by('-created_at')
             )
         )
     
     def meetup_count(self, obj):
-        """밋업 참가 횟수"""
+        """밋업 신청 횟수 (모든 상태 포함)"""
         # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
         if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
             count = len(obj._prefetched_objects_cache['meetup_orders'])
         else:
-            count = MeetupOrder.objects.filter(
-                user=obj,
-                status__in=['confirmed', 'completed']
-            ).count()
+            count = MeetupOrder.objects.filter(user=obj).count()
         return format_html(
             '<span style="color: #007cba; font-weight: bold;">{} 회</span>',
             count
         )
-    meetup_count.short_description = '참가 횟수'
+    meetup_count.short_description = '신청 횟수'
     
     def has_pending_orders(self, obj):
         """결제 대기 중인 주문이 있는지 여부"""
@@ -1339,37 +1333,54 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     has_attended_meetups.short_description = '실제 참석'
     
     def latest_meetup(self, obj):
-        """최근 참가한 밋업"""
+        """최근 신청한 밋업"""
         # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
         if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
             orders = obj._prefetched_objects_cache['meetup_orders']
             latest_order = orders[0] if orders else None
         else:
             latest_order = MeetupOrder.objects.filter(
-                user=obj,
-                status__in=['confirmed', 'completed']
+                user=obj
             ).select_related('meetup', 'meetup__store').order_by('-created_at').first()
         
         if latest_order:
+            # 상태에 따른 색상 설정
+            status_colors = {
+                'pending': '#f39c12',     # 주황색
+                'confirmed': '#27ae60',   # 초록색
+                'completed': '#3498db',   # 파란색
+                'cancelled': '#e74c3c',   # 빨간색
+            }
+            status_labels = {
+                'pending': '결제대기',
+                'confirmed': '참가확정',
+                'completed': '밋업완료',
+                'cancelled': '참가취소',
+            }
+            status_color = status_colors.get(latest_order.status, '#95a5a6')
+            status_label = status_labels.get(latest_order.status, latest_order.status)
+            
             return format_html(
                 '<div style="max-width: 200px;">'
                 '<div style="font-weight: bold; color: #495057;">{}</div>'
                 '<div style="font-size: 12px; color: #6c757d;">{}</div>'
-                '<div style="font-size: 11px; color: #868e96;">{}</div>'
+                '<div style="font-size: 11px; color: {};">● {} ({})</div>'
                 '</div>',
-                latest_order.meetup.name[:30] + ('...' if len(latest_order.meetup.name) > 30 else ''),
+                latest_order.meetup.name[:25] + ('...' if len(latest_order.meetup.name) > 25 else ''),
                 latest_order.meetup.store.store_name,
+                status_color,
+                status_label,
                 latest_order.created_at.strftime('%Y.%m.%d')
             )
         return '-'
-    latest_meetup.short_description = '최근 참가 밋업'
+    latest_meetup.short_description = '최근 신청 밋업'
     
     def total_meetup_spent(self, obj):
-        """총 밋업 참가비 지출"""
-        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
+        """총 밋업 참가비 지출 (확정/완료된 주문만)"""
+        # prefetch된 데이터 활용하여 추가 DB 쿼리 방지 - 확정/완료된 주문만 합산
         if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
             orders = obj._prefetched_objects_cache['meetup_orders']
-            total = sum(order.total_price for order in orders)
+            total = sum(order.total_price for order in orders if order.status in ['confirmed', 'completed'])
         else:
             total = MeetupOrder.objects.filter(
                 user=obj,
@@ -1381,22 +1392,21 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 '<span style="color: #28a745; font-weight: bold;">{} sats</span>',
                 f"{total:,}"
             )
-        return format_html('<span style="color: #6c757d;">무료 참가</span>')
+        return format_html('<span style="color: #6c757d;">0 sats</span>')
     total_meetup_spent.short_description = '총 지출'
     
     def meetup_orders_detail(self, obj):
-        """밋업 주문 상세 내역"""
+        """밋업 주문 상세 내역 (모든 상태 포함)"""
         # prefetch된 데이터 활용하여 추가 DB 쿼리 방지
         if hasattr(obj, '_prefetched_objects_cache') and 'meetup_orders' in obj._prefetched_objects_cache:
             orders = obj._prefetched_objects_cache['meetup_orders']
         else:
             orders = MeetupOrder.objects.filter(
-                user=obj,
-                status__in=['confirmed', 'completed']
+                user=obj
             ).select_related('meetup', 'meetup__store').order_by('-created_at')
         
         if not orders:
-            return '참가 내역이 없습니다.'
+            return '신청 내역이 없습니다.'
         
         html_parts = [
             '<table style="width: 100%; border-collapse: collapse; font-size: 12px;">',
@@ -1407,14 +1417,30 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
             '<th style="padding: 8px; text-align: left; border: 1px solid #dee2e6;">참가자명</th>',
             '<th style="padding: 8px; text-align: center; border: 1px solid #dee2e6;">상태</th>',
             '<th style="padding: 8px; text-align: right; border: 1px solid #dee2e6;">참가비</th>',
-            '<th style="padding: 8px; text-align: center; border: 1px solid #dee2e6;">참가일시</th>',
+            '<th style="padding: 8px; text-align: center; border: 1px solid #dee2e6;">신청일시</th>',
             '</tr>',
             '</thead>',
             '<tbody>'
         ]
         
+        # 상태별 색상 설정
+        status_colors = {
+            'pending': '#f39c12',     # 주황색
+            'confirmed': '#27ae60',   # 초록색
+            'completed': '#3498db',   # 파란색
+            'cancelled': '#e74c3c',   # 빨간색
+        }
+        
+        status_labels = {
+            'pending': '결제대기',
+            'confirmed': '참가확정',
+            'completed': '밋업완료',
+            'cancelled': '참가취소',
+        }
+        
         for order in orders:
-            status_color = '#28a745' if order.status == 'completed' else '#007cba'
+            status_color = status_colors.get(order.status, '#95a5a6')
+            status_label = status_labels.get(order.status, order.status)
             price_display = f'{order.total_price:,} sats' if order.total_price > 0 else '무료'
             
             html_parts.append(
@@ -1423,7 +1449,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; color: #6c757d;">{order.meetup.store.store_name}</td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; color: #6c757d;">{order.participant_name}</td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">'
-                f'<span style="color: {status_color}; font-weight: bold;">● {order.get_status_display()}</span></td>'
+                f'<span style="color: {status_color}; font-weight: bold;">● {status_label}</span></td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; color: #28a745;">{price_display}</td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{order.created_at.strftime("%Y.%m.%d %H:%M")}</td>'
                 f'</tr>'
@@ -1432,7 +1458,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         html_parts.extend(['</tbody>', '</table>'])
         
         return format_html(''.join(html_parts))
-    meetup_orders_detail.short_description = '참가 내역 상세'
+    meetup_orders_detail.short_description = '신청 내역 상세'
     
     def has_add_permission(self, request):
         """추가 권한 없음 (기존 사용자만 조회)"""
@@ -1490,10 +1516,9 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 status__in=['confirmed', 'completed']
             ).count()
             
-            # 각 참가자의 모든 밋업 주문 조회
+            # 각 참가자의 모든 밋업 주문 조회 (모든 상태 포함)
             orders = MeetupOrder.objects.filter(
-                user=participant,
-                status__in=['confirmed', 'completed']
+                user=participant
             ).select_related(
                 'meetup', 'meetup__store'
             ).prefetch_related(
@@ -1501,7 +1526,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
             ).order_by('-created_at')
             
             if not orders.exists():
-                # 참가 내역이 없는 경우에도 사용자 정보는 포함
+                # 신청 내역이 없는 경우에도 사용자 정보는 포함
                 row = [
                     participant.username,
                     participant.email,
@@ -1512,7 +1537,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                     pending_orders_count,
                     attended_count,
                     total_confirmed_count,
-                    '참가 내역 없음', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+                    '신청 내역 없음', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
                 ]
                 writer.writerow(row)
             else:
@@ -1574,18 +1599,17 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         # 메시지 표시
         total_participants = queryset.count()
         total_orders = MeetupOrder.objects.filter(
-            user__in=queryset,
-            status__in=['confirmed', 'completed']
+            user__in=queryset
         ).count()
         
         self.message_user(
             request, 
-            f'{total_participants}명의 참가자와 {total_orders}개의 참가 내역이 CSV로 다운로드되었습니다.',
+            f'{total_participants}명의 참가자와 {total_orders}개의 신청 내역이 CSV로 다운로드되었습니다.',
             level=messages.SUCCESS
         )
         return response
     
-    export_participants_csv.short_description = '선택된 참가자들의 밋업 참가 내역을 CSV로 다운로드'
+    export_participants_csv.short_description = '선택된 참가자들의 밋업 신청 내역을 CSV로 다운로드'
 
 
 
