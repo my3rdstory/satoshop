@@ -49,11 +49,7 @@
                   <i class="fas fa-flag-checkered mr-1"></i>
                   밋업 완료
                 </span>
-                {% elif order.status == 'pending' %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                  <i class="fas fa-clock mr-1"></i>
-                  결제 대기
-                </span>
+
                 {% elif order.status == 'cancelled' %}
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                   <i class="fas fa-times-circle mr-1"></i>

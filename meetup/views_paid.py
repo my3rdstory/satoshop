@@ -125,14 +125,14 @@ def meetup_checkout(request, store_id, meetup_id):
                             except (ValueError, MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
                                 continue
                 
-                # 주문 생성 (pending 상태로)
+                # 주문 생성 (바로 confirmed 상태로)
                 order = MeetupOrder.objects.create(
                     meetup=meetup,
                     user=request.user,
                     participant_name=participant_name,
                     participant_email=participant_email,
                     participant_phone=participant_phone,
-                    status='pending',
+                    status='confirmed',
                     is_temporary_reserved=False,
                     base_price=meetup.current_price,
                     options_price=options_price,
@@ -140,6 +140,7 @@ def meetup_checkout(request, store_id, meetup_id):
                     is_early_bird=meetup.is_discounted and meetup.is_early_bird_active,
                     discount_rate=meetup.public_discount_rate if meetup.is_early_bird_active else 0,
                     original_price=meetup.price if meetup.is_early_bird_active else None,
+                    confirmed_at=timezone.now(),
                 )
                 
                 # 선택된 옵션 저장
@@ -207,7 +208,7 @@ def meetup_checkout_payment(request, store_id, meetup_id, order_id):
         MeetupOrder,
         id=order_id,
         meetup=meetup,
-        status='pending'
+        status='confirmed'
     )
     
     # 주문 생성 후 30분 경과 시 만료
@@ -252,12 +253,12 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
             MeetupOrder,
             id=order_id,
             meetup=meetup,
-            status__in=['pending', 'cancelled']  # 취소된 주문도 포함
+            status__in=['confirmed', 'cancelled']  # 취소된 주문도 포함
         )
         
-        # 취소된 주문은 pending 상태로 복원
+        # 취소된 주문은 confirmed 상태로 복원
         if order.status == 'cancelled':
-            order.status = 'pending'
+            order.status = 'confirmed'
         
         # 블링크 서비스 가져오기
         blink_service = get_blink_service_for_store(store)
@@ -283,7 +284,7 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
         )
         
         if result['success']:
-            # 주문에 인보이스 정보 저장
+            # 주문에 인보이스 정보 저장 (이미 confirmed 상태)
             order.payment_hash = result['payment_hash']
             order.payment_request = result['invoice']
             order.save()
@@ -344,21 +345,17 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         
         if result['success']:
             if result['status'] == 'paid':
-                # 이미 확정된 주문인지 확인 (중복 처리 방지)
-                if order.status == 'confirmed':
+                # 이미 결제 완료된 주문인지 확인 (중복 처리 방지)
+                if order.paid_at:
                     return JsonResponse({
                         'success': True,
                         'paid': True,
                         'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
                     })
                 
-                # 결제 완료 처리 - 임시예약을 확정으로 변경
+                # 결제 완료 처리 - paid_at 시간만 업데이트
                 with transaction.atomic():
-                    order.status = 'confirmed'
-                    order.is_temporary_reserved = False  # 임시예약 해제
-                    order.reservation_expires_at = None  # 예약 만료시간 제거
                     order.paid_at = timezone.now()
-                    order.confirmed_at = timezone.now()
                     order.save()
                     
                 # 밋업 참가 확정 이메일 발송 (주인장에게 + 참가자에게) - 한 번만 발송

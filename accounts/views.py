@@ -181,9 +181,10 @@ def my_meetup_orders(request):
     from meetup.models import MeetupOrder
     from django.core.paginator import Paginator
     
-    # 사용자의 모든 밋업 주문 조회
+    # 사용자의 확정된 밋업 주문만 조회 (pending 상태는 제외)
     meetup_orders = MeetupOrder.objects.filter(
-        user=request.user
+        user=request.user,
+        status__in=['confirmed', 'completed']
     ).select_related(
         'meetup', 'meetup__store'
     ).prefetch_related(
