@@ -35,6 +35,8 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+
+
 </style>
 {% endblock %}
 
@@ -183,13 +185,15 @@
           <div class="flex items-center gap-3 mb-4">
             <i class="fas fa-map-marker-alt text-green-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장소</h3>
-            {% if meetup.location_full_address and not meetup.location_tbd %}
-            <button onclick="openNaverMap('{{ meetup.location_full_address }}')" 
-                    class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
-                    title="네이버지도에서 보기">
+            {% if meetup.location_address and not meetup.location_tbd %}
+            <a href="https://map.naver.com/v5/search/{{ meetup.location_address|urlencode }}" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-lg transition-colors shadow-sm hover:shadow-md"
+               title="네이버지도에서 보기">
               <i class="fas fa-map text-xs"></i>
               <span>지도보기</span>
-            </button>
+            </a>
             {% endif %}
           </div>
           {% if meetup.location_tbd %}
@@ -438,16 +442,6 @@
 <script src="{% static 'js/meetup-detail.js' %}"></script>
 
 <script>
-// 네이버지도로 주소 검색하여 새탭으로 이동
-function openNaverMap(address) {
-  if (!address) {
-    alert('주소 정보가 없습니다.');
-    return;
-  }
-  
-  // 네이버지도 검색 URL (새탭으로 열기)
-  const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(address)}`;
-  window.open(naverMapUrl, '_blank', 'noopener,noreferrer');
-}
+
 </script>
 {% endblock %} 

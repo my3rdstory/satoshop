@@ -966,7 +966,7 @@ class MeetupParticipantEntry(MeetupOrder):
 
 @admin.register(MeetupParticipantEntry)
 class MeetupParticipantEntryAdmin(admin.ModelAdmin):
-    """밋업별 참가자 관리 어드민 - 주문 데이터 기반으로 참가자 목록 관리"""
+    """밋업별 참가자 관리 어드민 - 모든 상태의 주문 데이터 기반으로 참가자 목록 관리 (pending, confirmed, cancelled, completed 모두 포함)"""
     list_display = [
         'participant_name', 'participant_email', 'meetup_name_display', 
         'store_display', 'order_status_display', 'attended', 'attendance_status_display',
@@ -1014,10 +1014,8 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
     actions = ['export_participant_entries_csv', 'mark_as_attended', 'mark_as_not_attended']
     
     def get_queryset(self, request):
-        """확정된 주문만 조회 (참가자 목록)"""
-        return super().get_queryset(request).filter(
-            status__in=['confirmed', 'completed']
-        ).select_related(
+        """모든 상태의 주문을 조회 (참가자 목록 - pending, confirmed, cancelled, completed 모두 포함)"""
+        return super().get_queryset(request).select_related(
             'meetup', 'meetup__store', 'user'
         )
     
@@ -1039,15 +1037,28 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
     def order_status_display(self, obj):
         """주문 상태 표시"""
         status_colors = {
-            'confirmed': '#27ae60',   # 초록색
-            'completed': '#3498db',   # 파란색
+            'pending': '#f39c12',     # 주황색 (결제 대기)
+            'confirmed': '#27ae60',   # 초록색 (참가 확정)
+            'completed': '#3498db',   # 파란색 (밋업 완료)
+            'cancelled': '#e74c3c',   # 빨간색 (참가 취소)
         }
         status_labels = {
+            'pending': '결제 대기',
             'confirmed': '참가 확정',
             'completed': '밋업 완료',
+            'cancelled': '참가 취소',
         }
         color = status_colors.get(obj.status, '#95a5a6')
         label = status_labels.get(obj.status, obj.status)
+        
+        # 취소된 경우 취소 사유도 표시
+        if obj.status == 'cancelled' and obj.auto_cancelled_reason:
+            return format_html(
+                '<span style="color: {}; font-weight: bold;">● {}</span><br>'
+                '<small style="color: #6c757d;">{}</small>',
+                color, label, obj.auto_cancelled_reason
+            )
+        
         return format_html(
             '<span style="color: {}; font-weight: bold;">● {}</span>',
             color, label
