@@ -16,6 +16,38 @@ from django.db import models
 
 logger = logging.getLogger(__name__)
 
+def check_admin_access(request, store):
+    """수퍼어드민 특별 접근 확인 및 메시지 표시"""
+    admin_access = request.GET.get('admin_access', '').lower() == 'true'
+    is_superuser = request.user.is_superuser
+    is_owner = store.owner == request.user
+    
+    # 스토어 소유자이거나 수퍼어드민이 admin_access 파라미터를 사용한 경우 접근 허용
+    if is_owner or (is_superuser and admin_access):
+        # 수퍼어드민이 다른 스토어에 접근하는 경우 알림 메시지 표시
+        if is_superuser and admin_access and not is_owner:
+            messages.info(request, f'관리자 권한으로 "{store.store_name}" 스토어에 접근 중입니다.')
+        return True
+    return False
+
+def get_store_with_admin_check(request, store_id, require_auth=True):
+    """스토어 조회 및 관리자 권한 확인"""
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    
+    if require_auth and request.user.is_authenticated:
+        if not check_admin_access(request, store):
+            is_superuser = request.user.is_superuser
+            if is_superuser:
+                # 수퍼어드민인 경우 admin_access 파라미터 사용법 안내
+                messages.error(request, 
+                    '스토어 소유자만 접근할 수 있습니다. '
+                    '관리자 권한으로 접근하려면 URL에 "?admin_access=true" 파라미터를 추가하세요.')
+            else:
+                messages.error(request, '스토어 소유자만 접근할 수 있습니다.')
+            return None
+    
+    return store
+
 def meetup_list(request, store_id):
     """밋업 목록 (공개/관리자 뷰)"""
     try:
@@ -23,8 +55,8 @@ def meetup_list(request, store_id):
     except Store.DoesNotExist:
         raise Http404("스토어를 찾을 수 없습니다.")
     
-    # 스토어 소유자인지 확인하여 관리자/공개 뷰 결정
-    is_public_view = request.user != store.owner
+    # 스토어 소유자인지 확인하여 관리자/공개 뷰 결정 (수퍼어드민 접근 포함)
+    is_public_view = not (request.user.is_authenticated and check_admin_access(request, store))
     
     # 밋업 목록 조회
     meetups_queryset = Meetup.objects.filter(
@@ -78,7 +110,9 @@ def public_meetup_list(request, store_id):
 @login_required
 def add_meetup(request, store_id):
     """밋업 추가"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
     
     if request.method == 'POST':
         form = MeetupForm(data=request.POST, files=request.FILES)
@@ -166,7 +200,8 @@ def meetup_detail(request, store_id, meetup_id):
     
     # 공개 뷰에서는 비활성화되거나 일시중단된 밋업만 접근 차단
     # 종료된 밋업이나 정원마감된 밋업은 상세 페이지 접근 허용
-    if request.user != store.owner:
+    is_owner_or_admin = request.user.is_authenticated and check_admin_access(request, store)
+    if not is_owner_or_admin:
         if not meetup.is_active or meetup.is_temporarily_closed:
             raise Http404("밋업을 찾을 수 없습니다.")
     
@@ -185,7 +220,10 @@ def meetup_detail(request, store_id, meetup_id):
 @login_required
 def edit_meetup_unified(request, store_id, meetup_id):
     """밋업 통합수정"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+    
     meetup = get_object_or_404(
         Meetup, 
         id=meetup_id, 
@@ -307,7 +345,10 @@ def edit_meetup_unified(request, store_id, meetup_id):
 @login_required
 def manage_meetup(request, store_id, meetup_id):
     """밋업 관리"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+    
     meetup = get_object_or_404(
         Meetup, 
         id=meetup_id, 
@@ -410,7 +451,9 @@ def meetup_status(request, store_id):
     from django.db import models
     
     # 스토어 소유자 권한 확인
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
     
     # 밋업별 참가 통계 계산
     meetups_with_orders = []
@@ -470,7 +513,9 @@ def meetup_status_detail(request, store_id, meetup_id):
     from django.db import models
     
     # 스토어 소유자 권한 확인
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
     meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
     
     # 해당 밋업의 주문들 (확정된 것, 취소된 것 포함)
@@ -523,7 +568,9 @@ def export_meetup_participants_csv(request, store_id, meetup_id):
     from django.utils import timezone
     
     # 스토어 소유자 권한 확인
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
     meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
     
     # 참가자 목록 (확정된 주문만)
@@ -603,7 +650,12 @@ def update_attendance(request, store_id, meetup_id):
     
     try:
         # 스토어 소유자 권한 확인
-        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
         meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
         
         data = json.loads(request.body)
@@ -661,7 +713,12 @@ def cancel_participation(request, store_id, meetup_id):
     
     try:
         # 스토어 소유자 권한 확인
-        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
         meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
         
         data = json.loads(request.body)
@@ -773,7 +830,12 @@ def toggle_temporary_closure(request, store_id, meetup_id):
     
     try:
         # 스토어 소유자 권한 확인
-        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
         meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
         
         # 현재 일시중단 상태 토글
@@ -811,7 +873,8 @@ def meetup_capacity_status(request, store_id, meetup_id):
         )
         
         # 공개 뷰에서는 비활성화되거나 일시중단된 밋업만 접근 차단
-        if request.user != store.owner:
+        is_owner_or_admin = request.user.is_authenticated and check_admin_access(request, store)
+        if not is_owner_or_admin:
             if not meetup.is_active or meetup.is_temporarily_closed:
                 return JsonResponse({'error': '밋업을 찾을 수 없습니다.'}, status=404)
         
