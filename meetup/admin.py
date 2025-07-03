@@ -48,6 +48,58 @@ class PaymentHashFilter(admin.SimpleListFilter):
             return queryset.filter(Q(payment_hash__isnull=True) | Q(payment_hash=''))
 
 
+class HasPendingOrdersFilter(admin.SimpleListFilter):
+    """미결제 주문 유무 필터"""
+    title = '미결제 주문 유무'
+    parameter_name = 'has_pending_orders'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', '있음'),
+            ('no', '없음'),
+        )
+
+    def queryset(self, request, queryset):
+        from .models import MeetupOrder
+        if self.value() == 'yes':
+            user_ids_with_pending = MeetupOrder.objects.filter(
+                status='pending'
+            ).values_list('user_id', flat=True).distinct()
+            return queryset.filter(id__in=user_ids_with_pending)
+        if self.value() == 'no':
+            user_ids_with_pending = MeetupOrder.objects.filter(
+                status='pending'
+            ).values_list('user_id', flat=True).distinct()
+            return queryset.exclude(id__in=user_ids_with_pending)
+
+
+class HasAttendedMeetupsFilter(admin.SimpleListFilter):
+    """실제 참석 유무 필터"""
+    title = '실제 참석 유무'
+    parameter_name = 'has_attended_meetups'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', '있음'),
+            ('no', '없음'),
+        )
+
+    def queryset(self, request, queryset):
+        from .models import MeetupOrder
+        if self.value() == 'yes':
+            user_ids_attended = MeetupOrder.objects.filter(
+                status__in=['confirmed', 'completed'],
+                attended=True
+            ).values_list('user_id', flat=True).distinct()
+            return queryset.filter(id__in=user_ids_attended)
+        if self.value() == 'no':
+            user_ids_attended = MeetupOrder.objects.filter(
+                status__in=['confirmed', 'completed'],
+                attended=True
+            ).values_list('user_id', flat=True).distinct()
+            return queryset.exclude(id__in=user_ids_attended)
+
+
 class MeetupImageInline(admin.TabularInline):
     """밋업 이미지 인라인 어드민"""
     model = MeetupImage
@@ -908,10 +960,10 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
     """밋업 신청 내역이 있는 사용자들만 관리하는 어드민"""
     list_display = [
         'username', 'email', 'first_name', 'last_name', 
-        'meetup_count', 'latest_meetup', 'total_meetup_spent', 
-        'date_joined', 'last_login'
+        'meetup_count', 'has_pending_orders', 'has_attended_meetups', 
+        'latest_meetup', 'total_meetup_spent', 'date_joined', 'last_login'
     ]
-    list_filter = ['date_joined', 'last_login', 'is_active']
+    list_filter = ['date_joined', 'last_login', 'is_active', HasPendingOrdersFilter, HasAttendedMeetupsFilter]
     search_fields = ['username', 'email', 'first_name', 'last_name']
     readonly_fields = [
         'username', 'email', 'first_name', 'last_name', 
@@ -968,6 +1020,37 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
             count
         )
     meetup_count.short_description = '참가 횟수'
+    
+    def has_pending_orders(self, obj):
+        """결제 대기 중인 주문이 있는지 여부"""
+        pending_count = MeetupOrder.objects.filter(
+            user=obj,
+            status='pending'
+        ).count()
+        
+        if pending_count > 0:
+            return format_html(
+                '<span style="color: #f39c12; font-weight: bold;">🟡 {}개</span>',
+                pending_count
+            )
+        return format_html('<span style="color: #95a5a6;">없음</span>')
+    has_pending_orders.short_description = '미결제 주문'
+    
+    def has_attended_meetups(self, obj):
+        """실제 참석한 밋업이 있는지 여부"""
+        attended_count = MeetupOrder.objects.filter(
+            user=obj,
+            status__in=['confirmed', 'completed'],
+            attended=True
+        ).count()
+        
+        if attended_count > 0:
+            return format_html(
+                '<span style="color: #27ae60; font-weight: bold;">✅ {}회</span>',
+                attended_count
+            )
+        return format_html('<span style="color: #95a5a6;">없음</span>')
+    has_attended_meetups.short_description = '실제 참석'
     
     def latest_meetup(self, obj):
         """최근 참가한 밋업"""
@@ -1093,6 +1176,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         # 헤더 작성
         headers = [
             '사용자명', '이메일', '이름', '성', '가입일', '최종로그인',
+            '미결제주문수', '실제참석횟수', '총참가횟수',
             '밋업명', '스토어명', '참가자명', '참가자이메일', '참가자연락처',
             '주문번호', '상태', '기본참가비', '옵션금액', '총참가비', 
             '원가격', '할인율', '조기등록여부', '결제해시', '결제일시',
@@ -1103,6 +1187,23 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         
         # 데이터 작성
         for participant in queryset.select_related('lightning_profile'):
+            # 사용자별 통계 정보 계산
+            pending_orders_count = MeetupOrder.objects.filter(
+                user=participant,
+                status='pending'
+            ).count()
+            
+            attended_count = MeetupOrder.objects.filter(
+                user=participant,
+                status__in=['confirmed', 'completed'],
+                attended=True
+            ).count()
+            
+            total_confirmed_count = MeetupOrder.objects.filter(
+                user=participant,
+                status__in=['confirmed', 'completed']
+            ).count()
+            
             # 각 참가자의 모든 밋업 주문 조회
             orders = MeetupOrder.objects.filter(
                 user=participant,
@@ -1122,7 +1223,10 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                     participant.last_name or '',
                     participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
                     participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
-                    '참가 내역 없음', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
+                    pending_orders_count,
+                    attended_count,
+                    total_confirmed_count,
+                    '참가 내역 없음', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''
                 ]
                 writer.writerow(row)
             else:
@@ -1155,6 +1259,9 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         participant.last_name or '',
                         participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
                         participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                        pending_orders_count,
+                        attended_count,
+                        total_confirmed_count,
                         order.meetup.name,
                         order.meetup.store.store_name,
                         order.participant_name,
