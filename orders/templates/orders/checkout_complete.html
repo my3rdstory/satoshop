@@ -247,34 +247,65 @@
     </div>
 
     <!-- 결제 완료 안내 메시지 -->
-    {% comment %} 결제 완료 메시지가 있는 상품이 있는지 먼저 확인 {% endcomment %}
+    {% comment %} 스토어 기본 메시지 또는 상품별 메시지가 있는지 확인 {% endcomment %}
     {% regroup all_order_items by product.completion_message as messages_by_product %}
-    {% for message_group in messages_by_product %}
-      {% if message_group.grouper %}
-        {% if forloop.first %}
-          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
-            <!-- 헤더 -->
-            <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
-              <div class="flex items-center">
-                <i class="fas fa-message text-xl mr-3"></i>
-                <h2 class="text-xl font-bold">판매자 안내 메시지</h2>
+    {% with has_store_message=primary_order.store.completion_message %}
+    {% with has_product_messages=False %}
+      {% for message_group in messages_by_product %}
+        {% if message_group.grouper %}
+          {% with has_product_messages=True %}{% endwith %}
+        {% endif %}
+      {% endfor %}
+      
+      {% if has_store_message or has_product_messages %}
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-message text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">판매자 안내 메시지</h2>
+            </div>
+          </div>
+          
+          <div class="p-6 space-y-6">
+            <!-- 스토어 기본 메시지 -->
+            {% if has_store_message %}
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+              <div class="flex items-start">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-store text-blue-600 dark:text-blue-400 mr-2 mt-1"></i>
+                </div>
+                <div class="flex-1">
+                  <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">{{ primary_order.store.store_name }} 스토어 안내</h4>
+                  <div class="text-sm text-blue-700 dark:text-blue-300 whitespace-pre-line leading-relaxed">{{ primary_order.store.completion_message }}</div>
+                </div>
               </div>
             </div>
+            {% endif %}
             
-            <div class="p-6 space-y-6">
-        {% endif %}
-        
-        {% for item in message_group.list %}
-          <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">            
-            <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{{ item.product.completion_message }}</div>
+            <!-- 상품별 메시지 -->
+            {% for message_group in messages_by_product %}
+              {% if message_group.grouper %}
+                {% for item in message_group.list %}
+                  <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-600">
+                    <div class="flex items-start">
+                      <div class="flex-shrink-0">
+                        <i class="fas fa-box text-gray-600 dark:text-gray-400 mr-2 mt-1"></i>
+                      </div>
+                      <div class="flex-1">
+                        <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">{{ item.product_title }} 상품 안내</h4>
+                        <div class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{{ item.product.completion_message }}</div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
           </div>
-          {% if forloop.last and forloop.parentloop.last %}
-            </div>
-          </div>
-          {% endif %}
-        {% endfor %}
+        </div>
       {% endif %}
-    {% endfor %}
+    {% endwith %}
+    {% endwith %}
 
     <!-- 주문서 다운로드 섹션 -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden mb-8">

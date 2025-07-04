@@ -897,6 +897,25 @@ def edit_theme(request, store_id):
     })
 
 @login_required
+def edit_completion_message(request, store_id):
+    """스토어 결제완료 안내 메시지 관리"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    
+    if request.method == 'POST':
+        completion_message = request.POST.get('completion_message', '').strip()
+        store.completion_message = completion_message
+        store.save()
+        
+        messages.success(request, '결제완료 안내 메시지가 업데이트되었습니다.')
+        return redirect('stores:edit_completion_message', store_id=store_id)
+    
+    context = {
+        'store': store,
+    }
+    
+    return render(request, 'stores/edit_completion_message.html', context)
+
+@login_required
 def manage_store(request, store_id):
     """스토어 관리 (활성화/비활성화, 삭제 등)"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
