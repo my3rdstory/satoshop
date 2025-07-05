@@ -49,6 +49,9 @@ class Store(models.Model):
     hero_color2 = models.CharField(max_length=7, default="#764ba2", help_text="히어로 섹션 그라데이션 끝 색상")
     hero_text_color = models.CharField(max_length=7, default="#ffffff", help_text="히어로 섹션 텍스트 색상")
     
+    # 스토어 결제완료 안내 메시지
+    completion_message = models.TextField(blank=True, help_text="결제 완료 후 고객에게 보여줄 기본 안내 메시지")
+    
     # 메타 정보
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stores')
     is_active = models.BooleanField(default=False, help_text="스토어 활성화 상태")
