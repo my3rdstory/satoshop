@@ -9,6 +9,7 @@ from stores.models import Store
 from .models import Menu, MenuCategory, MenuOrder, MenuOrderItem
 import logging
 import json
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +182,36 @@ def create_cart_invoice_mobile(request, store_id):
         
         # 메뉴 주문 생성
         with transaction.atomic():
+            # 🛡️ 기존 pending 상태의 주문 초기화 (재생성 대비)
+            try:
+                if request.user.is_authenticated:
+                    # 로그인된 사용자의 기존 pending 주문 취소
+                    user_id = request.user.id
+                    existing_orders = MenuOrder.objects.filter(
+                        store=store,
+                        status__in=['pending', 'payment_pending'],
+                        customer_info__user_id=user_id
+                    )
+                else:
+                    # 비로그인 사용자의 경우 IP 기반으로 처리
+                    ip_address = request.META.get('REMOTE_ADDR', '')
+                    from datetime import timedelta
+                    cutoff_time = timezone.now() - timedelta(hours=1)  # 1시간 이전 것들 정리
+                    existing_orders = MenuOrder.objects.filter(
+                        store=store,
+                        status__in=['pending', 'payment_pending'],
+                        customer_info__ip_address=ip_address,
+                        created_at__lt=cutoff_time
+                    ) if ip_address else MenuOrder.objects.none()
+                
+                if existing_orders.exists():
+                    existing_orders.update(status='cancelled')
+                    logger.debug(f"[MOBILE] 기존 pending 주문 {existing_orders.count()}개 취소됨")
+                    
+            except Exception as e:
+                logger.warning(f"[MOBILE] 기존 주문 정리 실패: {str(e)}")
+                # 실패해도 계속 진행
+            
             menu_order = MenuOrder.objects.create(
                 store=store,
                 status='payment_pending',

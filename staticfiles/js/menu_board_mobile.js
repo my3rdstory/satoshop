@@ -870,6 +870,84 @@ function cancelMobilePayment() {
         return;
     }
     
+    // 취소 중 표시
+    const cancelBtn = document.querySelector('[onclick="cancelMobilePayment()"]');
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+    }
+    
+    // 현재 결제 해시가 있는 경우에만 서버에 취소 요청
+    if (window.currentPaymentHash) {
+        const storeId = currentStoreId || window.location.pathname.split('/')[2];
+        
+        fetch(`/menu/${storeId}/m/cart/cancel-invoice/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: window.currentPaymentHash
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 서버 취소 성공
+                handleMobileCancelSuccess();
+            } else {
+                // 서버 취소 실패 또는 이미 결제 완료된 경우
+                if (data.order_number) {
+                    // 이미 결제가 완료된 경우
+                    alert(data.error || '결제가 완료되었습니다.');
+                    
+                    // 결제 상태 확인 중지
+                    if (window.paymentCheckInterval) {
+                        clearInterval(window.paymentCheckInterval);
+                        window.paymentCheckInterval = null;
+                    }
+                    
+                    // 성공 화면으로 전환
+                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+                    document.getElementById('mobile-payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearMobileCart();
+                    
+                    // 자동 리다이렉트 시작
+                    startMobileRedirectCountdown();
+                    
+                } else {
+                    // 일반적인 취소 실패
+                    alert('취소 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+                    
+                    // 취소 버튼 복원
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('취소 요청 중 오류:', error);
+            alert('취소 요청 중 오류가 발생했습니다.');
+            
+            // 취소 버튼 복원
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
+        });
+    } else {
+        // 결제 해시가 없는 경우 클라이언트 측에서만 처리
+        handleMobileCancelSuccess();
+    }
+}
+
+// 모바일 취소 성공 처리 공통 함수
+function handleMobileCancelSuccess() {
     // 결제 상태 확인 중지
     if (window.paymentCheckInterval) {
         clearInterval(window.paymentCheckInterval);
@@ -891,14 +969,109 @@ function cancelMobilePayment() {
     window.paymentExpiresAt = null;
 }
 
-function goBackToMobileMenuBoard() {
-    // 결제 완료 후 모바일 장바구니 비우기
-    clearMobileCart();
-    showView('menu-grid', currentCategory);
-    const paymentView = document.getElementById('mobile-payment-view');
-    if (paymentView) {
-        paymentView.remove();
+// 모바일 결제 상태 확인 시작
+function startMobilePaymentStatusCheck() {
+    if (!window.currentPaymentHash) return;
+    
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    
+    window.paymentCheckInterval = setInterval(() => {
+        fetch(`/menu/${storeId}/cart/check-payment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: window.currentPaymentHash
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.error('HTTP 오류:', response.status, response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                
+                if (data.status === 'paid') {
+                    // 결제 완료
+                    clearInterval(window.paymentCheckInterval);
+                    clearInterval(window.paymentCountdownInterval);
+                    
+                    // UI 상태 변경
+                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+                    document.getElementById('mobile-payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearMobileCart();
+                    
+                    // 10초 후 메뉴판으로 자동 이동
+                    startMobileRedirectCountdown();
+                    
+                } else if (data.status === 'expired') {
+                    // 인보이스 만료
+                    clearInterval(window.paymentCheckInterval);
+                    clearInterval(window.paymentCountdownInterval);
+                    
+                    alert('인보이스가 만료되었습니다.');
+                    closeMobilePaymentView();
+                }
+                // pending인 경우 계속 확인
+            } else {
+                console.error('모바일 결제 상태 확인 오류:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('모바일 결제 상태 확인 중 오류:', error);
+        });
+    }, 3000); // 3초마다 확인
+}
+
+// 모바일 리다이렉트 카운트다운
+function startMobileRedirectCountdown() {
+    let countdown = 10;
+    const countdownElement = document.querySelector('#mobile-payment-success .countdown');
+    
+    if (countdownElement) {
+        countdownElement.textContent = countdown;
     }
+    
+    const redirectInterval = setInterval(() => {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        
+        if (countdown <= 0) {
+            clearInterval(redirectInterval);
+            goBackToMobileMenuBoard();
+        }
+    }, 1000);
+}
+
+// CSRF 토큰 가져오기
+function getCsrfToken() {
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) {
+        return token.value;
+    }
+    
+    // 쿠키에서 CSRF 토큰 찾기
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 // 전역 함수들 노출
@@ -1060,109 +1233,4 @@ function startMobilePaymentCountdown() {
         
         document.getElementById('mobile-countdown-timer').textContent = timeString;
     }, 1000);
-}
-
-// 모바일 결제 상태 확인 시작
-function startMobilePaymentStatusCheck() {
-    if (!window.currentPaymentHash) return;
-    
-    const storeId = currentStoreId || window.location.pathname.split('/')[2];
-    
-    window.paymentCheckInterval = setInterval(() => {
-        fetch(`/menu/${storeId}/cart/check-payment/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({
-                payment_hash: window.currentPaymentHash
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                console.error('HTTP 오류:', response.status, response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                
-                if (data.status === 'paid') {
-                    // 결제 완료
-                    clearInterval(window.paymentCheckInterval);
-                    clearInterval(window.paymentCountdownInterval);
-                    
-                    // UI 상태 변경
-                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
-                    document.getElementById('mobile-payment-success').classList.remove('hidden');
-                    
-                    // 장바구니 비우기
-                    clearMobileCart();
-                    
-                    // 10초 후 메뉴판으로 자동 이동
-                    startMobileRedirectCountdown();
-                    
-                } else if (data.status === 'expired') {
-                    // 인보이스 만료
-                    clearInterval(window.paymentCheckInterval);
-                    clearInterval(window.paymentCountdownInterval);
-                    
-                    alert('인보이스가 만료되었습니다.');
-                    closeMobilePaymentView();
-                }
-                // pending인 경우 계속 확인
-            } else {
-                console.error('모바일 결제 상태 확인 오류:', data.error);
-            }
-        })
-        .catch(error => {
-            console.error('모바일 결제 상태 확인 중 오류:', error);
-        });
-    }, 3000); // 3초마다 확인
-}
-
-// 모바일 리다이렉트 카운트다운
-function startMobileRedirectCountdown() {
-    let countdown = 10;
-    const countdownElement = document.querySelector('#mobile-payment-success .countdown');
-    
-    if (countdownElement) {
-        countdownElement.textContent = countdown;
-    }
-    
-    const redirectInterval = setInterval(() => {
-        countdown--;
-        if (countdownElement) {
-            countdownElement.textContent = countdown;
-        }
-        
-        if (countdown <= 0) {
-            clearInterval(redirectInterval);
-            goBackToMobileMenuBoard();
-        }
-    }, 1000);
-}
-
-// CSRF 토큰 가져오기
-function getCsrfToken() {
-    const token = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (token) {
-        return token.value;
-    }
-    
-    // 쿠키에서 CSRF 토큰 찾기
-    const name = 'csrftoken';
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
 } 

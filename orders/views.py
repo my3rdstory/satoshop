@@ -1215,6 +1215,37 @@ def create_checkout_invoice(request):
             # 사용자가 로그인되어 있지 않으면 None으로 저장
             user_for_invoice = request.user if request.user.is_authenticated else None
             
+            # 🛡️ 기존 pending 상태의 인보이스 초기화 (재생성 대비)
+            try:
+                if user_for_invoice:
+                    # 로그인된 사용자의 기존 pending 인보이스 취소
+                    existing_invoices = Invoice.objects.filter(
+                        user=user_for_invoice,
+                        store=first_store,
+                        status='pending'
+                    )
+                else:
+                    # 비로그인 사용자의 경우 현재 세션 기반으로 처리하기 어려우므로 
+                    # 같은 스토어의 최근 pending 인보이스들 중 만료된 것들을 정리
+                    from datetime import timedelta
+                    cutoff_time = timezone.now() - timedelta(hours=1)  # 1시간 이전 것들 정리
+                    existing_invoices = Invoice.objects.filter(
+                        user=None,
+                        store=first_store,
+                        status='pending',
+                        created_at__lt=cutoff_time
+                    )
+                
+                if existing_invoices.exists():
+                    existing_invoices.update(status='cancelled')
+                    if settings.DEBUG:
+                        logger.debug(f"[INVOICE] 기존 pending 인보이스 {existing_invoices.count()}개 취소됨")
+                        
+            except Exception as e:
+                if settings.DEBUG:
+                    logger.warning(f"[INVOICE] 기존 인보이스 정리 실패: {str(e)}")
+                # 실패해도 계속 진행
+            
             invoice = Invoice.objects.create(
                 payment_hash=result['payment_hash'],
                 invoice_string=result['invoice'],
@@ -1283,6 +1314,21 @@ def check_checkout_payment(request):
         if settings.DEBUG:
             logger.debug(f"결제 상태 확인: payment_hash={payment_hash}")
         
+        # 🛡️ 이미 결제 완료된 주문이 있는지 먼저 확인 (중복 이메일 발송 방지)
+        existing_orders = Order.objects.filter(payment_id=payment_hash)
+        if existing_orders.exists():
+            if settings.DEBUG:
+                logger.debug(f"[PAYMENT] 이미 결제 완료된 주문 발견: {payment_hash}")
+            
+            all_orders = list(existing_orders)
+            return JsonResponse({
+                'success': True,
+                'status': 'paid',
+                'paid': True,
+                'order_number': all_orders[0].order_number if all_orders else None,
+                'redirect_url': f'/orders/checkout/complete/{all_orders[0].order_number}/' if all_orders else None
+            })
+        
         # 장바구니 확인
         cart_service = CartService(request)
         cart_items = cart_service.get_cart_items()
@@ -1325,64 +1371,78 @@ def check_checkout_payment(request):
         # 결제 완료 시 주문 생성
         if result['status'] == 'paid':
             try:
-                # 🛡️ 중복 결제 처리 방지: 이미 해당 payment_hash로 주문이 존재하는지 먼저 확인
-                existing_orders = Order.objects.filter(payment_id=payment_hash)
-                if existing_orders.exists():
-                    if settings.DEBUG:
-                        logger.debug(f"[PAYMENT] 중복 결제 처리 방지: {payment_hash} - 기존 주문 {existing_orders.count()}개 발견")
+                # 🛡️ 트랜잭션 및 select_for_update로 동시성 문제 방지
+                with transaction.atomic():
+                    # 다시 한 번 중복 결제 확인 (트랜잭션 내에서)
+                    existing_orders = Order.objects.filter(payment_id=payment_hash)
+                    if existing_orders.exists():
+                        if settings.DEBUG:
+                            logger.debug(f"[PAYMENT] 트랜잭션 내 중복 결제 확인: {payment_hash}")
+                        
+                        all_orders = list(existing_orders)
+                        return JsonResponse({
+                            'success': True,
+                            'status': result['status'],
+                            'paid': True,
+                            'order_number': all_orders[0].order_number if all_orders else None,
+                            'redirect_url': f'/orders/checkout/complete/{all_orders[0].order_number}/' if all_orders else None
+                        })
                     
-                    # 기존 주문 정보 반환
-                    all_orders = list(existing_orders)
+                    # 인보이스 상태 업데이트
+                    try:
+                        invoice = Invoice.objects.select_for_update().get(payment_hash=payment_hash)
+                        if invoice.status == 'paid':
+                            # 이미 처리된 인보이스인 경우
+                            if settings.DEBUG:
+                                logger.debug(f"[PAYMENT] 이미 처리된 인보이스: {payment_hash}")
+                            return JsonResponse({
+                                'success': True,
+                                'status': result['status'],
+                                'paid': True,
+                                'order_number': invoice.order.order_number if invoice.order else None,
+                                'redirect_url': f'/orders/checkout/complete/{invoice.order.order_number}/' if invoice.order else None
+                            })
+                        
+                        invoice.status = 'paid'
+                        invoice.paid_at = timezone.now()
+                        invoice.save()
+                        
+                        if settings.DEBUG:
+                            logger.debug(f"[PAYMENT] 인보이스 상태 업데이트 완료: {payment_hash}")
+                    except Invoice.DoesNotExist:
+                        if settings.DEBUG:
+                            logger.warning(f"[PAYMENT] 인보이스를 찾을 수 없음: {payment_hash}")
+                    
+                    # 주문 생성 로직 (새로운 CartService 기반 함수 사용)
+                    shipping_data = request.session.get('shipping_data', {})
+                    order_result = create_order_from_cart_service(request, payment_hash, shipping_data)
+                    
+                    # 인보이스와 주문 연결 (첫 번째 주문과 연결)
+                    try:
+                        invoice = Invoice.objects.get(payment_hash=payment_hash)
+                        if order_result['orders']:
+                            primary_order = order_result['orders'][0]
+                            invoice.order = primary_order
+                            invoice.save()
+                            
+                            if settings.DEBUG:
+                                logger.debug(f"[PAYMENT] 인보이스-주문 연결 완료: {payment_hash} -> {primary_order.order_number}")
+                    except (Invoice.DoesNotExist, Order.DoesNotExist) as e:
+                        if settings.DEBUG:
+                            logger.warning(f"[PAYMENT] 인보이스-주문 연결 실패: {str(e)}")
+                    
+                    # 주문 완료 후 세션에서 배송 정보 삭제
+                    if 'shipping_data' in request.session:
+                        del request.session['shipping_data']
+                    
                     return JsonResponse({
                         'success': True,
                         'status': result['status'],
                         'paid': True,
-                        'order_number': all_orders[0].order_number if all_orders else None,
-                        'redirect_url': f'/orders/checkout/complete/{all_orders[0].order_number}/' if all_orders else None
+                        'order_number': order_result['primary_order_number'],
+                        'redirect_url': f'/orders/checkout/complete/{order_result["primary_order_number"]}/'
                     })
-                
-                # 인보이스 상태 업데이트
-                try:
-                    invoice = Invoice.objects.get(payment_hash=payment_hash)
-                    invoice.status = 'paid'
-                    invoice.paid_at = timezone.now()
-                    invoice.save()
                     
-                    if settings.DEBUG:
-                        logger.debug(f"[PAYMENT] 인보이스 상태 업데이트 완료: {payment_hash}")
-                except Invoice.DoesNotExist:
-                    if settings.DEBUG:
-                        logger.warning(f"[PAYMENT] 인보이스를 찾을 수 없음: {payment_hash}")
-                
-                # 주문 생성 로직 (새로운 CartService 기반 함수 사용)
-                shipping_data = request.session.get('shipping_data', {})
-                order_result = create_order_from_cart_service(request, payment_hash, shipping_data)
-                
-                # 인보이스와 주문 연결 (첫 번째 주문과 연결)
-                try:
-                    invoice = Invoice.objects.get(payment_hash=payment_hash)
-                    if order_result['orders']:
-                        primary_order = order_result['orders'][0]
-                        invoice.order = primary_order
-                        invoice.save()
-                        
-                        if settings.DEBUG:
-                            logger.debug(f"[PAYMENT] 인보이스-주문 연결 완료: {payment_hash} -> {primary_order.order_number}")
-                except (Invoice.DoesNotExist, Order.DoesNotExist) as e:
-                    if settings.DEBUG:
-                        logger.warning(f"[PAYMENT] 인보이스-주문 연결 실패: {str(e)}")
-                
-                # 주문 완료 후 세션에서 배송 정보 삭제
-                if 'shipping_data' in request.session:
-                    del request.session['shipping_data']
-                
-                return JsonResponse({
-                    'success': True,
-                    'status': result['status'],
-                    'paid': True,
-                    'order_number': order_result['primary_order_number'],
-                    'redirect_url': f'/orders/checkout/complete/{order_result["primary_order_number"]}/'
-                })
             except Exception as e:
                 if settings.DEBUG:
                     logger.error(f"주문 생성 실패: {str(e)}", exc_info=True)
@@ -1432,6 +1492,19 @@ def cancel_invoice(request):
         if not payment_hash:
             return JsonResponse({'success': False, 'error': 'payment_hash가 필요합니다.'}, status=400)
         
+        # 🛡️ 이미 결제 완료된 주문이 있는지 먼저 확인 (취소 불가)
+        existing_orders = Order.objects.filter(payment_id=payment_hash)
+        if existing_orders.exists():
+            if settings.DEBUG:
+                logger.debug(f"[CANCEL] 이미 결제 완료된 주문 발견: {payment_hash}")
+            
+            all_orders = list(existing_orders)
+            return JsonResponse({
+                'success': False,
+                'error': '이미 결제가 완료되었습니다. 취소할 수 없습니다.',
+                'redirect_url': f'/orders/checkout/complete/{all_orders[0].order_number}/' if all_orders else None
+            })
+        
         # 인보이스 찾기 (로그인/비로그인 사용자 모두 지원)
         try:
             if request.user.is_authenticated:
@@ -1449,6 +1522,64 @@ def cancel_invoice(request):
                 'success': False, 
                 'error': f'취소할 수 없는 상태입니다. 현재 상태: {invoice.get_status_display()}'
             }, status=400)
+        
+        # 🛡️ 실제 결제 상태를 Blink API로 재확인
+        try:
+            # 스토어 가져오기
+            store = invoice.store
+            
+            # BlinkAPIService 초기화
+            blink_service = get_blink_service_for_store(store)
+            
+            # 결제 상태 재확인
+            result = blink_service.check_invoice_status(payment_hash)
+            
+            if result['success'] and result['status'] == 'paid':
+                # 실제로는 결제가 완료되었음!
+                if settings.DEBUG:
+                    logger.debug(f"[CANCEL] 실제 결제 완료 감지: {payment_hash}")
+                
+                # 인보이스 상태 업데이트
+                invoice.status = 'paid'
+                invoice.paid_at = timezone.now()
+                invoice.save()
+                
+                # 주문 생성 (결제 완료 처리)
+                try:
+                    with transaction.atomic():
+                        # 주문 생성 로직
+                        shipping_data = request.session.get('shipping_data', {})
+                        order_result = create_order_from_cart_service(request, payment_hash, shipping_data)
+                        
+                        # 인보이스와 주문 연결
+                        if order_result['orders']:
+                            primary_order = order_result['orders'][0]
+                            invoice.order = primary_order
+                            invoice.save()
+                        
+                        # 배송 정보 삭제
+                        if 'shipping_data' in request.session:
+                            del request.session['shipping_data']
+                        
+                        return JsonResponse({
+                            'success': False,
+                            'error': '결제가 완료되었습니다. 주문 완료 페이지로 이동합니다.',
+                            'redirect_url': f'/orders/checkout/complete/{order_result["primary_order_number"]}/'
+                        })
+                        
+                except Exception as e:
+                    if settings.DEBUG:
+                        logger.error(f"[CANCEL] 주문 생성 실패: {str(e)}")
+                    
+                    return JsonResponse({
+                        'success': False,
+                        'error': '결제는 완료되었지만 주문 생성에 실패했습니다. 고객센터에 문의해주세요.'
+                    })
+            
+        except Exception as e:
+            if settings.DEBUG:
+                logger.warning(f"[CANCEL] 결제 상태 재확인 실패: {str(e)}")
+            # 재확인 실패 시에는 그대로 진행
         
         # 인보이스 상태를 취소로 변경
         invoice.status = 'cancelled'

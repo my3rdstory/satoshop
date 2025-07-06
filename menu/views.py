@@ -169,6 +169,7 @@ def check_cart_payment(request, store_id):
     try:
         import json
         from .models import MenuOrder
+        from django.db import transaction
         
         logger.info(f"[결제상태체크] 요청 시작 - Store ID: {store_id}")
         
@@ -190,10 +191,18 @@ def check_cart_payment(request, store_id):
         
         logger.info(f"[결제상태체크] Payment Hash: {payment_hash}")
         
-        # 메뉴 주문 조회
+        # 🛡️ 이미 결제 완료된 주문이 있는지 먼저 확인 (중복 이메일 발송 방지)
         try:
             menu_order = MenuOrder.objects.get(payment_hash=payment_hash, store=store)
             logger.info(f"[결제상태체크] 주문 조회 성공 - 주문번호: {menu_order.order_number}, 현재 상태: {menu_order.status}")
+            
+            if menu_order.status == 'paid' and menu_order.paid_at:
+                logger.info(f"[결제상태체크] 이미 결제 완료된 주문: {menu_order.order_number}")
+                return JsonResponse({
+                    'success': True,
+                    'status': 'paid',
+                    'order_status': menu_order.status
+                })
         except MenuOrder.DoesNotExist:
             logger.error(f"[결제상태체크] 주문을 찾을 수 없음 - Payment Hash: {payment_hash}, Store: {store.store_id}")
             return JsonResponse({'success': False, 'error': '주문을 찾을 수 없습니다.'}, status=404)
@@ -226,12 +235,34 @@ def check_cart_payment(request, store_id):
             
             if result['success']:
                 if result['status'] == 'paid' and menu_order.status != 'paid':
-                    # 결제 완료로 상태 업데이트
-                    logger.info(f"[결제상태체크] 결제 완료 - 주문 상태 업데이트 중...")
-                    menu_order.status = 'paid'
-                    menu_order.paid_at = timezone.now()
-                    menu_order.save()
-                    logger.info(f"[결제상태체크] 주문 상태 업데이트 완료")
+                    # 🛡️ 트랜잭션 및 select_for_update로 동시성 문제 방지
+                    try:
+                        with transaction.atomic():
+                            menu_order_locked = MenuOrder.objects.select_for_update().get(
+                                id=menu_order.id,
+                                payment_hash=payment_hash,
+                                store=store
+                            )
+                            
+                            # 다시 한 번 상태 확인 (트랜잭션 내에서)
+                            if menu_order_locked.status == 'paid':
+                                logger.info(f"[결제상태체크] 이미 처리된 주문: {menu_order_locked.order_number}")
+                                return JsonResponse({
+                                    'success': True,
+                                    'status': result['status'],
+                                    'order_status': menu_order_locked.status
+                                })
+                            
+                            # 결제 완료로 상태 업데이트
+                            logger.info(f"[결제상태체크] 결제 완료 - 주문 상태 업데이트 중...")
+                            menu_order_locked.status = 'paid'
+                            menu_order_locked.paid_at = timezone.now()
+                            menu_order_locked.save()
+                            logger.info(f"[결제상태체크] 주문 상태 업데이트 완료")
+                            
+                    except MenuOrder.DoesNotExist:
+                        logger.error(f"[결제상태체크] 주문 락 획득 실패: {payment_hash}")
+                        return JsonResponse({'success': False, 'error': '주문 처리 중 오류가 발생했습니다.'})
                 
                 response_data = {
                     'success': True,
@@ -253,4 +284,120 @@ def check_cart_payment(request, store_id):
     except Exception as e:
         logger.error(f"[결제상태체크] 전체 오류: {str(e)}")
         return JsonResponse({'success': False, 'error': f'요청 처리 중 오류가 발생했습니다: {str(e)}'}, status=500)
+
+
+@csrf_exempt
+@require_POST
+def cancel_menu_invoice(request, store_id):
+    """메뉴 인보이스 취소"""
+    try:
+        import json
+        from .models import MenuOrder
+        from django.db import transaction
+        
+        logger.info(f"[메뉴취소] 요청 시작 - Store ID: {store_id}")
+        
+        # 스토어 조회 (비회원도 접근 가능)
+        store = get_object_or_404(Store, store_id=store_id, is_active=True)
+        logger.info(f"[메뉴취소] 스토어 조회 성공: {store.store_name}")
+        
+        # 요청 본문 파싱
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"[메뉴취소] JSON 파싱 오류: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'JSON 파싱 오류: {str(e)}'}, status=400)
+        
+        payment_hash = data.get('payment_hash')
+        if not payment_hash:
+            logger.error(f"[메뉴취소] payment_hash 누락")
+            return JsonResponse({'success': False, 'error': 'payment_hash가 필요합니다.'}, status=400)
+        
+        logger.info(f"[메뉴취소] Payment Hash: {payment_hash}")
+        
+        # 메뉴 주문 조회
+        try:
+            menu_order = MenuOrder.objects.get(payment_hash=payment_hash, store=store)
+            logger.info(f"[메뉴취소] 주문 조회 성공 - 주문번호: {menu_order.order_number}, 현재 상태: {menu_order.status}")
+        except MenuOrder.DoesNotExist:
+            logger.error(f"[메뉴취소] 주문을 찾을 수 없음 - Payment Hash: {payment_hash}, Store: {store.store_id}")
+            return JsonResponse({'success': False, 'error': '주문을 찾을 수 없습니다.'}, status=404)
+        
+        # 🛡️ 이미 결제 완료된 주문인지 확인 (취소 불가)
+        if menu_order.status == 'paid' and menu_order.paid_at:
+            logger.info(f"[메뉴취소] 이미 결제 완료된 주문: {menu_order.order_number}")
+            return JsonResponse({
+                'success': False,
+                'error': '이미 결제가 완료되었습니다. 취소할 수 없습니다.'
+            })
+        
+        # 취소 가능한 상태인지 확인
+        if menu_order.status not in ['pending', 'payment_pending']:
+            return JsonResponse({
+                'success': False, 
+                'error': f'취소할 수 없는 상태입니다. 현재 상태: {menu_order.get_status_display()}'
+            }, status=400)
+        
+        # 🛡️ 실제 결제 상태를 Blink API로 재확인
+        try:
+            from ln_payment.blink_service import get_blink_service_for_store
+            
+            # BlinkAPIService 초기화
+            blink_service = get_blink_service_for_store(store)
+            
+            # 결제 상태 재확인
+            result = blink_service.check_invoice_status(payment_hash)
+            
+            if result['success'] and result['status'] == 'paid':
+                # 실제로는 결제가 완료되었음!
+                logger.info(f"[메뉴취소] 실제 결제 완료 감지: {payment_hash}")
+                
+                # 주문 상태 업데이트 (결제 완료 처리)
+                try:
+                    with transaction.atomic():
+                        menu_order_locked = MenuOrder.objects.select_for_update().get(
+                            id=menu_order.id,
+                            payment_hash=payment_hash,
+                            store=store
+                        )
+                        
+                        menu_order_locked.status = 'paid'
+                        menu_order_locked.paid_at = timezone.now()
+                        menu_order_locked.save()
+                        
+                        logger.info(f"[메뉴취소] 결제 완료 상태로 업데이트: {menu_order_locked.order_number}")
+                        
+                        return JsonResponse({
+                            'success': False,
+                            'error': '결제가 완료되었습니다.',
+                            'order_number': menu_order_locked.order_number
+                        })
+                        
+                except MenuOrder.DoesNotExist:
+                    logger.error(f"[메뉴취소] 주문 락 획득 실패: {payment_hash}")
+                    return JsonResponse({
+                        'success': False,
+                        'error': '결제는 완료되었지만 주문 처리에 실패했습니다. 고객센터에 문의해주세요.'
+                    })
+            
+        except Exception as e:
+            logger.warning(f"[메뉴취소] 결제 상태 재확인 실패: {str(e)}")
+            # 재확인 실패 시에는 그대로 진행
+        
+        # 주문 상태를 취소로 변경
+        menu_order.status = 'cancelled'
+        menu_order.save()
+        
+        logger.info(f"[메뉴취소] 주문 취소 완료: {menu_order.order_number}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '주문이 취소되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"[메뉴취소] 전체 오류: {str(e)}")
+        import traceback
+        logger.error(f"[메뉴취소] 스택 트레이스: {traceback.format_exc()}")
+        return JsonResponse({'success': False, 'error': f'주문 취소 중 오류가 발생했습니다: {str(e)}'}, status=500)
 

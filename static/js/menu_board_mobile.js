@@ -870,6 +870,84 @@ function cancelMobilePayment() {
         return;
     }
     
+    // 취소 중 표시
+    const cancelBtn = document.querySelector('[onclick="cancelMobilePayment()"]');
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+    }
+    
+    // 현재 결제 해시가 있는 경우에만 서버에 취소 요청
+    if (window.currentPaymentHash) {
+        const storeId = currentStoreId || window.location.pathname.split('/')[2];
+        
+        fetch(`/menu/${storeId}/m/cart/cancel-invoice/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: window.currentPaymentHash
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 서버 취소 성공
+                handleMobileCancelSuccess();
+            } else {
+                // 서버 취소 실패 또는 이미 결제 완료된 경우
+                if (data.order_number) {
+                    // 이미 결제가 완료된 경우
+                    alert(data.error || '결제가 완료되었습니다.');
+                    
+                    // 결제 상태 확인 중지
+                    if (window.paymentCheckInterval) {
+                        clearInterval(window.paymentCheckInterval);
+                        window.paymentCheckInterval = null;
+                    }
+                    
+                    // 성공 화면으로 전환
+                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+                    document.getElementById('mobile-payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearMobileCart();
+                    
+                    // 자동 리다이렉트 시작
+                    startMobileRedirectCountdown();
+                    
+                } else {
+                    // 일반적인 취소 실패
+                    alert('취소 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+                    
+                    // 취소 버튼 복원
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('취소 요청 중 오류:', error);
+            alert('취소 요청 중 오류가 발생했습니다.');
+            
+            // 취소 버튼 복원
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
+        });
+    } else {
+        // 결제 해시가 없는 경우 클라이언트 측에서만 처리
+        handleMobileCancelSuccess();
+    }
+}
+
+// 모바일 취소 성공 처리 공통 함수
+function handleMobileCancelSuccess() {
     // 결제 상태 확인 중지
     if (window.paymentCheckInterval) {
         clearInterval(window.paymentCheckInterval);

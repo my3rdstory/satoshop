@@ -40,6 +40,7 @@ urlpatterns = [
     path('<str:store_id>/cart/', views.menu_cart_desktop, name='menu_cart_desktop'),
     path('<str:store_id>/cart/create-invoice/', views.create_cart_invoice_desktop, name='create_cart_invoice_desktop'),
     path('<str:store_id>/cart/check-payment/', views.check_cart_payment, name='check_cart_payment_desktop'),
+    path('<str:store_id>/cart/cancel-invoice/', views.cancel_menu_invoice, name='cancel_menu_invoice_desktop'),
     
     # === 모바일 메뉴판 ===
     path('<str:store_id>/m/', views.menu_board_mobile, name='menu_board_mobile'),
@@ -48,6 +49,7 @@ urlpatterns = [
     path('<str:store_id>/m/cart/', views.menu_cart_mobile, name='menu_cart_mobile'),
     path('<str:store_id>/m/cart/create-invoice/', views.create_cart_invoice_mobile, name='create_cart_invoice_mobile'),
     path('<str:store_id>/m/cart/check-payment/', views.check_cart_payment, name='check_cart_payment_mobile'),
+    path('<str:store_id>/m/cart/cancel-invoice/', views.cancel_menu_invoice, name='cancel_menu_invoice_mobile'),
     
     # === 하위 호환성 (기존 URL 지원) ===
     path('<str:store_id>/list/auto/', views.menu_board_auto_redirect, name='menu_board_auto_redirect'),
