@@ -175,11 +175,11 @@ input:checked + .slider:before {
             {% endif %}
             <div>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">생성일:</span>
-              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ menu.created_at|date:"Y년 m월 d일" }}</span>
+                              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ menu.created_at|date:"Y-m-d H:i:s" }}</span>
             </div>
             <div>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 수정:</span>
-              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ menu.updated_at|date:"Y년 m월 d일 H:i" }}</span>
+                              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ menu.updated_at|date:"Y-m-d H:i:s" }}</span>
             </div>
             <div>
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">이미지 개수:</span>

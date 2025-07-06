@@ -142,11 +142,7 @@
         <i class="fas fa-bolt text-3xl text-bitcoin"></i>
       </div>
       <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">밋업 참가비 결제</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">{{ meetup.name }}</p>
-        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          주문번호: {{ order.order_number }}
-        </div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">밋업 참가비 결제</h1>        
       </div>
     </div>
 
@@ -167,7 +163,7 @@
             <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <i class="fas fa-calendar-alt mr-2 text-purple-600"></i>
-                밋업 정보
+                밋업명: {{ meetup.name }}
               </h3>
               <div class="space-y-3">
                 {% if meetup.date_time %}
@@ -204,12 +200,18 @@
               <div class="space-y-3">
                 <div class="flex">
                   <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이름:</span>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_name }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.participant_name }}</span>
                 </div>
                 <div class="flex">
                   <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이메일:</span>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ order.participant_email }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.participant_email }}</span>
                 </div>
+                {% if participant_data.participant_phone %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">연락처:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.participant_phone }}</span>
+                </div>
+                {% endif %}
               </div>
             </div>
 
@@ -221,37 +223,39 @@
               </h3>
               <div class="space-y-3">
                 <!-- 최초 가격 (할인 적용 전 기본 가격) -->
-                {% if order.is_early_bird %}
+                {% if participant_data.is_early_bird %}
                 <div class="flex justify-between">
                   <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ order.original_price|floatformat:0|intcomma }} sats</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.original_price|floatformat:0|intcomma }} sats</span>
                 </div>
                 
                 <!-- 조기등록 할인 -->
                 <div class="flex justify-between text-sm">
                   <span class="text-green-600 dark:text-green-400">
-                    <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ order.discount_rate }}%)
+                    <i class="fas fa-tag mr-1"></i>조기등록 할인 ({{ participant_data.discount_rate }}%)
                   </span>
-                  <span class="text-green-600 dark:text-green-400">-{{ order.original_price|sub:order.base_price|floatformat:0|intcomma }} sats</span>
+                  {% with discount_amount=participant_data.original_price|sub:participant_data.base_price %}
+                  <span class="text-green-600 dark:text-green-400">-{{ discount_amount|floatformat:0|intcomma }} sats</span>
+                  {% endwith %}
                 </div>
                 {% else %}
                 <div class="flex justify-between">
                   <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
-                  <span class="font-medium text-gray-900 dark:text-white">{{ order.base_price|floatformat:0|intcomma }} sats</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.base_price|floatformat:0|intcomma }} sats</span>
                 </div>
                 {% endif %}
                 
                 <!-- 선택된 옵션들 -->
-                {% if order.selected_options.all %}
+                {% if participant_data.selected_options %}
                   <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">선택 옵션:</div>
-                  {% for selected_option in order.selected_options.all %}
+                  {% for option_data in participant_data.selected_options %}
                   <div class="flex justify-between text-sm pl-4">
                     <span class="text-gray-600 dark:text-gray-400">
-                      <i class="fas fa-chevron-right mr-2 text-xs"></i>{{ selected_option.option.name }}: {{ selected_option.choice.name }}
+                      <i class="fas fa-chevron-right mr-2 text-xs"></i>{{ option_data.option_name }}: {{ option_data.choice_name }}
                     </span>
                     <span class="font-medium text-gray-900 dark:text-white">
-                      {% if selected_option.additional_price > 0 %}
-                        +{{ selected_option.additional_price|floatformat:0|intcomma }} sats
+                      {% if option_data.additional_price > 0 %}
+                        +{{ option_data.additional_price|floatformat:0|intcomma }} sats
                       {% else %}
                         무료
                       {% endif %}
@@ -260,10 +264,18 @@
                   {% endfor %}
                 {% endif %}
                 
+                <!-- 옵션 총합 표시 (옵션이 있는 경우) -->
+                {% if participant_data.options_price > 0 %}
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">옵션 소계</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ participant_data.options_price|floatformat:0|intcomma }} sats</span>
+                </div>
+                {% endif %}
+                
                 <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
                   <div class="flex justify-between">
                     <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
-                    <span class="font-bold text-xl text-bitcoin">{{ order.total_price|floatformat:0|intcomma }} sats</span>
+                    <span class="font-bold text-xl text-bitcoin">{{ participant_data.total_price|floatformat:0|intcomma }} sats</span>
                   </div>
                 </div>
               </div>
@@ -301,7 +313,7 @@
               <div class="flex items-center">
                 <i class="fas fa-bolt text-bitcoin mr-2"></i>
                 <h3 class="font-bold text-gray-900 dark:text-white">
-                  {% if order.total_price == 0 %}
+                  {% if participant_data.total_price == 0 %}
                   무료 참가
                   {% else %}
                   결제 방법
@@ -309,7 +321,7 @@
                 </h3>
               </div>
 
-              {% if order.total_price == 0 %}
+              {% if participant_data.total_price == 0 %}
               <!-- 무료 밋업 안내 -->
               <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                 <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
@@ -340,7 +352,7 @@
               {% endif %}
             </div>
 
-            {% if order.total_price == 0 %}
+            {% if participant_data.total_price == 0 %}
             <!-- 무료 참가 신청 버튼 -->
             <form method="post" action="{% url 'meetup:meetup_checkout' store.store_id meetup.id %}" id="free-participation-form">
               {% csrf_token %}
@@ -482,8 +494,9 @@
 {
   "meetupId": {{ meetup.id }},
   "storeId": "{{ store.store_id }}",
-  "orderId": {{ order.id }},
-  "basePrice": {{ order.total_price }},
+  "basePrice": {{ participant_data.total_price }},
+  "participantName": "{{ participant_data.participant_name }}",
+  "participantEmail": "{{ participant_data.participant_email }}",
   "csrfToken": "{{ csrf_token }}",
   "isPaymentPage": true
 }

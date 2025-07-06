@@ -67,8 +67,7 @@
             <div class="space-y-2">
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">참가 확정일시</div>
               <div class="text-gray-900 dark:text-white">
-                <span class="local-time" data-datetime="{{ order.confirmed_at|date:'c' }}">{{ order.confirmed_at|date:"Y년 m월 d일 H:i" }}</span>
-                <small class="text-gray-500 dark:text-gray-400 user-timezone block text-xs mt-1"></small>
+                <span>{{ order.confirmed_at|date:"Y-m-d H:i:s" }}</span>
               </div>
             </div>
             
@@ -186,7 +185,7 @@
                 {% else %}
                 <span>결제 완료:</span>
                 {% endif %}
-                <span class="ml-2">{{ order.paid_at|date:"Y-m-d H:i" }}</span>
+                <span class="ml-2">{{ order.paid_at|date:"Y-m-d H:i:s" }}</span>
               </div>
             </div>
           </div>
@@ -348,7 +347,7 @@ function downloadParticipantInfo() {
     const orderNumber = `{{ order.order_number }}`;
     const participantName = `{{ order.participant_name }}`;
     const participantEmail = `{{ order.participant_email }}`;
-    const confirmedAt = `{{ order.confirmed_at|date:"Y년 m월 d일 H:i" }}`;
+    const confirmedAt = `{{ order.confirmed_at|date:"Y-m-d H:i:s" }}`;
     
     // 사용자 로컬 시간대로 변환 (다운로드용)
     const localConfirmedAt = window.convertToLocalTime ? window.convertToLocalTime(confirmedAt) : confirmedAt;

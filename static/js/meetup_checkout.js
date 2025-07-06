@@ -135,7 +135,7 @@ function generateInvoice() {
     qrCodeImage.classList.add('hidden');
     
     // 인보이스 생성 요청
-    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/${window.checkoutData.orderId}/create_invoice/`, {
+    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/create_invoice/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -282,7 +282,7 @@ function checkPaymentStatus() {
         return;
     }
     
-    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/${window.checkoutData.orderId}/check_payment/`, {
+    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/check_payment/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -364,7 +364,7 @@ function cancelInvoice() {
     cancelBtn.disabled = true;
     cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
     
-    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/${window.checkoutData.orderId}/cancel_invoice/`, {
+    fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/cancel_invoice/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -415,11 +415,11 @@ function cancelInvoice() {
                 lightningWalletButton.classList.add('hidden');
             }
             
-            // 🔄 페이지 새로고침으로 완전 초기화
+            // 🔄 페이지 새로고침으로 UI 초기화 (참가자 정보는 유지됨)
             setTimeout(() => {
-                showPaymentStatus('페이지를 새로고침하여 초기화합니다...', 'info');
+                showPaymentStatus('결제 화면을 초기화합니다...', 'info');
                 window.location.reload();
-            }, 1500);
+            }, 1000);  // 1.5초 → 1초로 단축
             
         } else {
             // 결제가 이미 완료된 경우 처리
@@ -752,7 +752,7 @@ function checkPaymentStatusEnhanced() {
     
     console.log('🔍 결제 상태 확인 중...', currentPaymentHash);
     
-    return fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/${window.checkoutData.orderId}/check_payment/`, {
+    return fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/check_payment/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

@@ -403,8 +403,13 @@ def meetup_checkout_complete(request, store_id, meetup_id, order_id):
             MeetupOrder,
             id=order_id,
             meetup=meetup,
-            status__in=['confirmed', 'completed']
+            status__in=['confirmed', 'completed']  # 🔄 확정된 주문만 결제 완료 페이지 접근 가능
         )
+        
+        # 결제가 완료되지 않은 경우 결제 페이지로 리다이렉트
+        if not order.paid_at:
+            messages.warning(request, '결제를 완료해주세요.')
+            return redirect('meetup:meetup_checkout_payment', store_id=store_id, meetup_id=meetup_id)
         
         # 할인 금액 계산 (조기등록 할인)
         discount_amount = 0

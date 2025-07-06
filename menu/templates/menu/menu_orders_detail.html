@@ -80,7 +80,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">등록일</label>
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
-              <span class="local-time" data-datetime="{{ menu.created_at|date:'c' }}">{{ menu.created_at|date:'Y년 m월 d일 H:i' }}</span>
+              <span>{{ menu.created_at|date:"Y-m-d H:i:s" }}</span>
             </div>
           </div>
         </div>
@@ -144,7 +144,7 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
-                  <span class="local-time" data-datetime="{{ item.order.created_at|date:'c' }}">{{ item.order.created_at|date:"Y.m.d H:i" }}</span>
+                  <span>{{ item.order.created_at|date:"Y-m-d H:i:s" }}</span>
                 </td>
                 <td class="px-6 py-4">
                   {% if item.selected_options %}
