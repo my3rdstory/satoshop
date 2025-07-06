@@ -189,6 +189,31 @@
               </div>
             </div>
 
+            <!-- QR 코드 섹션 -->
+            <div class="text-center">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가 확인 QR코드</h4>
+              <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 inline-block mb-3">
+                <canvas class="qr-code-canvas w-24 h-24" data-order-number="{{ order.order_number }}"></canvas>
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">주문번호: {{ order.order_number }}</div>
+              <div class="flex flex-col gap-2">
+                <button 
+                  onclick="downloadQRCode('{{ order.order_number }}')" 
+                  class="inline-flex items-center justify-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
+                >
+                  <i class="fas fa-download mr-1"></i>
+                  QR코드 다운로드
+                </button>
+                <button 
+                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.meetup.name|escapejs }}', '{{ order.participant_name|escapejs }}', '{{ order.participant_email|escapejs }}', '{{ order.confirmed_at|date:"Y년 m월 d일 H:i"|escapejs }}', '{{ order.meetup.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.meetup.location_full_address|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ order.meetup.store.store_name|escapejs }}')" 
+                  class="inline-flex items-center justify-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                >
+                  <i class="fas fa-file-text mr-1"></i>
+                  참가 정보 다운로드
+                </button>
+              </div>
+            </div>
+
             <!-- 참가자 정보 및 결제 정보 -->
             <div>
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가자 정보</h4>
@@ -266,6 +291,17 @@
           </div>
           {% endif %}
           
+          <!-- 주최자 완료 안내 메시지 -->
+          {% if order.meetup.completion_message %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">주최자 안내사항</h4>
+            <div class="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-2"></i>
+              <div class="inline">{{ order.meetup.completion_message|linebreaks }}</div>
+            </div>
+          </div>
+          {% endif %}
+
           <!-- 특이사항 -->
           {% if order.meetup.special_notes %}
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
@@ -368,7 +404,135 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- QR 코드 라이브러리 -->
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+
 <script>
-// 필요시 추가 JavaScript 기능
+// QR 코드 생성 및 관리
+document.addEventListener('DOMContentLoaded', function() {
+    const qrCanvases = document.querySelectorAll('.qr-code-canvas');
+    
+    qrCanvases.forEach(canvas => {
+        const orderNumber = canvas.getAttribute('data-order-number');
+        
+        if (orderNumber) {
+            // QR 코드 생성
+            new QRious({
+                element: canvas,
+                value: orderNumber,
+                size: 128,
+                background: 'white',
+                foreground: 'black',
+                level: 'M'
+            });
+        }
+    });
+});
+
+// QR코드 다운로드 함수
+function downloadQRCode(orderNumber) {
+    const canvas = document.querySelector(`canvas[data-order-number="${orderNumber}"]`);
+    if (!canvas) {
+        console.error('QR 코드를 찾을 수 없습니다.');
+        return;
+    }
+    
+    try {
+        // Canvas를 PNG로 변환
+        const dataURL = canvas.toDataURL('image/png');
+        
+        // 다운로드 링크 생성
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = `${orderNumber}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        console.log('QR코드 다운로드 완료');
+    } catch (error) {
+        console.error('QR코드 다운로드 실패:', error);
+    }
+}
+
+// 참가 정보 다운로드 함수
+function downloadParticipantInfo(orderNumber, meetupName, participantName, participantEmail, confirmedAt, meetupDate, meetupLocation, totalPrice, storeName) {
+    const textContent = `밋업 참가 확인서
+========================
+
+밋업 정보:
+- 밋업명: ${meetupName}
+- 주최: ${storeName}
+- 일시: ${meetupDate}
+- 장소: ${meetupLocation}
+
+참가자 정보:
+- 이름: ${participantName}
+- 이메일: ${participantEmail}
+- 주문번호: ${orderNumber}
+- 참가 확정일시: ${confirmedAt}
+
+결제 정보:
+- 최종 결제금액: ${totalPrice} sats
+
+이 파일은 밋업 참가 증명서입니다.
+밋업 당일 QR코드와 함께 지참해 주세요.
+
+========================
+생성일시: ${new Date().toLocaleString('ko-KR')}`;
+
+    // 파일 다운로드
+    try {
+        // UTF-8 BOM 추가하여 인코딩 문제 방지
+        const BOM = '\uFEFF';
+        const content = BOM + textContent;
+        
+        // 모바일 브라우저 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile && navigator.share) {
+            // 모바일에서 Web Share API 사용 가능한 경우
+            const file = new File([content], `${orderNumber}.txt`, { type: 'text/plain;charset=utf-8' });
+            navigator.share({
+                files: [file],
+                title: '밋업 참가 확인서',
+                text: `${meetupName} 참가 확인서`
+            }).catch(err => {
+                console.log('공유 취소 또는 실패:', err);
+                // 공유 실패 시 기본 다운로드 방식 사용
+                downloadWithBlob();
+            });
+        } else {
+            // 기본 다운로드 방식
+            downloadWithBlob();
+        }
+        
+        function downloadWithBlob() {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${orderNumber}.txt`;
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            
+            // 리소스 정리
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+        }
+        
+    } catch (error) {
+        console.error('파일 다운로드 실패:', error);
+        // 대안으로 새 창에서 텍스트 표시
+        const newWindow = window.open();
+        newWindow.document.write(`<pre style="font-family: monospace; white-space: pre-wrap; padding: 20px;">${textContent}</pre>`);
+        newWindow.document.title = `${orderNumber}.txt`;
+    }
+    
+    console.log('참가 정보 다운로드 완료');
+}
 </script>
 {% endblock %} 
