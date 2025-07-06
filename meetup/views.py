@@ -897,3 +897,140 @@ def meetup_capacity_status(request, store_id, meetup_id):
         return JsonResponse({'error': '정원 정보를 가져올 수 없습니다.'}, status=500)
 
 # 무료 밋업 체크아웃 뷰는 views_free.py로 분리됨
+
+@login_required
+def meetup_checker(request, store_id, meetup_id):
+    """밋업체커 - QR 스캔 및 수동 참석 확인"""
+    # 스토어 소유자 권한 확인
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        messages.error(request, '권한이 없습니다.')
+        return redirect('stores:store_detail', store_id=store_id)
+    
+    # 밋업 조회
+    meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+    
+    # 통계 계산
+    total_participants = MeetupOrder.objects.filter(
+        meetup=meetup,
+        status__in=['confirmed', 'completed']
+    ).count()
+    
+    attended_count = MeetupOrder.objects.filter(
+        meetup=meetup,
+        status__in=['confirmed', 'completed'],
+        attended=True
+    ).count()
+    
+    attendance_rate = (attended_count / total_participants * 100) if total_participants > 0 else 0
+    
+    context = {
+        'store': store,
+        'meetup': meetup,
+        'total_participants': total_participants,
+        'attended_count': attended_count,
+        'attendance_rate': attendance_rate,
+    }
+    
+    return render(request, 'meetup/meetup_checker.html', context)
+
+@login_required
+@require_POST
+@csrf_exempt
+def check_attendance(request, store_id, meetup_id):
+    """QR 코드 또는 주문번호로 참석 확인"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        
+        # 밋업 조회
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        # 요청 데이터 파싱
+        data = json.loads(request.body)
+        order_number = data.get('order_number', '').strip()
+        source = data.get('source', 'unknown')  # 'qr' 또는 'manual'
+        
+        if not order_number:
+            return JsonResponse({
+                'success': False,
+                'error': '주문번호가 필요합니다.'
+            })
+        
+        # 주문 조회
+        try:
+            order = MeetupOrder.objects.get(
+                order_number=order_number,
+                meetup=meetup,
+                status__in=['confirmed', 'completed']
+            )
+        except MeetupOrder.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '해당 주문번호를 찾을 수 없거나 이 밋업의 참가자가 아닙니다.'
+            })
+        
+        # 이미 참석 확인된 경우
+        if order.attended:
+            return JsonResponse({
+                'success': False,
+                'error': f'{order.participant_name}님은 이미 참석 확인되었습니다. (확인시간: {order.attended_at.strftime("%m/%d %H:%M")})'
+            })
+        
+        # 참석 확인 처리
+        order.attended = True
+        order.attended_at = timezone.now()
+        order.save()
+        
+        # 현재 통계 재계산
+        total_participants = MeetupOrder.objects.filter(
+            meetup=meetup,
+            status__in=['confirmed', 'completed']
+        ).count()
+        
+        attended_count = MeetupOrder.objects.filter(
+            meetup=meetup,
+            status__in=['confirmed', 'completed'],
+            attended=True
+        ).count()
+        
+        attendance_rate = (attended_count / total_participants * 100) if total_participants > 0 else 0
+        
+        logger.info(f"참석 확인 완료 - 밋업: {meetup.name}, 참가자: {order.participant_name}, 주문: {order_number}, 방법: {source}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참석 확인이 완료되었습니다.',
+            'participant': {
+                'name': order.participant_name,
+                'email': order.participant_email,
+                'phone': order.participant_phone,
+                'order_number': order.order_number,
+                'attended_at': order.attended_at.isoformat()
+            },
+            'stats': {
+                'total_participants': total_participants,
+                'attended_count': attended_count,
+                'attendance_rate': attendance_rate
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"참석 확인 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참석 확인 중 오류가 발생했습니다.'
+        })
