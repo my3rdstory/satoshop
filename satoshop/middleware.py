@@ -14,27 +14,48 @@ class PermissionsPolicyMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         
-        # Permissions Policy 헤더 추가
-        # unload 이벤트를 모든 오리진에서 허용하여 Django admin 호환성 보장
-        permissions_policy = (
-            'accelerometer=(), '
-            'autoplay=(), '
-            'camera=(), '
-            'display-capture=(), '
-            'encrypted-media=(), '
-            'geolocation=(), '
-            'gyroscope=(), '
-            'magnetometer=(), '
-            'microphone=(), '
-            'midi=(), '
-            'payment=(), '
-            'picture-in-picture=(), '
-            'publickey-credentials-get=(), '
-            'sync-xhr=(), '
-            'usb=(), '
-            'xr-spatial-tracking=(), '
-            'unload=*'
-        )
+        # meetup_checker 페이지는 카메라 접근 허용
+        if 'meetup' in request.path and 'checker' in request.path:
+            permissions_policy = (
+                'accelerometer=(), '
+                'autoplay=(), '
+                'camera=*, '  # 카메라 접근 허용
+                'display-capture=(), '
+                'encrypted-media=(), '
+                'geolocation=(), '
+                'gyroscope=(), '
+                'magnetometer=(), '
+                'microphone=(), '
+                'midi=(), '
+                'payment=(), '
+                'picture-in-picture=(), '
+                'publickey-credentials-get=(), '
+                'sync-xhr=(), '
+                'usb=(), '
+                'xr-spatial-tracking=(), '
+                'unload=*'
+            )
+        else:
+            # 기본 정책 (카메라 접근 차단)
+            permissions_policy = (
+                'accelerometer=(), '
+                'autoplay=(), '
+                'camera=(), '
+                'display-capture=(), '
+                'encrypted-media=(), '
+                'geolocation=(), '
+                'gyroscope=(), '
+                'magnetometer=(), '
+                'microphone=(), '
+                'midi=(), '
+                'payment=(), '
+                'picture-in-picture=(), '
+                'publickey-credentials-get=(), '
+                'sync-xhr=(), '
+                'usb=(), '
+                'xr-spatial-tracking=(), '
+                'unload=*'
+            )
         
         response['Permissions-Policy'] = permissions_policy
         return response 

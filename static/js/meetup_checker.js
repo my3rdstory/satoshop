@@ -153,7 +153,7 @@ function showCameraGuidance() {
                     <ul class="text-yellow-700 dark:text-yellow-300 text-sm mb-3">
                         <li>• <strong>localhost:8000</strong> 또는 <strong>127.0.0.1:8000</strong>으로 접속하세요</li>
                         <li>• 브라우저에서 카메라 권한을 허용해주세요</li>
-                        <li>• 권한 정책 오류가 발생하면 페이지를 새로고침해주세요</li>
+                        <li>• 브라우저 주소창의 카메라 아이콘을 클릭하여 허용하세요</li>
                         <li>• 카메라 사용이 어려운 경우 하단의 수동 입력을 이용하세요</li>
                     </ul>
                     <button onclick="window.location.reload()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
@@ -198,17 +198,14 @@ async function getCameras() {
                 console.log('권한 요청 실패, 기본 목록으로 진행:', permissionError.name);
                 
                 // 권한 정책 오류 특별 처리
-                if (permissionError.name === 'NotAllowedError' && 
-                    permissionError.message && 
-                    permissionError.message.includes('policy')) {
-                    console.error('권한 정책에 의해 카메라 접근이 차단되었습니다.');
-                    showToast('이 페이지에서 카메라 접근이 차단되었습니다. 페이지를 새로고침해주세요.', 'error');
-                    // 페이지 새로고침 제안
-                    setTimeout(() => {
-                        if (confirm('카메라 접근을 위해 페이지를 새로고침하시겠습니까?')) {
-                            window.location.reload();
-                        }
-                    }, 2000);
+                if (permissionError.name === 'NotAllowedError') {
+                    if (permissionError.message && permissionError.message.includes('policy')) {
+                        console.error('권한 정책에 의해 카메라 접근이 차단되었습니다.');
+                        showToast('카메라 접근 권한이 차단되었습니다. 브라우저 설정에서 카메라 권한을 허용해주세요.', 'error');
+                    } else {
+                        console.log('사용자가 카메라 권한을 거부했습니다.');
+                        showToast('카메라 권한이 거부되었습니다. 브라우저 주소창의 카메라 아이콘을 클릭하여 허용해주세요.', 'warning');
+                    }
                 }
                 // 권한이 거부되어도 기본 카메라 목록은 표시
             }
@@ -347,17 +344,6 @@ async function startScanner(deviceId = null) {
     try {
         console.log('스캐너 시작 시도...', deviceId ? `디바이스 ID: ${deviceId}` : '기본 카메라');
         
-        const constraints = {
-            video: {
-                facingMode: deviceId ? undefined : 'environment',
-                deviceId: deviceId ? { exact: deviceId } : undefined,
-                width: { ideal: 400 },
-                height: { ideal: 300 }
-            }
-        };
-        
-        console.log('카메라 제약 조건:', constraints);
-        
         // 기존 스트림이 있으면 정리
         if (stream) {
             console.log('기존 스트림 정리...');
@@ -365,14 +351,65 @@ async function startScanner(deviceId = null) {
             stream = null;
         }
         
-        console.log('getUserMedia 호출 중...');
-        
         // 권한 정책 확인
         if (document.featurePolicy && !document.featurePolicy.allowsFeature('camera')) {
             throw new Error('카메라 접근이 정책적으로 차단되어 있습니다.');
         }
         
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        // 유연한 제약 조건 사용
+        let constraints;
+        
+        if (deviceId) {
+            // 특정 디바이스 선택 시
+            constraints = {
+                video: {
+                    deviceId: { ideal: deviceId },  // exact 대신 ideal 사용
+                    width: { min: 200, ideal: 400, max: 800 },
+                    height: { min: 150, ideal: 300, max: 600 }
+                }
+            };
+        } else {
+            // 기본 카메라 선택 시 - 모바일은 후면, 데스크톱은 전면
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            constraints = {
+                video: {
+                    facingMode: isMobile ? { ideal: 'environment' } : { ideal: 'user' },
+                    width: { min: 200, ideal: 400, max: 800 },
+                    height: { min: 150, ideal: 300, max: 600 }
+                }
+            };
+        }
+        
+        console.log('카메라 제약 조건:', constraints);
+        console.log('getUserMedia 호출 중...');
+        
+        // 첫 번째 시도
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (constraintError) {
+            if (constraintError.name === 'OverconstrainedError') {
+                console.warn('제약 조건이 너무 엄격함, 기본 설정으로 재시도...', constraintError.constraint);
+                
+                // 더 간단한 fallback 제약 조건
+                const fallbackConstraints = {
+                    video: true  // 가장 기본적인 비디오 요청
+                };
+                
+                console.log('Fallback 제약 조건:', fallbackConstraints);
+                showToast('카메라 설정을 조정하는 중...', 'info');
+                
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+                    console.log('Fallback으로 카메라 스트림 획득 성공');
+                } catch (fallbackError) {
+                    console.error('Fallback도 실패:', fallbackError);
+                    throw fallbackError;
+                }
+            } else {
+                throw constraintError;
+            }
+        }
+        
         console.log('카메라 스트림 획득 성공:', stream.getVideoTracks().length, '개 비디오 트랙');
         
         if (!video) {
@@ -436,7 +473,7 @@ function handleCameraError(error) {
             errorMessage += '카메라가 다른 애플리케이션에서 사용 중입니다.';
             break;
         case 'OverconstrainedError':
-            errorMessage += '요청한 카메라 설정을 지원하지 않습니다.';
+            errorMessage += '요청한 카메라 설정을 지원하지 않습니다. 다른 카메라를 선택하거나 페이지를 새로고침해주세요.';
             break;
         case 'SecurityError':
             errorMessage += 'HTTPS 또는 localhost에서만 카메라를 사용할 수 있습니다.';
@@ -484,15 +521,16 @@ function showDetailedCameraHelp(error) {
             
             ${error.message && error.message.includes('정책적으로 차단') ? `
             <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                <h4 class="font-semibold text-red-800 dark:text-red-200 mb-2">🚫 권한 정책 에러</h4>
+                <h4 class="font-semibold text-red-800 dark:text-red-200 mb-2">⚠️ 카메라 설정 문제</h4>
                 <p class="text-sm text-red-700 dark:text-red-300 mb-2">
-                    브라우저의 권한 정책에 의해 카메라 접근이 차단되었습니다.
+                    카메라가 요청한 설정을 지원하지 않거나 권한이 차단되었습니다.
                 </p>
                 <ul class="text-sm text-red-700 dark:text-red-300 space-y-1">
                     <li>• 페이지를 완전히 새로고침해주세요 (Ctrl+F5)</li>
+                    <li>• 다른 카메라를 선택해보세요</li>
+                    <li>• 카메라가 다른 프로그램에서 사용 중인지 확인하세요</li>
+                    <li>• 브라우저 설정에서 카메라 권한을 확인하세요</li>
                     <li>• 시크릿/프라이빗 브라우징 모드에서 시도해보세요</li>
-                    <li>• 다른 브라우저에서 접속해보세요</li>
-                    <li>• 브라우저 설정에서 카메라 차단 목록을 확인하세요</li>
                 </ul>
             </div>
             ` : ''}
