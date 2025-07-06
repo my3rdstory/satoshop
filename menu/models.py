@@ -285,9 +285,8 @@ class MenuOrder(models.Model):
     def generate_order_number(self):
         """주문번호 생성"""
         import datetime
-        import random
         now = datetime.datetime.now()
-        return f"MENU{now.strftime('%Y%m%d')}{random.randint(100000, 999999)}"
+        return f"MENU-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S')}"
 
 
 class MenuOrderItem(models.Model):

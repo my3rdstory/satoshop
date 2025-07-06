@@ -7,10 +7,6 @@
 <link rel="stylesheet" href="{% static 'css/menu-orders-detail.css' %}">
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'js/timezone_converter.js' %}"></script>
-{% endblock %}
-
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -233,5 +229,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
 <script src="{% static 'js/menu-orders-detail.js' %}"></script>
 {% endblock %} 
