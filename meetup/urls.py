@@ -58,6 +58,10 @@ urlpatterns = [
     # 밋업 임시 예약 해제 (페이지 벗어날 때)
     path('<str:store_id>/<int:meetup_id>/release_reservation/', views.release_meetup_reservation, name='release_reservation'),
     
+    # 밋업체커 (QR 스캔 및 수동 참석 확인)
+    path('<str:store_id>/<int:meetup_id>/checker/', views.meetup_checker, name='meetup_checker'),
+    path('<str:store_id>/<int:meetup_id>/check-attendance/', views.check_attendance, name='check_attendance'),
+    
     # Admin 전용 URL
     path('admin/csv-upload/<int:meetup_id>/', admin_views.csv_upload_view, name='admin_csv_upload'),
     path('admin/csv-progress/<str:task_id>/', admin_views.get_progress, name='admin_csv_progress'),
