@@ -221,7 +221,7 @@ def create_meetup_order(meetup, participant_data, is_free=False, user=None):
     for option_data in participant_data.get('selected_options', []):
         try:
             option = MeetupOption.objects.get(id=option_data['option_id'])
-            choice = MeetupOptionChoice.objects.get(id=option_data['choice_id'])
+            choice = MeetupChoice.objects.get(id=option_data['choice_id'])
             
             MeetupOrderOption.objects.create(
                 order=order,
@@ -229,7 +229,7 @@ def create_meetup_order(meetup, participant_data, is_free=False, user=None):
                 choice=choice,
                 additional_price=option_data['additional_price']
             )
-        except (MeetupOption.DoesNotExist, MeetupOptionChoice.DoesNotExist):
+        except (MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
             logger.warning(f"옵션 또는 선택지를 찾을 수 없음: option_id={option_data['option_id']}, choice_id={option_data['choice_id']}")
     
     return order
