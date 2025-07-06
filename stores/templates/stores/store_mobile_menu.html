@@ -63,9 +63,6 @@
     <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-line mr-2"></i>밋업 현황
     </a>
-    <a href="{% url 'meetup:meetup_checker_select' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-qrcode mr-2"></i>밋업체커
-    </a>
     <div class="border-t border-gray-600 my-1"></div>
     {% else %}
     <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
