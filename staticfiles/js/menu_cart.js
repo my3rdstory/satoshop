@@ -1047,6 +1047,11 @@ function handleCancelSuccess() {
     // 결제 관련 변수 초기화
     currentPaymentHash = null;
     paymentExpiresAt = null;
+    
+    // 🔄 페이지 새로고침으로 완전 초기화
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
 }
 
 // 라이트닝 지갑 열기

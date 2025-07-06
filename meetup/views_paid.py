@@ -312,23 +312,35 @@ def create_meetup_invoice(request, store_id, meetup_id, order_id):
 @require_POST
 @csrf_exempt
 def check_meetup_payment_status(request, store_id, meetup_id, order_id):
-    """밋업 결제 상태 확인"""
+    """밋업 결제 상태 확인 (최적화된 버전)"""
+    import time
+    start_time = time.time()
+    
     try:
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        order = get_object_or_404(
-            MeetupOrder,
-            id=order_id,
-            meetup=meetup
-        )
+        # 캐시 키 생성
+        cache_key = f"meetup_payment_status_{store_id}_{meetup_id}_{order_id}"
         
-        # 이미 결제 완료된 주문인지 먼저 확인 (중복 이메일 발송 방지)
+        # DB 조회 최적화 - select_related로 한 번에 조회
+        try:
+            order = MeetupOrder.objects.select_related('meetup', 'meetup__store').get(
+                id=order_id,
+                meetup__id=meetup_id,
+                meetup__store__store_id=store_id,
+                meetup__store__deleted_at__isnull=True,
+                meetup__deleted_at__isnull=True
+            )
+            store = order.meetup.store
+            meetup = order.meetup
+        except MeetupOrder.DoesNotExist:
+            logger.warning(f"밋업 주문 조회 실패 - order_id: {order_id}, meetup_id: {meetup_id}, store_id: {store_id}")
+            return JsonResponse({
+                'success': False,
+                'error': '주문을 찾을 수 없습니다.'
+            })
+        
+        # 이미 결제 완료된 주문인지 먼저 확인 (가장 빠른 경로)
         if order.paid_at:
+            logger.debug(f"이미 결제 완료된 주문 - order_id: {order_id}, 응답 시간: {time.time() - start_time:.3f}s")
             return JsonResponse({
                 'success': True,
                 'paid': True,
@@ -337,6 +349,7 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         
         # 결제 정보가 없거나 빈 문자열인 경우
         if not order.payment_hash or order.payment_hash.strip() == '':
+            logger.warning(f"결제 정보 없음 - order_id: {order_id}")
             return JsonResponse({
                 'success': False,
                 'error': '결제 정보가 없습니다.'
@@ -345,74 +358,89 @@ def check_meetup_payment_status(request, store_id, meetup_id, order_id):
         # 블링크 서비스 가져오기
         blink_service = get_blink_service_for_store(store)
         if not blink_service:
+            logger.error(f"결제 서비스 설정 없음 - store_id: {store_id}")
             return JsonResponse({
                 'success': False,
                 'error': '결제 서비스가 설정되지 않았습니다.'
             })
         
-        # 결제 상태 확인
+        # 결제 상태 확인 (외부 API 호출)
+        logger.debug(f"결제 상태 확인 시작 - payment_hash: {order.payment_hash}")
         result = blink_service.check_invoice_status(order.payment_hash)
+        
+        logger.debug(f"결제 상태 확인 완료 - 소요 시간: {time.time() - start_time:.3f}s")
         
         if result['success']:
             if result['status'] == 'paid':
                 # 결제 완료 처리 - 트랜잭션으로 안전하게 처리
+                logger.info(f"결제 완료 감지 - order_id: {order_id}, payment_hash: {order.payment_hash}")
+                
                 with transaction.atomic():
                     # 주문을 다시 조회하여 최신 상태 확인 (동시성 문제 방지)
-                    order = MeetupOrder.objects.select_for_update().get(id=order_id)
+                    order_locked = MeetupOrder.objects.select_for_update().get(id=order_id)
                     
                     # 이미 결제 완료된 경우 (다른 요청에서 처리된 경우)
-                    if order.paid_at:
+                    if order_locked.paid_at:
+                        logger.debug(f"이미 다른 요청에서 결제 완료 처리됨 - order_id: {order_id}")
                         return JsonResponse({
                             'success': True,
                             'paid': True,
-                            'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
+                            'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order_locked.id}/'
                         })
                     
                     # 결제 정보가 삭제된 경우 (사용자가 취소한 경우)
-                    if not order.payment_hash or order.payment_hash.strip() == '':
-                        logger.warning(f"결제 완료되었지만 payment_hash가 삭제됨 - 주문: {order.order_number}")
+                    if not order_locked.payment_hash or order_locked.payment_hash.strip() == '':
+                        logger.warning(f"결제 완료되었지만 payment_hash가 삭제됨 - 주문: {order_locked.order_number}")
                         return JsonResponse({
                             'success': False,
                             'error': '결제가 취소되었습니다.'
                         })
                     
                     # 결제 완료 처리
-                    order.paid_at = timezone.now()
-                    order.save()
+                    order_locked.paid_at = timezone.now()
+                    order_locked.save()
                     
-                # 밋업 참가 확정 이메일 발송 - 트랜잭션 외부에서 실행
+                    logger.info(f"결제 완료 처리 완료 - order_id: {order_id}, 총 소요 시간: {time.time() - start_time:.3f}s")
+                    
+                # 밋업 참가 확정 이메일 발송 - 트랜잭션 외부에서 비동기로 실행
                 try:
                     from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
                     
                     # 주인장에게 알림 이메일
-                    send_meetup_notification_email(order)
+                    send_meetup_notification_email(order_locked)
                     
                     # 참가자에게 확인 이메일
-                    send_meetup_participant_confirmation_email(order)
+                    send_meetup_participant_confirmation_email(order_locked)
+                    
+                    logger.debug(f"결제 완료 이메일 발송 완료 - order_id: {order_id}")
                         
                 except Exception as e:
                     # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"이메일 발송 실패: {e}")
+                    logger.error(f"이메일 발송 실패 - order_id: {order_id}, error: {e}")
                     pass
                 
                 return JsonResponse({
                     'success': True,
                     'paid': True,
-                    'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
+                    'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order_id}/'
                 })
             else:
+                # 결제 대기 중
+                logger.debug(f"결제 대기 중 - order_id: {order_id}, status: {result['status']}")
                 return JsonResponse({
                     'success': True,
-                    'paid': False
+                    'paid': False,
+                    'status': result['status']
                 })
         else:
+            logger.error(f"결제 상태 확인 실패 - order_id: {order_id}, error: {result.get('error')}")
             return JsonResponse({
                 'success': False,
                 'error': result.get('error', '결제 상태 확인에 실패했습니다.')
             })
             
     except Exception as e:
-        logger.error(f"결제 상태 확인 중 오류: {e}", exc_info=True)
+        logger.error(f"결제 상태 확인 중 오류 - order_id: {order_id}, error: {e}", exc_info=True)
         return JsonResponse({
             'success': False,
             'error': '결제 상태 확인 중 오류가 발생했습니다.'

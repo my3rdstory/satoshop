@@ -5,6 +5,10 @@
 
 {% block title %}내 밋업 참가 내역 - {{ store.store_name }}{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_checkout.css' %}">
 {% endblock %}
@@ -64,8 +68,9 @@
                 </div>
                 <div>
                   <span class="font-medium">신청일:</span>
-                  <span>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                  <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:"Y-m-d H:i" }}</span>
                 </div>
+                <div class="text-xs text-gray-400 user-timezone"></div>
                 {% if order.paid_at %}
                 <div>
                   <span class="font-medium">결제완료:</span>

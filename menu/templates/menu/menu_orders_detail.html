@@ -7,6 +7,10 @@
 <link rel="stylesheet" href="{% static 'css/menu-orders-detail.css' %}">
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
+{% endblock %}
+
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -76,7 +80,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">등록일</label>
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
-              {{ menu.created_at|date:'Y년 m월 d일 H:i' }}
+              <span class="local-time" data-datetime="{{ menu.created_at|date:'c' }}">{{ menu.created_at|date:'Y년 m월 d일 H:i' }}</span>
             </div>
           </div>
         </div>
@@ -139,7 +143,9 @@
                     {{ item.total_price|floatformat:0 }} sats
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y.m.d H:i" }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
+                  <span class="local-time" data-datetime="{{ item.order.created_at|date:'c' }}">{{ item.order.created_at|date:"Y.m.d H:i" }}</span>
+                </td>
                 <td class="px-6 py-4">
                   {% if item.selected_options %}
                     <div class="text-sm text-gray-600 dark:text-gray-400">

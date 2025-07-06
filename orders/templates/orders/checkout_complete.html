@@ -41,6 +41,10 @@
 </style>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
+{% endblock %}
+
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,7 +87,10 @@
           
           <div class="space-y-2">
             <div class="text-sm font-medium text-gray-700 dark:text-gray-300">주문일시</div>
-            <div class="text-gray-900 dark:text-white">{{ primary_order.created_at|date:"Y년 m월 d일 H:i" }}</div>
+            <div class="text-gray-900 dark:text-white">
+              <span class="local-time" data-datetime="{{ primary_order.created_at|date:'c' }}">{{ primary_order.created_at|date:"Y년 m월 d일 H:i" }}</span>
+              <small class="text-gray-500 dark:text-gray-400 user-timezone block text-xs mt-1"></small>
+            </div>
           </div>
           
           <div class="space-y-2">

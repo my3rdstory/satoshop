@@ -701,24 +701,12 @@ function cancelInvoice() {
       currentInvoice = null;
       
       // 성공 메시지 표시
-      showPaymentStatus('결제가 취소되었습니다.', 'error');
+      showPaymentStatus('결제가 취소되었습니다. 페이지를 새로고침하여 초기화합니다...', 'success');
       
-      // 취소 버튼 숨기기
-      document.getElementById('cancelContainer').classList.add('hidden');
-      
-      // 인보이스 생성 버튼 복원
-      const generateBtn = document.getElementById('generateInvoiceBtn');
-      generateBtn.disabled = false;
-      generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
-      
-      // 인보이스 컨테이너 숨기기
-      document.getElementById('invoiceContainer').classList.add('hidden');
-      
-      // 라이트닝 지갑 버튼 숨기기
-      const lightningWalletButton = document.getElementById('lightningWalletButton');
-      if (lightningWalletButton) {
-        lightningWalletButton.classList.add('hidden');
-      }
+      // 🔄 페이지 새로고침으로 완전 초기화
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
       
     } else {
       // 실패 응답 처리

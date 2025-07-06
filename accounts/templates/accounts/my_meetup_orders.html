@@ -13,6 +13,10 @@
 </style>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="bg-gray-50 dark:bg-gray-900 py-8">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -66,8 +70,9 @@
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">신청일시</p>
                 <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
                   <i class="fas fa-clock mr-2 text-xs text-gray-400"></i>
-                  {{ order.created_at|date:'m월 d일 H:i' }}
+                  <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:'m월 d일 H:i' }}</span>
                 </p>
+                <small class="text-gray-400 user-timezone text-xs block mt-1"></small>
               </div>
             </div>
             

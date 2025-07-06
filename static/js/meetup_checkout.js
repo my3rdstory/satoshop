@@ -264,7 +264,12 @@ function startPaymentStatusCheck() {
         clearInterval(paymentCheckInterval);
     }
     
-    paymentCheckInterval = setInterval(checkPaymentStatus, 3000); // 3초마다 확인
+    // 즉시 한 번 확인하고 1초마다 확인 (기존 3초에서 단축)
+    checkPaymentStatus();
+    paymentCheckInterval = setInterval(checkPaymentStatus, 1000);
+    
+    // Page Visibility API 이벤트 리스너 추가
+    setupPageVisibilityListener();
 }
 
 function checkPaymentStatus() {
@@ -409,6 +414,12 @@ function cancelInvoice() {
             if (lightningWalletButton) {
                 lightningWalletButton.classList.add('hidden');
             }
+            
+            // 🔄 페이지 새로고침으로 완전 초기화
+            setTimeout(() => {
+                showPaymentStatus('페이지를 새로고침하여 초기화합니다...', 'info');
+                window.location.reload();
+            }, 1500);
             
         } else {
             // 결제가 이미 완료된 경우 처리
@@ -658,4 +669,179 @@ function openLightningWallet() {
         copyInvoiceToClipboard();
         showPaymentStatus('지갑 열기에 실패했습니다. 인보이스가 클립보드에 복사되었으니 직접 붙여넣어주세요.', 'warning');
     }
-} 
+    
+    // 지갑 앱 열림 후 즉시 결제 상태 확인 트리거
+    schedulePaymentCheck();
+}
+
+// 지갑 앱 열림 후 결제 상태 확인 스케줄링
+function schedulePaymentCheck() {
+    if (!currentPaymentHash) return;
+    
+    // 3초 후 첫 번째 확인 (지갑 앱 전환 시간 고려)
+    setTimeout(() => {
+        if (currentPaymentHash) {
+            console.log('지갑 앱 후 첫 번째 결제 상태 확인');
+            checkPaymentStatus();
+        }
+    }, 3000);
+    
+    // 8초 후 두 번째 확인 (결제 처리 시간 고려)
+    setTimeout(() => {
+        if (currentPaymentHash) {
+            console.log('지갑 앱 후 두 번째 결제 상태 확인');
+            checkPaymentStatus();
+        }
+    }, 8000);
+    
+    // 15초 후 세 번째 확인 (최종 확인)
+    setTimeout(() => {
+        if (currentPaymentHash) {
+            console.log('지갑 앱 후 최종 결제 상태 확인');
+            checkPaymentStatus();
+        }
+    }, 15000);
+}
+
+// Page Visibility API 설정
+function setupPageVisibilityListener() {
+    if (typeof document.hidden !== 'undefined') {
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+    } else if (typeof document.webkitHidden !== 'undefined') {
+        document.addEventListener('webkitvisibilitychange', handleVisibilityChange);
+    } else if (typeof document.mozHidden !== 'undefined') {
+        document.addEventListener('mozvisibilitychange', handleVisibilityChange);
+    }
+}
+
+// 페이지 가시성 변경 처리
+function handleVisibilityChange() {
+    if (document.hidden || document.webkitHidden || document.mozHidden) {
+        // 페이지가 백그라운드로 이동
+        console.log('📱 페이지가 백그라운드로 이동 (지갑 앱 열림?)');
+    } else {
+        // 페이지가 다시 활성화됨
+        console.log('📱 페이지가 다시 활성화됨 (지갑 앱에서 돌아옴?)');
+        
+        // 결제 상태 확인 중이면 즉시 확인
+        if (currentPaymentHash && paymentCheckInterval) {
+            console.log('🔍 결제 상태 즉시 확인 실행');
+            checkPaymentStatusEnhanced();
+            
+            // 추가로 2초 후 한 번 더 확인 (결제 완료 처리 시간 고려)
+            setTimeout(() => {
+                if (currentPaymentHash) {
+                    console.log('🔍 결제 상태 추가 확인 실행');
+                    checkPaymentStatusEnhanced();
+                }
+            }, 2000);
+        }
+    }
+}
+
+// 강화된 결제 상태 확인 (로깅 포함)
+function checkPaymentStatusEnhanced() {
+    if (!currentPaymentHash || currentPaymentHash === '') {
+        // payment_hash가 없으면 상태 확인 중지
+        if (paymentCheckInterval) {
+            clearInterval(paymentCheckInterval);
+            paymentCheckInterval = null;
+        }
+        return Promise.resolve();
+    }
+    
+    console.log('🔍 결제 상태 확인 중...', currentPaymentHash);
+    
+    return fetch(`/meetup/${window.checkoutData.storeId}/${window.checkoutData.meetupId}/checkout/${window.checkoutData.orderId}/check_payment/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': window.checkoutData.csrfToken
+        },
+        body: JSON.stringify({
+            payment_hash: currentPaymentHash
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('🔍 결제 상태 확인 결과:', data);
+        
+        if (data.success) {
+            if (data.paid) {
+                // 결제 완료
+                console.log('💳 결제 완료 감지!');
+                
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                    paymentCheckInterval = null;
+                }
+                
+                // 카운트다운 중지
+                if (window.meetupCountdownInstance) {
+                    try {
+                        window.meetupCountdownInstance.stopAndHide();
+                    } catch (error) {
+                        console.log('카운트다운 중지 중 오류:', error);
+                    }
+                }
+                
+                showPaymentStatus('✅ 결제가 완료되었습니다! 참가 확정 페이지로 이동합니다...', 'success');
+                
+                // 2초 후 결제 완료 페이지로 이동
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+            }
+            // 결제 대기 중이면 계속 확인
+        } else {
+            console.log('❌ 결제 상태 확인 실패:', data.error);
+            // 에러가 발생하면 상태 확인 중지
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+                paymentCheckInterval = null;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('🚨 결제 상태 확인 중 네트워크 오류:', error);
+        // 네트워크 에러는 조용히 처리하고 계속 폴링
+    });
+}
+
+// DOM 로드 완료 시 페이지 가시성 리스너 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    setupPageVisibilityListener();
+    
+    // 모바일 디바이스에서 추가 최적화
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+        console.log('📱 모바일 디바이스 감지됨 - 결제 상태 확인 최적화 활성화');
+        
+        // 모바일에서 페이지 포커스 이벤트 추가
+        window.addEventListener('focus', function() {
+            console.log('📱 window focus 이벤트 - 결제 상태 확인');
+            if (currentPaymentHash && paymentCheckInterval) {
+                checkPaymentStatusEnhanced();
+            }
+        });
+        
+        // 모바일에서 페이지 보이기 이벤트 추가
+        window.addEventListener('pageshow', function(event) {
+            console.log('📱 pageshow 이벤트 - 결제 상태 확인');
+            if (currentPaymentHash && paymentCheckInterval) {
+                checkPaymentStatusEnhanced();
+            }
+        });
+    }
+});
+
+// 기존 checkPaymentStatus 함수를 강화된 버전으로 교체
+const originalCheckPaymentStatus = checkPaymentStatus;
+checkPaymentStatus = function() {
+    return checkPaymentStatusEnhanced();
+}; 
