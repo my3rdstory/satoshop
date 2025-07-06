@@ -924,15 +924,30 @@ def meetup_checker(request, store_id, meetup_id):
     
     attendance_rate = (attended_count / total_participants * 100) if total_participants > 0 else 0
     
+    # 티켓 prefix 계산 (TICKET-YYYYMMDD- 형태)
+    if meetup.date_time:
+        date_str = meetup.date_time.strftime('%Y%m%d')
+    else:
+        from datetime import datetime
+        date_str = datetime.now().strftime('%Y%m%d')
+    
+    ticket_prefix = f"TICKET-{date_str}-"
+    
     context = {
         'store': store,
         'meetup': meetup,
         'total_participants': total_participants,
         'attended_count': attended_count,
         'attendance_rate': attendance_rate,
+        'ticket_prefix': ticket_prefix,
     }
     
-    return render(request, 'meetup/meetup_checker.html', context)
+    # Permissions Policy 헤더로 카메라 접근 허용
+    response = render(request, 'meetup/meetup_checker.html', context)
+    response['Permissions-Policy'] = 'camera=*, microphone=()'
+    # 추가적인 헤더 설정
+    response['Feature-Policy'] = 'camera *; microphone ()'
+    return response
 
 @login_required
 @require_POST
@@ -975,14 +990,23 @@ def check_attendance(request, store_id, meetup_id):
         except MeetupOrder.DoesNotExist:
             return JsonResponse({
                 'success': False,
-                'error': '해당 주문번호를 찾을 수 없거나 이 밋업의 참가자가 아닙니다.'
+                'error': '해당 주문번호를 찾을 수 없거나 이 밋업의 참가자가 아닙니다.',
+                'error_type': 'not_found'
             })
         
         # 이미 참석 확인된 경우
         if order.attended:
             return JsonResponse({
                 'success': False,
-                'error': f'{order.participant_name}님은 이미 참석 확인되었습니다. (확인시간: {order.attended_at.strftime("%m/%d %H:%M")})'
+                'error': f'{order.participant_name}님은 이미 참석 확인되었습니다. (확인시간: {order.attended_at.strftime("%m/%d %H:%M")})',
+                'error_type': 'already_attended',
+                'participant': {
+                    'name': order.participant_name,
+                    'email': order.participant_email,
+                    'phone': order.participant_phone,
+                    'order_number': order.order_number,
+                    'attended_at': order.attended_at.isoformat()
+                }
             })
         
         # 참석 확인 처리

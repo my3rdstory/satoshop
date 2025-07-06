@@ -3,6 +3,11 @@
 
 {% block title %}{{ meetup.name }} - 밋업체커{% endblock %}
 
+{% block extra_head %}
+<!-- 카메라 접근 권한 허용 정책 -->
+<meta http-equiv="Permissions-Policy" content="camera=*, microphone=()">
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_checker.css' %}">
 {% endblock %}
@@ -15,12 +20,12 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <i class="fas fa-chart-bar mr-2 text-blue-600"></i>
-                실시간 참석 현황
+                {{ meetup.name }} - 실시간 참석 현황
             </h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-blue-600 dark:text-blue-400" id="total-participants">{{ total_participants }}</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400">총 참가자</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">총 신청자</div>
                 </div>
                 <div class="text-center">
                     <div class="text-2xl font-bold text-green-600 dark:text-green-400" id="attended-count">{{ attended_count }}</div>
@@ -47,7 +52,7 @@
                 
                 <div class="scanner-container text-center">
                     <div class="scanner-overlay mb-4">
-                        <video id="qr-video" class="rounded-lg" playsinline></video>
+                        <video id="qr-video" class="rounded-lg" playsinline muted autoplay></video>
                         <div class="scanner-frame">
                             <div class="scanner-corner top-left"></div>
                             <div class="scanner-corner top-right"></div>
@@ -81,20 +86,25 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                     <i class="fas fa-keyboard mr-2 text-blue-600"></i>
-                    주문번호 직접 입력
+                    티켓번호 직접 입력
                 </h2>
                 
                 <form id="manual-form" class="space-y-4">
                     <div>
                         <label for="order-number-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            주문번호
+                            <span id="order-prefix" class="font-mono text-blue-600 dark:text-blue-400">{{ ticket_prefix }}</span> 부분은 제외하고 티켓 끝부분만 입력하세요.
                         </label>
-                        <input type="text" 
-                               id="order-number-input" 
-                               name="order_number"
-                               placeholder="TICKET-20241201-ABC12345"
-                               class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                               autocomplete="off">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex-1 relative">                                
+                                    <input type="text" 
+                                       id="order-number-input" 
+                                       name="order_number"
+                                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-green-500 font-mono"
+                                       autocomplete="off"
+                                       maxlength="8"
+                                       placeholder="예: A1B2C3D4">
+                             </div>
+                         </div>
                     </div>
                     
                     <button type="submit" 
@@ -110,7 +120,7 @@
         <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <i class="fas fa-history mr-2 text-purple-600"></i>
-                최근 확인 내역
+                최근 확인 내역 (새로고침 하면 사라짐)
             </h2>
             
             <div id="recent-checks" class="space-y-3">

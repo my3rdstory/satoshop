@@ -15,42 +15,120 @@ function getCsrfToken() {
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('페이지 로드 완료, 초기화 시작...');
+    
     video = document.getElementById('qr-video');
+    if (!video) {
+        console.error('QR 비디오 요소를 찾을 수 없습니다');
+    }
     
     // URL에서 store_id와 meetup_id 추출
     const pathParts = window.location.pathname.split('/');
     storeId = pathParts[2]; // /meetup/store_id/meetup_id/checker/
     meetupId = pathParts[3];
+    console.log('Store ID:', storeId, 'Meetup ID:', meetupId);
+    
+    // 브라우저 지원 확인 (먼저 실행)
+    const isSupported = checkBrowserSupport();
+    
+    if (isSupported) {
+        // 카메라 목록 가져오기
+        getCameras();
+    }
     
     // 카메라 오류 안내 표시
     showCameraGuidance();
     
     // 버튼 이벤트 리스너
-    document.getElementById('start-scanner').addEventListener('click', startScanner);
-    document.getElementById('stop-scanner').addEventListener('click', stopScanner);
-    document.getElementById('manual-form').addEventListener('submit', handleManualSubmit);
+    const startButton = document.getElementById('start-scanner');
+    const stopButton = document.getElementById('stop-scanner');
+    const manualForm = document.getElementById('manual-form');
+    const orderInput = document.getElementById('order-number-input');
+    
+    if (startButton) {
+        startButton.addEventListener('click', startScanner);
+    } else {
+        console.error('스캐너 시작 버튼을 찾을 수 없습니다');
+    }
+    
+    if (stopButton) {
+        stopButton.addEventListener('click', stopScanner);
+    } else {
+        console.error('스캐너 중지 버튼을 찾을 수 없습니다');
+    }
+    
+    if (manualForm) {
+        manualForm.addEventListener('submit', handleManualSubmit);
+    } else {
+        console.error('수동 입력 폼을 찾을 수 없습니다');
+    }
     
     // 수동 입력 필드 엔터키 처리
-    document.getElementById('order-number-input').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleManualSubmit(e);
-        }
-    });
+    if (orderInput) {
+        orderInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleManualSubmit(e);
+            }
+        });
+    } else {
+        console.error('주문번호 입력 필드를 찾을 수 없습니다');
+    }
     
-    // 카메라 목록 가져오기
-    getCameras();
-    
-    // 브라우저 지원 확인
-    checkBrowserSupport();
+    console.log('초기화 완료');
 });
 
 // 브라우저 지원 확인
 function checkBrowserSupport() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    console.log('브라우저 지원 확인 시작...');
+    
+    // MediaDevices API 지원 확인
+    if (!navigator.mediaDevices) {
+        console.error('navigator.mediaDevices를 지원하지 않음');
         showToast('이 브라우저는 카메라 기능을 지원하지 않습니다. 수동 입력을 사용해주세요.', 'warning');
-        document.getElementById('start-scanner').disabled = true;
-        document.getElementById('start-scanner').classList.add('btn-disabled');
+        disableScanner();
+        return false;
+    }
+    
+    // getUserMedia 지원 확인
+    if (!navigator.mediaDevices.getUserMedia) {
+        console.error('getUserMedia를 지원하지 않음');
+        showToast('이 브라우저는 카메라 접근을 지원하지 않습니다. 수동 입력을 사용해주세요.', 'warning');
+        disableScanner();
+        return false;
+    }
+    
+    // enumerateDevices 지원 확인
+    if (!navigator.mediaDevices.enumerateDevices) {
+        console.warn('enumerateDevices를 지원하지 않음 - 카메라 목록 표시 불가');
+    }
+    
+    // 보안 컨텍스트 확인
+    if (!window.isSecureContext) {
+        console.warn('비보안 컨텍스트 - HTTPS 또는 localhost가 아님');
+        const currentHost = window.location.host;
+        if (!currentHost.includes('localhost') && !currentHost.includes('127.0.0.1')) {
+            showToast('카메라는 HTTPS 또는 localhost에서만 사용할 수 있습니다.', 'warning');
+        }
+    }
+    
+    console.log('브라우저 지원 확인 완료:', {
+        mediaDevices: !!navigator.mediaDevices,
+        getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+        enumerateDevices: !!navigator.mediaDevices?.enumerateDevices,
+        secureContext: window.isSecureContext,
+        userAgent: navigator.userAgent
+    });
+    
+    return true;
+}
+
+// 스캐너 비활성화
+function disableScanner() {
+    const startButton = document.getElementById('start-scanner');
+    if (startButton) {
+        startButton.disabled = true;
+        startButton.classList.add('btn-disabled');
     }
 }
 
@@ -62,21 +140,26 @@ function showCameraGuidance() {
     
     let isSecureContext = window.isSecureContext;
     
-    // localhost나 127.0.0.1이 아니고 HTTP인 경우 경고 표시
+    // localhost나 127.0.0.1이 아니고 HTTP인 경우 또는 권한 정책 문제가 있는 경우 경고 표시
     if (!isSecureContext && !currentHost.includes('localhost') && !currentHost.includes('127.0.0.1')) {
         const notice = document.createElement('div');
-        notice.className = 'camera-error-notice dark:camera-error-notice.dark';
+        notice.className = 'camera-error-notice bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4';
         notice.innerHTML = `
             <div class="flex items-start">
                 <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-1"></i>
                 <div class="camera-troubleshooting">
                     <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">카메라 접근 안내</h4>
                     <p class="text-yellow-700 dark:text-yellow-300 mb-2">카메라 기능은 보안상 HTTPS 또는 localhost에서만 작동합니다.</p>
-                    <ul class="text-yellow-700 dark:text-yellow-300 text-sm">
+                    <ul class="text-yellow-700 dark:text-yellow-300 text-sm mb-3">
                         <li>• <strong>localhost:8000</strong> 또는 <strong>127.0.0.1:8000</strong>으로 접속하세요</li>
                         <li>• 브라우저에서 카메라 권한을 허용해주세요</li>
+                        <li>• 권한 정책 오류가 발생하면 페이지를 새로고침해주세요</li>
                         <li>• 카메라 사용이 어려운 경우 하단의 수동 입력을 이용하세요</li>
                     </ul>
+                    <button onclick="window.location.reload()" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
+                        <i class="fas fa-sync mr-1"></i>
+                        페이지 새로고침
+                    </button>
                 </div>
             </div>
         `;
@@ -87,33 +170,165 @@ function showCameraGuidance() {
 // 카메라 목록 가져오기
 async function getCameras() {
     try {
-        // 권한 요청 없이 기본 디바이스 목록만 조회
-        const devices = await navigator.mediaDevices.enumerateDevices();
+        console.log('카메라 목록 조회 시작...');
+        
+        // 권한 확인 (브라우저 호환성 고려)
+        let permissionGranted = false;
+        try {
+            if (navigator.permissions && navigator.permissions.query) {
+                const permissions = await navigator.permissions.query({ name: 'camera' });
+                console.log('카메라 권한 상태:', permissions.state);
+                permissionGranted = permissions.state === 'granted';
+            }
+        } catch (permissionError) {
+            console.log('권한 API 지원 안 함, 직접 카메라 접근 시도');
+        }
+        
+        // 권한이 없으면 미리 권한을 요청하여 카메라 목록을 제대로 가져옴
+        if (!permissionGranted) {
+            try {
+                console.log('카메라 목록 조회를 위한 권한 요청...');
+                const tempStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 1, height: 1 } 
+                });
+                console.log('권한 요청 성공, 임시 스트림 정리');
+                tempStream.getTracks().forEach(track => track.stop());
+                permissionGranted = true;
+            } catch (permissionError) {
+                console.log('권한 요청 실패, 기본 목록으로 진행:', permissionError.name);
+                
+                // 권한 정책 오류 특별 처리
+                if (permissionError.name === 'NotAllowedError' && 
+                    permissionError.message && 
+                    permissionError.message.includes('policy')) {
+                    console.error('권한 정책에 의해 카메라 접근이 차단되었습니다.');
+                    showToast('이 페이지에서 카메라 접근이 차단되었습니다. 페이지를 새로고침해주세요.', 'error');
+                    // 페이지 새로고침 제안
+                    setTimeout(() => {
+                        if (confirm('카메라 접근을 위해 페이지를 새로고침하시겠습니까?')) {
+                            window.location.reload();
+                        }
+                    }, 2000);
+                }
+                // 권한이 거부되어도 기본 카메라 목록은 표시
+            }
+        }
+        
+        // 디바이스 목록 조회
+        let devices;
+        try {
+            console.log('디바이스 목록 조회 시도...');
+            devices = await navigator.mediaDevices.enumerateDevices();
+            console.log('디바이스 목록:', devices.length, '개 디바이스');
+        } catch (enumerateError) {
+            console.error('디바이스 목록 조회 실패:', enumerateError);
+            throw enumerateError;
+        }
+        
+        // 비디오 디바이스 필터링
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        console.log('발견된 카메라 수:', videoDevices.length);
+        videoDevices.forEach((device, index) => {
+            console.log(`카메라 ${index + 1}:`, {
+                deviceId: device.deviceId,
+                label: device.label || '(권한 필요)',
+                groupId: device.groupId
+            });
+        });
         
         const select = document.getElementById('camera-select');
+        if (!select) {
+            console.error('카메라 선택 요소를 찾을 수 없습니다');
+            return;
+        }
+        
         select.innerHTML = '<option value="">카메라 선택</option>';
         
+        if (videoDevices.length === 0) {
+            console.warn('사용 가능한 카메라를 찾을 수 없습니다');
+            showToast('카메라가 연결되어 있지 않거나 사용할 수 없습니다.', 'warning');
+            return;
+        }
+        
+        let hasLabels = false;
         videoDevices.forEach((device, index) => {
             const option = document.createElement('option');
             option.value = device.deviceId;
-            option.textContent = device.label || `카메라 ${index + 1}`;
+            const label = device.label || `카메라 ${index + 1}`;
+            option.textContent = label;
             select.appendChild(option);
+            
+            if (device.label) hasLabels = true;
         });
         
-        if (videoDevices.length > 0) {
-            select.classList.remove('hidden');
-            select.addEventListener('change', switchCamera);
+        // 카메라가 있는 경우 선택 박스 표시
+        select.classList.remove('hidden');
+        select.addEventListener('change', switchCamera);
+        
+        // 안내 메시지 표시
+        if (!hasLabels && !permissionGranted) {
+            showToast('카메라를 사용하려면 "스캐너 시작" 버튼을 클릭하여 권한을 허용해주세요.', 'info');
+        } else {
+            console.log('카메라 목록 로드 완료');
         }
+        
     } catch (error) {
         console.error('카메라 목록 가져오기 실패:', error);
+        showToast(`카메라 초기화 실패: ${error.message}`, 'error');
         showCameraPermissionHelp();
     }
 }
 
 // 카메라 권한 도움말 표시
 function showCameraPermissionHelp() {
-    showToast('카메라 권한을 확인해주세요. 브라우저 설정에서 카메라 접근을 허용해주세요.', 'warning');
+    const scannerContainer = document.querySelector('.scanner-container');
+    
+    // 기존 도움말 제거
+    const existingHelp = scannerContainer.querySelector('.camera-permission-help');
+    if (existingHelp) {
+        existingHelp.remove();
+    }
+    
+    const helpDiv = document.createElement('div');
+    helpDiv.className = 'camera-permission-help bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4';
+    helpDiv.innerHTML = `
+        <div class="flex items-start">
+            <i class="fas fa-info-circle text-yellow-600 dark:text-yellow-400 mr-3 mt-1"></i>
+            <div>
+                <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">카메라 권한 필요</h4>
+                <p class="text-yellow-700 dark:text-yellow-300 mb-3">QR 코드 스캔을 위해 카메라 접근 권한이 필요합니다.</p>
+                <div class="text-sm text-yellow-600 dark:text-yellow-400 mb-3">
+                    <p class="mb-1">• 브라우저 주소창 왼쪽의 카메라 아이콘을 클릭하여 허용해주세요</p>
+                    <p class="mb-1">• 또는 브라우저 설정에서 이 사이트의 카메라 권한을 허용해주세요</p>
+                    <p>• 권한을 허용한 후 아래 버튼을 클릭해주세요</p>
+                </div>
+                <button onclick="retryGetCameras()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    <i class="fas fa-sync mr-2"></i>
+                    카메라 목록 새로고침
+                </button>
+            </div>
+        </div>
+    `;
+    
+    scannerContainer.insertBefore(helpDiv, scannerContainer.firstChild);
+    showToast('카메라 권한을 허용해주세요.', 'warning');
+}
+
+// 카메라 목록 재시도
+async function retryGetCameras() {
+    try {
+        // 권한 도움말 제거
+        const helpDiv = document.querySelector('.camera-permission-help');
+        if (helpDiv) {
+            helpDiv.remove();
+        }
+        
+        showToast('카메라 목록을 다시 가져오는 중...', 'info');
+        await getCameras();
+    } catch (error) {
+        console.error('카메라 목록 재시도 실패:', error);
+        showToast('카메라 목록을 가져오는데 실패했습니다.', 'error');
+    }
 }
 
 // 카메라 전환
@@ -130,6 +345,8 @@ async function switchCamera() {
 // 스캐너 시작
 async function startScanner(deviceId = null) {
     try {
+        console.log('스캐너 시작 시도...', deviceId ? `디바이스 ID: ${deviceId}` : '기본 카메라');
+        
         const constraints = {
             video: {
                 facingMode: deviceId ? undefined : 'environment',
@@ -139,9 +356,35 @@ async function startScanner(deviceId = null) {
             }
         };
         
+        console.log('카메라 제약 조건:', constraints);
+        
+        // 기존 스트림이 있으면 정리
+        if (stream) {
+            console.log('기존 스트림 정리...');
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        
+        console.log('getUserMedia 호출 중...');
+        
+        // 권한 정책 확인
+        if (document.featurePolicy && !document.featurePolicy.allowsFeature('camera')) {
+            throw new Error('카메라 접근이 정책적으로 차단되어 있습니다.');
+        }
+        
         stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log('카메라 스트림 획득 성공:', stream.getVideoTracks().length, '개 비디오 트랙');
+        
+        if (!video) {
+            console.error('비디오 요소를 찾을 수 없습니다');
+            return;
+        }
+        
         video.srcObject = stream;
+        console.log('비디오 요소에 스트림 할당 완료');
+        
         await video.play();
+        console.log('비디오 재생 시작');
         
         scanning = true;
         document.getElementById('start-scanner').classList.add('hidden');
@@ -158,8 +401,14 @@ async function startScanner(deviceId = null) {
             errorNotice.style.display = 'none';
         }
         
+        // 카메라 목록 새로고침 (권한 획득 후)
+        setTimeout(() => {
+            getCameras();
+        }, 1000);
+        
     } catch (error) {
-        console.error('카메라 시작 실패:', error);
+        console.error('카메라 시작 실패:', error.name, error.message);
+        console.error('에러 세부사항:', error);
         handleCameraError(error);
     }
 }
@@ -167,6 +416,14 @@ async function startScanner(deviceId = null) {
 // 카메라 에러 처리
 function handleCameraError(error) {
     let errorMessage = '카메라 접근에 실패했습니다. ';
+    
+    // Permissions Policy 에러 확인
+    if (error.message && error.message.includes('정책적으로 차단')) {
+        errorMessage = '카메라 접근이 정책적으로 차단되어 있습니다. 페이지를 새로고침하거나 다른 브라우저를 시도해보세요.';
+        showToast(errorMessage, 'error');
+        showDetailedCameraHelp(error);
+        return;
+    }
     
     switch (error.name) {
         case 'NotAllowedError':
@@ -224,6 +481,21 @@ function showDetailedCameraHelp(error) {
                     </li>
                 </ul>
             </div>
+            
+            ${error.message && error.message.includes('정책적으로 차단') ? `
+            <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                <h4 class="font-semibold text-red-800 dark:text-red-200 mb-2">🚫 권한 정책 에러</h4>
+                <p class="text-sm text-red-700 dark:text-red-300 mb-2">
+                    브라우저의 권한 정책에 의해 카메라 접근이 차단되었습니다.
+                </p>
+                <ul class="text-sm text-red-700 dark:text-red-300 space-y-1">
+                    <li>• 페이지를 완전히 새로고침해주세요 (Ctrl+F5)</li>
+                    <li>• 시크릿/프라이빗 브라우징 모드에서 시도해보세요</li>
+                    <li>• 다른 브라우저에서 접속해보세요</li>
+                    <li>• 브라우저 설정에서 카메라 차단 목록을 확인하세요</li>
+                </ul>
+            </div>
+            ` : ''}
             
             <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
                 <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">해결 방법</h4>
@@ -320,13 +592,26 @@ function handleScannedCode(orderNumber) {
 // 수동 입력 처리
 function handleManualSubmit(e) {
     e.preventDefault();
-    const orderNumber = document.getElementById('order-number-input').value.trim();
+    const hashValue = document.getElementById('order-number-input').value.trim();
     
-    if (!orderNumber) {
-        showToast('주문번호를 입력해주세요.', 'warning');
+    if (!hashValue) {
+        showToast('해시값을 입력해주세요.', 'warning');
         document.getElementById('order-number-input').focus();
         return;
     }
+    
+    // 해시값이 이미 TICKET-으로 시작하는 전체 주문번호인 경우 그대로 사용
+    let orderNumber;
+    if (hashValue.startsWith('TICKET-')) {
+        orderNumber = hashValue;
+    } else {
+        // 해시값만 입력된 경우 prefix와 결합
+        const prefix = document.getElementById('order-prefix').textContent;
+        orderNumber = prefix + hashValue;
+    }
+    
+    console.log('입력된 해시값:', hashValue);
+    console.log('완성된 주문번호:', orderNumber);
     
     checkAttendance(orderNumber, 'manual');
 }
@@ -371,8 +656,8 @@ async function checkAttendance(orderNumber, source) {
             playSuccessSound();
             
         } else {
-            showErrorResult(data.error, orderNumber);
-            addRecentCheck(null, orderNumber, false, data.error);
+            showErrorResult(data.error, orderNumber, data.error_type, data.participant);
+            addRecentCheck(data.participant, orderNumber, false, data.error, data.error_type);
             
             // 실패 효과음 (선택적)
             playErrorSound();
@@ -479,29 +764,72 @@ function showSuccessResult(participant, orderNumber) {
 }
 
 // 오류 결과 표시
-function showErrorResult(error, orderNumber) {
+function showErrorResult(error, orderNumber, errorType = 'unknown', participant = null) {
     const modal = document.getElementById('result-modal');
     const title = document.getElementById('modal-title');
     const content = document.getElementById('modal-content');
     
-    title.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>확인 실패';
-    title.className = 'text-lg font-medium text-red-600 dark:text-red-400';
-    
-    content.innerHTML = `
-        <div class="text-center">
-            <div class="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-times text-3xl text-red-600 dark:text-red-400"></i>
+    // 이미 참석 확인된 경우
+    if (errorType === 'already_attended' && participant) {
+        title.innerHTML = '<i class="fas fa-check-circle text-orange-600 mr-2"></i>이미 참석 확인됨';
+        title.className = 'text-lg font-medium text-orange-600 dark:text-orange-400';
+        
+        content.innerHTML = `
+            <div class="text-center result-animation">
+                <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-check text-3xl text-orange-600 dark:text-orange-400"></i>
+                </div>
+                <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">${participant.name}</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-2">${participant.email}</p>
+                ${participant.phone ? `<p class="text-sm text-gray-500 dark:text-gray-500 mb-4">${participant.phone}</p>` : ''}
+                <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-orange-600 dark:text-orange-400 font-medium">이미 참석 확인 완료</p>
+                    <p class="text-sm text-orange-700 dark:text-orange-300">확인시간: ${new Date(participant.attended_at).toLocaleString('ko-KR')}</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">주문번호</p>
+                    <p class="font-mono text-gray-900 dark:text-white">${orderNumber}</p>
+                </div>
             </div>
-            <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">참석 확인 실패</h4>
-            <p class="text-gray-600 dark:text-gray-400 mb-4">${error}</p>
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p class="text-sm text-gray-600 dark:text-gray-400">스캔된 주문번호</p>
-                <p class="font-mono text-gray-900 dark:text-white break-all">${orderNumber}</p>
+        `;
+        
+        // 음성 피드백 (이미 확인된 경우)
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(`${participant.name}님은 이미 참석 확인되었습니다`);
+            utterance.lang = 'ko-KR';
+            utterance.rate = 1.2;
+            utterance.volume = 0.7;
+            speechSynthesis.speak(utterance);
+        }
+        
+    } else {
+        // 참석자가 아닌 경우 또는 기타 오류
+        title.innerHTML = '<i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>확인 실패';
+        title.className = 'text-lg font-medium text-red-600 dark:text-red-400';
+        
+        content.innerHTML = `
+            <div class="text-center">
+                <div class="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-times text-3xl text-red-600 dark:text-red-400"></i>
+                </div>
+                <h4 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">참석 확인 실패</h4>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">${error}</p>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">스캔된 주문번호</p>
+                    <p class="font-mono text-gray-900 dark:text-white break-all">${orderNumber}</p>
+                </div>
             </div>
-        </div>
-    `;
+        `;
+    }
     
     modal.classList.remove('hidden');
+    
+    // 자동 모달 닫기 (3초 후)
+    setTimeout(() => {
+        if (!modal.classList.contains('hidden')) {
+            closeModal();
+        }
+    }, 3000);
 }
 
 // 모달 닫기
@@ -571,15 +899,16 @@ function animatePercentage(element, from, to) {
 }
 
 // 최근 확인 내역 추가
-function addRecentCheck(participant, orderNumber, success, error = null) {
+function addRecentCheck(participant, orderNumber, success, error = null, errorType = null) {
     const container = document.getElementById('recent-checks');
     const now = new Date();
     const timeString = now.toLocaleTimeString('ko-KR');
     
     const item = document.createElement('div');
-    item.className = `p-3 rounded-lg border-l-4 transition-all duration-300 ${success ? 'bg-green-50 dark:bg-green-900/20 border-green-500' : 'bg-red-50 dark:bg-red-900/20 border-red-500'}`;
     
     if (success) {
+        // 성공한 경우
+        item.className = 'p-3 rounded-lg border-l-4 transition-all duration-300 bg-green-50 dark:bg-green-900/20 border-green-500';
         item.innerHTML = `
             <div class="flex items-center justify-between">
                 <div>
@@ -593,7 +922,25 @@ function addRecentCheck(participant, orderNumber, success, error = null) {
                 </div>
             </div>
         `;
+    } else if (errorType === 'already_attended' && participant) {
+        // 이미 참석 확인된 경우
+        item.className = 'p-3 rounded-lg border-l-4 transition-all duration-300 bg-orange-50 dark:bg-orange-900/20 border-orange-500';
+        item.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="font-medium text-gray-900 dark:text-white">${participant.name}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">${orderNumber}</div>
+                    <div class="text-xs text-orange-600 dark:text-orange-400">이미 참석 확인됨</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-orange-600 dark:text-orange-400">중복 확인</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-500">${timeString}</div>
+                </div>
+            </div>
+        `;
     } else {
+        // 참석자가 아닌 경우 또는 기타 오류
+        item.className = 'p-3 rounded-lg border-l-4 transition-all duration-300 bg-red-50 dark:bg-red-900/20 border-red-500';
         item.innerHTML = `
             <div class="flex items-center justify-between">
                 <div>
