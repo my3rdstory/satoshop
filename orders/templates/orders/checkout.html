@@ -334,8 +334,8 @@
               결제 인보이스 생성
             </button>
             
-            <!-- 결제 주의사항 박스 -->
-            <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mt-4">
+            <!-- 결제 주의사항 박스 (모바일에서만 표시) -->
+            <div id="mobilePaymentWarning" class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mt-4 hidden">
               <div class="flex items-start">
                 <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-3 mt-0.5 flex-shrink-0"></i>
                 <div>
@@ -440,6 +440,20 @@
 let currentPaymentHash = null;
 let currentInvoice = null;
 let paymentCheckInterval = null;
+
+// 페이지 로드 시 모바일 환경 감지 및 주의사항 표시
+document.addEventListener('DOMContentLoaded', function() {
+  // 모바일 디바이스 감지
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (isMobile) {
+    // 모바일 환경에서만 주의사항 박스 표시
+    const mobileWarning = document.getElementById('mobilePaymentWarning');
+    if (mobileWarning) {
+      mobileWarning.classList.remove('hidden');
+    }
+  }
+});
 
 function generateInvoice() {
   const generateBtn = document.getElementById('generateInvoiceBtn');

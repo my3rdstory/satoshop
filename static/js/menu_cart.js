@@ -590,17 +590,19 @@ function showPaymentModal() {
                                 </div>
                                 
                                 <!-- 라이트닝 지갑 열기 버튼 -->
+                                <!--
                                 <div class="text-center mb-6">
                                     <button onclick="openLightningWallet()" 
                                             class="bg-orange-500 hover:bg-orange-600 text-white py-4 px-8 rounded-xl font-bold text-lg flex items-center justify-center mx-auto transition-all duration-300 hover:shadow-lg transform hover:scale-105 min-w-[280px]">
                                         <i class="fas fa-bolt mr-3 text-xl"></i>
-                                        라이트닝 지갑 열어 결제하기
+                                        라이트닝 지갑 열기
                                     </button>
                                     <p class="text-sm text-gray-600 mt-2">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        설치된 라이트닝 지갑이 자동으로 열립니다
+                                        QR 코드 스캔이 어려운 경우 클릭하세요
                                     </p>
                                 </div>
+                                -->
                                 
                                 <!-- 인보이스 텍스트 -->
                                 <div class="mb-4">
