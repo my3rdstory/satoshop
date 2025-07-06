@@ -411,12 +411,37 @@ function cancelInvoice() {
             }
             
         } else {
-            // 실패 메시지 표시
-            showPaymentStatus('취소 중 오류가 발생했습니다: ' + data.error, 'error');
-            
-            // 취소 버튼 복원
-            cancelBtn.disabled = false;
-            cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            // 결제가 이미 완료된 경우 처리
+            if (data.redirect_url) {
+                // 결제 상태 확인 중지
+                if (paymentCheckInterval) {
+                    clearInterval(paymentCheckInterval);
+                    paymentCheckInterval = null;
+                }
+                
+                // 카운트다운 중지
+                if (window.meetupCountdownInstance) {
+                    try {
+                        window.meetupCountdownInstance.stopAndHide();
+                    } catch (error) {
+                    }
+                }
+                
+                // 성공 메시지 표시
+                showPaymentStatus('결제가 완료되었습니다! 참가 확정 페이지로 이동합니다...', 'success');
+                
+                // 2초 후 결제 완료 페이지로 이동
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 2000);
+            } else {
+                // 일반적인 실패 메시지 표시
+                showPaymentStatus('취소 중 오류가 발생했습니다: ' + data.error, 'error');
+                
+                // 취소 버튼 복원
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
         }
     })
     .catch(error => {
