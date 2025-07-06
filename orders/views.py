@@ -1694,7 +1694,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                 logger.debug(f"[ORDER_CREATE] 스토어: {store.store_name}, 상품 수: {len(store_items)}")
             
             # 주문 번호 생성
-            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{timezone.now().strftime('%H%M%S')}"
             
             # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
             shipping_fees = []
@@ -1888,7 +1888,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                 logger.debug(f"[ORDER_CREATE] 스토어: {store.store_name}, 상품 수: {len(store_items)}")
             
             # 주문 번호 생성
-            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{timezone.now().strftime('%H%M%S')}"
             
             # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
             store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
