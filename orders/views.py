@@ -1017,10 +1017,17 @@ def checkout_complete(request, order_number):
                 raise Http404("주문을 찾을 수 없습니다.")
             
             # 같은 결제 해시로 생성된 모든 주문 가져오기
-            all_orders = Order.objects.filter(
-                user=request.user,
-                payment_id=primary_order.payment_id
-            ).prefetch_related('items__product__images')
+            # payment_id가 비어있거나 None인 경우 단일 주문만 처리
+            if primary_order.payment_id:
+                all_orders = Order.objects.filter(
+                    user=request.user,
+                    payment_id=primary_order.payment_id
+                ).prefetch_related('items__product__images')
+            else:
+                # 무료 상품 등으로 payment_id가 없는 경우 단일 주문만 처리
+                all_orders = Order.objects.filter(
+                    id=primary_order.id
+                ).prefetch_related('items__product__images')
         else:
             # 비로그인 사용자의 경우
             # 익명 사용자 주문인지 확인
@@ -1029,9 +1036,16 @@ def checkout_complete(request, order_number):
                 raise Http404("주문을 찾을 수 없습니다.")
             
             # 같은 결제 해시로 생성된 모든 주문 가져오기
-            all_orders = Order.objects.filter(
-                payment_id=primary_order.payment_id
-            ).prefetch_related('items__product__images')
+            # payment_id가 비어있거나 None인 경우 단일 주문만 처리
+            if primary_order.payment_id:
+                all_orders = Order.objects.filter(
+                    payment_id=primary_order.payment_id
+                ).prefetch_related('items__product__images')
+            else:
+                # 무료 상품 등으로 payment_id가 없는 경우 단일 주문만 처리
+                all_orders = Order.objects.filter(
+                    id=primary_order.id
+                ).prefetch_related('items__product__images')
     except Order.DoesNotExist:
         # 주문이 존재하지 않는 경우
         raise Http404("주문을 찾을 수 없습니다.")
