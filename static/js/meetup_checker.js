@@ -638,9 +638,9 @@ function handleManualSubmit(e) {
         return;
     }
     
-    // 해시값이 이미 TICKET-으로 시작하는 전체 주문번호인 경우 그대로 사용
+    // 해시값이 이미 전체 주문번호인 경우 그대로 사용 (스토어id-ticket- 형태로 시작)
     let orderNumber;
-    if (hashValue.startsWith('TICKET-')) {
+    if (hashValue.includes('-ticket-')) {
         orderNumber = hashValue;
     } else {
         // 해시값만 입력된 경우 prefix와 결합

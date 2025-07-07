@@ -929,14 +929,14 @@ def meetup_checker(request, store_id, meetup_id):
     
     attendance_rate = (attended_count / total_participants * 100) if total_participants > 0 else 0
     
-    # 티켓 prefix 계산 (TICKET-YYYYMMDD- 형태)
+    # 티켓 prefix 계산 (스토어id-ticket-YYYYMMDD- 형태)
     if meetup.date_time:
         date_str = meetup.date_time.strftime('%Y%m%d')
     else:
         from datetime import datetime
         date_str = datetime.now().strftime('%Y%m%d')
     
-    ticket_prefix = f"TICKET-{date_str}-"
+    ticket_prefix = f"{store.store_id}-ticket-{date_str}-"
     
     context = {
         'store': store,
