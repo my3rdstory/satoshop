@@ -81,7 +81,7 @@
           <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">{{ product.title }}</h3>
           <div class="space-y-2 text-sm">
             <p><span class="font-medium text-gray-700 dark:text-gray-300">가격:</span> <span class="text-bitcoin font-semibold">{{ product.price|floatformat:0 }} sats</span></p>
-            <p><span class="font-medium text-gray-700 dark:text-gray-300">등록일:</span> <span class="text-gray-900 dark:text-white">{{ product.created_at|date:"Y년 m월 d일" }}</span></p>
+            <p><span class="font-medium text-gray-700 dark:text-gray-300">등록일:</span> <span class="text-gray-900 dark:text-white">{{ product.created_at|date:"Y-m-d H:i:s" }}</span></p>
             <p><span class="font-medium text-gray-700 dark:text-gray-300">상태:</span> 
               {% if product.is_active %}
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
@@ -271,7 +271,7 @@
                   </span>
                   <div class="text-xs text-gray-500 dark:text-gray-400">배송비 제외</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y.m.d H:i" }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y-m-d H:i:s" }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   {% if item.order.status == 'paid' %}
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">

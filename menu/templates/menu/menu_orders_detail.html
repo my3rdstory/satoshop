@@ -76,7 +76,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">등록일</label>
             <div class="px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white">
-              {{ menu.created_at|date:'Y년 m월 d일 H:i' }}
+              <span>{{ menu.created_at|date:"Y-m-d H:i:s" }}</span>
             </div>
           </div>
         </div>
@@ -129,7 +129,9 @@
               {% for item in page_obj %}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white">
+                    {{ item.order.order_number|default:"(미생성)" }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.quantity }}개</td>
                 <td class="px-6 py-4 whitespace-nowrap text-bitcoin font-semibold">{{ item.menu_price|floatformat:0 }} sats</td>
@@ -139,7 +141,9 @@
                     {{ item.total_price|floatformat:0 }} sats
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y.m.d H:i" }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">
+                  <span>{{ item.order.created_at|date:"Y-m-d H:i:s" }}</span>
+                </td>
                 <td class="px-6 py-4">
                   {% if item.selected_options %}
                     <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -227,5 +231,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
 <script src="{% static 'js/menu-orders-detail.js' %}"></script>
 {% endblock %} 

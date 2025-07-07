@@ -492,6 +492,12 @@ function showPaymentModal() {
         return;
     }
     
+    // 무료 상품인 경우 바로 결제 완료 처리
+    if (totalAmount === 0) {
+        showFreeOrderSuccess();
+        return;
+    }
+    
     // 결제 화면을 메뉴 콘텐츠 영역에 표시
     const menuContent = document.querySelector('.menu-content');
     if (!menuContent) {
@@ -590,17 +596,19 @@ function showPaymentModal() {
                                 </div>
                                 
                                 <!-- 라이트닝 지갑 열기 버튼 -->
+                                <!--
                                 <div class="text-center mb-6">
                                     <button onclick="openLightningWallet()" 
                                             class="bg-orange-500 hover:bg-orange-600 text-white py-4 px-8 rounded-xl font-bold text-lg flex items-center justify-center mx-auto transition-all duration-300 hover:shadow-lg transform hover:scale-105 min-w-[280px]">
                                         <i class="fas fa-bolt mr-3 text-xl"></i>
-                                        라이트닝 지갑 열어 결제하기
+                                        라이트닝 지갑 열기
                                     </button>
                                     <p class="text-sm text-gray-600 mt-2">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        설치된 라이트닝 지갑이 자동으로 열립니다
+                                        QR 코드 스캔이 어려운 경우 클릭하세요
                                     </p>
                                 </div>
+                                -->
                                 
                                 <!-- 인보이스 텍스트 -->
                                 <div class="mb-4">
@@ -950,6 +958,84 @@ function cancelPayment() {
         return;
     }
     
+    // 취소 중 표시
+    const cancelBtn = document.querySelector('[onclick="cancelPayment()"]');
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+    }
+    
+    // 현재 결제 해시가 있는 경우에만 서버에 취소 요청
+    if (currentPaymentHash) {
+        const storeId = currentStoreId || window.location.pathname.split('/')[2];
+        
+        fetch(`/menu/${storeId}/cart/cancel-invoice/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: currentPaymentHash
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 서버 취소 성공
+                handleCancelSuccess();
+            } else {
+                // 서버 취소 실패 또는 이미 결제 완료된 경우
+                if (data.order_number) {
+                    // 이미 결제가 완료된 경우
+                    alert(data.error || '결제가 완료되었습니다.');
+                    
+                    // 결제 상태 확인 중지
+                    if (paymentCheckInterval) {
+                        clearInterval(paymentCheckInterval);
+                        paymentCheckInterval = null;
+                    }
+                    
+                    // 성공 화면으로 전환
+                    document.getElementById('payment-invoice').classList.add('hidden');
+                    document.getElementById('payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearCart();
+                    
+                    // 자동 리다이렉트 시작
+                    startRedirectCountdown();
+                    
+                } else {
+                    // 일반적인 취소 실패
+                    alert('취소 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+                    
+                    // 취소 버튼 복원
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('취소 요청 중 오류:', error);
+            alert('취소 요청 중 오류가 발생했습니다.');
+            
+            // 취소 버튼 복원
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
+        });
+    } else {
+        // 결제 해시가 없는 경우 클라이언트 측에서만 처리
+        handleCancelSuccess();
+    }
+}
+
+// 취소 성공 처리 공통 함수
+function handleCancelSuccess() {
     // 결제 상태 확인 중지
     if (paymentCheckInterval) {
         clearInterval(paymentCheckInterval);
@@ -969,6 +1055,11 @@ function cancelPayment() {
     // 결제 관련 변수 초기화
     currentPaymentHash = null;
     paymentExpiresAt = null;
+    
+    // 🔄 페이지 새로고침으로 완전 초기화
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
 }
 
 // 라이트닝 지갑 열기
@@ -1183,5 +1274,158 @@ function startRedirectCountdown() {
                 goBackToMenuBoard();
             }
         }, 1000);
+    }
+}
+
+// 무료 상품 결제 완료 화면 표시
+function showFreeOrderSuccess() {
+    const menuContent = document.querySelector('.menu-content');
+    if (!menuContent) {
+        alert('결제 화면을 표시할 수 없습니다.');
+        return;
+    }
+    
+    // 기존 결제 화면이 있으면 제거
+    const existingPaymentView = document.getElementById('payment-view');
+    if (existingPaymentView) {
+        existingPaymentView.remove();
+    }
+    
+    // 기존 콘텐츠 숨기기
+    const existingViews = menuContent.querySelectorAll('.content-view');
+    existingViews.forEach(view => view.classList.remove('active'));
+    
+    const totalItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // 무료 상품 결제 완료 화면 HTML 생성
+    const freeOrderHTML = `
+        <div id="payment-view" class="content-view active">
+            <div class="p-6">
+                <div class="bg-white rounded-lg shadow-lg">
+                    <!-- 헤더 -->
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-2xl font-bold text-gray-900">무료 상품 주문 완료</h2>
+                            <button onclick="closePaymentView()" class="text-gray-400 hover:text-gray-600 text-2xl">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 내용 -->
+                    <div class="p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- 왼쪽: 주문 목록 -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">주문 내역</h3>
+                            <div class="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                                <div id="payment-order-list" class="space-y-3">
+                                    <!-- 주문 목록이 여기에 동적으로 추가됩니다 -->
+                                </div>
+                                <div class="border-t border-gray-200 mt-4 pt-4">
+                                    <div class="flex justify-between items-center text-lg font-bold">
+                                        <span>총 결제 금액</span>
+                                        <span class="text-green-600 flex items-center">
+                                            <i class="fas fa-gift mr-2"></i>무료
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 오른쪽: 완료 정보 -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">주문 완료</h3>
+                            
+                            <!-- 무료 상품 완료 메시지 -->
+                            <div class="text-center">
+                                <!-- 에러 메시지 영역 -->
+                                <div id="free-order-error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-800" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span id="free-order-error-text"></span>
+                                </div>
+                                
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                                    <i class="fas fa-gift text-green-600 text-4xl mb-4"></i>
+                                    <h4 class="text-xl font-semibold text-green-900 mb-2">무료 상품 주문이 완료되었습니다!</h4>
+                                    <p class="text-green-700 text-sm">주문이 성공적으로 접수되었습니다.</p>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                    <div class="text-blue-600 text-lg font-bold" id="redirect-countdown">10</div>
+                                    <div class="text-blue-500 text-sm">초 후 메뉴판으로 이동합니다</div>
+                                </div>
+                                <button onclick="goBackToMenuBoard()" 
+                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-arrow-left mr-2"></i>지금 메뉴판으로 이동
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 결제 화면을 메뉴 콘텐츠에 추가
+    menuContent.insertAdjacentHTML('beforeend', freeOrderHTML);
+    
+    // 주문 목록 업데이트
+    updatePaymentOrderList();
+    
+    // 무료 상품 주문 처리
+    processFreeOrder();
+    
+    // 자동 리다이렉트 시작
+    startRedirectCountdown();
+}
+
+// 무료 상품 주문 처리
+function processFreeOrder() {
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    
+    fetch(`/menu/${storeId}/cart/process-free-order/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            items: cartData.map(item => ({
+                id: item.id,
+                quantity: item.quantity,
+                options: item.options || {}
+            }))
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 장바구니 비우기
+            clearCart();
+            console.log('무료 상품 주문이 완료되었습니다.');
+        } else {
+            console.error('무료 상품 주문 처리 실패:', data.error);
+            // 에러 발생 시 사용자에게 알림
+            updateFreeOrderError(data.error || '무료 상품 주문 처리 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('무료 상품 주문 처리 중 오류:', error);
+        // 네트워크 오류 등 예외 상황 처리
+        updateFreeOrderError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    });
+}
+
+// 무료 상품 주문 에러 표시
+function updateFreeOrderError(errorMessage) {
+    const errorElement = document.getElementById('free-order-error');
+    const errorTextElement = document.getElementById('free-order-error-text');
+    
+    if (errorElement && errorTextElement) {
+        errorTextElement.textContent = errorMessage;
+        errorElement.style.display = 'block';
+    } else {
+        // 에러 표시 영역이 없는 경우 알림으로 표시
+        alert(errorMessage);
     }
 }

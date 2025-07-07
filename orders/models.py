@@ -223,7 +223,7 @@ class Order(models.Model):
         import datetime
         import random
         now = datetime.datetime.now()
-        return f"ORD{now.strftime('%Y%m%d')}{random.randint(100000, 999999)}"
+        return f"ORD-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S')}"
 
 
 class OrderItem(models.Model):

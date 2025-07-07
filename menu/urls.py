@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_desktop, views_mobile
 
 app_name = 'menu'
 
@@ -34,20 +34,24 @@ urlpatterns = [
     path('<str:store_id>/orders/<int:menu_id>/', views.menu_orders_detail, name='menu_orders_detail'),
     
     # === 데스크톱 메뉴판 ===
-    path('<str:store_id>/list/', views.menu_board_desktop, name='menu_board_desktop'),
-    path('<str:store_id>/list/<int:menu_id>/', views.menu_detail_desktop, name='menu_detail_desktop'),
-    path('<str:store_id>/detail/<int:menu_id>/ajax/', views.menu_detail_ajax_desktop, name='menu_detail_ajax_desktop'),
-    path('<str:store_id>/cart/', views.menu_cart_desktop, name='menu_cart_desktop'),
-    path('<str:store_id>/cart/create-invoice/', views.create_cart_invoice_desktop, name='create_cart_invoice_desktop'),
+    path('<str:store_id>/list/', views_desktop.menu_board_desktop, name='menu_board_desktop'),
+    path('<str:store_id>/list/<int:menu_id>/', views_desktop.menu_detail_desktop, name='menu_detail_desktop'),
+    path('<str:store_id>/detail/<int:menu_id>/ajax/', views_desktop.menu_detail_ajax_desktop, name='menu_detail_ajax_desktop'),
+    path('<str:store_id>/cart/', views_desktop.menu_cart_desktop, name='menu_cart_desktop'),
+    path('<str:store_id>/cart/create-invoice/', views_desktop.create_cart_invoice_desktop, name='create_cart_invoice_desktop'),
+    path('<str:store_id>/cart/process-free-order/', views_desktop.process_free_order_desktop, name='process_free_order_desktop'),
     path('<str:store_id>/cart/check-payment/', views.check_cart_payment, name='check_cart_payment_desktop'),
+    path('<str:store_id>/cart/cancel-invoice/', views.cancel_menu_invoice, name='cancel_menu_invoice_desktop'),
     
     # === 모바일 메뉴판 ===
-    path('<str:store_id>/m/', views.menu_board_mobile, name='menu_board_mobile'),
-    path('<str:store_id>/m/<int:menu_id>/', views.menu_detail_mobile, name='menu_detail_mobile'),
-    path('<str:store_id>/m/detail/<int:menu_id>/ajax/', views.menu_detail_ajax_mobile, name='menu_detail_ajax_mobile'),
-    path('<str:store_id>/m/cart/', views.menu_cart_mobile, name='menu_cart_mobile'),
-    path('<str:store_id>/m/cart/create-invoice/', views.create_cart_invoice_mobile, name='create_cart_invoice_mobile'),
+    path('<str:store_id>/m/', views_mobile.menu_board_mobile, name='menu_board_mobile'),
+    path('<str:store_id>/m/<int:menu_id>/', views_mobile.menu_detail_mobile, name='menu_detail_mobile'),
+    path('<str:store_id>/m/detail/<int:menu_id>/ajax/', views_mobile.menu_detail_ajax_mobile, name='menu_detail_ajax_mobile'),
+    path('<str:store_id>/m/cart/', views_mobile.menu_cart_mobile, name='menu_cart_mobile'),
+    path('<str:store_id>/m/cart/create-invoice/', views_mobile.create_cart_invoice_mobile, name='create_cart_invoice_mobile'),
+    path('<str:store_id>/m/cart/process-free-order/', views_mobile.process_free_order_mobile, name='process_free_order_mobile'),
     path('<str:store_id>/m/cart/check-payment/', views.check_cart_payment, name='check_cart_payment_mobile'),
+    path('<str:store_id>/m/cart/cancel-invoice/', views.cancel_menu_invoice, name='cancel_menu_invoice_mobile'),
     
     # === 하위 호환성 (기존 URL 지원) ===
     path('<str:store_id>/list/auto/', views.menu_board_auto_redirect, name='menu_board_auto_redirect'),

@@ -132,7 +132,7 @@ class Command(BaseCommand):
                     user = random.choice(users)
 
                     # 주문번호 생성
-                    order_number = f"ORD{random_date.strftime('%Y%m%d')}{random.randint(100000, 999999)}"
+                    order_number = f"ORD-{random_date.strftime('%Y%m%d')}-{random_date.strftime('%H%M%S')}"
 
                     # 수량 결정 (1-5개)
                     quantity = random.randint(1, 5)

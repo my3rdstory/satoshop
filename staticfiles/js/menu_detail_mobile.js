@@ -145,7 +145,8 @@ function openMobileCart() {
     const overlay = document.getElementById('mobile-cart-overlay');
     
     if (cartSidebar && overlay) {
-        cartSidebar.classList.remove('-translate-x-full');
+        cartSidebar.classList.remove('-translate-y-full');
+        cartSidebar.classList.add('translate-y-0');
         overlay.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
@@ -160,7 +161,8 @@ function closeMobileCart() {
     const overlay = document.getElementById('mobile-cart-overlay');
     
     if (cartSidebar && overlay) {
-        cartSidebar.classList.add('-translate-x-full');
+        cartSidebar.classList.remove('translate-y-0');
+        cartSidebar.classList.add('-translate-y-full');
         overlay.classList.add('hidden');
         document.body.style.overflow = '';
     }

@@ -5,6 +5,10 @@
 
 {% block title %}내 밋업 참가 내역 - {{ store.store_name }}{% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
+{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/meetup_checkout.css' %}">
 {% endblock %}
@@ -64,12 +68,13 @@
                 </div>
                 <div>
                   <span class="font-medium">신청일:</span>
-                  <span>{{ order.created_at|date:"Y-m-d H:i" }}</span>
+                  <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:"Y-m-d H:i" }}</span>
                 </div>
+                <div class="text-xs text-gray-400 user-timezone"></div>
                 {% if order.paid_at %}
                 <div>
                   <span class="font-medium">결제완료:</span>
-                  <span>{{ order.paid_at|date:"Y-m-d H:i" }}</span>
+                  <span>{{ order.paid_at|date:"Y-m-d H:i:s" }}</span>
                 </div>
                 {% endif %}
               </div>
@@ -151,7 +156,7 @@
                   QR 다운로드
                 </button>
                 <button 
-                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.meetup.name|escapejs }}', '{{ order.participant_name|escapejs }}', '{{ order.participant_email|escapejs }}', '{{ order.confirmed_at|date:"Y년 m월 d일 H:i"|escapejs }}', '{{ order.meetup.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.meetup.location_full_address|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ store.store_name|escapejs }}')" 
+                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.meetup.name|escapejs }}', '{{ order.participant_name|escapejs }}', '{{ order.participant_email|escapejs }}', '{{ order.confirmed_at|date:"Y-m-d H:i:s"|escapejs }}', '{{ order.meetup.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.meetup.location_full_address|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ store.store_name|escapejs }}')" 
                   class="inline-flex items-center justify-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                 >
                   <i class="fas fa-file-text mr-1"></i>

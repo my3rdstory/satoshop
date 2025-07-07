@@ -228,7 +228,7 @@
                     </div>
                     {% if order.paid_at %}
                     <div class="text-xs text-green-600 dark:text-green-400 mt-1">
-                      결제: {{ order.paid_at|date:"m/d H:i" }}
+                      결제: {{ order.paid_at|date:"Y-m-d H:i:s" }}
                     </div>
                     {% endif %}
                   </div>

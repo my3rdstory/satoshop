@@ -165,34 +165,22 @@ function closeMobileMenu() {
     }, 300); // CSS 애니메이션 시간과 동일
 }
 
-// 모바일 장바구니 토글 함수
-function toggleMobileCart() {
-    const sidebar = document.getElementById('mobile-cart-sidebar');
-    const overlay = document.getElementById('mobile-cart-overlay');
-    
-    if (sidebar.classList.contains('translate-x-0')) {
-        closeMobileCart();
-    } else {
-        openMobileCart();
-    }
+// 장바구니 뷰 관련 함수들
+function showCartView() {
+    showView('cart');
 }
 
-function openMobileCart() {
-    const sidebar = document.getElementById('mobile-cart-sidebar');
-    const overlay = document.getElementById('mobile-cart-overlay');
-    
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    overlay.classList.remove('hidden');
+function hideCartView() {
+    showView('menu-grid', currentCategory);
 }
 
-function closeMobileCart() {
-    const sidebar = document.getElementById('mobile-cart-sidebar');
-    const overlay = document.getElementById('mobile-cart-overlay');
-    
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
+// 결제 뷰 관련 함수들
+function showPaymentView() {
+    showView('payment');
+}
+
+function hidePaymentView() {
+    showView('cart');
 }
 
 // 데스크톱 장바구니 시스템과 호환되는 addToCart 함수 (메뉴 상세화면용)
@@ -310,54 +298,56 @@ function clearMobileCart() {
 
 // 장바구니 표시 업데이트
 function updateCartDisplay() {
-    const cartItemsContainer = document.getElementById('mobile-cart-items');
-    const emptyCartMessage = document.getElementById('mobile-empty-cart');
-    const cartSummary = document.getElementById('mobile-cart-summary');
-    const cartTotalElement = document.getElementById('mobile-cart-total');
+    const cartItemsContainer = document.getElementById('mobile-cart-view-items');
+    const emptyCartMessage = document.getElementById('mobile-cart-view-empty');
+    const cartSummary = document.getElementById('mobile-cart-view-summary');
+    const cartTotalElement = document.getElementById('mobile-cart-view-total');
     
     if (mobileCart.length === 0) {
-        cartItemsContainer.innerHTML = '';
-        emptyCartMessage.classList.remove('hidden');
-        cartSummary.classList.add('hidden');
+        if (cartItemsContainer) cartItemsContainer.innerHTML = '';
+        if (emptyCartMessage) emptyCartMessage.classList.remove('hidden');
+        if (cartSummary) cartSummary.classList.add('hidden');
         cartTotal = 0;
     } else {
-        emptyCartMessage.classList.add('hidden');
-        cartSummary.classList.remove('hidden');
+        if (emptyCartMessage) emptyCartMessage.classList.add('hidden');
+        if (cartSummary) cartSummary.classList.remove('hidden');
         
         cartTotal = mobileCart.reduce((total, item) => total + (item.price * item.quantity), 0);
-        cartTotalElement.textContent = `${cartTotal.toLocaleString()} sats`;
+        if (cartTotalElement) cartTotalElement.textContent = `${cartTotal.toLocaleString()} sats`;
         
-        cartItemsContainer.innerHTML = mobileCart.map((item, index) => {
-            // 옵션 정보 표시 문자열 생성
-            const optionsText = item.options && Object.keys(item.options).length > 0 
-                ? Object.entries(item.options).map(([key, value]) => `${key}: ${value.value}`).join(', ')
-                : '';
-            
-            return `
-                <div class="cart-item flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-600">
-                    <div class="flex-1">
-                        <h4 class="font-medium text-gray-900 dark:text-white">${item.menuName}</h4>
-                        ${optionsText ? `<p class="text-xs text-blue-600 dark:text-blue-400">${optionsText}</p>` : ''}
-                        <p class="text-sm text-gray-600 dark:text-gray-400">${item.price.toLocaleString()} sats</p>
+        if (cartItemsContainer) {
+            cartItemsContainer.innerHTML = mobileCart.map((item, index) => {
+                // 옵션 정보 표시 문자열 생성
+                const optionsText = item.options && Object.keys(item.options).length > 0 
+                    ? Object.entries(item.options).map(([key, value]) => `${key}: ${value.value}`).join(', ')
+                    : '';
+                
+                return `
+                    <div class="cart-item flex items-center justify-between p-3 border-b border-gray-100 dark:border-gray-600">
+                        <div class="flex-1">
+                            <h4 class="font-medium text-gray-900 dark:text-white">${item.menuName}</h4>
+                            ${optionsText ? `<p class="text-xs text-blue-600 dark:text-blue-400">${optionsText}</p>` : ''}
+                            <p class="text-sm text-gray-600 dark:text-gray-400">${item.price.toLocaleString()} sats</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="changeCartItemQuantity('${item.menuId}', -1, ${index})" 
+                                    class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center">
+                                <i class="fas fa-minus text-xs text-gray-600 dark:text-gray-200"></i>
+                            </button>
+                            <span class="w-8 text-center text-gray-900 dark:text-white">${item.quantity}</span>
+                            <button onclick="changeCartItemQuantity('${item.menuId}', 1, ${index})" 
+                                    class="w-8 h-8 bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full flex items-center justify-center">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                            <button onclick="removeFromMobileCart('${item.menuId}', ${index})" 
+                                    class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="changeCartItemQuantity('${item.menuId}', -1, ${index})" 
-                                class="w-8 h-8 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-full flex items-center justify-center">
-                            <i class="fas fa-minus text-xs text-gray-600 dark:text-gray-200"></i>
-                        </button>
-                        <span class="w-8 text-center text-gray-900 dark:text-white">${item.quantity}</span>
-                        <button onclick="changeCartItemQuantity('${item.menuId}', 1, ${index})" 
-                                class="w-8 h-8 bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-full flex items-center justify-center">
-                            <i class="fas fa-plus text-xs"></i>
-                        </button>
-                        <button onclick="removeFromMobileCart('${item.menuId}', ${index})" 
-                                class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }).join('');
+        }
     }
 }
 
@@ -387,23 +377,25 @@ function changeCartItemQuantity(menuId, delta, index = null) {
 // 장바구니 업데이트 함수
 function updateCartButton() {
     const badge = document.getElementById('mobile-cart-badge');
-    const clearBtn = document.getElementById('mobile-clear-cart-btn');
+    const clearBtn = document.getElementById('mobile-cart-view-clear-btn');
     
     const cartItems = mobileCart.length;
     const totalQuantity = mobileCart.reduce((total, item) => total + item.quantity, 0);
     
     if (cartItems > 0) {
-        badge.textContent = totalQuantity;
-        badge.classList.remove('hidden');
-        clearBtn.classList.remove('hidden');
+        if (badge) {
+            badge.textContent = totalQuantity;
+            badge.classList.remove('hidden');
+        }
+        if (clearBtn) clearBtn.classList.remove('hidden');
     } else {
-        badge.classList.add('hidden');
-        clearBtn.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
+        if (clearBtn) clearBtn.classList.add('hidden');
     }
 }
 
 // 주문 처리
-function processOrderFromMobile() {
+function processOrderFromCart() {
     if (mobileCart.length === 0) {
         alert('장바구니가 비어있습니다.');
         return;
@@ -425,9 +417,6 @@ function processOrderFromMobile() {
         saveCartToStorage();
     }
     
-    // 먼저 장바구니 닫기
-    closeMobileCart();
-    
     // 모바일 장바구니 데이터를 데스크톱 장바구니 형식으로 변환
     const convertedCartData = validCartItems.map(item => ({
         id: `mobile_${item.menuId}_${Date.now()}`, // 고유 ID 생성
@@ -448,14 +437,13 @@ function processOrderFromMobile() {
         window.currentStoreId = window.storeId;
     }
     
-    // 약간의 딜레이 후 결제 화면 표시 (장바구니 닫힘 애니메이션 완료 대기)
-    setTimeout(() => {
-        showMobilePaymentModal();
-    }, 350);
+    // 결제 화면 표시
+    showPaymentView();
+    updatePaymentView();
 }
 
-// 모바일 전용 결제 모달
-function showMobilePaymentModal() {
+// 결제 뷰 업데이트 함수
+function updatePaymentView() {
     const totalAmount = mobileCart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const totalItems = mobileCart.reduce((sum, item) => sum + item.quantity, 0);
     
@@ -464,181 +452,138 @@ function showMobilePaymentModal() {
         return;
     }
     
-    // 메뉴 콘텐츠 영역 찾기 (모바일용)
-    const mobileContent = document.querySelector('.mobile-content');
-    if (!mobileContent) {
-        alert('결제 화면을 표시할 수 없습니다.');
+    // 무료 상품인 경우 바로 결제 완료 처리
+    if (totalAmount === 0) {
+        showMobileFreeOrderSuccess();
         return;
     }
     
-    // 기존 결제 화면이 있으면 제거
-    const existingPaymentView = document.getElementById('mobile-payment-view');
-    if (existingPaymentView) {
-        existingPaymentView.remove();
+    // 총 결제 금액 업데이트
+    const totalElement = document.getElementById('mobile-payment-total');
+    if (totalElement) {
+        totalElement.textContent = `${totalAmount.toLocaleString()} sats`;
     }
     
-    // 기존 콘텐츠 숨기기
-    const existingViews = mobileContent.querySelectorAll('.content-view');
-    existingViews.forEach(view => view.classList.remove('active'));
+    // 주문 목록 업데이트
+    updateMobilePaymentOrderList();
     
-    // 결제 화면 HTML 생성 (모바일 최적화)
-    const paymentHTML = `
-        <div id="mobile-payment-view" class="content-view active">
-            <div class="p-4">
-                <div class="bg-white rounded-lg shadow-lg">
-                    <!-- 헤더 -->
-                    <div class="p-4 border-b border-gray-200">
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-xl font-bold text-gray-900">결제하기</h2>
-                            <button onclick="closeMobilePaymentView()" class="text-gray-400 hover:text-gray-600 text-xl">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- 내용 -->
-                    <div class="p-4">
-                        <!-- 주문 목록 -->
-                        <div class="mb-6">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">주문 내역</h3>
-                            <div class="bg-gray-50 rounded-lg p-3 max-h-64 overflow-y-auto">
-                                <div id="mobile-payment-order-list" class="space-y-2">
-                                    ${mobileCart.map(item => `
-                                        <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                                            <div class="flex-1">
-                                                <div class="font-medium text-sm">${item.menuName}</div>
-                                                <div class="text-xs text-gray-600">${item.price.toLocaleString()} sats × ${item.quantity}</div>
-                                            </div>
-                                            <div class="font-bold text-blue-600">${(item.price * item.quantity).toLocaleString()} sats</div>
-                                        </div>
-                                    `).join('')}
-                                </div>
-                                <div class="border-t border-gray-200 mt-3 pt-3">
-                                    <div class="flex justify-between items-center text-lg font-bold">
-                                        <span>총 결제 금액</span>
-                                        <span class="text-blue-600">${totalAmount.toLocaleString()} sats</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- 결제 정보 -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3">결제 정보</h3>
-                            
-                            <!-- 인보이스 생성 전 -->
-                            <div id="mobile-payment-initial" class="text-center">
-                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                                    <i class="fas fa-bolt text-blue-600 text-2xl mb-2"></i>
-                                    <h4 class="text-lg font-semibold text-blue-900 mb-1">라이트닝 결제</h4>
-                                    <p class="text-blue-700 text-sm">빠르고 저렴한 비트코인 결제</p>
-                                </div>
-                                <div class="grid grid-cols-1 gap-3">
-                                    <button onclick="generateMobilePaymentInvoice()" 
-                                            class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-qrcode mr-2"></i>결제 인보이스 생성
-                                    </button>
-                                    <button onclick="closeMobilePaymentView()" 
-                                            class="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-arrow-left mr-2"></i>취소
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 로딩 -->
-                            <div id="mobile-payment-loading" class="hidden text-center py-8">
-                                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                                <p class="text-gray-600">인보이스를 생성하고 있습니다...</p>
-                            </div>
-                            
-                            <!-- QR 코드 및 인보이스 -->
-                            <div id="mobile-payment-invoice" class="hidden">
-                                <!-- 카운트다운 타이머 -->
-                                <div id="mobile-payment-countdown" class="text-center mb-4">
-                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                                        <div class="text-red-600 text-xl font-bold" id="mobile-countdown-timer">15:00</div>
-                                        <div class="text-red-500 text-sm">인보이스 유효 시간</div>
-                                    </div>
-                                </div>
-                                
-                                <!-- QR 코드 -->
-                                <div class="text-center mb-4">
-                                    <div id="mobile-qr-code-container" class="inline-block p-3 bg-white border-2 border-gray-300 rounded-lg">
-                                        <!-- QR 코드가 여기에 생성됩니다 -->
-                                    </div>
-                                </div>
-                                
-                                <!-- 라이트닝 지갑 열기 버튼 -->
-                                <div class="text-center mb-4">
-                                    <button onclick="openMobileLightningWallet()" 
-                                            class="bg-orange-500 hover:bg-orange-600 text-white py-3 px-6 rounded-xl font-bold text-base flex items-center justify-center mx-auto transition-all duration-300 hover:shadow-lg w-full">
-                                        <i class="fas fa-bolt mr-2 text-lg"></i>
-                                        라이트닝 지갑 열어 결제하기
-                                    </button>
-                                    <p class="text-xs text-gray-600 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        설치된 라이트닝 지갑이 자동으로 열립니다
-                                    </p>
-                                </div>
-                                
-                                <!-- 인보이스 텍스트 -->
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">인보이스 텍스트</label>
-                                    <div class="relative">
-                                        <textarea id="mobile-invoice-text" 
-                                                  class="w-full p-2 border border-gray-300 rounded-lg text-xs font-mono bg-gray-50 resize-none" 
-                                                  rows="2" 
-                                                  readonly></textarea>
-                                        <button onclick="copyMobileInvoiceText()" 
-                                                class="absolute top-1 right-1 bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-colors">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- 취소 버튼 -->
-                                <div class="text-center">
-                                    <button onclick="cancelMobilePayment()" 
-                                            class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors">
-                                        <i class="fas fa-times mr-2"></i>결제 취소
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- 결제 성공 -->
-                            <div id="mobile-payment-success" class="hidden text-center">
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                                    <i class="fas fa-check-circle text-green-600 text-3xl mb-3"></i>
-                                    <h4 class="text-lg font-semibold text-green-900 mb-2">결제가 완료되었습니다!</h4>
-                                    <p class="text-green-700 text-sm">주문이 성공적으로 처리되었습니다.</p>
-                                </div>
-                                <button onclick="goBackToMobileMenuBoard()" 
-                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors w-full">
-                                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 이동
-                                </button>
-                            </div>
-                            
-                            <!-- 결제 취소됨 -->
-                            <div id="mobile-payment-cancelled" class="hidden text-center">
-                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-                                    <i class="fas fa-times-circle text-gray-600 text-3xl mb-3"></i>
-                                    <h4 class="text-lg font-semibold text-gray-900 mb-2">결제가 취소되었습니다</h4>
-                                    <p class="text-gray-700 text-sm">언제든지 다시 결제를 시도하실 수 있습니다.</p>
-                                </div>
-                                <button onclick="goBackToMobileMenuBoard()" 
-                                        class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors w-full">
-                                    <i class="fas fa-arrow-left mr-2"></i>메뉴판으로 돌아가기
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    // 결제 상태 초기화
+    document.getElementById('mobile-payment-initial').classList.remove('hidden');
+    document.getElementById('mobile-payment-loading').classList.add('hidden');
+    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+    document.getElementById('mobile-payment-success').classList.add('hidden');
+    document.getElementById('mobile-payment-cancelled').classList.add('hidden');
+}
+
+// 모바일 무료 상품 결제 완료 화면 표시
+function showMobileFreeOrderSuccess() {
+    // 결제 뷰 표시
+    showPaymentView();
+    
+    // 총 결제 금액을 무료로 업데이트
+    const totalElement = document.getElementById('mobile-payment-total');
+    if (totalElement) {
+        totalElement.innerHTML = '<i class="fas fa-gift mr-2"></i>무료';
+        totalElement.classList.remove('text-blue-600', 'dark:text-blue-400');
+        totalElement.classList.add('text-green-600', 'dark:text-green-400');
+    }
+    
+    // 주문 목록 업데이트
+    updateMobilePaymentOrderList();
+    
+    // 모든 결제 상태 숨기기
+    document.getElementById('mobile-payment-initial').classList.add('hidden');
+    document.getElementById('mobile-payment-loading').classList.add('hidden');
+    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+    document.getElementById('mobile-payment-cancelled').classList.add('hidden');
+    
+    // 무료 주문 성공 상태 표시
+    const successElement = document.getElementById('mobile-payment-success');
+    if (successElement) {
+        // 무료 상품용 내용으로 업데이트
+        successElement.innerHTML = `
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                <i class="fas fa-gift text-green-600 dark:text-green-400 text-3xl mb-3"></i>
+                <h4 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">무료 상품 주문이 완료되었습니다!</h4>
+                <p class="text-green-700 dark:text-green-300 text-sm">주문이 성공적으로 접수되었습니다.</p>
             </div>
-        </div>
-    `;
+            <div id="mobile-free-order-error" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mb-3 text-red-800 dark:text-red-200 hidden">
+                <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mr-2"></i>
+                <span id="mobile-free-order-error-text"></span>
+            </div>
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                <div class="text-blue-600 dark:text-blue-400 text-lg font-bold" id="mobile-redirect-countdown">10</div>
+                <div class="text-blue-500 dark:text-blue-400 text-sm">초 후 메뉴판으로 이동합니다</div>
+            </div>
+            <button onclick="goBackToMobileMenuBoard()" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>지금 메뉴판으로 이동
+            </button>
+        `;
+        successElement.classList.remove('hidden');
+    }
     
-    // 결제 화면을 모바일 콘텐츠에 추가
-    mobileContent.insertAdjacentHTML('beforeend', paymentHTML);
+    // 무료 상품 주문 처리
+    processMobileFreeOrder();
+    
+    // 자동 리다이렉트 시작
+    startMobileRedirectCountdown();
+}
+
+// 모바일 무료 상품 주문 처리
+function processMobileFreeOrder() {
+    const storeId = currentStoreId || window.location.pathname.split('/')[2];
+    
+    // 모바일 장바구니 데이터를 서버 형식으로 변환
+    const convertedCartData = mobileCart.map(item => ({
+        menuId: item.menuId,
+        id: item.menuId,
+        quantity: item.quantity,
+        price: item.price,
+        totalPrice: item.price
+    }));
+    
+    fetch(`/menu/${storeId}/m/cart/process-free-order/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            items: convertedCartData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 장바구니 비우기
+            clearMobileCart();
+            console.log('무료 상품 주문이 완료되었습니다.');
+        } else {
+            console.error('무료 상품 주문 처리 실패:', data.error);
+            // 에러 발생 시 사용자에게 알림
+            updateMobileFreeOrderError(data.error || '무료 상품 주문 처리 중 오류가 발생했습니다.');
+        }
+    })
+    .catch(error => {
+        console.error('무료 상품 주문 처리 중 오류:', error);
+        // 네트워크 오류 등 예외 상황 처리
+        updateMobileFreeOrderError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
+    });
+}
+
+// 모바일 무료 상품 주문 에러 표시
+function updateMobileFreeOrderError(errorMessage) {
+    const errorElement = document.getElementById('mobile-free-order-error');
+    const errorTextElement = document.getElementById('mobile-free-order-error-text');
+    
+    if (errorElement && errorTextElement) {
+        errorTextElement.textContent = errorMessage;
+        errorElement.classList.remove('hidden');
+    } else {
+        // 에러 표시 영역이 없는 경우 알림으로 표시
+        alert(errorMessage);
+    }
 }
 
 // 장바구니 비우기 확인
@@ -650,11 +595,7 @@ function confirmClearCart() {
 
 // 모바일 결제 관련 함수들
 function closeMobilePaymentView() {
-    showView('menu-grid', currentCategory);
-    const paymentView = document.getElementById('mobile-payment-view');
-    if (paymentView) {
-        paymentView.remove();
-    }
+    hidePaymentView();
 }
 
 function generateMobilePaymentInvoice() {
@@ -870,6 +811,84 @@ function cancelMobilePayment() {
         return;
     }
     
+    // 취소 중 표시
+    const cancelBtn = document.querySelector('[onclick="cancelMobilePayment()"]');
+    if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+    }
+    
+    // 현재 결제 해시가 있는 경우에만 서버에 취소 요청
+    if (window.currentPaymentHash) {
+        const storeId = currentStoreId || window.location.pathname.split('/')[2];
+        
+        fetch(`/menu/${storeId}/m/cart/cancel-invoice/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                payment_hash: window.currentPaymentHash
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 서버 취소 성공
+                handleMobileCancelSuccess();
+            } else {
+                // 서버 취소 실패 또는 이미 결제 완료된 경우
+                if (data.order_number) {
+                    // 이미 결제가 완료된 경우
+                    alert(data.error || '결제가 완료되었습니다.');
+                    
+                    // 결제 상태 확인 중지
+                    if (window.paymentCheckInterval) {
+                        clearInterval(window.paymentCheckInterval);
+                        window.paymentCheckInterval = null;
+                    }
+                    
+                    // 성공 화면으로 전환
+                    document.getElementById('mobile-payment-invoice').classList.add('hidden');
+                    document.getElementById('mobile-payment-success').classList.remove('hidden');
+                    
+                    // 장바구니 비우기
+                    clearMobileCart();
+                    
+                    // 자동 리다이렉트 시작
+                    startMobileRedirectCountdown();
+                    
+                } else {
+                    // 일반적인 취소 실패
+                    alert('취소 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
+                    
+                    // 취소 버튼 복원
+                    if (cancelBtn) {
+                        cancelBtn.disabled = false;
+                        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('취소 요청 중 오류:', error);
+            alert('취소 요청 중 오류가 발생했습니다.');
+            
+            // 취소 버튼 복원
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
+        });
+    } else {
+        // 결제 해시가 없는 경우 클라이언트 측에서만 처리
+        handleMobileCancelSuccess();
+    }
+}
+
+// 모바일 취소 성공 처리 공통 함수
+function handleMobileCancelSuccess() {
     // 결제 상태 확인 중지
     if (window.paymentCheckInterval) {
         clearInterval(window.paymentCheckInterval);
@@ -889,16 +908,17 @@ function cancelMobilePayment() {
     // 결제 관련 변수 초기화
     window.currentPaymentHash = null;
     window.paymentExpiresAt = null;
+    
+    // 🔄 페이지 새로고침으로 완전 초기화
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
 }
 
 function goBackToMobileMenuBoard() {
     // 결제 완료 후 모바일 장바구니 비우기
     clearMobileCart();
     showView('menu-grid', currentCategory);
-    const paymentView = document.getElementById('mobile-payment-view');
-    if (paymentView) {
-        paymentView.remove();
-    }
 }
 
 // 전역 함수들 노출
@@ -907,17 +927,19 @@ window.showMenuDetail = showMenuDetail;
 window.backToMenuGrid = backToMenuGrid;
 window.toggleMobileMenu = toggleMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
-window.toggleMobileCart = toggleMobileCart;
-window.openMobileCart = openMobileCart;
-window.closeMobileCart = closeMobileCart;
+window.showCartView = showCartView;
+window.hideCartView = hideCartView;
+window.showPaymentView = showPaymentView;
+window.hidePaymentView = hidePaymentView;
+window.updatePaymentView = updatePaymentView;
 window.addToMobileCart = addToMobileCart;
 window.removeFromMobileCart = removeFromMobileCart;
 window.clearMobileCart = clearMobileCart;
 window.changeCartItemQuantity = changeCartItemQuantity;
-window.processOrderFromMobile = processOrderFromMobile;
+window.processOrderFromCart = processOrderFromCart;
 window.confirmClearCart = confirmClearCart;
 window.clearMobileCartAfterPayment = clearMobileCartAfterPayment;
-window.showMobilePaymentModal = showMobilePaymentModal;
+// showMobilePaymentModal 함수 제거됨 - updatePaymentView 사용
 window.closeMobilePaymentView = closeMobilePaymentView;
 window.generateMobilePaymentInvoice = generateMobilePaymentInvoice;
 window.openMobileLightningWallet = openMobileLightningWallet;
@@ -1124,21 +1146,17 @@ function startMobilePaymentStatusCheck() {
 
 // 모바일 리다이렉트 카운트다운
 function startMobileRedirectCountdown() {
-    let countdown = 10;
-    const countdownElement = document.querySelector('#mobile-payment-success .countdown');
+    let seconds = 10;
+    const countdownElement = document.getElementById('mobile-redirect-countdown');
     
-    if (countdownElement) {
-        countdownElement.textContent = countdown;
-    }
+    if (!countdownElement) return;
     
-    const redirectInterval = setInterval(() => {
-        countdown--;
-        if (countdownElement) {
-            countdownElement.textContent = countdown;
-        }
+    const interval = setInterval(() => {
+        countdownElement.textContent = seconds;
+        seconds--;
         
-        if (countdown <= 0) {
-            clearInterval(redirectInterval);
+        if (seconds < 0) {
+            clearInterval(interval);
             goBackToMobileMenuBoard();
         }
     }, 1000);
@@ -1165,4 +1183,20 @@ function getCsrfToken() {
         }
     }
     return cookieValue;
+}
+
+// 모바일 결제 주문 목록 업데이트
+function updateMobilePaymentOrderList() {
+    const orderListContainer = document.getElementById('mobile-payment-order-list');
+    if (!orderListContainer) return;
+    
+    orderListContainer.innerHTML = mobileCart.map(item => `
+        <div class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+            <div class="flex-1">
+                <div class="font-medium text-sm">${item.menuName}</div>
+                <div class="text-xs text-gray-600">${formatNumber(item.price)} sats × ${item.quantity}</div>
+            </div>
+            <div class="font-bold text-blue-600">${formatNumber(item.price * item.quantity)} sats</div>
+        </div>
+    `).join('');
 } 
