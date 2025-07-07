@@ -453,6 +453,28 @@ document.addEventListener('DOMContentLoaded', function() {
       mobileWarning.classList.remove('hidden');
     }
   }
+  
+  // 페이지 포커스 이벤트 리스너 추가 (모바일 결제 후 돌아왔을 때)
+  window.addEventListener('focus', function() {
+    if (currentPaymentHash) {
+      console.log('페이지 포커스 - 결제 상태 즉시 확인');
+      checkPaymentStatus();
+    }
+  });
+  
+  // 페이지 가시성 변경 이벤트 리스너 추가 (모바일 백그라운드에서 복귀 시)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && currentPaymentHash) {
+      console.log('페이지 가시성 변경 - 결제 상태 즉시 확인');
+      checkPaymentStatus();
+      
+      // 인터벌이 중단되었을 수 있으므로 재시작
+      if (paymentCheckInterval) {
+        clearInterval(paymentCheckInterval);
+      }
+      startPaymentStatusCheck();
+    }
+  });
 });
 
 function generateInvoice() {
@@ -621,6 +643,8 @@ function startPaymentStatusCheck() {
 function checkPaymentStatus() {
   if (!currentPaymentHash) return;
   
+  console.log('결제 상태 확인 중...', currentPaymentHash);
+  
   fetch('/orders/checkout/check_payment/', {
     method: 'POST',
     headers: {
@@ -631,26 +655,63 @@ function checkPaymentStatus() {
       payment_hash: currentPaymentHash
     })
   })
-  .then(response => response.json())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
   .then(data => {
+    console.log('결제 상태 응답:', data);
+    
     if (data.success) {
       if (data.paid) {
         // 결제 완료
+        console.log('결제 완료 확인됨!');
         clearInterval(paymentCheckInterval);
-        showPaymentStatus('결제가 완료되었습니다! 주문 페이지로 이동합니다...', 'success');
+        paymentCheckInterval = null;
+        
+        showPaymentStatus('✅ 결제가 완료되었습니다! 주문 페이지로 이동합니다...', 'success');
+        
+        // 현재 상태 초기화
+        currentPaymentHash = null;
+        currentInvoice = null;
         
         // 2초 후 주문 완료 페이지로 이동
         setTimeout(() => {
           window.location.href = data.redirect_url;
         }, 2000);
+      } else {
+        // 결제 대기 중 - 상태 메시지 업데이트
+        console.log('결제 대기 중...');
+        if (document.getElementById('paymentStatus').classList.contains('hidden')) {
+          showPaymentStatus('결제를 기다리고 있습니다. QR 코드를 스캔하거나 인보이스를 복사하여 결제해주세요.', 'pending');
+        }
       }
-      // 결제 대기 중이면 계속 확인
     } else {
       console.error('결제 상태 확인 오류:', data.error);
+      
+      // 오류가 발생해도 계속 확인 (네트워크 일시적 오류 가능성)
+      if (data.error && data.error.includes('not found')) {
+        // 인보이스를 찾을 수 없는 경우 - 심각한 오류
+        showPaymentStatus('인보이스를 찾을 수 없습니다. 페이지를 새로고침해주세요.', 'error');
+        clearInterval(paymentCheckInterval);
+        paymentCheckInterval = null;
+      }
     }
   })
   .catch(error => {
-    console.error('결제 상태 확인 중 오류:', error);
+    console.error('결제 상태 확인 중 네트워크 오류:', error);
+    
+    // 네트워크 오류는 일시적일 수 있으므로 계속 확인
+    // 단, 사용자에게 연결 문제가 있을 수 있음을 알림
+    const statusDiv = document.getElementById('paymentStatus');
+    if (!statusDiv.classList.contains('hidden')) {
+      const currentMessage = document.getElementById('paymentMessage').textContent;
+      if (!currentMessage.includes('연결 확인')) {
+        showPaymentStatus('네트워크 연결을 확인하는 중입니다. 결제 상태를 계속 확인하고 있습니다.', 'warning');
+      }
+    }
   });
 }
 
@@ -772,6 +833,22 @@ function openLightningWallet() {
             
             // 사용자에게 안내 메시지 표시
             showPaymentStatus('라이트닝 지갑이 열렸습니다. 결제 완료 후 이 페이지로 돌아와주세요.', 'info');
+            
+            // 모바일에서 지갑 열기 후 더 자주 결제 상태 확인
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+            }
+            // 1.5초마다 더 자주 확인 (모바일 환경에서 빠른 응답)
+            paymentCheckInterval = setInterval(checkPaymentStatus, 1500);
+            
+            // 5초 후 한 번 더 확인 (지갑에서 돌아올 시간 고려)
+            setTimeout(() => {
+                if (currentPaymentHash) {
+                    console.log('지갑 열기 후 5초 - 결제 상태 확인');
+                    checkPaymentStatus();
+                }
+            }, 5000);
+            
         } else {
             // 데스크톱에서는 새 탭으로 열기 시도
             const newWindow = window.open(lightningUrl, '_blank');
