@@ -285,8 +285,10 @@ class MenuOrder(models.Model):
     def generate_order_number(self):
         """주문번호 생성"""
         import datetime
+        import uuid
         now = datetime.datetime.now()
-        return f"MENU-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S')}"
+        unique_id = str(uuid.uuid4())[:8].upper()
+        return f"MENU-{now.strftime('%Y%m%d')}-{now.strftime('%H%M%S')}-{unique_id}"
 
 
 class MenuOrderItem(models.Model):

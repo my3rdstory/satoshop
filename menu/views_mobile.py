@@ -309,9 +309,19 @@ def process_free_order_mobile(request, store_id):
                 paid_at=timezone.now()
             )
             
-            # 주문번호 생성
-            menu_order.order_number = menu_order.generate_order_number()
-            menu_order.save()
+            # 주문번호 생성 (중복 방지를 위해 재시도 로직 추가)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    menu_order.order_number = menu_order.generate_order_number()
+                    menu_order.save()
+                    break
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise e
+                    logger.warning(f"[MOBILE] 주문번호 생성 재시도 {attempt + 1}/{max_retries}: {str(e)}")
+                    import time
+                    time.sleep(0.1)  # 100ms 대기
             
             # 주문 항목 생성
             for item_data in validated_items:

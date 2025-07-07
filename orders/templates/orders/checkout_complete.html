@@ -41,10 +41,6 @@
 </style>
 {% endblock %}
 
-{% block extra_js %}
-<script src="{% static 'js/timezone_converter.js' %}"></script>
-{% endblock %}
-
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -367,6 +363,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/timezone_converter.js' %}"></script>
 <script src="{% static 'js/common.js' %}"></script>
 
 <!-- 다운로드 URL을 data 속성으로 전달 -->

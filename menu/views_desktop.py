@@ -95,7 +95,7 @@ def create_cart_invoice_desktop(request, store_id):
     """데스크톱용 장바구니 결제 인보이스 생성"""
     try:
         # 스토어 조회 (비회원도 접근 가능)
-        store = get_object_or_404(Store, store_id=store_id, is_active=True)
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
         
         # 요청 본문 파싱
         try:
@@ -226,7 +226,7 @@ def process_free_order_desktop(request, store_id):
     """데스크톱용 무료 상품 주문 처리"""
     try:
         # 스토어 조회 (비회원도 접근 가능)
-        store = get_object_or_404(Store, store_id=store_id, is_active=True)
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True, is_active=True)
         
         # 요청 본문 파싱
         try:
@@ -309,9 +309,19 @@ def process_free_order_desktop(request, store_id):
                 paid_at=timezone.now()
             )
             
-            # 주문번호 생성
-            menu_order.order_number = menu_order.generate_order_number()
-            menu_order.save()
+            # 주문번호 생성 (중복 방지를 위해 재시도 로직 추가)
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    menu_order.order_number = menu_order.generate_order_number()
+                    menu_order.save()
+                    break
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        raise e
+                    logger.warning(f"[DESKTOP] 주문번호 생성 재시도 {attempt + 1}/{max_retries}: {str(e)}")
+                    import time
+                    time.sleep(0.1)  # 100ms 대기
             
             # 주문 항목 생성
             for item_data in validated_items:

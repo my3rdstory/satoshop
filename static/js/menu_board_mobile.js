@@ -678,6 +678,12 @@ function showMobileFreeOrderSuccess() {
                             
                             <!-- 무료 상품 완료 메시지 -->
                             <div class="text-center">
+                                <!-- 에러 메시지 영역 -->
+                                <div id="mobile-free-order-error" class="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 text-red-800" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span id="mobile-free-order-error-text"></span>
+                                </div>
+                                
                                 <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                                     <i class="fas fa-gift text-green-600 text-3xl mb-3"></i>
                                     <h4 class="text-lg font-semibold text-green-900 mb-2">무료 상품 주문이 완료되었습니다!</h4>
@@ -743,11 +749,29 @@ function processMobileFreeOrder() {
             console.log('무료 상품 주문이 완료되었습니다.');
         } else {
             console.error('무료 상품 주문 처리 실패:', data.error);
+            // 에러 발생 시 사용자에게 알림
+            updateMobileFreeOrderError(data.error || '무료 상품 주문 처리 중 오류가 발생했습니다.');
         }
     })
     .catch(error => {
         console.error('무료 상품 주문 처리 중 오류:', error);
+        // 네트워크 오류 등 예외 상황 처리
+        updateMobileFreeOrderError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     });
+}
+
+// 모바일 무료 상품 주문 에러 표시
+function updateMobileFreeOrderError(errorMessage) {
+    const errorElement = document.getElementById('mobile-free-order-error');
+    const errorTextElement = document.getElementById('mobile-free-order-error-text');
+    
+    if (errorElement && errorTextElement) {
+        errorTextElement.textContent = errorMessage;
+        errorElement.style.display = 'block';
+    } else {
+        // 에러 표시 영역이 없는 경우 알림으로 표시
+        alert(errorMessage);
+    }
 }
 
 // 장바구니 비우기 확인

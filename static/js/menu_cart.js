@@ -1339,6 +1339,12 @@ function showFreeOrderSuccess() {
                             
                             <!-- 무료 상품 완료 메시지 -->
                             <div class="text-center">
+                                <!-- 에러 메시지 영역 -->
+                                <div id="free-order-error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 text-red-800" style="display: none;">
+                                    <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                                    <span id="free-order-error-text"></span>
+                                </div>
+                                
                                 <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
                                     <i class="fas fa-gift text-green-600 text-4xl mb-4"></i>
                                     <h4 class="text-xl font-semibold text-green-900 mb-2">무료 상품 주문이 완료되었습니다!</h4>
@@ -1399,9 +1405,27 @@ function processFreeOrder() {
             console.log('무료 상품 주문이 완료되었습니다.');
         } else {
             console.error('무료 상품 주문 처리 실패:', data.error);
+            // 에러 발생 시 사용자에게 알림
+            updateFreeOrderError(data.error || '무료 상품 주문 처리 중 오류가 발생했습니다.');
         }
     })
     .catch(error => {
         console.error('무료 상품 주문 처리 중 오류:', error);
+        // 네트워크 오류 등 예외 상황 처리
+        updateFreeOrderError('네트워크 오류가 발생했습니다. 다시 시도해주세요.');
     });
+}
+
+// 무료 상품 주문 에러 표시
+function updateFreeOrderError(errorMessage) {
+    const errorElement = document.getElementById('free-order-error');
+    const errorTextElement = document.getElementById('free-order-error-text');
+    
+    if (errorElement && errorTextElement) {
+        errorTextElement.textContent = errorMessage;
+        errorElement.style.display = 'block';
+    } else {
+        // 에러 표시 영역이 없는 경우 알림으로 표시
+        alert(errorMessage);
+    }
 }
