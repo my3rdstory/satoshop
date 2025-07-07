@@ -1,0 +1,20 @@
+/* lecture_live_detail.css */
+/* 라이브 강의 상세 페이지 전용 스타일 */
+
+.lecture-image-container {
+    aspect-ratio: 1 / 1;
+    background: linear-gradient(135deg, #faf5ff 0%, #e0e7ff 100%);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.dark .lecture-image-container {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+} 

@@ -9,4 +9,20 @@ urlpatterns = [
     path('<int:pk>/enroll/', views.enroll_lecture, name='enroll'),
     path('my-lectures/', views.MyLecturesView.as_view(), name='my_lectures'),
     path('category/<int:category_id>/', views.LectureListView.as_view(), name='category'),
+    
+    path('<str:store_id>/live/', views.live_lecture_list, name='live_lecture_list'),
+    path('<str:store_id>/live/grid/', views.live_lecture_grid, name='live_lecture_grid'),
+    
+    path('<str:store_id>/live/add/', views.add_live_lecture, name='add_live_lecture'),
+    
+    path('<str:store_id>/live/status/', views.live_lecture_status, name='live_lecture_status'),
+    path('<str:store_id>/live/status/<int:live_lecture_id>/', views.live_lecture_status_detail, name='live_lecture_status_detail'),
+    
+    path('<str:store_id>/live/<int:live_lecture_id>/', views.live_lecture_detail, name='live_lecture_detail'),
+    
+    path('<str:store_id>/live/<int:live_lecture_id>/edit/', views.edit_live_lecture, name='edit_live_lecture'),
+    
+    path('<str:store_id>/live/<int:live_lecture_id>/checkout/', views.live_lecture_checkout, name='live_lecture_checkout'),
+    
+    path('<str:store_id>/live/<int:live_lecture_id>/complete/<int:order_id>/', views.live_lecture_checkout_complete, name='live_lecture_checkout_complete'),
 ] 
