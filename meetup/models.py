@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.core.validators import EmailValidator, RegexValidator
 from django.contrib.auth.models import User
 from stores.models import Store
+import datetime
+import uuid
 
 class Meetup(models.Model):
     """밋업"""
@@ -385,21 +387,19 @@ class MeetupOrder(models.Model):
         return f"{self.meetup.name} - {self.participant_name} ({self.order_number})"
     
     def save(self, *args, **kwargs):
-        # 주문번호 자동 생성
+        # 주문번호 자동 생성: store_id-ticket-YYYYMMDD-해시값 (밋업 진행일 기준)
         if not self.order_number:
-            from datetime import datetime
-            
-            # 밋업 날짜가 있으면 밋업 날짜를 사용, 없으면 현재 날짜 사용
+            # 밋업 진행일을 기준으로 하되, 없으면 현재 날짜 사용
             if self.meetup and self.meetup.date_time:
-                date_str = self.meetup.date_time.strftime('%Y%m%d')
+                base_date = self.meetup.date_time
             else:
-                date_str = datetime.now().strftime('%Y%m%d')
+                base_date = datetime.datetime.now()
+                
+            store_id = self.meetup.store.store_id
+            date_str = base_date.strftime('%Y%m%d')  # 20250606 형식
+            hash_value = str(uuid.uuid4())[:8].upper()
             
-            # 현재 시간을 기준으로 시분초 생성
-            now = datetime.now()
-            time_str = now.strftime('%H%M%S')
-            
-            self.order_number = f"TICKET-{date_str}-{time_str}"
+            self.order_number = f"{store_id}-ticket-{date_str}-{hash_value}"
         
         super().save(*args, **kwargs)
     
