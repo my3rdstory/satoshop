@@ -38,7 +38,7 @@
     <div class="mobile-header fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
         <div class="flex items-center justify-between p-4">
             <!-- 장바구니 버튼 -->
-            <button onclick="toggleMobileCart()" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+            <button onclick="showCartView()" class="relative p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                 <i class="fas fa-shopping-cart text-xl"></i>
                 <span id="mobile-cart-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
             </button>
@@ -192,53 +192,201 @@
         <div id="menu-detail-view" class="content-view">
             <!-- 메뉴 상세 내용이 동적으로 로드됩니다 -->
         </div>
-    </div>
-    
-        <!-- 모바일 장바구니 모달 -->
-    <div id="mobile-cart-sidebar" class="fixed top-0 left-0 right-0 max-h-[80vh] bg-white dark:bg-gray-800 shadow-xl transform -translate-y-full transition-transform duration-300 z-40 rounded-b-2xl">
-        <!-- 헤더 -->
-        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between rounded-t-2xl">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장바구니</h3>
-            <div class="flex items-center space-x-2">
-                <button id="mobile-clear-cart-btn" onclick="confirmClearCart()" 
-                        class="p-2 text-red-500 hover:text-red-700 hidden">
-                    <i class="fas fa-trash-alt"></i>
-                </button>
-                <button onclick="closeMobileCart()" class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+        
+        <!-- 장바구니 뷰 -->
+        <div id="cart-view" class="content-view">
+            <div class="bg-white dark:bg-gray-800 min-h-screen">
+                <!-- 장바구니 헤더 -->
+                <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button onclick="hideCartView()" class="p-2 mr-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">목록으로</h3>
+                    </div>
+                    <button id="mobile-cart-view-clear-btn" onclick="confirmClearCart()" 
+                            class="p-2 text-red-500 hover:text-red-700 hidden">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+                
+                <!-- 장바구니 내용 -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="mobile-cart-view-items">
+                        <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                    
+                    <!-- 빈 장바구니 메시지 -->
+                    <div id="mobile-cart-view-empty" class="text-center py-16 text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-shopping-cart text-4xl mb-4"></i>
+                        <p class="text-lg">장바구니가 비어있습니다</p>
+                        <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">메뉴를 선택해서 담아보세요</p>
+                    </div>
+                </div>
+                
+                <!-- 하단 주문 영역 -->
+                <div id="mobile-cart-view-summary" class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-lg font-semibold text-gray-900 dark:text-white">총 금액</span>
+                        <span id="mobile-cart-view-total" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>
+                    </div>
+                    <button onclick="processOrderFromCart()" 
+                            class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors">
+                        <i class="fas fa-credit-card mr-2"></i>결제하기
+                    </button>
+                </div>
             </div>
         </div>
         
-        <!-- 장바구니 내용 -->
-        <div class="flex-1 overflow-y-auto p-4" style="max-height: calc(80vh - 140px);">
-            <div id="mobile-cart-items">
-                <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
+        <!-- 결제 뷰 -->
+        <div id="payment-view" class="content-view">
+            <div class="bg-white dark:bg-gray-800 min-h-screen">
+                <!-- 결제 헤더 -->
+                <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <button onclick="hidePaymentView()" class="p-2 mr-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+                            <i class="fas fa-arrow-left text-xl"></i>
+                        </button>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">결제하기</h3>
+                    </div>
+                </div>
+                
+                <!-- 결제 내용 -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <!-- 주문 목록 -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">주문 내역</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 max-h-64 overflow-y-auto">
+                            <div id="mobile-payment-order-list" class="space-y-2">
+                                <!-- 주문 목록이 여기에 동적으로 추가됩니다 -->
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-gray-600 mt-3 pt-3">
+                                <div class="flex justify-between items-center font-bold">
+                                    <span class="text-gray-900 dark:text-white">총 결제 금액</span>
+                                    <span id="mobile-payment-total" class="text-blue-600 dark:text-blue-400">0 sats</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 결제 정보 -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">결제 정보</h3>
+                        
+                        <!-- 인보이스 생성 전 -->
+                        <div id="mobile-payment-initial" class="text-center">
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                                <i class="fas fa-bolt text-blue-600 dark:text-blue-400 text-2xl mb-2"></i>
+                                <h4 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">라이트닝 결제</h4>
+                                <p class="text-blue-700 dark:text-blue-300 text-sm">빠르고 저렴한 비트코인 결제</p>
+                            </div>
+                            <div class="space-y-2">
+                                <button onclick="generateMobilePaymentInvoice()" 
+                                        class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-qrcode mr-2"></i>결제 인보이스 생성
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 로딩 -->
+                        <div id="mobile-payment-loading" class="hidden text-center py-8">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400 mb-4"></div>
+                            <p class="text-gray-600 dark:text-gray-400">인보이스를 생성하고 있습니다...</p>
+                        </div>
+                        
+                        <!-- QR 코드 및 인보이스 -->
+                        <div id="mobile-payment-invoice" class="hidden">
+                            <!-- 카운트다운 타이머 -->
+                            <div id="mobile-payment-countdown" class="text-center mb-4">
+                                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                                    <div class="text-red-600 dark:text-red-400 text-xl font-bold" id="mobile-countdown-timer">15:00</div>
+                                    <div class="text-red-500 dark:text-red-400 text-sm">인보이스 유효 시간</div>
+                                </div>
+                            </div>
+                            
+                            <!-- QR 코드 -->
+                            <div class="text-center mb-4">
+                                <div id="mobile-qr-code-container" class="inline-block p-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-lg">
+                                    <!-- QR 코드가 여기에 생성됩니다 -->
+                                </div>
+                            </div>
+                            
+                            <!-- 라이트닝 지갑 버튼 및 안내 -->
+                            <div class="mb-4">
+                                <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 mb-3">
+                                    <div class="flex items-start space-x-2">
+                                        <i class="fas fa-mobile-alt text-orange-600 dark:text-orange-400 mt-1"></i>
+                                        <div class="text-sm">
+                                            <p class="text-orange-900 dark:text-orange-100 font-medium mb-1">모바일에서 간편 결제</p>
+                                            <p class="text-orange-700 dark:text-orange-300">아래 버튼을 누르면 라이트닝 지갑 앱이 자동으로 열립니다</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onclick="openMobileLightningWallet()" 
+                                        class="w-full bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition-colors mb-3">
+                                    <i class="fas fa-bolt mr-2 text-lg"></i>라이트닝 지갑 열어 결제하기
+                                </button>
+                            </div>
+                            
+                            <!-- 인보이스 텍스트 -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">인보이스 텍스트</label>
+                                <div class="relative">
+                                    <textarea id="mobile-invoice-text" 
+                                              class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-mono bg-gray-50 dark:bg-gray-700 resize-none text-gray-900 dark:text-white" 
+                                              rows="2" 
+                                              readonly></textarea>
+                                    <button onclick="copyMobileInvoiceText()" 
+                                            class="absolute top-2 right-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-2 py-1 rounded text-xs transition-colors">
+                                        <i class="fas fa-copy mr-1"></i>복사
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 취소 버튼 -->
+                            <div class="text-center">
+                                <button onclick="cancelMobilePayment()" 
+                                        class="w-full bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                                    <i class="fas fa-times mr-2"></i>결제 취소
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 결제 성공 -->
+                        <div id="mobile-payment-success" class="hidden text-center">
+                            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-3xl mb-3"></i>
+                                <h4 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">결제가 완료되었습니다!</h4>
+                                <p class="text-green-700 dark:text-green-300 text-sm">주문이 성공적으로 처리되었습니다.</p>
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 mb-4">
+                                <div class="text-blue-600 dark:text-blue-400 text-lg font-bold" id="mobile-redirect-countdown">10</div>
+                                <div class="text-blue-500 dark:text-blue-400 text-sm">초 후 메뉴판으로 이동합니다</div>
+                            </div>
+                            <button onclick="goBackToMobileMenuBoard()" 
+                                    class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i>지금 메뉴판으로 이동
+                            </button>
+                        </div>
+                        
+                        <!-- 결제 취소됨 -->
+                        <div id="mobile-payment-cancelled" class="hidden text-center">
+                            <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 mb-4">
+                                <i class="fas fa-times-circle text-gray-600 dark:text-gray-400 text-3xl mb-3"></i>
+                                <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">결제가 취소되었습니다</h4>
+                                <p class="text-gray-700 dark:text-gray-300 text-sm">언제든지 다시 결제를 시도하실 수 있습니다.</p>
+                            </div>
+                            <button onclick="hidePaymentView()" 
+                                    class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i>장바구니로 돌아가기
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            
-            <!-- 빈 장바구니 메시지 -->
-            <div id="mobile-empty-cart" class="text-center py-16 text-gray-500 dark:text-gray-400">
-                <i class="fas fa-shopping-cart text-4xl mb-4"></i>
-                <p class="text-lg">장바구니가 비어있습니다</p>
-                <p class="text-sm text-gray-400 dark:text-gray-500 mt-2">메뉴를 선택해서 담아보세요</p>
-            </div>
-        </div>
-        
-        <!-- 하단 주문 영역 -->
-        <div id="mobile-cart-summary" class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 hidden rounded-b-2xl">
-            <div class="flex items-center justify-between mb-4">
-                <span class="text-lg font-semibold text-gray-900 dark:text-white">총 금액</span>
-                <span id="mobile-cart-total" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>
-            </div>
-            <button onclick="processOrderFromMobile()" 
-                    class="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium transition-colors">
-                <i class="fas fa-credit-card mr-2"></i>결제하기
-            </button>
         </div>
     </div>
 
-    <!-- 오버레이 -->
-    <div id="mobile-cart-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden" onclick="closeMobileCart()"></div>
     
     <!-- 스토어 ID를 JavaScript에서 사용할 수 있도록 설정 -->
     <div data-store-id="{{ store.store_id }}" style="display: none;"></div>
