@@ -194,10 +194,10 @@
         </div>
     </div>
     
-        <!-- 모바일 장바구니 사이드바 -->
-    <div id="mobile-cart-sidebar" class="fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl transform -translate-x-full transition-transform duration-300 z-40">
+        <!-- 모바일 장바구니 모달 -->
+    <div id="mobile-cart-sidebar" class="fixed top-0 left-0 right-0 max-h-[80vh] bg-white dark:bg-gray-800 shadow-xl transform -translate-y-full transition-transform duration-300 z-40 rounded-b-2xl">
         <!-- 헤더 -->
-        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
+        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between rounded-t-2xl">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">장바구니</h3>
             <div class="flex items-center space-x-2">
                 <button id="mobile-clear-cart-btn" onclick="confirmClearCart()" 
@@ -211,7 +211,7 @@
         </div>
         
         <!-- 장바구니 내용 -->
-        <div class="flex-1 overflow-y-auto p-4" style="height: calc(100vh - 140px);">
+        <div class="flex-1 overflow-y-auto p-4" style="max-height: calc(80vh - 140px);">
             <div id="mobile-cart-items">
                 <!-- 장바구니 아이템들이 여기에 동적으로 추가됩니다 -->
             </div>
@@ -225,7 +225,7 @@
         </div>
         
         <!-- 하단 주문 영역 -->
-        <div id="mobile-cart-summary" class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 hidden">
+        <div id="mobile-cart-summary" class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 hidden rounded-b-2xl">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-lg font-semibold text-gray-900 dark:text-white">총 금액</span>
                 <span id="mobile-cart-total" class="text-xl font-bold text-blue-600 dark:text-blue-400">0 sats</span>

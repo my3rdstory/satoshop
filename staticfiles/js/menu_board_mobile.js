@@ -170,7 +170,7 @@ function toggleMobileCart() {
     const sidebar = document.getElementById('mobile-cart-sidebar');
     const overlay = document.getElementById('mobile-cart-overlay');
     
-    if (sidebar.classList.contains('translate-x-0')) {
+    if (sidebar.classList.contains('translate-y-0')) {
         closeMobileCart();
     } else {
         openMobileCart();
@@ -181,8 +181,8 @@ function openMobileCart() {
     const sidebar = document.getElementById('mobile-cart-sidebar');
     const overlay = document.getElementById('mobile-cart-overlay');
     
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
+    sidebar.classList.remove('-translate-y-full');
+    sidebar.classList.add('translate-y-0');
     overlay.classList.remove('hidden');
 }
 
@@ -190,8 +190,8 @@ function closeMobileCart() {
     const sidebar = document.getElementById('mobile-cart-sidebar');
     const overlay = document.getElementById('mobile-cart-overlay');
     
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
+    sidebar.classList.remove('translate-y-0');
+    sidebar.classList.add('-translate-y-full');
     overlay.classList.add('hidden');
 }
 
