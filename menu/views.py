@@ -250,15 +250,22 @@ def check_cart_payment(request, store_id):
                                 return JsonResponse({
                                     'success': True,
                                     'status': result['status'],
-                                    'order_status': menu_order_locked.status
+                                    'order_status': menu_order_locked.status,
+                                    'order_number': menu_order_locked.order_number
                                 })
                             
-                            # 결제 완료로 상태 업데이트
-                            logger.info(f"[결제상태체크] 결제 완료 - 주문 상태 업데이트 중...")
+                            # 결제 완료 처리: 주문번호 생성 및 상태 업데이트
+                            logger.info(f"[결제상태체크] 결제 완료 - 주문번호 생성 및 상태 업데이트 중...")
+                            
+                            # 주문번호 생성 (아직 없는 경우에만)
+                            if not menu_order_locked.order_number:
+                                menu_order_locked.order_number = menu_order_locked.generate_order_number()
+                            
                             menu_order_locked.status = 'paid'
                             menu_order_locked.paid_at = timezone.now()
                             menu_order_locked.save()
-                            logger.info(f"[결제상태체크] 주문 상태 업데이트 완료")
+                            
+                            logger.info(f"[결제상태체크] 주문 완료 - 주문번호: {menu_order_locked.order_number}")
                             
                     except MenuOrder.DoesNotExist:
                         logger.error(f"[결제상태체크] 주문 락 획득 실패: {payment_hash}")
@@ -269,6 +276,11 @@ def check_cart_payment(request, store_id):
                     'status': result['status'],
                     'order_status': menu_order.status
                 }
+                
+                # 결제 완료 시 주문번호 포함
+                if menu_order.status == 'paid' and menu_order.order_number:
+                    response_data['order_number'] = menu_order.order_number
+                
                 logger.info(f"[결제상태체크] 응답 데이터: {response_data}")
                 return JsonResponse(response_data)
             else:
@@ -360,6 +372,10 @@ def cancel_menu_invoice(request, store_id):
                             payment_hash=payment_hash,
                             store=store
                         )
+                        
+                        # 주문번호 생성 (아직 없는 경우에만)
+                        if not menu_order_locked.order_number:
+                            menu_order_locked.order_number = menu_order_locked.generate_order_number()
                         
                         menu_order_locked.status = 'paid'
                         menu_order_locked.paid_at = timezone.now()

@@ -240,7 +240,7 @@ class MenuOrder(models.Model):
     ]
     
     # 주문 기본 정보
-    order_number = models.CharField(max_length=50, unique=True, verbose_name='주문번호')
+    order_number = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name='주문번호')
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='menu_orders', verbose_name='스토어')
     status = models.CharField(
         max_length=20, choices=ORDER_STATUS_CHOICES, 
@@ -275,11 +275,11 @@ class MenuOrder(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.order_number} - {self.store.store_name}"
+        order_display = self.order_number or f"주문#{self.id}"
+        return f"{order_display} - {self.store.store_name}"
     
     def save(self, *args, **kwargs):
-        if not self.order_number:
-            self.order_number = self.generate_order_number()
+        # 주문번호는 결제 완료 시에만 생성
         super().save(*args, **kwargs)
     
     def generate_order_number(self):
@@ -321,7 +321,8 @@ class MenuOrderItem(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.order.order_number} - {self.menu_name} x{self.quantity}"
+        order_display = self.order.order_number or f"주문#{self.order.id}"
+        return f"{order_display} - {self.menu_name} x{self.quantity}"
     
     @property
     def unit_price(self):

@@ -242,7 +242,6 @@ def create_cart_invoice_mobile(request, store_id):
             'invoice': result['invoice'],
             'amount': total_amount,
             'memo': memo,
-            'order_number': menu_order.order_number,
             'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None,
         }
         

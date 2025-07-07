@@ -211,7 +211,7 @@ class MenuOrderAdmin(admin.ModelAdmin):
     
     def order_number_link(self, obj):
         """주문번호를 링크로 표시"""
-        return obj.order_number
+        return obj.order_number or '(미생성)'
     order_number_link.short_description = '주문번호'
     order_number_link.admin_order_field = 'order_number'
     

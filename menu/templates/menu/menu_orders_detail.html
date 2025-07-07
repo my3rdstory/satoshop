@@ -129,7 +129,9 @@
               {% for item in page_obj %}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white">
+                    {{ item.order.order_number|default:"(미생성)" }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.quantity }}개</td>
                 <td class="px-6 py-4 whitespace-nowrap text-bitcoin font-semibold">{{ item.menu_price|floatformat:0 }} sats</td>
