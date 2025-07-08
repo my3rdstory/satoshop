@@ -167,11 +167,7 @@
 
 /* 참석 현황 카드 애니메이션 */
 .stats-card {
-    transition: transform 0.2s ease-in-out;
-}
-
-.stats-card:hover {
-    transform: translateY(-2px);
+    /* 호버 애니메이션 제거됨 */
 }
 
 /* 스캔 성공 효과 */

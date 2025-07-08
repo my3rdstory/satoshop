@@ -15,21 +15,8 @@ function initializeLiveLectureStatus() {
 }
 
 function initializeStatsCards() {
-    // 통계 카드에 애니메이션 효과 추가
+    // 통계 카드 초기화 (호버 애니메이션 제거됨)
     const statsCards = document.querySelectorAll('.stats-card');
-    
-    statsCards.forEach((card, index) => {
-        // 카드 호버 시 부드러운 애니메이션
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
-            this.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '';
-        });
-    });
     
     console.log('통계 카드 초기화 완료');
 }

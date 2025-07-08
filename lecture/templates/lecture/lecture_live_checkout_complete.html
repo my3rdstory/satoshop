@@ -21,8 +21,7 @@
         <i class="fas fa-check-circle text-4xl text-green-600 dark:text-green-400"></i>
       </div>
       <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">참가가 확정되었습니다!</h1>
-      <p class="text-xl text-gray-600 dark:text-gray-400 mb-2">{{ live_lecture.name }}에 성공적으로 참가 신청이 완료되었습니다.</p>
-      <p class="text-lg text-gray-500 dark:text-gray-500">주문번호: <span class="font-mono text-purple-600 dark:text-purple-400">{{ order.order_number }}</span></p>
+      <p class="text-xl text-gray-600 dark:text-gray-400">{{ live_lecture.name }}에 성공적으로 참가 신청이 완료되었습니다.</p>
     </div>
 
     <!-- 주문 정보 카드 -->
@@ -36,40 +35,24 @@
       </div>
 
       <div class="p-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center lg:items-start">
-          <!-- 왼쪽: 주문 정보 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 왼쪽: 라이브 강의 정보 -->
           <div class="space-y-6">
-            <div class="space-y-2">
-              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">주문번호</div>
-              <div class="text-gray-900 dark:text-white font-mono text-lg">{{ order.order_number }}</div>
-            </div>
-            
             <div class="space-y-2">
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">라이브 강의</div>
               <div class="text-gray-900 dark:text-white font-semibold">{{ live_lecture.name }}</div>
             </div>
-          </div>
-          
-          <!-- 중앙: QR 코드 -->
-          <div class="flex flex-col items-center space-y-4">
-            <div class="text-center">
-              <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">참가 확인 QR코드</div>
-              <div class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600 inline-block">
-                <canvas id="qr-code" class="w-32 h-32"></canvas>
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">주문번호: {{ order.order_number }}</div>
-            </div>
-          </div>
-          
-          <!-- 오른쪽: 확정 정보 -->
-          <div class="space-y-6">
+            
             <div class="space-y-2">
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">참가 확정일시</div>
               <div class="text-gray-900 dark:text-white">
                 <span>{{ order.confirmed_at|date:"Y-m-d H:i:s" }}</span>
               </div>
             </div>
-            
+          </div>
+          
+          <!-- 오른쪽: 결제 정보 -->
+          <div class="space-y-6">
             <div class="space-y-2">
               <div class="text-sm font-medium text-gray-700 dark:text-gray-300">결제 상태</div>
               <div class="flex items-center text-green-600 dark:text-green-400 font-semibold">
@@ -80,6 +63,11 @@
                 결제 완료
                 {% endif %}
               </div>
+            </div>
+            
+            <div class="space-y-2">
+              <div class="text-sm font-medium text-gray-700 dark:text-gray-300">참가자</div>
+              <div class="text-gray-900 dark:text-white">{{ order.user.username }} ({{ order.user.email }})</div>
             </div>
           </div>
         </div>
@@ -114,10 +102,6 @@
               <span class="font-medium text-gray-900 dark:text-white">{{ live_lecture.instructor_email }}</span>
             </div>
             {% endif %}
-            <div class="flex">
-              <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">참가자:</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.user.username }} ({{ order.user.email }})</span>
-            </div>
           </div>
         </div>
 
@@ -172,7 +156,7 @@
         </div>
         <div class="ml-3">
           <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">강사 안내사항</h3>
-          <div class="text-blue-800 dark:text-blue-200 prose max-w-none">
+          <div class="text-blue-800 dark:text-blue-200 prose max-w-none completion-message-content">
             {{ live_lecture.completion_message|linebreaks }}
           </div>
         </div>
@@ -230,20 +214,15 @@
           <i class="fas fa-download text-green-600 dark:text-green-400 text-lg mt-1"></i>
         </div>
         <div class="ml-3">
-          <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">참가 확인서 자동 다운로드</h3>
+          <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">참가 확인서 다운로드</h3>
           <p class="text-green-800 dark:text-green-200 text-sm mb-4">
-            참가 확인을 위한 정보 파일과 QR코드 이미지가 자동으로 다운로드됩니다.
+            참가 확인을 위한 정보 파일을 다운로드할 수 있습니다.
           </p>
           <div class="flex flex-wrap gap-3">
             <button onclick="downloadParticipantInfo()" 
                     class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
               <i class="fas fa-file-text mr-2"></i>
               참가 정보 다운로드 (.txt)
-            </button>
-            <button onclick="downloadQRCode()" 
-                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
-              <i class="fas fa-qrcode mr-2"></i>
-              QR코드 다운로드 (.png)
             </button>
           </div>
         </div>
@@ -271,7 +250,6 @@
 <script type="application/json" id="live-lecture-data">
 {
   "name": "{{ live_lecture.name|escapejs }}",
-  "orderNumber": "{{ order.order_number|escapejs }}",
   "participantName": "{{ order.user.username|escapejs }}",
   "participantEmail": "{{ order.user.email|escapejs }}",
   "confirmedAt": "{{ order.confirmed_at|date:'Y-m-d H:i:s'|escapejs }}",
@@ -279,16 +257,22 @@
   "totalPrice": "{{ order.price|floatformat:0 }}",
   "storeName": "{{ store.store_name|escapejs }}",
   "instructorContact": "{% if live_lecture.instructor_contact %}{{ live_lecture.instructor_contact|escapejs }}{% endif %}",
-  "instructorEmail": "{% if live_lecture.instructor_email %}{{ live_lecture.instructor_email|escapejs }}{% endif %}"
+  "instructorEmail": "{% if live_lecture.instructor_email %}{{ live_lecture.instructor_email|escapejs }}{% endif %}",
+  "completionMessage": "{% if live_lecture.completion_message %}{{ live_lecture.completion_message|escapejs }}{% endif %}"
 }
 </script>
 
 <!-- 스크립트 -->
-<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script src="{% static 'js/lecture_live_checkout_complete.js' %}"></script>
 
 <script>
-// 데이터 로드
+// URL을 링크로 변환하는 함수
+function autoLinkUrls(text) {
+    const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+    return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">$1</a>');
+}
+
+// 데이터 로드 및 URL 자동 링크 처리
 document.addEventListener('DOMContentLoaded', function() {
     const dataElement = document.getElementById('live-lecture-data');
     if (dataElement) {
@@ -298,6 +282,14 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('데이터 파싱 실패:', error);
         }
     }
+    
+    // 강사 안내사항의 URL을 자동으로 링크로 변환
+    const completionMessageElements = document.querySelectorAll('.completion-message-content');
+    completionMessageElements.forEach(element => {
+        if (element.innerHTML) {
+            element.innerHTML = autoLinkUrls(element.innerHTML);
+        }
+    });
 });
 </script>
 {% endblock %} 

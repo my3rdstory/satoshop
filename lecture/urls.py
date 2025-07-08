@@ -17,6 +17,7 @@ urlpatterns = [
     
     path('<str:store_id>/live/status/', views.live_lecture_status, name='live_lecture_status'),
     path('<str:store_id>/live/status/<int:live_lecture_id>/', views.live_lecture_status_detail, name='live_lecture_status_detail'),
+    path('<str:store_id>/live/status/<int:live_lecture_id>/export/', views.export_live_lecture_participants_csv, name='export_live_lecture_participants_csv'),
     
     path('<str:store_id>/live/<int:live_lecture_id>/', views.live_lecture_detail, name='live_lecture_detail'),
     
@@ -25,4 +26,6 @@ urlpatterns = [
     path('<str:store_id>/live/<int:live_lecture_id>/checkout/', views.live_lecture_checkout, name='live_lecture_checkout'),
     
     path('<str:store_id>/live/<int:live_lecture_id>/complete/<int:order_id>/', views.live_lecture_checkout_complete, name='live_lecture_checkout_complete'),
+    path('<str:store_id>/live/<int:live_lecture_id>/order/<int:order_id>/', views.live_lecture_order_complete, name='live_lecture_order_complete'),
+    path('<str:store_id>/live/orders/', views.live_lecture_orders, name='live_lecture_orders'),
 ] 

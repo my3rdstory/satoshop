@@ -20,14 +20,14 @@ function initializeEditors() {
   descriptionEditor = new EasyMDE({
     element: document.getElementById('description'),
     spellChecker: false,
-    toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading-1', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
+    toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading-1', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code'],
     placeholder: '강의에 대한 자세한 설명을 작성하세요...'
   });
 
   completionMessageEditor = new EasyMDE({
     element: document.getElementById('completion_message'),
     spellChecker: false,
-    toolbar: ['bold', 'italic', '|', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
+    toolbar: ['bold', 'italic', '|', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code'],
     placeholder: '참가 완료 후 보여줄 메시지를 작성하세요...'
   });
 }

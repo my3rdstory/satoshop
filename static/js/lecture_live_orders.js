@@ -1,56 +1,14 @@
 // lecture_live_orders.js
 // 라이브 강의 신청 내역 페이지 JavaScript
 
-// QR 코드 생성 및 관리
+// 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
-    const qrCanvases = document.querySelectorAll('.qr-code-canvas');
-    
-    qrCanvases.forEach(canvas => {
-        const orderNumber = canvas.getAttribute('data-order-number');
-        
-        if (orderNumber) {
-            // QR 코드 생성
-            new QRious({
-                element: canvas,
-                value: orderNumber,
-                size: 128,
-                background: 'white',
-                foreground: 'black',
-                level: 'M'
-            });
-        }
-    });
-    
+    // 온라인 강의이므로 QR코드 생성 없음
+    console.log('라이브 강의 신청 내역 페이지 로드 완료');
 });
 
-// QR코드 다운로드 함수
-function downloadQRCode(orderNumber) {
-    const canvas = document.querySelector(`canvas[data-order-number="${orderNumber}"]`);
-    if (!canvas) {
-        console.error('QR 코드를 찾을 수 없습니다.');
-        return;
-    }
-    
-    try {
-        // Canvas를 PNG로 변환
-        const dataURL = canvas.toDataURL('image/png');
-        
-        // 다운로드 링크 생성
-        const a = document.createElement('a');
-        a.href = dataURL;
-        a.download = `라이브강의_QR코드_${orderNumber}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        console.log('QR코드 다운로드 완료');
-    } catch (error) {
-        console.error('QR코드 다운로드 실패:', error);
-    }
-}
-
 // 참가 정보 다운로드 함수
-function downloadParticipantInfo(orderNumber, lectureName, participantName, participantEmail, confirmedAt, lectureDate, totalPrice, priceType, priceKrw, storeName) {
+function downloadParticipantInfo(orderNumber, lectureName, participantName, participantEmail, confirmedAt, lectureDate, totalPrice, priceType, priceKrw, storeName, instructorContact, instructorEmail, completionMessage) {
     const textContent = `라이브 강의 참가 확인서
 ========================
 
@@ -71,8 +29,15 @@ function downloadParticipantInfo(orderNumber, lectureName, participantName, part
 ${priceType === 'krw' && priceKrw !== '0' ? `- 원화 기준가: ${parseInt(priceKrw).toLocaleString()}원\n` : ''}
 - 최종 결제금액: ${totalPrice === '0' ? '무료' : `${parseInt(totalPrice).toLocaleString()} sats`}
 
-이 파일은 라이브 강의 참가 증명서입니다.
-강의 당일 QR코드와 함께 지참해 주세요.
+강사 연락처:
+${instructorContact ? `- 연락처: ${instructorContact}` : ''}
+${instructorEmail ? `- 이메일: ${instructorEmail}` : ''}
+
+${completionMessage ? `강사 안내사항:\n${completionMessage}\n` : ''}
+일반 안내사항:
+- 참가 확정 후 취소는 불가능합니다.
+- 온라인 강의 링크는 강의 시작 전 이메일로 안내됩니다.
+- 문의사항은 강사에게 직접 연락해주세요.
 
 ========================
 생성일시: ${new Date().toLocaleString('ko-KR')}`;

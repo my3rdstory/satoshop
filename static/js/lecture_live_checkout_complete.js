@@ -1,36 +1,13 @@
 // lecture_live_checkout_complete.js
 // 라이브 강의 결제 완료 페이지 JavaScript
 
-// 전역 변수
-let qrCodeCanvas;
-
-// 페이지 로드 후 QR 코드 생성 및 자동 다운로드
+// 페이지 로드 후 자동 다운로드
 document.addEventListener('DOMContentLoaded', function() {
-    // QR 코드 생성
-    generateQRCode();
-    
     // 자동 다운로드 (페이지 로드 후 3초 후)
     setTimeout(() => {
         downloadParticipantInfo();
-        downloadQRCode();
     }, 3000);
 });
-
-function generateQRCode() {
-    const canvas = document.getElementById('qr-code');
-    if (!canvas || !window.liveLectureData) return;
-    
-    try {
-        const qr = new QRious({
-            element: canvas,
-            value: window.liveLectureData.orderNumber,
-            size: 128,
-            level: 'H'
-        });
-    } catch (error) {
-        console.error('QR코드 생성 실패:', error);
-    }
-}
 
 function downloadParticipantInfo() {
     if (!window.liveLectureData) return;
@@ -47,7 +24,6 @@ function downloadParticipantInfo() {
 ▶ 참가자 정보
 - 이름: ${data.participantName}
 - 이메일: ${data.participantEmail}
-- 주문번호: ${data.orderNumber}
 
 ▶ 결제 정보
 - 참가비: ${data.totalPrice === '0' ? '무료' : data.totalPrice + ' sats'}
@@ -57,9 +33,10 @@ function downloadParticipantInfo() {
 ${data.instructorContact ? '- 연락처: ' + data.instructorContact : ''}
 ${data.instructorEmail ? '- 이메일: ' + data.instructorEmail : ''}
 
-▶ 안내사항
+${data.completionMessage ? `▶ 강사 안내사항\n${data.completionMessage}\n` : ''}
+▶ 일반 안내사항
 - 참가 확정 후 취소는 불가능합니다.
-- 강의 당일 이 확인서를 지참해주세요.
+- 온라인 강의 링크는 강의 시작 전 이메일로 안내됩니다.
 - 문의사항은 강사에게 직접 연락해주세요.
 
 생성일시: ${new Date().toLocaleString('ko-KR')}
@@ -70,26 +47,9 @@ ${data.instructorEmail ? '- 이메일: ' + data.instructorEmail : ''}
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `라이브강의_참가확인서_${data.orderNumber}.txt`;
+    a.download = `라이브강의_참가확인서_${data.name.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-}
-
-function downloadQRCode() {
-    const canvas = document.getElementById('qr-code');
-    if (!canvas || !window.liveLectureData) return;
-    
-    try {
-        const url = canvas.toDataURL('image/png');
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `라이브강의_QR코드_${window.liveLectureData.orderNumber}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    } catch (error) {
-        console.error('QR코드 다운로드 실패:', error);
-    }
 } 

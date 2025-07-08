@@ -61,10 +61,6 @@
               </div>
               <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                 <div>
-                  <span class="font-medium">주문번호:</span>
-                  <span class="font-mono">{{ order.order_number }}</span>
-                </div>
-                <div>
                   <span class="font-medium">신청일:</span>
                   <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:"Y-m-d H:i" }}</span>
                 </div>
@@ -96,7 +92,7 @@
 
         <!-- 주문 상세 -->
         <div class="p-6">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 강의 정보 -->
             <div>
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">강의 정보</h4>
@@ -153,31 +149,6 @@
                 {% endif %}
               </div>
             </div>
-
-            <!-- QR 코드 -->
-            <div class="text-center">
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가 확인 QR코드</h4>
-              <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 inline-block mb-3">
-                <canvas class="qr-code-canvas w-20 h-20" data-order-number="{{ order.order_number }}"></canvas>
-              </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ order.order_number }}</div>
-              <div class="flex flex-col gap-1">
-                <button 
-                  onclick="downloadQRCode('{{ order.order_number }}')" 
-                  class="inline-flex items-center justify-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded transition-colors"
-                >
-                  <i class="fas fa-download mr-1"></i>
-                  QR 다운로드
-                </button>
-                <button 
-                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.live_lecture.name|escapejs }}', '{{ order.user.username|escapejs }}', '{{ order.user.email|escapejs }}', '{{ order.confirmed_at|date:"Y-m-d H:i:s"|escapejs }}', '{{ order.live_lecture.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ order.live_lecture.price_display|escapejs }}', '{{ order.live_lecture.price_krw|floatformat:0|default:"0"|escapejs }}', '{{ store.store_name|escapejs }}')" 
-                  class="inline-flex items-center justify-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
-                >
-                  <i class="fas fa-file-text mr-1"></i>
-                  참가 정보
-                </button>
-              </div>
-            </div>
           </div>
 
           <!-- 참가 완료 안내 메시지 -->
@@ -190,11 +161,27 @@
                   <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-sm mt-1"></i>
                 </div>
                 <div class="ml-3">
-                  <div class="text-sm text-blue-800 dark:text-blue-200 prose max-w-none markdown-content">
+                  <div class="text-sm text-blue-800 dark:text-blue-200 prose max-w-none markdown-content completion-message-content">
                     {{ order.live_lecture.completion_message }}
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- 참가 확인서 다운로드 -->
+          {% if order.status == 'confirmed' or order.status == 'completed' %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가 확인서</h4>
+            <div class="flex gap-2">
+              <button 
+                onclick="downloadParticipantInfo('{{ order.order_number|escapejs }}', '{{ order.live_lecture.name|escapejs }}', '{{ order.user.username|escapejs }}', '{{ order.user.email|escapejs }}', '{{ order.confirmed_at|date:"Y-m-d H:i:s"|escapejs }}', '{{ order.live_lecture.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ order.live_lecture.price_display|escapejs }}', '{{ order.live_lecture.price_krw|floatformat:0|default:"0"|escapejs }}', '{{ store.store_name|escapejs }}', '{{ order.live_lecture.instructor_contact|default:""|escapejs }}', '{{ order.live_lecture.instructor_email|default:""|escapejs }}', '{{ order.live_lecture.completion_message|default:""|escapejs }}')" 
+                class="inline-flex items-center justify-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <i class="fas fa-file-text mr-2"></i>
+                참가 확인서 다운로드
+              </button>
             </div>
           </div>
           {% endif %}
@@ -286,12 +273,26 @@
 <!-- 마크다운 렌더링 -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-// 마크다운 렌더링
+// URL을 링크로 변환하는 함수
+function autoLinkUrls(text) {
+    const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+    return text.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">$1</a>');
+}
+
+// 마크다운 렌더링 및 URL 자동 링크 처리
 document.addEventListener('DOMContentLoaded', function() {
   const markdownElements = document.querySelectorAll('.markdown-content');
   markdownElements.forEach(element => {
     if (typeof marked !== 'undefined') {
       element.innerHTML = marked.parse(element.textContent);
+    }
+  });
+  
+  // 강사 안내사항의 URL을 자동으로 링크로 변환
+  const completionMessageElements = document.querySelectorAll('.completion-message-content');
+  completionMessageElements.forEach(element => {
+    if (element.innerHTML) {
+      element.innerHTML = autoLinkUrls(element.innerHTML);
     }
   });
 });
@@ -300,6 +301,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% block extra_js %}
 <!-- 스크립트 -->
-<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script src="{% static 'js/lecture_live_orders.js' %}"></script>
 {% endblock %} 

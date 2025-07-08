@@ -517,3 +517,112 @@ def live_lecture_checkout_complete(request, store_id, live_lecture_id, order_id)
     }
     
     return render(request, 'lecture/lecture_live_checkout_complete.html', context)
+
+@login_required 
+def live_lecture_orders(request, store_id):
+    """사용자의 라이브 강의 주문 내역"""
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    
+    # 해당 스토어의 라이브 강의에 대한 사용자 주문 내역
+    orders = LiveLectureOrder.objects.filter(
+        live_lecture__store=store,
+        user=request.user
+    ).select_related('live_lecture', 'user').order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'store': store,
+        'orders': page_obj,
+    }
+    
+    return render(request, 'lecture/lecture_live_orders.html', context)
+
+@login_required
+def export_live_lecture_participants_csv(request, store_id, live_lecture_id):
+    """라이브 강의 참가자 목록 CSV 다운로드"""
+    import csv
+    from django.http import HttpResponse
+    from datetime import datetime
+    
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+    
+    live_lecture = get_object_or_404(
+        LiveLecture, 
+        id=live_lecture_id, 
+        store=store, 
+        deleted_at__isnull=True
+    )
+    
+    # 주문 목록 조회
+    orders = LiveLectureOrder.objects.filter(
+        live_lecture=live_lecture
+    ).select_related('user').order_by('-created_at')
+    
+    # CSV 응답 생성
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="라이브강의_참가자_{live_lecture.name}_{datetime.now().strftime("%Y%m%d")}.csv"'
+    
+    # BOM 추가 (Excel에서 한글 깨짐 방지)
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    
+    # 헤더 작성
+    headers = [
+        '참가자명', '이메일', '참가비', '주문번호', 
+        '참가신청일시', '결제완료일시', '상태'
+    ]
+    if live_lecture.price_display != 'free':
+        headers.append('결제해시')
+    
+    writer.writerow(headers)
+    
+    # 데이터 작성
+    for order in orders:
+        row = [
+            order.user.username,
+            order.user.email,
+            f"{order.price} sats" if order.price > 0 else "무료",
+            order.order_number,
+            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+            '참가확정' if order.status == 'confirmed' else '신청완료' if order.status == 'completed' else '취소됨'
+        ]
+        
+        if live_lecture.price_display != 'free':
+            row.append(order.payment_hash if hasattr(order, 'payment_hash') and order.payment_hash else '')
+        
+        writer.writerow(row)
+    
+    return response
+
+@login_required
+def live_lecture_order_complete(request, store_id, live_lecture_id, order_id):
+    """라이브 강의 주문 확정서 (주문 내역에서 접근)"""
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    live_lecture = get_object_or_404(
+        LiveLecture, 
+        id=live_lecture_id, 
+        store=store, 
+        deleted_at__isnull=True
+    )
+    order = get_object_or_404(LiveLectureOrder, id=order_id, live_lecture=live_lecture)
+    
+    # 로그인한 사용자가 주문자인지 확인
+    if order.user != request.user:
+        messages.error(request, '접근 권한이 없습니다.')
+        return redirect('lecture:live_lecture_list', store_id=store_id)
+    
+    context = {
+        'store': store,
+        'live_lecture': live_lecture,
+        'order': order,
+    }
+    
+    return render(request, 'lecture/lecture_live_checkout_complete.html', context)

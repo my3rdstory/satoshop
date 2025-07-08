@@ -21,20 +21,8 @@ function initializeLiveLectureStatusDetail() {
 }
 
 function initializeStatsCards() {
+    // 통계 카드 초기화 (호버 애니메이션 제거됨)
     const statsCards = document.querySelectorAll('.stat-card');
-    
-    statsCards.forEach((card, index) => {
-        // 카드 호버 시 부드러운 애니메이션
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-2px)';
-            this.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.1)';
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = '';
-        });
-    });
     
     console.log('통계 카드 초기화 완료');
 }
