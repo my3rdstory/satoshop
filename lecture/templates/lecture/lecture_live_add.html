@@ -55,11 +55,11 @@
         <div class="space-y-6">
           <!-- 강의명 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="title">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="name">
               라이브 강의명 <span class="text-red-500">*</span>
             </label>
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                   type="text" id="title" name="title" required placeholder="강의명을 입력하세요">
+                   type="text" id="name" name="name" required placeholder="강의명을 입력하세요">
           </div>
 
           <!-- 설명 -->
@@ -74,11 +74,11 @@
 
           <!-- 강의 일시 -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="datetime">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="date_time">
               강의 일시 <span class="text-red-500">*</span>
             </label>
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                   type="datetime-local" id="datetime" name="datetime" required>
+                   type="datetime-local" id="date_time" name="date_time" required>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">라이브 강의가 진행되는 날짜와 시간을 설정하세요</p>
           </div>
 
@@ -137,13 +137,13 @@
 
           <!-- 소통채널 -->
           <div>
-            <label for="communication_channel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="instructor_chat_channel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               소통채널
             </label>
             <input 
               type="url" 
-              id="communication_channel" 
-              name="communication_channel" 
+              id="instructor_chat_channel" 
+              name="instructor_chat_channel" 
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
               placeholder="https://..."
             >
@@ -186,7 +186,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <!-- 무료 -->
               <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('free')">
-                <input type="radio" name="price_type" value="free" id="price_type_free" class="sr-only">
+                <input type="radio" name="price_display" value="free" id="price_display_free" class="sr-only">
                 <div class="text-center">
                   <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fas fa-heart text-green-500 text-xl"></i>
@@ -197,8 +197,8 @@
               </div>
 
               <!-- 사토시 -->
-              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('satoshi')">
-                <input type="radio" name="price_type" value="satoshi" id="price_type_satoshi" class="sr-only">
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('sats')">
+                <input type="radio" name="price_display" value="sats" id="price_display_sats" class="sr-only">
                 <div class="text-center">
                   <div class="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fas fa-bitcoin-sign text-orange-500 text-xl"></i>
@@ -209,8 +209,8 @@
               </div>
 
               <!-- 원화연동 -->
-              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('krw_linked')">
-                <input type="radio" name="price_type" value="krw_linked" id="price_type_krw_linked" class="sr-only">
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('krw')">
+                <input type="radio" name="price_display" value="krw" id="price_display_krw" class="sr-only">
                 <div class="text-center">
                   <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fas fa-won-sign text-blue-500 text-xl"></i>
@@ -223,25 +223,25 @@
           </div>
 
           <!-- 사토시 가격 -->
-          <div id="satoshi_price_section" class="hidden">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="satoshi_price">
+          <div id="sats_price_section" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
               사토시 가격 <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="satoshi_price" name="satoshi_price" min="1" placeholder="참가비를 입력하세요">
+                     type="number" id="price" name="price" min="1" placeholder="참가비를 입력하세요">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
             </div>
           </div>
 
           <!-- 원화 가격 -->
           <div id="krw_price_section" class="hidden">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="krw_price">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price_krw">
               원화 가격 <span class="text-red-500">*</span>
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="krw_price" name="krw_price" min="1" placeholder="참가비를 입력하세요">
+                     type="number" id="price_krw" name="price_krw" min="1" placeholder="참가비를 입력하세요">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">원</span>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
@@ -264,9 +264,9 @@
         <div class="space-y-6">
           <!-- 정원 제한 없음 체크박스 -->
           <div class="flex items-center">
-            <input type="checkbox" id="no_capacity_limit" name="no_capacity_limit" 
+            <input type="checkbox" id="no_limit" name="no_limit" 
                    class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-            <label for="no_capacity_limit" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+            <label for="no_limit" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
               <span class="font-medium text-purple-600 dark:text-purple-400">정원 제한 없음</span>
               <span class="text-gray-500 dark:text-gray-400 ml-1">(체크 시 무제한 참가 가능)</span>
             </label>
@@ -303,7 +303,7 @@
               <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 드래그하여 업로드하거나 클릭하여 선택하세요</p>
               <p class="text-sm text-gray-500 dark:text-gray-400">권장: 1:1 비율, 최대 5MB</p>
             </div>
-            <input type="file" id="image" name="image" accept="image/*" class="hidden">
+            <input type="file" id="images" name="images" accept="image/*" class="hidden">
           </div>
           
           <div id="imagePreview" class="hidden">
@@ -385,31 +385,31 @@ function selectPriceType(type) {
   document.querySelector(`[onclick="selectPriceType('${type}')"]`).classList.add('selected');
   
   // 라디오 버튼 선택
-  document.getElementById(`price_type_${type}`).checked = true;
+  document.getElementById(`price_display_${type}`).checked = true;
   
   // 가격 섹션 표시/숨김
-  const satoshiSection = document.getElementById('satoshi_price_section');
+  const satoshiSection = document.getElementById('sats_price_section');
   const krwSection = document.getElementById('krw_price_section');
   
   satoshiSection.classList.add('hidden');
   krwSection.classList.add('hidden');
   
-  if (type === 'satoshi') {
+  if (type === 'sats') {
     satoshiSection.classList.remove('hidden');
-    document.getElementById('satoshi_price').required = true;
-    document.getElementById('krw_price').required = false;
-  } else if (type === 'krw_linked') {
+    document.getElementById('price').required = true;
+    document.getElementById('price_krw').required = false;
+  } else if (type === 'krw') {
     krwSection.classList.remove('hidden');
-    document.getElementById('krw_price').required = true;
-    document.getElementById('satoshi_price').required = false;
+    document.getElementById('price_krw').required = true;
+    document.getElementById('price').required = false;
   } else {
-    document.getElementById('satoshi_price').required = false;
-    document.getElementById('krw_price').required = false;
+    document.getElementById('price').required = false;
+    document.getElementById('price_krw').required = false;
   }
 }
 
 // 정원 제한 체크박스 이벤트
-document.getElementById('no_capacity_limit').addEventListener('change', function() {
+document.getElementById('no_limit').addEventListener('change', function() {
   const maxParticipantsSection = document.getElementById('max_participants_section');
   const maxParticipantsInput = document.getElementById('max_participants');
   
@@ -424,7 +424,7 @@ document.getElementById('no_capacity_limit').addEventListener('change', function
 
 // 이미지 업로드 관련
 const imageDropArea = document.getElementById('imageDropArea');
-const imageInput = document.getElementById('image');
+const imageInput = document.getElementById('images');
 const imagePreview = document.getElementById('imagePreview');
 const previewImg = document.getElementById('previewImg');
 const removeImageBtn = document.getElementById('removeImage');
@@ -474,7 +474,7 @@ function handleImageUpload(file) {
 
 // 폼 제출 전 검증
 document.getElementById('liveLectureForm').addEventListener('submit', function(e) {
-  const priceType = document.querySelector('input[name="price_type"]:checked');
+  const priceType = document.querySelector('input[name="price_display"]:checked');
   if (!priceType) {
     e.preventDefault();
     alert('가격 타입을 선택해주세요.');

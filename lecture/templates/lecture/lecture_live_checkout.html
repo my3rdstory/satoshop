@@ -1,0 +1,558 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}결제 - {{ live_lecture.name }} - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/meetup_checkout.css' %}">
+<style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .status-pending {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+
+  .status-success {
+    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+
+  .status-error {
+    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+
+  .invoice-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+
+  .invoice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+
+  /* 플로팅 카운트다운 스타일 */
+  .floating-countdown {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 1000;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .floating-countdown.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  
+  .floating-countdown.urgent {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    animation: pulse-red 1s infinite;
+  }
+  
+  /* 결제 모드 스타일 */
+  .floating-countdown.payment-mode {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+  }
+  
+  .floating-countdown.payment-mode .countdown-label::before {
+    content: "💳 ";
+  }
+  
+  /* 예약 모드 스타일 */
+  .floating-countdown.reservation-mode {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+  }
+  
+  .floating-countdown.reservation-mode .countdown-label::before {
+    content: "⏰ ";
+  }
+  
+  @keyframes pulse-red {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  @keyframes pulse-orange {
+    0%, 100% { 
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+    50% { 
+      box-shadow: 0 4px 30px rgba(245, 158, 11, 0.6);
+      transform: scale(1.02);
+    }
+  }
+  
+  .floating-countdown.payment-mode.urgent {
+    animation: pulse-orange 1s infinite;
+  }
+  
+  .countdown-time {
+    font-size: 18px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+  }
+  
+  .countdown-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 2px;
+  }
+  
+  /* 모바일에서 위치 조정 */
+  @media (max-width: 640px) {
+    .floating-countdown {
+      bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+    }
+    
+    .floating-countdown.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-video text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">라이브 강의 참가비 결제</h1>        
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <!-- 왼쪽: 주문 정보 (3/5 너비) -->
+      <div class="lg:col-span-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-video text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">라이브 강의 참가 정보</h2>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- 라이브 강의 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-video mr-2 text-purple-600"></i>
+                라이브 강의: {{ live_lecture.name }}
+              </h3>
+              <div class="space-y-3">
+                {% if live_lecture.date_time %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">일시:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">
+                    {{ live_lecture.date_time|date:"Y년 m월 d일 (l) H:i" }}
+                  </span>
+                </div>
+                {% endif %}
+                {% if live_lecture.instructor_contact %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">강사:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ live_lecture.instructor_contact }}</span>
+                </div>
+                {% endif %}
+                {% if live_lecture.special_notes %}
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">특이사항:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ live_lecture.special_notes }}</span>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- 참가자 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-user mr-2 text-blue-600"></i>
+                참가자 정보
+              </h3>
+              <div class="space-y-3">
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이름:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ user.username }}</span>
+                </div>
+                <div class="flex">
+                  <span class="text-sm text-gray-600 dark:text-gray-400 w-16 flex-shrink-0">이메일:</span>
+                  <span class="font-medium text-gray-900 dark:text-white">{{ user.email }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 결제 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-receipt mr-2 text-green-600"></i>
+                결제 정보
+              </h3>
+              <div class="space-y-3">
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">기본 참가비</span>
+                  <span class="font-medium text-gray-900 dark:text-white">
+                    {% if live_lecture.price_display == 'free' %}
+                      무료
+                    {% elif live_lecture.price_display == 'krw' %}
+                      {{ live_lecture.price_krw|intcomma }}원
+                    {% else %}
+                      {{ live_lecture.price|floatformat:0|intcomma }} sats
+                    {% endif %}
+                  </span>
+                </div>
+                
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                  <div class="flex justify-between">
+                    <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
+                    <span class="font-bold text-xl text-bitcoin">
+                      {% if live_lecture.price_display == 'free' %}
+                        무료
+                      {% elif live_lecture.price_display == 'krw' %}
+                        {{ live_lecture.price_krw|intcomma }}원
+                      {% else %}
+                        {{ live_lecture.price|floatformat:0|intcomma }} sats
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 결제 (2/5 너비) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-8">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-credit-card text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">결제 정보</h2>
+            </div>
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- 결제 방법 안내 -->
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <i class="fas fa-bolt text-bitcoin mr-2"></i>
+                <h3 class="font-bold text-gray-900 dark:text-white">
+                  {% if live_lecture.price_display == 'free' %}
+                  무료 참가
+                  {% else %}
+                  결제 방법
+                  {% endif %}
+                </h3>
+              </div>
+
+              {% if live_lecture.price_display == 'free' %}
+              <!-- 무료 라이브 강의 안내 -->
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div class="flex items-center">
+                    <i class="fas fa-gift text-green-600 dark:text-green-400 mr-2"></i>
+                    <p class="text-green-800 dark:text-green-200 text-sm font-medium">
+                      이 라이브 강의는 무료로 참가할 수 있습니다!
+                    </p>
+                  </div>
+                </div>
+                <p class="mt-3">
+                  아래 버튼을 클릭하여 참가 신청을 완료해주세요.
+                </p>
+              </div>
+              {% else %}
+              <!-- 유료 라이브 강의 안내 -->
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <ol class="list-decimal list-inside space-y-1 ml-2">
+                  <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
+                  <li>생성된 QR 코드를 라이트닝 지갑으로 스캔</li>
+                  <li>결제 완료 후 자동으로 참가가 확정됩니다</li>
+                </ol>
+                
+                <p class="mt-3">
+                  <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
+                </p>
+              </div>
+              {% endif %}
+            </div>
+
+            {% if live_lecture.price_display == 'free' %}
+            <!-- 무료 참가 신청 버튼 -->
+            <form method="post" action="{% url 'lecture:live_lecture_checkout' store.store_id live_lecture.id %}" id="free-participation-form">
+              {% csrf_token %}
+              <button 
+                type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg"
+                id="freeParticipationBtn"
+              >
+                <i class="fas fa-check mr-3"></i>
+                무료 참가 신청 완료하기
+              </button>
+            </form>
+            {% else %}
+            <!-- 인보이스 생성 버튼 -->
+            <button 
+              class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
+              onclick="generateInvoice()" 
+              id="generateInvoiceBtn"
+            >
+              <i class="fas fa-qrcode mr-3"></i>
+              결제 인보이스 생성
+            </button>
+            
+            <!-- 결제 주의사항 박스 (모바일에서만 표시) -->
+            <div id="mobilePaymentWarning" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4 hidden">
+              <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <p class="text-blue-800 dark:text-blue-200 text-sm font-medium">
+                    📱 모바일 결제 안내
+                  </p>
+                  <p class="text-blue-700 dark:text-blue-300 text-xs mt-1">
+                    • 라이트닝 지갑에서 결제 후 이 페이지로 돌아와주세요<br>
+                    • 결제 완료 시 자동으로 참가 확정 처리됩니다<br>
+                    • 페이지를 닫지 말고 잠시 대기해주세요
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- QR 코드 및 인보이스 표시 영역 -->
+            <div id="invoiceContainer" class="hidden space-y-4">
+              <!-- QR 코드 -->
+              <div class="text-center">
+                <div id="qrCodeContainer" class="inline-block p-5 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+                  <img id="qrCodeImage" src="" alt="결제 QR 코드" class="max-w-[250px] hidden">
+                  <div id="loadingSpinner" class="hidden">
+                    <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
+                    <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
+                  </div>
+                </div>
+                
+                <!-- 라이트닝 지갑 열기 버튼 -->
+                <div id="lightningWalletButton" class="hidden mt-4">
+                  <button 
+                    type="button" 
+                    onclick="openLightningWallet()" 
+                    class="inline-flex items-center px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    <i class="fas fa-bolt mr-2"></i>
+                    라이트닝 지갑 열기
+                  </button>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    QR 코드 스캔이 어려운 경우 클릭하세요
+                  </p>
+                </div>
+              </div>
+
+              <!-- 인보이스 텍스트 -->
+              <div>
+                <label class="block font-semibold mb-2 text-gray-900 dark:text-white">라이트닝 인보이스</label>
+                <textarea 
+                  id="invoiceTextArea" 
+                  readonly 
+                  class="w-full h-32 font-mono text-sm p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  placeholder="인보이스가 여기에 표시됩니다..."
+                ></textarea>
+                <button 
+                  type="button" 
+                  onclick="copyInvoiceToClipboard()" 
+                  class="mt-2 text-bitcoin hover:text-bitcoin/80 text-sm font-medium transition-colors"
+                >
+                  <i class="fas fa-copy mr-1"></i> 인보이스 복사
+                </button>
+              </div>
+
+              <!-- 결제 상태 -->
+              <div id="paymentStatus" class="hidden p-4 rounded-lg border">
+                <div id="paymentMessage"></div>
+              </div>
+
+              <!-- 취소 버튼 -->
+              <div id="cancelContainer" class="hidden">
+                <button 
+                  type="button" 
+                  onclick="cancelInvoice()" 
+                  id="cancelInvoiceBtn" 
+                  class="w-full bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition-colors"
+                >
+                  <i class="fas fa-times mr-2"></i> 결제 취소
+                </button>
+              </div>
+
+              <!-- 결제 안내 -->
+              <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm">
+                <p class="font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                  <i class="fas fa-info-circle mr-1"></i> 결제 방법:
+                </p>
+                <ol class="list-decimal list-inside space-y-1 text-blue-700 dark:text-blue-300 ml-2">
+                  <li>QR 코드를 라이트닝 지갑으로 스캔하거나</li>
+                  <li>인보이스 텍스트를 복사하여 지갑에 붙여넣기</li>
+                  <li>결제 완료 후 자동으로 참가가 확정됩니다</li>
+                </ol>
+                <p class="mt-2 text-blue-700 dark:text-blue-300">
+                  <span class="font-semibold">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 링크 -->
+    <div class="mt-8 text-center">
+      <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" 
+         class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-bitcoin transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        라이브 강의 상세로 돌아가기
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 데이터 전달 -->
+<script type="application/json" id="checkout-data">
+{
+  "liveLectureId": {{ live_lecture.id }},
+  "storeId": "{{ store.store_id }}",
+  "price": {% if live_lecture.price_display == 'free' %}0{% else %}{{ live_lecture.current_price }}{% endif %},
+  "csrfToken": "{{ csrf_token }}",
+  "isPaymentPage": true
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/lecture_live_checkout.js' %}"></script>
+
+<script>
+// DOM 로드 완료 시 실행
+document.addEventListener('DOMContentLoaded', function() {
+    // 모바일 디바이스 감지 및 주의사항 표시
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // 모바일 환경에서만 주의사항 박스 표시
+        const mobileWarning = document.getElementById('mobilePaymentWarning');
+        if (mobileWarning) {
+            mobileWarning.classList.remove('hidden');
+        }
+    }
+    
+    // 체크아웃 데이터 파싱
+    const checkoutDataElement = document.getElementById('checkout-data');
+    if (checkoutDataElement) {
+        const checkoutData = JSON.parse(checkoutDataElement.textContent);
+        window.checkoutData = checkoutData;
+    }
+    
+    // 무료 참가 신청 폼 이벤트 리스너
+    const freeForm = document.getElementById('free-participation-form');
+    
+    if (freeForm) {
+        freeForm.addEventListener('submit', function(event) {
+            // 버튼 상태 변경
+            const btn = document.getElementById('freeParticipationBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
+            }
+            
+            // event.preventDefault() 호출하지 않음 - 폼이 정상적으로 제출되도록 함
+        });
+    }
+});
+
+// 라이브 강의 결제 관련 함수들
+function generateInvoice() {
+    const btn = document.getElementById('generateInvoiceBtn');
+    if (!btn) return;
+    
+    // 버튼 비활성화
+    btn.disabled = true;
+    btn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>인보이스 생성 중...</span></div>';
+    
+    // 결제 처리 (실제 구현 시 추가)
+    setTimeout(() => {
+        // 임시로 에러 메시지 표시
+        showPaymentStatus('error', '결제 서비스가 아직 구현되지 않았습니다.');
+        
+        // 버튼 원상복구
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
+    }, 2000);
+}
+
+function showPaymentStatus(type, message) {
+    const statusDiv = document.getElementById('paymentStatus');
+    const messageDiv = document.getElementById('paymentMessage');
+    
+    if (!statusDiv || !messageDiv) return;
+    
+    // 스타일 초기화
+    statusDiv.className = 'p-4 rounded-lg border';
+    
+    // 타입에 따른 스타일 적용
+    if (type === 'error') {
+        statusDiv.classList.add('status-error');
+        messageDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+    } else if (type === 'success') {
+        statusDiv.classList.add('status-success');
+        messageDiv.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+    } else {
+        statusDiv.classList.add('status-pending');
+        messageDiv.innerHTML = `<i class="fas fa-clock mr-2"></i>${message}`;
+    }
+    
+    statusDiv.classList.remove('hidden');
+}
+
+function openLightningWallet() {
+    // 라이트닝 지갑 열기 (구현 시 추가)
+    alert('라이트닝 지갑 열기 기능은 아직 구현되지 않았습니다.');
+}
+
+function copyInvoiceToClipboard() {
+    const textarea = document.getElementById('invoiceTextArea');
+    if (textarea && textarea.value) {
+        textarea.select();
+        document.execCommand('copy');
+        alert('인보이스가 클립보드에 복사되었습니다.');
+    }
+}
+
+function cancelInvoice() {
+    // 인보이스 취소 (구현 시 추가)
+    if (confirm('결제를 취소하시겠습니까?')) {
+        window.location.reload();
+    }
+}
+</script>
+{% endblock %} 

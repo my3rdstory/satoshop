@@ -1,0 +1,128 @@
+/* 라이브 강의 현황 페이지 스타일 */
+
+/* 통계 카드 스타일 */
+.stats-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+}
+
+.dark .stats-card {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+}
+
+/* 라이브 강의 카드 스타일 */
+.lecture-card-inactive {
+    opacity: 0.7;
+}
+
+/* 라이브 강의 정보 카드 스타일 */
+.lecture-info-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+}
+
+.dark .lecture-info-card {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+}
+
+/* 통계 그리드 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.stat-card {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 테이블 스타일 */
+.orders-table {
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.orders-table th {
+    background-color: #f9fafb;
+    padding: 0.75rem 1.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.dark .orders-table th {
+    background-color: #374151;
+    color: #d1d5db;
+    border-bottom-color: #4b5563;
+}
+
+.orders-table td {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    white-space: nowrap;
+}
+
+.dark .orders-table td {
+    border-bottom-color: #4b5563;
+}
+
+.orders-table tr:hover {
+    background-color: #f9fafb;
+}
+
+.dark .orders-table tr:hover {
+    background-color: #374151;
+}
+
+/* 라이브 강의 카드 호버 효과 */
+.lecture-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark .lecture-card:hover {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .orders-table {
+        font-size: 0.875rem;
+    }
+    
+    .orders-table th,
+    .orders-table td {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* 애니메이션 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+} 
