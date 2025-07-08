@@ -291,6 +291,26 @@ def add_live_lecture(request, store_id):
 def live_lecture_detail(request, store_id, live_lecture_id):
     """라이브 강의 상세"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    
+    # 먼저 삭제된 강의인지 확인
+    try:
+        deleted_lecture = LiveLecture.objects.get(
+            id=live_lecture_id, 
+            store=store, 
+            deleted_at__isnull=False
+        )
+        # 삭제된 강의에 접근한 경우 전용 오류 페이지 표시
+        context = {
+            'store': store,
+            'live_lecture_id': live_lecture_id,
+            'deleted_at': deleted_lecture.deleted_at,
+            'error_type': 'lecture_deleted'
+        }
+        return render(request, 'lecture/lecture_not_found.html', context, status=404)
+    except LiveLecture.DoesNotExist:
+        pass
+    
+    # 정상적인 강의 조회
     live_lecture = get_object_or_404(
         LiveLecture, 
         id=live_lecture_id, 
