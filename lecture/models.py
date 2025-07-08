@@ -521,7 +521,7 @@ class LiveLectureOrder(models.Model):
         if not self.order_number:
             date_str = self.live_lecture.date_time.strftime('%Y%m%d') if self.live_lecture.date_time else timezone.now().strftime('%Y%m%d')
             unique_id = str(uuid.uuid4())[:8]
-            self.order_number = f"{self.live_lecture.store.id}-live-{date_str}-{unique_id}"
+            self.order_number = f"{self.live_lecture.store.store_id}-lecture-live-{date_str}-{unique_id}"
         
         super().save(*args, **kwargs)
     

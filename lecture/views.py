@@ -376,7 +376,7 @@ def edit_live_lecture(request, store_id, live_lecture_id):
                             messages.warning(request, '이미지 업로드 중 오류가 발생했습니다.')
                     
                     messages.success(request, f'"{live_lecture.name}" 라이브 강의가 성공적으로 수정되었습니다.')
-                    return redirect('lecture:live_lecture_detail', store_id=store_id, live_lecture_id=live_lecture_id)
+                    return redirect('lecture:live_lecture_list', store_id=store_id)
                     
             except Exception as e:
                 messages.error(request, '라이브 강의 수정 중 오류가 발생했습니다. 다시 시도해주세요.')

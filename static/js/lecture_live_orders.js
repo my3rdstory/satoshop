@@ -38,7 +38,7 @@ function downloadQRCode(orderNumber) {
         // 다운로드 링크 생성
         const a = document.createElement('a');
         a.href = dataURL;
-        a.download = `${orderNumber}.png`;
+        a.download = `라이브강의_QR코드_${orderNumber}.png`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -50,90 +50,45 @@ function downloadQRCode(orderNumber) {
 }
 
 // 참가 정보 다운로드 함수
-function downloadParticipantInfo(orderNumber, lectureTitle, userName, userEmail, confirmedAt, lectureDate, totalPrice, priceType, krwPrice, storeName) {
-    let priceText = '';
-    if (priceType === 'free') {
-        priceText = '무료';
-    } else if (priceType === 'krw_linked') {
-        priceText = `${totalPrice} sats (${krwPrice}원 연동)`;
-    } else {
-        priceText = `${totalPrice} sats`;
-    }
-    
+function downloadParticipantInfo(orderNumber, lectureName, participantName, participantEmail, confirmedAt, lectureDate, totalPrice, priceType, priceKrw, storeName) {
     const textContent = `라이브 강의 참가 확인서
 ========================
 
-강의 정보:
-- 강의명: ${lectureTitle}
+라이브 강의 정보:
+- 강의명: ${lectureName}
 - 주최: ${storeName}
 - 일시: ${lectureDate}
-- 형태: 온라인 강의
+- 형태: 온라인 라이브 강의
 
-신청자 정보:
-- 이름: ${userName}
-- 이메일: ${userEmail}
+참가자 정보:
+- 이름: ${participantName}
+- 이메일: ${participantEmail}
 - 주문번호: ${orderNumber}
-- 신청 확정일시: ${confirmedAt}
+- 참가 확정일시: ${confirmedAt}
 
 결제 정보:
-- 최종 결제금액: ${priceText}
+- 가격 타입: ${priceType === 'free' ? '무료' : priceType === 'krw' ? '원화연동' : '사토시'}
+${priceType === 'krw' && priceKrw !== '0' ? `- 원화 기준가: ${parseInt(priceKrw).toLocaleString()}원\n` : ''}
+- 최종 결제금액: ${totalPrice === '0' ? '무료' : `${parseInt(totalPrice).toLocaleString()} sats`}
 
 이 파일은 라이브 강의 참가 증명서입니다.
-강의 당일 QR코드와 함께 준비해 주세요.
+강의 당일 QR코드와 함께 지참해 주세요.
 
 ========================
 생성일시: ${new Date().toLocaleString('ko-KR')}`;
 
-    // 파일 다운로드
-    try {
-        // UTF-8 BOM 추가하여 인코딩 문제 방지
-        const BOM = '\uFEFF';
-        const content = BOM + textContent;
-        
-        // 모바일 브라우저 감지
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        if (isMobile && navigator.share) {
-            // 모바일에서 Web Share API 사용 가능한 경우
-            const file = new File([content], `${orderNumber}.txt`, { type: 'text/plain;charset=utf-8' });
-            navigator.share({
-                files: [file],
-                title: '라이브 강의 참가 확인서',
-                text: `${lectureTitle} 참가 확인서`
-            }).catch(err => {
-                console.log('공유 취소 또는 실패:', err);
-                // 공유 실패 시 기본 다운로드 방식 사용
-                downloadWithBlob();
-            });
-        } else {
-            // 기본 다운로드 방식
-            downloadWithBlob();
-        }
-        
-        function downloadWithBlob() {
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${orderNumber}.txt`;
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            
-            // 리소스 정리
-            setTimeout(() => {
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            }, 100);
-        }
-        
-    } catch (error) {
-        console.error('파일 다운로드 실패:', error);
-        // 대안으로 새 창에서 텍스트 표시
-        const newWindow = window.open();
-        newWindow.document.write(`<pre style="font-family: monospace; white-space: pre-wrap; padding: 20px;">${textContent}</pre>`);
-        newWindow.document.title = `${orderNumber}.txt`;
-    }
+    // 텍스트 파일로 다운로드
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `라이브강의_참가정보_${orderNumber}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
     
     console.log('참가 정보 다운로드 완료');
-} 
+}
+
+ 
