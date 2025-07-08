@@ -59,6 +59,12 @@ function setupEventListeners() {
         changeImageBtn.addEventListener('click', () => {
             currentImage.classList.add('hidden');
             imageDropArea.classList.remove('hidden');
+            
+            // 기존 파일 input 초기화
+            const imageInput = document.getElementById('images');
+            if (imageInput) {
+                imageInput.value = '';
+            }
         });
     }
 
@@ -91,16 +97,13 @@ function setupImageUpload() {
     imageDropArea.addEventListener('drop', (e) => {
         e.preventDefault();
         imageDropArea.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleImageUpload(files[0]);
-        }
+        const files = Array.from(e.dataTransfer.files);
+        handleImageFiles(files);
     });
 
     imageInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            handleImageUpload(e.target.files[0]);
-        }
+        const files = Array.from(e.target.files);
+        handleImageFiles(files);
     });
 
     removeImageBtn.addEventListener('click', () => {
@@ -110,23 +113,48 @@ function setupImageUpload() {
     });
 }
 
+// 이미지 파일 처리 (밋업과 동일한 방식)
+function handleImageFiles(files) {
+    // 1장만 허용
+    if (files.length > 1) {
+        alert('라이브 강의 이미지는 1장만 업로드할 수 있습니다.');
+        return;
+    }
+    
+    const file = files[0];
+    if (file && file.type.startsWith('image/')) {
+        if (file.size <= 10 * 1024 * 1024) { // 10MB 제한
+            handleImageUpload(file);
+            updateImageInput(file);
+        } else {
+            alert('이미지 크기는 10MB 이하여야 합니다.');
+        }
+    } else {
+        alert('이미지 파일만 업로드할 수 있습니다.');
+    }
+}
+
 // 이미지 업로드 처리
 function handleImageUpload(file) {
-    if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const previewImg = document.getElementById('previewImg');
-            const imagePreview = document.getElementById('imagePreview');
-            const imageDropArea = document.getElementById('imageDropArea');
-            
-            previewImg.src = e.target.result;
-            imagePreview.classList.remove('hidden');
-            imageDropArea.classList.add('hidden');
-        };
-        reader.readAsDataURL(file);
-    } else {
-        alert('이미지 파일만 업로드 가능합니다.');
-    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const previewImg = document.getElementById('previewImg');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageDropArea = document.getElementById('imageDropArea');
+        
+        previewImg.src = e.target.result;
+        imagePreview.classList.remove('hidden');
+        imageDropArea.classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+// 이미지 input 업데이트 (실제 파일이 폼에 포함되도록)
+function updateImageInput(file) {
+    const imageInput = document.getElementById('images');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    imageInput.files = dt.files;
 }
 
 // 가격 타입 선택 함수
