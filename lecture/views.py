@@ -508,6 +508,50 @@ def toggle_live_lecture_temporary_closure(request, store_id, live_lecture_id):
         })
 
 @login_required
+@require_POST
+@csrf_exempt
+def delete_live_lecture(request, store_id, live_lecture_id):
+    """라이브 강의 삭제 (soft delete)"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        
+        live_lecture = get_object_or_404(LiveLecture, id=live_lecture_id, store=store, deleted_at__isnull=True)
+        
+        # 참가자가 있는 경우 삭제 불가
+        if live_lecture.current_participants > 0:
+            return JsonResponse({
+                'success': False,
+                'error': '참가자가 있는 라이브 강의는 삭제할 수 없습니다. 먼저 모든 참가자를 취소해주세요.'
+            })
+        
+        # Soft delete 처리
+        live_lecture.deleted_at = timezone.now()
+        live_lecture.save()
+        
+        logger.info(f"라이브 강의 삭제: {live_lecture.name} (사용자: {request.user.username})")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'"{live_lecture.name}" 라이브 강의가 성공적으로 삭제되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"라이브 강의 삭제 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '라이브 강의 삭제 중 오류가 발생했습니다.'
+        })
+
+@login_required
 def live_lecture_checkout(request, store_id, live_lecture_id):
     """라이브 강의 결제 (무료/유료)"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)

@@ -27,6 +27,8 @@ urlpatterns = [
     
     path('<str:store_id>/live/<int:live_lecture_id>/toggle-temporary-closure/', views.toggle_live_lecture_temporary_closure, name='toggle_live_lecture_temporary_closure'),
     
+    path('<str:store_id>/live/<int:live_lecture_id>/delete/', views.delete_live_lecture, name='delete_live_lecture'),
+    
     path('<str:store_id>/live/<int:live_lecture_id>/checkout/', views.live_lecture_checkout, name='live_lecture_checkout'),
     
     path('<str:store_id>/live/<int:live_lecture_id>/complete/<int:order_id>/', views.live_lecture_checkout_complete, name='live_lecture_checkout_complete'),

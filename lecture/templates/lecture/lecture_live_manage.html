@@ -259,6 +259,8 @@
 window.liveLectureName = "{{ live_lecture.name|escapejs }}";
 window.csrfToken = "{{ csrf_token }}";
 window.toggleClosureUrl = "{% url 'lecture:toggle_live_lecture_temporary_closure' store.store_id live_lecture_id %}";
+window.deleteUrl = "{% url 'lecture:delete_live_lecture' store.store_id live_lecture_id %}";
+window.listUrl = "{% url 'lecture:live_lecture_list' store.store_id %}";
 </script>
 <script src="{% static 'js/lecture_live_manage.js' %}"></script>
 {% endblock %} 

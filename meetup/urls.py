@@ -37,6 +37,9 @@ urlpatterns = [
     # 밋업 일시중단 토글
     path('<str:store_id>/<int:meetup_id>/toggle-temporary-closure/', views.toggle_temporary_closure, name='toggle_temporary_closure'),
     
+    # 밋업 삭제
+    path('<str:store_id>/<int:meetup_id>/delete/', views.delete_meetup, name='delete_meetup'),
+    
     # 무료 밋업 전용 (구체적인 패턴을 먼저 배치)
     path('<str:store_id>/<int:meetup_id>/free_participant_info/', views_free.meetup_free_participant_info, name='meetup_free_participant_info'),
     
