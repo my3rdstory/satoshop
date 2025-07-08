@@ -338,40 +338,11 @@ function joinLiveLecture() {
     return;
   }
   
-  // 무료 강의인 경우 바로 신청 처리
-  if (data.priceType === 'free') {
-    submitLiveLectureOrder(data.lectureId, data.storeId);
-  } else {
-    // 유료 강의인 경우 결제 페이지로 이동
-    window.location.href = `/stores/${data.storeId}/lecture/live/${data.lectureId}/order/`;
-  }
+  // 무료/유료 강의 모두 checkout 페이지로 이동 (뷰에서 처리)
+  window.location.href = `/lecture/${data.storeId}/live/${data.lectureId}/checkout/`;
 }
 
-function submitLiveLectureOrder(lectureId, storeId) {
-  fetch(`/stores/${storeId}/lecture/live/${lectureId}/order/`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-    },
-    body: JSON.stringify({
-      lecture_id: lectureId
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      alert('무료 강의 참가 신청이 완료되었습니다!');
-      window.location.reload();
-    } else {
-      alert('참가 신청 중 오류가 발생했습니다: ' + data.message);
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('참가 신청 중 오류가 발생했습니다.');
-  });
-}
+
 
 // 마크다운 렌더링
 document.addEventListener('DOMContentLoaded', function() {

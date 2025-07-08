@@ -89,6 +89,20 @@
           </div>
         </div>
 
+        <!-- 에러 메시지 영역 -->
+        <div id="basic-info-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="basic-info-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div class="space-y-6">
           <!-- 강의명 -->
           <div>
@@ -140,6 +154,20 @@
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">강사 정보</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400">강사의 연락처 정보를 입력하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="instructor-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="instructor-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -214,6 +242,20 @@
           </div>
         </div>
 
+        <!-- 에러 메시지 영역 -->
+        <div id="price-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="price-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <div class="space-y-6">
           <!-- 가격 타입 선택 -->
           <div>
@@ -223,7 +265,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <!-- 무료 -->
               <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('free')">
-                <input type="radio" name="price_display" value="free" id="price_display_free" class="sr-only">
+                <input type="radio" name="price_display" value="free" id="price_display_free" class="sr-only" checked>
                 <div class="text-center">
                   <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
                     <i class="fas fa-heart text-green-500 text-xl"></i>
@@ -266,7 +308,7 @@
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="price" name="price" min="1" placeholder="참가비를 입력하세요">
+                     type="number" id="price" name="price" min="0" placeholder="참가비를 입력하세요" value="">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
             </div>
           </div>
@@ -278,7 +320,7 @@
             </label>
             <div class="relative">
               <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
-                     type="number" id="price_krw" name="price_krw" min="1" placeholder="참가비를 입력하세요">
+                     type="number" id="price_krw" name="price_krw" min="0" placeholder="참가비를 입력하세요" value="">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">원</span>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
@@ -295,6 +337,20 @@
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">정원 설정</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의 참가 정원을 설정하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="capacity-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="capacity-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
           </div>
         </div>
 

@@ -8,8 +8,9 @@ let completionMessageEditor;
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
   initializeEditors();
-  selectPriceType('free');
+  initializePriceType();
   setupEventListeners();
+  setupRealTimeValidation();
   addDebugHelper();
   console.log('라이브 강의 추가 페이지 로드 완료');
 });
@@ -31,6 +32,12 @@ function initializeEditors() {
   });
 }
 
+// 가격 타입 초기화
+function initializePriceType() {
+  // 무료 옵션이 기본으로 선택되도록 설정
+  selectPriceType('free');
+}
+
 // 이벤트 리스너 설정
 function setupEventListeners() {
   // 정원 제한 체크박스 이벤트
@@ -41,10 +48,14 @@ function setupEventListeners() {
     if (this.checked) {
       maxParticipantsSection.style.display = 'none';
       maxParticipantsInput.required = false;
+      maxParticipantsInput.value = '';
     } else {
       maxParticipantsSection.style.display = 'block';
       maxParticipantsInput.required = true;
     }
+    
+    // 정원 설정 섹션 검증
+    validateCapacitySection();
   });
 
   // 이미지 업로드 이벤트
@@ -52,6 +63,161 @@ function setupEventListeners() {
 
   // 폼 제출 검증
   document.getElementById('liveLectureForm').addEventListener('submit', validateForm);
+}
+
+// 실시간 검증 설정
+function setupRealTimeValidation() {
+  // 기본 정보 필드들
+  const nameInput = document.getElementById('name');
+  const dateTimeInput = document.getElementById('date_time');
+  
+  nameInput.addEventListener('input', validateBasicInfoSection);
+  nameInput.addEventListener('blur', validateBasicInfoSection);
+  
+  dateTimeInput.addEventListener('change', validateBasicInfoSection);
+  dateTimeInput.addEventListener('blur', validateBasicInfoSection);
+
+  // 에디터 변경 감지
+  if (descriptionEditor) {
+    descriptionEditor.codemirror.on('change', function() {
+      setTimeout(validateBasicInfoSection, 500); // 디바운스
+    });
+  }
+
+  // 강사 정보 필드들
+  const instructorContactInput = document.getElementById('instructor_contact');
+  const instructorEmailInput = document.getElementById('instructor_email');
+  
+  instructorContactInput.addEventListener('input', validateInstructorSection);
+  instructorContactInput.addEventListener('blur', validateInstructorSection);
+  
+  instructorEmailInput.addEventListener('input', validateInstructorSection);
+  instructorEmailInput.addEventListener('blur', validateInstructorSection);
+
+  // 가격 필드들
+  const priceInput = document.getElementById('price');
+  const priceKrwInput = document.getElementById('price_krw');
+  
+  priceInput.addEventListener('input', validatePriceSection);
+  priceInput.addEventListener('blur', validatePriceSection);
+  
+  priceKrwInput.addEventListener('input', validatePriceSection);
+  priceKrwInput.addEventListener('blur', validatePriceSection);
+
+  // 정원 필드
+  const maxParticipantsInput = document.getElementById('max_participants');
+  maxParticipantsInput.addEventListener('input', validateCapacitySection);
+  maxParticipantsInput.addEventListener('blur', validateCapacitySection);
+}
+
+// 섹션별 검증 함수들
+function validateBasicInfoSection() {
+  const errors = [];
+  
+  // 강의명 검증
+  const name = document.getElementById('name').value.trim();
+  if (!name) {
+    errors.push('라이브 강의명을 입력해주세요.');
+  }
+  
+  // 설명 검증
+  let description = '';
+  try {
+    description = descriptionEditor.value().trim();
+  } catch (e) {
+    description = document.getElementById('description').value.trim();
+  }
+  if (!description) {
+    errors.push('강의 설명을 입력해주세요.');
+  }
+  
+  // 날짜 시간 검증
+  const dateTime = document.getElementById('date_time').value;
+  if (!dateTime) {
+    errors.push('강의 일시를 입력해주세요.');
+  }
+  
+  showSectionErrors('basic-info', errors);
+  return errors.length === 0;
+}
+
+function validateInstructorSection() {
+  const errors = [];
+  
+  const instructorContact = document.getElementById('instructor_contact').value.trim();
+  const instructorEmail = document.getElementById('instructor_email').value.trim();
+  
+  if (!instructorContact && !instructorEmail) {
+    errors.push('강사 연락처 또는 이메일 중 하나는 필수 입력입니다.');
+  }
+  
+  showSectionErrors('instructor', errors);
+  return errors.length === 0;
+}
+
+function validatePriceSection() {
+  const errors = [];
+  
+  const priceType = document.querySelector('input[name="price_display"]:checked');
+  if (!priceType) {
+    errors.push('가격 타입을 선택해주세요.');
+  } else {
+    // 가격 타입별 추가 검증
+    if (priceType.value === 'sats') {
+      const priceInput = document.getElementById('price');
+      const priceValue = parseFloat(priceInput.value);
+      if (!priceInput.value || isNaN(priceValue) || priceValue <= 0) {
+        errors.push('사토시 가격을 입력해주세요.');
+      }
+    } else if (priceType.value === 'krw') {
+      const priceKrwInput = document.getElementById('price_krw');
+      const priceKrwValue = parseFloat(priceKrwInput.value);
+      if (!priceKrwInput.value || isNaN(priceKrwValue) || priceKrwValue <= 0) {
+        errors.push('원화 가격을 입력해주세요.');
+      }
+    }
+    // 무료 옵션('free')일 때는 추가 검증 없음
+  }
+  
+  showSectionErrors('price', errors);
+  return errors.length === 0;
+}
+
+function validateCapacitySection() {
+  const errors = [];
+  
+  const noLimit = document.getElementById('no_limit').checked;
+  const maxParticipants = document.getElementById('max_participants').value;
+  
+  if (!noLimit && (!maxParticipants || maxParticipants <= 0)) {
+    errors.push('정원을 설정하거나 정원 제한 없음을 체크해주세요.');
+  }
+  
+  showSectionErrors('capacity', errors);
+  return errors.length === 0;
+}
+
+// 섹션별 에러 표시 함수
+function showSectionErrors(sectionName, errors) {
+  const errorContainer = document.getElementById(`${sectionName}-errors`);
+  const errorList = document.getElementById(`${sectionName}-error-list`);
+  
+  if (errors.length > 0) {
+    errorList.innerHTML = errors.map(error => `<li>• ${error}</li>`).join('');
+    errorContainer.classList.remove('hidden');
+  } else {
+    errorContainer.classList.add('hidden');
+  }
+}
+
+// 모든 섹션 검증
+function validateAllSections() {
+  const basicInfoValid = validateBasicInfoSection();
+  const instructorValid = validateInstructorSection();
+  const priceValid = validatePriceSection();
+  const capacityValid = validateCapacitySection();
+  
+  return basicInfoValid && instructorValid && priceValid && capacityValid;
 }
 
 // 이미지 업로드 관련 이벤트 설정
@@ -130,28 +296,60 @@ function selectPriceType(type) {
   // 가격 섹션 표시/숨김
   const satoshiSection = document.getElementById('sats_price_section');
   const krwSection = document.getElementById('krw_price_section');
+  const priceInput = document.getElementById('price');
+  const priceKrwInput = document.getElementById('price_krw');
   
   satoshiSection.classList.add('hidden');
   krwSection.classList.add('hidden');
   
+  // 모든 가격 필드 초기화 및 required 속성 제거
+  priceInput.required = false;
+  priceKrwInput.required = false;
+  
   if (type === 'sats') {
     satoshiSection.classList.remove('hidden');
-    document.getElementById('price').required = true;
-    document.getElementById('price_krw').required = false;
+    priceInput.required = true;
+    priceInput.value = '';
+    priceKrwInput.value = '';
   } else if (type === 'krw') {
     krwSection.classList.remove('hidden');
-    document.getElementById('price_krw').required = true;
-    document.getElementById('price').required = false;
+    priceKrwInput.required = true;
+    priceInput.value = '';
+    priceKrwInput.value = '';
   } else {
-    document.getElementById('price').required = false;
-    document.getElementById('price_krw').required = false;
+    // 무료 옵션일 때는 필드를 비워둠 (폼 제출 시 0으로 설정됨)
+    priceInput.value = '';
+    priceKrwInput.value = '';
   }
+  
+  // 가격 섹션 검증
+  setTimeout(() => {
+    validatePriceSection();
+  }, 100);
 }
 
 // 폼 제출 전 검증
 function validateForm(e) {
   console.log('폼 제출 시도 시작');
-  const errors = [];
+  
+  // 가격 타입에 따라 숨겨진 필드 값 설정
+  const priceType = document.querySelector('input[name="price_display"]:checked');
+  if (priceType) {
+    const priceInput = document.getElementById('price');
+    const priceKrwInput = document.getElementById('price_krw');
+    
+    if (priceType.value === 'free') {
+      // 무료일 때 두 필드 모두 0으로 설정
+      priceInput.value = '0';
+      priceKrwInput.value = '0';
+    } else if (priceType.value === 'sats') {
+      // 사토시 가격일 때 원화 필드는 0으로 설정
+      priceKrwInput.value = '0';
+    } else if (priceType.value === 'krw') {
+      // 원화 가격일 때 사토시 필드는 0으로 설정
+      priceInput.value = '0';
+    }
+  }
   
   // 디버깅: 모든 폼 데이터 출력
   const formData = new FormData(this);
@@ -160,67 +358,19 @@ function validateForm(e) {
     console.log(`${key}: ${value}`);
   }
   
-  // 1. 필수 항목 검증
-  const name = document.getElementById('name').value.trim();
-  if (!name) {
-    errors.push('라이브 강의명을 입력해주세요.');
-  }
+  // 모든 섹션 검증
+  const isValid = validateAllSections();
   
-  let description = '';
-  try {
-    description = descriptionEditor.value().trim();
-  } catch (e) {
-    description = document.getElementById('description').value.trim();
-  }
-  if (!description) {
-    errors.push('강의 설명을 입력해주세요.');
-  }
-  
-  const dateTime = document.getElementById('date_time').value;
-  if (!dateTime) {
-    errors.push('강의 일시를 입력해주세요.');
-  }
-  
-  // 2. 가격 타입 검증
-  const priceType = document.querySelector('input[name="price_display"]:checked');
-  if (!priceType) {
-    errors.push('가격 타입을 선택해주세요.');
-  } else {
-    // 가격 타입별 추가 검증
-    if (priceType.value === 'sats') {
-      const priceInput = document.getElementById('price');
-      if (!priceInput.value || priceInput.value <= 0) {
-        errors.push('사토시 가격을 입력해주세요.');
-      }
-    } else if (priceType.value === 'krw') {
-      const priceKrwInput = document.getElementById('price_krw');
-      if (!priceKrwInput.value || priceKrwInput.value <= 0) {
-        errors.push('원화 가격을 입력해주세요.');
-      }
-    }
-  }
-  
-  // 3. 강사 연락처 검증
-  const instructorContact = document.getElementById('instructor_contact').value.trim();
-  const instructorEmail = document.getElementById('instructor_email').value.trim();
-  
-  if (!instructorContact && !instructorEmail) {
-    errors.push('강사 연락처 또는 이메일 중 하나는 필수 입력입니다.');
-  }
-  
-  // 4. 정원 검증
-  const noLimit = document.getElementById('no_limit').checked;
-  const maxParticipants = document.getElementById('max_participants').value;
-  
-  if (!noLimit && (!maxParticipants || maxParticipants <= 0)) {
-    errors.push('정원을 설정하거나 정원 제한 없음을 체크해주세요.');
-  }
-  
-  // 에러가 있으면 폼 제출 중단
-  if (errors.length > 0) {
+  if (!isValid) {
     e.preventDefault();
-    console.log('검증 실패 - 에러 목록:', errors);
-    alert('다음 항목을 확인해주세요:\n\n' + errors.join('\n'));
+    console.log('검증 실패 - 각 섹션의 에러 메시지를 확인하세요');
+    
+    // 첫 번째 에러가 있는 섹션으로 스크롤
+    const firstErrorSection = document.querySelector('.bg-red-50:not(.hidden)');
+    if (firstErrorSection) {
+      firstErrorSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    
     return false;
   }
   
