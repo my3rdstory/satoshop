@@ -104,6 +104,14 @@ class LiveLectureForm(forms.ModelForm):
             }),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 기본값 설정
+        if not self.instance.pk:  # 새로 생성하는 경우
+            self.fields['price_display'].initial = 'free'
+            self.fields['price'].initial = 0
+            self.fields['price_krw'].initial = 0
+    
     def clean(self):
         cleaned_data = super().clean()
         price_display = cleaned_data.get('price_display')

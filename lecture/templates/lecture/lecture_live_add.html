@@ -39,6 +39,43 @@
 
     <form method="post" enctype="multipart/form-data" id="liveLectureForm" class="space-y-8">
       {% csrf_token %}
+      
+      <!-- 폼 에러 표시 -->
+      {% if form.errors %}
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 오류를 수정해주세요:</h3>
+              <ul class="text-sm text-red-700 dark:text-red-300 space-y-1">
+                {% for field, errors in form.errors.items %}
+                  {% for error in errors %}
+                    <li>• {% if field == '__all__' %}{{ error }}{% else %}{{ field|capfirst }}: {{ error }}{% endif %}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      
+      <!-- 일반 메시지 표시 -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300{% elif message.tags == 'success' %}bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300{% else %}bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300{% endif %} border rounded-lg p-4 mb-6">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %} text-lg mr-3"></i>
+              </div>
+              <div>
+                <p class="text-sm">{{ message }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
 
       <!-- 기본 정보 -->
       <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
@@ -356,141 +393,7 @@
   </div>
 </div>
 
-<!-- EasyMDE 스크립트 -->
+<!-- 스크립트 -->
 <script src="{% static 'js/easymde.min.js' %}"></script>
-<script>
-// EasyMDE 초기화
-const descriptionEditor = new EasyMDE({
-  element: document.getElementById('description'),
-  spellChecker: false,
-  toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading-1', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code', '|', 'preview', 'side-by-side', 'fullscreen', '|', 'guide'],
-  placeholder: '강의에 대한 자세한 설명을 작성하세요...'
-});
-
-const completionMessageEditor = new EasyMDE({
-  element: document.getElementById('completion_message'),
-  spellChecker: false,
-  toolbar: ['bold', 'italic', '|', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'quote', 'code', '|', 'preview', 'side-by-side', 'fullscreen'],
-  placeholder: '참가 완료 후 보여줄 메시지를 작성하세요...'
-});
-
-// 가격 타입 선택 함수
-function selectPriceType(type) {
-  // 모든 카드 초기화
-  document.querySelectorAll('.price-type-card').forEach(card => {
-    card.classList.remove('selected');
-  });
-  
-  // 선택된 카드 활성화
-  document.querySelector(`[onclick="selectPriceType('${type}')"]`).classList.add('selected');
-  
-  // 라디오 버튼 선택
-  document.getElementById(`price_display_${type}`).checked = true;
-  
-  // 가격 섹션 표시/숨김
-  const satoshiSection = document.getElementById('sats_price_section');
-  const krwSection = document.getElementById('krw_price_section');
-  
-  satoshiSection.classList.add('hidden');
-  krwSection.classList.add('hidden');
-  
-  if (type === 'sats') {
-    satoshiSection.classList.remove('hidden');
-    document.getElementById('price').required = true;
-    document.getElementById('price_krw').required = false;
-  } else if (type === 'krw') {
-    krwSection.classList.remove('hidden');
-    document.getElementById('price_krw').required = true;
-    document.getElementById('price').required = false;
-  } else {
-    document.getElementById('price').required = false;
-    document.getElementById('price_krw').required = false;
-  }
-}
-
-// 정원 제한 체크박스 이벤트
-document.getElementById('no_limit').addEventListener('change', function() {
-  const maxParticipantsSection = document.getElementById('max_participants_section');
-  const maxParticipantsInput = document.getElementById('max_participants');
-  
-  if (this.checked) {
-    maxParticipantsSection.style.display = 'none';
-    maxParticipantsInput.required = false;
-  } else {
-    maxParticipantsSection.style.display = 'block';
-    maxParticipantsInput.required = true;
-  }
-});
-
-// 이미지 업로드 관련
-const imageDropArea = document.getElementById('imageDropArea');
-const imageInput = document.getElementById('images');
-const imagePreview = document.getElementById('imagePreview');
-const previewImg = document.getElementById('previewImg');
-const removeImageBtn = document.getElementById('removeImage');
-
-imageDropArea.addEventListener('click', () => imageInput.click());
-imageDropArea.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  imageDropArea.classList.add('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-});
-imageDropArea.addEventListener('dragleave', () => {
-  imageDropArea.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-});
-imageDropArea.addEventListener('drop', (e) => {
-  e.preventDefault();
-  imageDropArea.classList.remove('border-purple-500', 'bg-purple-50', 'dark:bg-purple-900/20');
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    handleImageUpload(files[0]);
-  }
-});
-
-imageInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) {
-    handleImageUpload(e.target.files[0]);
-  }
-});
-
-removeImageBtn.addEventListener('click', () => {
-  imageInput.value = '';
-  imagePreview.classList.add('hidden');
-  imageDropArea.classList.remove('hidden');
-});
-
-function handleImageUpload(file) {
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImg.src = e.target.result;
-      imagePreview.classList.remove('hidden');
-      imageDropArea.classList.add('hidden');
-    };
-    reader.readAsDataURL(file);
-  } else {
-    alert('이미지 파일만 업로드 가능합니다.');
-  }
-}
-
-// 폼 제출 전 검증
-document.getElementById('liveLectureForm').addEventListener('submit', function(e) {
-  const priceType = document.querySelector('input[name="price_display"]:checked');
-  if (!priceType) {
-    e.preventDefault();
-    alert('가격 타입을 선택해주세요.');
-    return false;
-  }
-  
-  const instructorContact = document.getElementById('instructor_contact').value;
-  const instructorEmail = document.getElementById('instructor_email').value;
-  
-  if (!instructorContact && !instructorEmail) {
-    e.preventDefault();
-    alert('강사 연락처 또는 이메일 중 하나는 필수 입력입니다.');
-    return false;
-  }
-  
-  return true;
-});
-</script>
+<script src="{% static 'js/lecture_live_add.js' %}"></script>
 {% endblock %} 

@@ -242,6 +242,7 @@ def add_live_lecture(request, store_id):
     
     if request.method == 'POST':
         form = LiveLectureForm(data=request.POST, files=request.FILES)
+        logger.info(f"LiveLecture 폼 제출 - 사용자: {request.user}, 데이터: {request.POST}")
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -274,6 +275,9 @@ def add_live_lecture(request, store_id):
             except Exception as e:
                 messages.error(request, '라이브 강의 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
                 logger.error(f"Error creating live lecture: {e}", exc_info=True)
+        else:
+            logger.error(f"LiveLecture 폼 검증 실패 - 에러: {form.errors}")
+            messages.error(request, '폼 검증에 실패했습니다. 입력 내용을 확인해주세요.')
     else:
         form = LiveLectureForm()
     
