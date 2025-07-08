@@ -177,14 +177,14 @@
           <i class="fas fa-edit mr-1"></i>
           수정
         </a>
-        <a href="{% url 'lecture:live_lecture_status_detail' store.store_id live_lecture.id %}" 
+        <a href="{% url 'lecture:live_lecture_manage' store.store_id live_lecture.id %}" 
            class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors text-sm">
-          <i class="fas fa-chart-bar mr-1"></i>
-          현황
+          <i class="fas fa-cog mr-1"></i>
+          관리
         </a>
         
         <!-- 일시중단 버튼 -->
-        <button onclick="toggleTemporaryClosure({{ live_lecture.id }}, '{{ live_lecture.name|escapejs }}')" 
+        <button onclick="toggleLiveLectureTemporaryClosure({{ live_lecture.id }}, '{{ live_lecture.name|escapejs }}')" 
                 class="w-full inline-flex items-center justify-center px-3 py-2 {% if live_lecture.is_temporarily_closed %}bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800{% else %}bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600{% endif %} rounded-lg transition-colors text-sm">
           <i class="fas {% if live_lecture.is_temporarily_closed %}fa-play{% else %}fa-pause{% endif %} mr-1"></i>
           <span>{% if live_lecture.is_temporarily_closed %}일시중단 해제{% else %}일시중단{% endif %}</span>

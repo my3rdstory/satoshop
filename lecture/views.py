@@ -447,6 +447,67 @@ def live_lecture_status_detail(request, store_id, live_lecture_id):
     return render(request, 'lecture/lecture_live_status_detail.html', context)
 
 @login_required
+def live_lecture_manage(request, store_id, live_lecture_id):
+    """라이브 강의 관리"""
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+    
+    live_lecture = get_object_or_404(
+        LiveLecture, 
+        id=live_lecture_id, 
+        store=store, 
+        deleted_at__isnull=True
+    )
+    
+    context = {
+        'store': store,
+        'live_lecture': live_lecture,
+        'live_lecture_id': live_lecture_id,
+    }
+    
+    return render(request, 'lecture/lecture_live_manage.html', context)
+
+@login_required
+@require_POST
+@csrf_exempt
+def toggle_live_lecture_temporary_closure(request, store_id, live_lecture_id):
+    """라이브 강의 일시중단 토글"""
+    import json
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        live_lecture = get_object_or_404(LiveLecture, id=live_lecture_id, store=store, deleted_at__isnull=True)
+        
+        # 현재 일시중단 상태 토글
+        live_lecture.is_temporarily_closed = not live_lecture.is_temporarily_closed
+        live_lecture.save()
+        
+        action = "일시중단" if live_lecture.is_temporarily_closed else "일시중단 해제"
+        message = f'"{live_lecture.name}" 라이브 강의가 {action}되었습니다.'
+        
+        logger.info(f"라이브 강의 일시중단 상태 변경: {live_lecture.name} - {action} (사용자: {request.user.username})")
+        
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'is_temporarily_closed': live_lecture.is_temporarily_closed
+        })
+        
+    except Exception as e:
+        logger.error(f"라이브 강의 일시중단 토글 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '일시중단 상태 변경 중 오류가 발생했습니다.'
+        })
+
+@login_required
 def live_lecture_checkout(request, store_id, live_lecture_id):
     """라이브 강의 결제 (무료/유료)"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)

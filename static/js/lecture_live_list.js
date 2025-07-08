@@ -2,7 +2,7 @@
 /* 라이브 강의 목록 페이지 전용 스크립트 */
 
 // 일시중단 토글 함수
-function toggleTemporaryClosure(liveLectureId, liveLectureTitle) {
+function toggleLiveLectureTemporaryClosure(liveLectureId, liveLectureTitle) {
     const action = document.querySelector(`button[onclick*="${liveLectureId}"] span`).textContent.includes('해제') ? '해제' : '설정';
     
     if (confirm(`"${liveLectureTitle}" 라이브 강의를 일시중단 ${action}하시겠습니까?`)) {
