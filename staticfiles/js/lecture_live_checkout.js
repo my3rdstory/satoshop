@@ -71,7 +71,7 @@ function generateInvoice() {
     
     // 버튼 비활성화 및 로딩 표시
     generateBtn.disabled = true;
-    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> 생성 중...';
+    generateBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>인보이스 생성 중...</span></div>';
     
     // 취소 버튼 초기화 및 숨기기
     document.getElementById('cancelContainer').classList.add('hidden');
@@ -90,7 +90,21 @@ function generateInvoice() {
     loadingSpinner.classList.remove('hidden');
     qrCodeImage.classList.add('hidden');
     
-    // 인보이스 생성 요청
+    // 인보이스 생성 요청 (임시 - 나중에 실제 API로 교체)
+    setTimeout(() => {
+        // 임시로 에러 메시지 표시
+        showPaymentStatus('error', '결제 서비스가 아직 구현되지 않았습니다.');
+        
+        // 버튼 복원
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
+        
+        // 로딩 숨기기
+        loadingSpinner.classList.add('hidden');
+    }, 2000);
+    
+    // 실제 구현 시 아래 주석을 해제하고 위의 setTimeout을 제거
+    /*
     fetch(`/lecture/${window.checkoutData.storeId}/live/${window.checkoutData.liveLectureId}/checkout/create_invoice/`, {
         method: 'POST',
         headers: {
@@ -144,18 +158,6 @@ function generateInvoice() {
             
             // 로딩 숨기기
             loadingSpinner.classList.add('hidden');
-            
-            // 라이트닝 지갑 버튼 숨기기
-            const lightningWalletButton = document.getElementById('lightningWalletButton');
-            if (lightningWalletButton) {
-                lightningWalletButton.classList.add('hidden');
-            }
-            
-            // 취소 버튼 숨기기 및 초기화
-            document.getElementById('cancelContainer').classList.add('hidden');
-            const cancelBtn = document.getElementById('cancelInvoiceBtn');
-            cancelBtn.disabled = false;
-            cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
         }
     })
     .catch(error => {
@@ -168,52 +170,50 @@ function generateInvoice() {
         
         // 로딩 숨기기
         loadingSpinner.classList.add('hidden');
-        
-        // 라이트닝 지갑 버튼 숨기기
-        const lightningWalletButton = document.getElementById('lightningWalletButton');
-        if (lightningWalletButton) {
-            lightningWalletButton.classList.add('hidden');
-        }
-        
-        // 취소 버튼 숨기기 및 초기화
-        document.getElementById('cancelContainer').classList.add('hidden');
-        const cancelBtn = document.getElementById('cancelInvoiceBtn');
-        cancelBtn.disabled = false;
-        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
     });
+    */
 }
 
 // QR 코드 생성
 function generateQRCode(invoice) {
-    try {
-        const qr = new QRious({
-            element: document.getElementById('qrCodeImage'),
-            value: invoice,
-            size: 250,
-            level: 'M'
-        });
-    } catch (error) {
-        console.error('QR 코드 생성 오류:', error);
-        // QR 코드 생성 실패 시 대체 텍스트 표시
-        document.getElementById('qrCodeImage').alt = 'QR 코드 생성 실패';
-    }
+    const qrCodeImage = document.getElementById('qrCodeImage');
+    
+    const qr = new QRious({
+        element: qrCodeImage,
+        value: invoice,
+        size: 250,
+        background: 'white',
+        foreground: 'black',
+        level: 'M'
+    });
 }
 
 // 인보이스 클립보드에 복사
 function copyInvoiceToClipboard() {
-    if (currentInvoice) {
-        const tempInput = document.createElement('input');
-        tempInput.value = currentInvoice;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-        
-        // 복사 완료 메시지
-        showPaymentStatus('success', '인보이스가 클립보드에 복사되었습니다.');
-        setTimeout(() => {
-            showPaymentStatus('pending', '결제를 기다리고 있습니다. QR 코드를 스캔하거나 인보이스를 복사하여 결제해주세요.');
-        }, 2000);
+    const invoiceTextArea = document.getElementById('invoiceTextArea');
+    if (invoiceTextArea && invoiceTextArea.value) {
+        invoiceTextArea.select();
+        navigator.clipboard.writeText(invoiceTextArea.value).then(function() {
+            // 성공 메시지
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-1"></i> 복사됨!';
+            btn.classList.add('text-green-600');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('text-green-600');
+            }, 2000);
+        }).catch(function(err) {
+            console.error('클립보드 복사 실패:', err);
+            // 폴백: 구식 방법
+            try {
+                document.execCommand('copy');
+                alert('인보이스가 클립보드에 복사되었습니다.');
+            } catch (e) {
+                alert('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
+            }
+        });
     }
 }
 
@@ -226,21 +226,18 @@ function startPaymentStatusCheck() {
     // 즉시 한 번 확인
     checkPaymentStatus();
     
-    // 1초마다 확인 (밋업과 동일)
-    paymentCheckInterval = setInterval(checkPaymentStatus, 1000);
+    // 5초마다 확인
+    paymentCheckInterval = setInterval(checkPaymentStatus, 5000);
 }
 
 // 결제 상태 확인
 function checkPaymentStatus() {
-    if (!currentPaymentHash || currentPaymentHash === '') {
-        // payment_hash가 없으면 상태 확인 중지
-        if (paymentCheckInterval) {
-            clearInterval(paymentCheckInterval);
-            paymentCheckInterval = null;
-        }
+    if (!currentPaymentHash) {
         return;
     }
     
+    // 실제 구현 시 아래 주석을 해제
+    /*
     fetch(`/lecture/${window.checkoutData.storeId}/live/${window.checkoutData.liveLectureId}/checkout/check_payment/`, {
         method: 'POST',
         headers: {
@@ -251,56 +248,46 @@ function checkPaymentStatus() {
             payment_hash: currentPaymentHash
         })
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            if (data.status === 'paid') {
-                // 결제 완료
-                showPaymentStatus('success', '결제가 완료되었습니다! 잠시 후 참가 확정 페이지로 이동합니다.');
-                
-                // 결제 상태 확인 중지
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
-                    paymentCheckInterval = null;
-                }
-                
-                // 3초 후 참가 확정 페이지로 이동
-                setTimeout(() => {
-                    window.location.href = `/lecture/${window.checkoutData.storeId}/live/${window.checkoutData.liveLectureId}/complete/${data.order_id}/`;
-                }, 3000);
-                
-            } else if (data.status === 'expired') {
-                // 결제 만료
-                showPaymentStatus('error', '결제 시간이 만료되었습니다. 다시 시도해주세요.');
-                
-                // 결제 상태 확인 중지
-                if (paymentCheckInterval) {
-                    clearInterval(paymentCheckInterval);
-                    paymentCheckInterval = null;
-                }
-                
-                // 인보이스 영역 숨기기
-                document.getElementById('invoiceContainer').classList.add('hidden');
-                
-                // 버튼 복원
-                const generateBtn = document.getElementById('generateInvoiceBtn');
-                generateBtn.disabled = false;
-                generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
+        if (data.paid) {
+            // 결제 완료
+            showPaymentStatus('success', '결제가 완료되었습니다! 잠시 후 참가 확정 페이지로 이동합니다.');
+            
+            // 결제 상태 확인 중지
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+                paymentCheckInterval = null;
             }
-            // data.status === 'pending'인 경우는 아무것도 하지 않고 계속 확인
-        } else {
-            // 서버에서 오류 응답
-            console.error('결제 상태 확인 오류:', data.error);
+            
+            // 3초 후 참가 확정 페이지로 이동
+            setTimeout(() => {
+                window.location.href = `/lecture/${window.checkoutData.storeId}/live/${window.checkoutData.liveLectureId}/complete/${data.order_id}/`;
+            }, 3000);
+            
+        } else if (data.expired) {
+            // 결제 만료
+            showPaymentStatus('error', '결제 시간이 만료되었습니다. 다시 시도해주세요.');
+            
+            // 결제 상태 확인 중지
+            if (paymentCheckInterval) {
+                clearInterval(paymentCheckInterval);
+                paymentCheckInterval = null;
+            }
+            
+            // 인보이스 영역 숨기기
+            document.getElementById('invoiceContainer').classList.add('hidden');
+            
+            // 버튼 복원
+            const generateBtn = document.getElementById('generateInvoiceBtn');
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
         }
     })
     .catch(error => {
         console.error('결제 상태 확인 오류:', error);
     });
+    */
 }
 
 // 결제 상태 메시지 표시
@@ -359,90 +346,33 @@ function openLightningWallet() {
 // 인보이스 취소
 function cancelInvoice() {
     if (confirm('결제를 취소하시겠습니까?')) {
-        const cancelBtn = document.getElementById('cancelInvoiceBtn');
+        // 결제 상태 확인 중지
+        if (paymentCheckInterval) {
+            clearInterval(paymentCheckInterval);
+            paymentCheckInterval = null;
+        }
         
-        // 취소 버튼 로딩 상태로 변경
-        cancelBtn.disabled = true;
-        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+        // 인보이스 영역 숨기기
+        document.getElementById('invoiceContainer').classList.add('hidden');
         
-        // 서버에 취소 요청
-        fetch(`/lecture/${window.checkoutData.storeId}/live/${window.checkoutData.liveLectureId}/checkout/cancel_payment/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': window.checkoutData.csrfToken
-            },
-            body: JSON.stringify({
-                payment_hash: currentPaymentHash
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // 서버 취소 성공
-                handleCancelSuccess();
-            } else {
-                // 서버 취소 실패
-                if (data.redirect_url) {
-                    // 이미 결제가 완료된 경우 완료 페이지로 리다이렉트
-                    window.location.href = data.redirect_url;
-                } else {
-                    alert('취소 중 오류가 발생했습니다: ' + (data.error || '알 수 없는 오류'));
-                    
-                    // 취소 버튼 복원
-                    cancelBtn.disabled = false;
-                    cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
-                }
-            }
-        })
-        .catch(error => {
-            console.error('취소 요청 중 오류:', error);
-            alert('취소 요청 중 오류가 발생했습니다.');
-            
-            // 취소 버튼 복원
-            cancelBtn.disabled = false;
-            cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
-        });
-    }
-}
-
-// 취소 성공 처리
-function handleCancelSuccess() {
-    // 결제 상태 확인 중지
-    if (paymentCheckInterval) {
-        clearInterval(paymentCheckInterval);
-        paymentCheckInterval = null;
-    }
-    
-    // 🔄 밋업과 동일: 취소 성공 시 페이지 새로고침
-    showPaymentStatus('success', '결제가 취소되었습니다. 페이지를 새로고침합니다...');
-    
-    setTimeout(() => {
-        window.location.reload();
-    }, 1500);
-    
-    return; // 아래 로직은 실행하지 않음 (페이지 새로고침으로 대체)
-    
-    // 인보이스 영역 숨기기
-    document.getElementById('invoiceContainer').classList.add('hidden');
-    
-    // 변수 초기화
-    currentPaymentHash = '';
-    currentInvoice = '';
-    isInvoiceGenerated = false;
-    
-    // 버튼 복원
-    const generateBtn = document.getElementById('generateInvoiceBtn');
-    generateBtn.disabled = false;
-    generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
-    
-    // 상태 메시지 숨기기
-    document.getElementById('paymentStatus').classList.add('hidden');
-    
-    showPaymentStatus('error', '결제가 취소되었습니다.');
-    
-    // 3초 후 메시지 숨기기
-    setTimeout(() => {
+        // 변수 초기화
+        currentPaymentHash = '';
+        currentInvoice = '';
+        isInvoiceGenerated = false;
+        
+        // 버튼 복원
+        const generateBtn = document.getElementById('generateInvoiceBtn');
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i>결제 인보이스 생성';
+        
+        // 상태 메시지 숨기기
         document.getElementById('paymentStatus').classList.add('hidden');
-    }, 3000);
+        
+        showPaymentStatus('error', '결제가 취소되었습니다.');
+        
+        // 3초 후 메시지 숨기기
+        setTimeout(() => {
+            document.getElementById('paymentStatus').classList.add('hidden');
+        }, 3000);
+    }
 } 

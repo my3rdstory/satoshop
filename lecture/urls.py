@@ -31,6 +31,12 @@ urlpatterns = [
     
     path('<str:store_id>/live/<int:live_lecture_id>/checkout/', views.live_lecture_checkout, name='live_lecture_checkout'),
     
+    path('<str:store_id>/live/<int:live_lecture_id>/checkout/create_invoice/', views.create_live_lecture_invoice, name='create_live_lecture_invoice'),
+    path('<str:store_id>/live/<int:live_lecture_id>/checkout/check_payment/', views.check_live_lecture_payment, name='check_live_lecture_payment'),
+    path('<str:store_id>/live/<int:live_lecture_id>/checkout/cancel_payment/', views.cancel_live_lecture_payment, name='cancel_live_lecture_payment'),
+    
+    path('<str:store_id>/live/<int:live_lecture_id>/debug/', views.debug_live_lecture_participation, name='debug_live_lecture_participation'),
+    
     path('<str:store_id>/live/<int:live_lecture_id>/complete/<int:order_id>/', views.live_lecture_checkout_complete, name='live_lecture_checkout_complete'),
     path('<str:store_id>/live/<int:live_lecture_id>/order/<int:order_id>/', views.live_lecture_order_complete, name='live_lecture_order_complete'),
     path('<str:store_id>/live/orders/', views.live_lecture_orders, name='live_lecture_orders'),

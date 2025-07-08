@@ -1,6 +1,6 @@
 안녕하세요, {{ store.owner_name }}님!
 
-{{ store.store_name }}에서 주최하는 "{{ live_lecture.title }}" 라이브 강의에 새로운 참가 신청이 접수되었습니다.
+{{ store.store_name }}에서 주최하는 "{{ live_lecture.name }}" 라이브 강의에 새로운 참가 신청이 접수되었습니다.
 
 아래는 참가자 상세 정보입니다:
 

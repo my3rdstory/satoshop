@@ -1,13 +1,13 @@
 안녕하세요, {{ user.username }}님!
 
-"{{ live_lecture.title }}" 라이브 강의 참가 신청이 성공적으로 완료되었습니다. 🎉
+"{{ live_lecture.name }}" 라이브 강의 참가 신청이 성공적으로 완료되었습니다. 🎉
 
 ▣ 강의 정보
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-강의명: {{ live_lecture.title }}
+강의명: {{ live_lecture.name }}
 주최: {{ store.store_name }}
 강사: {{ store.owner_name }}
-{% if live_lecture.datetime %}일시: {{ live_lecture.datetime|date:"Y년 m월 d일 (l) H시 i분" }}{% else %}일시: 미정{% endif %}
+{% if live_lecture.date_time %}일시: {{ live_lecture.date_time|date:"Y년 m월 d일 (l) H시 i분" }}{% else %}일시: 미정{% endif %}
 형태: 온라인 강의
 {% if live_lecture.special_notes %}특이사항: {{ live_lecture.special_notes }}{% endif %}
 
@@ -16,13 +16,13 @@
 참가자명: {{ user.username }}
 참가 확정일시: {{ confirmed_at|date:"Y년 m월 d일 H시 i분" }}
 주문번호: {{ order_number }}
-{% if live_lecture.price_type == 'free' %}참가비: 무료{% elif live_lecture.price_type == 'krw_linked' %}결제금액: {{ total_price|floatformat:0 }} sats ({{ live_lecture.krw_price|floatformat:0 }}원 연동){% else %}결제금액: {{ total_price|floatformat:0 }} sats{% endif %}
+{% if live_lecture.price_display == 'free' %}참가비: 무료{% elif live_lecture.price_display == 'krw' %}결제금액: {{ total_price|floatformat:0 }} sats ({{ live_lecture.price_krw|floatformat:0 }}원 연동){% else %}결제금액: {{ total_price|floatformat:0 }} sats{% endif %}
 
 ▣ 강사 연락처
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {% if live_lecture.instructor_contact %}📞 강사 연락처: {{ live_lecture.instructor_contact }}{% endif %}
 {% if live_lecture.instructor_email %}📧 강사 이메일: {{ live_lecture.instructor_email }}{% endif %}
-{% if live_lecture.communication_channel %}💬 소통채널: {{ live_lecture.communication_channel }}{% endif %}
+{% if live_lecture.instructor_chat_channel %}💬 소통채널: {{ live_lecture.instructor_chat_channel }}{% endif %}
 
 ▣ 참가 안내
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

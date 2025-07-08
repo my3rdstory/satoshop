@@ -16,7 +16,6 @@
 
 {% block extra_css %}
 <meta name="csrf-token" content="{{ csrf_token }}">
-<link rel="stylesheet" href="{% static 'css/meetup_detail.css' %}">
 <!-- Markdown Renderer CSS -->
 <link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
 <link rel="stylesheet" href="{% static 'css/lecture_live_detail.css' %}">
@@ -246,6 +245,24 @@
         </div>
         {% endif %}
 
+        <!-- 디버깅 정보 (개발용) -->
+        {% if settings.DEBUG %}
+        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+          <h4 class="font-bold text-yellow-800 dark:text-yellow-200 mb-2">🐛 디버깅 정보 (개발 모드)</h4>
+          <div class="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+            <div>is_active: {{ live_lecture.is_active }}</div>
+            <div>is_temporarily_closed: {{ live_lecture.is_temporarily_closed }}</div>
+            <div>is_expired: {{ live_lecture.is_expired }}</div>
+            <div>is_full: {{ live_lecture.is_full }}</div>
+            <div>can_participate: {{ live_lecture.can_participate }}</div>
+            <div>current_participants: {{ live_lecture.current_participants }}</div>
+            <div>max_participants: {{ live_lecture.max_participants }}</div>
+            <div>date_time: {{ live_lecture.date_time }}</div>
+            <div>현재 시간: {% now "Y-m-d H:i:s" %}</div>
+          </div>
+        </div>
+        {% endif %}
+
         <!-- 참가 신청 버튼 -->
         <div class="space-y-3">
           {% if live_lecture.can_participate %}
@@ -331,15 +348,24 @@
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
 <script>
 function joinLiveLecture() {
+  console.log('joinLiveLecture 함수 호출됨'); // 디버깅
+  
   const data = JSON.parse(document.getElementById('live-lecture-data').textContent);
+  console.log('라이브 강의 데이터:', data); // 디버깅
   
   if (!data.isAuthenticated) {
+    console.log('로그인되지 않음, 로그인 페이지로 이동'); // 디버깅
     window.location.href = data.loginUrl;
     return;
   }
   
+  console.log('체크아웃 페이지로 이동 시도'); // 디버깅
+  
   // 무료/유료 강의 모두 checkout 페이지로 이동 (뷰에서 처리)
-  window.location.href = `/lecture/${data.storeId}/live/${data.lectureId}/checkout/`;
+  const checkoutUrl = `/lecture/${data.storeId}/live/${data.lectureId}/checkout/`;
+  console.log('체크아웃 URL:', checkoutUrl); // 디버깅
+  
+  window.location.href = checkoutUrl;
 }
 
 

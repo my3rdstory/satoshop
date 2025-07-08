@@ -16,6 +16,8 @@ from .models import Lecture, Category, LectureEnrollment, LectureReview, LiveLec
 from .forms import LiveLectureForm
 import json
 import logging
+from django.conf import settings
+from ln_payment.blink_service import get_blink_service_for_store
 
 logger = logging.getLogger(__name__)
 
@@ -582,20 +584,34 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
         deleted_at__isnull=True
     )
     
+    # 🐛 디버깅: 라이브 강의 상태 로그
+    if settings.DEBUG:
+        logger.debug(f"라이브 강의 체크아웃 접근 - 사용자: {request.user}, 강의: {live_lecture.name}")
+        logger.debug(f"라이브 강의 상태 - is_active: {live_lecture.is_active}, is_temporarily_closed: {live_lecture.is_temporarily_closed}, is_expired: {live_lecture.is_expired}, is_full: {live_lecture.is_full}")
+        logger.debug(f"can_participate: {live_lecture.can_participate}")
+    
     # 라이브 강의 참가 가능 여부 확인
     if not live_lecture.can_participate:
+        if settings.DEBUG:
+            logger.debug(f"참가 불가능 - is_active: {live_lecture.is_active}, is_temporarily_closed: {live_lecture.is_temporarily_closed}, is_expired: {live_lecture.is_expired}, is_full: {live_lecture.is_full}")
         messages.error(request, '현재 참가 신청이 불가능한 라이브 강의입니다.')
         return redirect('lecture:live_lecture_detail', store_id=store_id, live_lecture_id=live_lecture_id)
     
-    # 이미 참가 신청한 사용자인지 확인
+    # 이미 참가 신청한 사용자인지 확인 (취소된 주문은 제외)
     existing_order = LiveLectureOrder.objects.filter(
         live_lecture=live_lecture,
-        user=request.user
+        user=request.user,
+        status__in=['confirmed', 'completed']  # 밋업과 동일: 취소된 주문은 다시 신청 가능
     ).first()
     
     if existing_order:
-        messages.info(request, '이미 참가 신청한 라이브 강의입니다.')
-        return redirect('lecture:live_lecture_detail', store_id=store_id, live_lecture_id=live_lecture_id)
+        if settings.DEBUG:
+            logger.debug(f"이미 참가 신청한 사용자 - 주문 ID: {existing_order.id}, 상태: {existing_order.status}")
+        
+        # 밋업과 동일: 기존 참가 확정 주문이 있으면 확정서 페이지로 이동
+        messages.info(request, f'이미 참가 신청이 완료된 라이브 강의입니다. (주문번호: {existing_order.order_number})')
+        return redirect('lecture:live_lecture_checkout_complete', 
+                       store_id=store_id, live_lecture_id=live_lecture_id, order_id=existing_order.id)
     
     # 무료 강의는 바로 신청 완료
     if live_lecture.price_display == 'free':
@@ -605,8 +621,26 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
                 user=request.user,
                 price=0,
                 status='confirmed',
-                confirmed_at=timezone.now()
+                confirmed_at=timezone.now(),
+                paid_at=timezone.now()
             )
+            
+            # 무료 라이브 강의 참가 확정 이메일 발송
+            try:
+                from .services import send_live_lecture_notification_email, send_live_lecture_participant_confirmation_email
+                
+                # 주인장에게 알림 이메일
+                send_live_lecture_notification_email(order)
+                
+                # 참가자에게 확인 이메일
+                send_live_lecture_participant_confirmation_email(order)
+                
+                logger.debug(f"무료 라이브 강의 이메일 발송 완료 - order_id: {order.id}")
+                    
+            except Exception as e:
+                # 이메일 발송 실패해도 주문 처리는 계속 진행
+                logger.error(f"무료 라이브 강의 이메일 발송 실패 - order_id: {order.id}, error: {e}")
+                pass
             
             messages.success(request, '라이브 강의 참가 신청이 완료되었습니다.')
             return redirect('lecture:live_lecture_checkout_complete', 
@@ -751,3 +785,367 @@ def live_lecture_order_complete(request, store_id, live_lecture_id, order_id):
     }
     
     return render(request, 'lecture/lecture_live_checkout_complete.html', context)
+
+@login_required
+@require_POST
+def create_live_lecture_invoice(request, store_id, live_lecture_id):
+    """라이브 강의 결제 인보이스 생성"""
+    try:
+        if settings.DEBUG:
+            logger.debug(f"create_live_lecture_invoice 호출 - User: {request.user}, Store: {store_id}, Lecture: {live_lecture_id}")
+        
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+        live_lecture = get_object_or_404(
+            LiveLecture, 
+            id=live_lecture_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
+        
+        # 라이브 강의 참가 가능 여부 확인
+        if not live_lecture.can_participate:
+            return JsonResponse({
+                'success': False, 
+                'error': '현재 참가 신청이 불가능한 라이브 강의입니다.'
+            }, status=400)
+        
+        # 이미 참가 신청한 사용자인지 확인 (취소된 주문은 제외)
+        existing_order = LiveLectureOrder.objects.filter(
+            live_lecture=live_lecture,
+            user=request.user,
+            status__in=['confirmed', 'completed']  # 밋업과 동일: 취소된 주문은 다시 신청 가능
+        ).first()
+        
+        if existing_order:
+            return JsonResponse({
+                'success': False, 
+                'error': '이미 참가 신청한 라이브 강의입니다.'
+            }, status=400)
+        
+        # 무료 강의는 인보이스 생성 불가
+        if live_lecture.price_display == 'free':
+            return JsonResponse({
+                'success': False, 
+                'error': '무료 강의는 결제가 필요하지 않습니다.'
+            }, status=400)
+        
+        # BlinkAPIService 초기화
+        try:
+            blink_service = get_blink_service_for_store(store)
+            if settings.DEBUG:
+                logger.debug("BlinkAPIService 초기화 성공")
+        except Exception as e:
+            if settings.DEBUG:
+                logger.error(f"BlinkAPIService 초기화 실패: {str(e)}")
+            return JsonResponse({
+                'success': False, 
+                'error': f'결제 서비스 초기화 실패: {str(e)}'
+            }, status=500)
+        
+        # 인보이스 생성
+        amount_sats = live_lecture.current_price
+        memo = f"{live_lecture.name} - {store.store_name}"
+        
+        if settings.DEBUG:
+            logger.debug(f"인보이스 생성 시작: amount={amount_sats} sats, memo={memo}")
+        
+        result = blink_service.create_invoice(
+            amount_sats=amount_sats,
+            memo=memo,
+            expires_in_minutes=15
+        )
+        
+        if settings.DEBUG:
+            logger.debug(f"인보이스 생성 결과: {result}")
+        
+        if not result['success']:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            }, status=500)
+        
+        # 🔄 밋업과 동일: 세션에 참가자 정보 저장 (DB에 주문 생성하지 않음)
+        participant_data = {
+            'live_lecture_id': live_lecture_id,
+            'participant_name': request.user.username,
+            'participant_email': request.user.email,
+            'price': amount_sats,
+            'payment_hash': result['payment_hash'],
+            'payment_request': result['invoice'],
+            'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None,
+        }
+        
+        # 세션에 참가자 정보 저장 (결제 완료 시 사용)
+        request.session[f'live_lecture_participant_data_{live_lecture_id}'] = participant_data
+        
+        if settings.DEBUG:
+            logger.debug(f"세션에 참가자 정보 저장 완료")
+        
+        # 응답 데이터 준비
+        response_data = {
+            'success': True,
+            'payment_hash': result['payment_hash'],
+            'invoice': result['invoice'],
+            'amount': amount_sats,
+            'memo': memo,
+            'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None,
+        }
+        
+        if settings.DEBUG:
+            logger.debug(f"응답 데이터: {response_data}")
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        if settings.DEBUG:
+            logger.error(f"인보이스 생성 중 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'인보이스 생성 중 오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+@login_required 
+@require_POST
+def check_live_lecture_payment(request, store_id, live_lecture_id):
+    """라이브 강의 결제 상태 확인"""
+    try:
+        data = json.loads(request.body)
+        payment_hash = data.get('payment_hash')
+        
+        if not payment_hash:
+            return JsonResponse({
+                'success': False, 
+                'error': '결제 해시가 필요합니다.'
+            }, status=400)
+        
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+        live_lecture = get_object_or_404(
+            LiveLecture, 
+            id=live_lecture_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
+        
+        # 🔄 밋업과 동일: 세션에서 참가자 정보 확인
+        participant_data = request.session.get(f'live_lecture_participant_data_{live_lecture_id}')
+        if not participant_data:
+            return JsonResponse({
+                'success': False,
+                'error': '참가자 정보가 없습니다.'
+            })
+        
+        stored_payment_hash = participant_data.get('payment_hash')
+        if not stored_payment_hash or stored_payment_hash != payment_hash:
+            return JsonResponse({
+                'success': False,
+                'error': '결제 정보가 일치하지 않습니다.'
+            })
+        
+        # 🛡️ 중복 주문 생성 방지: 이미 해당 payment_hash로 주문이 존재하는지 확인
+        existing_orders = LiveLectureOrder.objects.filter(payment_hash=payment_hash)
+        if existing_orders.exists():
+            logger.debug(f"이미 결제 완료된 주문 발견: {payment_hash}")
+            order = existing_orders.first()
+            return JsonResponse({
+                'success': True,
+                'status': 'paid',
+                'order_id': order.id
+            })
+        
+        # BlinkAPIService 초기화
+        blink_service = get_blink_service_for_store(store)
+        
+        # 결제 상태 확인
+        result = blink_service.check_invoice_status(payment_hash)
+        
+        if not result['success']:
+            return JsonResponse({
+                'success': False,
+                'error': result['error']
+            }, status=500)
+        
+        status = result['status']
+        
+        # 🔄 밋업과 동일: 결제 완료 시에만 주문 생성
+        if status == 'paid':
+            logger.info(f"결제 완료 감지 - live_lecture_id: {live_lecture_id}, payment_hash: {payment_hash}")
+            
+            with transaction.atomic():
+                # 주문 생성
+                order = LiveLectureOrder.objects.create(
+                    live_lecture=live_lecture,
+                    user=request.user,
+                    price=participant_data['price'],
+                    status='confirmed',
+                    payment_hash=payment_hash,
+                    payment_request=participant_data['payment_request'],
+                    paid_at=timezone.now(),
+                    confirmed_at=timezone.now(),
+                    is_temporary_reserved=False
+                )
+                
+                logger.info(f"주문 생성 완료 - order_id: {order.id}, 주문번호: {order.order_number}")
+            
+            # 세션에서 참가자 정보 삭제 (주문 생성 완료)
+            if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
+                del request.session[f'live_lecture_participant_data_{live_lecture_id}']
+            
+            # 라이브 강의 참가 확정 이메일 발송
+            try:
+                from .services import send_live_lecture_notification_email, send_live_lecture_participant_confirmation_email
+                
+                # 주인장에게 알림 이메일
+                send_live_lecture_notification_email(order)
+                
+                # 참가자에게 확인 이메일
+                send_live_lecture_participant_confirmation_email(order)
+                
+                logger.debug(f"결제 완료 이메일 발송 완료 - order_id: {order.id}")
+                    
+            except Exception as e:
+                # 이메일 발송 실패해도 주문 처리는 계속 진행
+                logger.error(f"이메일 발송 실패 - order_id: {order.id}, error: {e}")
+                pass
+        
+        return JsonResponse({
+            'success': True,
+            'status': status,
+            'order_id': order.id if status == 'paid' else None
+        })
+        
+    except Exception as e:
+        logger.error(f"결제 상태 확인 중 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'결제 상태 확인 중 오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+@login_required
+@require_POST  
+def cancel_live_lecture_payment(request, store_id, live_lecture_id):
+    """라이브 강의 결제 취소"""
+    try:
+        data = json.loads(request.body)
+        payment_hash = data.get('payment_hash')
+        
+        if not payment_hash:
+            return JsonResponse({
+                'success': False, 
+                'error': '결제 해시가 필요합니다.'
+            }, status=400)
+        
+        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+        live_lecture = get_object_or_404(
+            LiveLecture, 
+            id=live_lecture_id, 
+            store=store, 
+            deleted_at__isnull=True
+        )
+        
+        # 🔄 밋업과 동일: 세션에서 참가자 정보 확인
+        participant_data = request.session.get(f'live_lecture_participant_data_{live_lecture_id}')
+        if not participant_data:
+            return JsonResponse({
+                'success': False,
+                'error': '참가자 정보가 없습니다.'
+            })
+        
+        stored_payment_hash = participant_data.get('payment_hash')
+        if not stored_payment_hash or stored_payment_hash != payment_hash:
+            return JsonResponse({
+                'success': False,
+                'error': '결제 정보가 일치하지 않습니다.'
+            })
+        
+        # 🛡️ 이미 결제 완료된 주문이 있는지 확인 (취소 불가)
+        existing_orders = LiveLectureOrder.objects.filter(payment_hash=payment_hash)
+        if existing_orders.exists():
+            order = existing_orders.first()
+            logger.warning(f"이미 결제 완료된 주문의 취소 시도 - 주문: {order.order_number}")
+            return JsonResponse({
+                'success': False,
+                'error': '이미 결제가 완료된 주문은 취소할 수 없습니다.',
+                'redirect_url': f'/lecture/{store_id}/live/{live_lecture_id}/complete/{order.id}/'
+            })
+        
+        # 결제 상태를 한 번 더 확인 (마지막 안전장치)
+        try:
+            blink_service = get_blink_service_for_store(store)
+            if blink_service:
+                result = blink_service.check_invoice_status(payment_hash)
+                if result['success'] and result['status'] == 'paid':
+                    # 실제로는 결제가 완료된 경우 - 즉시 주문 생성 후 리다이렉트
+                    logger.warning(f"취소 시도 중 결제 완료 발견 - payment_hash: {payment_hash}")
+                    
+                    with transaction.atomic():
+                        order = LiveLectureOrder.objects.create(
+                            live_lecture=live_lecture,
+                            user=request.user,
+                            price=participant_data['price'],
+                            status='confirmed',
+                            payment_hash=payment_hash,
+                            payment_request=participant_data['payment_request'],
+                            paid_at=timezone.now(),
+                            confirmed_at=timezone.now(),
+                            is_temporary_reserved=False
+                        )
+                    
+                    # 세션에서 참가자 정보 삭제 (결제 완료되었으므로 삭제)
+                    if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
+                        del request.session[f'live_lecture_participant_data_{live_lecture_id}']
+                    
+                    return JsonResponse({
+                        'success': False,
+                        'error': '결제가 이미 완료되었습니다.',
+                        'redirect_url': f'/lecture/{store_id}/live/{live_lecture_id}/complete/{order.id}/'
+                    })
+        except Exception as e:
+            # 결제 상태 확인 실패는 무시하고 취소 계속 진행
+            logger.warning(f"취소 시 결제 상태 확인 실패 (계속 진행): {e}")
+        
+        # 🔄 밋업과 동일: 세션에서 참가자 정보만 삭제 (DB에는 아무것도 저장하지 않음)
+        if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
+            del request.session[f'live_lecture_participant_data_{live_lecture_id}']
+            logger.debug(f"세션에서 참가자 정보 삭제 완료 - live_lecture_id: {live_lecture_id}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '결제가 취소되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"결제 취소 중 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': f'결제 취소 중 오류가 발생했습니다: {str(e)}'
+        }, status=500)
+
+@login_required
+def debug_live_lecture_participation(request, store_id, live_lecture_id):
+    """라이브 강의 참가 가능 여부 디버깅용 뷰"""
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    live_lecture = get_object_or_404(
+        LiveLecture, 
+        id=live_lecture_id, 
+        store=store, 
+        deleted_at__isnull=True
+    )
+    
+    debug_info = {
+        'live_lecture_name': live_lecture.name,
+        'is_active': live_lecture.is_active,
+        'is_temporarily_closed': live_lecture.is_temporarily_closed,
+        'is_expired': live_lecture.is_expired,
+        'is_full': live_lecture.is_full,
+        'can_participate': live_lecture.can_participate,
+        'current_participants': live_lecture.current_participants,
+        'max_participants': live_lecture.max_participants,
+        'no_limit': live_lecture.no_limit,
+        'date_time': live_lecture.date_time,
+        'current_time': timezone.now(),
+        'existing_order': LiveLectureOrder.objects.filter(
+            live_lecture=live_lecture,
+            user=request.user
+        ).exists()
+    }
+    
+    return JsonResponse(debug_info, json_dumps_params={'default': str})
