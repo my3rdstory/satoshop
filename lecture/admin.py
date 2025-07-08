@@ -100,9 +100,13 @@ class LiveLectureAdmin(admin.ModelAdmin):
         }),
     )
     
+    def get_queryset(self, request):
+        """삭제된 라이브 강의는 목록에서 제외"""
+        return super().get_queryset(request).filter(deleted_at__isnull=True)
+    
     def get_readonly_fields(self, request, obj=None):
         if obj:  # 수정 시
-            return self.readonly_fields + ('store',)
+            return self.readonly_fields + ['store']
         return self.readonly_fields
 
 
@@ -153,5 +157,5 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
     
     def get_readonly_fields(self, request, obj=None):
         if obj:  # 수정 시
-            return self.readonly_fields + ('live_lecture', 'user')
+            return self.readonly_fields + ['live_lecture', 'user']
         return self.readonly_fields
