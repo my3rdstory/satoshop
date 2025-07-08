@@ -67,9 +67,9 @@
       </div>
       
       {% if is_public_view %}
-      <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}">
+      <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank">
       {% else %}
-      <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}">
+      <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank">
       {% endif %}
         {% if live_lecture.images.exists %}
         <img src="{{ live_lecture.images.first.file_url }}" alt="{{ live_lecture.name }}" 
@@ -88,12 +88,12 @@
       <!-- 라이브 강의 제목 -->
       <div class="mb-2">
         {% if is_public_view %}
-        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" 
+        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank"
            class="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2">
           {{ live_lecture.name }}
         </a>
         {% else %}
-        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" 
+        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank"
            class="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors line-clamp-2">
           {{ live_lecture.name }}
         </a>
@@ -194,7 +194,7 @@
         <!-- 강의보기 버튼 -->
         {% if is_public_view %}
           {% if live_lecture.can_participate %}
-          <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" 
+          <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank"
              class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm">
             <i class="fas fa-video mr-1"></i>
             참가하기
@@ -222,7 +222,7 @@
           {% endif %}
         {% else %}
         <!-- 관리자 뷰 -->
-        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" 
+        <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}" target="_blank"
            class="w-full inline-flex items-center justify-center px-3 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors text-sm">
           <i class="fas fa-eye mr-1"></i>
           상세보기
