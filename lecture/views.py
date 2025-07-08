@@ -341,8 +341,14 @@ def edit_live_lecture(request, store_id, live_lecture_id):
     )
     
     if request.method == 'POST':
+        logger.info(f"라이브 강의 수정 요청 시작 - ID: {live_lecture_id}")
+        logger.info(f"POST 데이터: {dict(request.POST)}")
+        
         form = LiveLectureForm(data=request.POST, files=request.FILES, instance=live_lecture)
+        logger.info(f"폼 생성 완료 - is_valid() 검사 시작")
+        
         if form.is_valid():
+            logger.info("폼 검증 성공 - 저장 시작")
             try:
                 with transaction.atomic():
                     # 라이브 강의 수정
@@ -375,6 +381,9 @@ def edit_live_lecture(request, store_id, live_lecture_id):
             except Exception as e:
                 messages.error(request, '라이브 강의 수정 중 오류가 발생했습니다. 다시 시도해주세요.')
                 logger.error(f"Error updating live lecture: {e}", exc_info=True)
+        else:
+            logger.error(f"LiveLecture 수정 폼 검증 실패 - 에러: {form.errors}")
+            messages.error(request, '폼 검증에 실패했습니다. 입력 내용을 확인해주세요.')
     else:
         form = LiveLectureForm(instance=live_lecture)
     

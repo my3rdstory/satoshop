@@ -2,17 +2,17 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}{{ live_lecture.title }} - {{ store.store_name }}{% endblock %}
+{% block title %}{{ live_lecture.name }} - {{ store.store_name }}{% endblock %}
 
 <!-- 라이브 강의별 오픈그래프 설정 -->
-{% block og_title %}{{ live_lecture.title }} - {{ store.store_name }}{% endblock %}
-{% block og_description %}{% if live_lecture.description %}{{ live_lecture.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 진행하는 라이브 강의 - {{ live_lecture.title }}{% endif %}{% endblock %}
+{% block og_title %}{{ live_lecture.name }} - {{ store.store_name }}{% endblock %}
+{% block og_description %}{% if live_lecture.description %}{{ live_lecture.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 진행하는 라이브 강의 - {{ live_lecture.name }}{% endif %}{% endblock %}
 {% block og_type %}event{% endblock %}
-{% block og_image %}{% if live_lecture.image %}{{ live_lecture.image.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
+{% block og_image %}{% if live_lecture.images.exists %}{{ live_lecture.images.first.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
 
-{% block twitter_title %}{{ live_lecture.title }} - {{ store.store_name }}{% endblock %}
-{% block twitter_description %}{% if live_lecture.description %}{{ live_lecture.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 진행하는 라이브 강의 - {{ live_lecture.title }}{% endif %}{% endblock %}
-{% block twitter_image %}{% if live_lecture.image %}{{ live_lecture.image.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
+{% block twitter_title %}{{ live_lecture.name }} - {{ store.store_name }}{% endblock %}
+{% block twitter_description %}{% if live_lecture.description %}{{ live_lecture.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 진행하는 라이브 강의 - {{ live_lecture.name }}{% endif %}{% endblock %}
+{% block twitter_image %}{% if live_lecture.images.exists %}{{ live_lecture.images.first.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
 
 {% block extra_css %}
 <meta name="csrf-token" content="{{ csrf_token }}">
@@ -33,8 +33,8 @@
         <div class="space-y-4">
           <!-- 메인 이미지 -->
           <div class="lecture-image-container relative">
-            {% if live_lecture.image %}
-            <img src="{{ live_lecture.image.file_url }}" alt="{{ live_lecture.title }}" 
+            {% if live_lecture.images.exists %}
+            <img src="{{ live_lecture.images.first.file_url }}" alt="{{ live_lecture.name }}" 
                  class="w-full h-full object-cover">
             {% else %}
             <div class="w-full h-full flex items-center justify-center">
@@ -47,15 +47,15 @@
             
             <!-- 가격 타입 오버레이 -->
             <div class="absolute top-4 right-4">
-              {% if live_lecture.price_type == 'free' %}
+              {% if live_lecture.price_display == 'free' %}
               <span class="px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-full">
                 무료
               </span>
-              {% elif live_lecture.price_type == 'satoshi' %}
+              {% elif live_lecture.price_display == 'sats' %}
               <span class="px-3 py-1 bg-orange-500 text-white text-sm font-medium rounded-full">
                 사토시
               </span>
-              {% elif live_lecture.price_type == 'krw_linked' %}
+              {% elif live_lecture.price_display == 'krw' %}
               <span class="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-full">
                 원화연동
               </span>
@@ -71,14 +71,14 @@
             <i class="fas fa-info-circle text-blue-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">강의 소개</h3>
           </div>
-          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white">
-            {{ live_lecture.description }}
+          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ live_lecture.description|safe }}">
+            <!-- 마크다운 콘텐츠가 여기에 렌더링됩니다 -->
           </div>
         </div>
         {% endif %}
 
         <!-- 강사 정보 -->
-        {% if live_lecture.instructor_contact or live_lecture.instructor_email or live_lecture.communication_channel %}
+        {% if live_lecture.instructor_contact or live_lecture.instructor_email or live_lecture.instructor_chat_channel %}
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3 mb-4">
             <i class="fas fa-chalkboard-teacher text-purple-500 text-lg"></i>
@@ -100,10 +100,10 @@
               </a>
             </div>
             {% endif %}
-            {% if live_lecture.communication_channel %}
+            {% if live_lecture.instructor_chat_channel %}
             <div class="flex items-center gap-3">
               <i class="fas fa-comments text-gray-500 w-4"></i>
-              <a href="{{ live_lecture.communication_channel }}" 
+              <a href="{{ live_lecture.instructor_chat_channel }}" 
                  target="_blank" 
                  rel="noopener noreferrer"
                  class="text-blue-600 dark:text-blue-400 hover:underline">
@@ -123,8 +123,8 @@
             <i class="fas fa-check-circle text-green-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">참가 완료 안내</h3>
           </div>
-          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white">
-            {{ live_lecture.completion_message }}
+          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ live_lecture.completion_message|safe }}">
+            <!-- 마크다운 콘텐츠가 여기에 렌더링됩니다 -->
           </div>
         </div>
         {% endif %}
@@ -134,24 +134,24 @@
       <div class="space-y-4">
         <!-- 제목 -->
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ live_lecture.title }}</h1>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">{{ live_lecture.name }}</h1>
           {% if not live_lecture.is_active %}
           <span class="inline-block px-3 py-1 bg-gray-500 text-white text-sm rounded-full">비활성화</span>
           {% endif %}
         </div>
 
         <!-- 일시 정보 -->
-        {% if live_lecture.datetime %}
+        {% if live_lecture.date_time %}
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div class="flex items-center gap-3 mb-2">
             <i class="fas fa-calendar-alt text-purple-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">일시</h3>
           </div>
           <div class="text-xl font-medium text-gray-900 dark:text-white">
-            {{ live_lecture.datetime|date:"Y년 m월 d일 (l)" }}
+            {{ live_lecture.date_time|date:"Y년 m월 d일 (l)" }}
           </div>
           <div class="text-lg text-gray-600 dark:text-gray-400">
-            {{ live_lecture.datetime|date:"H:i" }}
+            {{ live_lecture.date_time|date:"H:i" }}
           </div>
         </div>
         {% endif %}
@@ -178,21 +178,21 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">참가비</h3>
           </div>
           <div class="space-y-4">
-            {% if live_lecture.price_type == 'free' %}
+            {% if live_lecture.price_display == 'free' %}
             <div class="text-3xl font-bold text-green-600 dark:text-green-400">
               무료
             </div>
-            {% elif live_lecture.price_type == 'satoshi' %}
+            {% elif live_lecture.price_display == 'sats' %}
             <div class="text-3xl font-bold text-gray-900 dark:text-white">
-              {{ live_lecture.satoshi_price|floatformat:0|intcomma }} sats
+              {{ live_lecture.price|floatformat:0|intcomma }} sats
             </div>
-            {% elif live_lecture.price_type == 'krw_linked' %}
+            {% elif live_lecture.price_display == 'krw' %}
             <div class="space-y-2">
               <div class="text-3xl font-bold text-gray-900 dark:text-white">
-                {{ live_lecture.current_satoshi_price|floatformat:0|intcomma }} sats
+                {{ live_lecture.current_price|floatformat:0|intcomma }} sats
               </div>
               <div class="text-lg text-gray-600 dark:text-gray-400">
-                ({{ live_lecture.krw_price|floatformat:0|intcomma }}원 연동)
+                ({{ live_lecture.price_krw|floatformat:0|intcomma }}원 연동)
               </div>
             </div>
             {% endif %}
@@ -200,7 +200,7 @@
         </div>
 
         <!-- 참가 정원 정보 -->
-        {% if not live_lecture.no_capacity_limit %}
+        {% if not live_lecture.no_limit %}
         <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-3">
@@ -252,7 +252,7 @@
             {% if user.is_authenticated %}
             <button class="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
                     onclick="joinLiveLecture()">
-              {% if live_lecture.price_type == 'free' %}
+              {% if live_lecture.price_display == 'free' %}
               <i class="fas fa-heart"></i>
               <span>무료 참가 신청하기</span>
               {% else %}
@@ -313,10 +313,10 @@
 <!-- 라이브 강의 정보를 JavaScript 변수로 전달 -->
 <script type="application/json" id="live-lecture-data">
 {
-  "priceType": "{{ live_lecture.price_type }}",
-  "satoshiPrice": {{ live_lecture.satoshi_price|default:0 }},
-  "krwPrice": {{ live_lecture.krw_price|default:0 }},
-  "currentSatoshiPrice": {{ live_lecture.current_satoshi_price|default:0 }},
+  "priceType": "{{ live_lecture.price_display }}",
+  "satoshiPrice": {{ live_lecture.price|default:0 }},
+  "krwPrice": {{ live_lecture.price_krw|default:0 }},
+  "currentSatoshiPrice": {{ live_lecture.current_price|default:0 }},
   "lectureId": {{ live_lecture.id }},
   "storeId": "{{ store.store_id }}",
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
@@ -348,8 +348,9 @@ function joinLiveLecture() {
 document.addEventListener('DOMContentLoaded', function() {
   const markdownElements = document.querySelectorAll('.markdown-content');
   markdownElements.forEach(element => {
-    if (typeof marked !== 'undefined') {
-      element.innerHTML = marked.parse(element.textContent);
+    const markdownText = element.getAttribute('data-markdown');
+    if (markdownText && typeof marked !== 'undefined') {
+      element.innerHTML = marked.parse(markdownText);
     }
   });
 });

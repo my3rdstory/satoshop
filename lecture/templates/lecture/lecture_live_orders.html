@@ -40,7 +40,7 @@
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div class="flex-1">
               <div class="flex items-center gap-3 mb-2">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ order.live_lecture.title }}</h3>
+                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">{{ order.live_lecture.name }}</h3>
                 <!-- 상태 배지 -->
                 {% if order.status == 'confirmed' %}
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
@@ -79,15 +79,15 @@
             </div>
             <div class="text-right">
               <div class="text-2xl font-bold text-bitcoin mb-1">
-                {% if order.live_lecture.price_type == 'free' %}
+                {% if order.live_lecture.price_display == 'free' %}
                   <span class="text-green-600 dark:text-green-400">무료</span>
                 {% else %}
                   {{ order.total_price|floatformat:0|intcomma }} sats
                 {% endif %}
               </div>
-              {% if order.live_lecture.price_type == 'krw_linked' %}
+              {% if order.live_lecture.price_display == 'krw' %}
               <div class="text-sm text-gray-600 dark:text-gray-400">
-                ({{ order.live_lecture.krw_price|floatformat:0|intcomma }}원 연동)
+                ({{ order.live_lecture.price_krw|floatformat:0|intcomma }}원 연동)
               </div>
               {% endif %}
             </div>
@@ -101,14 +101,14 @@
             <div>
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">강의 정보</h4>
               <div class="space-y-2 text-sm">
-                {% if order.live_lecture.datetime %}
+                {% if order.live_lecture.date_time %}
                 <div class="flex items-center gap-2">
                   <i class="fas fa-calendar text-gray-400 w-4"></i>
-                  <span class="text-gray-900 dark:text-white">{{ order.live_lecture.datetime|date:"Y년 m월 d일 (l)" }}</span>
+                  <span class="text-gray-900 dark:text-white">{{ order.live_lecture.date_time|date:"Y년 m월 d일 (l)" }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <i class="fas fa-clock text-gray-400 w-4"></i>
-                  <span class="text-gray-900 dark:text-white">{{ order.live_lecture.datetime|date:"H:i" }}</span>
+                  <span class="text-gray-900 dark:text-white">{{ order.live_lecture.date_time|date:"H:i" }}</span>
                 </div>
                 {% endif %}
                 <div class="flex items-center gap-2">
@@ -140,10 +140,10 @@
                   <span class="text-gray-900 dark:text-white">{{ order.live_lecture.instructor_email }}</span>
                 </div>
                 {% endif %}
-                {% if order.live_lecture.communication_channel %}
+                {% if order.live_lecture.instructor_chat_channel %}
                 <div class="flex items-center gap-2">
                   <i class="fas fa-comments text-gray-400 w-4"></i>
-                  <a href="{{ order.live_lecture.communication_channel }}" 
+                  <a href="{{ order.live_lecture.instructor_chat_channel }}" 
                      target="_blank" 
                      rel="noopener noreferrer"
                      class="text-blue-600 dark:text-blue-400 hover:underline">
@@ -170,7 +170,7 @@
                   QR 다운로드
                 </button>
                 <button 
-                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.live_lecture.title|escapejs }}', '{{ order.user.username|escapejs }}', '{{ order.user.email|escapejs }}', '{{ order.confirmed_at|date:"Y-m-d H:i:s"|escapejs }}', '{{ order.live_lecture.datetime|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ order.live_lecture.price_type|escapejs }}', '{{ order.live_lecture.krw_price|floatformat:0|default:"0"|escapejs }}', '{{ store.store_name|escapejs }}')" 
+                  onclick="downloadParticipantInfo('{{ order.order_number }}', '{{ order.live_lecture.name|escapejs }}', '{{ order.user.username|escapejs }}', '{{ order.user.email|escapejs }}', '{{ order.confirmed_at|date:"Y-m-d H:i:s"|escapejs }}', '{{ order.live_lecture.date_time|date:"Y년 m월 d일 (l) H:i"|default:"미정"|escapejs }}', '{{ order.total_price|floatformat:0|escapejs }}', '{{ order.live_lecture.price_display|escapejs }}', '{{ order.live_lecture.price_krw|floatformat:0|default:"0"|escapejs }}', '{{ store.store_name|escapejs }}')" 
                   class="inline-flex items-center justify-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
                 >
                   <i class="fas fa-file-text mr-1"></i>
@@ -213,24 +213,24 @@
                     <div class="flex justify-between">
                       <span class="text-gray-600 dark:text-gray-400">강의 가격</span>
                       <span class="text-gray-900 dark:text-white">
-                        {% if order.live_lecture.price_type == 'free' %}
+                        {% if order.live_lecture.price_display == 'free' %}
                           무료
                         {% else %}
                           {{ order.total_price|floatformat:0|intcomma }} sats
                         {% endif %}
                       </span>
                     </div>
-                    {% if order.live_lecture.price_type == 'krw_linked' %}
+                    {% if order.live_lecture.price_display == 'krw' %}
                     <div class="flex justify-between">
                       <span class="text-gray-600 dark:text-gray-400">원화 기준</span>
-                      <span class="text-gray-900 dark:text-white">{{ order.live_lecture.krw_price|floatformat:0|intcomma }}원</span>
+                      <span class="text-gray-900 dark:text-white">{{ order.live_lecture.price_krw|floatformat:0|intcomma }}원</span>
                     </div>
                     {% endif %}
                     <div class="border-t border-gray-200 dark:border-gray-600 pt-2">
                       <div class="flex justify-between font-semibold">
                         <span class="text-gray-900 dark:text-white">총 결제금액</span>
                         <span class="text-bitcoin">
-                          {% if order.live_lecture.price_type == 'free' %}
+                          {% if order.live_lecture.price_display == 'free' %}
                             무료
                           {% else %}
                             {{ order.total_price|floatformat:0|intcomma }} sats
