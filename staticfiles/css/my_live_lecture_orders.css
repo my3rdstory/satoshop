@@ -1,0 +1,90 @@
+/* my_live_lecture_orders.css */
+/* 라이브 강의 신청 내역 페이지 스타일 */
+
+/* 애니메이션 */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-green {
+  0%, 100% { background-color: #10b981; }
+  50% { background-color: #047857; }
+}
+
+/* 페이지 헤더 */
+.live-lecture-icon {
+  animation: pulse-green 3s ease-in-out infinite;
+}
+
+/* 카드 애니메이션 */
+.order-card {
+  animation: fade-in 0.6s ease-out;
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15);
+}
+
+/* QR 코드 */
+.qr-code-canvas {
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+}
+
+/* 상태 배지 커스텀 */
+.status-badge {
+  transition: all 0.2s ease;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+}
+
+/* 다크모드 스타일 */
+.dark .qr-code-canvas {
+  border-color: #374151;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .order-card {
+    margin: 1rem 0;
+  }
+  
+  .grid-cols-3 {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* 로딩 애니메이션 */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 액션 버튼 그룹 */
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .action-buttons .inline-flex {
+    justify-content: center;
+  }
+} 

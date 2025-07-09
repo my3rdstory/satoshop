@@ -27,6 +27,234 @@
   box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
 }
 
+/* QR 코드 관련 스타일 */
+.qr-code-container {
+  display: inline-block;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dark .qr-code-container {
+  background: rgba(55, 65, 81, 1);
+  border-color: rgba(75, 85, 99, 1);
+}
+
+.qr-code-image {
+  max-width: 250px;
+  border-radius: 8px;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner-circle {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #f59e0b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.dark .spinner-circle {
+  border-color: #374151;
+  border-top-color: #f59e0b;
+}
+
+/* 인보이스 텍스트 영역 */
+.invoice-textarea {
+  width: 100%;
+  height: 128px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  padding: 12px;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  color: #111827;
+  resize: none;
+}
+
+.dark .invoice-textarea {
+  border-color: #4b5563;
+  background-color: #374151;
+  color: #f9fafb;
+}
+
+.invoice-textarea:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* 결제 안내 박스 */
+.payment-info-box {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+}
+
+.dark .payment-info-box {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.8);
+}
+
+.payment-info-title {
+  font-weight: 600;
+  color: #1e40af;
+  margin-bottom: 8px;
+}
+
+.dark .payment-info-title {
+  color: #3b82f6;
+}
+
+.payment-info-text {
+  color: #1d4ed8;
+  margin-left: 8px;
+}
+
+.dark .payment-info-text {
+  color: #60a5fa;
+}
+
+/* 모바일 경고 박스 */
+.mobile-warning-box {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.dark .mobile-warning-box {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.8);
+}
+
+.mobile-warning-title {
+  color: #1e40af;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.dark .mobile-warning-title {
+  color: #3b82f6;
+}
+
+.mobile-warning-text {
+  color: #1d4ed8;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.dark .mobile-warning-text {
+  color: #60a5fa;
+}
+
+/* 라이트닝 지갑 버튼 */
+.lightning-wallet-button {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  background: #ea580c;
+  color: white;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+}
+
+.lightning-wallet-button:hover {
+  background: #dc2626;
+  box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
+  transform: translateY(-2px);
+}
+
+.lightning-wallet-help {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+.dark .lightning-wallet-help {
+  color: #9ca3af;
+}
+
+/* 결제 상태 스타일 */
+.payment-status {
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid;
+  margin-top: 16px;
+}
+
+.payment-status.status-pending {
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #92400e;
+}
+
+.dark .payment-status.status-pending {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.8);
+  color: #fbbf24;
+}
+
+.payment-status.status-success {
+  background: #d1fae5;
+  border-color: #10b981;
+  color: #065f46;
+}
+
+.dark .payment-status.status-success {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.8);
+  color: #10b981;
+}
+
+.payment-status.status-error {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.dark .payment-status.status-error {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #ef4444;
+}
+
+/* 취소 버튼 */
+.cancel-button {
+  width: 100%;
+  background: #dc2626;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.cancel-button:hover {
+  background: #b91c1c;
+}
+
+.cancel-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 플로팅 카운트다운 스타일 */
 .floating-countdown {
   position: fixed;

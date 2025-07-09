@@ -598,17 +598,26 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
         return redirect('lecture:live_lecture_detail', store_id=store_id, live_lecture_id=live_lecture_id)
     
     # 이미 참가 신청한 사용자인지 확인 (취소된 주문은 제외)
+    # 🔍 실제로 결제 완료된 주문만 확인 (유료 강의의 경우 paid_at 필수)
     existing_order = LiveLectureOrder.objects.filter(
         live_lecture=live_lecture,
         user=request.user,
-        status__in=['confirmed', 'completed']  # 밋업과 동일: 취소된 주문은 다시 신청 가능
+        status__in=['confirmed', 'completed']
     ).first()
+    
+    # 유료 강의의 경우 실제 결제 완료 여부도 확인
+    if existing_order and live_lecture.price_display != 'free':
+        if not existing_order.paid_at:
+            # 결제되지 않은 주문은 무시 (결제 취소된 경우)
+            if settings.DEBUG:
+                logger.debug(f"결제되지 않은 기존 주문 발견 - 주문 ID: {existing_order.id}, 무시하고 계속 진행")
+            existing_order = None
     
     if existing_order:
         if settings.DEBUG:
-            logger.debug(f"이미 참가 신청한 사용자 - 주문 ID: {existing_order.id}, 상태: {existing_order.status}")
+            logger.debug(f"이미 참가 신청한 사용자 - 주문 ID: {existing_order.id}, 상태: {existing_order.status}, 결제여부: {existing_order.paid_at is not None}")
         
-        # 밋업과 동일: 기존 참가 확정 주문이 있으면 확정서 페이지로 이동
+        # 기존 참가 확정 주문이 있으면 확정서 페이지로 이동
         messages.info(request, f'이미 참가 신청이 완료된 라이브 강의입니다. (주문번호: {existing_order.order_number})')
         return redirect('lecture:live_lecture_checkout_complete', 
                        store_id=store_id, live_lecture_id=live_lecture_id, order_id=existing_order.id)
@@ -616,14 +625,30 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
     # 무료 강의는 바로 신청 완료
     if live_lecture.price_display == 'free':
         with transaction.atomic():
-            order = LiveLectureOrder.objects.create(
-                live_lecture=live_lecture,
-                user=request.user,
-                price=0,
-                status='confirmed',
-                confirmed_at=timezone.now(),
-                paid_at=timezone.now()
-            )
+            try:
+                order = LiveLectureOrder.objects.create(
+                    live_lecture=live_lecture,
+                    user=request.user,
+                    price=0,
+                    status='confirmed',
+                    confirmed_at=timezone.now(),
+                    paid_at=timezone.now()
+                )
+            except Exception as e:
+                # 중복 신청 시도 시 기존 주문으로 리다이렉트
+                if 'unique_active_live_lecture_order_per_user' in str(e):
+                    existing_order = LiveLectureOrder.objects.filter(
+                        live_lecture=live_lecture,
+                        user=request.user,
+                        status__in=['confirmed', 'completed']
+                        # 무료 강의는 paid_at이 없을 수 있으므로 별도 조건 없음
+                    ).first()
+                    if existing_order:
+                        messages.info(request, f'이미 참가 신청이 완료된 라이브 강의입니다. (주문번호: {existing_order.order_number})')
+                        return redirect('lecture:live_lecture_checkout_complete', 
+                                       store_id=store_id, live_lecture_id=live_lecture_id, order_id=existing_order.id)
+                # 다른 에러는 다시 발생시킴
+                raise e
             
             # 무료 라이브 강의 참가 확정 이메일 발송
             try:
@@ -809,11 +834,12 @@ def create_live_lecture_invoice(request, store_id, live_lecture_id):
                 'error': '현재 참가 신청이 불가능한 라이브 강의입니다.'
             }, status=400)
         
-        # 이미 참가 신청한 사용자인지 확인 (취소된 주문은 제외)
+        # 이미 참가 신청한 사용자인지 확인 (실제 결제 완료된 주문만)
         existing_order = LiveLectureOrder.objects.filter(
             live_lecture=live_lecture,
             user=request.user,
-            status__in=['confirmed', 'completed']  # 밋업과 동일: 취소된 주문은 다시 신청 가능
+            status__in=['confirmed', 'completed'],
+            paid_at__isnull=False  # 실제 결제 완료된 주문만 확인
         ).first()
         
         if existing_order:
@@ -821,6 +847,12 @@ def create_live_lecture_invoice(request, store_id, live_lecture_id):
                 'success': False, 
                 'error': '이미 참가 신청한 라이브 강의입니다.'
             }, status=400)
+        
+        # 🧹 기존 세션 데이터 정리 (새로운 결제를 위해)
+        session_key = f'live_lecture_participant_data_{live_lecture_id}'
+        if session_key in request.session:
+            del request.session[session_key]
+            logger.debug(f"기존 세션 데이터 정리 - live_lecture_id: {live_lecture_id}")
         
         # 무료 강의는 인보이스 생성 불가
         if live_lecture.price_display == 'free':
@@ -941,7 +973,10 @@ def check_live_lecture_payment(request, store_id, live_lecture_id):
             })
         
         # 🛡️ 중복 주문 생성 방지: 이미 해당 payment_hash로 주문이 존재하는지 확인
-        existing_orders = LiveLectureOrder.objects.filter(payment_hash=payment_hash)
+        existing_orders = LiveLectureOrder.objects.filter(
+            payment_hash=payment_hash,
+            paid_at__isnull=False  # 실제 결제 완료된 주문만 확인
+        )
         if existing_orders.exists():
             logger.debug(f"이미 결제 완료된 주문 발견: {payment_hash}")
             order = existing_orders.first()
@@ -970,20 +1005,37 @@ def check_live_lecture_payment(request, store_id, live_lecture_id):
             logger.info(f"결제 완료 감지 - live_lecture_id: {live_lecture_id}, payment_hash: {payment_hash}")
             
             with transaction.atomic():
-                # 주문 생성
-                order = LiveLectureOrder.objects.create(
-                    live_lecture=live_lecture,
-                    user=request.user,
-                    price=participant_data['price'],
-                    status='confirmed',
-                    payment_hash=payment_hash,
-                    payment_request=participant_data['payment_request'],
-                    paid_at=timezone.now(),
-                    confirmed_at=timezone.now(),
-                    is_temporary_reserved=False
-                )
-                
-                logger.info(f"주문 생성 완료 - order_id: {order.id}, 주문번호: {order.order_number}")
+                try:
+                    # 주문 생성
+                    order = LiveLectureOrder.objects.create(
+                        live_lecture=live_lecture,
+                        user=request.user,
+                        price=participant_data['price'],
+                        status='confirmed',
+                        payment_hash=payment_hash,
+                        payment_request=participant_data['payment_request'],
+                        paid_at=timezone.now(),
+                        confirmed_at=timezone.now(),
+                        is_temporary_reserved=False
+                    )
+                    
+                    logger.info(f"주문 생성 완료 - order_id: {order.id}, 주문번호: {order.order_number}")
+                except Exception as e:
+                    # 중복 신청 시도 시 기존 주문 확인
+                    if 'unique_active_live_lecture_order_per_user' in str(e):
+                        existing_order = LiveLectureOrder.objects.filter(
+                            live_lecture=live_lecture,
+                            user=request.user,
+                            status__in=['confirmed', 'completed'],
+                            paid_at__isnull=False  # 실제 결제 완료된 주문만 확인
+                        ).first()
+                        if existing_order:
+                            logger.warning(f"중복 신청 시도 감지, 기존 주문으로 처리 - existing_order_id: {existing_order.id}")
+                            order = existing_order
+                        else:
+                            raise e
+                    else:
+                        raise e
             
             # 세션에서 참가자 정보 삭제 (주문 생성 완료)
             if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
@@ -1057,7 +1109,10 @@ def cancel_live_lecture_payment(request, store_id, live_lecture_id):
             })
         
         # 🛡️ 이미 결제 완료된 주문이 있는지 확인 (취소 불가)
-        existing_orders = LiveLectureOrder.objects.filter(payment_hash=payment_hash)
+        existing_orders = LiveLectureOrder.objects.filter(
+            payment_hash=payment_hash,
+            paid_at__isnull=False  # 실제 결제 완료된 주문만 확인
+        )
         if existing_orders.exists():
             order = existing_orders.first()
             logger.warning(f"이미 결제 완료된 주문의 취소 시도 - 주문: {order.order_number}")
@@ -1077,17 +1132,31 @@ def cancel_live_lecture_payment(request, store_id, live_lecture_id):
                     logger.warning(f"취소 시도 중 결제 완료 발견 - payment_hash: {payment_hash}")
                     
                     with transaction.atomic():
-                        order = LiveLectureOrder.objects.create(
-                            live_lecture=live_lecture,
-                            user=request.user,
-                            price=participant_data['price'],
-                            status='confirmed',
-                            payment_hash=payment_hash,
-                            payment_request=participant_data['payment_request'],
-                            paid_at=timezone.now(),
-                            confirmed_at=timezone.now(),
-                            is_temporary_reserved=False
-                        )
+                        try:
+                            order = LiveLectureOrder.objects.create(
+                                live_lecture=live_lecture,
+                                user=request.user,
+                                price=participant_data['price'],
+                                status='confirmed',
+                                payment_hash=payment_hash,
+                                payment_request=participant_data['payment_request'],
+                                paid_at=timezone.now(),
+                                confirmed_at=timezone.now(),
+                                is_temporary_reserved=False
+                            )
+                        except Exception as create_error:
+                            # 이미 주문이 존재하는 경우 기존 주문 사용
+                            if 'unique_active_live_lecture_order_per_user' in str(create_error):
+                                order = LiveLectureOrder.objects.filter(
+                                    live_lecture=live_lecture,
+                                    user=request.user,
+                                    status__in=['confirmed', 'completed'],
+                                    paid_at__isnull=False  # 실제 결제 완료된 주문만 확인
+                                ).first()
+                                if not order:
+                                    raise create_error
+                            else:
+                                raise create_error
                     
                     # 세션에서 참가자 정보 삭제 (결제 완료되었으므로 삭제)
                     if f'live_lecture_participant_data_{live_lecture_id}' in request.session:

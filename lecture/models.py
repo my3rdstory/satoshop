@@ -499,6 +499,14 @@ class LiveLectureOrder(models.Model):
         verbose_name = "라이브 강의 주문"
         verbose_name_plural = "라이브 강의 주문"
         ordering = ['-created_at']
+        # 동일한 사용자가 동일한 강의에 중복 신청 방지 (취소된 주문 제외)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['live_lecture', 'user'],
+                condition=models.Q(status__in=['confirmed', 'completed']),
+                name='unique_active_live_lecture_order_per_user'
+            )
+        ]
         indexes = [
             models.Index(fields=['live_lecture']),
             models.Index(fields=['user']),
