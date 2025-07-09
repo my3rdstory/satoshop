@@ -650,22 +650,8 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
                 # 다른 에러는 다시 발생시킴
                 raise e
             
-            # 무료 라이브 강의 참가 확정 이메일 발송
-            try:
-                from .services import send_live_lecture_notification_email, send_live_lecture_participant_confirmation_email
-                
-                # 주인장에게 알림 이메일
-                send_live_lecture_notification_email(order)
-                
-                # 참가자에게 확인 이메일
-                send_live_lecture_participant_confirmation_email(order)
-                
-                logger.debug(f"무료 라이브 강의 이메일 발송 완료 - order_id: {order.id}")
-                    
-            except Exception as e:
-                # 이메일 발송 실패해도 주문 처리는 계속 진행
-                logger.error(f"무료 라이브 강의 이메일 발송 실패 - order_id: {order.id}, error: {e}")
-                pass
+            # 참가자에게는 이메일을 발송하지 않음 (참가자 정보 수집 없음)
+            # 마이페이지에서 신청 내역 확인 가능
             
             messages.success(request, '라이브 강의 참가 신청이 완료되었습니다.')
             return redirect('lecture:live_lecture_checkout_complete', 
@@ -1041,22 +1027,8 @@ def check_live_lecture_payment(request, store_id, live_lecture_id):
             if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
                 del request.session[f'live_lecture_participant_data_{live_lecture_id}']
             
-            # 라이브 강의 참가 확정 이메일 발송
-            try:
-                from .services import send_live_lecture_notification_email, send_live_lecture_participant_confirmation_email
-                
-                # 주인장에게 알림 이메일
-                send_live_lecture_notification_email(order)
-                
-                # 참가자에게 확인 이메일
-                send_live_lecture_participant_confirmation_email(order)
-                
-                logger.debug(f"결제 완료 이메일 발송 완료 - order_id: {order.id}")
-                    
-            except Exception as e:
-                # 이메일 발송 실패해도 주문 처리는 계속 진행
-                logger.error(f"이메일 발송 실패 - order_id: {order.id}, error: {e}")
-                pass
+            # 참가자에게는 이메일을 발송하지 않음 (참가자 정보 수집 없음)
+            # 마이페이지에서 신청 내역 확인 가능
         
         return JsonResponse({
             'success': True,

@@ -252,6 +252,23 @@
         </div>
         {% endif %}
 
+        <!-- 참가 안내 박스 -->
+        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-sm mt-1"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-blue-800 dark:text-blue-200 text-sm">
+                참가 이메일은 발송되지 않으며, 상세한 신청 정보는 
+                <a href="{% url 'accounts:mypage' %}" class="font-semibold hover:underline">마이페이지</a> → 
+                <a href="{% url 'accounts:my_live_lecture_orders' %}" class="font-semibold hover:underline">라이브 강의 신청내역</a> 
+                메뉴에서 확인할 수 있습니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <!-- 참가 신청 버튼 -->
         <div class="space-y-3">
           {% if live_lecture.can_participate %}

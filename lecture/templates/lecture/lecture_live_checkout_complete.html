@@ -207,6 +207,33 @@
     </div>
     {% endif %}
 
+    <!-- 신청 내역 안내 -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 mb-8">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-lg mt-1"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">참가 안내</h3>
+          <p class="text-blue-800 dark:text-blue-200 text-sm mb-4">
+            참가 이메일은 발송되지 않으며, 상세한 신청 정보는 아래에서 확인할 수 있습니다.
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <a href="{% url 'accounts:mypage' %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+              <i class="fas fa-user-circle mr-2"></i>
+              마이페이지
+            </a>
+            <a href="{% url 'accounts:my_live_lecture_orders' %}" 
+               class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+              <i class="fas fa-list mr-2"></i>
+              라이브 강의 신청내역
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 다운로드 안내 -->
     <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-8">
       <div class="flex items-start">
