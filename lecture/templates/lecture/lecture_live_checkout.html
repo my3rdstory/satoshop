@@ -118,8 +118,6 @@
                   <span class="font-medium text-gray-900 dark:text-white">
                     {% if live_lecture.price_display == 'free' %}
                       무료
-                    {% elif live_lecture.price_display == 'krw' %}
-                      {{ live_lecture.price_krw|intcomma }}원
                     {% else %}
                       {{ live_lecture.price|floatformat:0|intcomma }} sats
                     {% endif %}
@@ -132,8 +130,6 @@
                     <span class="font-bold text-xl text-bitcoin">
                       {% if live_lecture.price_display == 'free' %}
                         무료
-                      {% elif live_lecture.price_display == 'krw' %}
-                        {{ live_lecture.price_krw|intcomma }}원
                       {% else %}
                         {{ live_lecture.price|floatformat:0|intcomma }} sats
                       {% endif %}
