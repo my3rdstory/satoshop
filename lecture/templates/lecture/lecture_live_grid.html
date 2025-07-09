@@ -21,17 +21,6 @@
         </div>
         {% endif %}
         
-        <!-- 가격 타입 표시 -->
-        <div class="{% if live_lecture.price_display == 'free' %}bg-green-500{% elif live_lecture.price_display == 'krw' %}bg-blue-500{% else %}bg-orange-500{% endif %} text-white px-2 py-1 rounded-lg text-xs font-medium">
-          {% if live_lecture.price_display == 'free' %}
-            무료
-          {% elif live_lecture.price_display == 'krw' %}
-            원화연동
-          {% else %}
-            사토시
-          {% endif %}
-        </div>
-        
         <!-- 참가 상태 태그 -->
         {% if not is_public_view %}
         <!-- 관리자 뷰: 모든 참가 상태 표시 -->
@@ -119,34 +108,38 @@
         </div>
         {% elif live_lecture.is_discounted and live_lecture.is_early_bird_active %}
         <!-- 할인된 유료 강의 -->
-        <div class="flex items-center gap-2 mb-1">
-          <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
+        <div class="flex items-center space-x-2 mb-1">
+          <span class="text-lg font-bold text-red-500">
+            {{ live_lecture.current_price|floatformat:0|intcomma }} sats
+          </span>
+          <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
             {% if live_lecture.price_display == 'krw' %}
-              {{ live_lecture.display_discounted_price|floatformat:0|intcomma }} 원
+              {{ live_lecture.public_price_krw|floatformat:0|intcomma }} sats
             {% else %}
-              {{ live_lecture.current_price|floatformat:0|intcomma }} sats
+              {{ live_lecture.price|floatformat:0|intcomma }} sats
             {% endif %}
           </span>
-          <span class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
-            {{ live_lecture.public_discount_rate }}% 할인
-          </span>
         </div>
-        <div class="text-sm text-gray-500 line-through">
-          {% if live_lecture.price_display == 'krw' %}
-            {{ live_lecture.display_price|floatformat:0|intcomma }} 원
-          {% else %}
-            {{ live_lecture.price|floatformat:0|intcomma }} sats
-          {% endif %}
-        </div>
+                 {% if live_lecture.price_display == 'krw' %}
+         <div class="text-xs text-gray-600 dark:text-gray-400 mb-1">
+           <span class="text-red-600 dark:text-red-400 font-medium">{{ live_lecture.krw_discounted_price_display }}</span>
+           <span class="line-through ml-1">{{ live_lecture.krw_price_display }}</span>
+           <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+         </div>
+         {% endif %}
         {% else %}
         <!-- 일반 유료 강의 -->
-        <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
-          {% if live_lecture.price_display == 'krw' %}
-            {{ live_lecture.display_price|floatformat:0|intcomma }} 원
-          {% else %}
+        <div class="flex items-center">
+          <span class="text-lg font-bold text-gray-900 dark:text-white">
             {{ live_lecture.current_price|floatformat:0|intcomma }} sats
-          {% endif %}
+          </span>
         </div>
+                 {% if live_lecture.price_display == 'krw' %}
+         <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+           <span class="font-medium">{{ live_lecture.krw_price_display }}</span>
+           <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded ml-1">원화연동</span>
+         </div>
+         {% endif %}
         {% endif %}
       </div>
 

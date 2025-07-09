@@ -245,12 +245,23 @@ def add_live_lecture(request, store_id):
     if request.method == 'POST':
         form = LiveLectureForm(data=request.POST, files=request.FILES)
         logger.info(f"LiveLecture 폼 제출 - 사용자: {request.user}, 데이터: {request.POST}")
+        
         if form.is_valid():
             try:
                 with transaction.atomic():
                     # 라이브 강의 생성
                     live_lecture = form.save(commit=False)
                     live_lecture.store = store
+                    
+                    # 원화연동 가격 처리
+                    price_display = form.cleaned_data.get('price_display')
+                    if price_display == 'krw':
+                        # JavaScript에서 계산된 사토시 값 사용
+                        price_sats_calculated = request.POST.get('price_sats_calculated')
+                        if price_sats_calculated:
+                            live_lecture.price = int(price_sats_calculated)
+                            logger.info(f"원화연동 가격 처리: {live_lecture.price_krw}원 -> {live_lecture.price}sats")
+                    
                     live_lecture.save()
                     
                     # 이미지 업로드 처리
@@ -374,7 +385,18 @@ def edit_live_lecture(request, store_id, live_lecture_id):
             try:
                 with transaction.atomic():
                     # 라이브 강의 수정
-                    live_lecture = form.save()
+                    live_lecture = form.save(commit=False)
+                    
+                    # 원화연동 가격 처리
+                    price_display = form.cleaned_data.get('price_display')
+                    if price_display == 'krw':
+                        # JavaScript에서 계산된 사토시 값 사용
+                        price_sats_calculated = request.POST.get('price_sats_calculated')
+                        if price_sats_calculated:
+                            live_lecture.price = int(price_sats_calculated)
+                            logger.info(f"원화연동 가격 처리: {live_lecture.price_krw}원 -> {live_lecture.price}sats")
+                    
+                    live_lecture.save()
                     
                     # 이미지 업로드 처리
                     images = request.FILES.getlist('images')

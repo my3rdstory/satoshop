@@ -214,7 +214,7 @@
               </div>
 
               <!-- 사토시 -->
-              <div class="price-type-card rounded-lg p-4 cursor-pointer {% if live_lecture.price_display == 'sats' %}selected{% endif %}" onclick="selectPriceType('satoshi')">
+              <div class="price-type-card rounded-lg p-4 cursor-pointer {% if live_lecture.price_display == 'sats' %}selected{% endif %}" onclick="selectPriceType('sats')">
                 <input type="radio" name="price_display" value="sats" id="price_display_sats" class="sr-only" {% if live_lecture.price_display == 'sats' %}checked{% endif %}>
                 <div class="text-center">
                   <div class="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -226,7 +226,7 @@
               </div>
 
               <!-- 원화연동 -->
-              <div class="price-type-card rounded-lg p-4 cursor-pointer {% if live_lecture.price_display == 'krw' %}selected{% endif %}" onclick="selectPriceType('krw_linked')">
+              <div class="price-type-card rounded-lg p-4 cursor-pointer {% if live_lecture.price_display == 'krw' %}selected{% endif %}" onclick="selectPriceType('krw')">
                 <input type="radio" name="price_display" value="krw" id="price_display_krw" class="sr-only" {% if live_lecture.price_display == 'krw' %}checked{% endif %}>
                 <div class="text-center">
                   <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -240,7 +240,7 @@
           </div>
 
           <!-- 사토시 가격 -->
-          <div id="satoshi_price_section" class="{% if live_lecture.price_display != 'sats' %}hidden{% endif %}">
+          <div id="sats_price_section" class="{% if live_lecture.price_display != 'sats' %}hidden{% endif %}">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
               사토시 가격 <span class="text-red-500">*</span>
             </label>
@@ -261,7 +261,13 @@
                      type="number" id="price_krw" name="price_krw" min="1" placeholder="참가비를 입력하세요" value="{{ live_lecture.price_krw|default:'' }}">
               <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">원</span>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(실시간 환율 기준)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

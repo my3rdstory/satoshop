@@ -401,6 +401,28 @@ class LiveLecture(models.Model):
             return '원'
         return 'sats'
 
+    @property
+    def krw_price_display(self):
+        """원화 가격 표시 (원화 연동 강의용)"""
+        if self.price_display == 'krw' and self.price_krw is not None:
+            return f"{self.price_krw:,}원"
+        return None
+
+    @property
+    def krw_discounted_price_display(self):
+        """원화 할인가 표시 (원화 연동 강의용)"""
+        if self.price_display == 'krw' and self.is_discounted and self.discounted_price_krw is not None:
+            return f"{self.discounted_price_krw:,}원"
+        return None
+
+    @property
+    def current_exchange_rate(self):
+        """현재 환율 정보"""
+        if self.price_display == 'krw':
+            from myshop.models import ExchangeRate
+            return ExchangeRate.get_latest_rate()
+        return None
+
 
 class LiveLectureImage(models.Model):
     """라이브 강의 이미지"""
