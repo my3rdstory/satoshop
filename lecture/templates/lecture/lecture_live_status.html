@@ -31,11 +31,7 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">총 참가자 수</p>
             <p class="text-2xl font-bold text-gray-900 dark:text-white">
-              {% if live_lectures %}
-                {{ live_lectures|length|add:0 }}
-              {% else %}
-                0
-              {% endif %}
+              {{ total_participants|default:0 }}
             </p>
           </div>
         </div>
@@ -67,15 +63,7 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">총 매출</p>
             <p class="text-2xl font-bold text-bitcoin">
-              {% if live_lectures %}
-                {% for lecture in live_lectures %}
-                  {% for order in lecture.orders.all %}
-                    {% if forloop.first %}{{ order.price|add:0 }}{% else %}{{ order.price|add:0 }}{% endif %}
-                  {% endfor %}
-                {% endfor %}
-              {% else %}
-                0
-              {% endif %} sats
+              {{ total_revenue|default:0 }} sats
             </p>
           </div>
         </div>
@@ -149,13 +137,7 @@
                   </div>
                   <div>
                     <div class="text-lg font-bold text-green-600 dark:text-green-400">
-                      {% if live_lecture.orders.all %}
-                        {% for order in live_lecture.orders.all %}
-                          {% if forloop.first %}{{ order.price|add:0 }}{% else %}{{ order.price|add:0 }}{% endif %}
-                        {% endfor %}
-                      {% else %}
-                        0
-                      {% endif %}
+                      {{ live_lecture.total_revenue|default:0 }}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">총 매출 (sats)</div>
                   </div>

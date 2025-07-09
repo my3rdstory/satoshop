@@ -110,13 +110,7 @@
             </div>
             <div class="stat-card bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
               <div class="text-2xl font-bold text-green-600 dark:text-green-400">
-                {% if orders %}
-                  {% for order in orders %}
-                    {% if forloop.first %}{{ order.price|add:0 }}{% endif %}
-                  {% endfor %}
-                {% else %}
-                  0
-                {% endif %}
+                {{ total_revenue|default:0 }}
               </div>
               <div class="text-sm text-green-600 dark:text-green-400">총 매출 (sats)</div>
             </div>
@@ -134,23 +128,13 @@
             </div>
             <div class="stat-card bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
               <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {% if orders %}
-                  {% for order in orders %}
-                    {% if order.attended %}{{ forloop.counter0|add:1 }}{% endif %}
-                  {% endfor %}
-                {% else %}
-                  0
-                {% endif %}
+                {{ attended_count|default:0 }}
               </div>
               <div class="text-sm text-orange-600 dark:text-orange-400">실제 참석자</div>
             </div>
             <div class="stat-card bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
               <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                {% if live_lecture.current_participants > 0 %}
-                  {% widthratio orders.count live_lecture.current_participants 100 %}
-                {% else %}
-                  0
-                {% endif %}%
+                {{ attendance_rate|default:0 }}%
               </div>
               <div class="text-sm text-indigo-600 dark:text-indigo-400">참석률</div>
             </div>

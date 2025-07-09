@@ -3,7 +3,7 @@ from django.views.generic import ListView, DetailView
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.db.models import Q, Avg
+from django.db.models import Q, Avg, Sum
 from django.utils import timezone
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_POST, require_http_methods
@@ -451,9 +451,26 @@ def live_lecture_status(request, store_id):
         deleted_at__isnull=True
     ).prefetch_related('orders').order_by('-created_at')
     
+    # 총 매출 및 총 참가자 수 계산
+    total_revenue = 0
+    total_participants = 0
+    
+    # 각 라이브 강의별 매출 계산 및 총합 산정
+    for live_lecture in live_lectures:
+        lecture_revenue = live_lecture.orders.aggregate(
+            total=Sum('price')
+        )['total'] or 0
+        
+        # 라이브 강의 객체에 총 매출 추가 (template에서 사용하기 위해)
+        live_lecture.total_revenue = lecture_revenue
+        total_revenue += lecture_revenue
+        total_participants += live_lecture.current_participants
+    
     context = {
         'store': store,
         'live_lectures': live_lectures,
+        'total_revenue': total_revenue,
+        'total_participants': total_participants,
     }
     
     return render(request, 'lecture/lecture_live_status.html', context)
@@ -477,6 +494,11 @@ def live_lecture_status_detail(request, store_id, live_lecture_id):
         live_lecture=live_lecture
     ).select_related('user').order_by('-created_at')
     
+    # 총 매출 및 참석자 수 계산 (페이지네이션 전 전체 주문에서 계산)
+    total_revenue = orders.aggregate(total=Sum('price'))['total'] or 0
+    attended_count = orders.filter(attended=True).count()
+    attendance_rate = round((attended_count / live_lecture.current_participants * 100) if live_lecture.current_participants > 0 else 0)
+    
     # 페이지네이션
     paginator = Paginator(orders, 20)
     page_number = request.GET.get('page')
@@ -486,6 +508,9 @@ def live_lecture_status_detail(request, store_id, live_lecture_id):
         'store': store,
         'live_lecture': live_lecture,
         'orders': page_obj,
+        'total_revenue': total_revenue,
+        'attended_count': attended_count,
+        'attendance_rate': attendance_rate,
     }
     
     return render(request, 'lecture/lecture_live_status_detail.html', context)
