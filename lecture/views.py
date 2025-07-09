@@ -697,8 +697,12 @@ def live_lecture_checkout(request, store_id, live_lecture_id):
                 # 다른 에러는 다시 발생시킴
                 raise e
             
-            # 참가자에게는 이메일을 발송하지 않음 (참가자 정보 수집 없음)
-            # 마이페이지에서 신청 내역 확인 가능
+            # 주최자에게 알림 이메일 발송
+            try:
+                from .services import send_live_lecture_notification_email
+                send_live_lecture_notification_email(order)
+            except Exception:
+                pass  # 이메일 발송 실패는 무시하고 진행
             
             messages.success(request, '라이브 강의 참가 신청이 완료되었습니다.')
             return redirect('lecture:live_lecture_checkout_complete', 
@@ -1074,8 +1078,12 @@ def check_live_lecture_payment(request, store_id, live_lecture_id):
             if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
                 del request.session[f'live_lecture_participant_data_{live_lecture_id}']
             
-            # 참가자에게는 이메일을 발송하지 않음 (참가자 정보 수집 없음)
-            # 마이페이지에서 신청 내역 확인 가능
+            # 주최자에게 알림 이메일 발송
+            try:
+                from .services import send_live_lecture_notification_email
+                send_live_lecture_notification_email(order)
+            except Exception:
+                pass  # 이메일 발송 실패는 무시하고 진행
         
         return JsonResponse({
             'success': True,
@@ -1180,6 +1188,13 @@ def cancel_live_lecture_payment(request, store_id, live_lecture_id):
                     # 세션에서 참가자 정보 삭제 (결제 완료되었으므로 삭제)
                     if f'live_lecture_participant_data_{live_lecture_id}' in request.session:
                         del request.session[f'live_lecture_participant_data_{live_lecture_id}']
+                    
+                    # 주최자에게 알림 이메일 발송
+                    try:
+                        from .services import send_live_lecture_notification_email
+                        send_live_lecture_notification_email(order)
+                    except Exception:
+                        pass  # 이메일 발송 실패는 무시하고 진행
                     
                     return JsonResponse({
                         'success': False,

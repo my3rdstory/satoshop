@@ -44,9 +44,12 @@ def send_live_lecture_notification_email(live_lecture_order):
             logger.debug(f"라이브 강의 {live_lecture_order.order_number}: Gmail 설정 불완전 (이메일: {bool(store.email_host_user)}, 비밀번호: {bool(store.email_host_password_encrypted)})")
             return False
             
-        # 🔥 중요: 수신 이메일 주소 확인 (주인장 이메일)
-        if not store.owner_email:
-            logger.debug(f"라이브 강의 {live_lecture_order.order_number}: 스토어 주인장 이메일 주소가 설정되지 않음")
+        # 🔥 중요: 수신 이메일 주소 확인 (강사 이메일 우선, 없으면 주인장 이메일)
+        live_lecture = live_lecture_order.live_lecture
+        recipient_email = live_lecture.instructor_email or store.owner_email
+        
+        if not recipient_email:
+            logger.debug(f"라이브 강의 {live_lecture_order.order_number}: 강사 이메일과 스토어 주인장 이메일이 모두 설정되지 않음")
             return False
             
         # 스토어별 SMTP 설정
@@ -89,16 +92,19 @@ def send_live_lecture_notification_email(live_lecture_order):
                 template_content = f.read()
             
             template = Template(template_content)
+            recipient_name = "강사" if live_lecture.instructor_email else store.owner_name
             context = Context({
                 'store': store,
                 'live_lecture': live_lecture_order.live_lecture,
-                'lecture_content': lecture_content
+                'lecture_content': lecture_content,
+                'recipient_name': recipient_name
             })
             message = template.render(context)
         except Exception as e:
             logger.warning(f"템플릿 파일 읽기 실패, 기본 메시지 사용: {str(e)}")
-            # 템플릿 파일 실패 시 기본 메시지
-            message = f"""안녕하세요, {store.owner_name}님!
+            # 템플릿 파일 실패 시 기본 메시지 (강사 이메일 우선, 없으면 주인장 이메일)
+            recipient_name = "강사" if live_lecture.instructor_email else store.owner_name
+            message = f"""안녕하세요, {recipient_name}님!
 
 {store.store_name}에서 주최하는 "{live_lecture_order.live_lecture.name}" 라이브 강의에 새로운 참가 신청이 접수되었습니다.
 
@@ -117,7 +123,7 @@ SatoShop 팀"""
             subject=subject,
             body=message,
             from_email=f'{store.email_from_display} <{store.email_host_user}>',
-            to=[store.owner_email],
+            to=[recipient_email],
             connection=backend
         )
         
@@ -130,7 +136,7 @@ SatoShop 팀"""
         email_cache_key = f"live_lecture_owner_email_sent_{live_lecture_order.order_number}"
         cache.set(email_cache_key, True, timeout=86400)  # 24시간 보관
         
-        logger.info(f"라이브 강의 알림 이메일 발송 성공 - 주문: {live_lecture_order.order_number}, 수신: {store.owner_email}")
+        logger.info(f"라이브 강의 알림 이메일 발송 성공 - 주문: {live_lecture_order.order_number}, 수신: {recipient_email}")
         return True
         
     except Exception as e:
