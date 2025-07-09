@@ -17,7 +17,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/timezone_converter.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <!-- Markdown Renderer -->
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
@@ -158,9 +157,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">신청일시</p>
                 <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
                   <i class="fas fa-clock mr-2 text-xs text-gray-400"></i>
-                  <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:'m월 d일 H:i' }}</span>
+                  <span>{{ order.created_at|date:'Y. m. d. H:i:s' }}</span>
                 </p>
-                <small class="text-gray-400 user-timezone text-xs block mt-1"></small>
               </div>
             </div>
             
@@ -214,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 {% if order.live_lecture.date_time %}
                 <div class="flex items-center text-gray-600 dark:text-gray-400">
                   <i class="fas fa-calendar-alt mr-2 w-4"></i>
-                  <span>{{ order.live_lecture.date_time|date:'Y년 m월 d일 (l) H:i' }}</span>
+                  <span>{{ order.live_lecture.date_time|date:'Y. m. d. H:i:s' }}</span>
                 </div>
                 {% endif %}
                 
@@ -249,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="text-gray-500 dark:text-gray-400">결제일시:</div>
                   <div class="text-gray-900 dark:text-white">
                     {% if order.paid_at %}
-                    <span class="local-time" data-datetime="{{ order.paid_at|date:'c' }}">{{ order.paid_at|date:'m월 d일 H:i' }}</span>
+                    {{ order.paid_at|date:'Y. m. d. H:i:s' }}
                     {% else %}
                     미결제
                     {% endif %}
@@ -259,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="text-gray-500 dark:text-gray-400">확정일시:</div>
                   <div class="text-gray-900 dark:text-white">
                     {% if order.confirmed_at %}
-                    <span class="local-time" data-datetime="{{ order.confirmed_at|date:'c' }}">{{ order.confirmed_at|date:'m월 d일 H:i' }}</span>
+                    {{ order.confirmed_at|date:'Y. m. d. H:i:s' }}
                     {% else %}
                     미확정
                     {% endif %}
@@ -370,8 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 '{{ order.live_lecture.name }}',
                 '{{ user.username }}',
                 '{{ user.email }}',
-                '{% if order.confirmed_at %}{{ order.confirmed_at|date:'Y-m-d H:i' }}{% else %}미확정{% endif %}',
-                '{% if order.live_lecture.date_time %}{{ order.live_lecture.date_time|date:'Y년 m월 d일 H:i' }}{% else %}미정{% endif %}',
+                '{% if order.confirmed_at %}{{ order.confirmed_at|date:'Y. m. d. H:i:s' }}{% else %}미확정{% endif %}',
+                '{% if order.live_lecture.date_time %}{{ order.live_lecture.date_time|date:'Y. m. d. H:i:s' }}{% else %}미정{% endif %}',
                 '{% if order.live_lecture.price_display == 'free' %}무료{% else %}{{ order.price|floatformat:0|intcomma }} sats{% endif %}',
                 '{{ order.live_lecture.store.store_name }}'
               )"
