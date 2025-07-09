@@ -1237,3 +1237,124 @@ def debug_live_lecture_participation(request, store_id, live_lecture_id):
     }
     
     return JsonResponse(debug_info, json_dumps_params={'default': str})
+
+@login_required
+@require_POST
+@csrf_exempt
+def update_live_lecture_attendance(request, store_id, live_lecture_id):
+    """라이브 강의 참석 여부 업데이트"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        live_lecture = get_object_or_404(LiveLecture, id=live_lecture_id, store=store, deleted_at__isnull=True)
+        
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        attended = data.get('attended', False)
+        
+        if not order_id:
+            return JsonResponse({
+                'success': False,
+                'error': '주문 ID가 필요합니다.'
+            })
+        
+        # 해당 라이브 강의의 주문인지 확인
+        order = get_object_or_404(
+            LiveLectureOrder,
+            id=order_id,
+            live_lecture=live_lecture,
+            status__in=['confirmed', 'completed']
+        )
+        
+        # 참석 여부 업데이트
+        order.attended = attended
+        if attended:
+            order.attended_at = timezone.now()
+        else:
+            order.attended_at = None
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참석 여부가 업데이트되었습니다.',
+            'attended': order.attended,
+            'attended_at': order.attended_at.isoformat() if order.attended_at else None
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"라이브 강의 참석 여부 업데이트 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참석 여부 업데이트 중 오류가 발생했습니다.'
+        })
+
+@login_required
+@require_POST
+@csrf_exempt
+def cancel_live_lecture_participation(request, store_id, live_lecture_id):
+    """라이브 강의 참가 취소"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        live_lecture = get_object_or_404(LiveLecture, id=live_lecture_id, store=store, deleted_at__isnull=True)
+        
+        data = json.loads(request.body)
+        order_id = data.get('order_id')
+        
+        if not order_id:
+            return JsonResponse({
+                'success': False,
+                'error': '주문 ID가 필요합니다.'
+            })
+        
+        # 해당 라이브 강의의 확정된 주문인지 확인
+        order = get_object_or_404(
+            LiveLectureOrder,
+            id=order_id,
+            live_lecture=live_lecture,
+            status='confirmed'
+        )
+        
+        # 주문 상태를 취소로 변경
+        order.status = 'cancelled'
+        order.save()
+        
+        logger.info(f"라이브 강의 참가 취소: {order.order_number}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': '참가가 성공적으로 취소되었습니다.'
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '잘못된 요청 형식입니다.'
+        })
+    except Exception as e:
+        logger.error(f"라이브 강의 참가 취소 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '참가 취소 중 오류가 발생했습니다.'
+        })

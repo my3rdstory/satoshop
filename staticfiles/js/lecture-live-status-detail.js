@@ -199,10 +199,10 @@ function cancelParticipation(orderId, participantName) {
         
         // 현재 URL에서 store_id와 live_lecture_id 추출
         const pathParts = window.location.pathname.split('/');
-        const storeId = pathParts[2];
+        const storeId = pathParts[2]; // /lecture/store_id/live/status/live_lecture_id/
         const liveLectureId = pathParts[5];
         
-        fetch(`/lecture/${storeId}/live/${liveLectureId}/cancel_participation/`, {
+        fetch(`/lecture/${storeId}/live/status/${liveLectureId}/cancel_participation/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -272,26 +272,45 @@ function updateOrderRowStatus(orderId, newStatus) {
         switch(newStatus) {
             case 'cancelled':
                 statusHtml = `
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                        <i class="fas fa-ban mr-1"></i>
-                        취소됨
-                    </span>
+                    <div class="space-y-2">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                                <i class="fas fa-ban mr-1"></i>
+                                취소됨
+                            </span>
+                        </div>
+                    </div>
                 `;
                 break;
             case 'completed':
                 statusHtml = `
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                        <i class="fas fa-flag-checkered mr-1"></i>
-                        강의 완료
-                    </span>
+                    <div class="space-y-2">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                <i class="fas fa-flag-checkered mr-1"></i>
+                                강의 완료
+                            </span>
+                        </div>
+                    </div>
                 `;
                 break;
             default:
                 statusHtml = `
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        참가 확정
-                    </span>
+                    <div class="space-y-2">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                참가 확정
+                            </span>
+                        </div>
+                        <div>
+                            <button onclick="cancelParticipation(${orderId}, 'Unknown')" 
+                                    class="inline-flex items-center px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs font-medium rounded transition-colors">
+                                <i class="fas fa-times mr-1"></i>
+                                취소
+                            </button>
+                        </div>
+                    </div>
                 `;
         }
         
@@ -390,10 +409,10 @@ function updateAttendance(orderId, isAttended) {
     
     // 현재 URL에서 store_id와 live_lecture_id 추출
     const pathParts = window.location.pathname.split('/');
-    const storeId = pathParts[2];
+    const storeId = pathParts[2]; // /lecture/store_id/live/status/live_lecture_id/
     const liveLectureId = pathParts[5];
     
-    fetch(`/lecture/${storeId}/live/${liveLectureId}/update_attendance/`, {
+    fetch(`/lecture/${storeId}/live/status/${liveLectureId}/update_attendance/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
