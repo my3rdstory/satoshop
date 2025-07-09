@@ -44,22 +44,7 @@
             </div>
             {% endif %}
             
-            <!-- 가격 타입 오버레이 -->
-            <div class="absolute top-4 right-4">
-              {% if live_lecture.price_display == 'free' %}
-              <span class="px-3 py-1 bg-green-500 text-white text-sm font-medium rounded-full">
-                무료
-              </span>
-              {% elif live_lecture.price_display == 'sats' %}
-              <span class="px-3 py-1 bg-orange-500 text-white text-sm font-medium rounded-full">
-                사토시
-              </span>
-              {% elif live_lecture.price_display == 'krw' %}
-              <span class="px-3 py-1 bg-blue-500 text-white text-sm font-medium rounded-full">
-                원화연동
-              </span>
-              {% endif %}
-            </div>
+
           </div>
         </div>
 
