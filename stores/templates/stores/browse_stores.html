@@ -25,9 +25,6 @@
       <h1 class="text-4xl font-bold text-white mb-4">
         <i class="fas fa-search mr-3"></i>스토어 탐색
       </h1>
-      <p class="text-lg text-gray-300">
-        다양한 스토어를 찾아보고 새로운 상품을 발견해보세요
-      </p>
     </div>
 
     <!-- 검색창 -->
@@ -121,7 +118,6 @@
       {% endfor %}
     </div>
     {% else %}
-    <!-- 검색 결과 없음 -->
     <div class="text-center py-16">
       <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
         <i class="fas fa-search text-3xl text-gray-400"></i>
@@ -130,271 +126,198 @@
         검색 결과가 없습니다
       </h3>
       <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-        다른 검색어로 시도해보시거나 검색어를 확인해주세요.
+        다른 검색어를 시도해보세요.
       </p>
     </div>
     {% endif %}
 
-    {% if search_query and stores %}
-    <div class="text-center mt-12">
-      <a 
-        href="{% url 'stores:browse_stores' %}" 
-        class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
-      >
-        <i class="fas fa-arrow-left mr-2"></i>
-        전체 스토어 보기
-      </a>
-    </div>
-    {% endif %}
-
     {% else %}
-
-
-        <!-- 주문이 활발한 스토어 섹션 -->
-        {% if active_stores %}
-        <div class="mb-16">
-          <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              <i class="fas fa-fire text-red-500 mr-3"></i>주문이 활발한 스토어
-            </h2>
-            <p class="text-gray-600 dark:text-gray-400">최근 주문이 많은 인기 스토어들을 만나보세요</p>
-          </div>
-    
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {% for store in active_stores %}
-            <a 
-              href="{% url 'stores:store_detail' store.store_id %}" 
-              class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-            >
-              <!-- 스토어 이미지 -->
-              <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
-                {% if store.images.exists %}
-                <img 
-                  src="{{ store.images.first.file_url }}" 
-                  alt="{{ store.store_name }}"
-                  class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                >
-                {% else %}
-                <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center group-hover:from-bitcoin/10 group-hover:to-orange-500/10 transition-all duration-300">
-                  <i class="fas fa-store text-4xl text-gray-400 group-hover:text-bitcoin transition-colors"></i>
+    <!-- 4개 영역 그리드 레이아웃 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 상좌: 주문 활발한 스토어 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-b border-red-200 dark:border-red-700">
+          <h3 class="text-lg font-semibold text-red-800 dark:text-red-200 flex items-center">
+            <i class="fas fa-fire mr-2"></i>
+            주문 활발한 스토어
+          </h3>
+        </div>
+        <div class="p-4">
+          {% if active_stores %}
+                     <div class="space-y-3">
+             {% for store in active_stores %}
+             <a href="{% url 'stores:store_detail' store.store_id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ store.store_name }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.owner_name }}</p>
                 </div>
-                {% endif %}
-              </div>
-    
-              <!-- 스토어 정보 -->
-              <div class="p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-bitcoin transition-colors">
-                  {{ store.store_name }}
-                </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                  {% if store.store_description %}
-                    {{ store.store_description|truncatechars:80 }}
-                  {% else %}
-                    멋진 상품들을 판매하는 스토어입니다.
-                  {% endif %}
-                </p>
-                
-                <!-- 스토어 메타 정보 -->
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-user mr-2"></i>
-                    <span>{{ store.owner_name }}</span>
-                  </div>
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
-                    <div class="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
-                    인기
-                  </span>
-                </div>
+                <span class="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 rounded-full">인기</span>
               </div>
             </a>
             {% endfor %}
           </div>
-    
-          <!-- 전체보기 버튼 -->
-          <div class="text-center mt-8">
-            <a 
-              href="{% url 'stores:browse_active_stores' %}" 
-              class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
-            >
-              주문이 활발한 스토어 전체보기
-              <i class="fas fa-arrow-right ml-2"></i>
+                     <div class="mt-4 text-center">
+             <a href="{% url 'stores:browse_active_stores' %}" class="text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200">
+              전체보기 <i class="fas fa-arrow-right ml-1"></i>
             </a>
           </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">활발한 스토어가 없습니다</p>
+          {% endif %}
         </div>
+      </div>
+
+      <!-- 상우: 최근 주문된 상품 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-b border-blue-200 dark:border-blue-700">
+          <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 flex items-center">
+            <i class="fas fa-shopping-cart mr-2"></i>
+            최근 주문된 상품
+          </h3>
+        </div>
+                 <div class="p-4">
+           {% if recent_ordered_products %}
+                       <div class="space-y-3">
+             {% for order_item in recent_ordered_products %}
+             <a href="{% url 'products:product_detail' store_id=order_item.product.store.store_id product_id=order_item.product.id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ order_item.product.title }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ order_item.product.store.owner_name }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full">
+                  {{ order_item.product.public_price|floatformat:0 }}원
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">최근 주문된 상품이 없습니다</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 중좌: 최근 개설된 스토어 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border-b border-yellow-200 dark:border-yellow-700">
+          <h3 class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 flex items-center">
+            <i class="fas fa-star mr-2"></i>
+            최근 개설된 스토어
+          </h3>
+        </div>
+                 <div class="p-4">
+           {% if recent_stores %}
+                       <div class="space-y-3">
+             {% for store in recent_stores %}
+             <a href="{% url 'stores:store_detail' store.store_id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ store.store_name }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.owner_name }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">신규</span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+                     <div class="mt-4 text-center">
+             <a href="{% url 'stores:browse_recent_stores' %}" class="text-sm text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200">
+              전체보기 <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">최근 개설된 스토어가 없습니다</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- 중우: 최근 신청된 밋업 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-b border-purple-200 dark:border-purple-700">
+          <h3 class="text-lg font-semibold text-purple-800 dark:text-purple-200 flex items-center">
+            <i class="fas fa-users mr-2"></i>
+            최근 신청된 밋업
+          </h3>
+        </div>
+                 <div class="p-4">
+           {% if recent_meetup_orders %}
+                       <div class="space-y-3">
+             {% for order in recent_meetup_orders %}
+             <a href="{% url 'meetup:meetup_detail' store_id=order.meetup.store.store_id meetup_id=order.meetup.id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ order.meetup.name }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ order.meetup.store.owner_name }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+                  {% if order.total_price > 0 %}
+                    {{ order.total_price|floatformat:0 }}원
+                  {% else %}
+                    무료
+                  {% endif %}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">최근 신청된 밋업이 없습니다</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 하: 최신 라이브 강의 -->
+    <div class="mt-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-b border-indigo-200 dark:border-indigo-700">
+        <h3 class="text-lg font-semibold text-indigo-800 dark:text-indigo-200 flex items-center">
+          <i class="fas fa-video mr-2"></i>
+          최신 라이브 강의
+        </h3>
+      </div>
+             <div class="p-4">
+         {% if live_lectures %}
+                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+           {% for lecture in live_lectures %}
+           <a href="{% url 'lecture:live_lecture_detail' store_id=lecture.store.store_id live_lecture_id=lecture.id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+            <div class="text-center">
+              <h4 class="font-medium text-gray-900 dark:text-white mb-2">{{ lecture.name }}</h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ lecture.store.owner_name }}</p>
+              <span class="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full">
+                {% if lecture.price_display == 'free' %}
+                  무료
+                {% else %}
+                  유료
+                {% endif %}
+              </span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+                 <div class="mt-4 text-center">
+           <a href="{% url 'lecture:browse_live_lectures' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200">
+            전체보기 <i class="fas fa-arrow-right ml-1"></i>
+          </a>
+        </div>
+        {% else %}
+        <p class="text-center text-gray-500 dark:text-gray-400 py-8">최신 라이브 강의가 없습니다</p>
         {% endif %}
-        
-    <!-- 최근 개설된 스토어 섹션 -->
-    {% if recent_stores %}
-    <div class="mb-16">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          <i class="fas fa-star text-yellow-500 mr-3"></i>최근 개설된 스토어
-        </h2>
-        <p class="text-gray-600 dark:text-gray-400">새롭게 문을 연 스토어들을 확인해보세요</p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {% for store in recent_stores %}
-        <a 
-          href="{% url 'stores:store_detail' store.store_id %}" 
-          class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-        >
-          <!-- 스토어 이미지 -->
-          <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
-            {% if store.images.exists %}
-            <img 
-              src="{{ store.images.first.file_url }}" 
-              alt="{{ store.store_name }}"
-              class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-            >
-            {% else %}
-            <div class="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center group-hover:from-bitcoin/10 group-hover:to-orange-500/10 transition-all duration-300">
-              <i class="fas fa-store text-4xl text-gray-400 group-hover:text-bitcoin transition-colors"></i>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- 스토어 정보 -->
-          <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-bitcoin transition-colors">
-              {{ store.store_name }}
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-              {% if store.store_description %}
-                {{ store.store_description|truncatechars:80 }}
-              {% else %}
-                멋진 상품들을 판매하는 스토어입니다.
-              {% endif %}
-            </p>
-            
-            <!-- 스토어 메타 정보 -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <i class="fas fa-user mr-2"></i>
-                <span>{{ store.owner_name }}</span>
-              </div>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
-                <div class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></div>
-                신규
-              </span>
-            </div>
-          </div>
-        </a>
-        {% endfor %}
-      </div>
-
-      <!-- 전체보기 버튼 -->
-      <div class="text-center mt-8">
-        <a 
-          href="{% url 'stores:browse_recent_stores' %}" 
-          class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
-        >
-          최근 개설된 스토어 전체보기
-          <i class="fas fa-arrow-right ml-2"></i>
-        </a>
       </div>
     </div>
-    {% endif %}
 
-    <!-- 라이브 강의 섹션 -->
-    {% if live_lectures %}
-    <div>
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          <i class="fas fa-video text-purple-500 mr-3"></i>최신 라이브 강의
-        </h2>
-        <p class="text-gray-600 dark:text-gray-400">실시간으로 진행되는 라이브 강의를 만나보세요</p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-        {% for lecture in live_lectures %}
-        <a 
-          href="{% url 'lecture:live_lecture_detail' store_id=lecture.store.store_id live_lecture_id=lecture.id %}" 
-          class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-        >
-          <!-- 라이브 강의 이미지 -->
-          <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
-            {% if lecture.images.exists %}
-            <img 
-              src="{{ lecture.images.first.file_url }}" 
-              alt="{{ lecture.name }}"
-              class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-            >
-            {% else %}
-            <div class="w-full h-48 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-700 dark:to-purple-800 flex items-center justify-center group-hover:from-purple-500/10 group-hover:to-purple-600/10 transition-all duration-300">
-              <i class="fas fa-video text-4xl text-purple-400 group-hover:text-purple-500 transition-colors"></i>
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- 라이브 강의 정보 -->
-          <div class="p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-purple-500 transition-colors">
-              {{ lecture.name }}
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-              {% if lecture.description %}
-                {{ lecture.description|truncatechars:80 }}
-              {% else %}
-                실시간으로 진행되는 라이브 강의입니다.
-              {% endif %}
-            </p>
-            
-            <!-- 라이브 강의 메타 정보 -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                <i class="fas fa-store mr-2"></i>
-                <span>{{ lecture.store.store_name }}</span>
-              </div>
-              {% if lecture.price_display == 'free' %}
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-                무료
-              </span>
-              {% else %}
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
-                <div class="w-2 h-2 bg-purple-500 rounded-full mr-1"></div>
-                유료
-              </span>
-              {% endif %}
-            </div>
-            
-            <!-- 일시 정보 -->
-            {% if lecture.date_time %}
-            <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              <i class="fas fa-calendar mr-1"></i>
-              {{ lecture.date_time|date:"m월 d일 H:i" }}
-            </div>
-            {% endif %}
-          </div>
-        </a>
-        {% endfor %}
-      </div>
-
-      <!-- 전체보기 버튼 -->
-      <div class="text-center mt-8">
-        <a 
-          href="{% url 'lecture:browse_live_lectures' %}" 
-          class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
-        >
-          라이브 강의 전체보기
-          <i class="fas fa-arrow-right ml-2"></i>
-        </a>
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- 스토어가 없는 경우 -->
-    {% if not recent_stores and not active_stores %}
+    <!-- 데이터가 없는 경우 -->
+    {% if not recent_stores and not active_stores and not recent_ordered_products and not recent_meetup_orders and not live_lectures %}
     <div class="text-center py-16">
       <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
         <i class="fas fa-store text-3xl text-gray-400"></i>
       </div>
       <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-        활성화된 스토어가 없습니다
+        등록된 콘텐츠가 없습니다
       </h3>
       <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-        아직 등록된 스토어가 없습니다. 첫 번째 스토어를 만들어보세요!
+        아직 등록된 스토어나 콘텐츠가 없습니다. 첫 번째 스토어를 만들어보세요!
       </p>
       {% if user.is_authenticated %}
       <a 
