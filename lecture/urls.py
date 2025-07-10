@@ -10,6 +10,9 @@ urlpatterns = [
     path('my-lectures/', views.MyLecturesView.as_view(), name='my_lectures'),
     path('category/<int:category_id>/', views.LectureListView.as_view(), name='category'),
     
+    # 전체 라이브 강의 둘러보기
+    path('browse/', views.browse_live_lectures, name='browse_live_lectures'),
+    
     path('<str:store_id>/live/', views.live_lecture_list, name='live_lecture_list'),
     path('<str:store_id>/live/grid/', views.live_lecture_grid, name='live_lecture_grid'),
     

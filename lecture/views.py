@@ -235,6 +235,33 @@ def live_lecture_grid(request, store_id):
     
     return render(request, 'lecture/lecture_live_grid.html', context)
 
+def browse_live_lectures(request):
+    """전체 라이브 강의 둘러보기"""
+    from django.core.paginator import Paginator
+    
+    # 활성화된 모든 라이브 강의 조회 (활성화된 스토어의 것만)
+    live_lectures = LiveLecture.objects.filter(
+        is_active=True,
+        is_temporarily_closed=False,
+        deleted_at__isnull=True,
+        store__is_active=True,
+        store__deleted_at__isnull=True
+    ).select_related('store').prefetch_related('images').order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(live_lectures, 24)  # 한 페이지에 24개씩
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'live_lectures': page_obj.object_list,
+        'page_title': '전체 라이브 강의',
+        'page_description': '모든 스토어의 라이브 강의를 한 곳에서 확인하세요',
+    }
+    
+    return render(request, 'lecture/browse_live_lectures.html', context)
+
 @login_required
 def add_live_lecture(request, store_id):
     """라이브 강의 추가"""

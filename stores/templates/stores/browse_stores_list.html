@@ -60,7 +60,7 @@
     </div>
 
     <!-- 스토어 그리드 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
       {% for store in page_obj.object_list %}
       <a 
         href="{% url 'stores:store_detail' store.store_id %}" 
