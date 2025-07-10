@@ -13,6 +13,20 @@
 .live-lecture-icon {
     background: linear-gradient(135deg, #10b981 0%, #047857 100%);
 }
+
+/* 강사 안내 메시지 줄바꿈 스타일 */
+.instructor-message .markdown-content {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.instructor-message .markdown-content p {
+    margin-bottom: 0.75em;
+}
+
+.instructor-message .markdown-content br {
+    margin-bottom: 0.5em;
+}
 </style>
 {% endblock %}
 
@@ -97,7 +111,24 @@ document.addEventListener('DOMContentLoaded', function() {
     markdownElements.forEach(element => {
         const markdownText = element.getAttribute('data-markdown');
         if (markdownText && typeof marked !== 'undefined') {
-            element.innerHTML = marked.parse(markdownText);
+            // 줄바꿈 처리를 위해 텍스트 전처리
+            let processedText = markdownText;
+            
+            // 연속된 줄바꿈을 문단 구분으로 처리
+            processedText = processedText.replace(/\n\s*\n/g, '\n\n');
+            
+            // 단일 줄바꿈을 마크다운의 강제 줄바꿈으로 변환
+            // 하지만 이미 문단 구분이 있는 곳은 제외
+            processedText = processedText.replace(/(?<!\n)\n(?!\n)/g, '  \n');
+            
+            // 마크다운 파싱
+            element.innerHTML = marked.parse(processedText);
+        } else if (markdownText) {
+            // marked가 없는 경우 기본 텍스트 처리
+            const processedText = markdownText
+                .replace(/\n\s*\n/g, '</p><p>')  // 문단 구분
+                .replace(/\n/g, '<br>');         // 단일 줄바꿈
+            element.innerHTML = '<p>' + processedText + '</p>';
         }
     });
 });
@@ -280,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <!-- 강사 안내 메시지 (결제 완료 후 확인 가능) -->
           {% if order.status == 'confirmed' and order.live_lecture.completion_message %}
           <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 instructor-message">
               <div class="flex items-center gap-3 mb-4">
                 <i class="fas fa-check-circle text-blue-500 text-lg"></i>
                 <h4 class="text-lg font-semibold text-gray-900 dark:text-white">강사 안내 메시지</h4>
