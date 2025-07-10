@@ -120,6 +120,25 @@ def browse_stores(request):
             store__deleted_at__isnull=True
         ).select_related('store').order_by('-created_at')[:5]
         
+        # 최근 주문된 상품 목록 5개
+        from orders.models import OrderItem
+        recent_ordered_products = OrderItem.objects.filter(
+            product__is_active=True,
+            product__store__is_active=True,
+            product__store__deleted_at__isnull=True,
+            order__status='paid'
+        ).select_related('product', 'product__store').order_by('-order__created_at')[:5]
+        
+        # 최근 신청된 밋업 목록 5개
+        from meetup.models import MeetupOrder
+        recent_meetup_orders = MeetupOrder.objects.filter(
+            meetup__is_active=True,
+            meetup__deleted_at__isnull=True,
+            meetup__store__is_active=True,
+            meetup__store__deleted_at__isnull=True,
+            status__in=['confirmed', 'completed']
+        ).select_related('meetup', 'meetup__store').order_by('-created_at')[:5]
+        
         context = {
             'stores': None,
             'search_query': search_query,
@@ -127,6 +146,8 @@ def browse_stores(request):
             'recent_stores': recent_stores,
             'active_stores': active_order_stores_final,
             'live_lectures': live_lectures,
+            'recent_ordered_products': recent_ordered_products,
+            'recent_meetup_orders': recent_meetup_orders,
         }
     
     return render(request, 'stores/browse_stores.html', context)
