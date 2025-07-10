@@ -865,6 +865,50 @@ def toggle_temporary_closure(request, store_id, meetup_id):
             'error': '일시중단 상태 변경 중 오류가 발생했습니다.'
         })
 
+@login_required
+@require_POST
+@csrf_exempt
+def delete_meetup(request, store_id, meetup_id):
+    """밋업 삭제 (soft delete)"""
+    import json
+    from django.utils import timezone
+    
+    try:
+        # 스토어 소유자 권한 확인
+        store = get_store_with_admin_check(request, store_id)
+        if not store:
+            return JsonResponse({
+                'success': False,
+                'error': '권한이 없습니다.'
+            })
+        
+        meetup = get_object_or_404(Meetup, id=meetup_id, store=store, deleted_at__isnull=True)
+        
+        # 참가자가 있는 경우 삭제 불가
+        if meetup.current_participants > 0:
+            return JsonResponse({
+                'success': False,
+                'error': '참가자가 있는 밋업은 삭제할 수 없습니다. 먼저 모든 참가자를 취소해주세요.'
+            })
+        
+        # Soft delete 처리
+        meetup.deleted_at = timezone.now()
+        meetup.save()
+        
+        logger.info(f"밋업 삭제: {meetup.name} (사용자: {request.user.username})")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'"{meetup.name}" 밋업이 성공적으로 삭제되었습니다.'
+        })
+        
+    except Exception as e:
+        logger.error(f"밋업 삭제 오류: {e}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': '밋업 삭제 중 오류가 발생했습니다.'
+        })
+
 @require_http_methods(["GET"])
 def meetup_capacity_status(request, store_id, meetup_id):
     """밋업 정원 상태 API (AJAX용)"""

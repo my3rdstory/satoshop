@@ -80,6 +80,11 @@ class MeetupAdmin(admin.ModelAdmin):
         'download_participant_csv_sample', 'add_participants_csv'
     ]
     
+    def get_queryset(self, request):
+        """삭제된 밋업을 어드민 목록에서 제외"""
+        qs = super().get_queryset(request)
+        return qs.filter(deleted_at__isnull=True)
+    
     def price_display(self, obj):
         """가격 표시"""
         if obj.is_free:

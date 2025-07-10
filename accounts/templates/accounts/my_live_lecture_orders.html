@@ -1,0 +1,478 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}라이브 강의 신청 내역 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/my_live_lecture_orders.css' %}">
+<!-- Markdown Renderer CSS -->
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<style>
+/* 라이브 강의 신청 내역 페이지 스타일 */
+.live-lecture-icon {
+    background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+}
+
+/* 강사 안내 메시지 줄바꿈 스타일 */
+.instructor-message .markdown-content {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.instructor-message .markdown-content p {
+    margin-bottom: 0.75em;
+}
+
+.instructor-message .markdown-content br {
+    margin-bottom: 0.5em;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<!-- Markdown Renderer -->
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+
+<script>
+// 참가 정보 다운로드 함수
+function downloadParticipantInfo(orderNumber, lectureName, participantName, participantEmail, confirmedAt, lectureDate, totalPrice, storeName) {
+    const textContent = `라이브 강의 참가 확인서
+========================
+
+강의 정보:
+- 강의명: ${lectureName}
+- 주최: ${storeName}
+- 일시: ${lectureDate}
+
+참가자 정보:
+- 이름: ${participantName}
+- 이메일: ${participantEmail}
+- 주문번호: ${orderNumber}
+- 참가 확정일시: ${confirmedAt}
+
+결제 정보:
+- 최종 결제금액: ${totalPrice} sats
+
+이 파일은 라이브 강의 참가 증명서입니다.
+
+========================
+생성일시: ${new Date().toLocaleString('ko-KR')}`;
+
+    // 파일 다운로드
+    try {
+        // UTF-8 BOM 추가하여 인코딩 문제 방지
+        const BOM = '\uFEFF';
+        const content = BOM + textContent;
+        
+        // 모바일 브라우저 감지
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile && navigator.share) {
+            // 모바일에서 Web Share API 사용 가능한 경우
+            const file = new File([content], `${orderNumber}.txt`, { type: 'text/plain;charset=utf-8' });
+            navigator.share({
+                files: [file],
+                title: '라이브 강의 참가 확인서',
+                text: `${lectureName} 참가 확인서`
+            }).catch(err => {
+                console.log('공유 취소 또는 실패:', err);
+                // 공유 실패 시 기본 다운로드 방식 사용
+                downloadWithBlob();
+            });
+        } else {
+            // 기본 다운로드 방식
+            downloadWithBlob();
+        }
+        
+        function downloadWithBlob() {
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${orderNumber}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        console.log('참가 확인서 다운로드 완료');
+    } catch (error) {
+        console.error('다운로드 실패:', error);
+        alert('다운로드에 실패했습니다. 다시 시도해주세요.');
+    }
+}
+
+// 마크다운 렌더링
+document.addEventListener('DOMContentLoaded', function() {
+    const markdownElements = document.querySelectorAll('.markdown-content');
+    markdownElements.forEach(element => {
+        const markdownText = element.getAttribute('data-markdown');
+        if (markdownText && typeof marked !== 'undefined') {
+            // 줄바꿈 처리를 위해 텍스트 전처리
+            let processedText = markdownText;
+            
+            // 연속된 줄바꿈을 문단 구분으로 처리
+            processedText = processedText.replace(/\n\s*\n/g, '\n\n');
+            
+            // 단일 줄바꿈을 마크다운의 강제 줄바꿈으로 변환
+            // 하지만 이미 문단 구분이 있는 곳은 제외
+            processedText = processedText.replace(/(?<!\n)\n(?!\n)/g, '  \n');
+            
+            // 마크다운 파싱
+            element.innerHTML = marked.parse(processedText);
+        } else if (markdownText) {
+            // marked가 없는 경우 기본 텍스트 처리
+            const processedText = markdownText
+                .replace(/\n\s*\n/g, '</p><p>')  // 문단 구분
+                .replace(/\n/g, '<br>');         // 단일 줄바꿈
+            element.innerHTML = '<p>' + processedText + '</p>';
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 live-lecture-icon rounded-full mr-3">
+        <i class="fas fa-video text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이브 강의 신청 내역</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">신청한 모든 라이브 강의를 확인하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'accounts:mypage' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>마이페이지로 돌아가기</span>
+      </a>
+    </div>
+
+    {% if live_lecture_orders %}
+    <div class="space-y-6">
+      {% for order in live_lecture_orders %}
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden order-card">
+        <!-- 라이브 강의 정보 헤더 -->
+        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
+              <!-- 주문번호 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">주문번호</p>
+                <p class="text-sm font-medium text-green-600 dark:text-green-400 flex items-center mt-1">
+                  <i class="fas fa-receipt mr-2 text-xs"></i>
+                  {{ order.order_number }}
+                </p>
+              </div>
+              
+              <!-- 스토어 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">스토어</p>
+                <p class="text-sm font-medium text-gray-900 dark:text-white flex items-center mt-1">
+                  <i class="fas fa-store mr-2 text-xs text-gray-400"></i>
+                  {{ order.live_lecture.store.store_name }}
+                </p>
+              </div>
+              
+              <!-- 신청일시 -->
+              <div>
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">신청일시</p>
+                <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
+                  <i class="fas fa-clock mr-2 text-xs text-gray-400"></i>
+                  <span>{{ order.created_at|date:'Y. m. d. H:i:s' }}</span>
+                </p>
+              </div>
+            </div>
+            
+            <!-- 상태 배지 -->
+            <div class="flex items-center gap-3">
+              <!-- 강의 타입 -->
+              {% if order.live_lecture.price_display == 'free' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                <i class="fas fa-gift mr-1"></i>
+                무료 강의
+              </span>
+              {% else %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200">
+                <i class="fas fa-coins mr-1"></i>
+                유료 강의
+              </span>
+              {% endif %}
+              
+              <!-- 참가 상태 -->
+              {% if order.status == 'confirmed' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                <i class="fas fa-check mr-1"></i>
+                참가 확정
+              </span>
+              {% elif order.status == 'pending' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
+                <i class="fas fa-clock mr-1"></i>
+                대기중
+              </span>
+              {% elif order.status == 'cancelled' %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                <i class="fas fa-times mr-1"></i>
+                취소됨
+              </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 라이브 강의 상세 정보 -->
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 강의 정보 -->
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                <i class="fas fa-video mr-2 text-green-600 dark:text-green-400"></i>
+                {{ order.live_lecture.name }}
+              </h3>
+              
+              <div class="space-y-2 text-sm">
+                {% if order.live_lecture.date_time %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-calendar-alt mr-2 w-4"></i>
+                  <span>{{ order.live_lecture.date_time|date:'Y. m. d. H:i:s' }}</span>
+                </div>
+                {% endif %}
+                
+                {% if order.live_lecture.max_participants %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-user-friends mr-2 w-4"></i>
+                  <span>{{ order.live_lecture.current_participants }}명 / {{ order.live_lecture.max_participants }}명 참가중</span>
+                </div>
+                {% else %}
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-infinity mr-2 w-4"></i>
+                  <span>정원 제한 없음</span>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center text-gray-600 dark:text-gray-400">
+                  <i class="fas fa-coins mr-2 w-4"></i>
+                  {% if order.live_lecture.price_display == 'free' %}
+                  <span class="text-green-600 dark:text-green-400">무료</span>
+                  {% else %}
+                  <span>{{ order.price|floatformat:0|intcomma }} sats</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            
+            <!-- 참가 정보 -->
+            <div>
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">참가 정보</h4>
+              <div class="space-y-2 text-sm">
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="text-gray-500 dark:text-gray-400">결제일시:</div>
+                  <div class="text-gray-900 dark:text-white">
+                    {% if order.paid_at %}
+                    {{ order.paid_at|date:'Y. m. d. H:i:s' }}
+                    {% else %}
+                    미결제
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="text-gray-500 dark:text-gray-400">확정일시:</div>
+                  <div class="text-gray-900 dark:text-white">
+                    {% if order.confirmed_at %}
+                    {{ order.confirmed_at|date:'Y. m. d. H:i:s' }}
+                    {% else %}
+                    미확정
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div class="text-gray-500 dark:text-gray-400">결제금액:</div>
+                  <div class="text-gray-900 dark:text-white font-medium">
+                    {% if order.live_lecture.price_display == 'free' %}
+                    <span class="text-green-600 dark:text-green-400">무료</span>
+                    {% else %}
+                    {{ order.price|floatformat:0|intcomma }} sats
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 강사 안내 메시지 (결제 완료 후 확인 가능) -->
+          {% if order.status == 'confirmed' and order.live_lecture.completion_message %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6 instructor-message">
+              <div class="flex items-center gap-3 mb-4">
+                <i class="fas fa-check-circle text-blue-500 text-lg"></i>
+                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">강사 안내 메시지</h4>
+              </div>
+              <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ order.live_lecture.completion_message|safe }}">
+                <!-- 마크다운 콘텐츠가 여기에 렌더링됩니다 -->
+              </div>
+            </div>
+          </div>
+          {% endif %}
+          
+          <!-- 강사 정보 -->
+          {% if order.live_lecture.instructor_contact or order.live_lecture.instructor_email or order.live_lecture.instructor_chat_channel %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">강사 정보</h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              {% if order.live_lecture.instructor_contact %}
+              <div>
+                <div class="text-gray-500 dark:text-gray-400 mb-1">연락처</div>
+                <div class="text-gray-900 dark:text-white">{{ order.live_lecture.instructor_contact }}</div>
+              </div>
+              {% endif %}
+              {% if order.live_lecture.instructor_email %}
+              <div>
+                <div class="text-gray-500 dark:text-gray-400 mb-1">이메일</div>
+                <div class="text-gray-900 dark:text-white">
+                  <a href="mailto:{{ order.live_lecture.instructor_email }}" 
+                     class="text-blue-600 dark:text-blue-400 hover:underline">
+                    {{ order.live_lecture.instructor_email }}
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+              {% if order.live_lecture.instructor_chat_channel %}
+              <div>
+                <div class="text-gray-500 dark:text-gray-400 mb-1">소통채널</div>
+                <div class="text-gray-900 dark:text-white">
+                  <a href="{{ order.live_lecture.instructor_chat_channel }}" 
+                     target="_blank" 
+                     rel="noopener noreferrer"
+                     class="text-blue-600 dark:text-blue-400 hover:underline">
+                    바로가기 <i class="fas fa-external-link-alt text-xs ml-1"></i>
+                  </a>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+          
+          <!-- 특이사항 -->
+          {% if order.live_lecture.special_notes %}
+          <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">특이사항</h4>
+            <p class="text-sm text-gray-600 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mr-2"></i>
+              {{ order.live_lecture.special_notes }}
+            </p>
+          </div>
+          {% endif %}
+
+          <!-- 액션 버튼들 -->
+          <div class="action-buttons">
+            <a 
+              href="{% url 'lecture:live_lecture_list' order.live_lecture.store.store_id %}" 
+              class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-video mr-2"></i>
+              {{ order.live_lecture.store.store_name }} 라이브 강의 목록
+            </a>
+            
+            {% if not order.live_lecture.is_expired %}
+            <a 
+              href="{% url 'lecture:live_lecture_detail' order.live_lecture.store.store_id order.live_lecture.id %}" 
+              class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-info-circle mr-2"></i>
+              강의 상세보기
+            </a>
+            {% endif %}
+            
+            <button 
+              onclick="downloadParticipantInfo(
+                '{{ order.order_number }}',
+                '{{ order.live_lecture.name }}',
+                '{{ user.username }}',
+                '{{ user.email }}',
+                '{% if order.confirmed_at %}{{ order.confirmed_at|date:'Y. m. d. H:i:s' }}{% else %}미확정{% endif %}',
+                '{% if order.live_lecture.date_time %}{{ order.live_lecture.date_time|date:'Y. m. d. H:i:s' }}{% else %}미정{% endif %}',
+                '{% if order.live_lecture.price_display == 'free' %}무료{% else %}{{ order.price|floatformat:0|intcomma }} sats{% endif %}',
+                '{{ order.live_lecture.store.store_name }}'
+              )"
+              class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <i class="fas fa-download mr-2"></i>
+              참가 확인서 다운로드
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-12">
+      <div class="flex justify-center">
+        <div class="flex space-x-1">
+          {% if page_obj.has_previous %}
+          <a href="?page=1" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            처음
+          </a>
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            이전
+          </a>
+          {% endif %}
+          
+          <span class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+          </span>
+          
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            다음
+          </a>
+          <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            마지막
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <!-- 신청 내역이 없을 때 -->
+    <div class="text-center py-16">
+      <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 dark:bg-gray-700 rounded-full mb-6">
+        <i class="fas fa-video text-4xl text-gray-400"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">아직 참가한 라이브 강의가 없습니다</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+        다양한 스토어에서 열리는 흥미로운 라이브 강의에 참가해보세요!
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a 
+          href="{% url 'stores:browse_stores' %}" 
+          class="inline-flex items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg"
+        >
+          <i class="fas fa-search mr-2"></i>
+          라이브 강의 찾아보기
+        </a>
+        <a 
+          href="{% url 'accounts:mypage' %}" 
+          class="inline-flex items-center px-6 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>
+          마이페이지로 돌아가기
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} 

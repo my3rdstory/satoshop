@@ -31,24 +31,23 @@ function convertToLocalTime(dateString, format = 'datetime') {
         
         // 포맷에 따라 반환
         if (format === 'date') {
-            return localTime.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            const year = localTime.getFullYear();
+            const month = String(localTime.getMonth() + 1).padStart(2, '0');
+            const day = String(localTime.getDate()).padStart(2, '0');
+            return `${year}. ${month}. ${day}.`;
         } else if (format === 'time') {
-            return localTime.toLocaleTimeString('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const hour = String(localTime.getHours()).padStart(2, '0');
+            const minute = String(localTime.getMinutes()).padStart(2, '0');
+            const second = String(localTime.getSeconds()).padStart(2, '0');
+            return `${hour}:${minute}:${second}`;
         } else {
-            return localTime.toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const year = localTime.getFullYear();
+            const month = String(localTime.getMonth() + 1).padStart(2, '0');
+            const day = String(localTime.getDate()).padStart(2, '0');
+            const hour = String(localTime.getHours()).padStart(2, '0');
+            const minute = String(localTime.getMinutes()).padStart(2, '0');
+            const second = String(localTime.getSeconds()).padStart(2, '0');
+            return `${year}. ${month}. ${day}. ${hour}:${minute}:${second}`;
         }
     } catch (error) {
         console.warn('시간대 변환 실패:', error);
@@ -62,24 +61,23 @@ function convertISOToLocalTime(isoString, format = 'datetime') {
         const date = new Date(isoString);
         
         if (format === 'date') {
-            return date.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}. ${month}. ${day}.`;
         } else if (format === 'time') {
-            return date.toLocaleTimeString('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const second = String(date.getSeconds()).padStart(2, '0');
+            return `${hour}:${minute}:${second}`;
         } else {
-            return date.toLocaleString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hour = String(date.getHours()).padStart(2, '0');
+            const minute = String(date.getMinutes()).padStart(2, '0');
+            const second = String(date.getSeconds()).padStart(2, '0');
+            return `${year}. ${month}. ${day}. ${hour}:${minute}:${second}`;
         }
     } catch (error) {
         console.warn('ISO 시간대 변환 실패:', error);

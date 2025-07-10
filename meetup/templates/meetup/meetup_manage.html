@@ -392,8 +392,30 @@ function confirmMeetupPauseChange(checkbox) {
 function confirmDeleteMeetup() {
   if (confirm('정말로 이 밋업을 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.\n- 모든 참가자 정보가 삭제됩니다.\n- 진행 중인 결제가 취소됩니다.\n- 밋업 관련 모든 데이터가 영구 삭제됩니다.')) {
     if (confirm('마지막 확인입니다.\n\n정말로 "{{ meetup.name|escapejs }}" 밋업을 삭제하시겠습니까?')) {
-      // 밋업 삭제 API 호출 (향후 구현)
-      alert('밋업 삭제 기능은 아직 구현되지 않았습니다.\n\n삭제가 필요한 경우 관리자에게 문의해주세요.');
+      // 밋업 삭제 API 호출
+      const url = `{% url 'meetup:delete_meetup' store.store_id meetup_id %}`;
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'Content-Type': 'application/json',
+        },
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(data.message);
+          // 밋업 목록으로 이동
+          window.location.href = `{% url 'meetup:meetup_list' store.store_id %}`;
+        } else {
+          alert('오류가 발생했습니다: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('네트워크 오류가 발생했습니다.');
+      });
     }
   }
 }

@@ -57,41 +57,59 @@
             <i class="fas fa-cog mr-2"></i>스토어 관리
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
-          <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-            <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-store mr-2"></i>스토어 관리
-            </a>
-            <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-eye mr-2"></i>내 스토어 보기
-            </a>
-            <div class="border-t border-gray-600"></div>
-            <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-box mr-2"></i>상품관리
-            </a>
-            <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-shopping-cart mr-2"></i>주문관리
-            </a>
-            <div class="border-t border-gray-600"></div>
-            <a href="{% url 'menu:menu_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-utensils mr-2"></i>메뉴 관리
-            </a>
-            <a href="{% url 'menu:menu_orders' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-chart-line mr-2"></i>메뉴 판매 현황
-            </a>
-            <a href="{% url 'menu:menu_board_desktop' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-desktop mr-2"></i>메뉴판 이동(Desktop)
-            </a>
-            <a href="{% url 'menu:menu_board_mobile' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-mobile-alt mr-2"></i>메뉴판 이동(Mobile)
-            </a>
-            <div class="border-t border-gray-600"></div>
-            <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-users mr-2"></i>밋업 관리
-            </a>
-            <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
-              <i class="fas fa-chart-line mr-2"></i>밋업 현황
-            </a>
-            <div class="border-t border-gray-600"></div>
+          <div class="absolute right-0 mt-2 w-96 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+            <!-- 2열 그리드 레이아웃 -->
+            <div class="flex">
+              <!-- 첫 번째 열 (왼쪽) -->
+              <div class="w-1/2 border-r border-gray-600">
+                <a href="{% url 'stores:my_stores' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-store mr-2"></i>스토어 관리
+                </a>
+                <a href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-eye mr-2"></i>내 스토어 보기
+                </a>
+                <div class="border-t border-gray-600 mx-4"></div>
+                <a href="{% url 'menu:menu_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-utensils mr-2"></i>메뉴 관리
+                </a>
+                <a href="{% url 'menu:menu_orders' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-chart-line mr-2"></i>메뉴 판매 현황
+                </a>
+                <a href="{% url 'menu:menu_board_desktop' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-desktop mr-2"></i>메뉴판 이동(Desktop)
+                </a>
+                <a href="{% url 'menu:menu_board_mobile' store_id=user_active_store.store_id %}" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-mobile-alt mr-2"></i>메뉴판 이동(Mobile)
+                </a>
+              </div>
+              
+              <!-- 두 번째 열 (오른쪽) -->
+              <div class="w-1/2">
+                <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-box mr-2"></i>상품관리
+                </a>
+                <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-shopping-cart mr-2"></i>주문관리
+                </a>                
+                <div class="border-t border-gray-600 mx-4"></div>
+                <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-users mr-2"></i>밋업 관리
+                </a>
+                <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-chart-bar mr-2"></i>밋업 현황
+                </a>
+                <div class="border-t border-gray-600 mx-4"></div>
+                <a href="{% url 'lecture:live_lecture_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-video mr-2"></i>라이브 강의 관리
+                </a>
+                <a href="{% url 'lecture:live_lecture_status' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-chart-pie mr-2"></i>라이브 강의 현황
+                </a>
+              </div>
+            </div>
+            
+            <!-- 하단 공통 메뉴 -->
+            <div class="border-t border-gray-600 mt-1"></div>
             <a href="#" onclick="toggleTheme(); return false;" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
               <span class="theme-toggle-menu-item">
                 <i class="fas fa-sun theme-sun-icon" style="display: none;"></i>

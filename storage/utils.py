@@ -1065,4 +1065,185 @@ def process_meetup_image(image_file, target_size=500) -> Dict[str, Any]:
         return {
             'success': False,
             'error': error_msg
+        }
+
+
+def upload_live_lecture_image(image_file, live_lecture, user) -> Dict[str, Any]:
+    """
+    라이브 강의 이미지를 처리하고 업로드합니다.
+    
+    Args:
+        image_file: 업로드된 이미지 파일
+        live_lecture: LiveLecture 모델 인스턴스
+        user: 업로드하는 사용자
+    
+    Returns:
+        업로드 결과
+        {
+            'success': bool,
+            'live_lecture_image': LiveLectureImage (성공시),
+            'error': str (실패시)
+        }
+    """
+    try:
+        from lecture.models import LiveLectureImage
+        
+        # 이미지 처리 (1:1 비율로 500x500 크기)
+        process_result = process_live_lecture_image(image_file)
+        if not process_result['success']:
+            return process_result
+        
+        # S3에 업로드
+        prefix = f"live_lectures/{live_lecture.store.store_id}/{live_lecture.id}/images"
+        upload_result = upload_file_to_s3(
+            process_result['processed_file'], 
+            prefix=prefix
+        )
+        
+        if not upload_result['success']:
+            return upload_result
+        
+        # DB에 저장
+        # 다음 순서 계산
+        last_order = LiveLectureImage.objects.filter(live_lecture=live_lecture).aggregate(
+            models.Max('order')
+        )['order__max'] or 0
+        
+        # 파일 크기 다시 계산 (ContentFile에서)
+        process_result['processed_file'].seek(0)
+        file_content = process_result['processed_file'].read()
+        actual_file_size = len(file_content)
+        process_result['processed_file'].seek(0)  # 다시 처음으로
+        
+        live_lecture_image = LiveLectureImage.objects.create(
+            live_lecture=live_lecture,
+            original_name=image_file.name,
+            file_path=upload_result['file_path'],
+            file_url=upload_result['file_url'],
+            file_size=actual_file_size,
+            width=process_result['processed_size'][0],
+            height=process_result['processed_size'][1],
+            order=last_order + 1,
+            uploaded_by=user
+        )
+        
+        return {
+            'success': True,
+            'live_lecture_image': live_lecture_image
+        }
+        
+    except Exception as e:
+        error_msg = f"라이브 강의 이미지 업로드 실패: {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+
+
+def process_live_lecture_image(image_file, target_size=500) -> Dict[str, Any]:
+    """
+    라이브 강의 이미지를 처리합니다.
+    - 1:1 비율로 자르기
+    - 500x500 크기로 리사이즈
+    - AVIF 포맷으로 변환
+    
+    Args:
+        image_file: 업로드된 이미지 파일
+        target_size: 목표 크기 (기본값: 500px)
+    
+    Returns:
+        처리 결과 정보
+        {
+            'success': bool,
+            'processed_file': ContentFile,
+            'original_size': tuple,
+            'processed_size': tuple,
+            'error': str (실패시)
+        }
+    """
+    try:
+        if not PIL_AVAILABLE:
+            return {
+                'success': False,
+                'error': 'Pillow 패키지가 설치되지 않았습니다. pip install Pillow을 실행해주세요.'
+            }
+        
+        logger.info(f"라이브 강의 이미지 처리 시작: {image_file.name}")
+        
+        # 이미지 열기
+        try:
+            image = Image.open(image_file)
+            original_size = image.size
+            logger.info(f"원본 이미지 크기: {original_size}")
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'이미지 파일을 열 수 없습니다: {str(e)}'
+            }
+        
+        # EXIF 정보에 따른 회전 보정
+        image = ImageOps.exif_transpose(image)
+        
+        # RGB 모드로 변환 (AVIF 변환을 위해)
+        if image.mode not in ('RGB', 'RGBA'):
+            image = image.convert('RGB')
+        
+        # 1:1 비율로 중앙 크롭
+        width, height = image.size
+        min_dimension = min(width, height)
+        
+        left = (width - min_dimension) // 2
+        top = (height - min_dimension) // 2
+        right = left + min_dimension
+        bottom = top + min_dimension
+        
+        image = image.crop((left, top, right, bottom))
+        logger.info(f"1:1 크롭 완료: {image.size}")
+        
+        # 500x500으로 리사이즈
+        image = image.resize((target_size, target_size), Image.Resampling.LANCZOS)
+        logger.info(f"리사이즈 완료: {image.size}")
+        
+        # AVIF 포맷으로 변환
+        output = io.BytesIO()
+        try:
+            if AVIF_AVAILABLE:
+                image.save(output, format='AVIF', quality=85, optimize=True)
+                file_extension = '.avif'
+                logger.info("AVIF 포맷으로 변환 완료")
+            else:
+                image.save(output, format='WEBP', quality=85, optimize=True)
+                file_extension = '.webp'
+                logger.info("WEBP 포맷으로 변환 완료")
+        except Exception as e:
+            # AVIF/WebP 실패 시 JPEG로 fallback
+            logger.warning(f"AVIF/WebP 변환 실패, JPEG로 변환: {e}")
+            image.save(output, format='JPEG', quality=85, optimize=True)
+            file_extension = '.jpg'
+        
+        output.seek(0)
+        
+        # 새 파일명 생성
+        base_name = os.path.splitext(image_file.name)[0]
+        new_filename = f"{base_name}_processed{file_extension}"
+        
+        processed_file = ContentFile(output.getvalue(), name=new_filename)
+        
+        result = {
+            'success': True,
+            'processed_file': processed_file,
+            'original_size': original_size,
+            'processed_size': (target_size, target_size)
+        }
+        
+        logger.info(f"라이브 강의 이미지 처리 완료: {image_file.name}")
+        return result
+        
+    except Exception as e:
+        error_msg = f"라이브 강의 이미지 처리 실패: {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
         } 

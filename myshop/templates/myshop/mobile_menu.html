@@ -56,7 +56,14 @@
       <i class="fas fa-users mr-2"></i>밋업 관리
     </a>
     <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-chart-line mr-2"></i>밋업 현황
+      <i class="fas fa-chart-bar mr-2"></i>밋업 현황
+    </a>
+    <div class="border-t border-gray-600 my-1"></div>
+    <a href="{% url 'lecture:live_lecture_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-video mr-2"></i>라이브 강의 관리
+    </a>
+    <a href="{% url 'lecture:live_lecture_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-chart-pie mr-2"></i>라이브 강의 현황
     </a>
     {% else %}
     <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">

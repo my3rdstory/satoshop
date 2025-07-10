@@ -1,0 +1,214 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ page_title }} - SatoShop{% endblock %}
+
+<!-- Open Graph Meta Tags -->
+{% block og_title %}{{ page_title }} - SatoShop{% endblock %}
+{% block og_description %}{{ page_description }}{% endblock %}
+{% block og_type %}website{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 라이브 강의 전체보기 페이지 스타일 */
+.browse-hero {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 페이지 헤더 -->
+<section class="browse-hero py-16">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center">
+      <h1 class="text-4xl font-bold text-white mb-4">
+        <i class="fas fa-video text-purple-400 mr-3"></i>{{ page_title }}
+      </h1>
+      <p class="text-lg text-gray-300">
+        {{ page_description }}
+      </p>
+      <div class="mt-6">
+        <a 
+          href="{% url 'stores:browse_stores' %}" 
+          class="inline-flex items-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg transition-colors"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>
+          스토어 탐색으로 돌아가기
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 라이브 강의 목록 -->
+<section class="bg-gray-50 dark:bg-gray-900 py-12">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if live_lectures %}
+    <!-- 결과 정보 -->
+    <div class="mb-8 text-center">
+      <p class="text-gray-600 dark:text-gray-400">
+        총 <span class="font-semibold text-gray-900 dark:text-white">{{ page_obj.paginator.count }}개</span>의 라이브 강의
+        {% if page_obj.paginator.num_pages > 1 %}
+        ({{ page_obj.number }}/{{ page_obj.paginator.num_pages }} 페이지)
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- 라이브 강의 그리드 -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+      {% for lecture in live_lectures %}
+      <a 
+        href="{% url 'lecture:live_lecture_detail' store_id=lecture.store.store_id live_lecture_id=lecture.id %}" 
+        class="group bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+      >
+        <!-- 라이브 강의 이미지 -->
+        <div class="aspect-w-16 aspect-h-9 bg-gray-200 dark:bg-gray-700">
+          {% if lecture.images.exists %}
+          <img 
+            src="{{ lecture.images.first.file_url }}" 
+            alt="{{ lecture.name }}"
+            class="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+          >
+          {% else %}
+          <div class="w-full h-48 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-700 dark:to-purple-800 flex items-center justify-center group-hover:from-purple-500/10 group-hover:to-purple-600/10 transition-all duration-300">
+            <i class="fas fa-video text-4xl text-purple-400 group-hover:text-purple-500 transition-colors"></i>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 라이브 강의 정보 -->
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-purple-500 transition-colors">
+            {{ lecture.name }}
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+            {% if lecture.description %}
+              {{ lecture.description|truncatechars:80 }}
+            {% else %}
+              실시간으로 진행되는 라이브 강의입니다.
+            {% endif %}
+          </p>
+          
+          <!-- 라이브 강의 메타 정보 -->
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+              <i class="fas fa-store mr-2"></i>
+              <span>{{ lecture.store.store_name }}</span>
+            </div>
+            {% if lecture.price_display == 'free' %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+              <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+              무료
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+              <div class="w-2 h-2 bg-purple-500 rounded-full mr-1"></div>
+              유료
+            </span>
+            {% endif %}
+          </div>
+          
+          <!-- 일시 정보 -->
+          {% if lecture.date_time %}
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            <i class="fas fa-calendar mr-1"></i>
+            {{ lecture.date_time|date:"m월 d일 H:i" }}
+          </div>
+          {% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-center">
+      <nav class="flex items-center space-x-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-400 rounded-lg">
+          <i class="fas fa-chevron-left"></i>
+        </span>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="px-3 py-2 text-sm bg-purple-500 border border-purple-500 text-white rounded-lg">
+          {{ num }}
+        </span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          {{ num }}
+        </a>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-400 rounded-lg">
+          <i class="fas fa-chevron-right"></i>
+        </span>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 라이브 강의가 없는 경우 -->
+    <div class="text-center py-16">
+      <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+        <i class="fas fa-video text-3xl text-gray-400"></i>
+      </div>
+      <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        등록된 라이브 강의가 없습니다
+      </h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+        아직 진행 중인 라이브 강의가 없습니다. 곧 새로운 강의가 등록될 예정이니 기대해 주세요!
+      </p>
+      <a 
+        href="{% url 'stores:browse_stores' %}" 
+        class="inline-flex items-center px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors shadow-lg"
+      >
+        <i class="fas fa-search mr-2"></i>
+        스토어 둘러보기
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 페이지 스크롤 시 부드러운 애니메이션
+document.addEventListener('DOMContentLoaded', function() {
+    const lectureCards = document.querySelectorAll('.group');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    
+    lectureCards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %} 

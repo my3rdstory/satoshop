@@ -53,14 +53,17 @@ def browse_stores(request):
             'total_count': len(stores),
             'recent_stores': None,
             'active_stores': None,
+            'live_lectures': None,
         }
     else:
-        # 최근 개설된 스토어 8개 (생성일 기준)
-        recent_stores = active_stores.order_by('-created_at')[:8]
+        # 최근 개설된 스토어 5개 (생성일 기준)
+        recent_stores = active_stores.order_by('-created_at')[:5]
         
-        # 주문이 활발한 스토어 8개 (최근 주문 기준)
+        # 주문이 활발한 스토어 5개 (모든 주문 유형을 반영한 최근 주문 기준)
         from orders.models import Order
-        from django.db.models import Max
+        from meetup.models import MeetupOrder
+        from lecture.models import LiveLectureOrder
+        from django.db.models import Max, Q as Q_model
         from myshop.models import SiteSettings
         
         # 최근 30일 내 주문이 있는 스토어들을 최근 주문일 순으로 정렬
@@ -76,20 +79,54 @@ def browse_stores(request):
                 if store_id.strip()
             ]
         
+        # 각 스토어별로 가장 최근 주문일을 구하기 (상품, 밋업, 라이브강의 주문 모두 포함)
         active_order_stores = active_stores.filter(
-            orders__created_at__gte=thirty_days_ago
+            Q_model(orders__created_at__gte=thirty_days_ago) |  # 상품 주문
+            Q_model(meetups__orders__created_at__gte=thirty_days_ago) |  # 밋업 주문  
+            Q_model(live_lectures__orders__created_at__gte=thirty_days_ago)  # 라이브강의 주문
         ).exclude(
             store_id__in=excluded_store_ids
         ).annotate(
-            latest_order=Max('orders__created_at')
-        ).order_by('-latest_order')[:8]
+            latest_product_order=Max('orders__created_at'),
+            latest_meetup_order=Max('meetups__orders__created_at'),
+            latest_live_lecture_order=Max('live_lectures__orders__created_at')
+        ).distinct()
+        
+        # Python에서 최종 정렬 (각 스토어의 가장 최근 주문일 기준)
+        active_order_stores_list = []
+        for store in active_order_stores:
+            latest_dates = []
+            if store.latest_product_order:
+                latest_dates.append(store.latest_product_order)
+            if store.latest_meetup_order:
+                latest_dates.append(store.latest_meetup_order)
+            if store.latest_live_lecture_order:
+                latest_dates.append(store.latest_live_lecture_order)
+            
+            if latest_dates:
+                store.overall_latest_order = max(latest_dates)
+                active_order_stores_list.append(store)
+        
+        # 최근 주문일 기준으로 정렬하고 5개만 선택
+        active_order_stores_list.sort(key=lambda x: x.overall_latest_order, reverse=True)
+        active_order_stores_final = active_order_stores_list[:5]
+        
+        # 최신 라이브 강의 5개 (활성화되고 삭제되지 않은 것)
+        from lecture.models import LiveLecture
+        live_lectures = LiveLecture.objects.filter(
+            is_active=True,
+            deleted_at__isnull=True,
+            store__is_active=True,
+            store__deleted_at__isnull=True
+        ).select_related('store').order_by('-created_at')[:5]
         
         context = {
             'stores': None,
             'search_query': search_query,
             'total_count': 0,
             'recent_stores': recent_stores,
-            'active_stores': active_order_stores,
+            'active_stores': active_order_stores_final,
+            'live_lectures': live_lectures,
         }
     
     return render(request, 'stores/browse_stores.html', context)
@@ -122,7 +159,9 @@ def browse_recent_stores(request):
 def browse_active_stores(request):
     """주문이 활발한 스토어 전체보기"""
     from orders.models import Order
-    from django.db.models import Max
+    from meetup.models import MeetupOrder
+    from lecture.models import LiveLectureOrder
+    from django.db.models import Max, Q as Q_model
     from myshop.models import SiteSettings
     
     # 활성화된 스토어만 가져오기
@@ -144,17 +183,40 @@ def browse_active_stores(request):
             if store_id.strip()
         ]
     
-    stores = active_stores.filter(
-        orders__created_at__gte=thirty_days_ago
+    # 각 스토어별로 가장 최근 주문일을 구하기 (상품, 밋업, 라이브강의 주문 모두 포함)
+    active_order_stores = active_stores.filter(
+        Q_model(orders__created_at__gte=thirty_days_ago) |  # 상품 주문
+        Q_model(meetups__orders__created_at__gte=thirty_days_ago) |  # 밋업 주문  
+        Q_model(live_lectures__orders__created_at__gte=thirty_days_ago)  # 라이브강의 주문
     ).exclude(
         store_id__in=excluded_store_ids
     ).annotate(
-        latest_order=Max('orders__created_at')
-    ).order_by('-latest_order')
+        latest_product_order=Max('orders__created_at'),
+        latest_meetup_order=Max('meetups__orders__created_at'),
+        latest_live_lecture_order=Max('live_lectures__orders__created_at')
+    ).distinct()
+    
+    # Python에서 최종 정렬 (각 스토어의 가장 최근 주문일 기준)
+    active_order_stores_list = []
+    for store in active_order_stores:
+        latest_dates = []
+        if store.latest_product_order:
+            latest_dates.append(store.latest_product_order)
+        if store.latest_meetup_order:
+            latest_dates.append(store.latest_meetup_order)
+        if store.latest_live_lecture_order:
+            latest_dates.append(store.latest_live_lecture_order)
+        
+        if latest_dates:
+            store.overall_latest_order = max(latest_dates)
+            active_order_stores_list.append(store)
+    
+    # 최근 주문일 기준으로 정렬
+    active_order_stores_list.sort(key=lambda x: x.overall_latest_order, reverse=True)
     
     # 페이지네이션
     from django.core.paginator import Paginator
-    paginator = Paginator(stores, 16)  # 한 페이지에 16개씩
+    paginator = Paginator(active_order_stores_list, 16)  # 한 페이지에 16개씩
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     

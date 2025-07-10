@@ -201,9 +201,8 @@ function downloadParticipantInfo(orderNumber, meetupName, participantName, parti
                 <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">신청일시</p>
                 <p class="text-sm text-gray-600 dark:text-gray-300 flex items-center mt-1">
                   <i class="fas fa-clock mr-2 text-xs text-gray-400"></i>
-                  <span class="local-time" data-datetime="{{ order.created_at|date:'c' }}">{{ order.created_at|date:'m월 d일 H:i' }}</span>
+                  <span>{{ order.created_at|date:'Y. m. d. H:i:s' }}</span>
                 </p>
-                <small class="text-gray-400 user-timezone text-xs block mt-1"></small>
               </div>
             </div>
             

@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'boards',
     'menu',
     'meetup',
+    'lecture',
 ]
 
 MIDDLEWARE = [

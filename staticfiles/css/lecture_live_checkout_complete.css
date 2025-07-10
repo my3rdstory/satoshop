@@ -1,0 +1,247 @@
+/* lecture_live_checkout_complete.css */
+/* 라이브 강의 결제 완료 페이지 스타일 */
+
+/* 성공 아이콘 애니메이션 */
+@keyframes check-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes success-bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+/* 성공 메시지 컨테이너 */
+.success-container {
+  animation: check-fade-in 0.8s ease-out;
+}
+
+.success-icon {
+  animation: success-bounce 1.2s ease-in-out;
+}
+
+/* 완료 카드 스타일 */
+.completion-card {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  border: none;
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+}
+
+.completion-card-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Bitcoin 색상 클래스 */
+.text-bitcoin {
+  color: #f7931a;
+}
+
+.dark .text-bitcoin {
+  color: #f7931a;
+}
+
+/* 정보 박스 스타일 */
+.info-box {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.info-box:hover {
+  background: rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.dark .info-box {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.8);
+}
+
+.dark .info-box:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.warning-box {
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.warning-box:hover {
+  background: rgba(251, 191, 36, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(251, 191, 36, 0.2);
+}
+
+.dark .warning-box {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.8);
+}
+
+.dark .warning-box:hover {
+  background: rgba(251, 191, 36, 0.25);
+}
+
+.success-box {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.success-box:hover {
+  background: rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+}
+
+.dark .success-box {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.8);
+}
+
+.dark .success-box:hover {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* 다운로드 버튼 스타일 */
+.download-button {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transition: all 0.3s ease;
+}
+
+.download-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(22, 163, 74, 0.3);
+}
+
+/* 액션 버튼들 */
+.action-button {
+  transition: all 0.3s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+}
+
+.action-button.secondary {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+}
+
+.action-button.secondary:hover {
+  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+}
+
+.action-button.primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.action-button.primary:hover {
+  box-shadow: 0 8px 25px rgba(37, 99, 235, 0.3);
+}
+
+/* 링크 자동 변환 스타일 */
+.completion-message-content a {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  transition: all 0.3s ease;
+}
+
+.completion-message-content a:hover {
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+}
+
+/* 페이드 인 애니메이션 */
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 스태거드 애니메이션 (순차적 등장) */
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+
+/* 반응형 스타일 */
+@media (max-width: 640px) {
+  .completion-card {
+    margin: 0 -1rem;
+    border-radius: 0;
+  }
+  
+  .action-button {
+    font-size: 0.875rem;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .success-container h1 {
+    font-size: 2rem;
+  }
+  
+  .success-container p {
+    font-size: 1rem;
+  }
+}
+
+/* 다크모드 전용 스타일 */
+.dark .completion-card {
+  box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+}
+
+/* 프린트 스타일 */
+@media print {
+  .action-button, .download-button {
+    display: none !important;
+  }
+  
+  .completion-card {
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+  }
+} 
