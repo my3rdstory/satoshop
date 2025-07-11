@@ -111,25 +111,29 @@ def browse_stores(request):
         active_order_stores_list.sort(key=lambda x: x.overall_latest_order, reverse=True)
         active_order_stores_final = active_order_stores_list[:5]
         
-        # 최신 라이브 강의 5개 (활성화되고 삭제되지 않은 것)
+        # 최신 라이브 강의 5개 (활성화되고 삭제되지 않은 것, 제외 스토어 필터링)
         from lecture.models import LiveLecture
         live_lectures = LiveLecture.objects.filter(
             is_active=True,
             deleted_at__isnull=True,
             store__is_active=True,
             store__deleted_at__isnull=True
+        ).exclude(
+            store__store_id__in=excluded_store_ids
         ).select_related('store').order_by('-created_at')[:5]
         
-        # 최근 주문된 상품 목록 5개
+        # 최근 주문된 상품 목록 5개 (제외 스토어 필터링)
         from orders.models import OrderItem
         recent_ordered_products = OrderItem.objects.filter(
             product__is_active=True,
             product__store__is_active=True,
             product__store__deleted_at__isnull=True,
             order__status='paid'
+        ).exclude(
+            product__store__store_id__in=excluded_store_ids
         ).select_related('product', 'product__store').order_by('-order__created_at')[:5]
         
-        # 최근 신청된 밋업 목록 5개
+        # 최근 신청된 밋업 목록 5개 (제외 스토어 필터링)
         from meetup.models import MeetupOrder
         recent_meetup_orders = MeetupOrder.objects.filter(
             meetup__is_active=True,
@@ -137,6 +141,8 @@ def browse_stores(request):
             meetup__store__is_active=True,
             meetup__store__deleted_at__isnull=True,
             status__in=['confirmed', 'completed']
+        ).exclude(
+            meetup__store__store_id__in=excluded_store_ids
         ).select_related('meetup', 'meetup__store').order_by('-created_at')[:5]
         
         context = {
