@@ -31,6 +31,7 @@ urlpatterns = [
     path('boards/', include('boards.urls')),
     path('meetup/', include('meetup.urls')),
     path('lecture/', include('lecture.urls')),
+    path('file/', include('file.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
     
     # PWA 관련 파일들을 루트에서 제공

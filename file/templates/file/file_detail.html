@@ -1,0 +1,239 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ file.name }} - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/file_detail.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'file:file_list' store.store_id %}" 
+         class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+        <i class="fas fa-arrow-left mr-2"></i>
+        파일 목록으로
+      </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 왼쪽: 파일 정보 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+          <!-- 미리보기 이미지 -->
+          {% if file.preview_image %}
+          <div class="h-96 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
+                 class="w-full h-full object-contain">
+          </div>
+          {% endif %}
+          
+          <div class="p-8">
+            <!-- 파일명 -->
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              {{ file.name }}
+            </h1>
+            
+            <!-- 파일 정보 -->
+            <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">파일 크기</div>
+                <div class="font-semibold text-gray-900 dark:text-white">{{ file.get_file_size_display }}</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">등록일</div>
+                <div class="font-semibold text-gray-900 dark:text-white">{{ file.created_at|date:"Y.m.d" }}</div>
+              </div>
+              {% if file.max_downloads %}
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">남은 수량</div>
+                <div class="font-semibold text-gray-900 dark:text-white">{{ file.available_downloads }}개</div>
+              </div>
+              {% endif %}
+              {% if file.download_expiry_days %}
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">다운로드 기한</div>
+                <div class="font-semibold text-gray-900 dark:text-white">구매 후 {{ file.download_expiry_days }}일</div>
+              </div>
+              {% endif %}
+            </div>
+            
+            <!-- 설명 -->
+            {% if file.description %}
+            <div class="mb-6">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">파일 설명</h2>
+              <div class="markdown-content prose prose-gray dark:prose-invert max-w-none">
+                {{ file.description|linebreaks }}
+              </div>
+            </div>
+            {% endif %}
+            
+            <!-- 판매자 정보 -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <div class="flex items-center space-x-4">
+                {% if store.logo %}
+                <img src="{{ store.logo.url }}" alt="{{ store.store_name }}" 
+                     class="w-12 h-12 rounded-full object-cover">
+                {% else %}
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                  <span class="text-white font-semibold">{{ store.store_name|first }}</span>
+                </div>
+                {% endif %}
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">{{ store.store_name }}</h3>
+                  <a href="{% url 'stores:store_detail' store.store_id %}" 
+                     class="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+                    스토어 방문하기
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 구매 정보 -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sticky top-6">
+          <!-- 가격 정보 -->
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">가격 정보</h3>
+            
+            {% if file.price_display == 'free' %}
+              <div class="text-3xl font-bold text-green-600 dark:text-green-400">무료</div>
+            {% else %}
+              {% if file.is_discount_active %}
+                <div class="mb-2">
+                  <span class="text-gray-500 line-through text-lg">
+                    {{ file.price|intcomma }} {{ file.price_unit }}
+                  </span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span class="text-3xl font-bold text-bitcoin">
+                    {{ file.current_price|intcomma }} {{ file.price_unit }}
+                  </span>
+                  <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                    {{ file.discount_rate }}% 할인
+                  </span>
+                </div>
+                {% if file.discount_end_date %}
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  할인 종료: {{ file.discount_end_date|date:"Y.m.d" }}
+                  {% if file.discount_end_time %}{{ file.discount_end_time|time:"H:i" }}{% endif %}
+                </p>
+                {% endif %}
+              {% else %}
+                <div class="text-3xl font-bold text-bitcoin">
+                  {{ file.current_price|intcomma }} {{ file.price_unit }}
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+
+          <!-- 상태 및 액션 -->
+          <div class="space-y-3">
+            {% if not file.is_active %}
+              <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
+                <p class="text-gray-600 dark:text-gray-400">이 파일은 현재 판매되지 않습니다.</p>
+              </div>
+            {% elif file.is_temporarily_closed %}
+              <div class="bg-yellow-100 dark:bg-yellow-900 rounded-lg p-4 text-center">
+                <p class="text-yellow-800 dark:text-yellow-200">일시적으로 판매가 중단되었습니다.</p>
+              </div>
+            {% elif file.is_sold_out %}
+              <div class="bg-red-100 dark:bg-red-900 rounded-lg p-4 text-center">
+                <p class="text-red-800 dark:text-red-200">매진되었습니다.</p>
+              </div>
+            {% elif has_purchased %}
+              <!-- 이미 구매한 경우 -->
+              <div class="bg-green-50 dark:bg-green-900 rounded-lg p-4 mb-4">
+                <p class="text-green-800 dark:text-green-200 text-sm mb-2">
+                  <i class="fas fa-check-circle mr-1"></i> 구매 완료
+                </p>
+                {% if user_order.download_expires_at %}
+                <p class="text-xs text-green-700 dark:text-green-300">
+                  다운로드 기한: {{ user_order.download_expires_at|date:"Y.m.d H:i" }}까지
+                </p>
+                {% endif %}
+              </div>
+              
+              {% if can_download %}
+                <a href="{% url 'file:download_file' store.store_id file.id %}" 
+                   class="block w-full px-6 py-3 bg-blue-500 text-white text-center rounded-lg hover:bg-blue-600 transition-colors font-semibold">
+                  <i class="fas fa-download mr-2"></i>
+                  파일 다운로드
+                </a>
+              {% else %}
+                <button disabled
+                        class="block w-full px-6 py-3 bg-gray-300 text-gray-500 text-center rounded-lg cursor-not-allowed font-semibold">
+                  다운로드 기간 만료
+                </button>
+              {% endif %}
+            {% else %}
+              <!-- 구매 버튼 -->
+              {% if user.is_authenticated %}
+                <a href="{% url 'file:file_checkout' store.store_id file.id %}" 
+                   class="block w-full px-6 py-3 bg-purple-500 text-white text-center rounded-lg hover:bg-purple-600 transition-colors font-semibold">
+                  {% if file.price_display == 'free' %}
+                    <i class="fas fa-download mr-2"></i>
+                    무료 다운로드
+                  {% else %}
+                    <i class="fas fa-shopping-cart mr-2"></i>
+                    구매하기
+                  {% endif %}
+                </a>
+              {% else %}
+                <a href="{% url 'accounts:login' %}?next={{ request.path }}" 
+                   class="block w-full px-6 py-3 bg-gray-500 text-white text-center rounded-lg hover:bg-gray-600 transition-colors font-semibold">
+                  로그인 후 구매
+                </a>
+              {% endif %}
+            {% endif %}
+            
+            <!-- 관리자 버튼 -->
+            {% if is_owner %}
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-2">
+              <a href="{% url 'file:edit_file' store.store_id file.id %}" 
+                 class="block w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-edit mr-2"></i>
+                수정
+              </a>
+              <a href="{% url 'file:download_file' store.store_id file.id %}" 
+                 class="block w-full px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-center rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                <i class="fas fa-download mr-2"></i>
+                다운로드 (관리자)
+              </a>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 통계 (관리자용) -->
+          {% if is_owner %}
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-6">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">판매 통계</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">판매 수:</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ file.sales_count }}개</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600 dark:text-gray-400">다운로드 수:</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ file.download_count }}회</span>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/file_detail.js' %}"></script>
+{% endblock %}

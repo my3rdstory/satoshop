@@ -1,0 +1,258 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}파일 추가 - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/add_file.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">파일 추가</h1>
+      <p class="text-gray-600 dark:text-gray-400">디지털 파일을 등록하여 판매하세요</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+      
+      <!-- 기본 정보 -->
+      <div class="form-section">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">기본 정보</h2>
+        
+        <div class="space-y-6">
+          <!-- 파일명 -->
+          <div>
+            <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              파일명 <span class="text-red-500">*</span>
+            </label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 파일 업로드 -->
+          <div>
+            <label for="{{ form.file.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              파일 <span class="text-red-500">*</span>
+              <span class="text-xs text-gray-500">(최대 100MB)</span>
+            </label>
+            {{ form.file }}
+            {% if form.file.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.file.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 미리보기 이미지 -->
+          <div>
+            <label for="{{ form.preview_image.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              미리보기 이미지 <span class="text-gray-500">(선택)</span>
+            </label>
+            {{ form.preview_image }}
+            {% if form.preview_image.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.preview_image.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              파일 설명 <span class="text-gray-500">(마크다운 지원)</span>
+            </label>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 설정 -->
+      <div class="form-section">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">가격 설정</h2>
+        
+        <div class="space-y-6">
+          <!-- 가격 표시 방식 -->
+          <div>
+            <label for="{{ form.price_display.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              가격 표시 방식 <span class="text-red-500">*</span>
+            </label>
+            {{ form.price_display }}
+            {% if form.price_display.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.price_display.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 사토시 가격 -->
+          <div id="sats-price-section" style="display: none;">
+            <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              가격 (satoshi) <span class="text-red-500">*</span>
+            </label>
+            {{ form.price }}
+            {% if form.price.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.price.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 원화 가격 -->
+          <div id="krw-price-section" style="display: none;">
+            <label for="{{ form.price_krw.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              가격 (원) <span class="text-red-500">*</span>
+            </label>
+            {{ form.price_krw }}
+            {% if form.price_krw.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.price_krw.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 할인 설정 -->
+      <div class="form-section">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">할인 설정</h2>
+        
+        <div class="space-y-6">
+          <!-- 할인 적용 -->
+          <div class="flex items-center">
+            {{ form.is_discounted }}
+            <label for="{{ form.is_discounted.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              할인 적용
+            </label>
+          </div>
+
+          <div id="discount-section" style="display: none;" class="space-y-6">
+            <!-- 할인가 (사토시) -->
+            <div id="sats-discount-section" style="display: none;">
+              <label for="{{ form.discounted_price.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                할인가 (satoshi)
+              </label>
+              {{ form.discounted_price }}
+              {% if form.discounted_price.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.discounted_price.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- 할인가 (원화) -->
+            <div id="krw-discount-section" style="display: none;">
+              <label for="{{ form.discounted_price_krw.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                할인가 (원)
+              </label>
+              {{ form.discounted_price_krw }}
+              {% if form.discounted_price_krw.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.discounted_price_krw.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- 할인 종료일 -->
+            <div>
+              <label for="{{ form.discount_end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                할인 종료일
+              </label>
+              {{ form.discount_end_date }}
+              {% if form.discount_end_date.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.discount_end_date.errors.0 }}</p>
+              {% endif %}
+            </div>
+
+            <!-- 할인 종료시간 -->
+            <div>
+              <label for="{{ form.discount_end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                할인 종료시간
+              </label>
+              {{ form.discount_end_time }}
+              {% if form.discount_end_time.errors %}
+                <p class="mt-1 text-sm text-red-600">{{ form.discount_end_time.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 판매 설정 -->
+      <div class="form-section">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">판매 설정</h2>
+        
+        <div class="space-y-6">
+          <!-- 최대 다운로드 횟수 -->
+          <div>
+            <label for="{{ form.max_downloads.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              최대 판매 수량
+              <span class="text-xs text-gray-500">(비워두면 무제한)</span>
+            </label>
+            {{ form.max_downloads }}
+            {% if form.max_downloads.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.max_downloads.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 다운로드 유효기간 -->
+          <div>
+            <label for="{{ form.download_expiry_days.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              다운로드 유효기간 (일)
+              <span class="text-xs text-gray-500">(비워두면 무제한)</span>
+            </label>
+            {{ form.download_expiry_days }}
+            {% if form.download_expiry_days.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.download_expiry_days.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- 구매완료 안내메시지 -->
+          <div>
+            <label for="{{ form.purchase_message.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              구매완료 안내메시지
+              <span class="text-xs text-gray-500">(마크다운 지원)</span>
+            </label>
+            {{ form.purchase_message }}
+            {% if form.purchase_message.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.purchase_message.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 에러 메시지 -->
+      {% if form.non_field_errors %}
+        <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200">오류가 발생했습니다</h3>
+              <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                {% for error in form.non_field_errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- 버튼 -->
+      <div class="flex justify-end space-x-4">
+        <a href="{% url 'file:file_manage' store.store_id %}" 
+           class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          취소
+        </a>
+        <button type="submit" 
+                class="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+          파일 등록
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/add_file.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+{% endblock %}
