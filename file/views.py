@@ -43,7 +43,7 @@ def check_admin_access(request, store):
 
 def get_store_with_admin_check(request, store_id, require_auth=True):
     """스토어 조회 및 관리자 권한 확인"""
-    store = get_object_or_404(Store, store_id=store_id)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     
     if require_auth and request.user.is_authenticated:
         if not check_admin_access(request, store):
@@ -143,7 +143,7 @@ def delete_file(request, store_id, file_id):
 
 def file_list(request, store_id):
     """스토어의 파일 목록"""
-    store = get_object_or_404(Store, store_id=store_id)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     is_owner = request.user.is_authenticated and (request.user == store.owner or request.user.is_staff)
     
     # 기본 쿼리셋
@@ -185,7 +185,7 @@ def file_list(request, store_id):
 
 def file_detail(request, store_id, file_id):
     """파일 상세 페이지"""
-    store = get_object_or_404(Store, store_id=store_id)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
     
     is_owner = request.user.is_authenticated and (request.user == store.owner or request.user.is_staff)
@@ -314,7 +314,7 @@ def file_orders(request, store_id):
 @login_required
 def file_checkout(request, store_id, file_id):
     """파일 구매 체크아웃"""
-    store = get_object_or_404(Store, store_id=store_id)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     digital_file = get_object_or_404(
         DigitalFile, 
         id=file_id, 
@@ -621,7 +621,7 @@ def cancel_file_payment(request):
 @login_required
 def download_file(request, store_id, file_id):
     """파일 다운로드"""
-    store = get_object_or_404(Store, store_id=store_id)
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     digital_file = get_object_or_404(
         DigitalFile,
         id=file_id,
