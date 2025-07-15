@@ -1,0 +1,135 @@
+/* 이미지 업로드 드래그 & 드롭 스타일 */
+
+.image-drop-zone {
+    border: 2px dashed #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    background: #f9fafb;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.dark .image-drop-zone {
+    border-color: #4b5563;
+    background: #1f2937;
+}
+
+.image-drop-zone:hover {
+    border-color: #9333ea;
+    background: #faf5ff;
+}
+
+.dark .image-drop-zone:hover {
+    border-color: #9333ea;
+    background: #2d1b69;
+}
+
+.image-drop-zone.drag-over {
+    border-color: #9333ea;
+    background: #ede9fe;
+}
+
+.dark .image-drop-zone.drag-over {
+    border-color: #9333ea;
+    background: #3b2c5f;
+}
+
+.drop-zone-icon {
+    font-size: 3rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.drop-zone-text {
+    font-size: 1rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.dark .drop-zone-text {
+    color: #e5e7eb;
+}
+
+.drop-zone-subtext {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.dark .drop-zone-subtext {
+    color: #9ca3af;
+}
+
+.btn-select-image {
+    padding: 0.5rem 1rem;
+    background: #9333ea;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn-select-image:hover {
+    background: #7c3aed;
+}
+
+/* 이미지 미리보기 */
+.image-preview-container {
+    margin-top: 1rem;
+}
+
+.image-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.dark .image-preview-item {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.preview-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 0.375rem;
+}
+
+.preview-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.preview-filename {
+    font-size: 0.875rem;
+    color: #374151;
+    margin: 0;
+}
+
+.dark .preview-filename {
+    color: #e5e7eb;
+}
+
+.btn-remove-image {
+    padding: 0.375rem 0.75rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: background 0.3s ease;
+}
+
+.btn-remove-image:hover {
+    background: #dc2626;
+}

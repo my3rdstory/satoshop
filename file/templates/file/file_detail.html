@@ -26,9 +26,9 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
           <!-- 미리보기 이미지 -->
           {% if file.preview_image %}
-          <div class="h-96 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+          <div class="relative pb-[56.25%] bg-gray-100 dark:bg-gray-700">
             <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
-                 class="w-full h-full object-contain">
+                 class="absolute inset-0 w-full h-full object-cover">
           </div>
           {% endif %}
           

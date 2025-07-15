@@ -1,35 +1,61 @@
 // add_file.js - 파일 추가 기능을 위한 JavaScript
 
+// EasyMDE 에디터 변수들
+let descriptionEditor;
+let purchaseMessageEditor;
+
 document.addEventListener('DOMContentLoaded', function() {
     // 요소 선택
     const priceDisplay = document.getElementById('id_price_display');
     const satsPriceSection = document.getElementById('sats-price-section');
     const krwPriceSection = document.getElementById('krw-price-section');
-    const satsDiscountSection = document.getElementById('sats-discount-section');
-    const krwDiscountSection = document.getElementById('krw-discount-section');
-    const isDiscounted = document.getElementById('id_is_discounted');
-    const discountSection = document.getElementById('discount-section');
     const fileInput = document.getElementById('id_file');
     const previewImageInput = document.getElementById('id_preview_image');
     
+    // 마크다운 에디터 초기화
+    initializeMarkdownEditors();
+    
     // Flatpickr 초기화
     if (typeof flatpickr !== 'undefined') {
-        flatpickr("#id_discount_end_date", {
-            locale: "ko",
-            dateFormat: "Y-m-d",
-            minDate: "today"
-        });
-        
-        flatpickr("#id_discount_end_time", {
-            enableTime: true,
-            noCalendar: true,
-            dateFormat: "H:i",
-            time_24hr: true,
-            defaultHour: 23,
-            defaultMinute: 59
-        });
     }
 
+    // 마크다운 에디터 초기화 함수
+    function initializeMarkdownEditors() {
+        // 파일 설명 에디터
+        const descriptionTextarea = document.getElementById('id_description');
+        if (descriptionTextarea && typeof EasyMDE !== 'undefined') {
+            descriptionEditor = new EasyMDE({
+                element: descriptionTextarea,
+                spellChecker: false,
+                toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading-1', 'heading-2', 'heading-3', '|', 
+                         'unordered-list', 'ordered-list', '|', 'link', 'image', 'quote', 'code'],
+                placeholder: '파일에 대한 자세한 설명을 마크다운 형식으로 작성하세요',
+                autosave: {
+                    enabled: true,
+                    uniqueId: "file_description",
+                    delay: 1000,
+                }
+            });
+        }
+        
+        // 구매완료 메시지 에디터
+        const purchaseMessageTextarea = document.getElementById('id_purchase_message');
+        if (purchaseMessageTextarea && typeof EasyMDE !== 'undefined') {
+            purchaseMessageEditor = new EasyMDE({
+                element: purchaseMessageTextarea,
+                spellChecker: false,
+                toolbar: ['bold', 'italic', 'strikethrough', '|', 'heading-1', 'heading-2', 'heading-3', '|', 
+                         'unordered-list', 'ordered-list', '|', 'link', 'image', 'quote', 'code'],
+                placeholder: '구매 완료 후 보여줄 메시지를 작성하세요',
+                autosave: {
+                    enabled: true,
+                    uniqueId: "file_purchase_message",
+                    delay: 1000,
+                }
+            });
+        }
+    }
+    
     // 가격 표시 방식에 따른 입력 필드 표시/숨김
     function updatePriceSections() {
         const value = priceDisplay.value;
@@ -37,31 +63,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (value === 'free') {
             satsPriceSection.style.display = 'none';
             krwPriceSection.style.display = 'none';
-            satsDiscountSection.style.display = 'none';
-            krwDiscountSection.style.display = 'none';
-            isDiscounted.checked = false;
-            discountSection.style.display = 'none';
         } else if (value === 'sats') {
             satsPriceSection.style.display = 'block';
             krwPriceSection.style.display = 'none';
-            satsDiscountSection.style.display = 'block';
-            krwDiscountSection.style.display = 'none';
         } else if (value === 'krw') {
             satsPriceSection.style.display = 'none';
             krwPriceSection.style.display = 'block';
-            satsDiscountSection.style.display = 'none';
-            krwDiscountSection.style.display = 'block';
         }
     }
 
-    // 할인 섹션 표시/숨김
-    function updateDiscountSection() {
-        if (isDiscounted.checked && priceDisplay.value !== 'free') {
-            discountSection.style.display = 'block';
-        } else {
-            discountSection.style.display = 'none';
-        }
-    }
 
     // 파일 크기 검증
     function validateFileSize(file, maxSizeMB = 100) {
@@ -89,10 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePriceSections();
     }
 
-    if (isDiscounted) {
-        isDiscounted.addEventListener('change', updateDiscountSection);
-        updateDiscountSection();
-    }
 
     // 파일 입력 검증
     if (fileInput) {
@@ -137,72 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
-            // 할인 가격 검증
-            if (isDiscounted.checked && priceDisplay.value !== 'free') {
-                if (priceDisplay.value === 'sats') {
-                    const discountedPrice = document.getElementById('id_discounted_price');
-                    const originalPrice = document.getElementById('id_price');
-                    if (discountedPrice && originalPrice) {
-                        if (!discountedPrice.value || discountedPrice.value <= 0) {
-                            alert('할인가를 입력해주세요.');
-                            e.preventDefault();
-                            return;
-                        }
-                        if (parseFloat(discountedPrice.value) >= parseFloat(originalPrice.value)) {
-                            alert('할인가는 원가보다 낮아야 합니다.');
-                            e.preventDefault();
-                            return;
-                        }
-                    }
-                } else if (priceDisplay.value === 'krw') {
-                    const discountedPriceKrw = document.getElementById('id_discounted_price_krw');
-                    const originalPriceKrw = document.getElementById('id_price_krw');
-                    if (discountedPriceKrw && originalPriceKrw) {
-                        if (!discountedPriceKrw.value || discountedPriceKrw.value <= 0) {
-                            alert('할인가를 입력해주세요.');
-                            e.preventDefault();
-                            return;
-                        }
-                        if (parseFloat(discountedPriceKrw.value) >= parseFloat(originalPriceKrw.value)) {
-                            alert('할인가는 원가보다 낮아야 합니다.');
-                            e.preventDefault();
-                            return;
-                        }
-                    }
-                }
-            }
         });
     }
 
-    // 마크다운 에디터 초기화 (EasyMDE가 로드된 경우)
-    if (typeof EasyMDE !== 'undefined') {
-        const descriptionTextarea = document.getElementById('id_description');
-        const purchaseMessageTextarea = document.getElementById('id_purchase_message');
-        
-        if (descriptionTextarea) {
-            new EasyMDE({
-                element: descriptionTextarea,
-                spellChecker: false,
-                autosave: {
-                    enabled: true,
-                    uniqueId: "file_description",
-                    delay: 1000,
-                },
-                toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"]
-            });
-        }
-        
-        if (purchaseMessageTextarea) {
-            new EasyMDE({
-                element: purchaseMessageTextarea,
-                spellChecker: false,
-                autosave: {
-                    enabled: true,
-                    uniqueId: "file_purchase_message",
-                    delay: 1000,
-                },
-                toolbar: ["bold", "italic", "heading", "|", "quote", "unordered-list", "ordered-list", "|", "link", "|", "preview", "side-by-side", "fullscreen"]
-            });
-        }
-    }
+    // selectPriceType 함수가 템플릿에 정의되어 있으므로 중복 제거
 });

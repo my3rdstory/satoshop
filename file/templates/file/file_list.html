@@ -68,57 +68,61 @@
 
     <!-- 파일 목록 -->
     {% if files %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {% for file in files %}
       <div class="file-card bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
         <!-- 미리보기 이미지 -->
-        {% if file.preview_image %}
-        <div class="h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-          <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
-               class="w-full h-full object-cover">
-        </div>
-        {% else %}
-        <div class="h-48 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-          <i class="fas fa-file text-6xl text-purple-300 dark:text-gray-500"></i>
-        </div>
-        {% endif %}
+        <a href="{% url 'file:file_detail' store.store_id file.id %}" class="block">
+          {% if file.preview_image %}
+          <div class="relative pb-[56.25%] bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
+                 class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+          </div>
+          {% else %}
+          <div class="relative pb-[56.25%] bg-gradient-to-br from-purple-100 to-pink-100 dark:from-gray-700 dark:to-gray-600 hover:opacity-80 transition-opacity">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <i class="fas fa-file text-6xl text-purple-300 dark:text-gray-500"></i>
+            </div>
+          </div>
+          {% endif %}
+        </a>
         
-        <div class="p-6">
+        <div class="p-4">
           <!-- 파일명 -->
-          <h3 class="font-semibold text-lg text-gray-900 dark:text-white mb-2">
+          <h3 class="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-2">
             {{ file.name }}
           </h3>
           
           <!-- 파일 정보 -->
-          <div class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            <div class="flex items-center justify-between mb-1">
-              <span>크기: {{ file.get_file_size_display }}</span>
-              {% if file.max_downloads %}
-              <span>한정 {{ file.available_downloads }}개</span>
-              {% endif %}
-            </div>
+          <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            <div class="mb-1">{{ file.get_file_size_display }}</div>
+            {% if file.max_downloads %}
+            <div>한정 {{ file.available_downloads }}개</div>
+            {% endif %}
             {% if file.download_expiry_days %}
-            <div class="text-xs">다운로드 기한: 구매 후 {{ file.download_expiry_days }}일</div>
+            <div>기한: {{ file.download_expiry_days }}일</div>
             {% endif %}
           </div>
           
           <!-- 가격 정보 -->
-          <div class="mb-4">
+          <div class="mb-3">
             {% if file.price_display == 'free' %}
-              <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
+              <span class="text-green-600 dark:text-green-400 font-semibold text-sm">무료</span>
             {% else %}
               {% if file.is_discount_active %}
-                <div class="flex items-center space-x-2">
-                  <span class="text-gray-500 line-through text-sm">
+                <div>
+                  <span class="text-gray-500 line-through text-xs">
                     {{ file.price|intcomma }} {{ file.price_unit }}
                   </span>
-                  <span class="text-bitcoin font-semibold">
-                    {{ file.current_price|intcomma }} {{ file.price_unit }}
-                  </span>
-                  <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">할인</span>
+                  <div class="flex items-center space-x-1">
+                    <span class="text-bitcoin font-semibold text-sm">
+                      {{ file.current_price|intcomma }} {{ file.price_unit }}
+                    </span>
+                    <span class="text-xs bg-red-500 text-white px-1 py-0.5 rounded">할인</span>
+                  </div>
                 </div>
               {% else %}
-                <span class="text-bitcoin font-semibold">
+                <span class="text-bitcoin font-semibold text-sm">
                   {{ file.current_price|intcomma }} {{ file.price_unit }}
                 </span>
               {% endif %}
@@ -144,7 +148,7 @@
           
           <!-- 액션 버튼 -->
           <a href="{% url 'file:file_detail' store.store_id file.id %}" 
-             class="block w-full text-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+             class="block w-full text-center px-3 py-1.5 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors">
             자세히 보기
           </a>
         </div>

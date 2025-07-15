@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.core.files.storage import default_storage
 from datetime import timedelta
 import json
 import logging
@@ -62,13 +63,18 @@ def get_store_with_admin_check(request, store_id, require_auth=True):
 
 @login_required
 def add_file(request, store_id):
-    """파일 추가"""
+    """파일 추가 (다중 파일 지원)"""
     store = get_store_with_admin_check(request, store_id)
     if not store:
         messages.error(request, "스토어에 접근할 권한이 없습니다.")
         return redirect('stores:store_detail', store_id=store_id)
     
     if request.method == 'POST':
+        # AJAX 요청 처리 (다중 파일)
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return handle_multiple_file_upload(request, store)
+        
+        # 단일 파일 처리 (폴백)
         form = DigitalFileForm(request.POST, request.FILES)
         if form.is_valid():
             digital_file = form.save(commit=False)
@@ -76,7 +82,7 @@ def add_file(request, store_id):
             digital_file.save()
             
             messages.success(request, f"파일 '{digital_file.name}'이(가) 성공적으로 등록되었습니다.")
-            return redirect('file:file_manage', store_id=store.id)
+            return redirect('file:file_manage', store_id=store.store_id)
     else:
         form = DigitalFileForm()
     
@@ -88,9 +94,69 @@ def add_file(request, store_id):
     return render(request, 'file/add_file.html', context)
 
 
+def handle_multiple_file_upload(request, store):
+    """다중 파일 업로드 AJAX 처리"""
+    files = request.FILES.getlist('files[]')
+    
+    if len(files) > 10:
+        return JsonResponse({
+            'success': False,
+            'error': '최대 10개의 파일만 업로드할 수 있습니다.'
+        }, status=400)
+    
+    results = []
+    success_count = 0
+    
+    for file in files:
+        try:
+            # 각 파일에 대한 폼 데이터 준비
+            post_data = request.POST.copy()
+            post_data['name'] = file.name.rsplit('.', 1)[0]
+            
+            # 파일 크기 검증
+            if file.size > 100 * 1024 * 1024:  # 100MB
+                results.append({
+                    'name': file.name,
+                    'success': False,
+                    'error': '파일 크기가 100MB를 초과합니다.'
+                })
+                continue
+            
+            form = DigitalFileForm(post_data, {'file': file})
+            if form.is_valid():
+                digital_file = form.save(commit=False)
+                digital_file.store = store
+                digital_file.save()
+                success_count += 1
+                results.append({
+                    'name': file.name,
+                    'success': True,
+                    'id': digital_file.id
+                })
+            else:
+                results.append({
+                    'name': file.name,
+                    'success': False,
+                    'error': form.errors.as_text()
+                })
+        except Exception as e:
+            results.append({
+                'name': file.name,
+                'success': False,
+                'error': str(e)
+            })
+    
+    return JsonResponse({
+        'success': success_count > 0,
+        'success_count': success_count,
+        'total_count': len(files),
+        'results': results
+    })
+
+
 @login_required
 def edit_file(request, store_id, file_id):
-    """파일 수정"""
+    """파일 수정 (다중 파일 지원)"""
     store = get_store_with_admin_check(request, store_id)
     if not store:
         messages.error(request, "스토어에 접근할 권한이 없습니다.")
@@ -99,11 +165,22 @@ def edit_file(request, store_id, file_id):
     digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
     
     if request.method == 'POST':
+        # 다중 파일 정보 확인 (새 파일 추가 기능)
+        files_info = request.POST.get('files_info', '')
+        if files_info:
+            try:
+                files_data = json.loads(files_info)
+                if len(files_data) > 1:
+                    messages.info(request, "수정 모드에서는 하나의 파일만 업로드할 수 있습니다. 첫 번째 파일만 처리됩니다.")
+            except (json.JSONDecodeError, KeyError):
+                pass
+        
         form = DigitalFileForm(request.POST, request.FILES, instance=digital_file)
         if form.is_valid():
+            # 파일 변경 시 기존 파일은 models.py의 save()에서 자동 삭제
             form.save()
             messages.success(request, f"파일 '{digital_file.name}'이(가) 성공적으로 수정되었습니다.")
-            return redirect('file:file_manage', store_id=store.id)
+            return redirect('file:file_manage', store_id=store.store_id)
     else:
         form = DigitalFileForm(instance=digital_file)
     
@@ -118,7 +195,7 @@ def edit_file(request, store_id, file_id):
 
 @login_required
 def delete_file(request, store_id, file_id):
-    """파일 삭제 (소프트 삭제)"""
+    """파일 삭제 (소프트 삭제 및 오브젝트 스토리지 삭제)"""
     store = get_store_with_admin_check(request, store_id)
     if not store:
         messages.error(request, "스토어에 접근할 권한이 없습니다.")
@@ -127,11 +204,29 @@ def delete_file(request, store_id, file_id):
     digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
     
     if request.method == 'POST':
+        # 오브젝트 스토리지에서 파일 삭제
+        try:
+            if digital_file.file:
+                file_name = digital_file.file.name
+                if default_storage.exists(file_name):
+                    default_storage.delete(file_name)
+                    logger.info(f"Deleted file from storage: {file_name}")
+            
+            if digital_file.preview_image:
+                preview_name = digital_file.preview_image.name
+                if default_storage.exists(preview_name):
+                    default_storage.delete(preview_name)
+                    logger.info(f"Deleted preview image from storage: {preview_name}")
+        except Exception as e:
+            logger.error(f"Error deleting files from storage: {e}")
+            messages.warning(request, "파일 삭제 중 일부 오류가 발생했습니다.")
+        
+        # DB에서 소프트 삭제
         digital_file.deleted_at = timezone.now()
         digital_file.is_active = False
         digital_file.save()
         messages.success(request, f"파일 '{digital_file.name}'이(가) 삭제되었습니다.")
-        return redirect('file:file_manage', store_id=store.id)
+        return redirect('file:file_manage', store_id=store.store_id)
     
     context = {
         'store': store,
@@ -169,8 +264,8 @@ def file_list(request, store_id):
     else:
         queryset = queryset.order_by('-created_at')
     
-    # 페이지네이션
-    paginator = Paginator(queryset, 12)
+    # 페이지네이션 - 5열 레이아웃에 맞춰 20개씩 표시
+    paginator = Paginator(queryset, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -186,13 +281,25 @@ def file_list(request, store_id):
 def file_detail(request, store_id, file_id):
     """파일 상세 페이지"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-    digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
+    
+    try:
+        digital_file = DigitalFile.objects.get(id=file_id, store=store, deleted_at__isnull=True)
+    except DigitalFile.DoesNotExist:
+        context = {
+            'store': store,
+            'is_owner': request.user.is_authenticated and (request.user == store.owner or request.user.is_staff),
+        }
+        return render(request, 'file/file_not_found.html', context, status=404)
     
     is_owner = request.user.is_authenticated and (request.user == store.owner or request.user.is_staff)
     
     # 일반 사용자는 활성화된 파일만 볼 수 있음
     if not is_owner and (not digital_file.is_active or digital_file.is_temporarily_closed):
-        raise Http404("파일을 찾을 수 없습니다.")
+        context = {
+            'store': store,
+            'is_owner': is_owner,
+        }
+        return render(request, 'file/file_not_found.html', context, status=404)
     
     # 사용자가 이미 구매했는지 확인
     has_purchased = False
@@ -235,7 +342,7 @@ def file_manage(request, store_id):
         deleted_at__isnull=True
     ).annotate(
         order_count=Count('orders', filter=Q(orders__status='confirmed')),
-        download_count=Count('orders__download_logs')
+        total_download_count=Count('orders__download_logs')
     ).order_by('-created_at')
     
     # 통계
@@ -651,6 +758,13 @@ def download_file(request, store_id, file_id):
                 messages.error(request, "파일을 다운로드할 수 없습니다.")
             return redirect('file:file_detail', store_id=store.id, file_id=digital_file.id)
         
+        # 다운로드 클릭 추적 업데이트
+        if not order.download_clicked:
+            order.download_clicked = True
+            order.download_clicked_at = timezone.now()
+        order.download_click_count += 1
+        order.save(update_fields=['download_clicked', 'download_clicked_at', 'download_click_count'])
+        
         # 다운로드 로그 기록
         FileDownloadLog.objects.create(
             order=order,
@@ -660,25 +774,47 @@ def download_file(request, store_id, file_id):
     
     # 파일 전송
     try:
-        file_path = digital_file.file.path
-        if os.path.exists(file_path):
-            # MIME 타입 추측
-            content_type, _ = mimetypes.guess_type(file_path)
-            if content_type is None:
-                content_type = 'application/octet-stream'
-            
-            response = FileResponse(
-                open(file_path, 'rb'),
-                content_type=content_type
-            )
-            response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
-            return response
+        # S3 Storage를 사용하는 경우
+        if hasattr(digital_file.file.storage, 'client'):
+            # S3에서 파일 다운로드
+            try:
+                file_obj = digital_file.file.storage._open(digital_file.file.name)
+                
+                # MIME 타입 추측
+                content_type, _ = mimetypes.guess_type(digital_file.original_filename)
+                if content_type is None:
+                    content_type = 'application/octet-stream'
+                
+                response = FileResponse(
+                    file_obj,
+                    content_type=content_type
+                )
+                response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                return response
+            except Exception as e:
+                logger.error(f"S3 파일 다운로드 오류: {e}", exc_info=True)
+                raise Http404("파일을 찾을 수 없습니다.")
         else:
-            raise Http404("파일을 찾을 수 없습니다.")
+            # 로컬 파일 시스템 사용
+            file_path = digital_file.file.path
+            if os.path.exists(file_path):
+                # MIME 타입 추측
+                content_type, _ = mimetypes.guess_type(file_path)
+                if content_type is None:
+                    content_type = 'application/octet-stream'
+                
+                response = FileResponse(
+                    open(file_path, 'rb'),
+                    content_type=content_type
+                )
+                response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                return response
+            else:
+                raise Http404("파일을 찾을 수 없습니다.")
     except Exception as e:
         logger.error(f"파일 다운로드 오류: {e}", exc_info=True)
         messages.error(request, "파일 다운로드 중 오류가 발생했습니다.")
-        return redirect('file:file_detail', store_id=store.id, file_id=digital_file.id)
+        return redirect('file:file_detail', store_id=store.store_id, file_id=digital_file.id)
 
 
 @login_required

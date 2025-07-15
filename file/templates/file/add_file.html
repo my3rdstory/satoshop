@@ -5,6 +5,10 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/add_file.css' %}">
+<link rel="stylesheet" href="{% static 'css/file-upload-drag-drop.css' %}">
+<link rel="stylesheet" href="{% static 'css/image-upload-drag-drop.css' %}">
+<link rel="stylesheet" href="{% static 'css/file-price-type.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
 {% endblock %}
 
@@ -53,6 +57,7 @@
             <label for="{{ form.preview_image.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               미리보기 이미지 <span class="text-gray-500">(선택)</span>
             </label>
+            <p class="text-xs text-gray-500 mb-2">권장 비율: 16:9 (예: 1920x1080, 1280x720)</p>
             {{ form.preview_image }}
             {% if form.preview_image.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.preview_image.errors.0 }}</p>
@@ -77,23 +82,59 @@
         <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">가격 설정</h2>
         
         <div class="space-y-6">
-          <!-- 가격 표시 방식 -->
+          <!-- 가격 타입 선택 -->
           <div>
-            <label for="{{ form.price_display.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              가격 표시 방식 <span class="text-red-500">*</span>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              가격 타입 <span class="text-red-500">*</span>
             </label>
-            {{ form.price_display }}
-            {% if form.price_display.errors %}
-              <p class="mt-1 text-sm text-red-600">{{ form.price_display.errors.0 }}</p>
-            {% endif %}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <!-- 무료 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('free')">
+                <input type="radio" name="price_display" value="free" id="price_display_free" class="sr-only" checked>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-heart text-green-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">무료</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">가격 없음</p>
+                </div>
+              </div>
+
+              <!-- 사토시 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('sats')">
+                <input type="radio" name="price_display" value="sats" id="price_display_sats" class="sr-only">
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-bitcoin-sign text-orange-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">사토시</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">고정 사토시 가격</p>
+                </div>
+              </div>
+
+              <!-- 원화연동 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('krw')">
+                <input type="radio" name="price_display" value="krw" id="price_display_krw" class="sr-only">
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-won-sign text-blue-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">원화연동</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">원화 기준 자동 계산</p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 사토시 가격 -->
           <div id="sats-price-section" style="display: none;">
             <label for="{{ form.price.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              가격 (satoshi) <span class="text-red-500">*</span>
+              사토시 가격 <span class="text-red-500">*</span>
             </label>
-            {{ form.price }}
+            <div class="relative">
+              {{ form.price }}
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+            </div>
             {% if form.price.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.price.errors.0 }}</p>
             {% endif %}
@@ -102,76 +143,26 @@
           <!-- 원화 가격 -->
           <div id="krw-price-section" style="display: none;">
             <label for="{{ form.price_krw.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              가격 (원) <span class="text-red-500">*</span>
+              원화 가격 <span class="text-red-500">*</span>
             </label>
-            {{ form.price_krw }}
+            <div class="relative">
+              {{ form.price_krw }}
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">원</span>
+            </div>
             {% if form.price_krw.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.price_krw.errors.0 }}</p>
             {% endif %}
-          </div>
-        </div>
-      </div>
-
-      <!-- 할인 설정 -->
-      <div class="form-section">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">할인 설정</h2>
-        
-        <div class="space-y-6">
-          <!-- 할인 적용 -->
-          <div class="flex items-center">
-            {{ form.is_discounted }}
-            <label for="{{ form.is_discounted.id_for_label }}" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              할인 적용
-            </label>
-          </div>
-
-          <div id="discount-section" style="display: none;" class="space-y-6">
-            <!-- 할인가 (사토시) -->
-            <div id="sats-discount-section" style="display: none;">
-              <label for="{{ form.discounted_price.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                할인가 (satoshi)
-              </label>
-              {{ form.discounted_price }}
-              {% if form.discounted_price.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.discounted_price.errors.0 }}</p>
-              {% endif %}
-            </div>
-
-            <!-- 할인가 (원화) -->
-            <div id="krw-discount-section" style="display: none;">
-              <label for="{{ form.discounted_price_krw.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                할인가 (원)
-              </label>
-              {{ form.discounted_price_krw }}
-              {% if form.discounted_price_krw.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.discounted_price_krw.errors.0 }}</p>
-              {% endif %}
-            </div>
-
-            <!-- 할인 종료일 -->
-            <div>
-              <label for="{{ form.discount_end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                할인 종료일
-              </label>
-              {{ form.discount_end_date }}
-              {% if form.discount_end_date.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.discount_end_date.errors.0 }}</p>
-              {% endif %}
-            </div>
-
-            <!-- 할인 종료시간 -->
-            <div>
-              <label for="{{ form.discount_end_time.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                할인 종료시간
-              </label>
-              {{ form.discount_end_time }}
-              {% if form.discount_end_time.errors %}
-                <p class="mt-1 text-sm text-red-600">{{ form.discount_end_time.errors.0 }}</p>
-              {% endif %}
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(실시간 환율 기준)</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
 
       <!-- 판매 설정 -->
       <div class="form-section">
@@ -252,7 +243,21 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/file-price-handler.js' %}"></script>
 <script src="{% static 'js/add_file.js' %}"></script>
+<script src="{% static 'js/file-upload-drag-drop.js' %}"></script>
+<script src="{% static 'js/image-upload-drag-drop.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ko.js"></script>
+<script>
+// 초기화
+document.addEventListener('DOMContentLoaded', function() {
+  // 가격 핸들러 초기화
+  initializeFilePriceHandler();
+  
+  // 초기 가격 타입 설정
+  selectPriceType('free');
+});
+</script>
 {% endblock %}

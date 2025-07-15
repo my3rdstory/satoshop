@@ -36,10 +36,10 @@ class DigitalFileAdmin(admin.ModelAdmin):
 
 @admin.register(FileOrder)
 class FileOrderAdmin(admin.ModelAdmin):
-    list_display = ['order_number', 'user', 'digital_file', 'status', 'price', 'created_at']
-    list_filter = ['status', 'is_discounted', 'created_at']
+    list_display = ['order_number', 'user', 'digital_file', 'status', 'price', 'download_status', 'created_at']
+    list_filter = ['status', 'is_discounted', 'download_clicked', 'created_at']
     search_fields = ['order_number', 'user__username', 'digital_file__name']
-    readonly_fields = ['order_number', 'created_at', 'updated_at']
+    readonly_fields = ['order_number', 'download_clicked_at', 'created_at', 'updated_at']
     
     fieldsets = (
         ('주문 정보', {
@@ -57,10 +57,25 @@ class FileOrderAdmin(admin.ModelAdmin):
         ('확정 정보', {
             'fields': ('confirmed_at', 'confirmation_message_sent', 'download_expires_at')
         }),
+        ('다운로드 추적', {
+            'fields': ('download_clicked', 'download_clicked_at', 'download_click_count'),
+            'description': '구매자가 다운로드 버튼을 클릭했는지 추적합니다.'
+        }),
         ('타임스탬프', {
             'fields': ('created_at', 'updated_at')
         }),
     )
+    
+    def download_status(self, obj):
+        """다운로드 상태 표시"""
+        if obj.status != 'confirmed':
+            return '미구매'
+        elif obj.download_clicked:
+            return f'✅ 다운로드 ({obj.download_click_count}회)'
+        else:
+            return '❌ 미다운로드'
+    
+    download_status.short_description = '다운로드 상태'
 
 
 @admin.register(FileDownloadLog)

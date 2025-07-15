@@ -2,11 +2,20 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator, EmailValidator
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from storage.backends import S3Storage
 from django.utils import timezone
+from django.conf import settings
 from decimal import Decimal
 from datetime import timedelta
 import hashlib
+import logging
 from stores.models import Store
+from PIL import Image
+import io
+
+logger = logging.getLogger(__name__)
 
 
 def validate_file_size(value):
@@ -32,7 +41,8 @@ class DigitalFile(models.Model):
     file = models.FileField(
         upload_to='digital_files/%Y/%m/%d/', 
         verbose_name="파일",
-        validators=[validate_file_size]
+        validators=[validate_file_size],
+        storage=S3Storage() if hasattr(settings, 'S3_ACCESS_KEY_ID') and settings.S3_ACCESS_KEY_ID else default_storage
     )
     original_filename = models.CharField(max_length=255, verbose_name="원본 파일명", blank=True)
     file_size = models.PositiveIntegerField(verbose_name="파일 크기(bytes)", null=True, blank=True)
@@ -43,7 +53,8 @@ class DigitalFile(models.Model):
         upload_to='digital_files/previews/%Y/%m/%d/',
         verbose_name="미리보기 이미지",
         blank=True,
-        null=True
+        null=True,
+        storage=S3Storage() if hasattr(settings, 'S3_ACCESS_KEY_ID') and settings.S3_ACCESS_KEY_ID else default_storage
     )
     
     # 가격 정보
@@ -103,9 +114,90 @@ class DigitalFile(models.Model):
         ]
     
     def __str__(self):
-        return f"[{self.store.name}] {self.name}"
+        return f"[{self.store.store_name}] {self.name}"
     
     def save(self, *args, **kwargs):
+        # 기존 인스턴스 가져오기
+        if self.pk:
+            old_instance = DigitalFile.objects.filter(pk=self.pk).first()
+            
+            # 기존 파일이 있고 새 파일로 교체하는 경우
+            if old_instance and old_instance.file and self.file and old_instance.file != self.file:
+                # 기존 파일 삭제
+                try:
+                    if old_instance.file.storage.exists(old_instance.file.name):
+                        old_instance.file.storage.delete(old_instance.file.name)
+                        logger.info(f"Deleted old file from storage: {old_instance.file.name}")
+                except Exception as e:
+                    logger.error(f"Error deleting old file: {e}")
+            
+            # 기존 썸네일이 있고 새 썸네일로 교체하는 경우
+            if old_instance and old_instance.preview_image and self.preview_image and old_instance.preview_image != self.preview_image:
+                # 기존 썸네일 삭제
+                try:
+                    if old_instance.preview_image.storage.exists(old_instance.preview_image.name):
+                        old_instance.preview_image.storage.delete(old_instance.preview_image.name)
+                        logger.info(f"Deleted old preview image from storage: {old_instance.preview_image.name}")
+                except Exception as e:
+                    logger.error(f"Error deleting old preview image: {e}")
+        
+        # 미리보기 이미지가 있고 처리되지 않은 경우 16:9 비율로 리사이징
+        if self.preview_image and hasattr(self.preview_image, 'file'):
+            try:
+                # 이미지 열기
+                img = Image.open(self.preview_image.file)
+                
+                # RGBA인 경우 RGB로 변환
+                if img.mode == 'RGBA':
+                    background = Image.new('RGB', img.size, (255, 255, 255))
+                    background.paste(img, mask=img.split()[3])
+                    img = background
+                elif img.mode != 'RGB':
+                    img = img.convert('RGB')
+                
+                # 16:9 비율로 리사이징 (가로 1000px 기준)
+                target_width = 1000
+                target_height = int(target_width * 9 / 16)  # 562px
+                
+                # 현재 이미지의 비율 계산
+                current_ratio = img.width / img.height
+                target_ratio = 16 / 9
+                
+                if current_ratio > target_ratio:
+                    # 이미지가 더 넓은 경우 - 좌우를 잘라냄
+                    new_height = img.height
+                    new_width = int(new_height * target_ratio)
+                    left = (img.width - new_width) // 2
+                    right = left + new_width
+                    img = img.crop((left, 0, right, img.height))
+                else:
+                    # 이미지가 더 높은 경우 - 상하를 잘라냄
+                    new_width = img.width
+                    new_height = int(new_width / target_ratio)
+                    top = (img.height - new_height) // 2
+                    bottom = top + new_height
+                    img = img.crop((0, top, img.width, bottom))
+                
+                # 최종 크기로 리사이징
+                img = img.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                
+                # 메모리에 저장
+                output = io.BytesIO()
+                img.save(output, format='JPEG', quality=85, optimize=True)
+                output.seek(0)
+                
+                # 파일명 생성
+                file_name = self.preview_image.name.split('/')[-1]
+                if not file_name.lower().endswith('.jpg'):
+                    file_name = file_name.rsplit('.', 1)[0] + '.jpg'
+                
+                # ContentFile로 변환하여 저장
+                self.preview_image.save(file_name, ContentFile(output.read()), save=False)
+                
+                logger.info(f"Resized preview image to 16:9 ratio (1000x562)")
+            except Exception as e:
+                logger.error(f"Error resizing preview image: {e}")
+        
         if self.file:
             # 원본 파일명 저장
             if not self.original_filename:
@@ -230,6 +322,28 @@ class DigitalFile(models.Model):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
+    
+    def delete(self, *args, **kwargs):
+        """파일 삭제 시 오브젝트 스토리지에서도 삭제"""
+        # 파일 삭제
+        if self.file:
+            try:
+                if self.file.storage.exists(self.file.name):
+                    self.file.storage.delete(self.file.name)
+                    logger.info(f"Deleted file from storage: {self.file.name}")
+            except Exception as e:
+                logger.error(f"Error deleting file: {e}")
+        
+        # 미리보기 이미지 삭제
+        if self.preview_image:
+            try:
+                if self.preview_image.storage.exists(self.preview_image.name):
+                    self.preview_image.storage.delete(self.preview_image.name)
+                    logger.info(f"Deleted preview image from storage: {self.preview_image.name}")
+            except Exception as e:
+                logger.error(f"Error deleting preview image: {e}")
+        
+        super().delete(*args, **kwargs)
 
 
 class FileOrder(models.Model):
@@ -273,6 +387,11 @@ class FileOrder(models.Model):
     # 다운로드 만료일
     download_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="다운로드 만료일")
     
+    # 다운로드 클릭 추적
+    download_clicked = models.BooleanField(default=False, verbose_name="다운로드 버튼 클릭 여부")
+    download_clicked_at = models.DateTimeField(null=True, blank=True, verbose_name="다운로드 버튼 첫 클릭 시간")
+    download_click_count = models.PositiveIntegerField(default=0, verbose_name="다운로드 클릭 횟수")
+    
     # 타임스탬프
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -306,7 +425,10 @@ class FileOrder(models.Model):
         # 주문번호 생성
         if not self.order_number:
             import uuid
-            self.order_number = f"FILE-{timezone.now().strftime('%Y%m%d')}-{str(uuid.uuid4())[:8].upper()}"
+            store_id = self.digital_file.store.store_id
+            date_str = timezone.now().strftime('%Y%m%d')
+            unique_id = str(uuid.uuid4())[:8].upper()
+            self.order_number = f"{store_id}-FILE-{date_str}-{unique_id}"
         
         # 임시 예약 만료 시간 설정 (15분)
         if self.is_temporary_reserved and not self.reservation_expires_at:
