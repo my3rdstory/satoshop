@@ -37,11 +37,15 @@
             <div class="flex space-x-4 flex-1">
               <!-- 미리보기 이미지 -->
               {% if order.digital_file.preview_image %}
-              <img src="{{ order.digital_file.preview_image.url }}" alt="{{ order.digital_file.name }}" 
-                   class="w-20 h-20 rounded-lg object-cover flex-shrink-0">
+              <div class="relative flex-shrink-0" style="width: 128px; height: 72px;">
+                <img src="{{ order.digital_file.preview_image.url }}" alt="{{ order.digital_file.name }}" 
+                     class="absolute inset-0 w-full h-full rounded-lg object-cover">
+              </div>
               {% else %}
-              <div class="w-20 h-20 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-file text-2xl text-purple-600 dark:text-purple-400"></i>
+              <div class="relative bg-purple-100 dark:bg-purple-900 rounded-lg flex-shrink-0" style="width: 128px; height: 72px;">
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <i class="fas fa-file text-2xl text-purple-600 dark:text-purple-400"></i>
+                </div>
               </div>
               {% endif %}
               
