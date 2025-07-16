@@ -136,6 +136,7 @@
 </section>
 
 <!-- 상품 목록 -->
+{% if products %}
 <section id="products-section" class="py-8">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-8">
@@ -158,9 +159,11 @@
     {% endwith %}
   </div>
 </section>
+{% endif %}
 
 <!-- 밋업 목록 -->
-<section id="meetups-section" class="py-8 bg-gray-50 dark:bg-gray-900">
+{% if meetups %}
+<section id="meetups-section" class="py-8 {% if products %}bg-gray-50 dark:bg-gray-900{% endif %}">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-8">
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
@@ -182,6 +185,33 @@
     {% endwith %}
   </div>
 </section>
+{% endif %}
+
+<!-- 라이브 강의 목록 -->
+{% if live_lectures %}
+<section id="live-lectures-section" class="py-8 {% if products and meetups %}{% elif products and not meetups %}bg-gray-50 dark:bg-gray-900{% elif not products and meetups %}bg-gray-50 dark:bg-gray-900{% else %}{% endif %}">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-video text-green-500 mr-3"></i>
+        라이브 강의 목록
+      </h2>
+      <a href="{% url 'lecture:live_lecture_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
+    </div>
+
+    <!-- 라이브 강의 그리드 (최대 4개만 표시) -->
+    {% with live_lectures|slice:":4" as limited_live_lectures %}
+    {% with True as is_public_view %}
+    {% include 'lecture/lecture_live_grid.html' with live_lectures=limited_live_lectures %}
+    {% endwith %}
+    {% endwith %}
+  </div>
+</section>
+{% endif %}
 
 <!-- 이미지 모달 -->
 {% if store.images.exists %}
