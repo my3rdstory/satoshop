@@ -1,58 +1,7 @@
 from django.contrib import admin
-from .models import Category, Lecture, LectureEnrollment, LectureReview, LiveLecture, LiveLectureImage, LiveLectureOrder
+from .models import LiveLecture, LiveLectureImage, LiveLectureOrder
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'created_at']
-    search_fields = ['name']
-    ordering = ['-created_at']
-
-
-@admin.register(Lecture)
-class LectureAdmin(admin.ModelAdmin):
-    list_display = ['title', 'category', 'instructor', 'difficulty', 'price', 'status', 'enrolled_count', 'start_date']
-    list_filter = ['category', 'difficulty', 'status', 'created_at']
-    search_fields = ['title', 'instructor__username', 'instructor__first_name', 'instructor__last_name']
-    ordering = ['-created_at']
-    readonly_fields = ['enrolled_count', 'created_at', 'updated_at']
-    
-    fieldsets = (
-        ('기본 정보', {
-            'fields': ('title', 'description', 'category', 'instructor')
-        }),
-        ('강의 설정', {
-            'fields': ('difficulty', 'duration', 'max_students', 'price', 'status')
-        }),
-        ('일정', {
-            'fields': ('start_date', 'end_date')
-        }),
-        ('이미지', {
-            'fields': ('thumbnail',)
-        }),
-        ('통계', {
-            'fields': ('enrolled_count', 'created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-
-@admin.register(LectureEnrollment)
-class LectureEnrollmentAdmin(admin.ModelAdmin):
-    list_display = ['lecture', 'student', 'status', 'enrolled_at']
-    list_filter = ['status', 'enrolled_at', 'lecture__category']
-    search_fields = ['lecture__title', 'student__username', 'student__first_name', 'student__last_name']
-    ordering = ['-enrolled_at']
-    readonly_fields = ['enrolled_at']
-
-
-@admin.register(LectureReview)
-class LectureReviewAdmin(admin.ModelAdmin):
-    list_display = ['lecture', 'student', 'rating', 'created_at']
-    list_filter = ['rating', 'created_at', 'lecture__category']
-    search_fields = ['lecture__title', 'student__username', 'comment']
-    ordering = ['-created_at']
-    readonly_fields = ['created_at']
 
 
 class LiveLectureImageInline(admin.TabularInline):
@@ -69,6 +18,7 @@ class LiveLectureAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
     readonly_fields = ['current_participants', 'created_at', 'updated_at']
     inlines = [LiveLectureImageInline]
+    list_per_page = 10
     
     fieldsets = (
         ('기본 정보', {
@@ -102,25 +52,12 @@ class LiveLectureAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         """삭제된 라이브 강의는 목록에서 제외"""
-        return super().get_queryset(request).filter(deleted_at__isnull=True)
+        return super().get_queryset(request).filter(deleted_at__isnull=True).select_related('store')
     
     def get_readonly_fields(self, request, obj=None):
         if obj:  # 수정 시
             return self.readonly_fields + ['store']
         return self.readonly_fields
-
-
-@admin.register(LiveLectureImage)
-class LiveLectureImageAdmin(admin.ModelAdmin):
-    list_display = ['live_lecture', 'original_name', 'file_size_display', 'width', 'height', 'uploaded_at']
-    list_filter = ['uploaded_at', 'live_lecture__store']
-    search_fields = ['live_lecture__name', 'original_name']
-    ordering = ['-uploaded_at']
-    readonly_fields = ['file_size', 'width', 'height', 'uploaded_at', 'uploaded_by']
-    
-    def file_size_display(self, obj):
-        return obj.get_file_size_display()
-    file_size_display.short_description = '파일 크기'
 
 
 @admin.register(LiveLectureOrder)
@@ -130,6 +67,10 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
     search_fields = ['live_lecture__name', 'user__username', 'user__email', 'order_number']
     ordering = ['-created_at']
     readonly_fields = ['order_number', 'created_at', 'updated_at', 'paid_at', 'confirmed_at']
+    list_per_page = 10
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('live_lecture', 'live_lecture__store', 'user')
     
     fieldsets = (
         ('주문 정보', {

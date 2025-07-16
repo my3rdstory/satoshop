@@ -13,6 +13,7 @@ class LightningUserAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'last_login_at']
     search_fields = ['user__username', 'public_key']
     readonly_fields = ['created_at', 'last_login_at']
+    list_per_page = 10
     
     def public_key_short(self, obj):
         return f"{obj.public_key[:16]}..."
@@ -29,6 +30,9 @@ class LightningUserAdmin(admin.ModelAdmin):
     
     def has_add_permission(self, request):
         return False  # 수동 생성 방지
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
     
     def has_change_permission(self, request, obj=None):
         return request.user.is_superuser  # 관리자만 수정 가능
@@ -86,11 +90,14 @@ class CustomUserAdmin(UserAdmin):
     
     def meetup_participation_count(self, obj):
         """밋업 참가 횟수 표시"""
-        from meetup.models import MeetupOrder
-        count = MeetupOrder.objects.filter(
-            user=obj,
-            status__in=['confirmed', 'completed']
-        ).count()
+        # get_queryset에서 annotation으로 처리하면 더 효율적
+        count = getattr(obj, '_meetup_count', None)
+        if count is None:
+            from meetup.models import MeetupOrder
+            count = MeetupOrder.objects.filter(
+                user=obj,
+                status__in=['confirmed', 'completed']
+            ).count()
         if count > 0:
             return format_html(
                 '<span style="color: #28a745; font-weight: bold;">📅 {}회</span>',
@@ -101,8 +108,22 @@ class CustomUserAdmin(UserAdmin):
     meetup_participation_count.short_description = '밋업 참가'
     
     def get_queryset(self, request):
-        """쿼리 최적화 - 라이트닝 프로필 정보를 미리 로드"""
-        return super().get_queryset(request).select_related('lightning_profile')
+        """쿼리 최적화 - 라이트닝 프로필 정보를 미리 로드하고 밋업 참가 횟수 annotation"""
+        qs = super().get_queryset(request).select_related('lightning_profile')
+        
+        # list view일 때만 meetup count annotation 추가
+        if not self.get_changelist_instance(request):
+            return qs
+            
+        from django.db.models import Count, Q
+        from meetup.models import MeetupOrder
+        
+        return qs.annotate(
+            _meetup_count=Count(
+                'meetuporder',
+                filter=Q(meetuporder__status__in=['confirmed', 'completed'])
+            )
+        )
 
 
 
