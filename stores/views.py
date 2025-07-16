@@ -610,10 +610,19 @@ def store_detail(request, store_id):
             is_active=True
         ).order_by('-created_at')[:4]
         
+        # 라이브 강의 목록도 함께 가져오기 (최대 4개만)
+        from lecture.models import LiveLecture
+        live_lectures = LiveLecture.objects.filter(
+            store=store,
+            is_active=True,
+            deleted_at__isnull=True
+        ).order_by('-created_at')[:4]
+        
         return render(request, 'stores/store_detail.html', {
             'store': store,
             'products': products,
             'meetups': meetups,
+            'live_lectures': live_lectures,
         })
     else:
         # 비활성화된 스토어는 안내 페이지 표시
