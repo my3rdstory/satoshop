@@ -275,6 +275,16 @@ class DigitalFile(models.Model):
         return current
     
     @property
+    def current_price_krw(self):
+        """현재 원화 가격 (원화연동인 경우)"""
+        if self.price_display != 'krw':
+            return None
+        
+        if self.is_discount_active:
+            return self.discounted_price_krw or self.price_krw
+        return self.price_krw
+    
+    @property
     def price_unit(self):
         """가격 단위 반환"""
         if self.price_display == 'free':
@@ -311,6 +321,37 @@ class DigitalFile(models.Model):
         """판매 횟수"""
         return self.orders.filter(status='confirmed').count()
     
+    @property
+    def get_price_sats(self):
+        """정가를 사토시로 반환"""
+        if self.price_display == 'free':
+            return 0
+        
+        if self.price_display == 'krw' and self.price_krw is not None:
+            from myshop.models import ExchangeRate
+            latest_rate = ExchangeRate.get_latest_rate()
+            if latest_rate and latest_rate.btc_krw_rate > 0:
+                btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
+                sats_amount = btc_amount * 100_000_000
+                return round(sats_amount)
+        
+        return self.price
+    
+    @property
+    def discount_percentage(self):
+        """할인율 계산"""
+        if not self.is_discount_active:
+            return 0
+        
+        if self.price_display == 'krw':
+            if self.price_krw and self.discounted_price_krw:
+                return round((self.price_krw - self.discounted_price_krw) / self.price_krw * 100)
+        else:
+            if self.price and self.discounted_price:
+                return round((self.price - self.discounted_price) / self.price * 100)
+        
+        return 0
+    
     def get_file_size_display(self):
         """파일 크기를 읽기 쉬운 형태로 반환"""
         if not self.file_size:
@@ -322,6 +363,17 @@ class DigitalFile(models.Model):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
+    
+    @property
+    def preview_image_url(self):
+        """미리보기 이미지 URL을 안전하게 반환"""
+        if not self.preview_image:
+            return None
+        try:
+            return self.preview_image.url
+        except Exception as e:
+            logger.warning(f"Preview image URL error for file {self.id}: {e}")
+            return None
     
     def delete(self, *args, **kwargs):
         """파일 삭제 시 오브젝트 스토리지에서도 삭제"""

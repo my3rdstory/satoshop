@@ -163,6 +163,14 @@ def edit_file(request, store_id, file_id):
     
     digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
     
+    # preview_image URL 접근 시 에러 방지 (GET/POST 모두에서 필요)
+    preview_image_url = None
+    if digital_file.preview_image:
+        try:
+            preview_image_url = digital_file.preview_image.url
+        except Exception as e:
+            logger.warning(f"Preview image URL error for file {file_id}: {e}")
+    
     if request.method == 'POST':
         # 다중 파일 정보 확인 (새 파일 추가 기능)
         files_info = request.POST.get('files_info', '')
@@ -186,6 +194,7 @@ def edit_file(request, store_id, file_id):
         'store': store,
         'form': form,
         'digital_file': digital_file,
+        'preview_image_url': preview_image_url,
         'is_owner': True,
     }
     return render(request, 'file/edit_file.html', context)

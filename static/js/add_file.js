@@ -4,9 +4,14 @@
 let descriptionEditor;
 let purchaseMessageEditor;
 
+// 현재 선택된 가격 타입 가져오기 (전역 함수로 선언)
+function getSelectedPriceType() {
+    const selectedRadio = document.querySelector('input[name="price_display"]:checked');
+    return selectedRadio ? selectedRadio.value : 'free';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // 요소 선택
-    const priceDisplay = document.getElementById('id_price_display');
     const satsPriceSection = document.getElementById('sats-price-section');
     const krwPriceSection = document.getElementById('krw-price-section');
     const fileInput = document.getElementById('id_file');
@@ -127,14 +132,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) {
         form.addEventListener('submit', function(e) {
             // 가격 검증
-            if (priceDisplay.value === 'sats') {
+            const selectedPriceType = getSelectedPriceType();
+            if (selectedPriceType === 'sats') {
                 const priceInput = document.getElementById('id_price');
                 if (priceInput && (!priceInput.value || priceInput.value <= 0)) {
                     alert('사토시 가격을 입력해주세요.');
                     e.preventDefault();
                     return;
                 }
-            } else if (priceDisplay.value === 'krw') {
+            } else if (selectedPriceType === 'krw') {
                 const priceKrwInput = document.getElementById('id_price_krw');
                 if (priceKrwInput && (!priceKrwInput.value || priceKrwInput.value <= 0)) {
                     alert('원화 가격을 입력해주세요.');

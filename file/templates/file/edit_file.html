@@ -65,11 +65,11 @@
               미리보기 이미지 <span class="text-gray-500">(선택)</span>
             </label>
             <p class="text-xs text-gray-500 mb-2">권장 비율: 16:9 (예: 1920x1080, 1280x720)</p>
-            {% if digital_file.preview_image %}
+            {% if preview_image_url %}
               <div class="mb-4 existing-preview-image">
                 <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">현재 미리보기 이미지</p>
                 <div class="preview-image-wrapper">
-                  <img src="{{ digital_file.preview_image.url }}" alt="현재 미리보기" class="preview-image">
+                  <img src="{{ preview_image_url }}" alt="현재 미리보기" class="preview-image">
                 </div>
               </div>
             {% endif %}
@@ -191,11 +191,16 @@
               <span class="text-xs text-gray-500">(비워두면 무제한)</span>
             </label>
             {{ form.max_downloads }}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <i class="fas fa-info-circle"></i> 설정한 수량만큼만 판매됩니다. 예: 100개 한정판
+            </p>
+            {% if digital_file.sales_count > 0 %}
+              <p class="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                <i class="fas fa-chart-line"></i> 현재 {{ digital_file.sales_count }}개 판매됨
+              </p>
+            {% endif %}
             {% if form.max_downloads.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.max_downloads.errors.0 }}</p>
-            {% endif %}
-            {% if digital_file.sales_count > 0 %}
-              <p class="mt-1 text-xs text-gray-500">현재 {{ digital_file.sales_count }}개 판매됨</p>
             {% endif %}
           </div>
 
@@ -206,6 +211,9 @@
               <span class="text-xs text-gray-500">(비워두면 무제한)</span>
             </label>
             {{ form.download_expiry_days }}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <i class="fas fa-info-circle"></i> 구매일로부터 설정한 일수 동안만 다운로드 가능합니다. 예: 30일 → 구매 후 30일까지
+            </p>
             {% if form.download_expiry_days.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.download_expiry_days.errors.0 }}</p>
             {% endif %}

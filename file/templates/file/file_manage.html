@@ -135,9 +135,9 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <a href="{% url 'file:file_detail' store.store_id file.id %}" 
                    class="flex items-center hover:opacity-80 transition-opacity">
-                  {% if file.preview_image %}
+                  {% if file.preview_image_url %}
                   <div class="relative w-16 h-9 mr-3">
-                    <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
+                    <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
                          class="absolute inset-0 w-full h-full rounded-lg object-cover">
                   </div>
                   {% else %}
@@ -153,18 +153,39 @@
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">
                       {{ file.get_file_size_display }}
+                      {% if file.max_downloads %}
+                        <span class="ml-2">
+                          <i class="fas fa-user-times text-yellow-500"></i>
+                          한정 {{ file.available_downloads }}/{{ file.max_downloads }}
+                        </span>
+                      {% endif %}
+                      {% if file.download_expiry_days %}
+                        <span class="ml-2">
+                          <i class="fas fa-clock text-blue-500"></i>
+                          {{ file.download_expiry_days }}일
+                        </span>
+                      {% endif %}
                     </div>
                   </div>
                 </a>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 {% if file.price_display == 'free' %}
-                  <span class="text-sm text-green-600 dark:text-green-400">무료</span>
+                  <span class="text-sm font-semibold text-green-600 dark:text-green-400">
+                    <i class="fas fa-gift mr-1"></i>무료
+                  </span>
                 {% else %}
-                  <div class="text-sm text-gray-900 dark:text-white">
-                    {{ file.current_price|intcomma }} {{ file.price_unit }}
+                  <div class="text-sm">
+                    <span class="font-semibold text-purple-600 dark:text-purple-400">
+                      {{ file.current_price_sats|floatformat:0|intcomma }} sats
+                      {% if file.price_display == 'krw' %}
+                      <span class="text-xs text-gray-600 dark:text-gray-400">
+                        (₩{{ file.current_price_krw|floatformat:0|intcomma }})
+                      </span>
+                      {% endif %}
+                    </span>
                     {% if file.is_discount_active %}
-                      <span class="text-xs text-red-500 ml-1">할인중</span>
+                      <span class="text-xs bg-red-500 text-white px-1 py-0.5 rounded ml-1">{{ file.discount_percentage }}% 할인</span>
                     {% endif %}
                   </div>
                 {% endif %}

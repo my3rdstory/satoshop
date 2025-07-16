@@ -176,6 +176,9 @@
               <span class="text-xs text-gray-500">(비워두면 무제한)</span>
             </label>
             {{ form.max_downloads }}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <i class="fas fa-info-circle"></i> 설정한 수량만큼만 판매됩니다. 예: 100개 한정판
+            </p>
             {% if form.max_downloads.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.max_downloads.errors.0 }}</p>
             {% endif %}
@@ -188,6 +191,9 @@
               <span class="text-xs text-gray-500">(비워두면 무제한)</span>
             </label>
             {{ form.download_expiry_days }}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <i class="fas fa-info-circle"></i> 구매일로부터 설정한 일수 동안만 다운로드 가능합니다. 예: 30일 → 구매 후 30일까지
+            </p>
             {% if form.download_expiry_days.errors %}
               <p class="mt-1 text-sm text-red-600">{{ form.download_expiry_days.errors.0 }}</p>
             {% endif %}

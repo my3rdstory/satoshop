@@ -218,31 +218,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 폼 제출 전 검증
         form.addEventListener('submit', function(e) {
-            // 가격 검증
-            if (priceDisplay.value === 'sats') {
-                const priceInput = document.getElementById('id_price');
-                if (priceInput && (!priceInput.value || priceInput.value <= 0)) {
-                    alert('사토시 가격을 입력해주세요.');
-                    e.preventDefault();
-                    return;
-                }
-            } else if (priceDisplay.value === 'krw') {
-                const priceKrwInput = document.getElementById('id_price_krw');
-                if (priceKrwInput && (!priceKrwInput.value || priceKrwInput.value <= 0)) {
-                    alert('원화 가격을 입력해주세요.');
-                    e.preventDefault();
-                    return;
+            // priceDisplay가 존재하는지 확인
+            if (priceDisplay) {
+                // 가격 검증
+                if (priceDisplay.value === 'sats') {
+                    const priceInput = document.getElementById('id_price');
+                    if (priceInput && (!priceInput.value || priceInput.value <= 0)) {
+                        alert('사토시 가격을 입력해주세요.');
+                        e.preventDefault();
+                        return;
+                    }
+                } else if (priceDisplay.value === 'krw') {
+                    const priceKrwInput = document.getElementById('id_price_krw');
+                    if (priceKrwInput && (!priceKrwInput.value || priceKrwInput.value <= 0)) {
+                        alert('원화 가격을 입력해주세요.');
+                        e.preventDefault();
+                        return;
+                    }
                 }
             }
 
+            // 폼 제출 시 변경 사항 플래그 리셋
+            hasChanges = false;
 
             // 제출 시 변경 사항 표시
-            if (hasChanges) {
-                const submitButton = form.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>저장 중...';
-                }
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>저장 중...';
             }
         });
     }
@@ -253,6 +256,19 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.returnValue = '변경사항이 저장되지 않았습니다. 페이지를 떠나시겠습니까?';
         }
+    });
+
+    // 모든 입력 필드에서 엔터키 처리 (textarea 제외)
+    const allInputs = form.querySelectorAll('input[type="text"], input[type="number"], select');
+    allInputs.forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                // 엔터키 누를 때 경고창 방지를 위해 플래그 리셋
+                setTimeout(() => {
+                    hasChanges = false;
+                }, 0);
+            }
+        });
     });
 
 });
