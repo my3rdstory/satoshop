@@ -12,7 +12,7 @@ from django.db import transaction
 from django.core.paginator import Paginator
 
 from stores.models import Store
-from .models import Lecture, Category, LectureEnrollment, LectureReview, LiveLecture, LiveLectureImage, LiveLectureOrder
+from .models import Lecture, LectureEnrollment, LectureReview, LiveLecture, LiveLectureImage, LiveLectureOrder
 from .forms import LiveLectureForm
 import json
 import logging
@@ -30,12 +30,9 @@ class LectureListView(ListView):
     paginate_by = 12
     
     def get_queryset(self):
-        queryset = Lecture.objects.filter(status='published').select_related('category', 'instructor')
+        queryset = Lecture.objects.filter(status='published').select_related('instructor')
         
-        # 카테고리 필터
-        category_id = self.kwargs.get('category_id')
-        if category_id:
-            queryset = queryset.filter(category_id=category_id)
+        # 카테고리 필터 제거됨
             
         # 검색
         search = self.request.GET.get('search')
@@ -56,8 +53,7 @@ class LectureListView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.all()
-        context['current_category'] = self.kwargs.get('category_id')
+        # 카테고리 관련 컨텍스트 제거됨
         context['search'] = self.request.GET.get('search', '')
         context['sort'] = self.request.GET.get('sort', '-created_at')
         return context

@@ -10,20 +10,6 @@ import datetime
 import uuid
 
 
-class Category(models.Model):
-    """강의 카테고리"""
-    name = models.CharField(max_length=100, verbose_name="카테고리명")
-    description = models.TextField(blank=True, verbose_name="설명")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
-    
-    class Meta:
-        verbose_name = "카테고리"
-        verbose_name_plural = "카테고리"
-        
-    def __str__(self):
-        return self.name
-
-
 class Lecture(models.Model):
     """강의"""
     DIFFICULTY_CHOICES = [
@@ -40,7 +26,7 @@ class Lecture(models.Model):
     
     title = models.CharField(max_length=200, verbose_name="강의명")
     description = models.TextField(verbose_name="강의 설명")
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, verbose_name="카테고리")
+    # category field removed
     instructor = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="강사")
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, verbose_name="난이도")
     duration = models.PositiveIntegerField(verbose_name="강의 시간(분)")

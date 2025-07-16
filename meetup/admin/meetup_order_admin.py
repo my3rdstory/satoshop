@@ -53,8 +53,14 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     ]
 
     def get_queryset(self, request):
-        """queryset에 결제해시 유무 어노테이션 추가"""
+        """queryset에 결제해시 유무 어노테이션 추가 및 쿼리 최적화"""
         queryset = super().get_queryset(request)
+        
+        # select_related로 meetup과 store 정보 미리 로드
+        queryset = queryset.select_related('meetup', 'meetup__store', 'user')
+        
+        # prefetch_related로 옵션 정보 미리 로드
+        queryset = queryset.prefetch_related('selected_options')
         
         queryset = queryset.annotate(
             has_payment_hash=Case(

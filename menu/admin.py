@@ -9,6 +9,10 @@ class MenuCategoryAdmin(admin.ModelAdmin):
     search_fields = ['name', 'store__store_name']
     readonly_fields = ['id', 'created_at', 'updated_at']
     ordering = ['store', 'name']
+    list_per_page = 10
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('store')
 
 class MenuImageInline(admin.TabularInline):
     """메뉴 이미지 인라인 어드민"""
@@ -51,6 +55,10 @@ class MenuAdmin(admin.ModelAdmin):
     readonly_fields = ['id', 'created_at', 'updated_at']
     filter_horizontal = ['categories']
     inlines = [MenuImageInline, MenuOptionInline]
+    list_per_page = 10
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('store').prefetch_related('categories')
     
     def get_categories(self, obj):
         """메뉴의 카테고리들을 콤마로 구분하여 표시"""
@@ -232,6 +240,9 @@ class MenuOrderAdmin(admin.ModelAdmin):
         )
     status_colored.short_description = '주문 상태'
     status_colored.admin_order_field = 'status'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('store').prefetch_related('items')
     
     def items_count(self, obj):
         """주문 아이템 개수"""

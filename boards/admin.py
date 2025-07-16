@@ -10,6 +10,7 @@ class NoticeAdmin(admin.ModelAdmin):
     readonly_fields = ['views', 'created_at', 'updated_at']
     list_editable = ['is_pinned', 'is_active']
     ordering = ['-is_pinned', '-created_at']
+    list_per_page = 10
     
     fieldsets = (
         ('기본 정보', {
@@ -24,6 +25,9 @@ class NoticeAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('author')
+    
     def save_model(self, request, obj, form, change):
         if not change:  # 새 게시글인 경우
             obj.author = request.user
@@ -38,6 +42,10 @@ class NoticeCommentAdmin(admin.ModelAdmin):
     readonly_fields = ['created_at', 'updated_at']
     list_editable = ['is_active']
     ordering = ['-created_at']
+    list_per_page = 10
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('author', 'notice')
     
     def content_preview(self, obj):
         return obj.content[:50] + '...' if len(obj.content) > 50 else obj.content

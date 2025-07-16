@@ -72,6 +72,7 @@ class MeetupAdmin(admin.ModelAdmin):
         'id', 'created_at', 'updated_at', 'current_price', 'is_early_bird_active', 
         'public_discount_rate', 'current_participants'
     ]
+    list_per_page = 10
     # inlines = [MeetupImageInline, MeetupOptionInline]  # 밋업 이미지와 옵션 인라인 비활성화
     
     # 액션 추가
@@ -81,9 +82,9 @@ class MeetupAdmin(admin.ModelAdmin):
     ]
     
     def get_queryset(self, request):
-        """삭제된 밋업을 어드민 목록에서 제외"""
+        """삭제된 밋업을 어드민 목록에서 제외하고 쿼리 최적화"""
         qs = super().get_queryset(request)
-        return qs.filter(deleted_at__isnull=True)
+        return qs.filter(deleted_at__isnull=True).select_related('store').prefetch_related('orders')
     
     def price_display(self, obj):
         """가격 표시"""
@@ -136,12 +137,14 @@ class MeetupAdmin(admin.ModelAdmin):
     
     def cancelled_orders_count(self, obj):
         """취소된 주문 수"""
-        return obj.orders.filter(status='cancelled').count()
+        # prefetch_related로 이미 로드된 orders 사용
+        return len([o for o in obj.orders.all() if o.status == 'cancelled'])
     cancelled_orders_count.short_description = '취소된 주문'
     
     def view_participants_button(self, obj):
         """참가자 목록 보기 버튼 - 어드민 내에서 밋업 주문 목록으로 이동"""
-        participants_count = obj.orders.filter(status__in=['confirmed', 'completed']).count()
+        # prefetch_related로 이미 로드된 orders 사용
+        participants_count = len([o for o in obj.orders.all() if o.status in ['confirmed', 'completed']])
         if participants_count > 0:
             # 장고 어드민의 MeetupOrder 목록으로 이동하면서 현재 밋업 필터 적용
             admin_url = reverse('admin:meetup_meetuporder_changelist')

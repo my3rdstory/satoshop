@@ -493,4 +493,196 @@ a.active:hover,
 .theme-toggle,
 button.theme-toggle {
     display: none !important;
+}
+
+/* Django Admin 브레드크럼 숨기기 */
+div.breadcrumbs,
+.breadcrumbs,
+#breadcrumbs,
+.module .breadcrumbs,
+#content .breadcrumbs,
+body .breadcrumbs {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+/* 최상단 헤더 고정 (Sticky) */
+#header {
+    position: sticky !important;
+    position: -webkit-sticky !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    background: #417690 !important;
+    margin: 0 !important;
+}
+
+/* 헤더 내부 요소들 높이 조정 */
+#header #branding {
+    height: 32px !important;
+    line-height: 32px !important;
+}
+
+#header #branding h1 {
+    margin: 0 !important;
+    padding: 0 8px !important;
+    line-height: 32px !important;
+    font-size: 14px !important;
+}
+
+#header #user-tools {
+    padding: 0 8px !important;
+    line-height: 32px !important;
+    font-size: 11px !important;
+}
+
+/* body 기본 설정 */
+body {
+    margin: 0 !important;
+}
+
+/* 사이드바는 기본 위치 유지 */
+#nav-sidebar {
+    /* Django 기본 스타일 사용 */
+}
+
+/* 메인 콘텐츠 영역 - 기본 설정 복원 후 너비만 조정 */
+#content {
+    /* 기본 마진과 패딩 유지하되 최대 너비 제한 제거 */
+}
+
+/* 전체 너비 사용을 위한 설정 */
+@media (min-width: 767px) {
+    #content {
+        max-width: none !important;
+    }
+    
+    .flex-container {
+        max-width: none !important;
+    }
+    
+    #changelist {
+        width: 100% !important;
+    }
+    
+    #changelist .results {
+        width: 100% !important;
+    }
+    
+    #changelist .actions {
+        max-width: none !important;
+    }
+    
+    #changelist-filter {
+        /* 필터는 기본 너비 유지 */
+    }
+    
+    #changelist #content-main {
+        width: 100% !important;
+    }
+}
+
+/* 사이드바가 숨겨진 경우 */
+body.nav-sidebar-collapsed #nav-sidebar {
+    display: none !important;
+}
+
+body.nav-sidebar-collapsed #content {
+    margin-left: 0 !important;
+}
+
+/* nav-filter 검색창 숨기기 */
+#nav-filter,
+input#nav-filter,
+.nav-filter,
+#nav-sidebar #nav-filter,
+.sidebar #nav-filter {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* nav-filter 컨테이너도 숨기기 */
+#nav-sidebar .filter,
+.sidebar .filter {
+    display: none !important;
+}
+
+/* 위아래 여백 줄이기 - 테이블 캡션 */
+caption,
+table caption,
+.module caption {
+    padding: 2px 8px !important; /* 기존 패딩을 줄임 */
+    margin: 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* 모듈 간 여백 줄이기 */
+.module {
+    margin-bottom: 8px !important; /* 기존 여백을 줄임 */
+}
+
+/* 폼 필드 여백 줄이기 */
+.form-row {
+    padding: 6px 10px !important; /* 기존 패딩을 줄임 */
+}
+
+/* 테이블 셀 여백 줄이기 */
+td, th {
+    padding: 6px 8px !important; /* 기존 패딩을 줄임 */
+}
+
+/* 제목 여백 줄이기 */
+h1, h2, h3, h4, h5, h6 {
+    margin: 8px 0 !important; /* 기존 마진을 줄임 */
+}
+
+/* 콘텐츠 영역 상단 여백 줄이기 */
+#content {
+    padding: 10px 20px !important; /* 기존 패딩을 줄임 */
+}
+
+/* 페이지 헤더 여백 줄이기 */
+#content-main {
+    margin-top: 0 !important;
+}
+
+/* 액션 바 여백 줄이기 */
+.actions {
+    padding: 6px !important;
+    margin: 0 !important;
+}
+
+/* 버튼 여백 줄이기 */
+.submit-row {
+    padding: 8px 16px !important;
+    margin: 10px 0 0 0 !important;
+}
+
+/* 인라인 관련 여백 줄이기 */
+.inline-group {
+    margin-bottom: 10px !important;
+}
+
+.inline-related {
+    margin-bottom: 8px !important;
+}
+
+/* 필드셋 여백 줄이기 */
+fieldset {
+    margin-bottom: 10px !important;
+    padding: 8px !important;
+}
+
+/* 도움말 텍스트 여백 줄이기 */
+.help {
+    margin: 2px 0 !important;
+    padding: 2px 0 !important;
 } 

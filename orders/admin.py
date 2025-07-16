@@ -53,49 +53,54 @@ class CartItemInline(admin.TabularInline):
     product_link.short_description = '상품'
 
 
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ['user', 'total_items', 'total_amount', 'stores_count', 'last_updated', 'created_at']
-    list_filter = ['created_at', 'updated_at']
-    search_fields = ['user__username', 'user__email']
-    readonly_fields = ['created_at', 'updated_at', 'total_amount', 'total_items', 'stores_list']
-    list_per_page = 10
-    
-    fieldsets = (
-        ('장바구니 정보', {
-            'fields': ('user', 'total_items', 'total_amount', 'stores_list')
-        }),
-        ('메타 정보', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        })
-    )
-    
-    inlines = [CartItemInline]
-    
-    def total_items(self, obj):
-        return obj.items.count()
-    total_items.short_description = '상품 수'
-    
-    def stores_count(self, obj):
-        stores = set()
-        for item in obj.items.all():
-            if item.product and item.product.store:
-                stores.add(item.product.store.store_name)
-        return len(stores)
-    stores_count.short_description = '스토어 수'
-    
-    def stores_list(self, obj):
-        stores = set()
-        for item in obj.items.all():
-            if item.product and item.product.store:
-                stores.add(item.product.store.store_name)
-        return ', '.join(sorted(stores)) if stores else '-'
-    stores_list.short_description = '포함된 스토어들'
-    
-    def last_updated(self, obj):
-        return obj.updated_at
-    last_updated.short_description = '마지막 수정'
+# @admin.register(Cart)  # 장바구니들 메뉴 제거
+# class CartAdmin(admin.ModelAdmin):
+#     list_display = ['user', 'total_items', 'total_amount', 'stores_count', 'last_updated', 'created_at']
+#     list_filter = ['created_at', 'updated_at']
+#     search_fields = ['user__username', 'user__email']
+#     readonly_fields = ['created_at', 'updated_at', 'total_amount', 'total_items', 'stores_list']
+#     list_per_page = 10
+#     
+#     fieldsets = (
+#         ('장바구니 정보', {
+#             'fields': ('user', 'total_items', 'total_amount', 'stores_list')
+#         }),
+#         ('메타 정보', {
+#             'fields': ('created_at', 'updated_at'),
+#             'classes': ('collapse',)
+#         })
+#     )
+#     
+#     inlines = [CartItemInline]
+#     
+#     def get_queryset(self, request):
+#         return super().get_queryset(request).select_related('user').prefetch_related(
+#             'items__product__store'
+#         )
+#     
+#     def total_items(self, obj):
+#         return obj.items.count()
+#     total_items.short_description = '상품 수'
+#     
+#     def stores_count(self, obj):
+#         stores = set()
+#         for item in obj.items.all():
+#             if item.product and item.product.store:
+#                 stores.add(item.product.store.store_name)
+#         return len(stores)
+#     stores_count.short_description = '스토어 수'
+#     
+#     def stores_list(self, obj):
+#         stores = set()
+#         for item in obj.items.all():
+#             if item.product and item.product.store:
+#                 stores.add(item.product.store.store_name)
+#         return ', '.join(sorted(stores)) if stores else '-'
+#     stores_list.short_description = '포함된 스토어들'
+#     
+#     def last_updated(self, obj):
+#         return obj.updated_at
+#     last_updated.short_description = '마지막 수정'
 
 
 # CartItem은 Cart의 인라인으로만 관리하므로 별도 어드민 등록하지 않음
@@ -184,6 +189,9 @@ class OrderAdmin(admin.ModelAdmin):
     )
     
     inlines = [OrderItemInline]
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user', 'store').prefetch_related('items')
     
     def order_number_link(self, obj):
         """주문번호를 링크로 표시"""

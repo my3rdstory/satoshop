@@ -8,7 +8,6 @@ urlpatterns = [
     path('<int:pk>/', views.LectureDetailView.as_view(), name='detail'),
     path('<int:pk>/enroll/', views.enroll_lecture, name='enroll'),
     path('my-lectures/', views.MyLecturesView.as_view(), name='my_lectures'),
-    path('category/<int:category_id>/', views.LectureListView.as_view(), name='category'),
     
     # 전체 라이브 강의 둘러보기
     path('browse/', views.browse_live_lectures, name='browse_live_lectures'),
