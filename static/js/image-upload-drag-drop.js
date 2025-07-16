@@ -131,7 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
     function showPreview(imageSrc, fileName) {
         previewContainer.innerHTML = `
             <div class="image-preview-item">
-                <img src="${imageSrc}" alt="미리보기" class="preview-image">
+                <div class="preview-image-wrapper">
+                    <img src="${imageSrc}" alt="미리보기" class="preview-image">
+                </div>
                 <div class="preview-info">
                     <p class="preview-filename">${escapeHtml(fileName)}</p>
                     <button type="button" class="btn-remove-image">

@@ -66,9 +66,11 @@
             </label>
             <p class="text-xs text-gray-500 mb-2">권장 비율: 16:9 (예: 1920x1080, 1280x720)</p>
             {% if digital_file.preview_image %}
-              <div class="mb-2">
-                <img src="{{ digital_file.preview_image.url }}" alt="현재 미리보기" class="h-32 rounded-lg">
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">현재 미리보기 이미지</p>
+              <div class="mb-4 existing-preview-image">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">현재 미리보기 이미지</p>
+                <div class="preview-image-wrapper">
+                  <img src="{{ digital_file.preview_image.url }}" alt="현재 미리보기" class="preview-image">
+                </div>
               </div>
             {% endif %}
             {{ form.preview_image }}

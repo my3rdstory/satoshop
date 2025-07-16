@@ -107,24 +107,35 @@
           <!-- 가격 정보 -->
           <div class="mb-3">
             {% if file.price_display == 'free' %}
-              <span class="text-green-600 dark:text-green-400 font-semibold text-sm">무료</span>
+              <div class="text-lg font-bold text-green-600 dark:text-green-400">
+                <i class="fas fa-gift mr-1"></i>무료
+              </div>
             {% else %}
               {% if file.is_discount_active %}
-                <div>
-                  <span class="text-gray-500 line-through text-xs">
-                    {{ file.price|intcomma }} {{ file.price_unit }}
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    {{ file.current_price_sats|floatformat:0|intcomma }} sats
+                    {% if file.price_display == 'krw' %}
+                    <span class="text-xs text-gray-600 dark:text-gray-400">(₩{{ file.discounted_price_krw|floatformat:0|intcomma }})</span>
+                    {% endif %}
                   </span>
-                  <div class="flex items-center space-x-1">
-                    <span class="text-bitcoin font-semibold text-sm">
-                      {{ file.current_price|intcomma }} {{ file.price_unit }}
-                    </span>
-                    <span class="text-xs bg-red-500 text-white px-1 py-0.5 rounded">할인</span>
-                  </div>
+                  <span class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
+                    {{ file.discount_percentage }}% 할인
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 line-through">
+                  {{ file.get_price_sats|floatformat:0|intcomma }} sats
+                  {% if file.price_display == 'krw' %}
+                  <span class="text-xs">(₩{{ file.price_krw|floatformat:0|intcomma }})</span>
+                  {% endif %}
                 </div>
               {% else %}
-                <span class="text-bitcoin font-semibold text-sm">
-                  {{ file.current_price|intcomma }} {{ file.price_unit }}
-                </span>
+                <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  {{ file.current_price_sats|floatformat:0|intcomma }} sats
+                  {% if file.price_display == 'krw' %}
+                  <span class="text-xs text-gray-600 dark:text-gray-400">(₩{{ file.price_krw|floatformat:0|intcomma }})</span>
+                  {% endif %}
+                </div>
               {% endif %}
             {% endif %}
           </div>

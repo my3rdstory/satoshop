@@ -81,7 +81,6 @@ def add_file(request, store_id):
             digital_file.store = store
             digital_file.save()
             
-            messages.success(request, f"파일 '{digital_file.name}'이(가) 성공적으로 등록되었습니다.")
             return redirect('file:file_manage', store_id=store.store_id)
     else:
         form = DigitalFileForm()
@@ -179,7 +178,6 @@ def edit_file(request, store_id, file_id):
         if form.is_valid():
             # 파일 변경 시 기존 파일은 models.py의 save()에서 자동 삭제
             form.save()
-            messages.success(request, f"파일 '{digital_file.name}'이(가) 성공적으로 수정되었습니다.")
             return redirect('file:file_manage', store_id=store.store_id)
     else:
         form = DigitalFileForm(instance=digital_file)
