@@ -949,7 +949,7 @@ function startPaymentStatusCheck() {
         .catch(error => {
             console.error('결제 상태 확인 중 오류:', error);
         });
-    }, 3000); // 3초마다 확인
+    }, 1000); // 1초마다 확인
 }
 
 // 결제 취소

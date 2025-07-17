@@ -34,8 +34,8 @@
         
         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
           <div class="flex items-start space-x-4">
-            {% if file.preview_image %}
-            <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
+            {% if file.preview_image_url %}
+            <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
                  class="w-20 h-20 rounded-lg object-cover flex-shrink-0">
             {% else %}
             <div class="w-20 h-20 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -161,9 +161,9 @@
 // Set global variables for the external script
 window.fileId = {{ file.id }};
 window.storeId = {{ store.id }};
-window.createInvoiceUrl = '{% url "file:create_file_invoice" %}';
-window.checkPaymentUrl = '{% url "file:check_file_payment" %}';
-window.cancelPaymentUrl = '{% url "file:cancel_file_payment" %}';
+window.createInvoiceUrl = '/file/ajax/create-invoice/';
+window.checkPaymentUrl = '/file/ajax/check-payment/';
+window.cancelPaymentUrl = '/file/ajax/cancel-payment/';
 window.fileDetailUrl = '{% url "file:file_detail" store.store_id file.id %}';
 window.csrfToken = '{{ csrf_token }}';
 </script>

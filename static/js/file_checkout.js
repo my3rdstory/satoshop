@@ -153,7 +153,7 @@ function startPaymentCheck() {
         .catch(error => {
             console.error('결제 확인 오류:', error);
         });
-    }, 3000); // 3초마다 확인
+    }, 1000); // 1초마다 확인
 }
 
 // 카운트다운
