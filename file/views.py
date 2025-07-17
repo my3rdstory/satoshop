@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import mimetypes
+import urllib.parse
 
 from stores.models import Store
 from .models import DigitalFile, FileOrder, FileDownloadLog
@@ -801,11 +802,25 @@ def download_file(request, store_id, file_id):
                 if content_type is None:
                     content_type = 'application/octet-stream'
                 
+                # PNG 등 이미지 파일도 다운로드되도록 설정
+                if digital_file.original_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    content_type = 'application/octet-stream'
+                
                 response = FileResponse(
                     file_obj,
                     content_type=content_type
                 )
-                response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                
+                # 파일명 처리 - ASCII가 아닌 문자가 있는지 확인
+                try:
+                    digital_file.original_filename.encode('ascii')
+                    # ASCII 파일명인 경우
+                    response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                except UnicodeEncodeError:
+                    # 한글 등 non-ASCII 파일명인 경우
+                    encoded_filename = urllib.parse.quote(digital_file.original_filename)
+                    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
+                
                 return response
             except Exception as e:
                 logger.error(f"S3 파일 다운로드 오류: {e}", exc_info=True)
@@ -819,11 +834,25 @@ def download_file(request, store_id, file_id):
                 if content_type is None:
                     content_type = 'application/octet-stream'
                 
+                # PNG 등 이미지 파일도 다운로드되도록 설정
+                if digital_file.original_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp')):
+                    content_type = 'application/octet-stream'
+                
                 response = FileResponse(
                     open(file_path, 'rb'),
                     content_type=content_type
                 )
-                response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                
+                # 파일명 처리 - ASCII가 아닌 문자가 있는지 확인
+                try:
+                    digital_file.original_filename.encode('ascii')
+                    # ASCII 파일명인 경우
+                    response['Content-Disposition'] = f'attachment; filename="{digital_file.original_filename}"'
+                except UnicodeEncodeError:
+                    # 한글 등 non-ASCII 파일명인 경우
+                    encoded_filename = urllib.parse.quote(digital_file.original_filename)
+                    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
+                
                 return response
             else:
                 raise Http404("파일을 찾을 수 없습니다.")
