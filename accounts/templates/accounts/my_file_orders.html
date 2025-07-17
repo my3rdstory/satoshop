@@ -76,7 +76,7 @@
                   {% if order.download_expires_at %}
                   <span class="text-gray-600 dark:text-gray-400">
                     <i class="fas fa-calendar-alt mr-1"></i>
-                    다운로드 기한: {{ order.download_expires_at|date:"Y.m.d" }}까지
+                    다운로드 기한: {{ order.download_expires_at|date:"Y.m.d H:i" }}까지
                   </span>
                   {% endif %}
                 </div>
