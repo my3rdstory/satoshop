@@ -1,0 +1,30 @@
+/* 파일 앱 가격 타입 선택 카드 스타일 */
+
+.price-type-card {
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.price-type-card:hover {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.price-type-card.selected {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.dark .price-type-card {
+    border-color: #4b5563;
+}
+
+.dark .price-type-card:hover {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
+
+.dark .price-type-card.selected {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
