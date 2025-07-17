@@ -152,15 +152,22 @@
                       {{ file.name }}
                     </div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">
-                      {{ file.get_file_size_display }}
+                      <span class="mr-2">
+                        <i class="fas fa-file-alt text-gray-400"></i>
+                        {{ file.get_file_type_display }}
+                      </span>
+                      <span class="mr-2">
+                        <i class="fas fa-hdd text-gray-400"></i>
+                        {{ file.get_file_size_display }}
+                      </span>
                       {% if file.max_downloads %}
-                        <span class="ml-2">
-                          <i class="fas fa-user-times text-yellow-500"></i>
+                        <span class="mr-2">
+                          <i class="fas fa-cube text-yellow-500"></i>
                           한정 {{ file.available_downloads }}/{{ file.max_downloads }}
                         </span>
                       {% endif %}
                       {% if file.download_expiry_days %}
-                        <span class="ml-2">
+                        <span>
                           <i class="fas fa-clock text-blue-500"></i>
                           {{ file.download_expiry_days }}일
                         </span>

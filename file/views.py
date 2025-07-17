@@ -23,6 +23,7 @@ from .services import (
     send_file_purchase_notification_email,
     send_file_buyer_confirmation_email
 )
+from ln_payment.blink_service import get_blink_service_for_store
 
 logger = logging.getLogger(__name__)
 
@@ -490,9 +491,6 @@ def file_checkout(request, store_id, file_id):
 @csrf_exempt
 def create_file_invoice(request):
     """파일 구매 인보이스 생성"""
-    import requests
-    from django.conf import settings
-    
     try:
         data = json.loads(request.body)
         file_id = data.get('file_id')
@@ -510,6 +508,9 @@ def create_file_invoice(request):
             is_active=True,
             is_temporarily_closed=False
         )
+        
+        # 스토어 가져오기
+        store = digital_file.store
         
         # 이미 구매했는지 확인
         existing_order = FileOrder.objects.filter(
@@ -545,6 +546,14 @@ def create_file_invoice(request):
         current_price = digital_file.current_price_sats
         is_discounted = digital_file.is_discount_active
         
+        # 블링크 서비스 가져오기
+        blink_service = get_blink_service_for_store(store)
+        if not blink_service:
+            return JsonResponse({
+                'success': False,
+                'error': '결제 서비스가 설정되지 않았습니다.'
+            })
+        
         # 주문 생성
         with transaction.atomic():
             order = FileOrder.objects.create(
@@ -556,42 +565,33 @@ def create_file_invoice(request):
                 discount_rate=round((1 - current_price / digital_file.price) * 100) if is_discounted and digital_file.price > 0 else 0
             )
             
-            # Blink 인보이스 생성
-            headers = {
-                'X-API-KEY': settings.BLINK_API_KEY,
-                'Content-Type': 'application/json'
-            }
-            
-            invoice_data = {
-                'amount': current_price,
-                'memo': f"파일 구매: {digital_file.name} - {order.order_number}"
-            }
-            
-            response = requests.post(
-                f"{settings.BLINK_API_URL}/invoices",
-                headers=headers,
-                json=invoice_data,
-                timeout=10
+            # 인보이스 생성
+            memo = f"파일 구매: {digital_file.name} - {order.order_number}"
+            result = blink_service.create_invoice(
+                amount_sats=current_price,
+                memo=memo,
+                expires_in_minutes=15
             )
             
-            if response.status_code == 200:
-                invoice_data = response.json()
-                order.payment_hash = invoice_data.get('payment_hash', '')
-                order.payment_request = invoice_data.get('payment_request', '')
+            if result['success']:
+                order.payment_hash = result['payment_hash']
+                order.payment_request = result['invoice']
                 order.save()
                 
                 return JsonResponse({
                     'success': True,
                     'payment_request': order.payment_request,
+                    'payment_hash': result['payment_hash'],
                     'order_id': order.id,
                     'order_number': order.order_number,
-                    'expires_at': order.reservation_expires_at.isoformat()
+                    'amount_sats': current_price,
+                    'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else order.reservation_expires_at.isoformat()
                 })
             else:
                 order.delete()
                 return JsonResponse({
                     'success': False,
-                    'error': '결제 요청 생성에 실패했습니다.'
+                    'error': result.get('error', '결제 요청 생성에 실패했습니다.')
                 })
                 
     except Exception as e:
@@ -607,9 +607,6 @@ def create_file_invoice(request):
 @csrf_exempt
 def check_file_payment(request):
     """파일 구매 결제 상태 확인"""
-    import requests
-    from django.conf import settings
-    
     try:
         data = json.loads(request.body)
         order_id = data.get('order_id')
@@ -638,23 +635,23 @@ def check_file_payment(request):
                 'error': '예약 시간이 만료되었습니다.'
             })
         
-        # Blink API로 결제 상태 확인
-        headers = {
-            'X-API-KEY': settings.BLINK_API_KEY,
-            'Content-Type': 'application/json'
-        }
+        # 스토어 및 블링크 서비스 가져오기
+        store = order.digital_file.store
+        blink_service = get_blink_service_for_store(store)
+        if not blink_service:
+            logger.error(f"결제 서비스 설정 없음 - store_id: {store.store_id}")
+            return JsonResponse({
+                'success': False,
+                'error': '결제 서비스가 설정되지 않았습니다.'
+            })
         
-        response = requests.get(
-            f"{settings.BLINK_API_URL}/invoices/{order.payment_hash}",
-            headers=headers,
-            timeout=10
-        )
+        # 결제 상태 확인
+        logger.debug(f"결제 상태 확인 시작 - order_id: {order_id}, payment_hash: {order.payment_hash}")
+        result = blink_service.check_invoice_status(order.payment_hash)
+        logger.debug(f"결제 상태 확인 결과 - result: {result}")
         
-        if response.status_code == 200:
-            invoice_data = response.json()
-            is_paid = invoice_data.get('is_paid', False)
-            
-            if is_paid:
+        if result['success']:
+            if result['status'] == 'paid':
                 with transaction.atomic():
                     order.status = 'confirmed'
                     order.paid_at = timezone.now()
@@ -674,15 +671,27 @@ def check_file_payment(request):
                     'paid': True,
                     'redirect_url': reverse('file:file_complete', kwargs={'order_id': order.id})
                 })
+            elif result['status'] == 'expired':
+                # 인보이스가 만료된 경우
+                order.status = 'cancelled'
+                order.auto_cancelled_reason = '인보이스 만료'
+                order.save()
+                return JsonResponse({
+                    'success': False,
+                    'paid': False,
+                    'error': '인보이스가 만료되었습니다.'
+                })
             else:
+                # pending 상태
                 return JsonResponse({
                     'success': True,
                     'paid': False
                 })
         else:
+            logger.error(f"결제 상태 확인 실패: {result.get('error', 'Unknown error')}")
             return JsonResponse({
                 'success': False,
-                'error': '결제 상태 확인에 실패했습니다.'
+                'error': result.get('error', '결제 상태 확인에 실패했습니다.')
             })
             
     except Exception as e:

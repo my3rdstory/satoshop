@@ -6,148 +6,328 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/file_checkout.css' %}">
+<style>
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .status-pending {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
+  }
+
+  .status-success {
+    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
+  }
+
+  .status-error {
+    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
+  }
+
+  .invoice-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  }
+
+  .invoice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+  }
+
+  /* QR 코드 컨테이너 스타일 */
+  #qrCodeContainer canvas {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
 {% endblock %}
 
 {% block store_content %}
-<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8">
-  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- 뒤로가기 -->
-    <div class="mb-6">
-      <a href="{% url 'file:file_detail' store.store_id file.id %}" 
-         class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-        <i class="fas fa-arrow-left mr-2"></i>
-        파일 상세로 돌아가기
-      </a>
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
+        <i class="fas fa-bolt text-3xl text-bitcoin"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">파일 구매 결제</h1>        
+      </div>
     </div>
 
-    <!-- 결제 카드 -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
-      <!-- 헤더 -->
-      <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
-        <h1 class="text-2xl font-bold mb-2">파일 구매</h1>
-        <p class="text-purple-100">Lightning Network로 안전하고 빠른 결제</p>
-      </div>
-
-      <!-- 파일 정보 -->
-      <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">구매 정보</h2>
-        
-        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-          <div class="flex items-start space-x-4">
-            {% if file.preview_image_url %}
-            <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
-                 class="w-20 h-20 rounded-lg object-cover flex-shrink-0">
-            {% else %}
-            <div class="w-20 h-20 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
-              <i class="fas fa-file text-2xl text-purple-600 dark:text-purple-400"></i>
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      <!-- 왼쪽: 주문 정보 (3/5 너비) -->
+      <div class="lg:col-span-3">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-file text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">파일 구매 정보</h2>
             </div>
-            {% endif %}
-            
-            <div class="flex-1">
-              <h3 class="font-semibold text-gray-900 dark:text-white mb-1">{{ file.name }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                크기: {{ file.get_file_size_display }}
-                {% if file.download_expiry_days %}
-                | 다운로드 기한: 구매 후 {{ file.download_expiry_days }}일
+          </div>
+
+          <div class="p-6 space-y-6">
+            <!-- 파일 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-file-alt mr-2 text-purple-600"></i>
+                파일 정보
+              </h3>
+              <div class="flex items-start space-x-4">
+                {% if file.preview_image_url %}
+                <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
+                     class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
+                {% else %}
+                <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <i class="fas fa-file text-3xl text-purple-600 dark:text-purple-400"></i>
+                </div>
                 {% endif %}
-              </p>
-              <p class="text-lg font-bold text-bitcoin">
-                {{ price_sats|intcomma }} sats
-              </p>
+                
+                <div class="flex-1">
+                  <h4 class="font-bold text-gray-900 dark:text-white text-lg mb-2">{{ file.name }}</h4>
+                  <div class="space-y-2">
+                    <div class="flex">
+                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">파일 크기:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ file.get_file_size_display }}</span>
+                    </div>
+                    {% if file.download_expiry_days %}
+                    <div class="flex">
+                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">다운로드 기한:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">구매 후 {{ file.download_expiry_days }}일</span>
+                    </div>
+                    {% endif %}
+                    {% if file.max_download_limit %}
+                    <div class="flex">
+                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">최대 다운로드:</span>
+                      <span class="font-medium text-gray-900 dark:text-white">{{ file.max_download_limit }}회</span>
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 결제 정보 -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-receipt mr-2 text-green-600"></i>
+                결제 정보
+              </h3>
+              <div class="space-y-3">
+                <!-- 할인 여부에 따른 가격 표시 -->
+                {% if file.is_discount_active %}
+                <div class="flex justify-between">
+                  <span class="text-gray-600 dark:text-gray-400">기본 가격</span>
+                  <span class="font-medium text-gray-900 dark:text-white line-through">{{ file.price|floatformat:0|intcomma }} sats</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-green-600 dark:text-green-400">
+                    <i class="fas fa-tag mr-1"></i>할인 ({{ file.discount_percentage }}%)
+                  </span>
+                  <span class="text-green-600 dark:text-green-400">-{{ file.discount_amount|floatformat:0|intcomma }} sats</span>
+                </div>
+                {% endif %}
+                
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                  <div class="flex justify-between">
+                    <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
+                    <span class="font-bold text-xl text-bitcoin">{{ price_sats|floatformat:0|intcomma }} sats</span>
+                  </div>
+                  {% if file.price_display == 'krw' and file.price_krw %}
+                  <div class="flex justify-between mt-1">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">원화 기준</span>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">₩{{ file.price_krw|floatformat:0|intcomma }}</span>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- 결제 섹션 -->
-      <div class="p-6">
-        <div id="payment-section">
-          <!-- 로딩 상태 -->
-          <div id="loading-state" class="text-center py-8">
-            <div class="inline-flex items-center space-x-3">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-              <span class="text-gray-600 dark:text-gray-400">결제 준비 중...</span>
+      <!-- 오른쪽: 결제 (2/5 너비) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-8">
+          <!-- 헤더 -->
+          <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6">
+            <div class="flex items-center">
+              <i class="fas fa-credit-card text-xl mr-3"></i>
+              <h2 class="text-xl font-bold">결제 정보</h2>
             </div>
           </div>
 
-          <!-- 인보이스 표시 영역 -->
-          <div id="invoice-section" class="hidden">
-            <!-- QR 코드 -->
-            <div class="text-center mb-6">
-              <div id="qr-code" class="inline-block p-4 bg-white rounded-lg shadow-md"></div>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
-                Lightning 지갑으로 QR 코드를 스캔하세요
-              </p>
+          <div class="p-6 space-y-6">
+            <!-- 결제 방법 안내 -->
+            <div class="space-y-4">
+              <div class="flex items-center">
+                <i class="fas fa-bolt text-bitcoin mr-2"></i>
+                <h3 class="font-bold text-gray-900 dark:text-white">
+                  {% if price_sats == 0 %}
+                  무료 다운로드
+                  {% else %}
+                  결제 방법
+                  {% endif %}
+                </h3>
+              </div>
+
+              {% if price_sats == 0 %}
+              <!-- 무료 파일 안내 -->
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div class="flex items-center">
+                    <i class="fas fa-gift text-green-600 dark:text-green-400 mr-2"></i>
+                    <p class="text-green-800 dark:text-green-200 text-sm font-medium">
+                      이 파일은 무료로 다운로드할 수 있습니다!
+                    </p>
+                  </div>
+                </div>
+                <p class="mt-3">
+                  아래 버튼을 클릭하여 다운로드를 시작해주세요.
+                </p>
+              </div>
+              {% else %}
+              <!-- 유료 파일 안내 -->
+              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                <ol class="list-decimal list-inside space-y-1 ml-2">
+                  <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
+                  <li>생성된 QR 코드를 라이트닝 지갑으로 스캔</li>
+                  <li>결제 완료 후 파일 다운로드가 가능합니다</li>
+                </ol>
+                
+                <p class="mt-3">
+                  <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
+                </p>
+              </div>
+              {% endif %}
             </div>
 
-            <!-- 인보이스 텍스트 -->
-            <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                또는 인보이스를 복사하세요:
-              </label>
-              <div class="relative">
-                <input type="text" id="payment-request" readonly
-                       class="w-full px-4 py-3 pr-24 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-xs font-mono text-gray-900 dark:text-white">
-                <button type="button" onclick="copyInvoice()"
-                        class="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-purple-500 text-white text-sm rounded-md hover:bg-purple-600 transition-colors">
-                  복사
+            {% if price_sats == 0 %}
+            <!-- 무료 다운로드 버튼 -->
+            <form method="post" action="{% url 'file:file_checkout' store.store_id file.id %}" id="free-download-form">
+              {% csrf_token %}
+              <button 
+                type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg"
+                id="freeDownloadBtn"
+              >
+                <i class="fas fa-download mr-3"></i>
+                무료 다운로드 시작하기
+              </button>
+            </form>
+            {% else %}
+            <!-- 인보이스 생성 버튼 -->
+            <button 
+              class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
+              onclick="generateInvoice()" 
+              id="generateInvoiceBtn"
+            >
+              <i class="fas fa-qrcode mr-3"></i>
+              결제 인보이스 생성
+            </button>
+            
+            <!-- 결제 주의사항 박스 (모바일에서만 표시) -->
+            <div id="mobilePaymentWarning" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4 hidden">
+              <div class="flex items-start">
+                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                  <p class="text-blue-800 dark:text-blue-200 text-sm font-medium">
+                    📱 모바일 결제 안내
+                  </p>
+                  <p class="text-blue-700 dark:text-blue-300 text-xs mt-1">
+                    • 라이트닝 지갑에서 결제 후 이 페이지로 돌아와주세요<br>
+                    • 결제 완료 시 자동으로 파일 다운로드가 준비됩니다<br>
+                    • 페이지를 닫지 말고 잠시 대기해주세요
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- QR 코드 및 인보이스 표시 영역 -->
+            <div id="invoiceContainer" class="hidden space-y-4">
+              <!-- QR 코드 -->
+              <div class="text-center">
+                <div id="qrCodeContainer" class="inline-block p-5 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
+                  <img id="qrCodeImage" src="" alt="결제 QR 코드" class="max-w-[250px] hidden">
+                  <canvas id="qrCodeCanvas" class="hidden"></canvas>
+                  <div id="loadingSpinner" class="hidden">
+                    <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
+                    <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
+                  </div>
+                </div>
+                
+                <!-- 라이트닝 지갑 열기 버튼 -->
+                <div id="lightningWalletButton" class="hidden mt-4">
+                  <button 
+                    type="button" 
+                    onclick="openLightningWallet()" 
+                    class="inline-flex items-center px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
+                  >
+                    <i class="fas fa-bolt mr-2"></i>
+                    라이트닝 지갑 열기
+                  </button>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    QR 코드 스캔이 어려운 경우 클릭하세요
+                  </p>
+                </div>
+              </div>
+
+              <!-- 인보이스 텍스트 -->
+              <div>
+                <label class="block font-semibold mb-2 text-gray-900 dark:text-white">라이트닝 인보이스</label>
+                <textarea 
+                  id="invoiceTextArea" 
+                  readonly 
+                  class="w-full h-32 font-mono text-sm p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                  placeholder="인보이스가 여기에 표시됩니다..."
+                ></textarea>
+                <button 
+                  type="button" 
+                  onclick="copyInvoiceToClipboard()" 
+                  class="mt-2 text-bitcoin hover:text-bitcoin/80 text-sm font-medium transition-colors"
+                >
+                  <i class="fas fa-copy mr-1"></i> 인보이스 복사
+                </button>
+              </div>
+
+              <!-- 결제 상태 -->
+              <div id="paymentStatus" class="hidden p-4 rounded-lg border">
+                <div class="text-center">
+                  <p id="paymentMessage" class="text-gray-800 dark:text-gray-200"></p>
+                </div>
+              </div>
+
+              <!-- 취소 버튼 -->
+              <div class="text-center">
+                <button 
+                  type="button" 
+                  onclick="cancelPayment()" 
+                  id="cancelInvoiceBtn"
+                  class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                >
+                  결제 취소
                 </button>
               </div>
             </div>
 
-            <!-- 상태 표시 -->
-            <div class="text-center">
-              <div class="inline-flex items-center space-x-2 text-gray-600 dark:text-gray-400">
-                <div class="pulse">
-                  <i class="fas fa-circle text-yellow-500"></i>
+            <!-- 안내 사항 -->
+            <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-info-circle text-blue-400"></i>
                 </div>
-                <span>결제 대기 중...</span>
-              </div>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                남은 시간: <span id="countdown">15:00</span>
-              </p>
-            </div>
-
-            <!-- 취소 버튼 -->
-            <div class="mt-6 text-center">
-              <button type="button" onclick="cancelPayment()"
-                      class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
-                결제 취소
-              </button>
-            </div>
-          </div>
-
-          <!-- 에러 메시지 -->
-          <div id="error-message" class="hidden bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <i class="fas fa-exclamation-circle text-red-400"></i>
-              </div>
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800 dark:text-red-200">오류 발생</h3>
-                <div class="mt-2 text-sm text-red-700 dark:text-red-300">
-                  <p id="error-text"></p>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">안내 사항</h3>
+                  <ul class="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
+                    <li>Lightning Network를 지원하는 지갑이 필요합니다</li>
+                    <li>결제는 15분 이내에 완료해주세요</li>
+                    <li>결제 완료 후 즉시 파일을 다운로드할 수 있습니다</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 안내 사항 -->
-    <div class="mt-6 bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
-      <div class="flex">
-        <div class="flex-shrink-0">
-          <i class="fas fa-info-circle text-blue-400"></i>
-        </div>
-        <div class="ml-3">
-          <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">안내 사항</h3>
-          <ul class="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
-            <li>Lightning Network를 지원하는 지갑이 필요합니다</li>
-            <li>결제는 15분 이내에 완료해주세요</li>
-            <li>결제 완료 후 즉시 파일을 다운로드할 수 있습니다</li>
-          </ul>
         </div>
       </div>
     </div>
@@ -156,7 +336,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
 <script>
 // Set global variables for the external script
 window.fileId = {{ file.id }};

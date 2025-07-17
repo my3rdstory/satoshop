@@ -4,23 +4,74 @@ let orderId = null;
 let checkInterval = null;
 let countdownInterval = null;
 let expiresAt = null;
+let currentPaymentHash = null;
+let currentInvoice = null;
 
-// 페이지 로드 시 인보이스 생성
-document.addEventListener('DOMContentLoaded', function() {
-    createInvoice();
+// 페이지 로드 시
+ document.addEventListener('DOMContentLoaded', function() {
+    // 모바일 디바이스 감지 및 주의사항 표시
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // 모바일 환경에서만 주의사항 박스 표시
+        const mobileWarning = document.getElementById('mobilePaymentWarning');
+        if (mobileWarning) {
+            mobileWarning.classList.remove('hidden');
+        }
+    }
+    
+    // 페이지 포커스 이벤트 리스너 추가 (모바일 결제 후 돌아왔을 때)
+    window.addEventListener('focus', function() {
+        if (currentPaymentHash) {
+            console.log('페이지 포커스 - 결제 상태 즉시 확인');
+            checkPaymentStatus();
+        }
+    });
+    
+    // 페이지 가시성 변경 이벤트 리스너 추가 (모바일 백그라운드에서 복귀 시)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && currentPaymentHash) {
+            console.log('페이지 가시성 변경 - 결제 상태 즉시 확인');
+            checkPaymentStatus();
+            
+            // 인터벌이 중단되었을 수 있으므로 재시작
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+            startPaymentCheck();
+        }
+    });
 });
 
 // 인보이스 생성
-function createInvoice() {
-    const loadingState = document.getElementById('loading-state');
+function generateInvoice() {
+    const generateBtn = document.getElementById('generateInvoiceBtn');
+    const invoiceContainer = document.getElementById('invoiceContainer');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const qrCodeCanvas = document.getElementById('qrCodeCanvas');
     const fileId = window.fileId || document.querySelector('[data-file-id]')?.dataset.fileId;
     
     if (!fileId) {
-        showError('파일 정보를 찾을 수 없습니다.');
+        showPaymentStatus('파일 정보를 찾을 수 없습니다.', 'error');
         return;
     }
+    
+    // 버튼 비활성화 및 로딩 표시
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-3"></i> 생성 중...';
+    
+    // 기존 결제 상태 확인 중지
+    if (checkInterval) {
+        clearInterval(checkInterval);
+        checkInterval = null;
+    }
+    
+    // 인보이스 컨테이너 표시 및 로딩 스피너 표시
+    invoiceContainer.classList.remove('hidden');
+    loadingSpinner.classList.remove('hidden');
+    qrCodeCanvas.classList.add('hidden');
 
-    fetch(window.createInvoiceUrl || '/file/api/create-invoice/', {
+    fetch(window.createInvoiceUrl || '/file/ajax/create-invoice/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -30,241 +81,325 @@ function createInvoice() {
             file_id: fileId
         })
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('네트워크 응답이 올바르지 않습니다.');
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // 인보이스 생성 성공
+            currentPaymentHash = data.payment_hash;
+            currentInvoice = data.payment_request;
             orderId = data.order_id;
             expiresAt = new Date(data.expires_at);
-            showInvoice(data.payment_request);
+            
+            // QR 코드 생성
+            generateQRCode(data.payment_request);
+            
+            // 인보이스 텍스트 표시
+            document.getElementById('invoiceTextArea').value = data.payment_request;
+            
+            // 라이트닝 지갑 열기 버튼 표시
+            document.getElementById('lightningWalletButton').classList.remove('hidden');
+            
+            // 결제 상태 확인 시작
             startPaymentCheck();
-            startCountdown();
+            
+            showPaymentStatus('결제를 기다리고 있습니다. QR 코드를 스캔하거나 인보이스를 복사하여 결제해주세요.', 'pending');
+            
+            // 버튼 텍스트 변경
+            generateBtn.innerHTML = '<i class="fas fa-check mr-3"></i> 인보이스 생성됨';
         } else {
-            showError(data.error || '인보이스 생성에 실패했습니다.');
+            // 인보이스 생성 실패
+            showPaymentStatus(data.error || '인보이스 생성에 실패했습니다.', 'error');
+            
+            // 버튼 복원
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+            
+            // 로딩 숨기기
+            loadingSpinner.classList.add('hidden');
+            
+            // 라이트닝 지갑 버튼 숨기기
+            document.getElementById('lightningWalletButton').classList.add('hidden');
         }
     })
     .catch(error => {
         console.error('인보이스 생성 오류:', error);
-        showError('네트워크 오류가 발생했습니다.');
+        showPaymentStatus('인보이스 생성 중 오류가 발생했습니다.', 'error');
+        
+        // 버튼 복원
+        generateBtn.disabled = false;
+        generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+        
+        // 로딩 숨기기
+        loadingSpinner.classList.add('hidden');
+        
+        // 라이트닝 지갑 버튼 숨기기
+        document.getElementById('lightningWalletButton').classList.add('hidden');
     });
 }
 
-// 인보이스 표시
-function showInvoice(paymentRequest) {
-    document.getElementById('loading-state').classList.add('hidden');
-    document.getElementById('invoice-section').classList.remove('hidden');
-    document.getElementById('payment-request').value = paymentRequest;
-    
-    // QR 코드 생성
-    const qrContainer = document.getElementById('qr-code');
-    qrContainer.innerHTML = '';
-    
-    if (typeof QRCode !== 'undefined') {
-        QRCode.toCanvas(paymentRequest, {
-            width: 256,
-            margin: 2,
-            color: {
-                dark: '#000000',
-                light: '#FFFFFF'
-            }
-        }, function (error, canvas) {
-            if (error) {
-                console.error('QR 코드 생성 오류:', error);
-                qrContainer.innerHTML = '<p class="text-red-500">QR 코드 생성 실패</p>';
-            } else {
-                qrContainer.appendChild(canvas);
-                canvas.style.maxWidth = '100%';
-                canvas.style.height = 'auto';
-            }
+// QR 코드 생성
+function generateQRCode(invoice) {
+    try {
+        const qr = new QRious({
+            element: document.getElementById('qrCodeCanvas'),
+            value: invoice,
+            size: 250,
+            level: 'M'
         });
-    } else {
-        console.error('QRCode 라이브러리가 로드되지 않았습니다.');
-        qrContainer.innerHTML = '<p class="text-yellow-500">QR 코드를 표시할 수 없습니다.</p>';
+        
+        // QR 코드 표시
+        document.getElementById('loadingSpinner').classList.add('hidden');
+        document.getElementById('qrCodeCanvas').classList.remove('hidden');
+    } catch (error) {
+        console.error('QR 코드 생성 오류:', error);
+        // QR 코드 생성 실패 시 대체 텍스트 표시
+        document.getElementById('qrCodeContainer').innerHTML = '<p class="text-red-500">QR 코드 생성 실패</p>';
     }
 }
 
 // 인보이스 복사
-function copyInvoice() {
-    const input = document.getElementById('payment-request');
-    const button = event.target;
-    
-    // 입력 필드 선택 및 복사
-    input.select();
-    input.setSelectionRange(0, 99999); // 모바일 지원
-    
-    try {
+function copyInvoiceToClipboard() {
+    if (currentInvoice) {
+        const tempInput = document.createElement('input');
+        tempInput.value = currentInvoice;
+        document.body.appendChild(tempInput);
+        tempInput.select();
         document.execCommand('copy');
+        document.body.removeChild(tempInput);
         
-        // 피드백
-        const originalText = button.textContent;
-        const originalClasses = button.className;
-        button.textContent = '복사됨!';
-        button.classList.add('bg-green-500', 'hover:bg-green-600');
-        button.classList.remove('bg-purple-500', 'hover:bg-purple-600');
-        
+        // 복사 완료 메시지
+        showPaymentStatus('인보이스가 클립보드에 복사되었습니다.', 'success');
         setTimeout(() => {
-            button.textContent = originalText;
-            button.className = originalClasses;
-        }, 2000);
-    } catch (err) {
-        console.error('복사 실패:', err);
-        alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            showPaymentStatus('결제를 기다리고 있습니다...', 'pending');
+        }, 3000);
+    }
+}
+
+// 라이트닝 지갑 열기
+function openLightningWallet() {
+    if (currentInvoice) {
+        const lightningUri = `lightning:${currentInvoice}`;
+        window.location.href = lightningUri;
+        
+        // 모바일 환경에서는 지갑 열기 후 자동 결제 확인 강화
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // 기존 interval 중지
+            if (checkInterval) {
+                clearInterval(checkInterval);
+            }
+            // 1초마다 더 자주 확인
+            checkInterval = setInterval(checkPaymentStatus, 1000);
+            
+            // 5초 후 한 번 더 확인 (지갑에서 돌아올 시간 고려)
+            setTimeout(() => {
+                if (currentPaymentHash) {
+                    console.log('지갑 열기 후 5초 - 결제 상태 확인');
+                    checkPaymentStatus();
+                }
+            }, 5000);
+        }
     }
 }
 
 // 결제 상태 확인
-function startPaymentCheck() {
-    checkInterval = setInterval(() => {
-        if (!orderId) return;
-        
-        fetch(window.checkPaymentUrl || '/file/api/check-payment/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({
-                order_id: orderId
-            })
+function checkPaymentStatus() {
+    if (!currentPaymentHash || !orderId) {
+        // 필수 정보가 없으면 타이머 정리
+        if (checkInterval) {
+            clearInterval(checkInterval);
+            checkInterval = null;
+        }
+        return;
+    }
+    
+    fetch(window.checkPaymentUrl || '/file/ajax/check-payment/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            order_id: orderId
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.paid) {
-                clearInterval(checkInterval);
-                clearInterval(countdownInterval);
-                
-                // 성공 메시지 표시
-                showSuccess('결제가 완료되었습니다! 잠시 후 이동합니다...');
-                
-                // 리다이렉트
-                setTimeout(() => {
-                    window.location.href = data.redirect_url;
-                }, 1500);
-            } else if (!data.success) {
-                clearInterval(checkInterval);
-                clearInterval(countdownInterval);
-                showError(data.error || '결제 확인 중 오류가 발생했습니다.');
-            }
-        })
-        .catch(error => {
-            console.error('결제 확인 오류:', error);
-        });
-    }, 1000); // 1초마다 확인
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.paid) {
+            clearInterval(checkInterval);
+            clearInterval(countdownInterval);
+            
+            showPaymentStatus('결제가 완료되었습니다! 잠시 후 이동합니다...', 'success');
+            
+            // 리다이렉트
+            setTimeout(() => {
+                window.location.href = data.redirect_url;
+            }, 1500);
+        } else if (!data.success && data.error) {
+            clearInterval(checkInterval);
+            clearInterval(countdownInterval);
+            showPaymentStatus(data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('결제 확인 오류:', error);
+    });
 }
 
-// 카운트다운
-function startCountdown() {
-    countdownInterval = setInterval(() => {
-        const now = new Date();
-        const remaining = Math.max(0, expiresAt - now);
-        
-        if (remaining === 0) {
-            clearInterval(countdownInterval);
-            clearInterval(checkInterval);
-            showError('결제 시간이 만료되었습니다.');
-            return;
-        }
-        
-        const minutes = Math.floor(remaining / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
-        const countdownElement = document.getElementById('countdown');
-        
-        if (countdownElement) {
-            countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
-            // 남은 시간이 1분 미만일 때 빨간색으로 표시
-            if (remaining < 60000) {
-                countdownElement.classList.add('text-red-500', 'font-bold');
-            }
-        }
-    }, 1000);
+// 결제 상태 확인 시작
+function startPaymentCheck() {
+    if (checkInterval) {
+        clearInterval(checkInterval);
+    }
+    
+    checkInterval = setInterval(checkPaymentStatus, 1000); // 1초마다 확인
+}
+
+// 결제 상태 메시지 표시
+function showPaymentStatus(message, type) {
+    const statusElement = document.getElementById('paymentStatus');
+    const messageElement = document.getElementById('paymentMessage');
+    
+    if (!statusElement || !messageElement) return;
+    
+    statusElement.classList.remove('hidden', 'status-pending', 'status-success', 'status-error');
+    
+    // 타입에 따른 스타일 설정
+    switch(type) {
+        case 'pending':
+            statusElement.classList.add('status-pending');
+            messageElement.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+            break;
+        case 'success':
+            statusElement.classList.add('status-success');
+            messageElement.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+            break;
+        case 'error':
+            statusElement.classList.add('status-error');
+            messageElement.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+            break;
+        default:
+            messageElement.textContent = message;
+    }
 }
 
 // 결제 취소
 function cancelPayment() {
-    if (!orderId) {
-        window.history.back();
+    if (!currentPaymentHash) {
+        showPaymentStatus('취소할 인보이스가 없습니다.', 'error');
         return;
     }
     
-    if (confirm('결제를 취소하시겠습니까?')) {
-        clearInterval(checkInterval);
-        clearInterval(countdownInterval);
-        
-        // 취소 요청
-        fetch(window.cancelPaymentUrl || '/file/api/cancel-payment/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            },
-            body: JSON.stringify({
-                order_id: orderId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.history.back();
-            } else {
-                // 실패해도 뒤로 가기
-                window.history.back();
-            }
-        })
-        .catch(() => {
-            // 에러 발생 시에도 뒤로 가기
-            window.history.back();
-        });
+    if (!confirm('정말로 결제를 취소하시겠습니까?')) {
+        return;
     }
+    
+    // 즉시 타이머 정리
+    if (checkInterval) {
+        clearInterval(checkInterval);
+        checkInterval = null;
+    }
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
+    const cancelBtn = document.getElementById('cancelInvoiceBtn');
+    cancelBtn.disabled = true;
+    cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 취소 중...';
+    
+    fetch(window.cancelPaymentUrl || '/file/ajax/cancel-payment/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            order_id: orderId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 결제 상태 확인 중지
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+            
+            // 현재 인보이스 정보 초기화
+            currentPaymentHash = null;
+            currentInvoice = null;
+            orderId = null;
+            
+            // 성공 메시지 표시
+            showPaymentStatus('결제가 취소되었습니다.', 'error');
+            
+            // 인보이스 생성 버튼 복원
+            const generateBtn = document.getElementById('generateInvoiceBtn');
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-qrcode mr-3"></i> 결제 인보이스 생성';
+            
+            // 인보이스 컨테이너 숨기기
+            document.getElementById('invoiceContainer').classList.add('hidden');
+            
+            // 라이트닝 지갑 버튼 숨기기
+            const lightningWalletButton = document.getElementById('lightningWalletButton');
+            if (lightningWalletButton) {
+                lightningWalletButton.classList.add('hidden');
+            }
+            
+            // 페이지 새로고침 전에 모든 타이머 확실히 정리
+            if (checkInterval) {
+                clearInterval(checkInterval);
+                checkInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            // 페이지 새로고침으로 UI 초기화
+            setTimeout(() => {
+                showPaymentStatus('결제 화면을 초기화합니다...', 'info');
+                window.location.reload();
+            }, 1000);
+            
+        } else {
+            // 결제가 이미 완료된 경우 처리
+            if (data.redirect_url) {
+                // 결제 상태 확인 중지
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                    checkInterval = null;
+                }
+                
+                showPaymentStatus('결제가 이미 완료되었습니다. 잠시 후 이동합니다...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
+            } else {
+                showPaymentStatus(data.error || '취소 중 오류가 발생했습니다.', 'error');
+                cancelBtn.disabled = false;
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+            }
+        }
+    })
+    .catch(error => {
+        showPaymentStatus('취소 중 오류가 발생했습니다.', 'error');
+        cancelBtn.disabled = false;
+        cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i> 결제 취소';
+    });
 }
 
 // 성공 메시지 표시
 function showSuccess(message) {
-    document.getElementById('loading-state').classList.add('hidden');
-    document.getElementById('invoice-section').classList.add('hidden');
-    document.getElementById('error-message').classList.add('hidden');
-    
-    const successDiv = document.createElement('div');
-    successDiv.className = 'bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 rounded-lg p-4';
-    successDiv.innerHTML = `
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <i class="fas fa-check-circle text-green-400 text-xl"></i>
-            </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-green-800 dark:text-green-200">결제 성공</h3>
-                <div class="mt-2 text-sm text-green-700 dark:text-green-300">
-                    <p>${message}</p>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    const paymentSection = document.getElementById('payment-section');
-    paymentSection.innerHTML = '';
-    paymentSection.appendChild(successDiv);
+    showPaymentStatus(message, 'success');
 }
 
 // 에러 표시
 function showError(message) {
-    document.getElementById('loading-state').classList.add('hidden');
-    document.getElementById('invoice-section').classList.add('hidden');
-    document.getElementById('error-message').classList.remove('hidden');
-    document.getElementById('error-text').textContent = message;
-    
-    // 다시 시도 버튼 추가
-    const errorMessage = document.getElementById('error-message');
-    if (!errorMessage.querySelector('.retry-button')) {
-        const retryButton = document.createElement('button');
-        retryButton.className = 'retry-button mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors';
-        retryButton.textContent = '다시 시도';
-        retryButton.onclick = () => location.reload();
-        errorMessage.appendChild(retryButton);
-    }
+    showPaymentStatus(message, 'error');
 }
 
 // CSRF 토큰 가져오기
@@ -292,33 +427,12 @@ function getCsrfToken() {
 
 // 페이지 떠날 때 정리
 window.addEventListener('beforeunload', () => {
-    if (checkInterval) clearInterval(checkInterval);
-    if (countdownInterval) clearInterval(countdownInterval);
-});
-
-// 페이지 가시성 변경 감지 (백그라운드 탭 처리)
-document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-        // 페이지가 백그라운드로 갔을 때
-        if (checkInterval) {
-            clearInterval(checkInterval);
-            checkInterval = null;
-        }
-    } else {
-        // 페이지가 다시 활성화되었을 때
-        if (!checkInterval && orderId && !document.getElementById('error-message').classList.contains('hidden')) {
-            startPaymentCheck();
-        }
+    if (checkInterval) {
+        clearInterval(checkInterval);
+        checkInterval = null;
     }
-});
-
-// 모바일 장치에서 화면 회전 시 QR 코드 크기 조정
-window.addEventListener('orientationchange', () => {
-    setTimeout(() => {
-        const canvas = document.querySelector('#qr-code canvas');
-        if (canvas) {
-            canvas.style.maxWidth = '100%';
-            canvas.style.height = 'auto';
-        }
-    }, 300);
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
 });

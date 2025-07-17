@@ -66,10 +66,16 @@
                 <!-- 다운로드 정보 -->
                 <div class="flex items-center space-x-4 text-sm">
                   <span class="text-gray-600 dark:text-gray-400">
-                    크기: {{ order.digital_file.get_file_size_display }}
+                    <i class="fas fa-file-alt mr-1"></i>
+                    {{ order.digital_file.get_file_type_display }}
+                  </span>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-hdd mr-1"></i>
+                    {{ order.digital_file.get_file_size_display }}
                   </span>
                   {% if order.download_expires_at %}
                   <span class="text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-calendar-alt mr-1"></i>
                     다운로드 기한: {{ order.download_expires_at|date:"Y.m.d" }}까지
                   </span>
                   {% endif %}

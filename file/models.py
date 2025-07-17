@@ -352,6 +352,17 @@ class DigitalFile(models.Model):
         
         return 0
     
+    @property
+    def discount_amount(self):
+        """할인 금액 (사토시 단위)"""
+        if not self.is_discount_active:
+            return 0
+        
+        original_sats = self.get_price_sats
+        current_sats = self.current_price_sats
+        
+        return original_sats - current_sats
+    
     def get_file_size_display(self):
         """파일 크기를 읽기 쉬운 형태로 반환"""
         if not self.file_size:
@@ -363,6 +374,100 @@ class DigitalFile(models.Model):
                 return f"{size:.1f} {unit}"
             size /= 1024.0
         return f"{size:.1f} TB"
+    
+    def get_file_extension(self):
+        """파일 확장자 반환"""
+        if self.original_filename:
+            ext = self.original_filename.rsplit('.', 1)[-1].upper()
+            return ext
+        return "알 수 없음"
+    
+    def get_file_type_display(self):
+        """파일 유형을 사용자 친화적으로 표시"""
+        if not self.original_filename:
+            return "알 수 없음"
+        
+        ext = self.original_filename.rsplit('.', 1)[-1].lower()
+        
+        # 파일 유형 매핑
+        file_types = {
+            # 문서
+            'pdf': 'PDF 문서',
+            'doc': 'Word 문서',
+            'docx': 'Word 문서',
+            'xls': 'Excel 문서',
+            'xlsx': 'Excel 문서',
+            'ppt': 'PowerPoint 문서',
+            'pptx': 'PowerPoint 문서',
+            'txt': '텍스트 파일',
+            'rtf': 'RTF 문서',
+            'odt': 'OpenDocument 문서',
+            
+            # 이미지
+            'jpg': 'JPG 이미지',
+            'jpeg': 'JPEG 이미지',
+            'png': 'PNG 이미지',
+            'gif': 'GIF 이미지',
+            'bmp': 'BMP 이미지',
+            'svg': 'SVG 이미지',
+            'webp': 'WebP 이미지',
+            'ico': '아이콘 파일',
+            'tiff': 'TIFF 이미지',
+            'psd': 'Photoshop 파일',
+            'ai': 'Illustrator 파일',
+            
+            # 동영상
+            'mp4': 'MP4 동영상',
+            'avi': 'AVI 동영상',
+            'mov': 'MOV 동영상',
+            'wmv': 'WMV 동영상',
+            'flv': 'FLV 동영상',
+            'mkv': 'MKV 동영상',
+            'webm': 'WebM 동영상',
+            
+            # 오디오
+            'mp3': 'MP3 오디오',
+            'wav': 'WAV 오디오',
+            'flac': 'FLAC 오디오',
+            'aac': 'AAC 오디오',
+            'ogg': 'OGG 오디오',
+            'wma': 'WMA 오디오',
+            'm4a': 'M4A 오디오',
+            
+            # 압축
+            'zip': 'ZIP 압축파일',
+            'rar': 'RAR 압축파일',
+            '7z': '7Z 압축파일',
+            'tar': 'TAR 압축파일',
+            'gz': 'GZ 압축파일',
+            'bz2': 'BZ2 압축파일',
+            
+            # 코드/개발
+            'py': 'Python 파일',
+            'js': 'JavaScript 파일',
+            'html': 'HTML 파일',
+            'css': 'CSS 파일',
+            'json': 'JSON 파일',
+            'xml': 'XML 파일',
+            'java': 'Java 파일',
+            'cpp': 'C++ 파일',
+            'c': 'C 파일',
+            'php': 'PHP 파일',
+            'rb': 'Ruby 파일',
+            'go': 'Go 파일',
+            'swift': 'Swift 파일',
+            'kt': 'Kotlin 파일',
+            
+            # 기타
+            'epub': 'EPUB 전자책',
+            'mobi': 'MOBI 전자책',
+            'apk': 'Android 앱',
+            'exe': 'Windows 실행파일',
+            'dmg': 'macOS 설치파일',
+            'iso': 'ISO 이미지',
+        }
+        
+        return file_types.get(ext, f'{ext.upper()} 파일')
     
     @property
     def preview_image_url(self):

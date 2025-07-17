@@ -41,25 +41,21 @@
             <!-- 파일 정보 -->
             <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
               <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">파일 유형</div>
+                <div class="font-semibold text-gray-900 dark:text-white">{{ file.get_file_type_display }}</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <div class="text-gray-600 dark:text-gray-400 mb-1">파일 크기</div>
                 <div class="font-semibold text-gray-900 dark:text-white">{{ file.get_file_size_display }}</div>
+              </div>
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="text-gray-600 dark:text-gray-400 mb-1">파일 확장자</div>
+                <div class="font-semibold text-gray-900 dark:text-white">.{{ file.get_file_extension }}</div>
               </div>
               <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                 <div class="text-gray-600 dark:text-gray-400 mb-1">등록일</div>
                 <div class="font-semibold text-gray-900 dark:text-white">{{ file.created_at|date:"Y.m.d" }}</div>
               </div>
-              {% if file.max_downloads %}
-              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div class="text-gray-600 dark:text-gray-400 mb-1">남은 수량</div>
-                <div class="font-semibold text-gray-900 dark:text-white">{{ file.available_downloads }}개</div>
-              </div>
-              {% endif %}
-              {% if file.download_expiry_days %}
-              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div class="text-gray-600 dark:text-gray-400 mb-1">다운로드 기한</div>
-                <div class="font-semibold text-gray-900 dark:text-white">구매 후 {{ file.download_expiry_days }}일</div>
-              </div>
-              {% endif %}
             </div>
             
             <!-- 설명 -->
@@ -131,6 +127,24 @@
                   {{ file.current_price|intcomma }} {{ file.price_unit }}
                 </div>
               {% endif %}
+            {% endif %}
+            
+            <!-- 남은 수량 및 다운로드 기한 정보 -->
+            {% if file.max_downloads or file.download_expiry_days %}
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 space-y-2 text-sm">
+              {% if file.max_downloads %}
+              <div class="flex items-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-cube mr-2"></i>
+                <span>남은 수량: <span class="font-semibold text-gray-900 dark:text-white">{{ file.available_downloads }}개</span></span>
+              </div>
+              {% endif %}
+              {% if file.download_expiry_days %}
+              <div class="flex items-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-clock mr-2"></i>
+                <span>다운로드 기한: <span class="font-semibold text-gray-900 dark:text-white">구매 후 {{ file.download_expiry_days }}일</span></span>
+              </div>
+              {% endif %}
+            </div>
             {% endif %}
           </div>
 

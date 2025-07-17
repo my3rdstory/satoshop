@@ -95,17 +95,24 @@
           
           <!-- 파일 정보 -->
           <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
-            <div class="flex items-center gap-2">
-              <span>{{ file.get_file_size_display }}</span>
-              {% if file.max_downloads %}
-              <span class="text-yellow-600 dark:text-yellow-400">
-                <i class="fas fa-user-times"></i> {{ file.available_downloads }}개
-              </span>
-              {% endif %}
-              {% if file.download_expiry_days %}
-              <span class="text-blue-600 dark:text-blue-400">
-                <i class="fas fa-clock"></i> {{ file.download_expiry_days }}일
-              </span>
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <span><i class="fas fa-file-alt"></i> {{ file.get_file_type_display }}</span>
+                <span>{{ file.get_file_size_display }}</span>
+              </div>
+              {% if file.max_downloads or file.download_expiry_days %}
+              <div class="flex items-center gap-2">
+                {% if file.max_downloads %}
+                <span class="text-yellow-600 dark:text-yellow-400">
+                  <i class="fas fa-cube"></i> {{ file.available_downloads }}개
+                </span>
+                {% endif %}
+                {% if file.download_expiry_days %}
+                <span class="text-blue-600 dark:text-blue-400">
+                  <i class="fas fa-clock"></i> {{ file.download_expiry_days }}일
+                </span>
+                {% endif %}
+              </div>
               {% endif %}
             </div>
           </div>
