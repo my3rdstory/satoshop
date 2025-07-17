@@ -318,7 +318,11 @@ def check_cart_payment(request, store_id):
             logger.error(f"[결제상태체크] Blink API 서비스 오류: {str(e)}")
             import traceback
             logger.error(f"[결제상태체크] 스택 트레이스: {traceback.format_exc()}")
-            return JsonResponse({'success': False, 'error': '결제 상태 확인 중 오류가 발생했습니다.'})
+            # 오류가 발생해도 결제 상태는 계속 확인해야 함
+            return JsonResponse({
+                'success': True,
+                'status': 'pending'
+            })
         
     except Exception as e:
         logger.error(f"[결제상태체크] 전체 오류: {str(e)}")

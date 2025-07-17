@@ -695,11 +695,17 @@ def check_file_payment(request):
                 'error': result.get('error', '결제 상태 확인에 실패했습니다.')
             })
             
-    except Exception as e:
-        logger.error(f"결제 상태 확인 오류: {e}", exc_info=True)
+    except FileOrder.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'error': '결제 상태 확인 중 오류가 발생했습니다.'
+            'error': '주문을 찾을 수 없습니다.'
+        })
+    except Exception as e:
+        logger.error(f"결제 상태 확인 오류: {e}", exc_info=True)
+        # 오류가 발생해도 결제 상태는 계속 확인해야 함
+        return JsonResponse({
+            'success': True,
+            'paid': False
         })
 
 
