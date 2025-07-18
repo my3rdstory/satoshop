@@ -270,46 +270,86 @@
       </div>
     </div>
 
-    <!-- 하: 최신 라이브 강의 -->
-    <div class="mt-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-b border-indigo-200 dark:border-indigo-700">
-        <h3 class="text-lg font-semibold text-indigo-800 dark:text-indigo-200 flex items-center">
-          <i class="fas fa-video mr-2"></i>
-          최신 라이브 강의
-        </h3>
+    <!-- 하단 섹션: 최근 판매된 디지털 파일 / 최신 라이브 강의 -->
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- 왼쪽: 최근 판매된 디지털 파일 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-b border-purple-200 dark:border-purple-700">
+          <h3 class="text-lg font-semibold text-purple-800 dark:text-purple-200 flex items-center">
+            <i class="fas fa-file-download mr-2"></i>
+            최근 판매된 디지털 파일
+          </h3>
+        </div>
+        <div class="p-4">
+          {% if recent_file_orders %}
+          <div class="space-y-3">
+            {% for order in recent_file_orders %}
+            <a href="{% url 'file:file_detail' store_id=order.digital_file.store.store_id file_id=order.digital_file.id %}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-100 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ order.digital_file.name }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ order.digital_file.store.owner_name }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-full">
+                  {% if order.price > 0 %}
+                    {{ order.price|intcomma }} sats
+                  {% else %}
+                    무료
+                  {% endif %}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">최근 판매된 파일이 없습니다</p>
+          {% endif %}
+        </div>
       </div>
-             <div class="p-4">
-         {% if live_lectures %}
-                   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-           {% for lecture in live_lectures %}
-           <a href="{% url 'lecture:live_lecture_detail' store_id=lecture.store.store_id live_lecture_id=lecture.id %}" class="block p-1 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-            <div class="text-center">
-              <h4 class="font-medium text-gray-900 dark:text-white mb-2">{{ lecture.name }}</h4>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ lecture.store.owner_name }}</p>
-              <span class="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full">
-                {% if lecture.price_display == 'free' %}
-                  무료
-                {% else %}
-                  유료
-                {% endif %}
-              </span>
-            </div>
-          </a>
-          {% endfor %}
+      
+      <!-- 오른쪽: 최신 라이브 강의 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 border-b border-indigo-200 dark:border-indigo-700">
+          <h3 class="text-lg font-semibold text-indigo-800 dark:text-indigo-200 flex items-center">
+            <i class="fas fa-video mr-2"></i>
+            최신 라이브 강의
+          </h3>
         </div>
-                 <div class="mt-4 text-center">
-           <a href="{% url 'lecture:browse_live_lectures' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200">
-            전체보기 <i class="fas fa-arrow-right ml-1"></i>
-          </a>
+        <div class="p-4">
+          {% if live_lectures %}
+          <div class="space-y-3">
+            {% for lecture in live_lectures %}
+            <a href="{% url 'lecture:live_lecture_detail' store_id=lecture.store.store_id live_lecture_id=lecture.id %}" class="block p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-100 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h4 class="font-medium text-gray-900 dark:text-white">{{ lecture.name }}</h4>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">{{ lecture.store.owner_name }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full">
+                  {% if lecture.price_display == 'free' %}
+                    무료
+                  {% else %}
+                    유료
+                  {% endif %}
+                </span>
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+          <div class="mt-4 text-center">
+            <a href="{% url 'lecture:browse_live_lectures' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200">
+              전체보기 <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400 py-8">최신 라이브 강의가 없습니다</p>
+          {% endif %}
         </div>
-        {% else %}
-        <p class="text-center text-gray-500 dark:text-gray-400 py-8">최신 라이브 강의가 없습니다</p>
-        {% endif %}
       </div>
     </div>
 
     <!-- 데이터가 없는 경우 -->
-    {% if not recent_stores and not active_stores and not recent_ordered_products and not recent_meetup_orders and not live_lectures %}
+    {% if not recent_stores and not active_stores and not recent_ordered_products and not recent_meetup_orders and not live_lectures and not recent_file_orders %}
     <div class="text-center py-16">
       <div class="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
         <i class="fas fa-store text-3xl text-gray-400"></i>

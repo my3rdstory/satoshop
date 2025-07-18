@@ -122,6 +122,22 @@ def browse_stores(request):
             store__store_id__in=excluded_store_ids
         ).select_related('store').order_by('-created_at')[:5]
         
+        # 최근 판매된 디지털 파일 5개 (제외 스토어 필터링)
+        from file.models import FileOrder
+        recent_file_orders = FileOrder.objects.filter(
+            status='confirmed',
+            digital_file__is_active=True,
+            digital_file__deleted_at__isnull=True,
+            digital_file__store__is_active=True,
+            digital_file__store__deleted_at__isnull=True
+        ).exclude(
+            digital_file__store__store_id__in=excluded_store_ids
+        ).select_related(
+            'digital_file', 
+            'digital_file__store',
+            'user'
+        ).order_by('-confirmed_at')[:5]
+        
         # 최근 주문된 상품 목록 5개 (제외 스토어 필터링)
         from orders.models import OrderItem
         recent_ordered_products = OrderItem.objects.filter(
@@ -152,6 +168,7 @@ def browse_stores(request):
             'recent_stores': recent_stores,
             'active_stores': active_order_stores_final,
             'live_lectures': live_lectures,
+            'recent_file_orders': recent_file_orders,
             'recent_ordered_products': recent_ordered_products,
             'recent_meetup_orders': recent_meetup_orders,
         }
