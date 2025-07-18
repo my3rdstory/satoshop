@@ -100,9 +100,9 @@
                   <i class="fas fa-download mr-2"></i>
                   다운로드
                 </a>
-                {% if order.download_logs.exists %}
+                {% if order.download_click_count > 0 %}
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ order.download_logs.count }}회 다운로드
+                  {{ order.download_click_count }}회 다운로드
                 </p>
                 {% endif %}
               {% else %}
