@@ -618,11 +618,20 @@ def store_detail(request, store_id):
             deleted_at__isnull=True
         ).order_by('-created_at')[:4]
         
+        # 디지털 파일 목록도 함께 가져오기 (최대 4개만)
+        from file.models import DigitalFile
+        digital_files = DigitalFile.objects.filter(
+            store=store,
+            is_active=True,
+            deleted_at__isnull=True
+        ).order_by('-created_at')[:4]
+        
         return render(request, 'stores/store_detail.html', {
             'store': store,
             'products': products,
             'meetups': meetups,
             'live_lectures': live_lectures,
+            'digital_files': digital_files,
         })
     else:
         # 비활성화된 스토어는 안내 페이지 표시
