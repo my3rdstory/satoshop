@@ -210,32 +210,91 @@ def delete_file(request, store_id, file_id):
         messages.error(request, "스토어에 접근할 권한이 없습니다.")
         return redirect('stores:store_detail', store_id=store_id)
     
-    digital_file = get_object_or_404(DigitalFile, id=file_id, store=store, deleted_at__isnull=True)
+    # DB에서 필요한 데이터만 가져오기 (FileField 접근 방지)
+    file_info = DigitalFile.objects.filter(
+        id=file_id, 
+        store=store, 
+        deleted_at__isnull=True
+    ).values(
+        'id', 'name', 'file', 'preview_image', 'file_size', 'created_at'
+    ).first()
+    
+    if not file_info:
+        raise Http404("파일을 찾을 수 없습니다.")
     
     if request.method == 'POST':
         # 오브젝트 스토리지에서 파일 삭제
-        try:
-            if digital_file.file:
-                file_name = digital_file.file.name
-                if default_storage.exists(file_name):
-                    default_storage.delete(file_name)
-                    logger.info(f"Deleted file from storage: {file_name}")
-            
-            if digital_file.preview_image:
-                preview_name = digital_file.preview_image.name
-                if default_storage.exists(preview_name):
-                    default_storage.delete(preview_name)
-                    logger.info(f"Deleted preview image from storage: {preview_name}")
-        except Exception as e:
-            logger.error(f"Error deleting files from storage: {e}")
-            messages.warning(request, "파일 삭제 중 일부 오류가 발생했습니다.")
+        deletion_errors = []
         
-        # DB에서 소프트 삭제
-        digital_file.deleted_at = timezone.now()
-        digital_file.is_active = False
-        digital_file.save()
-        messages.success(request, f"파일 '{digital_file.name}'이(가) 삭제되었습니다.")
+        # 메인 파일 삭제
+        if file_info.get('file'):
+            try:
+                from storage.backends import S3Storage
+                storage = S3Storage()
+                storage.delete(file_info['file'])
+                logger.info(f"Deleted file from storage: {file_info['file']}")
+            except Exception as e:
+                logger.error(f"Error deleting file {file_info['file']}: {e}", exc_info=True)
+                deletion_errors.append(f"파일: {str(e)}")
+        
+        # 미리보기 이미지 삭제
+        if file_info.get('preview_image'):
+            try:
+                from storage.backends import S3Storage
+                storage = S3Storage()
+                storage.delete(file_info['preview_image'])
+                logger.info(f"Deleted preview image from storage: {file_info['preview_image']}")
+            except Exception as e:
+                logger.error(f"Error deleting preview image {file_info['preview_image']}: {e}", exc_info=True)
+                deletion_errors.append(f"미리보기: {str(e)}")
+        
+        # 에러가 있었다면 경고 메시지
+        if deletion_errors:
+            logger.warning(f"파일 삭제 중 일부 오류 발생: {deletion_errors}")
+            messages.warning(request, "파일 삭제 중 일부 오류가 발생했지만, 파일은 삭제 처리되었습니다.")
+        
+        # DB에서 소프트 삭제 (update 사용으로 객체 로드 방지)
+        DigitalFile.objects.filter(id=file_id).update(
+            deleted_at=timezone.now(),
+            is_active=False
+        )
+        messages.success(request, f"파일 '{file_info['name']}'이(가) 삭제되었습니다.")
         return redirect('file:file_manage', store_id=store.store_id)
+    
+    # GET 요청에서는 템플릿에서 사용할 데이터만 준비
+    # 판매 수와 다운로드 수는 별도로 계산
+    sales_count = FileOrder.objects.filter(
+        digital_file_id=file_id,
+        status='confirmed'
+    ).count()
+    
+    download_count = FileDownloadLog.objects.filter(
+        order__digital_file_id=file_id
+    ).count()
+    
+    # 파일 크기 표시용 변환
+    def format_file_size(size):
+        if not size:
+            return "알 수 없음"
+        for unit in ['bytes', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
+    
+    # 템플릿용 가상 객체 생성
+    class FileInfo:
+        def __init__(self, data):
+            self.name = data['name']
+            self.created_at = data['created_at']
+            self.sales_count = sales_count
+            self.download_count = download_count
+            self.file_size_display = format_file_size(data.get('file_size'))
+        
+        def get_file_size_display(self):
+            return self.file_size_display
+    
+    digital_file = FileInfo(file_info)
     
     context = {
         'store': store,

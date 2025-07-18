@@ -37,6 +37,39 @@ function initializeEditors() {
   });
 }
 
+// 가격 타입 초기화
+function initializePriceType() {
+  // 무료 옵션이 기본으로 선택되도록 설정
+  selectPriceType('free');
+}
+
+// 이벤트 리스너 설정
+function setupEventListeners() {
+  // 정원 제한 체크박스 이벤트
+  document.getElementById('no_limit').addEventListener('change', function() {
+    const maxParticipantsSection = document.getElementById('max_participants_section');
+    const maxParticipantsInput = document.getElementById('max_participants');
+    
+    if (this.checked) {
+      maxParticipantsSection.style.display = 'none';
+      maxParticipantsInput.required = false;
+      maxParticipantsInput.value = '';
+    } else {
+      maxParticipantsSection.style.display = 'block';
+      maxParticipantsInput.required = true;
+    }
+    
+    // 정원 설정 섹션 검증
+    validateCapacitySection();
+  });
+
+  // 이미지 업로드 이벤트
+  setupImageUpload();
+
+  // 폼 제출 검증
+  document.getElementById('liveLectureForm').addEventListener('submit', validateForm);
+}
+
 // 환율 정보 로드
 async function loadExchangeRate() {
   if (isLoadingExchangeRate) return;
@@ -92,39 +125,6 @@ function updatePriceConversion() {
       exchangeInfo.classList.add('hidden');
     }
   }
-}
-
-// 가격 타입 초기화
-function initializePriceType() {
-  // 무료 옵션이 기본으로 선택되도록 설정
-  selectPriceType('free');
-}
-
-// 이벤트 리스너 설정
-function setupEventListeners() {
-  // 정원 제한 체크박스 이벤트
-  document.getElementById('no_limit').addEventListener('change', function() {
-    const maxParticipantsSection = document.getElementById('max_participants_section');
-    const maxParticipantsInput = document.getElementById('max_participants');
-    
-    if (this.checked) {
-      maxParticipantsSection.style.display = 'none';
-      maxParticipantsInput.required = false;
-      maxParticipantsInput.value = '';
-    } else {
-      maxParticipantsSection.style.display = 'block';
-      maxParticipantsInput.required = true;
-    }
-    
-    // 정원 설정 섹션 검증
-    validateCapacitySection();
-  });
-
-  // 이미지 업로드 이벤트
-  setupImageUpload();
-
-  // 폼 제출 검증
-  document.getElementById('liveLectureForm').addEventListener('submit', validateForm);
 }
 
 // 실시간 검증 설정
@@ -269,30 +269,25 @@ function validateCapacitySection() {
 
 // 섹션별 에러 표시 함수
 function showSectionErrors(sectionName, errors) {
-  const errorDiv = document.getElementById(`${sectionName}-errors`);
+  const errorContainer = document.getElementById(`${sectionName}-errors`);
   const errorList = document.getElementById(`${sectionName}-error-list`);
   
   if (errors.length > 0) {
-    errorList.innerHTML = '';
-    errors.forEach(error => {
-      const li = document.createElement('li');
-      li.textContent = `• ${error}`;
-      errorList.appendChild(li);
-    });
-    errorDiv.classList.remove('hidden');
+    errorList.innerHTML = errors.map(error => `<li>• ${error}</li>`).join('');
+    errorContainer.classList.remove('hidden');
   } else {
-    errorDiv.classList.add('hidden');
+    errorContainer.classList.add('hidden');
   }
 }
 
-// 전체 검증 함수
+// 모든 섹션 검증
 function validateAllSections() {
-  const basicValid = validateBasicInfoSection();
+  const basicInfoValid = validateBasicInfoSection();
   const instructorValid = validateInstructorSection();
   const priceValid = validatePriceSection();
   const capacityValid = validateCapacitySection();
   
-  return basicValid && instructorValid && priceValid && capacityValid;
+  return basicInfoValid && instructorValid && priceValid && capacityValid;
 }
 
 // 이미지 업로드 관련 이벤트 설정
@@ -377,6 +372,7 @@ function updateImageInput(file) {
   imageInput.files = dt.files;
 }
 
+// 가격 타입 선택 함수
 function selectPriceType(type) {
   // 모든 카드 초기화
   document.querySelectorAll('.price-type-card').forEach(card => {
@@ -436,7 +432,7 @@ function selectPriceType(type) {
   validatePriceSection();
 }
 
-// 폼 제출 검증
+// 폼 제출 전 검증
 function validateForm(e) {
   console.log('폼 제출 시작 - validateForm 호출됨');
   
@@ -521,20 +517,24 @@ function prepareFormDataForSubmission() {
 
 // 디버깅 도우미 함수 추가
 function addDebugHelper() {
-  if (window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')) {
-    console.log('디버그 모드 활성화');
-    window.debugLiveLecture = {
-      getFormData: function() {
-        const formData = new FormData(document.getElementById('liveLectureForm'));
-        const data = {};
-        for (let [key, value] of formData.entries()) {
-          data[key] = value;
-        }
-        return data;
-      },
-      validateAll: validateAllSections,
-      getDescriptionValue: () => descriptionEditor ? descriptionEditor.value() : '',
-      getCompletionMessageValue: () => completionMessageEditor ? completionMessageEditor.value() : ''
-    };
-  }
-} 
+  // 디버깅 도우미 함수
+  window.debugForm = function() {
+    console.log('=== 폼 디버깅 정보 ===');
+    console.log('강의명:', document.getElementById('name').value);
+    console.log('설명:', document.getElementById('description').value);
+    console.log('일시:', document.getElementById('date_time').value);
+    console.log('가격 타입:', document.querySelector('input[name="price_display"]:checked')?.value);
+    console.log('사토시 가격:', document.getElementById('price').value);
+    console.log('원화 가격:', document.getElementById('price_krw').value);
+    console.log('강사 연락처:', document.getElementById('instructor_contact').value);
+    console.log('강사 이메일:', document.getElementById('instructor_email').value);
+    console.log('정원 제한 없음:', document.getElementById('no_limit').checked);
+    console.log('최대 참가자:', document.getElementById('max_participants').value);
+    console.log('==================');
+  };
+  
+  console.log('디버깅 도우미: 콘솔에서 debugForm()을 입력하면 현재 폼 상태를 확인할 수 있습니다.');
+}
+
+// selectPriceType 함수를 전역으로 노출 (HTML에서 onclick으로 호출하기 때문)
+window.selectPriceType = selectPriceType; 

@@ -34,13 +34,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // 스토어 관련 공통 기능들을 여기에 추가할 수 있습니다
   
-  // 예: 스토어 이미지 로딩 에러 처리
-  const storeImages = document.querySelectorAll('img[src*="/media/"]');
-  storeImages.forEach(img => {
-    img.addEventListener('error', function() {
-      this.src = '/static/images/placeholder-store.png'; // 기본 이미지로 대체
-    });
-  });
+  // 이미지 에러 처리 기능 제거 - 불필요한 404 에러 방지
+  // 필요 시 각 페이지에서 개별적으로 처리
   
   // 스토어 링크 클릭 추적 (선택사항)
   const storeLinks = document.querySelectorAll('a[href*="/stores/"]');

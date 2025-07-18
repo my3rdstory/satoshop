@@ -25,6 +25,48 @@ def validate_file_size(value):
         raise ValidationError('파일 크기는 100MB를 초과할 수 없습니다.')
 
 
+def digital_file_upload_to(instance, filename):
+    """디지털 파일 업로드 경로 생성"""
+    from datetime import datetime
+    import uuid
+    import os
+    
+    # 파일 확장자 추출
+    ext = filename.split('.')[-1] if '.' in filename else ''
+    
+    # 고유한 파일명 생성
+    unique_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    new_filename = f"{timestamp}_{unique_id}.{ext}" if ext else f"{timestamp}_{unique_id}"
+    
+    # 날짜별 디렉토리 구조
+    date_path = datetime.now().strftime('%Y/%m/%d')
+    
+    # 최종 경로: digital_files/2025/01/18/20250118_123456_abcdef12.png
+    return f'digital_files/{date_path}/{new_filename}'
+
+
+def preview_image_upload_to(instance, filename):
+    """미리보기 이미지 업로드 경로 생성"""
+    from datetime import datetime
+    import uuid
+    import os
+    
+    # 파일 확장자 추출
+    ext = filename.split('.')[-1] if '.' in filename else ''
+    
+    # 고유한 파일명 생성
+    unique_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    new_filename = f"{timestamp}_{unique_id}.{ext}" if ext else f"{timestamp}_{unique_id}"
+    
+    # 날짜별 디렉토리 구조
+    date_path = datetime.now().strftime('%Y/%m/%d')
+    
+    # 최종 경로: digital_files/previews/2025/01/18/20250118_123456_abcdef12.jpg
+    return f'digital_files/previews/{date_path}/{new_filename}'
+
+
 class DigitalFile(models.Model):
     """디지털 파일"""
     PRICE_DISPLAY_CHOICES = [
@@ -39,7 +81,7 @@ class DigitalFile(models.Model):
     
     # 파일 정보
     file = models.FileField(
-        upload_to='digital_files/%Y/%m/%d/', 
+        upload_to=digital_file_upload_to, 
         verbose_name="파일",
         validators=[validate_file_size],
         storage=S3Storage() if hasattr(settings, 'S3_ACCESS_KEY_ID') and settings.S3_ACCESS_KEY_ID else default_storage
@@ -50,7 +92,7 @@ class DigitalFile(models.Model):
     
     # 미리보기 이미지 (선택사항)
     preview_image = models.ImageField(
-        upload_to='digital_files/previews/%Y/%m/%d/',
+        upload_to=preview_image_upload_to,
         verbose_name="미리보기 이미지",
         blank=True,
         null=True,
@@ -483,22 +525,24 @@ class DigitalFile(models.Model):
     def delete(self, *args, **kwargs):
         """파일 삭제 시 오브젝트 스토리지에서도 삭제"""
         # 파일 삭제
-        if self.file:
+        if self.file and self.file.name:
             try:
-                if self.file.storage.exists(self.file.name):
-                    self.file.storage.delete(self.file.name)
-                    logger.info(f"Deleted file from storage: {self.file.name}")
+                # exists 체크 없이 바로 삭제 시도 (exists가 에러를 발생시킬 수 있음)
+                self.file.storage.delete(self.file.name)
+                logger.info(f"Deleted file from storage: {self.file.name}")
             except Exception as e:
-                logger.error(f"Error deleting file: {e}")
+                logger.error(f"Error deleting file {self.file.name}: {e}", exc_info=True)
+                # 에러가 발생해도 계속 진행
         
         # 미리보기 이미지 삭제
-        if self.preview_image:
+        if self.preview_image and self.preview_image.name:
             try:
-                if self.preview_image.storage.exists(self.preview_image.name):
-                    self.preview_image.storage.delete(self.preview_image.name)
-                    logger.info(f"Deleted preview image from storage: {self.preview_image.name}")
+                # exists 체크 없이 바로 삭제 시도
+                self.preview_image.storage.delete(self.preview_image.name)
+                logger.info(f"Deleted preview image from storage: {self.preview_image.name}")
             except Exception as e:
-                logger.error(f"Error deleting preview image: {e}")
+                logger.error(f"Error deleting preview image {self.preview_image.name}: {e}", exc_info=True)
+                # 에러가 발생해도 계속 진행
         
         super().delete(*args, **kwargs)
 

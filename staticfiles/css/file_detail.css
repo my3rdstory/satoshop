@@ -1,0 +1,610 @@
+/* File Detail CSS */
+/* Basic styles for file detail view */
+
+/* Markdown content styles from template */
+.markdown-content {
+    line-height: 1.8;
+}
+
+.markdown-content h1 { 
+    font-size: 2rem; 
+    font-weight: bold; 
+    margin: 1.5rem 0; 
+}
+
+.markdown-content h2 { 
+    font-size: 1.5rem; 
+    font-weight: bold; 
+    margin: 1.25rem 0; 
+}
+
+.markdown-content h3 { 
+    font-size: 1.25rem; 
+    font-weight: bold; 
+    margin: 1rem 0; 
+}
+
+.markdown-content p { 
+    margin: 1rem 0; 
+}
+
+.markdown-content ul, 
+.markdown-content ol { 
+    margin: 1rem 0; 
+    padding-left: 2rem; 
+}
+
+.markdown-content li { 
+    margin: 0.5rem 0; 
+}
+
+.markdown-content code { 
+    background-color: #f3f4f6; 
+    padding: 0.25rem 0.5rem; 
+    border-radius: 0.25rem; 
+}
+
+.markdown-content pre { 
+    background-color: #f3f4f6; 
+    padding: 1rem; 
+    border-radius: 0.5rem; 
+    overflow-x: auto; 
+    margin: 1rem 0; 
+}
+
+.markdown-content blockquote { 
+    border-left: 4px solid #e5e7eb; 
+    padding-left: 1rem; 
+    margin: 1rem 0; 
+}
+
+.file-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.file-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 2rem;
+}
+
+/* Main content area */
+.file-main {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* File header */
+.file-header {
+    padding: 2rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.file-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0.5rem;
+}
+
+.file-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.meta-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* File preview section */
+.file-preview {
+    padding: 2rem;
+    background-color: #f9fafb;
+}
+
+.preview-container {
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background-color: #f3f4f6;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-type {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.preview-button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    background-color: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.preview-button:hover {
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.preview-content {
+    padding: 2rem;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Different preview types */
+.preview-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.preview-document {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #374151;
+}
+
+.preview-code {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    overflow-x: auto;
+}
+
+.preview-video,
+.preview-audio {
+    width: 100%;
+    max-width: 100%;
+}
+
+.preview-unavailable {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.preview-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    color: #d1d5db;
+}
+
+/* File description */
+.file-description {
+    padding: 2rem;
+}
+
+.description-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+}
+
+.description-content {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #4b5563;
+}
+
+/* File details tabs */
+.file-tabs {
+    border-top: 1px solid #e5e7eb;
+}
+
+.tab-list {
+    display: flex;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.tab-button {
+    padding: 1rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.tab-button:hover {
+    color: #374151;
+}
+
+.tab-button.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+}
+
+.tab-content {
+    padding: 2rem;
+}
+
+/* Specifications table */
+.specs-table {
+    width: 100%;
+    font-size: 0.875rem;
+}
+
+.specs-row {
+    display: flex;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.specs-row:last-child {
+    border-bottom: none;
+}
+
+.specs-label {
+    flex: 0 0 150px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.specs-value {
+    flex: 1;
+    color: #6b7280;
+}
+
+/* Sidebar */
+.file-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Purchase card */
+.purchase-card {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 2rem;
+}
+
+.price-section {
+    margin-bottom: 1.5rem;
+}
+
+.price-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+
+.price-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.price-currency {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6b7280;
+}
+
+.purchase-button {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: #3b82f6;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.purchase-button:hover {
+    background-color: #2563eb;
+}
+
+.purchase-button:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+.purchase-features {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.feature-icon {
+    width: 1rem;
+    height: 1rem;
+    color: #10b981;
+}
+
+/* Seller info */
+.seller-card {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.seller-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.seller-avatar {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: #e5e7eb;
+}
+
+.seller-info {
+    flex: 1;
+}
+
+.seller-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.seller-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.seller-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* Reviews section */
+.reviews-section {
+    margin-top: 2rem;
+}
+
+.reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.reviews-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.review-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.reviewer-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.review-date {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+.review-rating {
+    display: flex;
+    gap: 0.125rem;
+    margin-bottom: 0.5rem;
+}
+
+.star {
+    width: 1rem;
+    height: 1rem;
+    color: #fbbf24;
+}
+
+.star.empty {
+    color: #e5e7eb;
+}
+
+.review-content {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+/* Related files */
+.related-files {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.related-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+}
+
+.related-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.related-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.related-item:hover {
+    background-color: #f3f4f6;
+}
+
+.related-icon {
+    width: 2rem;
+    height: 2rem;
+    background-color: #e5e7eb;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.related-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.related-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a202c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.related-price {
+    font-size: 0.75rem;
+    color: #6b7280;
+}
+
+/* Responsive design */
+@media (max-width: 968px) {
+    .file-detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .file-sidebar {
+        order: -1;
+    }
+
+    .purchase-card {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+    .file-detail-container {
+        padding: 1rem;
+    }
+
+    .file-header {
+        padding: 1.5rem;
+    }
+
+    .file-title {
+        font-size: 1.5rem;
+    }
+
+    .file-meta {
+        font-size: 0.75rem;
+    }
+
+    .tab-list {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .specs-row {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    .specs-label {
+        flex: none;
+    }
+}
