@@ -12,6 +12,7 @@ function getSelectedPriceType() {
 
 document.addEventListener('DOMContentLoaded', function() {
     // 요소 선택
+    const priceDisplay = document.getElementById('id_price_display');
     const satsPriceSection = document.getElementById('sats-price-section');
     const krwPriceSection = document.getElementById('krw-price-section');
     const fileInput = document.getElementById('id_file');
