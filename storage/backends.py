@@ -221,18 +221,29 @@ class S3Storage(Storage):
     
     def delete(self, name):
         """S3에서 파일 삭제"""
+        if not name:
+            logger.warning("삭제할 파일명이 비어있습니다.")
+            return False
+            
         try:
             logger.info(f"파일 삭제 시도: {name}")
             
+            # 파일 존재 여부와 관계없이 삭제 요청
+            # S3는 존재하지 않는 파일을 삭제해도 에러를 발생시키지 않음
             self.client.delete_object(Bucket=self.bucket_name, Key=name)
             
             logger.info(f"파일 삭제 성공: {name}")
             return True
         except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            # 404 에러는 파일이 없는 것이므로 성공으로 처리
+            if error_code == '404':
+                logger.info(f"삭제할 파일이 없음 (이미 삭제됨): {name}")
+                return True
             logger.error(f"파일 삭제 실패: {name} - {e}")
             return False
         except Exception as e:
-            logger.error(f"파일 삭제 중 예외 발생: {name} - {e}")
+            logger.error(f"파일 삭제 중 예외 발생: {name} - {e}", exc_info=True)
             return False
     
     def exists(self, name):
@@ -421,12 +432,8 @@ class S3Storage(Storage):
             raise IOError(f"S3 디렉토리 목록 조회 실패: {e}")
     
     def generate_filename(self, filename):
-        """고유한 파일명 생성"""
-        # 파일 확장자 분리
-        name, ext = os.path.splitext(filename)
-        
-        # UUID와 타임스탬프로 고유한 파일명 생성
-        unique_id = str(uuid.uuid4())[:8]
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        
-        return f"{timestamp}_{unique_id}{ext}" 
+        """
+        Django가 전달한 파일명을 그대로 사용
+        (upload_to 함수에서 이미 고유한 파일명과 경로를 생성함)
+        """
+        return filename 

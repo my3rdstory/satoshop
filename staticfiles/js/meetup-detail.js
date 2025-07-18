@@ -51,7 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function initializeCountdown() {
-        // 카운트다운 시작
+        // 조기등록 할인 오버레이 카운트다운 시작
+        const countdownDataElement = document.getElementById('countdown-data');
+        if (countdownDataElement) {
+            try {
+                const countdownData = JSON.parse(countdownDataElement.textContent);
+                if (countdownData.endDateTime) {
+                    startEarlyBirdCountdown(countdownData.endDateTime);
+                }
+            } catch (e) {
+                console.error('조기등록 카운트다운 데이터 파싱 오류:', e);
+            }
+        }
+        
+        // 기타 카운트다운 요소들
         const countdownElement = document.querySelector('.countdown-timer');
         if (countdownElement) {
             const endDateTime = countdownElement.dataset.endDateTime;
@@ -59,6 +72,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 startCountdown(endDateTime);
             }
         }
+    }
+    
+    function startEarlyBirdCountdown(endDateTime) {
+        const countdownElement = document.getElementById('early-bird-countdown-overlay');
+        if (!countdownElement) return;
+        
+        const countdownInterval = setInterval(() => {
+            const now = new Date();
+            const end = new Date(endDateTime);
+            const timeLeft = end - now;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                countdownElement.textContent = '할인 종료';
+                // 페이지 새로고침으로 할인 상태 업데이트
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                return;
+            }
+            
+            // 시간 계산
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            // 남은 시간 포맷팅 (항상 초까지 표시)
+            let timeString = '';
+            if (days > 0) {
+                timeString = `${days}일 ${hours}시간 ${minutes}분 ${seconds}초`;
+            } else if (hours > 0) {
+                timeString = `${hours}시간 ${minutes}분 ${seconds}초`;
+            } else if (minutes > 0) {
+                timeString = `${minutes}분 ${seconds}초`;
+            } else {
+                timeString = `${seconds}초`;
+            }
+            
+            countdownElement.textContent = `${timeString} 남음`;
+            
+            // 1시간 미만일 때 긴급 스타일 적용
+            if (timeLeft < 3600000) { // 1시간 = 3600000ms
+                countdownElement.classList.add('text-red-300', 'font-bold');
+            }
+            
+        }, 1000);
     }
     
     function startCountdown(endDateTime) {
@@ -77,8 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 메인 이미지 변경
-    function changeMainImage(imageUrl, thumbnailElement) {
+    // 메인 이미지 변경 - 전역 함수로 노출
+    window.changeMainImage = function(imageUrl, thumbnailElement) {
         const mainImage = document.getElementById('mainImage');
         if (mainImage) {
             mainImage.src = imageUrl;
@@ -91,10 +151,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // 클릭된 썸네일에 active 클래스 추가
             thumbnailElement.classList.add('active');
         }
-    }
+    };
     
-    // 옵션 선택 (토글 방식)
-    function selectOption(choiceElement) {
+    // 옵션 선택 (토글 방식) - 전역 함수로 노출
+    window.selectOption = function(choiceElement) {
         const optionId = choiceElement.dataset.optionId;
         const choiceId = choiceElement.dataset.choiceId;
         const choicePrice = parseFloat(choiceElement.dataset.choicePrice) || 0;
@@ -157,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 총 가격 업데이트
         updateTotalPrice();
         updateJoinButtonState();
-    }
+    };
     
     // 총 가격 업데이트
     function updateTotalPrice() {
@@ -175,8 +235,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 밋업 참가 신청 (AJAX로 변경)
-    function joinMeetup() {
+    // 밋업 참가 신청 (AJAX로 변경) - 전역 함수로 노출
+    window.joinMeetup = function() {
         const joinButton = document.querySelector('[onclick="joinMeetup()"]');
         if (!joinButton) return;
         
@@ -206,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 페이지 이동
         window.location.href = fullUrl;
-    }
+    };
     
     // 정원 상태 업데이트 (필요시에만 호출)
     function updateCapacityStatus() {

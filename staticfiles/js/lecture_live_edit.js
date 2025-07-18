@@ -5,11 +5,16 @@
 let descriptionEditor;
 let completionMessageEditor;
 
+// 환율 관련 변수들
+let currentExchangeRate = null;
+let isLoadingExchangeRate = false;
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     initializeEditors();
     setupEventListeners();
     initializeFormStates();
+    loadExchangeRate();
 });
 
 // EasyMDE 에디터 초기화
@@ -34,6 +39,63 @@ function initializeEditors() {
     });
 }
 
+// 환율 정보 로드
+async function loadExchangeRate() {
+    if (isLoadingExchangeRate) return;
+    
+    isLoadingExchangeRate = true;
+    try {
+        console.log('환율 정보 로드 중...');
+        const response = await fetch('/api/exchange-rate/');
+        const data = await response.json();
+        
+        if (data.success) {
+            currentExchangeRate = data.btc_krw_rate;
+            console.log('환율 정보 로드 완료:', currentExchangeRate);
+            // 환율 로드 완료 후 가격 변환 정보 업데이트
+            updatePriceConversion();
+        } else {
+            console.error('환율 데이터 로드 실패:', data.error);
+        }
+    } catch (error) {
+        console.error('환율 API 호출 실패:', error);
+    } finally {
+        isLoadingExchangeRate = false;
+    }
+}
+
+// 원화를 사토시로 변환
+function convertKrwToSats(krwAmount) {
+    if (!krwAmount || !currentExchangeRate || krwAmount <= 0) {
+        return 0;
+    }
+    
+    // 1 BTC = 100,000,000 사토시
+    const btcAmount = krwAmount / currentExchangeRate;
+    const satsAmount = btcAmount * 100_000_000;
+    return Math.round(satsAmount);
+}
+
+// 가격 변환 정보 업데이트
+function updatePriceConversion() {
+    const priceKrwInput = document.getElementById('price_krw');
+    if (!priceKrwInput) return;
+    
+    const krwValue = parseFloat(priceKrwInput.value);
+    const exchangeInfo = document.querySelector('#krw_price_section .exchange-info');
+    const convertedAmount = document.querySelector('#krw_price_section .converted-amount');
+    
+    if (exchangeInfo && convertedAmount) {
+        if (krwValue && krwValue > 0 && currentExchangeRate) {
+            const satsValue = convertKrwToSats(krwValue);
+            convertedAmount.textContent = `약 ${satsValue.toLocaleString()} sats`;
+            exchangeInfo.classList.remove('hidden');
+        } else {
+            exchangeInfo.classList.add('hidden');
+        }
+    }
+}
+
 // 이벤트 리스너 설정
 function setupEventListeners() {
     // 정원 제한 체크박스 이벤트
@@ -49,6 +111,13 @@ function setupEventListeners() {
             maxParticipantsInput.required = true;
         }
     });
+
+    // 원화 가격 입력 이벤트 (실시간 변환)
+    const priceKrwInput = document.getElementById('price_krw');
+    if (priceKrwInput) {
+        priceKrwInput.addEventListener('input', updatePriceConversion);
+        priceKrwInput.addEventListener('blur', updatePriceConversion);
+    }
 
     // 이미지 변경 버튼 이벤트
     const changeImageBtn = document.getElementById('changeImageBtn');
@@ -165,30 +234,52 @@ function selectPriceType(type) {
     });
     
     // 선택된 카드 활성화
-    document.querySelector(`[onclick="selectPriceType('${type}')"]`).classList.add('selected');
+    const selectedCard = document.querySelector(`[onclick="selectPriceType('${type}')"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('selected');
+    }
     
     // 라디오 버튼 선택
-    const radioValue = type === 'satoshi' ? 'sats' : (type === 'krw_linked' ? 'krw' : 'free');
-    document.getElementById(`price_display_${radioValue}`).checked = true;
+    let radioValue;
+    if (type === 'free') {
+        radioValue = 'free';
+    } else if (type === 'sats') {
+        radioValue = 'sats';
+    } else if (type === 'krw') {
+        radioValue = 'krw';
+    }
+    
+    if (radioValue) {
+        const radioButton = document.getElementById(`price_display_${radioValue}`);
+        if (radioButton) {
+            radioButton.checked = true;
+        }
+    }
     
     // 가격 섹션 표시/숨김
-    const satoshiSection = document.getElementById('satoshi_price_section');
+    const satsSection = document.getElementById('sats_price_section');
     const krwSection = document.getElementById('krw_price_section');
     
-    satoshiSection.classList.add('hidden');
-    krwSection.classList.add('hidden');
+    if (satsSection) satsSection.classList.add('hidden');
+    if (krwSection) krwSection.classList.add('hidden');
     
-    if (type === 'satoshi') {
-        satoshiSection.classList.remove('hidden');
-        document.getElementById('price').required = true;
-        document.getElementById('price_krw').required = false;
-    } else if (type === 'krw_linked') {
+    // 입력 필드 required 속성 초기화
+    const priceInput = document.getElementById('price');
+    const priceKrwInput = document.getElementById('price_krw');
+    
+    if (priceInput) priceInput.required = false;
+    if (priceKrwInput) priceKrwInput.required = false;
+    
+    if (type === 'sats' && satsSection) {
+        satsSection.classList.remove('hidden');
+        if (priceInput) priceInput.required = true;
+    } else if (type === 'krw' && krwSection) {
         krwSection.classList.remove('hidden');
-        document.getElementById('price_krw').required = true;
-        document.getElementById('price').required = false;
-    } else {
-        document.getElementById('price').required = false;
-        document.getElementById('price_krw').required = false;
+        if (priceKrwInput) {
+            priceKrwInput.required = true;
+            // 원화 가격 섹션이 표시될 때 변환 정보 업데이트
+            updatePriceConversion();
+        }
     }
 }
 
@@ -196,97 +287,74 @@ function selectPriceType(type) {
 function validateForm(e) {
     console.log('폼 제출 시작 - validateForm 호출됨');
     
+    // 폼 제출 전 환율 기반 사토시 값 준비
+    prepareFormDataForSubmission();
+    
     // EasyMDE 에디터의 내용을 텍스트영역에 저장
     if (descriptionEditor) {
-        const description = descriptionEditor.value();
-        document.getElementById('description').value = description;
-        console.log('Description 값 설정:', description);
+        const descriptionTextarea = document.getElementById('description');
+        descriptionTextarea.value = descriptionEditor.value();
     }
+    
     if (completionMessageEditor) {
-        const completionMessage = completionMessageEditor.value();
-        document.getElementById('completion_message').value = completionMessage;
-        console.log('Completion message 값 설정:', completionMessage);
+        const completionMessageTextarea = document.getElementById('completion_message');
+        completionMessageTextarea.value = completionMessageEditor.value();
     }
     
-    const priceType = document.querySelector('input[name="price_display"]:checked');
-    if (!priceType) {
-        e.preventDefault();
-        alert('가격 타입을 선택해주세요.');
-        console.log('폼 제출 실패: 가격 타입 미선택');
-        return false;
-    }
-    console.log('선택된 가격 타입:', priceType.value);
+    console.log('폼 제출 준비 완료');
+    return true;
+}
+
+// 폼 제출 시 원화연동 가격 처리
+function prepareFormDataForSubmission() {
+    const priceDisplay = document.querySelector('input[name="price_display"]:checked');
+    if (!priceDisplay) return;
     
-    // 가격 타입에 따라 숨겨진 필드들에 기본값 설정
+    const form = document.getElementById('liveLectureForm');
+    if (!form) return;
+    
+    // 기존 hidden 필드들 제거
+    const existingHiddenFields = form.querySelectorAll('input[type="hidden"][name$="_calculated"]');
+    existingHiddenFields.forEach(field => field.remove());
+    
+    // 가격 필드 처리
     const priceInput = document.getElementById('price');
     const priceKrwInput = document.getElementById('price_krw');
     
-    if (priceType.value === 'free') {
-        // 무료인 경우 모든 가격 필드를 0으로 설정
-        priceInput.value = '0';
-        priceKrwInput.value = '0';
-        console.log('무료 강의 - 가격 필드들을 0으로 설정');
-    } else if (priceType.value === 'sats') {
-        // 사토시인 경우 원화 가격을 0으로 설정
-        priceKrwInput.value = '0';
-        // 사토시 가격이 비어있으면 0으로 설정
-        if (!priceInput.value || priceInput.value.trim() === '') {
+    if (priceDisplay.value === 'krw') {
+        // 원화연동 모드: 원화 값을 사토시로 변환해서 추가 전송
+        if (priceKrwInput && priceKrwInput.value && currentExchangeRate) {
+            const krwValue = parseFloat(priceKrwInput.value);
+            const satsValue = convertKrwToSats(krwValue);
+            
+            // 계산된 사토시 값을 hidden field로 추가
+            const hiddenSatsField = document.createElement('input');
+            hiddenSatsField.type = 'hidden';
+            hiddenSatsField.name = 'price_sats_calculated';
+            hiddenSatsField.value = satsValue;
+            form.appendChild(hiddenSatsField);
+            
+            // price 필드에 임시값 설정 (폼 검증 통과용)
+            if (priceInput) {
+                priceInput.value = '1'; // 임시값 설정
+            }
+            
+            console.log(`원화연동 가격 처리: ${krwValue}원 -> ${satsValue}sats`);
+        }
+    } else if (priceDisplay.value === 'free') {
+        // 무료 모드: price 필드를 0으로 설정
+        if (priceInput) {
             priceInput.value = '0';
         }
-        console.log('사토시 강의 - 원화 가격을 0으로 설정, 사토시 가격:', priceInput.value);
-    } else if (priceType.value === 'krw') {
-        // 원화인 경우 사토시 가격을 0으로 설정
-        priceInput.value = '0';
-        // 원화 가격이 비어있으면 0으로 설정
-        if (!priceKrwInput.value || priceKrwInput.value.trim() === '') {
+        if (priceKrwInput) {
             priceKrwInput.value = '0';
         }
-                 console.log('원화 강의 - 사토시 가격을 0으로 설정, 원화 가격:', priceKrwInput.value);
-     }
-     
-     // 할인 관련 필드들도 기본값 설정
-     const discountedPriceInput = document.getElementById('discounted_price');
-     const discountedPriceKrwInput = document.getElementById('discounted_price_krw');
-     
-     if (discountedPriceInput && (!discountedPriceInput.value || discountedPriceInput.value.trim() === '')) {
-         discountedPriceInput.value = '0';
-     }
-     if (discountedPriceKrwInput && (!discountedPriceKrwInput.value || discountedPriceKrwInput.value.trim() === '')) {
-         discountedPriceKrwInput.value = '0';
-     }
-     
-     // 정원 관련 필드 처리
-     const noLimitCheckbox = document.getElementById('no_limit');
-     const maxParticipantsInput = document.getElementById('max_participants');
-     
-     if (noLimitCheckbox && noLimitCheckbox.checked) {
-         // 정원 제한이 없는 경우 max_participants를 null로 처리하기 위해 빈 값으로 설정
-         if (maxParticipantsInput) {
-             maxParticipantsInput.value = '';
-         }
-         console.log('정원 제한 없음 - max_participants를 빈 값으로 설정');
-     } else if (maxParticipantsInput && (!maxParticipantsInput.value || maxParticipantsInput.value.trim() === '')) {
-         // 정원 제한이 있는데 값이 비어있으면 에러
-         e.preventDefault();
-         alert('정원을 설정하거나 정원 없음을 체크해주세요.');
-         console.log('폼 제출 실패: 정원 미설정');
-         return false;
-     }
-     
-     console.log('최종 가격 설정 - price:', priceInput.value, 'price_krw:', priceKrwInput.value);
-     
-     const instructorContact = document.getElementById('instructor_contact').value;
-    const instructorEmail = document.getElementById('instructor_email').value;
-    
-    if (!instructorContact && !instructorEmail) {
-        e.preventDefault();
-        alert('강사 연락처 또는 이메일 중 하나는 필수 입력입니다.');
-        console.log('폼 제출 실패: 강사 연락처/이메일 미입력');
-        return false;
+    } else if (priceDisplay.value === 'sats') {
+        // 사토시 모드: price_krw 필드를 0으로 설정
+        if (priceKrwInput) {
+            priceKrwInput.value = '0';
+        }
     }
-    
-    console.log('폼 검증 통과 - 제출 계속 진행');
-    return true;
 }
 
 // 페이지 로드 시 초기 설정
@@ -295,8 +363,22 @@ function initializeFormStates() {
     const selectedPriceType = document.querySelector('input[name="price_display"]:checked');
     if (selectedPriceType) {
         // 선택된 값에 따라 올바른 타입으로 변환
-        const type = selectedPriceType.value === 'sats' ? 'satoshi' : (selectedPriceType.value === 'krw' ? 'krw_linked' : 'free');
+        const type = selectedPriceType.value === 'sats' ? 'sats' : (selectedPriceType.value === 'krw' ? 'krw' : 'free');
         selectPriceType(type);
+        
+        // 원화연동인 경우 환율 정보가 로드된 후 변환 정보 표시
+        if (selectedPriceType.value === 'krw') {
+            // 환율이 이미 로드되었으면 즉시 업데이트, 아니면 잠시 후 재시도
+            if (currentExchangeRate) {
+                updatePriceConversion();
+            } else {
+                setTimeout(() => {
+                    if (currentExchangeRate) {
+                        updatePriceConversion();
+                    }
+                }, 1000);
+            }
+        }
     }
     
     // 정원 제한 체크박스 상태에 따른 섹션 표시/숨김 설정

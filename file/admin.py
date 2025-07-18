@@ -1,14 +1,45 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 from .models import DigitalFile, FileOrder, FileDownloadLog
+
+
+class DeletedListFilter(admin.SimpleListFilter):
+    """삭제 상태 필터"""
+    title = _('삭제 상태')
+    parameter_name = 'deleted_status'
+    
+    def lookups(self, request, model_admin):
+        return (
+            ('active', _('활성 (삭제되지 않음)')),
+            ('deleted', _('삭제됨')),
+            ('all', _('모두 보기')),
+        )
+    
+    def queryset(self, request, queryset):
+        if self.value() == 'active':
+            return queryset.filter(deleted_at__isnull=True)
+        elif self.value() == 'deleted':
+            return queryset.filter(deleted_at__isnull=False)
+        return queryset
+    
+    def choices(self, changelist):
+        # 기본값을 'active'로 설정
+        value = self.value() or 'active'
+        for lookup, title in self.lookup_choices:
+            yield {
+                'selected': value == str(lookup),
+                'query_string': changelist.get_query_string({self.parameter_name: lookup}),
+                'display': title,
+            }
 
 
 @admin.register(DigitalFile)
 class DigitalFileAdmin(admin.ModelAdmin):
-    list_display = ['name', 'store', 'price_display', 'price', 'is_active', 'total_downloads', 'created_at']
-    list_filter = ['store', 'price_display', 'is_active', 'is_discounted']
-    search_fields = ['name', 'description', 'store__name']
-    readonly_fields = ['file_hash', 'file_size', 'original_filename', 'created_at', 'updated_at', 'total_downloads_display']
+    list_display = ['name', 'store', 'price_display', 'price', 'is_active', 'is_deleted', 'total_downloads', 'created_at']
+    list_filter = [DeletedListFilter, 'store', 'price_display', 'is_active', 'is_discounted']
+    search_fields = ['name', 'description', 'store__store_name']
+    readonly_fields = ['file_hash', 'file_size', 'original_filename', 'created_at', 'updated_at', 'deleted_at', 'total_downloads_display']
     
     fieldsets = (
         ('기본 정보', {
@@ -61,6 +92,43 @@ class DigitalFileAdmin(admin.ModelAdmin):
         )
     
     total_downloads_display.short_description = '다운로드 통계'
+    
+    def is_deleted(self, obj):
+        """삭제 여부 표시"""
+        if obj.deleted_at:
+            return format_html(
+                '<span style="color: red;">✗ 삭제됨</span>'
+            )
+        return format_html(
+            '<span style="color: green;">✓ 활성</span>'
+        )
+    
+    is_deleted.short_description = '삭제 상태'
+    
+    def get_queryset(self, request):
+        """기본 쿼리셋"""
+        qs = super().get_queryset(request)
+        # 필터가 설정되지 않은 경우 기본적으로 삭제되지 않은 항목만 표시
+        if not request.GET.get('deleted_status'):
+            return qs.filter(deleted_at__isnull=True)
+        return qs
+    
+    def hard_delete_selected(self, request, queryset):
+        """선택한 파일들을 완전 삭제 (오브젝트 스토리지 포함)"""
+        count = 0
+        for obj in queryset:
+            # delete() 메서드가 오브젝트 스토리지에서도 삭제함
+            obj.delete()
+            count += 1
+        
+        self.message_user(
+            request,
+            f"{count}개의 파일이 완전히 삭제되었습니다. (오브젝트 스토리지 포함)"
+        )
+    
+    hard_delete_selected.short_description = "선택한 파일 완전 삭제 (오브젝트 스토리지 포함)"
+    
+    actions = ['hard_delete_selected']
 
 
 @admin.register(FileOrder)

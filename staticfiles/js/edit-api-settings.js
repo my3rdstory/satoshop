@@ -206,8 +206,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // 즉시 한 번 확인
     checkPaymentStatus();
 
-    // 5초마다 확인
-    paymentCheckInterval = setInterval(checkPaymentStatus, 5000);
+    // 1초마다 확인
+    paymentCheckInterval = setInterval(checkPaymentStatus, 1000);
 
     // 20분 후 자동으로 확인 중단
     setTimeout(function () {
