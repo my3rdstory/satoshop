@@ -114,7 +114,28 @@ class FileOrderAdmin(admin.ModelAdmin):
 
 @admin.register(FileDownloadLog)
 class FileDownloadLogAdmin(admin.ModelAdmin):
-    list_display = ['order', 'ip_address', 'downloaded_at']
+    list_display = ['order', 'store_name', 'file_name', 'user', 'ip_address', 'downloaded_at']
     list_filter = ['downloaded_at']
-    search_fields = ['order__order_number', 'ip_address']
+    search_fields = ['order__order_number', 'ip_address', 'order__digital_file__name', 'order__digital_file__store__store_name']
     readonly_fields = ['downloaded_at']
+    
+    def store_name(self, obj):
+        """스토어명 표시"""
+        return obj.order.digital_file.store.store_name
+    
+    store_name.short_description = '스토어'
+    store_name.admin_order_field = 'order__digital_file__store__store_name'
+    
+    def file_name(self, obj):
+        """파일명 표시"""
+        return obj.order.digital_file.name
+    
+    file_name.short_description = '파일명'
+    file_name.admin_order_field = 'order__digital_file__name'
+    
+    def user(self, obj):
+        """사용자 표시"""
+        return obj.order.user.username
+    
+    user.short_description = '사용자'
+    user.admin_order_field = 'order__user__username'
