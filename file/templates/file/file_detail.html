@@ -63,7 +63,7 @@
             <div class="mb-6">
               <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">파일 설명</h2>
               <div class="markdown-content prose prose-gray dark:prose-invert max-w-none">
-                {{ file.description|linebreaks }}
+                {{ file.description }}
               </div>
             </div>
             {% endif %}
@@ -249,5 +249,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
 <script src="{% static 'js/file_detail.js' %}"></script>
 {% endblock %}
