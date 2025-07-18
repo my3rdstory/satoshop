@@ -175,6 +175,9 @@ local_settings.py
 *.key
 *.crt
 
+# Encryption keys
+store_encryption.key
+
 # Database dumps
 *.sql
 *.dump
