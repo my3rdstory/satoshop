@@ -36,7 +36,7 @@ class DeletedListFilter(admin.SimpleListFilter):
 
 @admin.register(DigitalFile)
 class DigitalFileAdmin(admin.ModelAdmin):
-    list_display = ['name', 'store', 'price_display', 'price', 'is_active', 'is_deleted', 'total_downloads', 'created_at']
+    list_display = ['name', 'store', 'price_display', 'price_with_krw', 'is_active', 'is_deleted', 'total_downloads', 'created_at']
     list_filter = [DeletedListFilter, 'store', 'price_display', 'is_active', 'is_discounted']
     search_fields = ['name', 'description', 'store__store_name']
     readonly_fields = ['file_hash', 'file_size', 'original_filename', 'created_at', 'updated_at', 'deleted_at', 'total_downloads_display']
@@ -104,6 +104,33 @@ class DigitalFileAdmin(admin.ModelAdmin):
         )
     
     is_deleted.short_description = '삭제 상태'
+    
+    def price_with_krw(self, obj):
+        """가격 표시 (원화연동인 경우 사토시 변환)"""
+        if obj.price_display == 'free':
+            return format_html('<span style="color: green;">무료</span>')
+        elif obj.price_display == 'krw':
+            # 원화연동인 경우 사토시로 변환
+            sats_price = obj.current_price_sats
+            krw_price = obj.price_krw
+            if sats_price and krw_price:
+                return format_html(
+                    '<span style="font-weight: bold;">{} sats</span><br>'
+                    '<span style="color: gray; font-size: 0.85em;">({}원)</span>',
+                    f'{sats_price:,}',
+                    f'{krw_price:,.0f}'
+                )
+            return '-'
+        else:
+            # 사토시 가격
+            if obj.price:
+                return format_html(
+                    '<span style="font-weight: bold;">{} sats</span>',
+                    f'{obj.price:,}'
+                )
+            return '-'
+    
+    price_with_krw.short_description = '가격'
     
     def get_queryset(self, request):
         """기본 쿼리셋"""
