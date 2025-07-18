@@ -40,7 +40,8 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         'participant_phone', 'base_price', 'options_price', 'total_price', 
         'original_price', 'discount_rate', 'is_early_bird', 'payment_hash', 
         'paid_at', 'is_temporary_reserved', 'reservation_expires_at', 
-        'reservation_time_left', 'auto_cancelled_reason', 'created_at', 'updated_at'
+        'reservation_time_left', 'auto_cancelled_reason', 'created_at', 'updated_at',
+        'invoice_data_display'
     ]
     ordering = ['-created_at']
     list_per_page = 10
@@ -302,6 +303,17 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     
     invoice_display.short_description = '인보이스'
     
+    def invoice_data_display(self, obj):
+        """인보이스 전체 데이터 표시"""
+        if obj.payment_request:
+            return format_html(
+                '<textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 0.8em;">{}</textarea>',
+                obj.payment_request
+            )
+        return '-'
+    
+    invoice_data_display.short_description = '인보이스 문자열'
+    
     # 커스텀 액션들
 
     def mark_as_attended(self, request, queryset):
@@ -509,6 +521,10 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         }),
         ('결제 정보', {
             'fields': ('payment_hash', 'paid_at')
+        }),
+        ('인보이스 데이터', {
+            'fields': ('invoice_data_display',),
+            'classes': ('collapse',)
         }),
         ('메타 정보', {
             'fields': ('created_at', 'updated_at'),

@@ -193,7 +193,7 @@ class MenuOrderAdmin(admin.ModelAdmin):
     ]
     list_filter = ['status', 'store', 'created_at', 'paid_at']
     search_fields = ['order_number', 'store__store_name', 'payment_hash']
-    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary']
+    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary', 'invoice_data_display']
     list_per_page = 10
     
     fieldsets = (
@@ -202,6 +202,10 @@ class MenuOrderAdmin(admin.ModelAdmin):
         }),
         ('결제 정보', {
             'fields': ('total_amount', 'payment_hash', 'paid_at')
+        }),
+        ('인보이스 데이터', {
+            'fields': ('invoice_data_display',),
+            'classes': ('collapse',)
         }),
         ('고객 정보', {
             'fields': ('customer_info',),
@@ -272,6 +276,17 @@ class MenuOrderAdmin(admin.ModelAdmin):
         return '-'
     
     invoice_display.short_description = '인보이스'
+    
+    def invoice_data_display(self, obj):
+        """인보이스 전체 데이터 표시"""
+        if obj.payment_request:
+            return format_html(
+                '<textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 0.8em;">{}</textarea>',
+                obj.payment_request
+            )
+        return '-'
+    
+    invoice_data_display.short_description = '인보이스 문자열'
     
     def items_summary(self, obj):
         """주문 아이템들의 요약 정보"""
