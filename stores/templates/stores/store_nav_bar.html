@@ -39,17 +39,17 @@
         <!-- 상품 목록 버튼 (데스크톱에서만 표시) -->
         <a href="{% url 'products:public_product_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-list mr-2 text-xs"></i>
-          상품 목록
+          상품
         </a>
         <!-- 밋업 목록 버튼 (데스크톱에서만 표시) -->
         <a href="{% url 'meetup:public_meetup_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-users mr-2 text-xs"></i>
-          밋업 목록
+          밋업
         </a>
         <!-- 라이브 강의 목록 버튼 (데스크톱에서만 표시) -->
         <a href="{% url 'lecture:live_lecture_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-video mr-2 text-xs"></i>
-          라이브 강의 목록
+          라이브 강의
         </a>
         <!-- 파일 목록 버튼 (데스크톱에서만 표시) -->
         {% if user.is_authenticated %}
@@ -61,7 +61,7 @@
           {% else %}
           <a href="{% url 'file:file_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
             <i class="fas fa-file-download mr-2 text-xs"></i>
-            파일 목록
+            파일
           </a>
           {% endif %}
         {% else %}
