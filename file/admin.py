@@ -5,10 +5,10 @@ from .models import DigitalFile, FileOrder, FileDownloadLog
 
 @admin.register(DigitalFile)
 class DigitalFileAdmin(admin.ModelAdmin):
-    list_display = ['name', 'store', 'price_display', 'price', 'is_active', 'created_at']
+    list_display = ['name', 'store', 'price_display', 'price', 'is_active', 'total_downloads', 'created_at']
     list_filter = ['store', 'price_display', 'is_active', 'is_discounted']
     search_fields = ['name', 'description', 'store__name']
-    readonly_fields = ['file_hash', 'file_size', 'original_filename', 'created_at', 'updated_at']
+    readonly_fields = ['file_hash', 'file_size', 'original_filename', 'created_at', 'updated_at', 'total_downloads_display']
     
     fieldsets = (
         ('기본 정보', {
@@ -29,10 +29,38 @@ class DigitalFileAdmin(admin.ModelAdmin):
         ('상태', {
             'fields': ('is_active', 'is_temporarily_closed', 'purchase_message')
         }),
+        ('통계', {
+            'fields': ('total_downloads_display',)
+        }),
         ('타임스탬프', {
             'fields': ('created_at', 'updated_at', 'deleted_at')
         }),
     )
+    
+    def total_downloads(self, obj):
+        """총 다운로드 수 표시 (리스트용)"""
+        count = FileDownloadLog.objects.filter(order__digital_file=obj).count()
+        return format_html('<span style="font-weight: bold;">{}</span>', count)
+    
+    total_downloads.short_description = '총 다운로드'
+    
+    def total_downloads_display(self, obj):
+        """총 다운로드 수 상세 표시 (상세보기용)"""
+        total = FileDownloadLog.objects.filter(order__digital_file=obj).count()
+        unique_users = FileDownloadLog.objects.filter(
+            order__digital_file=obj
+        ).values('order__user').distinct().count()
+        
+        return format_html(
+            '<div style="font-size: 14px;">'
+            '<strong>총 다운로드 수:</strong> {}회<br>'
+            '<strong>다운로드한 사용자 수:</strong> {}명'
+            '</div>',
+            total,
+            unique_users
+        )
+    
+    total_downloads_display.short_description = '다운로드 통계'
 
 
 @admin.register(FileOrder)
