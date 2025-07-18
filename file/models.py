@@ -308,13 +308,35 @@ class DigitalFile(models.Model):
         
         if self.price_display == 'krw' and current is not None:
             from myshop.models import ExchangeRate
-            latest_rate = ExchangeRate.get_latest_rate()
-            if latest_rate and latest_rate.btc_krw_rate > 0:
-                btc_amount = current / float(latest_rate.btc_krw_rate)
-                sats_amount = btc_amount * 100_000_000
-                return round(sats_amount)
+            try:
+                latest_rate = ExchangeRate.objects.latest('created_at')
+                if latest_rate and latest_rate.btc_krw_rate > 0:
+                    btc_amount = current / float(latest_rate.btc_krw_rate)
+                    sats_amount = btc_amount * 100_000_000
+                    return round(sats_amount)
+            except ExchangeRate.DoesNotExist:
+                pass
         
         return current
+    
+    @property
+    def price_sats(self):
+        """정상 가격 (사토시 단위로 변환)"""
+        if self.price_display == 'free':
+            return 0
+        
+        if self.price_display == 'krw' and self.price_krw is not None:
+            from myshop.models import ExchangeRate
+            try:
+                latest_rate = ExchangeRate.objects.latest('created_at')
+                if latest_rate and latest_rate.btc_krw_rate > 0:
+                    btc_amount = self.price_krw / float(latest_rate.btc_krw_rate)
+                    sats_amount = btc_amount * 100_000_000
+                    return round(sats_amount)
+            except ExchangeRate.DoesNotExist:
+                pass
+        
+        return self.price
     
     @property
     def current_price_krw(self):
@@ -521,6 +543,20 @@ class DigitalFile(models.Model):
         except Exception as e:
             logger.warning(f"Preview image URL error for file {self.id}: {e}")
             return None
+    
+    @property
+    def krw_price_display(self):
+        """원화 가격 표시 문자열"""
+        if self.price_display == 'krw' and self.price_krw:
+            return f"{self.price_krw:,.0f}원"
+        return ""
+    
+    @property
+    def krw_discounted_price_display(self):
+        """원화 할인 가격 표시 문자열"""
+        if self.price_display == 'krw' and self.is_discount_active and self.discounted_price_krw:
+            return f"{self.discounted_price_krw:,.0f}원"
+        return ""
     
     def delete(self, *args, **kwargs):
         """파일 삭제 시 오브젝트 스토리지에서도 삭제"""

@@ -102,30 +102,29 @@
             {% if file.price_display == 'free' %}
               <div class="text-3xl font-bold text-green-600 dark:text-green-400">무료</div>
             {% else %}
-              {% if file.is_discount_active %}
-                <div class="mb-2">
-                  <span class="text-gray-500 line-through text-lg">
-                    {{ file.price|intcomma }} {{ file.price_unit }}
-                  </span>
-                </div>
-                <div class="flex items-center space-x-3">
-                  <span class="text-3xl font-bold text-bitcoin">
-                    {{ file.current_price|intcomma }} {{ file.price_unit }}
-                  </span>
-                  <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm">
-                    {{ file.discount_rate }}% 할인
-                  </span>
-                </div>
-                {% if file.discount_end_date %}
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  할인 종료: {{ file.discount_end_date|date:"Y.m.d" }}
-                  {% if file.discount_end_time %}{{ file.discount_end_time|time:"H:i" }}{% endif %}
-                </p>
-                {% endif %}
-              {% else %}
-                <div class="text-3xl font-bold text-bitcoin">
+              <div class="text-3xl font-bold text-bitcoin">
+                {% if file.price_display == 'krw' %}
+                  {{ file.current_price_sats|intcomma }} sats
+                {% else %}
                   {{ file.current_price|intcomma }} {{ file.price_unit }}
+                {% endif %}
+              </div>
+              {% if file.price_display == 'krw' %}
+              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                ({{ file.krw_price_display }})
+              </div>
+              <!-- 원화 연동 상품일 때 환율 정보 표시 -->
+              <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">원화 연동</span>
                 </div>
+                {% if current_exchange_rate %}
+                <div class="text-xs text-gray-500 dark:text-gray-500">
+                  환율: 1 BTC = {{ current_exchange_rate.btc_krw_rate|floatformat:0|intcomma }}원
+                  ({{ current_exchange_rate.created_at|date:"m월 d일 H:i" }} 기준)
+                </div>
+                {% endif %}
+              </div>
               {% endif %}
             {% endif %}
             

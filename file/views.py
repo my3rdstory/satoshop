@@ -385,6 +385,15 @@ def file_detail(request, store_id, file_id):
             has_purchased = True
             can_download = user_order.can_download
     
+    # 원화 연동 가격인 경우 현재 환율 정보 가져오기
+    current_exchange_rate = None
+    if digital_file.price_display == 'krw':
+        from myshop.models import ExchangeRate
+        try:
+            current_exchange_rate = ExchangeRate.objects.latest('created_at')
+        except ExchangeRate.DoesNotExist:
+            pass
+    
     context = {
         'store': store,
         'file': digital_file,
@@ -392,6 +401,7 @@ def file_detail(request, store_id, file_id):
         'has_purchased': has_purchased,
         'can_download': can_download,
         'user_order': user_order,
+        'current_exchange_rate': current_exchange_rate,
     }
     return render(request, 'file/file_detail.html', context)
 
