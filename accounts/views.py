@@ -981,3 +981,29 @@ def meetup_participant_detail(request, user_id):
         'unique_stores': list(unique_stores),
     }
     return render(request, 'accounts/meetup_participant_detail.html', context)
+
+
+@login_required
+def my_file_orders(request):
+    """내 파일 구매 내역 (모든 스토어 통합)"""
+    from file.models import FileOrder
+    from django.core.paginator import Paginator
+    
+    # 사용자의 확정된 파일 주문만 조회
+    file_orders = FileOrder.objects.filter(
+        user=request.user,
+        status='confirmed'
+    ).select_related(
+        'digital_file', 'digital_file__store'
+    ).order_by('-created_at')
+    
+    # 페이지네이션
+    paginator = Paginator(file_orders, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'file_orders': page_obj.object_list,
+    }
+    return render(request, 'accounts/my_file_orders.html', context)

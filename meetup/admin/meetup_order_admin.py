@@ -24,7 +24,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     """밋업 주문 어드민"""
     list_display = [
         'order_number', 'meetup_name_display', 'store_display', 'participant_name', 
-        'order_status_display', 'payment_status_display', 'attended_status_display',
+        'order_status_display', 'payment_status_display', 'invoice_display', 'attended_status_display',
         'total_price_display', 'reservation_status_display', 'created_at_display'
     ]
     list_filter = [
@@ -33,7 +33,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     ]
     search_fields = [
         'order_number', 'participant_name', 'participant_email', 
-        'meetup__name', 'participant_phone'
+        'meetup__name', 'participant_phone', 'payment_hash'
     ]
     readonly_fields = [
         'order_number', 'meetup', 'user', 'participant_name', 'participant_email', 
@@ -283,6 +283,24 @@ class MeetupOrderAdmin(admin.ModelAdmin):
             )
         return f"{obj.total_price:,} sats"
     total_price_display.short_description = '결제금액'
+    
+    def invoice_display(self, obj):
+        """인보이스 표시"""
+        if obj.payment_hash:
+            # 인보이스의 일부만 표시 (앞 10자, 뒤 10자)
+            if len(obj.payment_hash) > 25:
+                display_text = f"{obj.payment_hash[:10]}...{obj.payment_hash[-10:]}"
+            else:
+                display_text = obj.payment_hash
+            
+            return format_html(
+                '<span title="{}" style="font-family: monospace; font-size: 0.85em;">{}</span>',
+                obj.payment_hash,
+                display_text
+            )
+        return '-'
+    
+    invoice_display.short_description = '인보이스'
     
     # 커스텀 액션들
 

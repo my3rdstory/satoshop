@@ -22,6 +22,9 @@ urlpatterns = [
     # 라이브 강의 신청 내역
     path('my-live-lecture-orders/', views.my_live_lecture_orders, name='my_live_lecture_orders'),
     
+    # 파일 구매 내역
+    path('my-file-orders/', views.my_file_orders, name='my_file_orders'),
+    
     # 밋업 참가자 관리 (어드민)
     path('admin/meetup-participants/', views.meetup_participants_admin, name='meetup_participants_admin'),
     path('admin/meetup-participant/<int:user_id>/', views.meetup_participant_detail, name='meetup_participant_detail'),

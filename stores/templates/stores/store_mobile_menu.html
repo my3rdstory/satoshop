@@ -30,6 +30,22 @@
     <a href="{% url 'lecture:live_lecture_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
       <i class="fas fa-video mr-2 text-xs"></i>라이브 강의 목록
     </a>
+    <!-- 스토어 전용: 파일 목록 (모바일에서만 표시) -->
+    {% if user.is_authenticated %}
+      {% if user == store.owner or user.is_staff %}
+      <a href="{% url 'file:file_manage' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+        <i class="fas fa-file-download mr-2 text-xs"></i>파일 관리
+      </a>
+      {% else %}
+      <a href="{% url 'file:file_list' store_id=store.store_id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+        <i class="fas fa-file-download mr-2 text-xs"></i>파일 목록
+      </a>
+      {% endif %}
+    {% else %}
+    <a href="{% url 'file:file_list' store_id=store.id %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+      <i class="fas fa-file-download mr-2 text-xs"></i>파일 목록
+    </a>
+    {% endif %}
     {% endif %}
 
     {% if user.is_authenticated %}
@@ -73,6 +89,13 @@
     </a>
     <a href="{% url 'lecture:live_lecture_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-pie mr-2"></i>라이브 강의 현황
+    </a>
+    <div class="border-t border-gray-600 my-1"></div>
+    <a href="{% url 'file:file_manage' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-file-download mr-2"></i>파일 관리
+    </a>
+    <a href="{% url 'file:file_orders' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-chart-area mr-2"></i>파일 현황
     </a>
     <div class="border-t border-gray-600 my-1"></div>
     {% else %}

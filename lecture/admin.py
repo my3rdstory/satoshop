@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import LiveLecture, LiveLectureImage, LiveLectureOrder
 
 
@@ -62,9 +63,9 @@ class LiveLectureAdmin(admin.ModelAdmin):
 
 @admin.register(LiveLectureOrder)
 class LiveLectureOrderAdmin(admin.ModelAdmin):
-    list_display = ['live_lecture', 'user', 'status', 'price', 'is_early_bird', 'paid_at', 'created_at']
+    list_display = ['live_lecture', 'user', 'status', 'price', 'invoice_display', 'is_early_bird', 'paid_at', 'created_at']
     list_filter = ['status', 'is_early_bird', 'created_at', 'live_lecture__store']
-    search_fields = ['live_lecture__name', 'user__username', 'user__email', 'order_number']
+    search_fields = ['live_lecture__name', 'user__username', 'user__email', 'order_number', 'payment_hash']
     ordering = ['-created_at']
     readonly_fields = ['order_number', 'created_at', 'updated_at', 'paid_at', 'confirmed_at']
     list_per_page = 10
@@ -100,3 +101,21 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
         if obj:  # 수정 시
             return self.readonly_fields + ['live_lecture', 'user']
         return self.readonly_fields
+    
+    def invoice_display(self, obj):
+        """인보이스 표시"""
+        if obj.payment_hash:
+            # 인보이스의 일부만 표시 (앞 10자, 뒤 10자)
+            if len(obj.payment_hash) > 25:
+                display_text = f"{obj.payment_hash[:10]}...{obj.payment_hash[-10:]}"
+            else:
+                display_text = obj.payment_hash
+            
+            return format_html(
+                '<span title="{}" style="font-family: monospace; font-size: 0.85em;">{}</span>',
+                obj.payment_hash,
+                display_text
+            )
+        return '-'
+    
+    invoice_display.short_description = '인보이스'

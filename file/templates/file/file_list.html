@@ -1,0 +1,237 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - 파일 목록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/file_list.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-download text-white text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">디지털 파일</h1>
+            <p class="text-gray-600 dark:text-gray-300">{{ store.store_name }}의 디지털 파일을 구매하세요</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          {% if is_owner %}
+          <a href="{% url 'file:add_file' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            파일 추가
+          </a>
+          <a href="{% url 'file:file_manage' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+            <i class="fas fa-cog mr-2"></i>
+            파일 관리
+          </a>
+          {% endif %}
+          <a href="{% url 'stores:store_detail' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            스토어로 돌아가기
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- 정렬 옵션 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          총 {{ files.paginator.count }}개의 파일
+        </p>
+        <form method="get" class="flex items-center space-x-2">
+          <label class="text-sm text-gray-600 dark:text-gray-400">정렬:</label>
+          <select name="sort" onchange="this.form.submit()" 
+                  class="text-sm px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            <option value="-created_at" {% if sort == '-created_at' %}selected{% endif %}>최신순</option>
+            <option value="created_at" {% if sort == 'created_at' %}selected{% endif %}>오래된순</option>
+            <option value="name" {% if sort == 'name' %}selected{% endif %}>이름순</option>
+            <option value="-name" {% if sort == '-name' %}selected{% endif %}>이름 역순</option>
+            <option value="price" {% if sort == 'price' %}selected{% endif %}>가격 낮은순</option>
+            <option value="-price" {% if sort == '-price' %}selected{% endif %}>가격 높은순</option>
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <!-- 파일 목록 -->
+    {% if files %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      {% for file in files %}
+      <div class="file-card bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <!-- 미리보기 이미지 -->
+        <a href="{% url 'file:file_detail' store.store_id file.id %}" class="block">
+          {% if file.preview_image_url %}
+          <div class="relative pb-[56.25%] bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
+                 class="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+          </div>
+          {% else %}
+          <div class="relative pb-[56.25%] bg-gradient-to-br from-purple-100 to-pink-100 dark:from-gray-700 dark:to-gray-600 hover:opacity-80 transition-opacity">
+            <div class="absolute inset-0 flex items-center justify-center">
+              <i class="fas fa-file text-6xl text-purple-300 dark:text-gray-500"></i>
+            </div>
+          </div>
+          {% endif %}
+        </a>
+        
+        <div class="p-4">
+          <!-- 파일명 -->
+          <h3 class="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-2">
+            {{ file.name }}
+          </h3>
+          
+          <!-- 파일 정보 -->
+          <div class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-2">
+                <span><i class="fas fa-file-alt"></i> {{ file.get_file_type_display }}</span>
+                <span>{{ file.get_file_size_display }}</span>
+              </div>
+              {% if file.max_downloads or file.download_expiry_days %}
+              <div class="flex items-center gap-2">
+                {% if file.max_downloads %}
+                <span class="text-yellow-600 dark:text-yellow-400">
+                  <i class="fas fa-cube"></i> {{ file.available_downloads }}개
+                </span>
+                {% endif %}
+                {% if file.download_expiry_days %}
+                <span class="text-blue-600 dark:text-blue-400">
+                  <i class="fas fa-clock"></i> {{ file.download_expiry_days }}일
+                </span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- 가격 정보 -->
+          <div class="mb-3">
+            {% if file.price_display == 'free' %}
+              <div class="text-lg font-bold text-green-600 dark:text-green-400">
+                <i class="fas fa-gift mr-1"></i>무료
+              </div>
+            {% else %}
+              {% if file.is_discount_active %}
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    {{ file.current_price_sats|floatformat:0|intcomma }} sats
+                    {% if file.price_display == 'krw' %}
+                    <span class="text-xs text-gray-600 dark:text-gray-400">(₩{{ file.discounted_price_krw|floatformat:0|intcomma }})</span>
+                    {% endif %}
+                  </span>
+                  <span class="px-2 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
+                    {{ file.discount_percentage }}% 할인
+                  </span>
+                </div>
+                <div class="text-sm text-gray-500 line-through">
+                  {{ file.get_price_sats|floatformat:0|intcomma }} sats
+                  {% if file.price_display == 'krw' %}
+                  <span class="text-xs">(₩{{ file.price_krw|floatformat:0|intcomma }})</span>
+                  {% endif %}
+                </div>
+              {% else %}
+                <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  {{ file.current_price_sats|floatformat:0|intcomma }} sats
+                  {% if file.price_display == 'krw' %}
+                  <span class="text-xs text-gray-600 dark:text-gray-400">(₩{{ file.price_krw|floatformat:0|intcomma }})</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endif %}
+          </div>
+          
+          <!-- 상태 표시 -->
+          {% if not file.is_active or file.is_temporarily_closed %}
+            <div class="mb-4">
+              {% if file.is_temporarily_closed %}
+                <span class="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded">일시중단</span>
+              {% elif not file.is_active %}
+                <span class="text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded">비활성</span>
+              {% endif %}
+            </div>
+          {% endif %}
+          
+          {% if file.is_sold_out %}
+            <div class="mb-4">
+              <span class="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-2 py-1 rounded">매진</span>
+            </div>
+          {% endif %}
+          
+          <!-- 액션 버튼 -->
+          <a href="{% url 'file:file_detail' store.store_id file.id %}" 
+             class="block w-full text-center px-3 py-1.5 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 transition-colors">
+            자세히 보기
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <!-- 페이지네이션 -->
+    {% if files.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+      <nav class="inline-flex rounded-md shadow-sm -space-x-px">
+        {% if files.has_previous %}
+        <a href="?page={{ files.previous_page_number }}{% if sort %}&sort={{ sort }}{% endif %}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        {% endif %}
+        
+        {% for num in files.paginator.page_range %}
+          {% if files.number == num %}
+          <span class="relative inline-flex items-center px-4 py-2 border border-purple-500 bg-purple-50 dark:bg-purple-900 text-sm font-medium text-purple-600 dark:text-purple-300">
+            {{ num }}
+          </span>
+          {% elif num > files.number|add:'-3' and num < files.number|add:'3' %}
+          <a href="?page={{ num }}{% if sort %}&sort={{ sort }}{% endif %}" 
+             class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            {{ num }}
+          </a>
+          {% endif %}
+        {% endfor %}
+        
+        {% if files.has_next %}
+        <a href="?page={{ files.next_page_number }}{% if sort %}&sort={{ sort }}{% endif %}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- 파일이 없을 때 -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center">
+      <i class="fas fa-file-excel text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">아직 등록된 파일이 없습니다.</p>
+      {% if is_owner %}
+      <a href="{% url 'file:add_file' store.store_id %}" 
+         class="inline-flex items-center px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+        <i class="fas fa-plus mr-2"></i>
+        첫 파일 등록하기
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/file_list.js' %}"></script>
+{% endblock %}

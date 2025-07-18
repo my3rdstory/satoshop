@@ -1,0 +1,194 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}내 파일 구매 내역 - SatoShop{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-download text-white text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">내 파일 구매 내역</h1>
+            <p class="text-gray-600 dark:text-gray-300">구매한 디지털 파일을 다운로드하세요</p>
+          </div>
+        </div>
+        <a href="{% url 'accounts:mypage' %}" 
+           class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <i class="fas fa-arrow-left mr-2"></i>
+          마이페이지로
+        </a>
+      </div>
+    </div>
+
+    {% if file_orders %}
+    <!-- 파일 목록 -->
+    <div class="space-y-4">
+      {% for order in file_orders %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden">
+        <div class="p-6">
+          <div class="flex items-start justify-between">
+            <div class="flex space-x-4 flex-1">
+              <!-- 미리보기 이미지 -->
+              {% if order.digital_file.preview_image %}
+              <div class="relative flex-shrink-0" style="width: 128px; height: 72px;">
+                <img src="{{ order.digital_file.preview_image.url }}" alt="{{ order.digital_file.name }}" 
+                     class="absolute inset-0 w-full h-full rounded-lg object-cover">
+              </div>
+              {% else %}
+              <div class="relative bg-purple-100 dark:bg-purple-900 rounded-lg flex-shrink-0" style="width: 128px; height: 72px;">
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <i class="fas fa-file text-2xl text-purple-600 dark:text-purple-400"></i>
+                </div>
+              </div>
+              {% endif %}
+              
+              <!-- 파일 정보 -->
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                  {{ order.digital_file.name }}
+                </h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  <a href="{% url 'stores:store_detail' order.digital_file.store.store_id %}" 
+                     class="text-purple-600 dark:text-purple-400 hover:underline">
+                    {{ order.digital_file.store.store_name }}
+                  </a>
+                  <span class="mx-2">•</span>
+                  구매일: {{ order.confirmed_at|date:"Y.m.d" }}
+                </p>
+                
+                <!-- 다운로드 정보 -->
+                <div class="flex items-center space-x-4 text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-file-alt mr-1"></i>
+                    {{ order.digital_file.get_file_type_display }}
+                  </span>
+                  <span class="text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-hdd mr-1"></i>
+                    {{ order.digital_file.get_file_size_display }}
+                  </span>
+                  {% if order.download_expires_at %}
+                  <span class="text-gray-600 dark:text-gray-400">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    다운로드 기한: {{ order.download_expires_at|date:"Y.m.d H:i" }}까지
+                  </span>
+                  {% endif %}
+                </div>
+                
+                <!-- 구매 안내 메시지 -->
+                {% if order.digital_file.purchase_message %}
+                <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p class="text-sm text-gray-700 dark:text-gray-300">
+                    {{ order.digital_file.purchase_message|linebreaks }}
+                  </p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            
+            <!-- 액션 버튼 -->
+            <div class="flex flex-col items-end space-y-2 ml-4">
+              {% if order.can_download %}
+                <a href="{% url 'file:download_file' order.digital_file.store.store_id order.digital_file.id %}" 
+                   class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  <i class="fas fa-download mr-2"></i>
+                  다운로드
+                </a>
+                {% if order.download_logs.exists %}
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ order.download_logs.count }}회 다운로드
+                </p>
+                {% endif %}
+              {% else %}
+                <button disabled
+                        class="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+                  <i class="fas fa-clock mr-2"></i>
+                  기간 만료
+                </button>
+              {% endif %}
+              
+              <a href="{% url 'file:file_detail' order.digital_file.store.store_id order.digital_file.id %}" 
+                 class="text-sm text-purple-600 dark:text-purple-400 hover:underline">
+                파일 상세 보기
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 주문 정보 -->
+        <div class="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-600 dark:text-gray-400">
+              주문번호: <span class="font-mono">{{ order.order_number }}</span>
+            </span>
+            {% if order.price > 0 %}
+              <span class="text-bitcoin font-semibold">
+                {{ order.price|intcomma }} sats
+                {% if order.is_discounted %}
+                  <span class="text-xs text-gray-500 dark:text-gray-400">({{ order.discount_rate }}% 할인)</span>
+                {% endif %}
+              </span>
+            {% else %}
+              <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- 페이지네이션 -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+      <nav class="inline-flex rounded-md shadow-sm -space-x-px">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+          <span class="relative inline-flex items-center px-4 py-2 border border-purple-500 bg-purple-50 dark:bg-purple-900 text-sm font-medium text-purple-600 dark:text-purple-300">
+            {{ num }}
+          </span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <a href="?page={{ num }}" 
+             class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            {{ num }}
+          </a>
+          {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" 
+           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+      </nav>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- 구매 내역이 없을 때 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-12 text-center">
+      <i class="fas fa-shopping-basket text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">아직 구매한 파일이 없습니다.</p>
+      <a href="{% url 'myshop:index' %}" 
+         class="inline-flex items-center px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
+        <i class="fas fa-search mr-2"></i>
+        스토어 둘러보기
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -637,7 +637,7 @@ function startPaymentStatusCheck() {
     clearInterval(paymentCheckInterval);
   }
   
-  paymentCheckInterval = setInterval(checkPaymentStatus, 3000); // 3초마다 확인
+  paymentCheckInterval = setInterval(checkPaymentStatus, 1000); // 1초마다 확인
 }
 
 function checkPaymentStatus() {
@@ -838,8 +838,8 @@ function openLightningWallet() {
             if (paymentCheckInterval) {
                 clearInterval(paymentCheckInterval);
             }
-            // 1.5초마다 더 자주 확인 (모바일 환경에서 빠른 응답)
-            paymentCheckInterval = setInterval(checkPaymentStatus, 1500);
+            // 1초마다 확인 (모바일 환경에서 빠른 응답)
+            paymentCheckInterval = setInterval(checkPaymentStatus, 1000);
             
             // 5초 후 한 번 더 확인 (지갑에서 돌아올 시간 고려)
             setTimeout(() => {
