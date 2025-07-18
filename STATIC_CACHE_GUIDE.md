@@ -78,26 +78,26 @@ python manage.py collectstatic --noinput --clear
 ### 1. 해시 정보 확인
 ```bash
 # 모든 파일의 해시 정보 확인
-uv run python manage.py show_static_hashes
+python manage.py show_static_hashes
 
 # CSS 파일만 확인
-uv run python manage.py show_static_hashes --type css
+python manage.py show_static_hashes --type css
 
 # JS 파일만 확인
-uv run python manage.py show_static_hashes --type js
+python manage.py show_static_hashes --type js
 
 # 상세 정보 포함 (파일 크기 등)
-uv run python manage.py show_static_hashes --detailed
+python manage.py show_static_hashes --detailed
 ```
 
 ### 2. 캐시 지우기
 ```bash
 # 모든 정적 파일 캐시 지우기
-uv run python manage.py clear_static_cache --all
+python manage.py clear_static_cache --all
 
 # 특정 패턴의 캐시만 지우기
-uv run python manage.py clear_static_cache --pattern "css/*"
-uv run python manage.py clear_static_cache --pattern "js/*"
+python manage.py clear_static_cache --pattern "css/*"
+python manage.py clear_static_cache --pattern "js/*"
 ```
 
 ## 환경별 동작 방식
@@ -148,7 +148,7 @@ uv run python manage.py clear_static_cache --pattern "js/*"
 ### 1. 첫 배포 시
 ```bash
 # 정적 파일 수집 전 기존 파일 정리
-uv run python manage.py collectstatic --clear --noinput
+python manage.py collectstatic --clear --noinput
 ```
 
 ### 2. 개발 환경에서
@@ -165,19 +165,19 @@ uv run python manage.py collectstatic --clear --noinput
 ### 1. 매니페스트 파일 오류
 ```bash
 # 정적 파일 재수집
-uv run python manage.py collectstatic --clear --noinput
+python manage.py collectstatic --clear --noinput
 ```
 
 ### 2. 캐시 문제
 ```bash
 # 해시 캐시 지우기
-uv run python manage.py clear_static_cache --all
+python manage.py clear_static_cache --all
 ```
 
 ### 3. 파일을 찾을 수 없음
 ```bash
 # 파일 해시 정보 확인
-uv run python manage.py show_static_hashes --detailed
+python manage.py show_static_hashes --detailed
 ```
 
 ## 예제 출력
