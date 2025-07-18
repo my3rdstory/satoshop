@@ -40,7 +40,7 @@ class FileOrderAdmin(admin.ModelAdmin):
     list_display = ['order_number', 'user', 'digital_file', 'status', 'price', 'invoice_display', 'download_status', 'created_at']
     list_filter = ['status', 'is_discounted', 'download_clicked', 'created_at']
     search_fields = ['order_number', 'user__username', 'digital_file__name', 'payment_hash']
-    readonly_fields = ['order_number', 'download_clicked_at', 'created_at', 'updated_at']
+    readonly_fields = ['order_number', 'download_clicked_at', 'created_at', 'updated_at', 'invoice_data_display']
     
     fieldsets = (
         ('주문 정보', {
@@ -51,6 +51,10 @@ class FileOrderAdmin(admin.ModelAdmin):
         }),
         ('결제 정보', {
             'fields': ('payment_hash', 'payment_request', 'paid_at')
+        }),
+        ('인보이스 데이터', {
+            'fields': ('invoice_data_display',),
+            'classes': ('collapse',)
         }),
         ('예약 정보', {
             'fields': ('is_temporary_reserved', 'reservation_expires_at', 'auto_cancelled_reason')
@@ -95,6 +99,17 @@ class FileOrderAdmin(admin.ModelAdmin):
         return '-'
     
     invoice_display.short_description = '인보이스'
+    
+    def invoice_data_display(self, obj):
+        """인보이스 전체 데이터 표시"""
+        if obj.payment_request:
+            return format_html(
+                '<textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 0.8em;">{}</textarea>',
+                obj.payment_request
+            )
+        return '-'
+    
+    invoice_data_display.short_description = '인보이스 문자열'
 
 
 @admin.register(FileDownloadLog)

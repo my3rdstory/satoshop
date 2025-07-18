@@ -67,7 +67,7 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
     list_filter = ['status', 'is_early_bird', 'created_at', 'live_lecture__store']
     search_fields = ['live_lecture__name', 'user__username', 'user__email', 'order_number', 'payment_hash']
     ordering = ['-created_at']
-    readonly_fields = ['order_number', 'created_at', 'updated_at', 'paid_at', 'confirmed_at']
+    readonly_fields = ['order_number', 'created_at', 'updated_at', 'paid_at', 'confirmed_at', 'invoice_data_display']
     list_per_page = 10
     
     def get_queryset(self, request):
@@ -82,6 +82,10 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
         }),
         ('결제 정보', {
             'fields': ('payment_hash', 'payment_request', 'paid_at'),
+            'classes': ('collapse',)
+        }),
+        ('인보이스 데이터', {
+            'fields': ('invoice_data_display',),
             'classes': ('collapse',)
         }),
         ('참가 정보', {
@@ -119,3 +123,14 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
         return '-'
     
     invoice_display.short_description = '인보이스'
+    
+    def invoice_data_display(self, obj):
+        """인보이스 전체 데이터 표시"""
+        if obj.payment_request:
+            return format_html(
+                '<textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 0.8em;">{}</textarea>',
+                obj.payment_request
+            )
+        return '-'
+    
+    invoice_data_display.short_description = '인보이스 문자열'
