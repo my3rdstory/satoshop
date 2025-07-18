@@ -188,7 +188,7 @@ class MenuOrderItemInline(admin.TabularInline):
 @admin.register(MenuOrder)
 class MenuOrderAdmin(admin.ModelAdmin):
     list_display = [
-        'order_number_link', 'store', 'status_colored', 
+        'order_number_link', 'store', 'status_colored', 'invoice_display',
         'items_count', 'total_amount_formatted', 'created_at', 'paid_at'
     ]
     list_filter = ['status', 'store', 'created_at', 'paid_at']
@@ -254,6 +254,24 @@ class MenuOrderAdmin(admin.ModelAdmin):
         return f"{obj.total_amount:,} sats"
     total_amount_formatted.short_description = '총 금액'
     total_amount_formatted.admin_order_field = 'total_amount'
+    
+    def invoice_display(self, obj):
+        """인보이스 표시"""
+        if obj.payment_hash:
+            # 인보이스의 일부만 표시 (앞 10자, 뒤 10자)
+            if len(obj.payment_hash) > 25:
+                display_text = f"{obj.payment_hash[:10]}...{obj.payment_hash[-10:]}"
+            else:
+                display_text = obj.payment_hash
+            
+            return format_html(
+                '<span title="{}" style="font-family: monospace; font-size: 0.85em;">{}</span>',
+                obj.payment_hash,
+                display_text
+            )
+        return '-'
+    
+    invoice_display.short_description = '인보이스'
     
     def items_summary(self, obj):
         """주문 아이템들의 요약 정보"""

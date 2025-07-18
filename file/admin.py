@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 from .models import DigitalFile, FileOrder, FileDownloadLog
 
 
@@ -36,9 +37,9 @@ class DigitalFileAdmin(admin.ModelAdmin):
 
 @admin.register(FileOrder)
 class FileOrderAdmin(admin.ModelAdmin):
-    list_display = ['order_number', 'user', 'digital_file', 'status', 'price', 'download_status', 'created_at']
+    list_display = ['order_number', 'user', 'digital_file', 'status', 'price', 'invoice_display', 'download_status', 'created_at']
     list_filter = ['status', 'is_discounted', 'download_clicked', 'created_at']
-    search_fields = ['order_number', 'user__username', 'digital_file__name']
+    search_fields = ['order_number', 'user__username', 'digital_file__name', 'payment_hash']
     readonly_fields = ['order_number', 'download_clicked_at', 'created_at', 'updated_at']
     
     fieldsets = (
@@ -76,6 +77,24 @@ class FileOrderAdmin(admin.ModelAdmin):
             return '❌ 미다운로드'
     
     download_status.short_description = '다운로드 상태'
+    
+    def invoice_display(self, obj):
+        """인보이스 표시"""
+        if obj.payment_hash:
+            # 인보이스의 일부만 표시 (앞 10자, 뒤 10자)
+            if len(obj.payment_hash) > 25:
+                display_text = f"{obj.payment_hash[:10]}...{obj.payment_hash[-10:]}"
+            else:
+                display_text = obj.payment_hash
+            
+            return format_html(
+                '<span title="{}" style="font-family: monospace; font-size: 0.85em;">{}</span>',
+                obj.payment_hash,
+                display_text
+            )
+        return '-'
+    
+    invoice_display.short_description = '인보이스'
 
 
 @admin.register(FileDownloadLog)
