@@ -1,0 +1,59 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 메뉴판 선택{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/menu_device_select.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 mb-8">
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <i class="fas fa-utensils text-white text-3xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">{{ store.store_name }} 메뉴판</h1>
+        <p class="text-lg text-gray-600 dark:text-gray-300">원하는 링크로 이동하세요.</p>
+      </div>
+
+      <!-- 디바이스 선택 카드 -->
+      <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        <!-- 데스크톱 카드 -->
+        <a href="{% url 'menu:menu_board_desktop' store_id=store.store_id %}" 
+           target="_blank"
+           class="device-card group bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900 dark:to-blue-800 rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <div class="text-center">
+            <div class="device-icon-wrapper mb-4">
+              <i class="fas fa-desktop text-5xl text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">데스크톱 메뉴판으로 이동</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-300">PC나 노트북에서 최적화된 화면</p>
+          </div>
+        </a>
+
+        <!-- 모바일 카드 -->
+        <a href="{% url 'menu:menu_board_mobile' store_id=store.store_id %}" 
+           target="_blank"
+           class="device-card group bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800 rounded-xl p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <div class="text-center">
+            <div class="device-icon-wrapper mb-4">
+              <i class="fas fa-mobile-alt text-5xl text-purple-600 dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors"></i>
+            </div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">모바일 메뉴판으로 이동</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-300">스마트폰이나 태블릿에서 최적화된 화면</p>
+          </div>
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/menu_device_select.js' %}"></script>
+{% endblock %}

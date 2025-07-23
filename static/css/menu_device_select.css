@@ -1,0 +1,119 @@
+/* 디바이스 선택 페이지 스타일 */
+
+/* 디바이스 카드 스타일 */
+.device-card {
+    display: block;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+}
+
+.device-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.device-card:hover::before {
+    opacity: 1;
+}
+
+.device-card:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* 아이콘 애니메이션 */
+.device-icon-wrapper {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.device-card:hover .device-icon-wrapper {
+    transform: translateY(-5px);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .device-card {
+        margin-bottom: 1rem;
+    }
+    
+    .device-card:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* 다크 모드 스타일 */
+@media (prefers-color-scheme: dark) {
+    .device-card {
+        background-color: rgba(31, 41, 55, 0.5);
+    }
+    
+    .device-card:hover {
+        background-color: rgba(31, 41, 55, 0.7);
+        border-color: rgba(99, 102, 241, 0.5);
+    }
+}
+
+/* 애니메이션 효과 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.device-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.device-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+/* 접근성 향상 */
+.device-card:focus {
+    outline: 3px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.device-card:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* 로딩 상태 */
+.device-card.loading {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.device-card.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #3b82f6;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
