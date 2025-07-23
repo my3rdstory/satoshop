@@ -1,11 +1,19 @@
+import KeyboardManager from '../managers/KeyboardManager.js';
+
 export default class MainMenuScene extends Phaser.Scene {
     constructor() {
         super({ key: 'MainMenu' });
+        this.keyboardManager = null;
     }
 
-    create() {
+    async create() {
         const centerX = this.scale.width/2;
         const centerY = this.scale.height/2;
+        
+        // 키보드 매니저 초기화
+        this.keyboardManager = new KeyboardManager(this);
+        await this.keyboardManager.load();
+        this.keyboardManager.setupKeys();
         
         this.add.text(centerX, centerY - 100, 'To the Selker!', { fontSize: '48px', fill: '#fff' }).setOrigin(0.5);
 
@@ -25,12 +33,31 @@ export default class MainMenuScene extends Phaser.Scene {
             this.scene.start('Settings');
         });
         
-        // S키 단축키 추가
-        this.add.text(centerX, centerY + 200, 'Press [S] to Start', { fontSize: '20px', fill: '#999' }).setOrigin(0.5);
-        
-        this.input.keyboard.on('keydown-S', () => {
-            const name = localStorage.getItem('vamsur_nickname');
-            this.scene.start('GameScene', { nickname: name });
-        });
+        // 키보드 단축키 안내 (동적 생성)
+        const shortcuts = [];
+        if (this.keyboardManager) {
+            const actions = this.keyboardManager.getAllActionsForScene();
+            actions.forEach(action => {
+                shortcuts.push(`[${action.key}] ${action.description}`);
+            });
+        }
+        this.add.text(centerX, centerY + 200, shortcuts.join(' | '), { fontSize: '20px', fill: '#999' }).setOrigin(0.5);
+    }
+    
+    update() {
+        if (this.keyboardManager) {
+            if (this.keyboardManager.isActionPressed('startGame')) {
+                const name = localStorage.getItem('vamsur_nickname');
+                this.scene.start('GameScene', { nickname: name });
+            }
+            
+            if (this.keyboardManager.isActionPressed('openRanking')) {
+                this.scene.start('RankingScene', {});
+            }
+            
+            if (this.keyboardManager.isActionPressed('openSettings')) {
+                this.scene.start('Settings');
+            }
+        }
     }
 }

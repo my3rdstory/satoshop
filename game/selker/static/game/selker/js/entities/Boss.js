@@ -78,8 +78,9 @@ export default class Boss {
         this.healthText.y = y - 15;
     }
     
-    takeDamage(damage) {
-        this.hp -= damage * 1.5;  // 데미지 1.5배 증가
+    takeDamage(damage, isRawDamage = false) {
+        // isRawDamage가 true면 그대로 적용, false면 1.5배 증가
+        this.hp -= isRawDamage ? damage : damage * 1.5;
         this.updateHealthBar();
         
         // 피격 효과

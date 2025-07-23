@@ -1,8 +1,10 @@
 import ApiService from '../services/api.js';
+import KeyboardManager from '../managers/KeyboardManager.js';
 
 export default class RankingScene extends Phaser.Scene {
     constructor() {
         super({ key: 'RankingScene' });
+        this.keyboardManager = null;
     }
     
     init(data) {
@@ -12,6 +14,11 @@ export default class RankingScene extends Phaser.Scene {
     async create() {
         const centerX = this.scale.width / 2;
         const centerY = this.scale.height / 2;
+        
+        // 키보드 매니저 초기화
+        this.keyboardManager = new KeyboardManager(this);
+        await this.keyboardManager.load();
+        this.keyboardManager.setupKeys();
         
         // 타이틀 - GAME OVER 또는 RANKINGS
         const title = this.playerData.score !== undefined ? 'GAME OVER' : 'RANKINGS';
@@ -213,7 +220,8 @@ export default class RankingScene extends Phaser.Scene {
         newGameButton.setInteractive();
         newGameButton.setStrokeStyle(2, 0x00ffff);
         
-        const newGameText = this.add.text(centerX - 120, buttonY, 'New Game [S]', { 
+        const newGameKey = this.keyboardManager?.getActionKey('startGame') || 'S';
+        const newGameText = this.add.text(centerX - 120, buttonY, `New Game [${newGameKey}]`, { 
             fontSize: '24px', 
             fill: '#000',
             fontStyle: 'bold'
@@ -224,7 +232,8 @@ export default class RankingScene extends Phaser.Scene {
         menuButton.setInteractive();
         menuButton.setStrokeStyle(2, 0x00ffff);
         
-        const menuText = this.add.text(centerX + 120, buttonY, 'Main Menu [M]', { 
+        const menuKey = this.keyboardManager?.getActionKey('returnToMainMenu') || 'C';
+        const menuText = this.add.text(centerX + 120, buttonY, `Main Menu [${menuKey}]`, { 
             fontSize: '24px', 
             fill: '#fff',
             fontStyle: 'bold'
@@ -263,20 +272,19 @@ export default class RankingScene extends Phaser.Scene {
     }
     
     setupKeyboardShortcuts() {
-        // S키 - 새 게임
-        this.input.keyboard.on('keydown-S', () => {
-            const nickname = localStorage.getItem('vamsur_nickname');
-            this.scene.start('GameScene', { nickname: nickname });
-        });
-        
-        // M키 - 메인 메뉴
-        this.input.keyboard.on('keydown-M', () => {
-            this.scene.start('MainMenu');
-        });
-        
-        // ESC키 - 메인 메뉴
-        this.input.keyboard.on('keydown-ESC', () => {
-            this.scene.start('MainMenu');
-        });
+        // 키보드 매니저로 대체됨
+    }
+    
+    update() {
+        if (this.keyboardManager) {
+            if (this.keyboardManager.isActionPressed('startGame')) {
+                const nickname = localStorage.getItem('vamsur_nickname');
+                this.scene.start('GameScene', { nickname: nickname });
+            }
+            
+            if (this.keyboardManager.isActionPressed('returnToMainMenu')) {
+                this.scene.start('MainMenu');
+            }
+        }
     }
 }

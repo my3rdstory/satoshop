@@ -31,7 +31,7 @@ export default class WaveConfig {
     generateDefaultConfig(wave) {
         const defaults = this.config.waves.default;
         const config = {
-            spawnCount: Math.min(wave, defaults.maxSpawnCount),
+            spawnCount: Math.min(eval(defaults.spawnCountFormula.replace(/wave/g, wave)), defaults.maxSpawnCount),
             enemyTypes: defaults.enemyTypes,
             boss: {
                 hp: eval(defaults.boss.hpFormula.replace('wave', wave)),
@@ -123,5 +123,14 @@ export default class WaveConfig {
     
     getEnemySizeReduction() {
         return this.config?.waves.default.enemySizeReduction?.reductionPercent || 0.2;
+    }
+    
+    getBombConfig() {
+        return this.config?.bomb || {
+            bossDamagePercent: 0.5,
+            explosionColor: 0xffff00,
+            explosionRadius: 100,
+            explosionDuration: 500
+        };
     }
 }

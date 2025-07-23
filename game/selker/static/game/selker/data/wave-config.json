@@ -132,12 +132,13 @@
       }
     },
     "default": {
-      "spawnCountFormula": "wave",
+      "spawnCountFormula": "Math.floor(wave * 0.85)",
+      "spawnCountReduction": 0.85,
       "weaponLevelBonus": {
         "startLevel": 3,
         "bonusFormula": "(weaponLevel - 2) * 0.5"
       },
-      "maxSpawnCount": 15,
+      "maxSpawnCount": 12,
       "enemyTypes": {
         "normal": 0.7,
         "shooter": 0.3
@@ -228,5 +229,11 @@
     "alpha": 0.8
   },
   "waveTimer": 15,
-  "autoFireDelay": 500
+  "autoFireDelay": 500,
+  "bomb": {
+    "bossDamagePercent": 0.5,
+    "explosionColor": "0xffff00",
+    "explosionRadius": 100,
+    "explosionDuration": 500
+  }
 }

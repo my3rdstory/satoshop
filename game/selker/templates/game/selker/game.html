@@ -15,9 +15,13 @@
     <link rel="stylesheet" href="{% static 'game/selker/css/game.css' %}">
 </head>
 <body>
-    <div id="game-container"></div>
+    <div id="game-container" tabindex="0"></div>
     <script>
         window.USER_NICKNAME = "{{ user_nickname }}";
+        // 페이지 로드 시 게임 컨테이너에 포커스
+        window.addEventListener('load', () => {
+            document.getElementById('game-container').focus();
+        });
     </script>
     <script type="module" src="{% static 'game/selker/js/main.js' %}"></script>
 </body>

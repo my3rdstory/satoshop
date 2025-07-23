@@ -16,5 +16,8 @@ export const gameConfig = {
             gravity: { y: 0 },
             debug: false
         }
+    },
+    input: {
+        keyboard: true
     }
 };

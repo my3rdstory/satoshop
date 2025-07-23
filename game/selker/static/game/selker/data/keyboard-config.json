@@ -1,0 +1,56 @@
+{
+  "scenes": {
+    "MainMenu": {
+      "S": {
+        "action": "startGame",
+        "description": "게임 시작"
+      },
+      "R": {
+        "action": "openRanking",
+        "description": "랭킹 보기"
+      },
+      "T": {
+        "action": "openSettings",
+        "description": "설정"
+      }
+    },
+    "GameScene": {
+      "P": {
+        "action": "togglePause",
+        "description": "일시정지"
+      },
+      "C": {
+        "action": "returnToMainMenu",
+        "description": "메인 메뉴로",
+        "condition": "isPaused"
+      },
+      "M": {
+        "action": "toggleMusic",
+        "description": "음악 켜기/끄기"
+      }
+    },
+    "RankingScene": {
+      "S": {
+        "action": "startGame",
+        "description": "새 게임"
+      },
+      "C": {
+        "action": "returnToMainMenu",
+        "description": "메인 메뉴로"
+      }
+    },
+    "Settings": {
+      "C": {
+        "action": "returnToMainMenu",
+        "description": "메인 메뉴로"
+      }
+    }
+  },
+  "globalKeys": {
+    "F11": {
+      "action": "toggleFullscreen",
+      "description": "전체화면 전환",
+      "preventDefault": true
+    }
+  }
+}

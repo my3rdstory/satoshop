@@ -1,14 +1,22 @@
+import KeyboardManager from '../managers/KeyboardManager.js';
+
 export default class SettingsScene extends Phaser.Scene {
     constructor() {
         super({ key: 'Settings' });
+        this.keyboardManager = null;
     }
 
     preload() {
         this.load.html('nameform', 'nameform.html');
     }
 
-    create() {
+    async create() {
         const centerX = this.scale.width/2;
+        
+        // 키보드 매니저 초기화
+        this.keyboardManager = new KeyboardManager(this);
+        await this.keyboardManager.load();
+        this.keyboardManager.setupKeys();
         
         this.add.text(centerX, 100, 'Settings', { fontSize: '48px', fill: '#fff' }).setOrigin(0.5);
 
@@ -49,9 +57,18 @@ export default class SettingsScene extends Phaser.Scene {
             this.scene.start('Boot');
         });
 
-        const backButton = this.add.text(centerX, 500, 'Back to Menu', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
+        const backKey = this.keyboardManager?.getActionKey('returnToMainMenu') || 'C';
+        const backButton = this.add.text(centerX, 500, `Back to Menu [${backKey}]`, { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
         backButton.on('pointerdown', () => {
             this.scene.start('MainMenu');
         });
+    }
+    
+    update() {
+        if (this.keyboardManager) {
+            if (this.keyboardManager.isActionPressed('returnToMainMenu')) {
+                this.scene.start('MainMenu');
+            }
+        }
     }
 }
