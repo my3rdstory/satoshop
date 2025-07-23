@@ -65,6 +65,8 @@ export default class GameScene extends Phaser.Scene {
         this.enemies = this.physics.add.group();
         this.weapons = this.physics.add.group();
         this.items = this.physics.add.group();
+        this.shields = this.physics.add.group();
+        this.enemyWeapons = this.physics.add.group();
 
         this.waveText = this.add.text(16, 16, 'Wave: 1', { fontSize: this.scaleManager.getFontSize(32), fill: '#fff' });
         this.waveTimerText = this.add.text(16, 84, 'Next wave: 15s', { fontSize: this.scaleManager.getFontSize(24), fill: '#ff0' });
@@ -184,6 +186,20 @@ export default class GameScene extends Phaser.Scene {
             }
         });
 
+        // 방어막과 적 총알 충돌
+        this.physics.add.overlap(this.shields, this.enemyWeapons, (shield, bullet) => {
+            // 총알 제거
+            bullet.destroy();
+            
+            // 방어막 깜빡임 효과
+            shield.setAlpha(0.2);
+            this.time.delayedCall(100, () => {
+                if (shield && shield.active) {
+                    shield.setAlpha(0.8);
+                }
+            });
+        });
+
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             const itemType = item.getData('type');
             let message = '';
@@ -211,6 +227,10 @@ export default class GameScene extends Phaser.Scene {
                     });
                     this.enemies.clear(true, true);
                     message = 'BOOM!';
+                    break;
+                case 'shield':
+                    this.createShield();
+                    message = 'SHIELD!';
                     break;
             }
             
@@ -243,6 +263,9 @@ export default class GameScene extends Phaser.Scene {
         if (this.gameOver) {
             return;
         }
+
+        // 방어막 업데이트
+        this.updateShields();
 
         this.player.body.setVelocity(0);
 
@@ -437,9 +460,10 @@ export default class GameScene extends Phaser.Scene {
         if (rand < 0.05) {
             // 웨이브에 따른 가중치 아이템 드롭
             const weights = {
-                weapon: this.wave <= 3 ? 40 : 30,  // 초반엔 무기 드롭률 높음
-                hp: this.hp < 50 ? 40 : 30,        // 체력 낮으면 회복 드롭률 높음
-                bomb: this.wave >= 5 ? 30 : 20     // 후반엔 폭탄 드롭률 높음
+                weapon: this.wave <= 3 ? 30 : 25,   // 초반엔 무기 드롭률 높음
+                hp: this.hp < 50 ? 35 : 25,         // 체력 낮으면 회복 드롭률 높음
+                bomb: this.wave >= 5 ? 25 : 15,     // 후반엔 폭탄 드롭률 높음
+                shield: this.wave >= 3 ? 25 : 15    // 3웨이브부터 방어막 드롭
             };
             
             const type = this.weightedRandom(weights);
@@ -448,6 +472,7 @@ export default class GameScene extends Phaser.Scene {
                 case 'weapon': color = 0x0000ff; break;
                 case 'hp': color = 0x00ff00; break;
                 case 'bomb': color = 0xffff00; break;
+                case 'shield': color = 0xff00ff; break;  // 보라색
             }
             const item = this.add.rectangle(enemy.x, enemy.y, 20, 20, color);
             this.physics.add.existing(item);
@@ -468,9 +493,10 @@ export default class GameScene extends Phaser.Scene {
     dropBossItem(x, y) {
         // 보스는 아이템 드롭 확정 (100%)
         const weights = {
-            weapon: 40,
-            hp: 40,
-            bomb: 20
+            weapon: 35,
+            hp: 35,
+            bomb: 15,
+            shield: 15
         };
         
         const type = this.weightedRandom(weights);
@@ -479,6 +505,7 @@ export default class GameScene extends Phaser.Scene {
             case 'weapon': color = 0x0000ff; break;
             case 'hp': color = 0x00ff00; break;
             case 'bomb': color = 0xffff00; break;
+            case 'shield': color = 0xff00ff; break;
         }
         
         const offsetX = Phaser.Math.Between(-50, 50);
@@ -571,6 +598,65 @@ export default class GameScene extends Phaser.Scene {
         if (!result) {
             ApiService.saveLocalRanking(name, score, this.wave, this.weaponLevel, playTime);
         }
+    }
+
+    createShield() {
+        // 기존 방어막이 있으면 제거
+        this.shields.clear(true, true);
+        
+        // 3개의 방어막 조각 생성
+        const shieldCount = 3;
+        const radius = 80; // 플레이어로부터의 거리
+        
+        for (let i = 0; i < shieldCount; i++) {
+            const angle = (360 / shieldCount) * i;
+            const shield = this.add.rectangle(0, 0, 30, 10, 0xff00ff);
+            shield.setAlpha(0.8);
+            
+            this.physics.add.existing(shield);
+            shield.body.setImmovable(true);
+            
+            // 방어막 데이터 설정
+            shield.setData('angle', angle);
+            shield.setData('radius', radius);
+            shield.setData('rotationSpeed', 0.5); // 느린 회전 속도
+            
+            this.shields.add(shield);
+            
+            // 빛나는 효과
+            this.tweens.add({
+                targets: shield,
+                alpha: 0.4,
+                duration: 500,
+                yoyo: true,
+                repeat: -1
+            });
+        }
+        
+        // 방어막 지속 시간 (20초)
+        this.time.delayedCall(20000, () => {
+            this.shields.clear(true, true);
+        });
+    }
+
+    updateShields() {
+        this.shields.children.entries.forEach(shield => {
+            const angle = shield.getData('angle');
+            const radius = shield.getData('radius');
+            const rotationSpeed = shield.getData('rotationSpeed');
+            
+            // 각도 업데이트
+            const newAngle = angle + rotationSpeed;
+            shield.setData('angle', newAngle);
+            
+            // 위치 업데이트
+            const rad = Phaser.Math.DegToRad(newAngle);
+            shield.x = this.player.x + Math.cos(rad) * radius;
+            shield.y = this.player.y + Math.sin(rad) * radius;
+            
+            // 방어막 회전
+            shield.rotation = rad + Math.PI / 2;
+        });
     }
 
 }

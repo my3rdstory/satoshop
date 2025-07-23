@@ -45,6 +45,9 @@ export default class ShooterEnemy {
         const speed = this.scaleManager ? this.scaleManager.getBulletSpeed() : 250;
         this.scene.physics.velocityFromRotation(angle, speed, bullet.body.velocity);
         
+        // enemyWeapons 그룹에 추가
+        this.scene.enemyWeapons.add(bullet);
+        
         // 플레이어와 충돌 처리
         this.scene.physics.add.overlap(this.scene.player, bullet, () => {
             if (!this.scene.gameOver) {

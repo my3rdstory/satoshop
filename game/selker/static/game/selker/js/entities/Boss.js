@@ -121,6 +121,9 @@ export default class Boss {
                 Math.sin(angle) * speed
             );
             
+            // enemyWeapons 그룹에 추가
+            this.scene.enemyWeapons.add(bullet);
+            
             // 충돌 처리
             this.scene.physics.add.overlap(this.scene.player, bullet, () => {
                 if (!this.scene.gameOver) {
@@ -145,6 +148,9 @@ export default class Boss {
     homingShot() {
         const missile = this.scene.add.circle(this.sprite.x, this.sprite.y, 8, 0xffff00);
         this.scene.physics.add.existing(missile);
+        
+        // enemyWeapons 그룹에 추가
+        this.scene.enemyWeapons.add(missile);
         
         // 추적 미사일
         const updateMissile = () => {

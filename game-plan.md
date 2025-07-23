@@ -68,11 +68,18 @@
   - **무기 강화** (파란색): 무기 레벨 +1
   - **체력 회복** (초록색): HP +20
   - **폭탄** (노란색): 화면의 모든 적 제거 (보스 포함)
+  - **방어막** (보라색): 플레이어 주변을 회전하며 적 총알 차단
 - **가중치 시스템**:
   - 초반(웨이브 1-3): 무기 드롭률 높음
   - 체력 50 미만: 회복 드롭률 높음
   - 후반(웨이브 5+): 폭탄 드롭률 높음
+  - 웨이브 3+: 방어막 드롭 가능
 - **효과**: 획득 시 캐릭터 위에 메시지 표시
+- **방어막 특징**:
+  - 3개의 방어막 조각이 플레이어 주변을 느리게 회전
+  - 적의 모든 총알을 차단 (충돌 데미지는 막지 못함)
+  - 20초 지속
+  - 총알 충돌 시 잠시 깜빡이는 시각 효과
 
 ### 5. 플레이어 시스템
 - **체력**: 100
@@ -125,7 +132,7 @@
 
 ### Django 프로젝트 구조
 ```
-minigame/                # Django 프로젝트
+satoshop-dev/            # Django 프로젝트
 ├── .venv/              # 가상환경
 ├── .env                # 환경 변수 (SECRET_KEY, DEBUG 등)
 ├── .gitignore          # Git 제외 파일
@@ -133,42 +140,51 @@ minigame/                # Django 프로젝트
 ├── README.md           # 프로젝트 문서
 ├── CLAUDE.md           # 개발 지침
 ├── game-plan.md        # 게임 설계 문서
-├── minigame/           # 메인 프로젝트 설정
+├── satoshop/           # 메인 프로젝트 설정
 │   ├── settings.py     # Django 설정 (환경 변수 사용)
 │   ├── urls.py         # 메인 URL 라우팅
 │   ├── wsgi.py         # WSGI 설정
 │   └── asgi.py         # ASGI 설정
-├── main/               # 게임 목록 앱
-│   ├── templates/
-│   │   └── main/
-│   │       └── index.html  # 게임 목록 페이지
-│   ├── static/
-│   │   └── main/
-│   │       └── css/
-│   │           └── style.css  # 메인 페이지 스타일
-│   ├── views.py        # 게임 목록 뷰
-│   └── urls.py         # main 앱 URL
-└── selker/             # To the Selker! 게임 앱
+└── game/               # 미니게임 앱
     ├── templates/
-    │   └── selker/
-    │       └── game.html   # 게임 페이지 템플릿
+    │   └── game/
+    │       ├── base.html       # 레트로 스타일 베이스 템플릿
+    │       └── game_list.html  # 게임 목록 페이지
     ├── static/
-    │   └── selker/
+    │   └── game/
     │       ├── css/
-    │       │   └── game.css  # 게임 스타일
-    │       ├── js/         # 게임 JavaScript 파일들
-    │       ├── audio/      # 게임 사운드 파일
-    │       └── html/       # HTML 폼 파일
-    ├── views.py        # 게임 뷰
-    └── urls.py         # selker 앱 URL
+    │       │   ├── base.css       # 레트로 공통 스타일
+    │       │   └── game_list.css  # 게임 목록 스타일
+    │       ├── js/
+    │       │   └── game_list.js   # 게임 목록 인터랙션
+    │       └── images/
+    │           └── game-console.png # 파비콘
+    ├── selker/             # To the Selker! 게임 모듈
+    │   ├── templates/
+    │   │   └── game/selker/
+    │   │       └── game.html   # 게임 페이지 템플릿
+    │   ├── static/
+    │   │   └── game/selker/
+    │   │       ├── css/
+    │   │       │   └── game.css  # 게임 스타일
+    │   │       ├── js/         # 게임 JavaScript 파일들
+    │   │       ├── audio/      # 게임 사운드 파일
+    │   │       └── html/       # HTML 폼 파일
+    │   ├── models.py       # 랭킹, 게임플레이 기록 모델
+    │   ├── views.py        # 게임 뷰 및 API
+    │   ├── urls.py         # selker 게임 URL
+    │   └── apps.py         # selker 앱 설정
+    ├── views.py        # 게임 목록 뷰
+    └── urls.py         # game 앱 URL
 ```
 
 ### URL 라우팅 구조
-- `/` - 게임 목록 페이지 (main 앱)
-- `/selker/` - To the Selker! 게임 페이지
+- `/minigame/` - 게임 목록 페이지 (로그인 필수, 레트로 스타일)
+- `/minigame/selker/` - To the Selker! 게임 페이지 (로그인 필수)
+- `/minigame/selker/api/` - 게임 API 엔드포인트
 - `/admin/` - Django 관리자 페이지
 
-### 게임 파일 구조 (selker/static/selker/js/)
+### 게임 파일 구조 (game/selker/static/game/selker/js/)
 ```
 js/
 ├── main.js              # 메인 진입점
