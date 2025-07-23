@@ -37,11 +37,13 @@ export default class RankingScene extends Phaser.Scene {
             loadingText.destroy();
             
             let rankings;
-            if (rankingData && Array.isArray(rankingData)) {
-                rankings = rankingData;
-            } else if (rankingData && rankingData.rankings) {
+            if (rankingData && rankingData.rankings) {
+                // DB에서 가져온 랭킹 사용
                 rankings = rankingData.rankings;
+            } else if (rankingData && Array.isArray(rankingData)) {
+                rankings = rankingData;
             } else {
+                // DB 랭킹이 없을 때만 localStorage 사용
                 rankings = JSON.parse(localStorage.getItem('vamsur_ranking') || '[]');
             }
             
@@ -52,7 +54,7 @@ export default class RankingScene extends Phaser.Scene {
             loadingText.setText('Failed to load rankings');
             console.error('Error loading rankings:', error);
             
-            // 로컬 랭킹 표시
+            // API 실패 시에만 로컬 랭킹 표시
             const localRankings = JSON.parse(localStorage.getItem('vamsur_ranking') || '[]');
             this.displayRankings(localRankings);
         }

@@ -1,5 +1,5 @@
 // API 서비스
-const API_URL = '/selker/api';
+const API_URL = '/minigame/selker/api';
 
 export default class ApiService {
     static async saveRanking(data) {
@@ -10,6 +10,9 @@ export default class ApiService {
                 nickname: window.USER_NICKNAME || data.nickname
             };
             
+            console.log('Saving ranking to:', `${API_URL}/rankings/`);
+            console.log('Data:', dataWithUserNickname);
+            
             const response = await fetch(`${API_URL}/rankings/`, {
                 method: 'POST',
                 headers: {
@@ -18,11 +21,17 @@ export default class ApiService {
                 body: JSON.stringify(dataWithUserNickname)
             });
             
+            console.log('Response status:', response.status);
+            
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
                 throw new Error('Failed to save ranking');
             }
             
-            return await response.json();
+            const result = await response.json();
+            console.log('Save ranking success:', result);
+            return result;
         } catch (error) {
             console.error('Error saving ranking:', error);
             // 실패 시 로컬스토리지 사용 (백업)
