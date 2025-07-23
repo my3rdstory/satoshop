@@ -1,0 +1,125 @@
+/* 레트로 게임 베이스 스타일 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Press Start 2P', cursive;
+    background-color: #000;
+    color: #0f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.game-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: 
+        linear-gradient(rgba(0, 255, 0, 0.1) 50%, transparent 50%),
+        linear-gradient(90deg, rgba(0, 255, 0, 0.05) 50%, transparent 50%);
+    background-size: 50px 50px, 50px 50px;
+    animation: scan-line 8s linear infinite;
+}
+
+@keyframes scan-line {
+    0% {
+        background-position: 0 0, 0 0;
+    }
+    100% {
+        background-position: 0 50px, 50px 0;
+    }
+}
+
+/* 네비게이션 */
+.retro-nav {
+    background-color: #111;
+    border-bottom: 3px solid #0f0;
+    padding: 15px 0;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 20px;
+    color: #0f0;
+    text-decoration: none;
+    text-shadow: 0 0 10px #0f0;
+    letter-spacing: 2px;
+}
+
+.logo:hover {
+    animation: glow 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+    }
+    to {
+        text-shadow: 0 0 20px #0f0, 0 0 30px #0f0;
+    }
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.player-name {
+    font-size: 12px;
+    color: #0f0;
+    text-shadow: 0 0 5px #0f0;
+}
+
+.exit-btn {
+    font-size: 12px;
+    color: #f00;
+    text-decoration: none;
+    text-shadow: 0 0 5px #f00;
+    transition: all 0.3s;
+}
+
+.exit-btn:hover {
+    color: #ff0;
+    text-shadow: 0 0 10px #ff0;
+}
+
+/* 메인 컨텐츠 */
+.main-content {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    width: 100%;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+    .logo {
+        font-size: 14px;
+    }
+    
+    .player-name,
+    .exit-btn {
+        font-size: 10px;
+    }
+    
+    .nav-content {
+        padding: 0 10px;
+    }
+}

@@ -96,6 +96,8 @@ INSTALLED_APPS = [
     'meetup',
     'lecture',
     'file',
+    'game',
+    'game.selker',
 ]
 
 MIDDLEWARE = [

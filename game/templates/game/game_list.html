@@ -1,0 +1,51 @@
+{% extends 'game/base.html' %}
+{% load static %}
+
+{% block title %}GAME SELECT{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'game/css/game_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="game-select-container">
+    <h1 class="main-title">SELECT GAME</h1>
+    <div class="blink-text">PRESS START</div>
+    
+    <div class="game-grid">
+        {% for game in games %}
+        <div class="retro-game-card" data-url="{{ game.url }}">
+            <div class="game-screen">
+                {% if game.thumbnail %}
+                <img src="{{ game.thumbnail }}" alt="{{ game.title }}" class="game-thumbnail">
+                {% else %}
+                <div class="no-image">
+                    <div class="pixel-icon">🎮</div>
+                    <span>NO IMAGE</span>
+                </div>
+                {% endif %}
+                <div class="scanlines"></div>
+            </div>
+            
+            <div class="game-info">
+                <h2 class="game-title">{{ game.title|upper }}</h2>
+                <p class="game-desc">{{ game.description|upper }}</p>
+                
+                <a href="{{ game.url }}" class="start-button" target="_blank">
+                    <span class="button-text">► START</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="footer-text">
+        <span class="coin-text">INSERT COIN</span>
+        <span class="credit-text">CREDIT: ∞</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'game/js/game_list.js' %}"></script>
+{% endblock %}
