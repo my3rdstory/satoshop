@@ -3,9 +3,20 @@ export default class ShooterEnemy {
         this.scene = scene;
         this.scaleManager = scaleManager;
         
+        // 적 설정 가져오기
+        const enemyConfig = scene.game.waveConfig?.getEnemyStats('shooter') || {
+            hp: 3,
+            collisionDamage: 8,
+            bulletDamage: 5,
+            score: 30,
+            color: 0xff6600,
+            shootDelay: { min: 2000, max: 3000 },
+            dropRate: 0.1
+        };
+        
         // 총 쏘는 적은 다른 색상과 모양
         this.size = scaleManager ? scaleManager.getShooterEnemySize() : 35;
-        this.color = 0xff6600; // 주황색
+        this.color = parseInt(enemyConfig.color) || 0xff6600;
         
         // 적 생성
         this.sprite = scene.add.rectangle(x, y, this.size, this.size, this.color);
@@ -17,15 +28,19 @@ export default class ShooterEnemy {
         this.sprite.setData('shooter', this);
         
         // 발사 타이머
+        const shootDelay = enemyConfig.shootDelay;
         this.shootTimer = scene.time.addEvent({
-            delay: 2000 + Math.random() * 1000, // 2-3초마다
+            delay: shootDelay.min + Math.random() * (shootDelay.max - shootDelay.min),
             callback: this.shoot,
             callbackScope: this,
             loop: true
         });
         
-        // 체력 (일반 적보다 높음)
-        this.hp = 3;
+        // 체력과 기타 스텟
+        this.hp = enemyConfig.hp;
+        this.bulletDamage = enemyConfig.bulletDamage;
+        this.score = enemyConfig.score;
+        this.dropRate = enemyConfig.dropRate;
     }
     
     shoot() {
@@ -52,7 +67,7 @@ export default class ShooterEnemy {
         this.scene.physics.add.overlap(this.scene.player, bullet, () => {
             if (!this.scene.gameOver) {
                 bullet.destroy();
-                this.scene.hp -= 5;
+                this.scene.hp -= this.bulletDamage;
                 this.scene.hpText.setText('HP: ' + this.scene.hp);
                 if (this.scene.hp <= 0) {
                     this.scene.endGame();
@@ -96,13 +111,13 @@ export default class ShooterEnemy {
             this.shootTimer.remove();
         }
         if (this.sprite) {
-            // 점수 추가 (일반 적보다 높음)
-            this.scene.score += 30;
+            // 점수 추가
+            this.scene.score += this.score;
             this.scene.scoreText.setText('Score: ' + this.scene.score);
             
-            // 아이템 드롭률도 약간 높음
+            // 아이템 드롭
             const rand = Math.random();
-            if (rand < 0.1) { // 10% 확률
+            if (rand < this.dropRate) {
                 this.scene.dropItem(this.sprite);
             }
             

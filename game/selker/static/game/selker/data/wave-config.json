@@ -1,0 +1,232 @@
+{
+  "waves": {
+    "1": {
+      "spawnCount": 1,
+      "enemyTypes": {
+        "normal": 1.0
+      },
+      "boss": {
+        "hp": 80,
+        "damage": 15,
+        "attackDelay": 4000,
+        "radialBullets": 4,
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplier": 500
+      },
+      "items": {
+        "dropRate": 0.05,
+        "weights": {
+          "weapon": 30,
+          "hp": 25,
+          "bomb": 15,
+          "shield": 0
+        }
+      }
+    },
+    "2": {
+      "spawnCount": 2,
+      "enemyTypes": {
+        "normal": 1.0
+      },
+      "boss": {
+        "hp": 110,
+        "damage": 15,
+        "attackDelay": 3800,
+        "radialBullets": 4,
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplier": 500
+      },
+      "items": {
+        "dropRate": 0.05,
+        "weights": {
+          "weapon": 30,
+          "hp": 25,
+          "bomb": 15,
+          "shield": 0
+        }
+      }
+    },
+    "3": {
+      "spawnCount": 3,
+      "enemyTypes": {
+        "normal": 1.0
+      },
+      "boss": {
+        "hp": 140,
+        "damage": 15,
+        "attackDelay": 3600,
+        "radialBullets": 5,
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplier": 500
+      },
+      "items": {
+        "dropRate": 0.05,
+        "weights": {
+          "weapon": 30,
+          "hp": 25,
+          "bomb": 15,
+          "shield": 25
+        }
+      }
+    },
+    "4": {
+      "spawnCount": 4,
+      "enemyTypes": {
+        "normal": 1.0
+      },
+      "boss": {
+        "hp": 170,
+        "damage": 15,
+        "attackDelay": 3400,
+        "radialBullets": 5,
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplier": 500
+      },
+      "items": {
+        "dropRate": 0.05,
+        "weights": {
+          "weapon": 25,
+          "hp": 25,
+          "bomb": 20,
+          "shield": 25
+        }
+      }
+    },
+    "5": {
+      "spawnCount": 5,
+      "enemyTypes": {
+        "normal": 0.7,
+        "shooter": 0.3
+      },
+      "boss": {
+        "hp": 200,
+        "damage": 15,
+        "attackDelay": 3200,
+        "radialBullets": 6,
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplier": 500
+      },
+      "items": {
+        "dropRate": 0.05,
+        "weights": {
+          "weapon": 25,
+          "hp": 25,
+          "bomb": 25,
+          "shield": 25
+        }
+      }
+    },
+    "default": {
+      "spawnCountFormula": "wave",
+      "weaponLevelBonus": {
+        "startLevel": 3,
+        "bonusFormula": "(weaponLevel - 2) * 0.5"
+      },
+      "maxSpawnCount": 15,
+      "enemyTypes": {
+        "normal": 0.7,
+        "shooter": 0.3
+      },
+      "enemySizeReduction": {
+        "startWave": 10,
+        "reductionPercent": 0.2
+      },
+      "boss": {
+        "hpFormula": "50 + (wave * 30)",
+        "damage": 15,
+        "attackDelayFormula": "Math.max(2000, 4000 - (wave * 200))",
+        "radialBulletsFormula": "Math.min(4 + wave, 8)",
+        "bulletSpeed": 150,
+        "bulletDamage": 10,
+        "missileDamage": 15,
+        "missileSpeed": 100,
+        "scoreMultiplierFormula": "500 * wave"
+      },
+      "items": {
+        "dropRate": 0.05,
+        "dynamicWeights": {
+          "weapon": {
+            "condition": "wave <= 3",
+            "trueValue": 30,
+            "falseValue": 25
+          },
+          "hp": {
+            "condition": "hp < 50",
+            "trueValue": 35,
+            "falseValue": 25
+          },
+          "bomb": {
+            "condition": "wave >= 5",
+            "trueValue": 25,
+            "falseValue": 15
+          },
+          "shield": {
+            "condition": "wave >= 3",
+            "trueValue": 25,
+            "falseValue": 15
+          }
+        }
+      },
+      "bossItems": {
+        "dropCount": 3,
+        "weights": {
+          "weapon": 35,
+          "hp": 35,
+          "bomb": 15,
+          "shield": 15
+        }
+      }
+    }
+  },
+  "enemyStats": {
+    "normal": {
+      "hp": 1,
+      "damage": 10,
+      "score": 10,
+      "color": "0xff0000"
+    },
+    "shooter": {
+      "hp": 3,
+      "collisionDamage": 8,
+      "bulletDamage": 5,
+      "score": 30,
+      "color": "0xff6600",
+      "shootDelay": {
+        "min": 2000,
+        "max": 3000
+      },
+      "dropRate": 0.1
+    }
+  },
+  "player": {
+    "maxHp": 100,
+    "speed": 200
+  },
+  "shield": {
+    "count": 3,
+    "radius": 80,
+    "rotationSpeed": 0.5,
+    "duration": 20000,
+    "width": 30,
+    "height": 10,
+    "color": "0xff00ff",
+    "alpha": 0.8
+  },
+  "waveTimer": 15,
+  "autoFireDelay": 500
+}

@@ -18,7 +18,7 @@ export default class GameScene extends Phaser.Scene {
         this.wave = 1;
         this.waveText = null;
         this.waveTimerText = null;
-        this.waveTimer = 15;
+        this.waveTimer = this.game.waveConfig?.getWaveTimer() || 15;
         this.weapons = null;
         this.hp = 100;
         this.hpText = null;
@@ -84,7 +84,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.time.addEvent({
-            delay: 15000,  // 15초마다 웨이브 증가
+            delay: (this.game.waveConfig?.getWaveTimer() || 15) * 1000,  // 설정된 시간마다 웨이브 증가
             callback: this.increaseWave,
             callbackScope: this,
             loop: true
@@ -97,7 +97,7 @@ export default class GameScene extends Phaser.Scene {
                 if (!this.gameOver) {
                     this.waveTimer--;
                     if (this.waveTimer <= 0) {
-                        this.waveTimer = 15;
+                        this.waveTimer = this.game.waveConfig?.getWaveTimer() || 15;
                     }
                     this.waveTimerText.setText(`Next wave: ${this.waveTimer}s`);
                 }
@@ -114,7 +114,7 @@ export default class GameScene extends Phaser.Scene {
         
         // 자동 발사 추가
         this.time.addEvent({
-            delay: 500,
+            delay: this.game.waveConfig?.getAutoFireDelay() || 500,
             callback: () => {
                 if (!this.gameOver && this.enemies.children.entries.length > 0) {
                     const nearestEnemy = this.physics.closest(this.player, this.enemies.children.entries);
@@ -149,7 +149,8 @@ export default class GameScene extends Phaser.Scene {
             // 일반 적
             else {
                 enemy.destroy();
-                this.score += 10;
+                const normalConfig = this.game.waveConfig?.getEnemyStats('normal');
+                this.score += normalConfig?.score || 10;
                 this.scoreText.setText('Score: ' + this.score);
                 
                 // 일반 적만 아이템 드롭
@@ -159,15 +160,17 @@ export default class GameScene extends Phaser.Scene {
 
         this.physics.add.collider(this.player, this.enemies, (player, enemy) => {
             if (!this.gameOver) {
-                let damage = 10;
+                let damage;
                 
                 // 보스인 경우
                 if (enemy.getData('isBoss')) {
-                    damage = 15;
+                    const boss = enemy.getData('boss');
+                    damage = boss?.damage || 15;
                 }
                 // 총 쏘는 적인 경우
                 else if (enemy.getData('isShooter')) {
-                    damage = 8;
+                    const shooterConfig = this.game.waveConfig?.getEnemyStats('shooter');
+                    damage = shooterConfig?.collisionDamage || 8;
                     const shooter = enemy.getData('shooter');
                     if (shooter) {
                         shooter.destroy();
@@ -175,6 +178,8 @@ export default class GameScene extends Phaser.Scene {
                 }
                 // 일반 적
                 else {
+                    const normalConfig = this.game.waveConfig?.getEnemyStats('normal');
+                    damage = normalConfig?.damage || 10;
                     enemy.destroy();
                 }
                 
@@ -309,13 +314,14 @@ export default class GameScene extends Phaser.Scene {
     spawnEnemies() {
         if (this.gameOver) return;
         
-        // 기본 스폰 수: 웨이브 수
-        let spawnCount = this.wave;
+        const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
         
-        // 무기 레벨에 따른 추가 스폰 (무기 레벨 3 이상부터)
-        if (this.weaponLevel > 2) {
-            spawnCount += Math.floor((this.weaponLevel - 2) * 0.5);
-        }
+        // 기본 스폰 수: 웨이브 설정에서 가져오기
+        let spawnCount = waveConfig?.spawnCount || this.wave;
+        
+        // 무기 레벨에 따른 추가 스폰
+        const weaponBonus = this.game.waveConfig?.getWeaponLevelBonus(this.weaponLevel) || 0;
+        spawnCount += weaponBonus;
         
         // 최대 스폰 제한
         spawnCount = Math.min(spawnCount, 15);
@@ -341,16 +347,20 @@ export default class GameScene extends Phaser.Scene {
             case 3: spawnX = 0; spawnY = y; break;
         }
 
-        // 웨이브 5 이상에서 30% 확률로 총 쏘는 적 생성
-        if (this.wave >= 5 && Math.random() < 0.3) {
+        const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
+        const enemyTypes = waveConfig?.enemyTypes || { normal: 0.7, shooter: 0.3 };
+        
+        // 적 타입 비율에 따라 생성
+        const random = Math.random();
+        if (this.wave >= 5 && enemyTypes.shooter && random < enemyTypes.shooter) {
             const shooter = new ShooterEnemy(this, spawnX, spawnY, this.scaleManager);
             this.enemies.add(shooter.sprite);
         } else {
             // 일반 적
             let enemySize = this.scaleManager.getEnemySize();
             
-            // 웨이브 10 이상에서 크기 20% 감소
-            if (this.wave >= 10) {
+            // 웨이브에 따른 크기 감소
+            if (this.game.waveConfig?.shouldReduceEnemySize(this.wave)) {
                 enemySize = this.scaleManager.getSmallEnemySize();
             }
             
@@ -415,8 +425,9 @@ export default class GameScene extends Phaser.Scene {
             case 3: spawnX = 0; spawnY = this.scale.height/2; break;
         }
         
-        // 보스 생성
-        this.boss = new Boss(this, spawnX, spawnY, this.wave, this.scaleManager);
+        // 보스 생성 (웨이브 설정 포함)
+        const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
+        this.boss = new Boss(this, spawnX, spawnY, this.wave, this.scaleManager, waveConfig);
         this.enemies.add(this.boss.sprite);
         this.bossSpawned = true;
         
@@ -455,16 +466,23 @@ export default class GameScene extends Phaser.Scene {
     }
 
     dropItem(enemy) {
+        const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
+        const itemConfig = waveConfig?.items || { dropRate: 0.05 };
+        
         const rand = Math.random();
-        // 아이템 드롭률 조정 (3% -> 5%)
-        if (rand < 0.05) {
-            // 웨이브에 따른 가중치 아이템 드롭
-            const weights = {
-                weapon: this.wave <= 3 ? 30 : 25,   // 초반엔 무기 드롭률 높음
-                hp: this.hp < 50 ? 35 : 25,         // 체력 낮으면 회복 드롭률 높음
-                bomb: this.wave >= 5 ? 25 : 15,     // 후반엔 폭탄 드롭률 높음
-                shield: this.wave >= 3 ? 25 : 15    // 3웨이브부터 방어막 드롭
-            };
+        if (rand < itemConfig.dropRate) {
+            // 동적 가중치 계산
+            const weights = itemConfig.weights || 
+                this.game.waveConfig?.calculateDynamicWeights(
+                    this.game.waveConfig.config.waves.default.items.dynamicWeights, 
+                    this.wave, 
+                    this.hp
+                ) || {
+                    weapon: 25,
+                    hp: 25,
+                    bomb: 25,
+                    shield: 25
+                };
             
             const type = this.weightedRandom(weights);
             let color;
@@ -492,7 +510,8 @@ export default class GameScene extends Phaser.Scene {
     
     dropBossItem(x, y) {
         // 보스는 아이템 드롭 확정 (100%)
-        const weights = {
+        const bossItemConfig = this.game.waveConfig?.getBossItemConfig();
+        const weights = bossItemConfig?.weights || {
             weapon: 35,
             hp: 35,
             bomb: 15,
@@ -604,22 +623,30 @@ export default class GameScene extends Phaser.Scene {
         // 기존 방어막이 있으면 제거
         this.shields.clear(true, true);
         
-        // 3개의 방어막 조각 생성
-        const shieldCount = 3;
-        const radius = 80; // 플레이어로부터의 거리
+        // 방어막 설정 가져오기
+        const shieldConfig = this.game.waveConfig?.getShieldConfig() || {
+            count: 3,
+            radius: 80,
+            width: 30,
+            height: 10,
+            color: 0xff00ff,
+            alpha: 0.8,
+            rotationSpeed: 0.5,
+            duration: 20000
+        };
         
-        for (let i = 0; i < shieldCount; i++) {
-            const angle = (360 / shieldCount) * i;
-            const shield = this.add.rectangle(0, 0, 30, 10, 0xff00ff);
-            shield.setAlpha(0.8);
+        for (let i = 0; i < shieldConfig.count; i++) {
+            const angle = (360 / shieldConfig.count) * i;
+            const shield = this.add.rectangle(0, 0, shieldConfig.width, shieldConfig.height, shieldConfig.color);
+            shield.setAlpha(shieldConfig.alpha);
             
             this.physics.add.existing(shield);
             shield.body.setImmovable(true);
             
             // 방어막 데이터 설정
             shield.setData('angle', angle);
-            shield.setData('radius', radius);
-            shield.setData('rotationSpeed', 0.5); // 느린 회전 속도
+            shield.setData('radius', shieldConfig.radius);
+            shield.setData('rotationSpeed', shieldConfig.rotationSpeed); // 느린 회전 속도
             
             this.shields.add(shield);
             
@@ -633,8 +660,8 @@ export default class GameScene extends Phaser.Scene {
             });
         }
         
-        // 방어막 지속 시간 (20초)
-        this.time.delayedCall(20000, () => {
+        // 방어막 지속 시간
+        this.time.delayedCall(shieldConfig.duration, () => {
             this.shields.clear(true, true);
         });
     }

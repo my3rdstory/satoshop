@@ -1,3 +1,5 @@
+import WaveConfig from '../config/WaveConfig.js';
+
 export default class BootScene extends Phaser.Scene {
     constructor() {
         super({ key: 'Boot' });
@@ -9,7 +11,13 @@ export default class BootScene extends Phaser.Scene {
         this.load.audio('bgm', '/static/game/selker/audio/bgm.mp3');
     }
 
-    create() {
+    async create() {
+        // 웨이브 설정 로드
+        const waveConfig = new WaveConfig();
+        await waveConfig.load();
+        
+        // 게임 전역에서 사용할 수 있도록 저장
+        this.game.waveConfig = waveConfig;
         // 사토삽 로그인 사용자 이름을 자동으로 사용
         const name = window.USER_NICKNAME || localStorage.getItem('vamsur_nickname');
         if (name) {

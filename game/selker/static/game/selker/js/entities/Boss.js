@@ -1,16 +1,24 @@
 export default class Boss {
-    constructor(scene, x, y, wave, scaleManager) {
+    constructor(scene, x, y, wave, scaleManager, waveConfig) {
         this.scene = scene;
         this.wave = wave;
         this.scaleManager = scaleManager;
+        this.waveConfig = waveConfig;
         
         // 보스 크기와 색상
         this.size = scaleManager ? scaleManager.getBossSize() : 80;
         this.color = 0xff00ff;
         
-        // 보스 체력 (웨이브에 따라 증가) - 난이도 하향
-        this.maxHp = 50 + (wave * 30);  // 100 -> 50, 50 -> 30으로 감소
+        // 보스 체력 (웨이브 설정에서 가져오기)
+        const bossConfig = waveConfig?.boss || { hp: 50 + (wave * 30) };
+        this.maxHp = bossConfig.hp;
         this.hp = this.maxHp;
+        this.damage = bossConfig.damage || 15;
+        this.bulletDamage = bossConfig.bulletDamage || 10;
+        this.missileDamage = bossConfig.missileDamage || 15;
+        this.bulletSpeed = bossConfig.bulletSpeed || 150;
+        this.missileSpeed = bossConfig.missileSpeed || 100;
+        this.scoreMultiplier = bossConfig.scoreMultiplier || 500;
         
         // 보스 생성
         this.sprite = scene.add.rectangle(x, y, this.size, this.size, this.color);
@@ -24,9 +32,10 @@ export default class Boss {
         // 체력바 생성
         this.createHealthBar();
         
-        // 보스 패턴 타이머 - 공격 주기 늘림
+        // 보스 패턴 타이머 - 웨이브 설정에서 가져오기
+        const attackDelay = bossConfig.attackDelay || (4000 - (wave * 200));
         this.attackTimer = scene.time.addEvent({
-            delay: 4000 - (wave * 200),  // 첫 웨이브 4초, 점점 빨라짐
+            delay: attackDelay,
             callback: this.attackPattern,
             callbackScope: this,
             loop: true
@@ -70,7 +79,7 @@ export default class Boss {
     }
     
     takeDamage(damage) {
-        this.hp -= damage * 1.5;  // 데미지 1.5배 증가 (보스가 더 빨리 죽음)
+        this.hp -= damage * 1.5;  // 데미지 1.5배 증가
         this.updateHealthBar();
         
         // 피격 효과
@@ -109,13 +118,13 @@ export default class Boss {
     }
     
     radialShot() {
-        const bullets = Math.min(4 + this.wave, 8);  // 첫 웨이브는 4발, 최대 8발
+        const bullets = this.waveConfig?.boss?.radialBullets || Math.min(4 + this.wave, 8);
         for (let i = 0; i < bullets; i++) {
             const angle = (Math.PI * 2 / bullets) * i;
             const bullet = this.scene.add.circle(this.sprite.x, this.sprite.y, 10, 0xff00ff);
             this.scene.physics.add.existing(bullet);
             
-            const speed = 150;  // 200 -> 150으로 감소
+            const speed = this.bulletSpeed;
             bullet.body.setVelocity(
                 Math.cos(angle) * speed,
                 Math.sin(angle) * speed
@@ -128,7 +137,7 @@ export default class Boss {
             this.scene.physics.add.overlap(this.scene.player, bullet, () => {
                 if (!this.scene.gameOver) {
                     bullet.destroy();
-                    this.scene.hp -= 10;  // 15 -> 10으로 감소
+                    this.scene.hp -= this.bulletDamage;
                     this.scene.hpText.setText('HP: ' + this.scene.hp);
                     if (this.scene.hp <= 0) {
                         this.scene.endGame();
@@ -155,7 +164,7 @@ export default class Boss {
         // 추적 미사일
         const updateMissile = () => {
             if (missile && missile.body && this.scene.player) {
-                this.scene.physics.moveToObject(missile, this.scene.player, 100);  // 150 -> 100으로 감소
+                this.scene.physics.moveToObject(missile, this.scene.player, this.missileSpeed);
             }
         };
         
@@ -170,7 +179,7 @@ export default class Boss {
             if (!this.scene.gameOver) {
                 missile.destroy();
                 missileTimer.remove();
-                this.scene.hp -= 15;  // 20 -> 15로 감소
+                this.scene.hp -= this.missileDamage;
                 this.scene.hpText.setText('HP: ' + this.scene.hp);
                 if (this.scene.hp <= 0) {
                     this.scene.endGame();
@@ -203,7 +212,7 @@ export default class Boss {
         if (!this.sprite || !this.sprite.active) return;
         
         // 보스 격파 시 대량의 점수와 아이템
-        this.scene.score += 500 * this.wave;
+        this.scene.score += this.scoreMultiplier;
         this.scene.scoreText.setText('Score: ' + this.scene.score);
         
         // 보스 아이템 드롭 (확률 높음)
