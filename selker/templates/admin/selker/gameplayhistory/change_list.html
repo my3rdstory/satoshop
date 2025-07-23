@@ -1,0 +1,50 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+{% if stats %}
+<div class="stats-container">
+    <h2>게임플레이 통계</h2>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-label">총 게임 수</div>
+            <div class="stat-value">{{ stats.total_games|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">평균 점수</div>
+            <div class="stat-value">{{ stats.avg_score|floatformat:0|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">최고 점수</div>
+            <div class="stat-value highlight">{{ stats.max_score|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">평균 웨이브</div>
+            <div class="stat-value">{{ stats.avg_wave|floatformat:1|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">최고 웨이브</div>
+            <div class="stat-value highlight">{{ stats.max_wave|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">평균 플레이 시간</div>
+            <div class="stat-value">{{ stats.avg_play_time_formatted }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">총 처치한 적</div>
+            <div class="stat-value">{{ stats.total_enemies|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">총 처치한 보스</div>
+            <div class="stat-value">{{ stats.total_bosses|default:0 }}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">총 획득 아이템</div>
+            <div class="stat-value">{{ stats.total_items|default:0 }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{{ block.super }}
+{% endblock %}
