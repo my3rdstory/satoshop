@@ -25,14 +25,13 @@ def get_store_or_404(store_id, user):
     return get_object_or_404(Store, store_id=store_id, owner=user, deleted_at__isnull=True)
 
 
-@login_required
 def menu_list(request, store_id):
     """메뉴 관리 목록 - 권한에 따라 다른 페이지 표시"""
     # 스토어 조회 (일단 활성화된 스토어인지만 확인)
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     
-    # 스토어 주인인지 확인
-    if store.owner != request.user:
+    # 로그인하지 않았거나 스토어 주인이 아닌 경우
+    if not request.user.is_authenticated or store.owner != request.user:
         # 일반 사용자는 디바이스 선택 페이지로
         context = {
             'store': store,
