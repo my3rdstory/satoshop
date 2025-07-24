@@ -128,7 +128,7 @@ def export_product_orders_csv(request, store, product):
     # 헤더 작성
     writer.writerow([
         '주문번호', '주문자', '수량', '단가(sats)', '옵션가격(sats)', '총액(sats)', 
-        '주문일시', '상태', '선택옵션', '연락처', '이메일', 
+        '주문일시', '상태', '배송상태', '선택옵션', '연락처', '이메일', 
         '우편번호', '주소', '상세주소', '요청사항'
     ])
     
@@ -158,6 +158,7 @@ def export_product_orders_csv(request, store, product):
             item.total_price,
             order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             order.get_status_display(),
+            order.get_delivery_status_display(),
             options_str,
             order.buyer_phone or '',
             order.buyer_email or '',
@@ -273,7 +274,7 @@ def export_product_orders_excel(request, store, product):
         # 헤더 작성
         headers = [
             '주문번호', '주문자', '수량', '단가(sats)', '옵션가격(sats)', '총액(sats)',
-            '주문일시', '상태', '선택옵션', '연락처', '이메일',
+            '주문일시', '상태', '배송상태', '선택옵션', '연락처', '이메일',
             '우편번호', '주소', '상세주소', '요청사항'
         ]
         
@@ -303,18 +304,19 @@ def export_product_orders_excel(request, store, product):
             ws.cell(row=row, column=6, value=item.total_price)
             ws.cell(row=row, column=7, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
             ws.cell(row=row, column=8, value=order.get_status_display())
-            ws.cell(row=row, column=9, value=options_str)
+            ws.cell(row=row, column=9, value=order.get_delivery_status_display())
+            ws.cell(row=row, column=10, value=options_str)
             # 우편번호 처리 - 0으로 시작하는 경우 문자열로 보존
             postal_code = order.shipping_postal_code or ''
             if postal_code and postal_code.startswith('0'):
                 postal_code = f'="{postal_code}"'  # Excel에서 문자열로 인식하도록 처리
             
-            ws.cell(row=row, column=10, value=order.buyer_phone or '')
-            ws.cell(row=row, column=11, value=order.buyer_email or '')
-            ws.cell(row=row, column=12, value=postal_code)
-            ws.cell(row=row, column=13, value=order.shipping_address or '')
-            ws.cell(row=row, column=14, value=order.shipping_detail_address or '')
-            ws.cell(row=row, column=15, value=order.order_memo or '')
+            ws.cell(row=row, column=11, value=order.buyer_phone or '')
+            ws.cell(row=row, column=12, value=order.buyer_email or '')
+            ws.cell(row=row, column=13, value=postal_code)
+            ws.cell(row=row, column=14, value=order.shipping_address or '')
+            ws.cell(row=row, column=15, value=order.shipping_detail_address or '')
+            ws.cell(row=row, column=16, value=order.order_memo or '')
         
         # 열 너비 자동 조정
         for col in range(1, len(headers) + 1):

@@ -2047,3 +2047,37 @@ def download_order_txt_public(request, order_number):
         response['Content-Disposition'] = f'attachment; filename="{fallback_filename}"'
     
     return response
+
+
+@login_required
+def toggle_delivery_status(request, order_id):
+    """배송상태 토글 API"""
+    if request.method != 'POST':
+        return JsonResponse({'error': '잘못된 요청입니다.'}, status=405)
+    
+    try:
+        # 주문 조회
+        order = Order.objects.get(id=order_id)
+        
+        # 권한 확인 (스토어 주인만 변경 가능)
+        if order.store.owner != request.user:
+            return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+        
+        # 배송상태 토글
+        if order.delivery_status == 'preparing':
+            order.delivery_status = 'completed'
+        else:
+            order.delivery_status = 'preparing'
+        
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'delivery_status': order.delivery_status,
+            'delivery_status_display': order.get_delivery_status_display()
+        })
+        
+    except Order.DoesNotExist:
+        return JsonResponse({'error': '주문을 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

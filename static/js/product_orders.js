@@ -267,6 +267,70 @@ function attachPaginationEvents() {
     });
 }
 
+// 배송상태 토글 함수
+async function toggleDeliveryStatus(orderId, currentStatus) {
+    try {
+        const response = await fetch(`/orders/orders/${orderId}/toggle-delivery-status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 버튼 업데이트
+            const button = document.querySelector(`button[data-order-id="${orderId}"]`);
+            if (button) {
+                const newStatus = data.delivery_status;
+                const icon = button.querySelector('i');
+                
+                if (newStatus === 'preparing') {
+                    button.className = 'delivery-status-btn inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50';
+                    icon.className = 'fas fa-box mr-1';
+                } else {
+                    button.className = 'delivery-status-btn inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50';
+                    icon.className = 'fas fa-check-circle mr-1';
+                }
+                
+                // 텍스트 업데이트
+                button.innerHTML = `<i class="${icon.className}"></i>${data.delivery_status_display}`;
+                
+                // onclick 속성 업데이트
+                button.setAttribute('onclick', `toggleDeliveryStatus('${orderId}', '${newStatus}')`);
+            }
+        } else {
+            alert('배송상태 변경에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('배송상태 변경 오류:', error);
+        alert('배송상태 변경 중 오류가 발생했습니다.');
+    }
+}
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     updateFilterButtons(); // 이 함수 안에서 updateCsvDownloadLink()도 호출됨

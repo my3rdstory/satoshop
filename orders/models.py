@@ -159,6 +159,11 @@ class Order(models.Model):
         ('refunded', '환불 완료'),
     ]
     
+    DELIVERY_STATUS_CHOICES = [
+        ('preparing', '배송준비중'),
+        ('completed', '배송완료'),
+    ]
+    
     # 주문 기본 정보
     order_number = models.CharField(max_length=50, unique=True, verbose_name='주문번호')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
@@ -166,6 +171,10 @@ class Order(models.Model):
     status = models.CharField(
         max_length=20, choices=ORDER_STATUS_CHOICES, 
         default='pending', verbose_name='주문 상태'
+    )
+    delivery_status = models.CharField(
+        max_length=20, choices=DELIVERY_STATUS_CHOICES,
+        default='preparing', verbose_name='배송 상태'
     )
     
     # 주문자 정보
