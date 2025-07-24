@@ -254,6 +254,7 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">총액</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문일시</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">상태</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">배송상태</th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -286,6 +287,16 @@
                     {{ item.order.get_status_display }}
                   </span>
                   {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <button 
+                    onclick="toggleDeliveryStatus('{{ item.order.id }}', '{{ item.order.delivery_status }}')"
+                    class="delivery-status-btn inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors {% if item.order.delivery_status == 'preparing' %}bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50{% else %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50{% endif %}"
+                    data-order-id="{{ item.order.id }}"
+                  >
+                    <i class="fas {% if item.order.delivery_status == 'preparing' %}fa-box{% else %}fa-check-circle{% endif %} mr-1"></i>
+                    {{ item.order.get_delivery_status_display }}
+                  </button>
                 </td>
               </tr>
               {% endfor %}

@@ -159,16 +159,16 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
         'order_number_link', 'buyer_name', 'store', 'status_colored', 
-        'items_count', 'total_amount_formatted', 'created_at', 'paid_at'
+        'delivery_status_colored', 'items_count', 'total_amount_formatted', 'created_at', 'paid_at'
     ]
-    list_filter = ['status', 'store', 'created_at', 'paid_at']
+    list_filter = ['status', 'delivery_status', 'store', 'created_at', 'paid_at']
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'buyer_phone']
     readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary']
     list_per_page = 10
     
     fieldsets = (
         ('주문 정보', {
-            'fields': ('order_number', 'user', 'store', 'status')
+            'fields': ('order_number', 'user', 'store', 'status', 'delivery_status')
         }),
         ('주문자 정보', {
             'fields': ('buyer_name', 'buyer_phone', 'buyer_email')
@@ -218,6 +218,21 @@ class OrderAdmin(admin.ModelAdmin):
         )
     status_colored.short_description = '주문 상태'
     status_colored.admin_order_field = 'status'
+    
+    def delivery_status_colored(self, obj):
+        """배송상태를 색상과 함께 표시"""
+        colors = {
+            'preparing': '#f59e0b',  # 황색 - 배송준비중
+            'completed': '#3b82f6',  # 파란색 - 배송완료
+        }
+        color = colors.get(obj.delivery_status, '#6b7280')
+        return format_html(
+            '<span style="color: {}; font-weight: bold;">{}</span>',
+            color,
+            obj.get_delivery_status_display()
+        )
+    delivery_status_colored.short_description = '배송 상태'
+    delivery_status_colored.admin_order_field = 'delivery_status'
     
     def items_count(self, obj):
         """주문 아이템 개수"""
