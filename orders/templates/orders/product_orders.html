@@ -264,11 +264,8 @@
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {% for item in page_obj|default:order_items %}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <td class="px-6 py-4">
-                  <div class="text-sm">
-                    <div class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number|slice:":15" }}</div>
-                    <div class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number|slice:"15:" }}</div>
-                  </div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="font-semibold text-gray-900 dark:text-white text-sm">{{ item.order.order_number }}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.buyer_name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.quantity }}개</td>
@@ -279,11 +276,8 @@
                   </span>
                   <div class="text-xs text-gray-500 dark:text-gray-400">배송비 제외</div>
                 </td>
-                <td class="px-6 py-4">
-                  <div class="text-sm text-gray-900 dark:text-white">
-                    <div>{{ item.order.created_at|date:"Y-m-d" }}</div>
-                    <div>{{ item.order.created_at|date:"H:i:s" }}</div>
-                  </div>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white text-sm">
+                  {{ item.order.created_at|date:"Y-m-d H:i:s" }}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   {% if item.order.status == 'paid' %}
