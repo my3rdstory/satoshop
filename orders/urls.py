@@ -19,6 +19,7 @@ urlpatterns = [
     path('<str:store_id>/products/<int:product_id>/orders/', views.product_orders, name='product_orders'),
     path('<str:store_id>/products/<int:product_id>/orders/export/', views.export_product_orders_csv, name='export_product_orders_csv'),
     path('orders/<int:order_id>/toggle-delivery-status/', views.toggle_delivery_status, name='toggle_delivery_status'),
+    path('orders/<int:order_id>/update-tracking/', views.update_tracking_info, name='update_tracking_info'),
     
     # 결제 및 구매
     path('shipping/', views.shipping_info, name='shipping_info'),

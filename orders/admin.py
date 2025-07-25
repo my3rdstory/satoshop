@@ -159,11 +159,12 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
         'order_number_link', 'buyer_name', 'store', 'status_colored', 
-        'delivery_status_colored', 'items_count', 'total_amount_formatted', 'created_at', 'paid_at'
+        'delivery_status_colored', 'courier_company', 'tracking_number', 'items_count', 
+        'total_amount_formatted', 'created_at', 'paid_at'
     ]
     list_filter = ['status', 'delivery_status', 'store', 'created_at', 'paid_at']
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'buyer_phone']
-    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary']
+    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary', 'courier_company', 'tracking_number']
     list_per_page = 10
     
     fieldsets = (
@@ -174,7 +175,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('buyer_name', 'buyer_phone', 'buyer_email')
         }),
         ('배송 정보', {
-            'fields': ('shipping_postal_code', 'shipping_address', 'shipping_detail_address', 'order_memo')
+            'fields': ('shipping_postal_code', 'shipping_address', 'shipping_detail_address', 'order_memo', 'courier_company', 'tracking_number')
         }),
         ('결제 정보', {
             'fields': ('subtotal', 'shipping_fee', 'total_amount', 'payment_id', 'paid_at')
@@ -220,10 +221,10 @@ class OrderAdmin(admin.ModelAdmin):
     status_colored.admin_order_field = 'status'
     
     def delivery_status_colored(self, obj):
-        """배송상태를 색상과 함께 표시"""
+        """발송상태를 색상과 함께 표시"""
         colors = {
-            'preparing': '#f59e0b',  # 황색 - 배송준비중
-            'completed': '#3b82f6',  # 파란색 - 배송완료
+            'preparing': '#f59e0b',  # 황색 - 발송준비중
+            'completed': '#3b82f6',  # 파란색 - 발송완료
         }
         color = colors.get(obj.delivery_status, '#6b7280')
         return format_html(
@@ -231,7 +232,7 @@ class OrderAdmin(admin.ModelAdmin):
             color,
             obj.get_delivery_status_display()
         )
-    delivery_status_colored.short_description = '배송 상태'
+    delivery_status_colored.short_description = '발송 상태'
     delivery_status_colored.admin_order_field = 'delivery_status'
     
     def items_count(self, obj):
