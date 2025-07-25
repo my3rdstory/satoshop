@@ -1743,7 +1743,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             all_orders.append(order)
             
             if settings.DEBUG:
-                logger.debug(f"[ORDER_CREATE] 주문 생성: {order_number}, 배송비: {store_shipping_fee} sats")
+                logger.debug(f"[ORDER_CREATE] 주문 생성: {order.order_number}, 배송비: {store_shipping_fee} sats")
             
             # 주문 아이템 생성
             for item in store_items:
@@ -1926,7 +1926,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             all_orders.append(order)
             
             if settings.DEBUG:
-                logger.debug(f"[ORDER_CREATE] 주문 생성: {order_number}, 배송비: {store_shipping_fee} sats")
+                logger.debug(f"[ORDER_CREATE] 주문 생성: {order.order_number}, 배송비: {store_shipping_fee} sats")
             
             # 주문 아이템 생성
             for item in store_items:
