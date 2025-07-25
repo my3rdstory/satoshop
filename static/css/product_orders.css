@@ -8,4 +8,48 @@
   background-color: rgba(245, 158, 11, 0.2);
   border-color: rgba(245, 158, 11, 0.4);
   color: #fbbf24;
+}
+
+/* 테이블 전체 화면 사용 */
+.overflow-x-auto {
+  width: 100% !important;
+}
+
+#orders-section {
+  width: 100% !important;
+}
+
+/* 테이블 최소 너비 설정 */
+table {
+  min-width: 1100px !important;
+}
+
+/* 주문번호 컬럼 너비 제한 */
+th:first-child,
+td:first-child {
+  max-width: 200px;
+  word-break: break-all;
+}
+
+/* 주문일시 컬럼 너비 제한 */
+th:nth-child(6),
+td:nth-child(6) {
+  max-width: 100px;
+}
+
+/* 택배 정보 입력 필드 스타일 */
+.tracking-courier,
+.tracking-number {
+  transition: border-color 0.3s ease;
+}
+
+.tracking-courier:focus,
+.tracking-number:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+}
+
+/* 성공 시 초록색 테두리 */
+.border-green-500 {
+  border-color: #10b981 !important;
 } 

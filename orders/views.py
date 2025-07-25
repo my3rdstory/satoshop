@@ -1707,8 +1707,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             if settings.DEBUG:
                 logger.debug(f"[ORDER_CREATE] 스토어: {store.store_name}, 상품 수: {len(store_items)}")
             
-            # 주문 번호 생성
-            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{timezone.now().strftime('%H%M%S')}"
+            # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
             
             # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
             shipping_fees = []
@@ -1723,7 +1722,6 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             
             # 주문 생성
             order = Order.objects.create(
-                order_number=order_number,
                 user=user,
                 store=store,
                 buyer_name=shipping_data.get('buyer_name', ''),
@@ -1745,7 +1743,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             all_orders.append(order)
             
             if settings.DEBUG:
-                logger.debug(f"[ORDER_CREATE] 주문 생성: {order_number}, 배송비: {store_shipping_fee} sats")
+                logger.debug(f"[ORDER_CREATE] 주문 생성: {order.order_number}, 배송비: {store_shipping_fee} sats")
             
             # 주문 아이템 생성
             for item in store_items:
@@ -1813,11 +1811,10 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             if settings.DEBUG:
                 logger.debug(f"[ORDER_CREATE] 주문 총액 계산: {order.order_number}, 상품: {order.subtotal} + 배송: {order.shipping_fee} = {order.total_amount} sats")
             
-            # 구매 내역 생성 (로그인 사용자만)
-            if request.user.is_authenticated and user != request.user:
-                # 실제 로그인한 사용자로 구매 내역 생성
+            # 구매 내역 생성
+            if user:
                 PurchaseHistory.objects.create(
-                    user=request.user,
+                    user=user,
                     order=order,
                     store_name=order.store.store_name,
                     total_amount=order.total_amount,
@@ -1901,15 +1898,13 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             if settings.DEBUG:
                 logger.debug(f"[ORDER_CREATE] 스토어: {store.store_name}, 상품 수: {len(store_items)}")
             
-            # 주문 번호 생성
-            order_number = f"ORD-{timezone.now().strftime('%Y%m%d')}-{timezone.now().strftime('%H%M%S')}"
+            # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
             
             # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
             store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
             
             # 주문 생성
             order = Order.objects.create(
-                order_number=order_number,
                 user=user,
                 store=store,
                 buyer_name=shipping_data.get('buyer_name', ''),
@@ -1931,7 +1926,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             all_orders.append(order)
             
             if settings.DEBUG:
-                logger.debug(f"[ORDER_CREATE] 주문 생성: {order_number}, 배송비: {store_shipping_fee} sats")
+                logger.debug(f"[ORDER_CREATE] 주문 생성: {order.order_number}, 배송비: {store_shipping_fee} sats")
             
             # 주문 아이템 생성
             for item in store_items:
@@ -2079,5 +2074,43 @@ def toggle_delivery_status(request, order_id):
         
     except Order.DoesNotExist:
         return JsonResponse({'error': '주문을 찾을 수 없습니다.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def update_tracking_info(request, order_id):
+    """택배 정보 업데이트 API"""
+    if request.method != 'POST':
+        return JsonResponse({'error': '잘못된 요청입니다.'}, status=405)
+    
+    try:
+        # JSON 데이터 파싱
+        data = json.loads(request.body)
+        courier_company = data.get('courier_company', '').strip()
+        tracking_number = data.get('tracking_number', '').strip()
+        
+        # 주문 조회
+        order = Order.objects.get(id=order_id)
+        
+        # 권한 확인 (스토어 주인만 변경 가능)
+        if order.store.owner != request.user:
+            return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+        
+        # 택배 정보 업데이트
+        order.courier_company = courier_company
+        order.tracking_number = tracking_number
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'courier_company': order.courier_company,
+            'tracking_number': order.tracking_number
+        })
+        
+    except Order.DoesNotExist:
+        return JsonResponse({'error': '주문을 찾을 수 없습니다.'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': '잘못된 JSON 형식입니다.'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

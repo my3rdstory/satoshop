@@ -182,4 +182,36 @@ except Exception as e:
     print('📝 빌드는 계속 진행됩니다.')
 " || echo "⚠️ 라이트닝 테스트를 건너뛰고 빌드를 계속합니다."
 
+echo "🔧 누락된 PurchaseHistory 생성 중..."
+python manage.py shell -c "
+from orders.models import Order, PurchaseHistory
+from django.db import transaction
+
+print('누락된 PurchaseHistory 확인 중...')
+
+paid_orders = Order.objects.filter(status='paid')
+total_orders = paid_orders.count()
+missing_count = 0
+created_count = 0
+
+with transaction.atomic():
+    for order in paid_orders:
+        if not PurchaseHistory.objects.filter(order=order).exists():
+            missing_count += 1
+            try:
+                PurchaseHistory.objects.create(
+                    user=order.user,
+                    order=order,
+                    store_name=order.store.store_name,
+                    total_amount=order.total_amount,
+                    purchase_date=order.paid_at or order.created_at
+                )
+                created_count += 1
+            except Exception as e:
+                print(f'오류: {order.order_number} - {e}')
+
+print(f'✅ PurchaseHistory 생성 완료: {created_count}/{missing_count}건')
+print(f'📊 총 PurchaseHistory: {PurchaseHistory.objects.count()}건')
+"
+
 echo "✅ 빌드 완료! satoshop-dev 프로젝트가 배포 준비되었습니다."

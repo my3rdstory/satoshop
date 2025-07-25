@@ -160,8 +160,8 @@ class Order(models.Model):
     ]
     
     DELIVERY_STATUS_CHOICES = [
-        ('preparing', '배송준비중'),
-        ('completed', '배송완료'),
+        ('preparing', '발송준비중'),
+        ('completed', '발송완료'),
     ]
     
     # 주문 기본 정보
@@ -174,7 +174,15 @@ class Order(models.Model):
     )
     delivery_status = models.CharField(
         max_length=20, choices=DELIVERY_STATUS_CHOICES,
-        default='preparing', verbose_name='배송 상태'
+        default='preparing', verbose_name='발송 상태'
+    )
+    
+    # 택배 정보
+    courier_company = models.CharField(
+        max_length=50, blank=True, verbose_name='택배사명'
+    )
+    tracking_number = models.CharField(
+        max_length=100, blank=True, verbose_name='송장번호'
     )
     
     # 주문자 정보
