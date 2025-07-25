@@ -13,15 +13,27 @@
 /* 테이블 전체 화면 사용 */
 .overflow-x-auto {
   width: 100% !important;
+  overflow-x: auto !important;
 }
 
 #orders-section {
   width: 100% !important;
 }
 
-/* 테이블 최소 너비 설정 */
+/* 테이블 최소 너비 설정 - 스크롤 가능하도록 */
 table {
-  min-width: 1100px !important;
+  min-width: 1400px !important;
+  width: 100% !important;
+}
+
+/* 날짜 필터링 섹션도 전체 너비 */
+.bg-white.dark\:bg-gray-800 {
+  width: 100% !important;
+}
+
+/* 컨테이너 전체 화면 사용 */
+.bg-gray-50.dark\:bg-gray-900 > div {
+  max-width: 100% !important;
 }
 
 /* 주문번호 컬럼 너비 제한 */

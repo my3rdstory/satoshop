@@ -10,7 +10,7 @@
 
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="w-full px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
       <div class="flex items-center mb-4 lg:mb-0">
@@ -218,7 +218,7 @@
     </div>
 
     <!-- 주문 내역 -->
-    <div id="orders-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div id="orders-section" class="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <!-- 헤더 -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
         <div class="flex items-center justify-between">
@@ -243,8 +243,8 @@
       <div class="p-6">
         {% if page_obj or order_items %}
         <!-- 테이블 -->
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="w-full overflow-x-auto">
+          <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문번호</th>
