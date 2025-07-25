@@ -36,17 +36,16 @@ table {
   max-width: 100% !important;
 }
 
-/* 주문번호 컬럼 너비 제한 */
+/* 주문번호 컬럼 너비 설정 */
 th:first-child,
 td:first-child {
-  max-width: 200px;
-  word-break: break-all;
+  min-width: 250px;
 }
 
-/* 주문일시 컬럼 너비 제한 */
+/* 주문일시 컬럼 너비 설정 */
 th:nth-child(6),
 td:nth-child(6) {
-  max-width: 100px;
+  min-width: 150px;
 }
 
 /* 택배 정보 입력 필드 스타일 */
