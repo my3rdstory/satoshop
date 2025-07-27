@@ -166,17 +166,17 @@ def process_meme_image(image_file: UploadedFile, max_width: int = 1000) -> Dict[
 
 
 def create_meme_thumbnail(image_file: ContentFile, target_ratio: Tuple[int, int] = (4, 3), 
-                         target_width: int = 300) -> Dict[str, Any]:
+                         target_width: int = 200) -> Dict[str, Any]:
     """
     밈 썸네일을 생성합니다.
     - 4:3 비율로 크롭
-    - 300px 너비로 리사이즈
+    - 200px 너비로 리사이즈
     - WebP 포맷으로 저장
     
     Args:
         image_file: 처리된 이미지 파일
         target_ratio: 목표 비율 (기본값: 4:3)
-        target_width: 목표 너비 (기본값: 300px)
+        target_width: 목표 너비 (기본값: 200px)
     
     Returns:
         썸네일 생성 결과
@@ -218,9 +218,9 @@ def create_meme_thumbnail(image_file: ContentFile, target_ratio: Tuple[int, int]
             # ImageOps.fit을 사용하여 비율 맞춰 크롭 및 리사이즈
             thumbnail = ImageOps.fit(img, target_size, Image.Resampling.LANCZOS)
             
-            # WebP로 저장
+            # WebP로 저장 (썸네일은 더 낮은 품질로 저장하여 용량 절약)
             output = io.BytesIO()
-            thumbnail.save(output, format='WebP', quality=85, method=6)
+            thumbnail.save(output, format='WebP', quality=80, method=6)
             output.seek(0)
             
             # 썸네일 파일명 생성

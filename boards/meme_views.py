@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
@@ -310,3 +310,36 @@ def get_tag_cloud(request):
     ]
     
     return JsonResponse({'tags': tag_data})
+
+
+@require_POST
+def meme_increment_stat(request, pk):
+    """밈 통계를 증가시킵니다."""
+    meme = get_object_or_404(MemePost, pk=pk, is_active=True)
+    
+    # 요청에서 통계 타입 가져오기
+    try:
+        data = json.loads(request.body)
+        stat_type = data.get('type')
+    except:
+        return JsonResponse({'error': '잘못된 요청입니다.'}, status=400)
+    
+    # 통계 타입별로 증가
+    if stat_type == 'list_copy':
+        meme.list_copy_count = F('list_copy_count') + 1
+    elif stat_type == 'list_view':
+        meme.list_view_count = F('list_view_count') + 1
+    elif stat_type == 'detail_copy':
+        meme.detail_copy_count = F('detail_copy_count') + 1
+    else:
+        return JsonResponse({'error': '잘못된 통계 타입입니다.'}, status=400)
+    
+    meme.save(update_fields=[f'{stat_type}_count'])
+    
+    # 최신 값을 가져오기 위해 refresh
+    meme.refresh_from_db()
+    
+    return JsonResponse({
+        'success': True,
+        'count': getattr(meme, f'{stat_type}_count')
+    })

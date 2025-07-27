@@ -1,7 +1,46 @@
 // 밈 갤러리 리스트 JavaScript
 
+// 통계 업데이트 함수
+async function updateMemeStats(memeId, statType) {
+    try {
+        const response = await fetch(`/boards/meme/${memeId}/stat/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ type: statType })
+        });
+        
+        if (!response.ok) {
+            throw new Error('통계 업데이트 실패');
+        }
+        
+        const data = await response.json();
+        console.log(`${statType} count updated:`, data.count);
+    } catch (error) {
+        console.error('통계 업데이트 오류:', error);
+    }
+}
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // 이미지 복사 기능
-async function copyMemeImage(imageUrl, title) {
+async function copyMemeImage(imageUrl, title, memeId) {
     try {
         // 이미지를 fetch로 가져오기
         const response = await fetch(imageUrl);
@@ -36,6 +75,11 @@ async function copyMemeImage(imageUrl, title) {
         // 메모리 정리
         URL.revokeObjectURL(img.src);
         
+        // 통계 업데이트
+        if (memeId) {
+            updateMemeStats(memeId, 'list_copy');
+        }
+        
         // 성공 메시지
         showNotification('이미지가 클립보드에 복사되었습니다!', 'success');
     } catch (error) {
@@ -58,6 +102,9 @@ function showMemeModal(imageUrl, title, memeId) {
     modalImage.alt = title;
     modalTitle.textContent = title;
     modalDetailLink.href = `/boards/meme/${memeId}/`;
+    
+    // 통계 업데이트
+    updateMemeStats(memeId, 'list_view');
     
     modal.classList.add('show');
     document.body.style.overflow = 'hidden';

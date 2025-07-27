@@ -25,4 +25,5 @@ urlpatterns = [
     path('meme/<int:pk>/delete/', meme_views.meme_delete, name='meme_delete'),
     path('meme/upload/', meme_views.meme_upload_image, name='meme_upload_image'),
     path('meme/tags/', meme_views.get_tag_cloud, name='meme_tag_cloud'),
+    path('meme/<int:pk>/stat/', meme_views.meme_increment_stat, name='meme_increment_stat'),
 ] 
