@@ -1,0 +1,106 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}밈 등록{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static_v 'css/meme_create.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="meme-form-container">
+    <div class="form-header">
+        <h1 class="form-title">밈 등록</h1>
+        <a href="{% url 'boards:meme_list' %}" class="btn-back">
+            <!-- Heroicon: arrow-left -->
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            목록으로
+        </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="meme-form">
+        {% csrf_token %}
+        
+        <!-- 제목 입력 -->
+        <div class="form-group">
+            <label for="id_title" class="form-label">제목</label>
+            {{ form.title }}
+            {% if form.title.errors %}
+            <div class="error-message">{{ form.title.errors.0 }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 이미지 업로드 (드래그&드롭) -->
+        <div class="form-group">
+            <label class="form-label">이미지</label>
+            <div id="dropZone" class="drop-zone">
+                <input type="file" name="image" id="imageInput" accept=".jpg,.jpeg,.png,.gif,.webp" class="hidden">
+                <div class="drop-zone-content">
+                    <!-- Heroicon: photograph -->
+                    <svg class="drop-zone-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <p class="drop-zone-text">이미지를 드래그하여 놓거나 클릭하여 선택하세요</p>
+                    <p class="drop-zone-hint">JPG, JPEG, PNG, GIF, WebP (최대 10MB)</p>
+                </div>
+                <div id="imagePreview" class="image-preview hidden">
+                    <img id="previewImg" src="" alt="미리보기">
+                    <button type="button" class="remove-image" onclick="removeImage()">
+                        <!-- Heroicon: x -->
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 태그 선택 -->
+        <div class="form-group">
+            <label class="form-label">태그</label>
+            <div class="tags-container">
+                <!-- 기존 태그 -->
+                <div class="existing-tags">
+                    <h3 class="tags-subtitle">기존 태그</h3>
+                    <div class="tag-checkboxes">
+                        {% for tag in form.tags %}
+                        <label class="tag-checkbox">
+                            {{ tag.tag }}
+                            <span class="tag-label">{{ tag.choice_label }}</span>
+                        </label>
+                        {% empty %}
+                        <p class="no-tags">등록된 태그가 없습니다</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- 새 태그 -->
+                <div class="new-tags">
+                    <h3 class="tags-subtitle">새 태그 추가</h3>
+                    {{ form.new_tags }}
+                    <p class="form-help">{{ form.new_tags.help_text }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 제출 버튼 -->
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <!-- Heroicon: upload -->
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
+                밈 등록
+            </button>
+            <a href="{% url 'boards:meme_list' %}" class="btn-cancel">취소</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static_v 'js/meme_create.js' %}"></script>
+{% endblock %}

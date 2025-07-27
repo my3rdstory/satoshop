@@ -1,0 +1,214 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}밈 삭제 - {{ meme.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.delete-container {
+    max-width: 600px;
+    margin: 4rem auto;
+    padding: 0 1rem;
+}
+
+.delete-card {
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    text-align: center;
+}
+
+.delete-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1.5rem;
+    color: #ef4444;
+}
+
+.delete-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+
+.delete-message {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.meme-info {
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+.meme-info-title {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.meme-thumbnail {
+    max-width: 200px;
+    max-height: 150px;
+    width: auto;
+    height: auto;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.warning-box {
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+.warning-text {
+    color: #991b1b;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.delete-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn-confirm-delete,
+.btn-cancel {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-confirm-delete {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-confirm-delete:hover {
+    background: #dc2626;
+}
+
+.btn-cancel {
+    background: white;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.btn-cancel:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.confirmation-step {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.checkbox-container input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+}
+
+.checkbox-label {
+    font-size: 0.875rem;
+    color: #374151;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-container">
+    <div class="delete-card">
+        <!-- Heroicon: exclamation -->
+        <svg class="delete-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+        
+        <h1 class="delete-title">밈 삭제 확인</h1>
+        <p class="delete-message">정말로 이 밈을 삭제하시겠습니까?</p>
+        
+        <div class="meme-info">
+            <div class="meme-info-title">{{ meme.title }}</div>
+            <img src="{{ meme.thumbnail_url }}" alt="{{ meme.title }}" class="meme-thumbnail">
+        </div>
+        
+        <div class="warning-box">
+            <p class="warning-text">
+                ⚠️ 주의: 삭제된 밈은 복구할 수 없으며, 오브젝트 스토리지에서도 완전히 삭제됩니다.
+            </p>
+        </div>
+        
+        <div class="confirmation-step">
+            <form method="post" id="deleteForm">
+                {% csrf_token %}
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="confirmCheck" name="confirm" required>
+                    <label for="confirmCheck" class="checkbox-label">
+                        위 내용을 확인했으며, 삭제에 동의합니다.
+                    </label>
+                </div>
+                
+                <div class="delete-actions">
+                    <button type="submit" class="btn-confirm-delete" id="deleteBtn" disabled>
+                        삭제하기
+                    </button>
+                    <a href="{% url 'boards:meme_detail' meme.pk %}" class="btn-cancel">
+                        취소
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmCheck = document.getElementById('confirmCheck');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const deleteForm = document.getElementById('deleteForm');
+    
+    // 체크박스 상태에 따라 버튼 활성화/비활성화
+    confirmCheck.addEventListener('change', function() {
+        deleteBtn.disabled = !this.checked;
+    });
+    
+    // 폼 제출시 최종 확인
+    deleteForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (confirm('정말로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+            // 버튼 비활성화 및 로딩 표시
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '삭제 중...';
+            this.submit();
+        }
+    });
+});
+</script>
+{% endblock %}
