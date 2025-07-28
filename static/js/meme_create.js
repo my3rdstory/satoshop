@@ -46,6 +46,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // 클립보드 붙여넣기 이벤트 (Ctrl+V)
+    document.addEventListener('paste', function(e) {
+        const items = e.clipboardData.items;
+        
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            
+            // 이미지 타입 체크
+            if (item.type.indexOf('image') !== -1) {
+                e.preventDefault();
+                
+                // 클립보드의 이미지를 File 객체로 변환
+                const blob = item.getAsFile();
+                if (blob) {
+                    // 파일명 생성
+                    const filename = 'clipboard_' + new Date().getTime() + '.' + blob.type.split('/')[1];
+                    const file = new File([blob], filename, { type: blob.type });
+                    
+                    // 기존 파일 처리 함수 사용
+                    handleFile(file);
+                }
+                break;
+            }
+        }
+    });
+    
     // 파일 처리
     function handleFile(file) {
         // 파일 타입 체크
