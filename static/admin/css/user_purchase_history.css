@@ -1,0 +1,21 @@
+/* 사용자별 구매 내역 - 주문 인라인 테이블 스타일 */
+.inline-group .tabular tr.has_original td {
+    padding: 10px 8px !important;
+    vertical-align: middle !important;
+}
+
+.inline-group .tabular td.field-order_number_wrap {
+    max-width: 250px !important;
+    min-width: 200px !important;
+}
+
+/* 주문번호가 있는 첫 번째 열의 높이 조정 */
+.inline-group .tabular tr {
+    height: auto !important;
+    min-height: 50px;
+}
+
+/* 모든 텍스트가 잘 보이도록 */
+.inline-group .tabular td {
+    line-height: 1.4 !important;
+}
