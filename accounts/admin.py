@@ -6,6 +6,8 @@ from django.urls import reverse
 from django.db import models
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
+from django.http import HttpResponse
+import csv
 from .models import LightningUser, UserPurchaseHistory
 
 
@@ -177,6 +179,25 @@ class OrderInline(admin.TabularInline):
         return super().get_queryset(request).select_related('store').order_by('-created_at')
 
 
+class HasOrdersFilter(admin.SimpleListFilter):
+    """주문 보유 여부 필터"""
+    title = '주문 보유'
+    parameter_name = 'has_orders'
+    
+    def lookups(self, request, model_admin):
+        return (
+            ('yes', '주문 있음'),
+            ('no', '주문 없음'),
+        )
+    
+    def queryset(self, request, queryset):
+        if self.value() == 'yes':
+            return queryset.filter(orders__status='paid').distinct()
+        elif self.value() == 'no':
+            return queryset.exclude(orders__status='paid').distinct()
+        return queryset
+
+
 @admin.register(UserPurchaseHistory)
 class UserPurchaseHistoryAdmin(admin.ModelAdmin):
     """사용자별 구매 내역 조회"""
@@ -188,10 +209,20 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
     
     # 리스트 뷰는 사용하지 않고 바로 검색창으로
     list_display = ['username', 'email', 'total_orders', 'total_spent', 'date_joined']
-    list_filter = []
+    list_filter = [HasOrdersFilter]
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering = ['-id']
+    
+    def get_ordering(self, request):
+        """정렬 옵션 제공"""
+        ordering = super().get_ordering(request)
+        # URL 파라미터로 정렬 옵션 확인
+        if request.GET.get('o'):
+            return ordering
+        # 기본값 또는 커스텀 정렬
+        return ordering
     list_per_page = 20
+    actions = ['export_as_csv']
     
     # 인라인으로 주문 내역 표시
     inlines = [OrderInline]
@@ -221,6 +252,7 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
         return format_html('<span style="font-weight: bold;">{}</span>', count)
     total_orders.short_description = '총 주문 수'
     total_orders.admin_order_field = 'order_count'
+    total_orders.empty_value_display = '0'
     
     def total_spent(self, obj):
         """총 구매 금액"""
@@ -233,6 +265,8 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
             )['total'] or 0
         return format_html('<span style="color: #28a745; font-weight: bold;">{} sats</span>', f"{total:,}")
     total_spent.short_description = '총 구매 금액'
+    total_spent.admin_order_field = 'total_spent_amount'
+    total_spent.empty_value_display = '0 sats'
     
     def get_queryset(self, request):
         """User 모델을 사용 - 쿼리 최적화"""
@@ -262,6 +296,52 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
     def get_readonly_fields(self, request, obj=None):
         """모든 필드를 읽기 전용으로"""
         return [f.name for f in User._meta.fields]
+    
+    def export_as_csv(self, request, queryset):
+        """선택된 사용자들의 구매 내역을 CSV로 내보내기"""
+        meta = self.model._meta
+        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+        response['Content-Disposition'] = 'attachment; filename=user_purchase_history.csv'
+        response.write('\ufeff')  # UTF-8 BOM 추가
+        
+        writer = csv.writer(response)
+        
+        # 헤더 작성
+        writer.writerow([
+            '사용자명', '이메일', '이름', '가입일', 
+            '총 주문 수', '총 구매 금액(sats)', '마지막 구매일'
+        ])
+        
+        # 데이터 작성
+        for user in queryset:
+            orders = user.orders.filter(status='paid')
+            total_orders = orders.count()
+            total_amount = orders.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
+            last_purchase = orders.order_by('-paid_at').first()
+            last_purchase_date = last_purchase.paid_at if last_purchase else None
+            
+            writer.writerow([
+                user.username,
+                user.email,
+                f"{user.first_name} {user.last_name}".strip() or '-',
+                user.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                total_orders,
+                total_amount,
+                last_purchase_date.strftime('%Y-%m-%d %H:%M:%S') if last_purchase_date else '-'
+            ])
+        
+        return response
+    
+    export_as_csv.short_description = 'CSV로 내보내기'
+    
+    def changelist_view(self, request, extra_context=None):
+        """리스트 뷰에 추가 버튼 표시"""
+        extra_context = extra_context or {}
+        
+        # 전체 다운로드 URL 추가
+        extra_context['has_export_all'] = True
+        
+        return super().changelist_view(request, extra_context)
 
 
 
