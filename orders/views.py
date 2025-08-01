@@ -322,7 +322,8 @@ def order_management(request, store_id):
     # 상품별 판매 현황 (선택된 월 기준)
     from django.db.models import F
     products_with_orders = Product.objects.filter(
-        store=store
+        store=store,
+        is_active=True
     ).annotate(
         total_orders=Count('orderitem__order', distinct=True, filter=Q(
             orderitem__order__created_at__gte=month_start,
@@ -339,7 +340,7 @@ def order_management(request, store_id):
                 orderitem__order__created_at__lt=month_end
             )
         )
-    ).filter(total_orders__gt=0).order_by('-total_revenue')
+    ).order_by('-total_revenue', '-created_at')
     
     context = {
         'store': store,
