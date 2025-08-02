@@ -23,7 +23,7 @@ class MemeListView(ListView):
     model = MemePost
     template_name = 'boards/meme/list.html'
     context_object_name = 'memes'
-    paginate_by = 30  # 6개 x 5줄
+    paginate_by = 15  # 5개 x 3줄
     
     def get_queryset(self):
         queryset = MemePost.objects.filter(is_active=True).select_related('author').prefetch_related('tags')
