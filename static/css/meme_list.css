@@ -319,6 +319,55 @@
     gap: 0.5rem;
 }
 
+.page-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-card-bg);
+    border: 1px solid var(--meme-border);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.page-arrow:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+    color: var(--meme-text);
+}
+
+.page-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-card-bg);
+    border: 1px solid var(--meme-border);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.page-number:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+    color: var(--meme-text);
+}
+
+.page-number.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    cursor: default;
+}
+
 .page-link {
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
