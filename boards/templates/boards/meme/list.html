@@ -126,17 +126,32 @@
     <div class="pagination">
         <div class="pagination-inner">
             {% if page_obj.has_previous %}
-            <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-link">처음</a>
-            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-link">이전</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-arrow">
+                <!-- Heroicon: chevron-left -->
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
             {% endif %}
             
-            <span class="page-info">
-                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-            </span>
+            <!-- 페이지 번호들 -->
+            {% for page_num in page_obj.paginator.page_range %}
+                {% if page_num > page_obj.number|add:"-3" and page_num < page_obj.number|add:"3" %}
+                    {% if page_num == page_obj.number %}
+                    <span class="page-number active">{{ page_num }}</span>
+                    {% else %}
+                    <a href="?page={{ page_num }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-number">{{ page_num }}</a>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
             
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-link">다음</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-link">마지막</a>
+            <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if selected_tag %}&tag={{ selected_tag }}{% endif %}" class="page-arrow">
+                <!-- Heroicon: chevron-right -->
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
             {% endif %}
         </div>
     </div>
