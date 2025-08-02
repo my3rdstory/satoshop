@@ -115,8 +115,9 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
         const submitBtn = form.querySelector('.btn-submit');
         
-        // 이미지 필수 체크
-        if (!imageInput.files.length) {
+        // 이미지 필수 체크 (수정 페이지가 아닌 경우에만)
+        const isEditPage = window.location.pathname.includes('/edit/');
+        if (!isEditPage && !imageInput.files.length) {
             e.preventDefault();
             alert('이미지를 선택해주세요.');
             return;
