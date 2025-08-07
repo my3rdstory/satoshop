@@ -60,3 +60,14 @@ class LightningUser(models.Model):
             lightning_user.update_last_login()
             
             return user, True  # 새 사용자
+
+
+from django.contrib.auth.models import User as DjangoUser
+
+
+class UserPurchaseHistory(DjangoUser):
+    """사용자 구매 내역 조회용 Proxy 모델"""
+    class Meta:
+        proxy = True
+        verbose_name = '사용자별 구매 내역'
+        verbose_name_plural = '사용자별 구매 내역'

@@ -185,3 +185,6 @@ store_encryption.key
 # Temporary files
 temp/
 tmp/
+
+# YoYo AI version control directory
+.yoyo/

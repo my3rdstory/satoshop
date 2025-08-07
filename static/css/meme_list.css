@@ -1,0 +1,554 @@
+/* 밈 갤러리 리스트 스타일 */
+
+.meme-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* 다크모드 변수 */
+:root {
+    --meme-bg: white;
+    --meme-text: #1f2937;
+    --meme-text-secondary: #6b7280;
+    --meme-border: #e5e7eb;
+    --meme-hover-bg: #f9fafb;
+    --meme-card-bg: white;
+    --meme-input-bg: white;
+    --meme-modal-bg: rgba(0, 0, 0, 0.9);
+    --meme-tag-bg: #f3f4f6;
+}
+
+[data-theme="dark"] {
+    --meme-bg: #1f2937;
+    --meme-text: #f9fafb;
+    --meme-text-secondary: #d1d5db;
+    --meme-border: #374151;
+    --meme-hover-bg: #374151;
+    --meme-card-bg: #111827;
+    --meme-input-bg: #374151;
+    --meme-modal-bg: rgba(0, 0, 0, 0.95);
+    --meme-tag-bg: #374151;
+}
+
+/* 헤더 섹션 */
+.meme-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 0;
+    margin: -1rem -1rem 2rem;
+    border-radius: 0 0 1rem 1rem;
+}
+
+.meme-header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    text-align: center;
+}
+
+.meme-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.meme-title-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.meme-subtitle {
+    font-size: 1.125rem;
+    opacity: 0.9;
+}
+
+/* 검색 및 컨트롤 */
+.meme-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--meme-text-secondary);
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--meme-border);
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    background: var(--meme-input-bg);
+    color: var(--meme-text);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.control-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-meme {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.btn-outline {
+    background: var(--meme-card-bg);
+    color: var(--meme-text-secondary);
+    border-color: var(--meme-border);
+}
+
+.btn-outline:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5a67d8;
+}
+
+/* 선택된 태그 정보 */
+.selected-tag-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--meme-tag-bg);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tag-label {
+    font-size: 0.875rem;
+    color: var(--meme-text-secondary);
+}
+
+.tag-name {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.clear-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-left: auto;
+    color: var(--meme-text-secondary);
+    transition: all 0.2s;
+}
+
+.clear-tag:hover {
+    color: #ef4444;
+}
+
+/* 밈 그리드 */
+.meme-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1280px) {
+    .meme-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (max-width: 1024px) {
+    .meme-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .meme-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .meme-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.meme-card {
+    background: var(--meme-card-bg);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    border: 1px solid var(--meme-border);
+}
+
+.meme-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.meme-image-wrapper {
+    position: relative;
+    padding-bottom: 75%; /* 4:3 비율 */
+    background: var(--meme-tag-bg);
+}
+
+.meme-thumbnail {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.meme-info {
+    padding: 0.75rem;
+}
+
+.meme-card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--meme-text);
+}
+
+.meme-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-tag-bg);
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action:hover {
+    background: var(--meme-hover-bg);
+    color: var(--meme-text);
+}
+
+/* 빈 상태 */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state p {
+    font-size: 1.125rem;
+    color: var(--meme-text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* 페이지네이션 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.pagination-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.page-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-card-bg);
+    border: 1px solid var(--meme-border);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.page-arrow:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+    color: var(--meme-text);
+}
+
+.page-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-card-bg);
+    border: 1px solid var(--meme-border);
+    border-radius: 50%;
+    text-decoration: none;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.page-number:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+    color: var(--meme-text);
+}
+
+.page-number.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    cursor: default;
+}
+
+.page-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--meme-text-secondary);
+    background: var(--meme-card-bg);
+    border: 1px solid var(--meme-border);
+    border-radius: 0.375rem;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background: var(--meme-hover-bg);
+    border-color: var(--meme-text-secondary);
+}
+
+.page-info {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    color: var(--meme-text);
+    font-weight: 500;
+}
+
+/* 크게보기 모달 */
+.meme-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    padding: 2rem;
+    overflow: auto;
+}
+
+.meme-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    position: relative;
+    max-width: 90vw;
+    max-height: 90vh;
+    background: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.modal-close:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: calc(90vh - 4rem);
+    object-fit: contain;
+}
+
+.modal-footer {
+    padding: 1rem;
+    background: var(--meme-card-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--meme-text);
+}
+
+.modal-detail-link {
+    font-size: 0.875rem;
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.modal-detail-link:hover {
+    color: #5a67d8;
+}
+
+/* 태그 클라우드 모달 */
+.tag-cloud-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    padding: 2rem;
+}
+
+.tag-cloud-modal.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-cloud-content {
+    background: var(--meme-card-bg);
+    border-radius: 0.5rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.tag-cloud-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--meme-border);
+}
+
+.tag-cloud-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--meme-text);
+}
+
+.tag-cloud-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tag-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: var(--meme-tag-bg);
+    color: var(--meme-text-secondary);
+    border-radius: 9999px;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.tag-item:hover {
+    background: #667eea;
+    color: white;
+}
+
+.tag-count {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}

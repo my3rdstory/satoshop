@@ -160,8 +160,8 @@ class Order(models.Model):
     ]
     
     DELIVERY_STATUS_CHOICES = [
-        ('preparing', '배송준비중'),
-        ('completed', '배송완료'),
+        ('preparing', '발송준비중'),
+        ('completed', '발송완료'),
     ]
     
     # 주문 기본 정보
@@ -174,7 +174,15 @@ class Order(models.Model):
     )
     delivery_status = models.CharField(
         max_length=20, choices=DELIVERY_STATUS_CHOICES,
-        default='preparing', verbose_name='배송 상태'
+        default='preparing', verbose_name='발송 상태'
+    )
+    
+    # 택배 정보
+    courier_company = models.CharField(
+        max_length=50, blank=True, verbose_name='택배사명'
+    )
+    tracking_number = models.CharField(
+        max_length=100, blank=True, verbose_name='송장번호'
     )
     
     # 주문자 정보
@@ -217,6 +225,8 @@ class Order(models.Model):
             models.Index(fields=['store', 'created_at']),
             models.Index(fields=['status']),
             models.Index(fields=['order_number']),
+            models.Index(fields=['user', 'status']),  # 사용자별 상태 조회 최적화
+            models.Index(fields=['user', 'status', 'created_at']),  # 사용자별 구매 내역 조회 최적화
         ]
     
     def __str__(self):
@@ -308,7 +318,7 @@ class PurchaseHistory(models.Model):
     # 개인정보 보호를 위한 자동 삭제 필드
     auto_delete_at = models.DateTimeField(
         verbose_name='자동 삭제 예정일',
-        help_text='구매 후 3개월 뒤 자동 삭제'
+        help_text='구매 후 1년 뒤 자동 삭제'
     )
     
     class Meta:
@@ -328,9 +338,9 @@ class PurchaseHistory(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.auto_delete_at and self.purchase_date:
-            # 구매 날짜로부터 3개월 뒤 자동 삭제 날짜 설정
+            # 구매 날짜로부터 1년 뒤 자동 삭제 날짜 설정
             from datetime import timedelta
-            self.auto_delete_at = self.purchase_date + timedelta(days=90)
+            self.auto_delete_at = self.purchase_date + timedelta(days=365)
         super().save(*args, **kwargs)
 
 

@@ -331,6 +331,53 @@ function getCookie(name) {
     return cookieValue;
 }
 
+// 택배 정보 업데이트 함수
+async function updateTrackingInfo(orderId, field, value) {
+    try {
+        // 현재 입력 필드의 택배사명과 송장번호 값 가져오기
+        const courierInput = document.querySelector(`input[data-order-id="${orderId}"][data-field="courier_company"]`);
+        const trackingInput = document.querySelector(`input[data-order-id="${orderId}"][data-field="tracking_number"]`);
+        
+        const courierCompany = courierInput ? courierInput.value : '';
+        const trackingNumber = trackingInput ? trackingInput.value : '';
+        
+        const response = await fetch(`/orders/orders/${orderId}/update-tracking/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                courier_company: courierCompany,
+                tracking_number: trackingNumber
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // 입력 필드에 성공 표시
+            const input = document.querySelector(`input[data-order-id="${orderId}"][data-field="${field}"]`);
+            if (input) {
+                input.classList.add('border-green-500');
+                setTimeout(() => {
+                    input.classList.remove('border-green-500');
+                }, 2000);
+            }
+        } else {
+            alert('택배 정보 저장에 실패했습니다.');
+        }
+    } catch (error) {
+        console.error('택배 정보 업데이트 오류:', error);
+        alert('택배 정보 저장 중 오류가 발생했습니다.');
+    }
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     updateFilterButtons(); // 이 함수 안에서 updateCsvDownloadLink()도 호출됨
@@ -354,4 +401,51 @@ document.addEventListener('DOMContentLoaded', function() {
     // 날짜 입력 필드 변경 시에도 CSV 링크 업데이트
     document.getElementById('start_date').addEventListener('change', updateCsvDownloadLink);
     document.getElementById('end_date').addEventListener('change', updateCsvDownloadLink);
+    
+    // 택배 정보 입력 필드에 이벤트 리스너 추가
+    function attachTrackingEvents() {
+        const trackingInputs = document.querySelectorAll('.tracking-courier, .tracking-number');
+        trackingInputs.forEach(input => {
+            // 기존 이벤트 리스너 제거
+            input.removeEventListener('keypress', handleTrackingKeypress);
+            input.removeEventListener('blur', handleTrackingBlur);
+            
+            // 새 이벤트 리스너 추가
+            input.addEventListener('keypress', handleTrackingKeypress);
+            input.addEventListener('blur', handleTrackingBlur);
+        });
+    }
+    
+    // Enter 키 이벤트 핸들러
+    function handleTrackingKeypress(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const orderId = e.target.dataset.orderId;
+            const field = e.target.dataset.field;
+            updateTrackingInfo(orderId, field, e.target.value);
+        }
+    }
+    
+    // 포커스 아웃 이벤트 핸들러
+    function handleTrackingBlur(e) {
+        const orderId = e.target.dataset.orderId;
+        const field = e.target.dataset.field;
+        const originalValue = e.target.defaultValue || '';
+        
+        // 값이 변경된 경우에만 업데이트
+        if (e.target.value !== originalValue) {
+            updateTrackingInfo(orderId, field, e.target.value);
+            e.target.defaultValue = e.target.value; // 새 값을 기본값으로 설정
+        }
+    }
+    
+    // 초기 이벤트 연결
+    attachTrackingEvents();
+    
+    // AJAX로 새 컨텐츠가 로드될 때마다 이벤트 재연결
+    const originalAttachPaginationEvents = attachPaginationEvents;
+    window.attachPaginationEvents = function() {
+        originalAttachPaginationEvents();
+        attachTrackingEvents();
+    };
 }); 

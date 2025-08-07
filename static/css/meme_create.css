@@ -1,0 +1,340 @@
+/* 밈 등록/수정 폼 스타일 */
+
+/* 다크모드 변수 */
+:root {
+    --form-bg: white;
+    --form-text: #1f2937;
+    --form-text-secondary: #6b7280;
+    --form-border: #e5e7eb;
+    --form-hover-bg: #f9fafb;
+    --form-card-bg: white;
+    --form-input-bg: white;
+    --form-tag-bg: #f3f4f6;
+    --form-error: #ef4444;
+}
+
+[data-theme="dark"] {
+    --form-bg: #1f2937;
+    --form-text: #f9fafb;
+    --form-text-secondary: #d1d5db;
+    --form-border: #4b5563;
+    --form-hover-bg: #374151;
+    --form-card-bg: #111827;
+    --form-input-bg: #1f2937;
+    --form-tag-bg: #374151;
+    --form-error: #f87171;
+}
+
+.meme-form-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--form-border);
+}
+
+.form-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--form-text);
+    margin: 0;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: var(--form-text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    color: var(--form-text);
+}
+
+.meme-form {
+    background: var(--form-card-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    border: 1px solid var(--form-border);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--form-text);
+}
+
+.error-message {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--form-error);
+}
+
+/* 드래그&드롭 영역 */
+.drop-zone {
+    position: relative;
+    border: 2px dashed var(--form-border);
+    border-radius: 0.5rem;
+    padding: 3rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: var(--form-hover-bg);
+}
+
+.drop-zone:hover {
+    border-color: var(--form-text-secondary);
+    background: var(--form-tag-bg);
+}
+
+.drop-zone.drag-over {
+    border-color: #667eea;
+    background: #ede9fe;
+}
+
+.hidden {
+    display: none;
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.drop-zone-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    color: var(--form-text-secondary);
+}
+
+.drop-zone-text {
+    font-size: 1rem;
+    color: var(--form-text);
+    margin-bottom: 0.5rem;
+}
+
+.drop-zone-hint {
+    font-size: 0.875rem;
+    color: var(--form-text-secondary);
+}
+
+/* 이미지 미리보기 */
+.image-preview {
+    position: relative;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.image-preview img {
+    width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+}
+
+.remove-image {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.remove-image:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+/* 태그 컨테이너 */
+.tags-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+@media (max-width: 640px) {
+    .tags-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.existing-tags,
+.new-tags {
+    background: var(--form-hover-bg);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid var(--form-border);
+}
+
+.tags-subtitle {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--form-text);
+    margin-bottom: 0.75rem;
+}
+
+.tag-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.tag-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+}
+
+.tag-checkbox:hover {
+    background: var(--form-tag-bg);
+}
+
+.tag-checkbox input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.tag-label {
+    font-size: 0.875rem;
+    color: var(--form-text);
+}
+
+.no-tags {
+    font-size: 0.875rem;
+    color: var(--form-text-secondary);
+    text-align: center;
+    padding: 1rem;
+}
+
+.form-help {
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--form-text-secondary);
+}
+
+/* 폼 입력 필드 */
+.form-input,
+input.form-input,
+#id_new_tags,
+#id_title {
+    background: var(--form-input-bg) !important;
+    color: var(--form-text) !important;
+    border: 1px solid var(--form-border) !important;
+}
+
+.form-input:focus,
+input.form-input:focus,
+#id_new_tags:focus,
+#id_title:focus {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
+}
+
+/* 폼 액션 */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--form-border);
+    justify-content: flex-end;
+}
+
+.btn-submit,
+.btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+}
+
+.btn-submit {
+    background: #667eea;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #5a67d8;
+}
+
+.btn-submit:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background: var(--form-card-bg);
+    color: var(--form-text-secondary);
+    border: 1px solid var(--form-border);
+}
+
+.btn-cancel:hover {
+    background: var(--form-hover-bg);
+    border-color: var(--form-text-secondary);
+}
+
+/* 로딩 상태 */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}

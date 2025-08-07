@@ -10,7 +10,7 @@
 
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="w-full px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
       <div class="flex items-center mb-4 lg:mb-0">
@@ -218,7 +218,7 @@
     </div>
 
     <!-- 주문 내역 -->
-    <div id="orders-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div id="orders-section" class="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       <!-- 헤더 -->
       <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6">
         <div class="flex items-center justify-between">
@@ -243,8 +243,8 @@
       <div class="p-6">
         {% if page_obj or order_items %}
         <!-- 테이블 -->
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="w-full overflow-x-auto">
+          <table class="w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead class="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문번호</th>
@@ -254,14 +254,18 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">총액</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">주문일시</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">상태</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">배송상태</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">발송상태</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  송장번호
+                  <span class="text-red-500 normal-case text-xs font-normal">(*입력 후 Enter 치면 즉시 저장)</span>
+                </th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {% for item in page_obj|default:order_items %}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="font-semibold text-gray-900 dark:text-white">{{ item.order.order_number }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white text-sm">{{ item.order.order_number }}</span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.buyer_name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.quantity }}개</td>
@@ -272,7 +276,9 @@
                   </span>
                   <div class="text-xs text-gray-500 dark:text-gray-400">배송비 제외</div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{{ item.order.created_at|date:"Y-m-d H:i:s" }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white text-sm">
+                  {{ item.order.created_at|date:"Y-m-d H:i:s" }}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   {% if item.order.status == 'paid' %}
                   <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
@@ -297,6 +303,26 @@
                     <i class="fas {% if item.order.delivery_status == 'preparing' %}fa-box{% else %}fa-check-circle{% endif %} mr-1"></i>
                     {{ item.order.get_delivery_status_display }}
                   </button>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center space-x-2">
+                    <input 
+                      type="text" 
+                      class="tracking-courier w-24 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="택배사"
+                      value="{{ item.order.courier_company|default:'' }}"
+                      data-order-id="{{ item.order.id }}"
+                      data-field="courier_company"
+                    >
+                    <input 
+                      type="text" 
+                      class="tracking-number w-32 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="송장번호"
+                      value="{{ item.order.tracking_number|default:'' }}"
+                      data-order-id="{{ item.order.id }}"
+                      data-field="tracking_number"
+                    >
+                  </div>
                 </td>
               </tr>
               {% endfor %}

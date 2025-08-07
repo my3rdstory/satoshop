@@ -1246,4 +1246,119 @@ def process_live_lecture_image(image_file, target_size=500) -> Dict[str, Any]:
         return {
             'success': False,
             'error': error_msg
+        }
+
+
+def upload_meme_image(image_file, original_processed_file, thumbnail_file, user) -> Dict[str, Any]:
+    """
+    밈 이미지와 썸네일을 업로드합니다.
+    
+    Args:
+        image_file: 원본 업로드 파일
+        original_processed_file: 처리된 원본 이미지
+        thumbnail_file: 생성된 썸네일
+        user: 업로드하는 사용자
+    
+    Returns:
+        업로드 결과
+        {
+            'success': bool,
+            'original_path': str,
+            'original_url': str,
+            'thumbnail_path': str,
+            'thumbnail_url': str,
+            'file_size': int,
+            'width': int,
+            'height': int,
+            'error': str (실패시)
+        }
+    """
+    try:
+        from boards.models import MemePost
+        
+        # S3 스토리지 인스턴스
+        storage = S3Storage()
+        
+        # 원본 이미지 업로드
+        original_prefix = "memes/originals"
+        original_result = upload_file_to_s3(
+            original_processed_file,
+            prefix=original_prefix,
+            storage=storage
+        )
+        
+        if not original_result['success']:
+            return original_result
+        
+        # 썸네일 업로드
+        thumbnail_prefix = "memes/thumbnails"
+        thumbnail_result = upload_file_to_s3(
+            thumbnail_file,
+            prefix=thumbnail_prefix,
+            storage=storage
+        )
+        
+        if not thumbnail_result['success']:
+            # 원본 삭제
+            delete_file_from_s3(original_result['file_path'], storage)
+            return thumbnail_result
+        
+        # 이미지 크기 정보 가져오기
+        try:
+            original_processed_file.seek(0)
+            with Image.open(original_processed_file) as img:
+                width, height = img.size
+        except:
+            width, height = 0, 0
+        
+        return {
+            'success': True,
+            'original_path': original_result['file_path'],
+            'original_url': original_result['file_url'],
+            'thumbnail_path': thumbnail_result['file_path'],
+            'thumbnail_url': thumbnail_result['file_url'],
+            'file_size': original_result['file_size'],
+            'original_filename': image_file.name,
+            'width': width,
+            'height': height
+        }
+        
+    except Exception as e:
+        error_msg = f"밈 이미지 업로드 실패: {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+
+
+def delete_meme_images(original_path: str, thumbnail_path: str) -> Dict[str, Any]:
+    """
+    밈 이미지와 썸네일을 S3에서 삭제합니다.
+    
+    Args:
+        original_path: 원본 이미지 경로
+        thumbnail_path: 썸네일 경로
+    
+    Returns:
+        삭제 결과
+    """
+    try:
+        storage = S3Storage()
+        
+        # 원본 삭제
+        original_result = delete_file_from_s3(original_path, storage)
+        
+        # 썸네일 삭제
+        thumbnail_result = delete_file_from_s3(thumbnail_path, storage)
+        
+        return {
+            'success': original_result['success'] and thumbnail_result['success'],
+            'errors': []
+        }
+        
+    except Exception as e:
+        return {
+            'success': False,
+            'errors': [str(e)]
         } 
