@@ -155,7 +155,13 @@ export default class ItemManager {
         
         // 물리 속성 추가
         scene.physics.add.existing(itemShape);
-        itemShape.body.setSize(size, size);
+        
+        // body가 생성되었는지 확인
+        if (itemShape.body) {
+            itemShape.body.setSize(size, size);
+        } else {
+            console.warn('Physics body not created for item:', itemType);
+        }
         
         // 아이템 데이터 저장
         itemShape.setData('itemType', itemType);
@@ -236,20 +242,17 @@ export default class ItemManager {
     }
     
     createHeart(x, y, size, color, scene) {
-        // 간단한 하트 모양 (원 2개 + 삼각형)
-        const group = scene.add.group();
-        const circle1 = scene.add.circle(x - size/4, y - size/4, size/3, color);
-        const circle2 = scene.add.circle(x + size/4, y - size/4, size/3, color);
-        const triangle = this.createTriangle(x, y + size/4, size * 0.7, color, scene);
-        group.addMultiple([circle1, circle2, triangle]);
-        return group;
+        // 간단한 하트 모양 - 단일 원형으로 단순화 (physics body 문제 해결)
+        const heart = scene.add.circle(0, 0, size/2, color);
+        heart.setStrokeStyle(2, 0xff0000); // 빨간 테두리로 하트 표현
+        return heart;
     }
     
     applyItemEffect(itemType, player, scene) {
         const itemConfig = this.config.items[itemType];
         if (!itemConfig) return;
         
-        // 아이템 name을 메시지로 표시 (밝은 색상)
+        // 아이템 name과 description을 메시지로 표시 (밝은 색상)
         if (itemConfig.name && scene.showMessage) {
             const colorMap = {
                 'weaponLevelUp': 0x6666ff,  // 밝은 파란색
@@ -262,7 +265,13 @@ export default class ItemManager {
                 'maxHpIncrease': 0x66ff66     // 밝은 초록색
             };
             const color = colorMap[itemConfig.effect] || 0xffffff;
-            scene.showMessage(itemConfig.name, color);
+            
+            // name과 description을 함께 표시
+            let message = itemConfig.name;
+            if (itemConfig.description) {
+                message += ` - ${itemConfig.description}`;
+            }
+            scene.showMessage(message, color);
         }
         
         switch (itemConfig.effect) {

@@ -29,14 +29,7 @@ export default class RankingScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // 게임오버일 때 추가 메시지 표시
-        if (this.playerData.score !== undefined) {
-            this.add.text(centerX, 100, '셀커에 실패하셨습니다.', {
-                fontSize: '28px',
-                fill: '#ff6666',
-                fontStyle: 'italic'
-            }).setOrigin(0.5);
-        }
+        // 게임오버일 때는 GameScene에서 이미 메시지를 표시했으므로 여기서는 제거
         
         // 현재 게임 스코어 또는 최고 스코어 표시
         await this.displayMyScore();
@@ -49,7 +42,7 @@ export default class RankingScene extends Phaser.Scene {
         
         // 랭킹 가져오기
         try {
-            const rankingData = await ApiService.getTopRankings(15);
+            const rankingData = await ApiService.getTopRankings(10);
             loadingText.destroy();
             
             let rankings;
@@ -145,57 +138,58 @@ export default class RankingScene extends Phaser.Scene {
     
     displayRankings(rankings) {
         const centerX = this.scale.width / 2;
-        const startY = 250;  // 200에서 250으로 조정하여 더 아래로
+        const centerY = this.scale.height / 2;
+        const startY = centerY - 100;  // 화면 세로 중앙 기준으로 배치
         
         // 랭킹 제목
-        this.add.text(centerX, startY - 60, 'TOP 15 RANKINGS', {  // -40에서 -60으로 더 위로
+        this.add.text(centerX, startY - 50, 'TOP 10 RANKINGS', {  // TOP 10으로 변경
             fontSize: '32px', 
             fill: '#ffd700',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // 랭킹 배경 (15위까지 표시하도록 크게 조정)
-        const rankingBg = this.add.rectangle(centerX, startY + 210, 900, 480, 0x000033, 0.8);  // y위치와 높이 조정
+        // 랭킹 배경 (10개에 맞게 높이 조정)
+        const rankingBg = this.add.rectangle(centerX, startY + 155, 900, 380, 0x000033, 0.8);  // 높이를 380으로 조정
         rankingBg.setStrokeStyle(2, 0x0066ff);
         
         // 헤더
-        this.add.text(centerX - 400, startY + 20, 'Rank', {  // +10에서 +20으로
+        this.add.text(centerX - 400, startY, 'Rank', {
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX - 300, startY + 20, 'Name', { 
+        this.add.text(centerX - 300, startY, 'Name', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX - 120, startY + 20, 'Score', { 
+        this.add.text(centerX - 120, startY, 'Score', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX, startY + 20, 'Wave', { 
+        this.add.text(centerX, startY, 'Wave', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX + 80, startY + 20, 'W.Lv', { 
+        this.add.text(centerX + 80, startY, 'W.Lv', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX + 250, startY + 20, 'Date', { 
+        this.add.text(centerX + 250, startY, 'Date', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
         
         // 구분선
-        this.add.line(centerX, startY + 45, 0, 0, 880, 0, 0x666666).setLineWidth(2);  // +35에서 +45로
+        this.add.line(centerX, startY + 25, 0, 0, 880, 0, 0x666666).setLineWidth(2);
         
-        // 랭킹 목록 (15위까지만)
-        rankings.slice(0, 15).forEach((ranking, index) => {
-            const y = startY + 65 + (index * 28);  // +50에서 +65로, 간격도 25에서 28로
+        // 랭킹 목록 (10위까지만)
+        rankings.slice(0, 10).forEach((ranking, index) => {
+            const y = startY + 45 + (index * 30);  // 간격을 30으로 유지
             const isCurrentPlayer = ranking.nickname === this.playerData.nickname && 
                                   ranking.score === this.playerData.score;
             const color = isCurrentPlayer ? '#ffff00' : '#ffffff';

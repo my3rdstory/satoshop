@@ -66,7 +66,8 @@ export default class ShooterEnemy {
             this.scene.player.x, this.scene.player.y
         );
         
-        const speed = this.scaleManager ? this.scaleManager.getBulletSpeed() : 250;
+        // 총알 속도를 적절한 고정값으로 설정 (화면 크기에 관계없이)
+        const speed = 150;
         this.scene.physics.velocityFromRotation(angle, speed, bullet.body.velocity);
         
         // enemyWeapons 그룹에 추가

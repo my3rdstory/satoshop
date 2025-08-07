@@ -152,8 +152,8 @@
       "spawnDelay": 1200,
       "spawnPattern": "circle",
       "enemyTypes": {
-        "normal": 0.7,
-        "shooter": 0.3
+        "normal": 0.85,
+        "shooter": 0.15
       },
       "boss": {
         "hp": 125,
@@ -187,8 +187,8 @@
       },
       "maxSpawnCount": 10,
       "enemyTypes": {
-        "normal": 0.7,
-        "shooter": 0.3
+        "normal": 0.85,
+        "shooter": 0.15
       },
       "enemySizeReduction": {
         "startWave": 10,

@@ -15,13 +15,66 @@
     <link rel="stylesheet" href="{% static 'game/selker/css/game.css' %}">
 </head>
 <body>
+    <!-- 모바일 경고 메시지 -->
+    <div id="mobile-warning" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; color: #fff; z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 20px; text-align: center;">
+        <h1 style="font-size: 24px; margin-bottom: 20px; color: #ffd700;">모바일 미지원 안내</h1>
+        <p style="font-size: 18px; line-height: 1.6; margin-bottom: 30px;">
+            이 게임은 모바일 화면을 지원하지 않습니다.<br>
+            PC에서 접속하시거나,<br>
+            브라우저의 <strong style="color: #00ff00;">데스크톱 모드</strong>로 전환해 주세요.
+        </p>
+        <div style="background: #333; padding: 20px; border-radius: 10px; margin-top: 20px;">
+            <p style="font-size: 16px; margin-bottom: 15px; color: #ffd700;">데스크톱 모드 전환 방법:</p>
+            <ul style="text-align: left; font-size: 14px; line-height: 1.8;">
+                <li><strong>Chrome:</strong> 메뉴(⋮) → 데스크톱 사이트</li>
+                <li><strong>Safari:</strong> 공유 버튼 → 데스크톱 웹사이트 요청</li>
+                <li><strong>Samsung Internet:</strong> 메뉴 → 데스크톱 버전</li>
+            </ul>
+        </div>
+    </div>
+    
     <div id="game-container" tabindex="0"></div>
     <script>
+        // 모바일 감지 함수
+        function isMobileDevice() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            
+            // 모바일 기기 감지
+            const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+            
+            // 화면 크기로도 체크
+            const isSmallScreen = window.innerWidth <= 768;
+            
+            // 터치 지원 여부
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            
+            return isMobile || (isSmallScreen && isTouchDevice);
+        }
+        
+        // 모바일 체크 및 처리
+        function checkMobile() {
+            if (isMobileDevice()) {
+                document.getElementById('mobile-warning').style.display = 'flex';
+                document.getElementById('game-container').style.display = 'none';
+            } else {
+                document.getElementById('mobile-warning').style.display = 'none';
+                document.getElementById('game-container').style.display = 'block';
+            }
+        }
+        
         window.USER_NICKNAME = "{{ user_nickname }}";
-        // 페이지 로드 시 게임 컨테이너에 포커스
+        
+        // 페이지 로드 시 체크
         window.addEventListener('load', () => {
-            document.getElementById('game-container').focus();
+            checkMobile();
+            
+            if (!isMobileDevice()) {
+                document.getElementById('game-container').focus();
+            }
         });
+        
+        // 화면 크기 변경 시 재체크
+        window.addEventListener('resize', checkMobile);
     </script>
     <script type="module" src="{% static 'game/selker/js/main.js' %}"></script>
 </body>

@@ -420,14 +420,16 @@ export default class GameScene extends Phaser.Scene {
         this.updateShields();
         
         // ShooterEnemy 텍스트 위치 업데이트
-        this.enemies.children.entries.forEach(enemy => {
-            if (enemy.getData('isShooter')) {
-                const shooter = enemy.getData('shooter');
-                if (shooter && shooter.update) {
-                    shooter.update();
+        if (this.enemies && this.enemies.children && this.enemies.children.entries) {
+            this.enemies.children.entries.forEach(enemy => {
+                if (enemy && enemy.getData && enemy.getData('isShooter')) {
+                    const shooter = enemy.getData('shooter');
+                    if (shooter && shooter.update) {
+                        shooter.update();
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // 플레이어가 초기화되지 않았으면 리턴
         if (!this.player || !this.player.body) {
@@ -815,12 +817,21 @@ export default class GameScene extends Phaser.Scene {
         this.shieldTimers = [];
 
         // 게임 오버 텍스트
-        const gameOverText = this.add.text(this.scale.width/2, this.scale.height/2, 'GAME OVER', { 
+        const gameOverText = this.add.text(this.scale.width/2, this.scale.height/2 - 30, 'GAME OVER', { 
             fontSize: '64px', 
             fill: '#ff0000',
             fontStyle: 'bold',
             stroke: '#ffffff',
             strokeThickness: 4
+        }).setOrigin(0.5);
+        
+        // 셀커에 실패하셨습니다 텍스트
+        const failText = this.add.text(this.scale.width/2, this.scale.height/2 + 30, '셀커에 실패하셨습니다', {
+            fontSize: '32px',
+            fill: '#ff6666',
+            fontStyle: 'italic',
+            stroke: '#000000',
+            strokeThickness: 2
         }).setOrigin(0.5);
         
         // 깜빡임 효과
@@ -1193,12 +1204,15 @@ export default class GameScene extends Phaser.Scene {
     }
     
     showMessage(message, color = 0xffff00) {
-        const text = this.add.text(this.player.x, this.player.y - 40, message, { 
-            fontSize: '24px', 
+        // 메시지가 길면 줄바꿈 처리
+        const displayMessage = message.replace(' - ', '\n');
+        const text = this.add.text(this.player.x, this.player.y - 50, displayMessage, { 
+            fontSize: '20px', 
             fill: '#' + color.toString(16).padStart(6, '0'),
             fontStyle: 'bold',
             stroke: '#000000',
-            strokeThickness: 2
+            strokeThickness: 2,
+            align: 'center'
         }).setOrigin(0.5);
         
         // 텍스트를 위로 올라가면서 사라지게 하는 애니메이션
