@@ -119,6 +119,7 @@ export default class GameScene extends Phaser.Scene {
         this.items = this.physics.add.group();
         this.shields = this.physics.add.group();
         this.enemyWeapons = this.physics.add.group();
+        this.poos = this.physics.add.group();
 
         this.waveText = this.add.text(16, 16, 'Wave: 1', { fontSize: this.scaleManager.getFontSize(32), fill: '#fff' });
         this.waveTimerText = this.add.text(16, 84, 'Next wave: 15s', { fontSize: this.scaleManager.getFontSize(24), fill: '#ff0' });
@@ -237,10 +238,35 @@ export default class GameScene extends Phaser.Scene {
                     enemy.destroy();
                 }
                 
-                this.hp -= damage;
-                this.hpText.setText('HP: ' + this.hp);
-                if (this.hp <= 0) {
-                    this.endGame();
+                // 실드가 있으면 데미지 무효화
+                if (this.hasShield) {
+                    // 실드 파괴
+                    this.hasShield = false;
+                    if (this.shieldSprite) {
+                        // 실드 파괴 효과
+                        this.tweens.add({
+                            targets: this.shieldSprite,
+                            scale: 1.5,
+                            alpha: 0,
+                            duration: 300,
+                            onComplete: () => {
+                                this.shieldSprite.destroy();
+                                this.shieldSprite = null;
+                            }
+                        });
+                    }
+                    if (this.shieldTimer) {
+                        this.shieldTimer.destroy();
+                        this.shieldTimer = null;
+                    }
+                    this.showMessage('SHIELD BROKEN!', 0xff0000);
+                } else {
+                    // 실드가 없으면 데미지 받음
+                    this.hp -= damage;
+                    this.hpText.setText('HP: ' + this.hp);
+                    if (this.hp <= 0) {
+                        this.endGame();
+                    }
                 }
             }
         });
@@ -259,6 +285,25 @@ export default class GameScene extends Phaser.Scene {
             });
         });
 
+        // 플레이어와 poo 충돌
+        this.physics.add.overlap(this.player, this.poos, (player, poo) => {
+            // 체력 25% 감소
+            const damage = Math.ceil(this.hp * 0.25);
+            this.hp = Math.max(0, this.hp - damage);
+            this.hpText.setText('HP: ' + this.hp);
+            
+            // poo 제거
+            poo.destroy();
+            
+            // 메시지 표시
+            this.showMessage('HP 25% 없애!', 0xff0000);
+            
+            // 체력이 0이면 게임 오버
+            if (this.hp <= 0) {
+                this.endGame();
+            }
+        });
+        
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             const itemType = item.getData('itemType') || item.getData('type');
             
@@ -527,6 +572,9 @@ export default class GameScene extends Phaser.Scene {
         this.waveText.setText('Wave: ' + this.wave);
         this.bossSpawned = false; // 다음 웨이브를 위해 리셋
         
+        // 웨이브 종료 시 poo 배치
+        this.spawnPoos();
+        
         // 웨이브 증가 알림 표시
         const waveAlert = this.add.text(this.scale.width/2, this.scale.height*0.25, `WAVE ${this.wave}!`, { 
             fontSize: '48px', 
@@ -594,13 +642,20 @@ export default class GameScene extends Phaser.Scene {
         const weaponSize = this.scaleManager.getWeaponSize();
         const weaponSpeed = this.scaleManager.getWeaponSpeed();
         
-        for (let i = 0; i < this.weaponLevel; i++) {
-            // 비트코인 색상의 원형 무기 (주황색)
-            const weapon = this.add.circle(this.player.x, this.player.y, weaponSize.width / 2, 0xf7931a);
-            this.physics.add.existing(weapon);
-            this.weapons.add(weapon);
-            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y) + Phaser.Math.DegToRad(-10 + i * 10);
-            this.physics.velocityFromRotation(angle, weaponSpeed, weapon.body.velocity);
+        // 멀티샷이면 추가 방향으로도 발사
+        const shotDirections = this.isMultishot ? [-30, -15, 0, 15, 30] : [0];
+        
+        for (let dir of shotDirections) {
+            for (let i = 0; i < this.weaponLevel; i++) {
+                // 비트코인 색상의 원형 무기 (주황색, 멀티샷일 때는 보라색)
+                const weaponColor = this.isMultishot ? 0xff00ff : 0xf7931a;
+                const weapon = this.add.circle(this.player.x, this.player.y, weaponSize.width / 2, weaponColor);
+                this.physics.add.existing(weapon);
+                this.weapons.add(weapon);
+                const baseAngle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y);
+                const angle = baseAngle + Phaser.Math.DegToRad(dir + (-10 + i * 10));
+                this.physics.velocityFromRotation(angle, weaponSpeed, weapon.body.velocity);
+            }
         }
     }
 
@@ -1049,5 +1104,251 @@ export default class GameScene extends Phaser.Scene {
             }
         });
     }
-
+    
+    activateShield(itemConfig) {
+        // 이미 실드가 있으면 제거
+        if (this.shieldSprite) {
+            this.shieldSprite.destroy();
+        }
+        
+        // 실드 시각 효과 생성
+        this.shieldSprite = this.add.circle(this.player.x, this.player.y, 40, 0x00ffff, 0.3);
+        this.shieldSprite.setStrokeStyle(2, 0x00ffff, 0.8);
+        
+        // 실드 지속시간
+        const duration = itemConfig.duration || 5000;
+        
+        // 실드 상태 플래그
+        this.hasShield = true;
+        
+        // 실드가 플레이어를 따라다니도록 업데이트
+        if (this.shieldTimer) {
+            this.shieldTimer.destroy();
+        }
+        
+        this.shieldTimer = this.time.addEvent({
+            delay: 16,
+            callback: () => {
+                if (this.shieldSprite && this.player) {
+                    this.shieldSprite.x = this.player.x;
+                    this.shieldSprite.y = this.player.y;
+                }
+            },
+            loop: true
+        });
+        
+        // 지속시간 후 실드 제거
+        this.time.delayedCall(duration, () => {
+            if (this.shieldSprite) {
+                this.shieldSprite.destroy();
+                this.shieldSprite = null;
+            }
+            if (this.shieldTimer) {
+                this.shieldTimer.destroy();
+                this.shieldTimer = null;
+            }
+            this.hasShield = false;
+        });
+        
+        // 실드 획득 메시지
+        this.showMessage('SHIELD ACTIVATED!', 0x00ffff);
+    }
+    
+    applySpeedBoost(speedMultiplier, duration) {
+        const originalSpeed = this.playerSpeed || 200;
+        const boostedSpeed = originalSpeed * (speedMultiplier || 1.5);
+        
+        // 속도 증가
+        this.playerSpeed = boostedSpeed;
+        
+        // 시각 효과
+        if (this.player) {
+            this.player.setTint(0xffff00);
+        }
+        
+        // 지속시간 후 원래 속도로 복구
+        this.time.delayedCall(duration || 3000, () => {
+            this.playerSpeed = originalSpeed;
+            if (this.player) {
+                this.player.clearTint();
+            }
+        });
+        
+        // 속도 증가 메시지
+        this.showMessage('SPEED BOOST!', 0xffff00);
+    }
+    
+    showMessage(message, color = 0xffff00) {
+        const text = this.add.text(this.player.x, this.player.y - 40, message, { 
+            fontSize: '24px', 
+            fill: '#' + color.toString(16).padStart(6, '0'),
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
+        // 텍스트를 위로 올라가면서 사라지게 하는 애니메이션
+        this.tweens.add({
+            targets: text,
+            y: text.y - 50,
+            alpha: 0,
+            duration: 1000,
+            ease: 'Power2',
+            onComplete: () => {
+                text.destroy();
+            }
+        });
+    }
+    
+    activateMultishot(duration) {
+        // 멀티샷 활성화
+        this.isMultishot = true;
+        
+        // 시각 효과 - 플레이어 색상 변경
+        if (this.player) {
+            this.player.setTint(0xff00ff);
+        }
+        
+        // 지속시간 후 멀티샷 종료
+        this.time.delayedCall(duration || 5000, () => {
+            this.isMultishot = false;
+            if (this.player) {
+                this.player.clearTint();
+            }
+        });
+        
+        // 메시지 표시
+        this.showMessage('MULTISHOT!', 0xff00ff);
+    }
+    
+    screenBomb(damage) {
+        const bombConfig = this.game.waveConfig?.getBombConfig() || {
+            bossDamagePercent: 0.5,
+            explosionColor: 0xffff00,
+            explosionRadius: 100,
+            explosionDuration: 500
+        };
+        
+        // 화면 전체 폭발 효과
+        const screenFlash = this.add.rectangle(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            this.scale.width,
+            this.scale.height,
+            0xffff00,
+            0.6
+        );
+        
+        this.tweens.add({
+            targets: screenFlash,
+            alpha: 0,
+            duration: 300,
+            onComplete: () => screenFlash.destroy()
+        });
+        
+        // 모든 적에게 데미지
+        this.enemies.children.each(enemy => {
+            if (enemy.getData('isBoss')) {
+                const boss = enemy.getData('boss');
+                if (boss && boss.hp) {
+                    // 보스는 고정 데미지 또는 체력 비율 중 작은 값
+                    const percentDamage = Math.floor(boss.hp * bombConfig.bossDamagePercent);
+                    const actualDamage = damage ? Math.min(damage, percentDamage) : percentDamage;
+                    boss.takeDamage(actualDamage, true);
+                    
+                    // 폭발 이펙트 표시
+                    const explosion = this.add.circle(boss.sprite.x, boss.sprite.y, 
+                        bombConfig.explosionRadius, bombConfig.explosionColor, 0.8);
+                    this.tweens.add({
+                        targets: explosion,
+                        scale: 3,
+                        alpha: 0,
+                        duration: bombConfig.explosionDuration,
+                        onComplete: () => explosion.destroy()
+                    });
+                }
+            } else {
+                // 일반 적은 즉사
+                const explosion = this.add.circle(enemy.x, enemy.y, 
+                    50, 0xffff00, 0.8);
+                this.tweens.add({
+                    targets: explosion,
+                    scale: 2,
+                    alpha: 0,
+                    duration: 300,
+                    onComplete: () => explosion.destroy()
+                });
+                
+                // 적 제거 및 점수 추가
+                const isShooter = enemy.getData('isShooter');
+                if (isShooter) {
+                    const shooter = enemy.getData('shooter');
+                    if (shooter) {
+                        shooter.destroy();
+                    }
+                } else {
+                    enemy.destroy();
+                    const normalConfig = this.game.waveConfig?.getEnemyStats('normal');
+                    this.score += normalConfig?.score || 10;
+                    this.scoreText.setText('Score: ' + this.score);
+                }
+            }
+        });
+        
+        // 메시지 표시
+        this.showMessage('SCREEN CLEAR!', 0xffff00);
+    }
+    
+    spawnPoos() {
+        // 웨이브에 따라 poo 개수 증가 (최소 2개, 최대 8개)
+        const pooCount = Math.min(8, Math.max(2, Math.floor(this.wave / 2) + 1));
+        
+        for (let i = 0; i < pooCount; i++) {
+            // 화면 내 랜덤 위치에 배치 (플레이어 주변 제외)
+            let x, y;
+            do {
+                x = Phaser.Math.Between(50, this.scale.width - 50);
+                y = Phaser.Math.Between(50, this.scale.height - 50);
+            } while (Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) < 100);
+            
+            const poo = this.physics.add.sprite(x, y, 'poo');
+            poo.setScale(1.2);
+            this.poos.add(poo);
+            
+            // 회전 애니메이션
+            this.tweens.add({
+                targets: poo,
+                rotation: Math.PI * 2,
+                duration: 3000,
+                repeat: -1,
+                ease: 'Linear'
+            });
+            
+            // 부유 애니메이션
+            this.tweens.add({
+                targets: poo,
+                y: y - 10,
+                duration: 2000,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+            
+            // 5초 후 자동 제거
+            this.time.delayedCall(5000, () => {
+                if (poo && poo.active) {
+                    // 페이드 아웃 효과
+                    this.tweens.add({
+                        targets: poo,
+                        alpha: 0,
+                        scale: 0.5,
+                        duration: 500,
+                        onComplete: () => {
+                            poo.destroy();
+                        }
+                    });
+                }
+            });
+        }
+    }
 }

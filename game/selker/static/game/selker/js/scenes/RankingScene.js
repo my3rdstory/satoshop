@@ -29,6 +29,15 @@ export default class RankingScene extends Phaser.Scene {
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
+        // 게임오버일 때 추가 메시지 표시
+        if (this.playerData.score !== undefined) {
+            this.add.text(centerX, 100, '셀커에 실패하셨습니다.', {
+                fontSize: '28px',
+                fill: '#ff6666',
+                fontStyle: 'italic'
+            }).setOrigin(0.5);
+        }
+        
         // 현재 게임 스코어 또는 최고 스코어 표시
         await this.displayMyScore();
         

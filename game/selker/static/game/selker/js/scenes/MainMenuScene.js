@@ -27,20 +27,28 @@ export default class MainMenuScene extends Phaser.Scene {
             fill: '#fff'
         }).setOrigin(1, 0);
         
-        this.add.text(centerX, centerY - 100, 'To the Selker!', { fontSize: '48px', fill: '#fff' }).setOrigin(0.5);
+        this.add.text(centerX, centerY - 100, 'To the Selker!', { fontSize: '56px', fill: '#fff' }).setOrigin(0.5);
+        
+        // 서브 타이틀 추가
+        this.add.text(centerX, centerY - 40, '"당신은 셀커에 성공할 수 있습니까?"', { 
+            fontSize: '20px', 
+            fill: '#ffd700',
+            fontStyle: 'italic',
+            padding: { top: 5, bottom: 5 }
+        }).setOrigin(0.5);
 
-        const startButton = this.add.text(centerX, centerY, 'Start Game', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
+        const startButton = this.add.text(centerX, centerY + 20, 'Start Game', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
         startButton.on('pointerdown', () => {
             const name = localStorage.getItem('vamsur_nickname');
             this.scene.start('GameScene', { nickname: name });
         });
 
-        const rankingButton = this.add.text(centerX, centerY + 50, 'Rankings', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
+        const rankingButton = this.add.text(centerX, centerY + 70, 'Rankings', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
         rankingButton.on('pointerdown', () => {
             this.scene.start('RankingScene', {});  // 빈 데이터로 전달하여 최고 점수 표시
         });
 
-        const settingsButton = this.add.text(centerX, centerY + 100, 'Settings', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
+        const settingsButton = this.add.text(centerX, centerY + 120, 'Settings', { fontSize: '32px', fill: '#0f0' }).setOrigin(0.5).setInteractive();
         settingsButton.on('pointerdown', () => {
             this.scene.start('Settings');
         });

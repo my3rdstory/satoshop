@@ -102,6 +102,12 @@ export default class ItemManager {
     createItem(x, y, itemType = null, wave = 1, playerHp = 100, weaponLevel = 1, gameScene = null) {
         // GameScene를 사용하도록 수정
         const scene = gameScene || this.scene;
+        
+        // scene.physics가 없거나 null인 경우 체크
+        if (!scene || !scene.physics || !scene.physics.add) {
+            console.error('Scene or physics system not properly initialized');
+            return null;
+        }
         // 아이템 타입이 지정되지 않으면 랜덤 선택
         if (!itemType) {
             itemType = this.selectRandomItem(wave, playerHp, weaponLevel);
@@ -123,30 +129,30 @@ export default class ItemManager {
         
         switch (itemConfig.shape) {
             case 'circle':
-                itemShape = this.scene.add.circle(0, 0, size/2, color);
+                itemShape = scene.add.circle(0, 0, size/2, color);
                 break;
             case 'star':
-                itemShape = this.createStar(0, 0, size/2, color);
+                itemShape = this.createStar(0, 0, size/2, color, scene);
                 break;
             case 'hexagon':
-                itemShape = this.createHexagon(0, 0, size/2, color);
+                itemShape = this.createHexagon(0, 0, size/2, color, scene);
                 break;
             case 'triangle':
-                itemShape = this.createTriangle(0, 0, size, color);
+                itemShape = this.createTriangle(0, 0, size, color, scene);
                 break;
             case 'diamond':
-                itemShape = this.createDiamond(0, 0, size, color);
+                itemShape = this.createDiamond(0, 0, size, color, scene);
                 break;
             case 'heart':
-                itemShape = this.createHeart(0, 0, size, color);
+                itemShape = this.createHeart(0, 0, size, color, scene);
                 break;
             default:
-                itemShape = this.scene.add.rectangle(0, 0, size, size, color);
+                itemShape = scene.add.rectangle(0, 0, size, size, color);
         }
         
         // 아이템 텍스트 추가
         if (itemConfig.text) {
-            const itemText = this.scene.add.text(0, 0, itemConfig.text, {
+            const itemText = scene.add.text(0, 0, itemConfig.text, {
                 fontSize: itemConfig.textSize || '14px',
                 fill: itemConfig.textColor || '#ffffff',
                 fontStyle: 'bold',
@@ -160,7 +166,7 @@ export default class ItemManager {
         }
         
         // 물리 속성 추가
-        this.scene.physics.add.existing(itemGroup);
+        scene.physics.add.existing(itemGroup);
         itemGroup.body.setSize(size, size);
         
         // 아이템 데이터 저장
@@ -169,7 +175,7 @@ export default class ItemManager {
         
         // 회전 애니메이션
         if (itemConfig.rotationSpeed) {
-            this.scene.tweens.add({
+            scene.tweens.add({
                 targets: itemGroup,
                 rotation: Math.PI * 2,
                 duration: 60000 / itemConfig.rotationSpeed,
@@ -179,7 +185,7 @@ export default class ItemManager {
         
         // 부유 애니메이션
         if (this.config.visualEffects?.floatAnimation && itemConfig.floatSpeed) {
-            this.scene.tweens.add({
+            scene.tweens.add({
                 targets: itemGroup,
                 y: y - 10,
                 duration: 2000 / (itemConfig.floatSpeed / 20),
@@ -197,7 +203,7 @@ export default class ItemManager {
         return itemGroup;
     }
     
-    createStar(x, y, radius, color) {
+    createStar(x, y, radius, color, scene) {
         const points = [];
         const numPoints = 5;
         const angleStep = (Math.PI * 2) / numPoints;
@@ -212,7 +218,7 @@ export default class ItemManager {
         return scene.add.polygon(x, y, points, color);
     }
     
-    createHexagon(x, y, radius, color) {
+    createHexagon(x, y, radius, color, scene) {
         const points = [];
         for (let i = 0; i < 6; i++) {
             const angle = (Math.PI * 2 * i) / 6 - Math.PI / 2;
@@ -222,7 +228,7 @@ export default class ItemManager {
         return scene.add.polygon(x, y, points, color);
     }
     
-    createTriangle(x, y, size, color) {
+    createTriangle(x, y, size, color, scene) {
         const points = [
             x, y - size/2,
             x - size/2, y + size/2,
@@ -231,7 +237,7 @@ export default class ItemManager {
         return scene.add.polygon(x, y, points, color);
     }
     
-    createDiamond(x, y, size, color) {
+    createDiamond(x, y, size, color, scene) {
         const points = [
             x, y - size/2,
             x + size/2, y,
@@ -241,12 +247,12 @@ export default class ItemManager {
         return scene.add.polygon(x, y, points, color);
     }
     
-    createHeart(x, y, size, color) {
+    createHeart(x, y, size, color, scene) {
         // 간단한 하트 모양 (원 2개 + 삼각형)
-        const group = this.scene.add.group();
-        const circle1 = this.scene.add.circle(x - size/4, y - size/4, size/3, color);
-        const circle2 = this.scene.add.circle(x + size/4, y - size/4, size/3, color);
-        const triangle = this.createTriangle(x, y + size/4, size * 0.7, color);
+        const group = scene.add.group();
+        const circle1 = scene.add.circle(x - size/4, y - size/4, size/3, color);
+        const circle2 = scene.add.circle(x + size/4, y - size/4, size/3, color);
+        const triangle = this.createTriangle(x, y + size/4, size * 0.7, color, scene);
         group.addMultiple([circle1, circle2, triangle]);
         return group;
     }
@@ -297,17 +303,17 @@ export default class ItemManager {
         }
         
         // 아이템 획득 효과음 또는 시각 효과
-        this.showPickupEffect(player.x, player.y, itemConfig);
+        this.showPickupEffect(player.x, player.y, itemConfig, scene);
     }
     
-    showPickupEffect(x, y, itemConfig) {
+    showPickupEffect(x, y, itemConfig, scene) {
         // 아이템 획득 시 파티클 효과
         const color = parseInt(itemConfig.color);
         for (let i = 0; i < 8; i++) {
-            const particle = this.scene.add.circle(x, y, 3, color);
+            const particle = scene.add.circle(x, y, 3, color);
             const angle = (Math.PI * 2 * i) / 8;
             
-            this.scene.tweens.add({
+            scene.tweens.add({
                 targets: particle,
                 x: x + Math.cos(angle) * 50,
                 y: y + Math.sin(angle) * 50,
@@ -318,14 +324,14 @@ export default class ItemManager {
         }
         
         // 텍스트 표시
-        const pickupText = this.scene.add.text(x, y - 30, itemConfig.name, {
+        const pickupText = scene.add.text(x, y - 30, itemConfig.name, {
             fontSize: '16px',
             fill: itemConfig.textColor || '#ffffff',
             stroke: '#000000',
             strokeThickness: 2
         }).setOrigin(0.5);
         
-        this.scene.tweens.add({
+        scene.tweens.add({
             targets: pickupText,
             y: y - 60,
             alpha: 0,
@@ -339,7 +345,7 @@ export default class ItemManager {
         return Math.random() < dropRate;
     }
     
-    dropBossItems(x, y, wave, playerHp, weaponLevel) {
+    dropBossItems(x, y, wave, playerHp, weaponLevel, gameScene) {
         const itemCount = this.config.dropRates.bossItemCount || 3;
         const items = [];
         
@@ -349,7 +355,7 @@ export default class ItemManager {
             const itemX = x + Math.cos(angle) * distance;
             const itemY = y + Math.sin(angle) * distance;
             
-            const item = this.createItem(itemX, itemY, null, wave, playerHp, weaponLevel);
+            const item = this.createItem(itemX, itemY, null, wave, playerHp, weaponLevel, gameScene);
             if (item) {
                 items.push(item);
             }

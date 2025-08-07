@@ -71,7 +71,7 @@
         "normal": 1.0
       },
       "boss": {
-        "hp": 110,
+        "hp": 80,
         "damage": 15,
         "attackDelay": 3800,
         "radialBullets": 4,
@@ -99,7 +99,7 @@
         "normal": 1.0
       },
       "boss": {
-        "hp": 140,
+        "hp": 95,
         "damage": 15,
         "attackDelay": 3600,
         "radialBullets": 5,
@@ -127,7 +127,7 @@
         "normal": 1.0
       },
       "boss": {
-        "hp": 170,
+        "hp": 110,
         "damage": 15,
         "attackDelay": 3400,
         "radialBullets": 5,
@@ -156,7 +156,7 @@
         "shooter": 0.3
       },
       "boss": {
-        "hp": 200,
+        "hp": 125,
         "damage": 15,
         "attackDelay": 3200,
         "radialBullets": 6,
@@ -195,7 +195,7 @@
         "reductionPercent": 0.2
       },
       "boss": {
-        "hpFormula": "50 + (wave * 30)",
+        "hpFormula": "50 + (wave * 15)",
         "damage": 15,
         "attackDelayFormula": "Math.max(2000, 4000 - (wave * 200))",
         "radialBulletsFormula": "Math.min(4 + wave, 8)",

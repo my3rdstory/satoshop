@@ -20,8 +20,9 @@ export default class Boss {
         this.missileSpeed = bossConfig.missileSpeed || 100;
         this.scoreMultiplier = bossConfig.scoreMultiplier || 500;
         
-        // 보스 생성
-        this.sprite = scene.add.rectangle(x, y, this.size, this.size, this.color);
+        // 보스 생성 - 주황색 노란테두리 사각형
+        this.sprite = scene.add.rectangle(x, y, this.size, this.size, 0xff8800);
+        this.sprite.setStrokeStyle(4, 0xffff00);
         scene.physics.add.existing(this.sprite);
         this.sprite.body.setImmovable(true);
         
@@ -29,8 +30,8 @@ export default class Boss {
         this.sprite.setData('isBoss', true);
         this.sprite.setData('boss', this);
         
-        // "Big Blocker" 텍스트를 보스 몸통에 추가
-        this.nameText = scene.add.text(x, y, 'Big Blocker', {
+        // "Central Bank" 텍스트를 보스 몸통에 추가
+        this.nameText = scene.add.text(x, y, 'Central Bank', {
             fontSize: '14px',
             fill: '#ffffff',
             fontStyle: 'bold',
@@ -209,7 +210,7 @@ export default class Boss {
     update() {
         if (!this.sprite || !this.sprite.body) return;
         
-        // "Big Blocker" 텍스트 위치 업데이트
+        // "Central Bank" 텍스트 위치 업데이트
         if (this.nameText) {
             this.nameText.x = this.sprite.x;
             this.nameText.y = this.sprite.y;
@@ -227,7 +228,7 @@ export default class Boss {
         // 이미 제거된 경우 중복 실행 방지
         if (!this.sprite || !this.sprite.active) return;
         
-        // "Big Blocker" 텍스트 제거
+        // "Central Bank" 텍스트 제거
         if (this.nameText) {
             this.nameText.destroy();
         }
@@ -236,10 +237,8 @@ export default class Boss {
         this.scene.score += this.scoreMultiplier;
         this.scene.scoreText.setText('Score: ' + this.scene.score);
         
-        // 보스 아이템 드롭 (확률 높음)
-        for (let i = 0; i < 3; i++) {
-            this.scene.dropBossItem(this.sprite.x, this.sprite.y);
-        }
+        // 보스 아이템 드롭 (dropBossItems가 이미 여러 아이템을 드롭함)
+        this.scene.dropBossItem(this.sprite.x, this.sprite.y);
         
         // 격파 이펙트
         for (let i = 0; i < 20; i++) {

@@ -46,7 +46,7 @@
     },
     "shield": {
       "name": "에어갭",
-      "color": "0x00ffff",
+      "color": "0xF7931A",
       "size": 22,
       "shape": "hexagon",
       "text": "S",
