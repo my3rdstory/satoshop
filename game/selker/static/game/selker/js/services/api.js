@@ -76,6 +76,80 @@ export default class ApiService {
         }
     }
     
+    // GamePlayHistory API 메서드
+    static async startGame(nickname) {
+        try {
+            const response = await fetch(`${API_URL}/game/start/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nickname: window.USER_NICKNAME || nickname || 'Anonymous'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to start game');
+            }
+            
+            const result = await response.json();
+            return result.session_id;
+        } catch (error) {
+            console.error('Error starting game:', error);
+            // 실패 시 로컬 세션 ID 생성
+            return 'local-' + Date.now();
+        }
+    }
+    
+    static async updateGame(sessionId, gameData) {
+        try {
+            const response = await fetch(`${API_URL}/game/update/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    ...gameData
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update game');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error updating game:', error);
+            return null;
+        }
+    }
+    
+    static async endGame(sessionId, gameData) {
+        try {
+            const response = await fetch(`${API_URL}/game/end/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    ...gameData
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to end game');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error ending game:', error);
+            return null;
+        }
+    }
+    
     // getStats 메서드 제거 (Django에서 미사용)
     
     // 로컬스토리지 백업 메서드

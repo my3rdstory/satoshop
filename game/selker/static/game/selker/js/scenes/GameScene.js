@@ -40,6 +40,13 @@ export default class GameScene extends Phaser.Scene {
         this.pauseInstructions = null;
         this.shieldTimers = [];
         this.keyboardManager = null;
+        
+        // GamePlayHistory 추적용 변수
+        this.sessionId = null;
+        this.enemiesKilled = 0;
+        this.bossKilled = 0;
+        this.itemsCollected = 0;
+        this.lastUpdateTime = 0;
     }
 
     preload() {
@@ -101,6 +108,10 @@ export default class GameScene extends Phaser.Scene {
         
         // 게임 시작 시간 기록
         this.startTime = Date.now();
+        
+        // GamePlayHistory 세션 시작
+        this.sessionId = await ApiService.startGame(this.nickname);
+        console.log('Game session started:', this.sessionId);
         
         // BGM 재생
         if (!this.sound.get('bgm')) {
@@ -199,6 +210,7 @@ export default class GameScene extends Phaser.Scene {
                 if (!destroyed) {
                     return; // 보스가 아직 살아있음
                 }
+                this.bossKilled++;  // 보스 처치 카운트
             } 
             // 총 쏘는 적인 경우
             else if (enemy.getData('isShooter')) {
@@ -207,6 +219,7 @@ export default class GameScene extends Phaser.Scene {
                 if (!destroyed) {
                     return; // 아직 살아있음
                 }
+                this.enemiesKilled++;  // 적 처치 카운트
             }
             // 일반 적
             else {
@@ -214,6 +227,7 @@ export default class GameScene extends Phaser.Scene {
                 const normalConfig = this.game.waveConfig?.getEnemyStats('normal');
                 this.score += normalConfig?.score || 10;
                 this.scoreText.setText('Score: ' + this.score);
+                this.enemiesKilled++;  // 적 처치 카운트
                 
                 // 일반 적만 아이템 드롭
                 this.dropItem(enemy);
@@ -315,6 +329,7 @@ export default class GameScene extends Phaser.Scene {
         
         this.physics.add.overlap(this.player, this.items, (player, item) => {
             const itemType = item.getData('itemType') || item.getData('type');
+            this.itemsCollected++;  // 아이템 획득 카운트
             
             if (this.game.itemManager) {
                 this.game.itemManager.applyItemEffect(itemType, player, this);
@@ -419,6 +434,13 @@ export default class GameScene extends Phaser.Scene {
         
         if (this.gameOver || this.isPaused) {
             return;
+        }
+        
+        // 5초마다 게임 상태 업데이트 (서버 부하 방지)
+        const currentTime = Date.now();
+        if (currentTime - this.lastUpdateTime > 5000) {
+            this.lastUpdateTime = currentTime;
+            this.updateGameStats();
         }
 
         // 방어막 업데이트
@@ -809,7 +831,21 @@ export default class GameScene extends Phaser.Scene {
         return Object.keys(weights)[0];
     }
 
-    endGame() {
+    async updateGameStats() {
+        // 게임 진행 상태를 서버에 업데이트
+        if (this.sessionId && !this.sessionId.startsWith('local-')) {
+            await ApiService.updateGame(this.sessionId, {
+                score: this.score,
+                wave: this.wave,
+                weapon_level: this.weaponLevel,
+                enemies_killed: this.enemiesKilled,
+                boss_killed: this.bossKilled,
+                items_collected: this.itemsCollected
+            });
+        }
+    }
+    
+    async endGame() {
         this.gameOver = true;
         this.physics.pause();
         // 플레이어 이미지를 빨간색으로 tint
@@ -820,6 +856,17 @@ export default class GameScene extends Phaser.Scene {
             if (timer) timer.remove();
         });
         this.shieldTimers = [];
+        
+        // GamePlayHistory 종료 API 호출
+        const playTime = Math.floor((Date.now() - this.startTime) / 1000);
+        await ApiService.endGame(this.sessionId, {
+            score: this.score,
+            wave: this.wave,
+            weapon_level: this.weaponLevel,
+            enemies_killed: this.enemiesKilled,
+            boss_killed: this.bossKilled,
+            items_collected: this.itemsCollected
+        });
 
         // 게임 오버 텍스트
         const gameOverText = this.add.text(this.scale.width/2, this.scale.height/2 - 30, 'GAME OVER', { 
