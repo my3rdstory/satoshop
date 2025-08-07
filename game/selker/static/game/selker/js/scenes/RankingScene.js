@@ -40,7 +40,7 @@ export default class RankingScene extends Phaser.Scene {
         
         // 랭킹 가져오기
         try {
-            const rankingData = await ApiService.getTopRankings(10);
+            const rankingData = await ApiService.getTopRankings(15);
             loadingText.destroy();
             
             let rankings;
@@ -139,43 +139,53 @@ export default class RankingScene extends Phaser.Scene {
         const startY = 250;  // 200에서 250으로 조정하여 더 아래로
         
         // 랭킹 제목
-        this.add.text(centerX, startY - 60, 'TOP 10 RANKINGS', {  // -40에서 -60으로 더 위로
+        this.add.text(centerX, startY - 60, 'TOP 15 RANKINGS', {  // -40에서 -60으로 더 위로
             fontSize: '32px', 
             fill: '#ffd700',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // 랭킹 배경 (더 크게 조정)
-        const rankingBg = this.add.rectangle(centerX, startY + 140, 600, 340, 0x000033, 0.8);  // y위치와 높이 조정
+        // 랭킹 배경 (15위까지 표시하도록 크게 조정)
+        const rankingBg = this.add.rectangle(centerX, startY + 210, 900, 480, 0x000033, 0.8);  // y위치와 높이 조정
         rankingBg.setStrokeStyle(2, 0x0066ff);
         
         // 헤더
-        this.add.text(centerX - 250, startY + 20, 'Rank', {  // +10에서 +20으로
+        this.add.text(centerX - 400, startY + 20, 'Rank', {  // +10에서 +20으로
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX - 100, startY + 20, 'Name', { 
+        this.add.text(centerX - 300, startY + 20, 'Name', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX + 100, startY + 20, 'Score', { 
+        this.add.text(centerX - 120, startY + 20, 'Score', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
-        this.add.text(centerX + 200, startY + 20, 'Wave', { 
+        this.add.text(centerX, startY + 20, 'Wave', { 
+            fontSize: '20px', 
+            fill: '#fff',
+            fontStyle: 'bold'
+        });
+        this.add.text(centerX + 80, startY + 20, 'W.Lv', { 
+            fontSize: '20px', 
+            fill: '#fff',
+            fontStyle: 'bold'
+        });
+        this.add.text(centerX + 250, startY + 20, 'Date', { 
             fontSize: '20px', 
             fill: '#fff',
             fontStyle: 'bold'
         });
         
         // 구분선
-        this.add.line(centerX, startY + 45, 0, 0, 580, 0, 0x666666).setLineWidth(2);  // +35에서 +45로
+        this.add.line(centerX, startY + 45, 0, 0, 880, 0, 0x666666).setLineWidth(2);  // +35에서 +45로
         
-        // 랭킹 목록
-        rankings.slice(0, 10).forEach((ranking, index) => {
+        // 랭킹 목록 (15위까지만)
+        rankings.slice(0, 15).forEach((ranking, index) => {
             const y = startY + 65 + (index * 28);  // +50에서 +65로, 간격도 25에서 28로
             const isCurrentPlayer = ranking.nickname === this.playerData.nickname && 
                                   ranking.score === this.playerData.score;
@@ -183,28 +193,51 @@ export default class RankingScene extends Phaser.Scene {
             
             // 순위
             const rank = ranking.rank || (index + 1);
-            this.add.text(centerX - 250, y, rank.toString(), { 
+            this.add.text(centerX - 400, y, rank.toString(), { 
                 fontSize: '18px', 
                 fill: color 
             });
             
             // 이름
             const name = ranking.nickname || ranking.name || 'Unknown';
-            this.add.text(centerX - 100, y, name.substring(0, 15), { 
+            this.add.text(centerX - 300, y, name.substring(0, 10), { 
                 fontSize: '18px', 
                 fill: color 
             });
             
             // 점수
-            this.add.text(centerX + 100, y, ranking.score.toString(), { 
+            this.add.text(centerX - 120, y, ranking.score.toString(), { 
                 fontSize: '18px', 
                 fill: color 
             });
             
             // 웨이브
             if (ranking.wave) {
-                this.add.text(centerX + 200, y, ranking.wave.toString(), { 
+                this.add.text(centerX, y, ranking.wave.toString(), { 
                     fontSize: '18px', 
+                    fill: color 
+                });
+            }
+            
+            // 무기 레벨
+            const weaponLevel = ranking.weapon_level || ranking.weaponLevel || 1;
+            this.add.text(centerX + 80, y, weaponLevel.toString(), { 
+                fontSize: '18px', 
+                fill: color 
+            });
+            
+            // 날짜 (YYYY-MM-DD HH:MM:SS 형식)
+            if (ranking.created_at) {
+                const date = new Date(ranking.created_at);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                this.add.text(centerX + 250, y, dateStr, { 
+                    fontSize: '12px', 
                     fill: color 
                 });
             }

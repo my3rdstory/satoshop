@@ -1,12 +1,49 @@
 {
+  "spawnSettings": {
+    "default": {
+      "spawnDelay": 1500,
+      "spawnDelayReduction": 50,
+      "minSpawnDelay": 800,
+      "spawnPattern": "random",
+      "difficultyMultiplier": 1.0,
+      "maxEnemiesOnScreen": 20
+    },
+    "easy": {
+      "spawnDelay": 2500,
+      "spawnDelayReduction": 30,
+      "minSpawnDelay": 1500,
+      "spawnCountMultiplier": 0.7,
+      "difficultyMultiplier": 0.7,
+      "maxEnemiesOnScreen": 15
+    },
+    "normal": {
+      "spawnDelay": 1500,
+      "spawnDelayReduction": 50,
+      "minSpawnDelay": 800,
+      "spawnCountMultiplier": 1.0,
+      "difficultyMultiplier": 1.0,
+      "maxEnemiesOnScreen": 20
+    },
+    "hard": {
+      "spawnDelay": 1000,
+      "spawnDelayReduction": 60,
+      "minSpawnDelay": 500,
+      "spawnCountMultiplier": 1.3,
+      "difficultyMultiplier": 1.5,
+      "maxEnemiesOnScreen": 30
+    },
+    "currentDifficulty": "normal"
+  },
   "waves": {
     "1": {
       "spawnCount": 1,
+      "spawnDelay": 2000,
+      "spawnPattern": "single",
       "enemyTypes": {
         "normal": 1.0
       },
       "boss": {
-        "hp": 80,
+        "hp": 30,
         "damage": 15,
         "attackDelay": 4000,
         "radialBullets": 4,
@@ -28,6 +65,8 @@
     },
     "2": {
       "spawnCount": 2,
+      "spawnDelay": 1800,
+      "spawnPattern": "random",
       "enemyTypes": {
         "normal": 1.0
       },
@@ -54,6 +93,8 @@
     },
     "3": {
       "spawnCount": 3,
+      "spawnDelay": 1600,
+      "spawnPattern": "random",
       "enemyTypes": {
         "normal": 1.0
       },
@@ -80,6 +121,8 @@
     },
     "4": {
       "spawnCount": 4,
+      "spawnDelay": 1400,
+      "spawnPattern": "wave",
       "enemyTypes": {
         "normal": 1.0
       },
@@ -106,6 +149,8 @@
     },
     "5": {
       "spawnCount": 5,
+      "spawnDelay": 1200,
+      "spawnPattern": "circle",
       "enemyTypes": {
         "normal": 0.7,
         "shooter": 0.3
@@ -133,6 +178,8 @@
     },
     "default": {
       "spawnCountFormula": "Math.floor(wave * 0.85)",
+      "spawnDelayFormula": "Math.max(800, 2000 - (wave * 100))",
+      "spawnPattern": "mixed",
       "spawnCountReduction": 0.85,
       "weaponLevelBonus": {
         "startLevel": 3,

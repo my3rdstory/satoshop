@@ -4,6 +4,8 @@ import Boss from '../entities/Boss.js';
 import ShooterEnemy from '../entities/ShooterEnemy.js';
 import ApiService from '../services/api.js';
 import KeyboardManager from '../managers/KeyboardManager.js';
+import EnemyManager from '../managers/EnemyManager.js';
+import ItemManager from '../managers/ItemManager.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -41,6 +43,33 @@ export default class GameScene extends Phaser.Scene {
 
     preload() {
         this.load.html('nameform', 'nameform.html');
+        // 플레이어 이미지가 로드되지 않았으면 다시 로드
+        if (!this.textures.exists('player')) {
+            this.load.svg('player', '/static/game/selker/img/Bitcoin.svg', { width: 25, height: 25 });
+        }
+        
+        // 적 매니저가 없으면 생성 및 로드
+        if (!this.game.enemyManager) {
+            this.game.enemyManager = new EnemyManager(this);
+            this.game.enemyManager.load().then(() => {
+                this.game.enemyManager.preloadEnemies();
+                if (this.load.list.size > 0) {
+                    this.load.start();
+                }
+            });
+        } else {
+            // 이미지 다시 로드 확인
+            this.game.enemyManager.preloadEnemies();
+            if (this.load.list.size > 0) {
+                this.load.start();
+            }
+        }
+        
+        // 아이템 매니저가 없으면 생성 및 로드
+        if (!this.game.itemManager) {
+            this.game.itemManager = new ItemManager(this);
+            this.game.itemManager.load();
+        }
     }
 
     async create() {
@@ -74,7 +103,9 @@ export default class GameScene extends Phaser.Scene {
         }
         
         const playerSize = this.scaleManager.getPlayerSize();
-        this.player = this.add.rectangle(centerX, centerY, playerSize, playerSize, 0xffffff);
+        // Bitcoin 이미지를 플레이어로 사용
+        this.player = this.add.image(centerX, centerY, 'player');
+        this.player.setDisplaySize(playerSize, playerSize);
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
 
@@ -97,8 +128,10 @@ export default class GameScene extends Phaser.Scene {
         // 무기 레벨 표시
         this.weaponLevelText = this.add.text(16, 118, 'Weapon Lv: 1', { fontSize: this.scaleManager.getFontSize(20), fill: '#0ff' });
 
-        this.time.addEvent({
-            delay: 1000,
+        // 웨이브 설정에서 스폰 딜레이 가져오기
+        const initialSpawnDelay = this.game.waveConfig?.getSpawnDelay(this.wave) || 1500;
+        this.spawnTimer = this.time.addEvent({
+            delay: initialSpawnDelay,
             callback: this.spawnEnemies,
             callbackScope: this,
             loop: true
@@ -227,63 +260,67 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.physics.add.overlap(this.player, this.items, (player, item) => {
-            const itemType = item.getData('type');
-            let message = '';
+            const itemType = item.getData('itemType') || item.getData('type');
             
-            switch (itemType) {
-                case 'weapon':
-                    this.weaponLevel++;
-                    this.weaponLevelText.setText('Weapon Lv: ' + this.weaponLevel);
-                    message = 'Weapon UP!';
-                    break;
-                case 'hp':
-                    this.hp = Math.min(100, this.hp + 20);
-                    this.hpText.setText('HP: ' + this.hp);
-                    message = '+20 HP';
-                    break;
-                case 'bomb':
-                    const bombConfig = this.game.waveConfig?.getBombConfig() || {
-                        bossDamagePercent: 0.5,
-                        explosionColor: 0xffff00,
-                        explosionRadius: 100,
-                        explosionDuration: 500
-                    };
-                    
-                    // 보스는 체력 비율 감소, 일반 적은 즉사
-                    this.enemies.children.each(enemy => {
-                        if (enemy.getData('isBoss')) {
-                            const boss = enemy.getData('boss');
-                            if (boss && boss.hp) {
-                                // 보스 현재 체력의 설정 비율만큼 데미지
-                                const damage = Math.floor(boss.hp * bombConfig.bossDamagePercent);
-                                boss.takeDamage(damage, true);
-                                
-                                // 폭발 이펙트 표시
-                                const explosion = this.add.circle(boss.sprite.x, boss.sprite.y, 
-                                    bombConfig.explosionRadius, bombConfig.explosionColor, 0.8);
-                                this.tweens.add({
-                                    targets: explosion,
-                                    scale: 3,
-                                    alpha: 0,
-                                    duration: bombConfig.explosionDuration,
-                                    onComplete: () => explosion.destroy()
-                                });
+            if (this.game.itemManager) {
+                this.game.itemManager.applyItemEffect(itemType, player, this);
+            } else {
+                // 폴백: 기존 코드
+                let message = '';
+                switch (itemType) {
+                    case 'weapon':
+                        this.weaponLevel++;
+                        this.weaponLevelText.setText('Weapon Lv: ' + this.weaponLevel);
+                        message = 'Weapon UP!';
+                        break;
+                    case 'hp':
+                        this.hp = Math.min(100, this.hp + 20);
+                        this.hpText.setText('HP: ' + this.hp);
+                        message = '+20 HP';
+                        break;
+                    case 'bomb':
+                        const bombConfig = this.game.waveConfig?.getBombConfig() || {
+                            bossDamagePercent: 0.5,
+                            explosionColor: 0xffff00,
+                            explosionRadius: 100,
+                            explosionDuration: 500
+                        };
+                        
+                        // 보스는 체력 비율 감소, 일반 적은 즉사
+                        this.enemies.children.each(enemy => {
+                            if (enemy.getData('isBoss')) {
+                                const boss = enemy.getData('boss');
+                                if (boss && boss.hp) {
+                                    // 보스 현재 체력의 설정 비율만큼 데미지
+                                    const damage = Math.floor(boss.hp * bombConfig.bossDamagePercent);
+                                    boss.takeDamage(damage, true);
+                                    
+                                    // 폭발 이펙트 표시
+                                    const explosion = this.add.circle(boss.sprite.x, boss.sprite.y, 
+                                        bombConfig.explosionRadius, bombConfig.explosionColor, 0.8);
+                                    this.tweens.add({
+                                        targets: explosion,
+                                        scale: 3,
+                                        alpha: 0,
+                                        duration: bombConfig.explosionDuration,
+                                        onComplete: () => explosion.destroy()
+                                    });
+                                }
+                            } else {
+                                // 일반 적은 즉사
+                                enemy.destroy();
                             }
-                        } else {
-                            // 일반 적은 즉사
-                            enemy.destroy();
-                        }
-                    });
-                    message = 'BOOM!';
-                    break;
+                        });
+                        message = 'BOOM!';
+                        break;
                 case 'shield':
                     this.createShield();
                     message = 'SHIELD!';
                     break;
-            }
-            
-            // 아이템 획득 메시지 표시
-            if (message) {
+                }
+                
+                // 아이템 획득 메시지 표시
+                if (message) {
                 const text = this.add.text(this.player.x, this.player.y - 40, message, { 
                     fontSize: '24px', 
                     fill: '#ffff00',
@@ -301,6 +338,7 @@ export default class GameScene extends Phaser.Scene {
                         text.destroy();
                     }
                 });
+                }
             }
             
             item.destroy();
@@ -329,6 +367,11 @@ export default class GameScene extends Phaser.Scene {
 
         // 방어막 업데이트
         this.updateShields();
+
+        // 플레이어가 초기화되지 않았으면 리턴
+        if (!this.player || !this.player.body) {
+            return;
+        }
 
         this.player.body.setVelocity(0);
 
@@ -360,6 +403,14 @@ export default class GameScene extends Phaser.Scene {
         this.enemies.children.each(enemy => {
             if (enemy.body) {
                 this.physics.moveToObject(enemy, this.player, enemySpeed);
+                
+                // 적 회전 애니메이션 적용
+                const rotationSpeed = enemy.getData('rotationSpeed') || 60;
+                const rotationDirection = enemy.getData('rotationDirection') || 1;
+                
+                // 프레임당 회전 각도 계산 (도/초 -> 라디안/프레임)
+                const rotationPerFrame = (rotationSpeed * rotationDirection * Math.PI / 180) / 60;
+                enemy.rotation += rotationPerFrame;
             }
         });
         
@@ -372,10 +423,18 @@ export default class GameScene extends Phaser.Scene {
     spawnEnemies() {
         if (this.gameOver || this.isPaused) return;
         
+        // 최대 적 수 체크
+        const maxEnemies = this.game.waveConfig?.getMaxEnemiesOnScreen() || 20;
+        if (this.enemies.children.entries.length >= maxEnemies) {
+            return;
+        }
+        
         const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
         
-        // 기본 스폰 수: 웨이브 설정에서 가져오기
-        let spawnCount = waveConfig?.spawnCount || this.wave;
+        // 스폰 수를 설정에서 가져오기
+        let spawnCount = this.game.waveConfig?.getSpawnCount(this.wave) || 
+                        waveConfig?.spawnCount || 
+                        this.wave;
         
         // 무기 레벨에 따른 추가 스폰
         const weaponBonus = this.game.waveConfig?.getWeaponLevelBonus(this.weaponLevel) || 0;
@@ -422,14 +481,35 @@ export default class GameScene extends Phaser.Scene {
                 enemySize = this.scaleManager.getSmallEnemySize();
             }
             
-            const enemy = this.add.rectangle(spawnX, spawnY, enemySize, enemySize, 0xff0000);
-            this.physics.add.existing(enemy);
-            this.enemies.add(enemy);
+            // 적 매니저를 통해 적 생성 (GameScene 전달)
+            const enemy = this.game.enemyManager.createEnemy(spawnX, spawnY, this.wave, this);
+            if (enemy) {
+                // 크기 조정 (웨이브에 따른 크기 감소 적용)
+                if (this.game.waveConfig?.shouldReduceEnemySize(this.wave)) {
+                    const smallSize = this.scaleManager.getSmallEnemySize();
+                    if (enemy.setDisplaySize) {
+                        enemy.setDisplaySize(smallSize, smallSize);
+                    }
+                }
+                this.enemies.add(enemy);
+            }
         }
     }
 
     increaseWave() {
         if (this.gameOver || this.isPaused) return;
+        
+        // 웨이브 증가 시 스폰 타이머 업데이트
+        if (this.spawnTimer) {
+            this.spawnTimer.remove();
+            const newSpawnDelay = this.game.waveConfig?.getSpawnDelay(this.wave + 1) || 1500;
+            this.spawnTimer = this.time.addEvent({
+                delay: newSpawnDelay,
+                callback: this.spawnEnemies,
+                callbackScope: this,
+                loop: true
+            });
+        }
         
         // 보스 스폰 (웨이브가 끝날 때)
         this.spawnBoss();
@@ -515,7 +595,8 @@ export default class GameScene extends Phaser.Scene {
         const weaponSpeed = this.scaleManager.getWeaponSpeed();
         
         for (let i = 0; i < this.weaponLevel; i++) {
-            const weapon = this.add.rectangle(this.player.x, this.player.y, weaponSize.width, weaponSize.height, 0x00ff00);
+            // 비트코인 색상의 원형 무기 (주황색)
+            const weapon = this.add.circle(this.player.x, this.player.y, weaponSize.width / 2, 0xf7931a);
             this.physics.add.existing(weapon);
             this.weapons.add(weapon);
             const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, pointer.x, pointer.y) + Phaser.Math.DegToRad(-10 + i * 10);
@@ -524,23 +605,90 @@ export default class GameScene extends Phaser.Scene {
     }
 
     dropItem(enemy) {
-        const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
-        const itemConfig = waveConfig?.items || { dropRate: 0.05 };
-        
-        const rand = Math.random();
-        if (rand < itemConfig.dropRate) {
-            // 동적 가중치 계산
-            const weights = itemConfig.weights || 
-                this.game.waveConfig?.calculateDynamicWeights(
-                    this.game.waveConfig.config.waves.default.items.dynamicWeights, 
-                    this.wave, 
-                    this.hp
-                ) || {
-                    weapon: 25,
-                    hp: 25,
-                    bomb: 25,
-                    shield: 25
-                };
+        if (this.game.itemManager) {
+            if (this.game.itemManager.shouldDropItem(this.wave)) {
+                const item = this.game.itemManager.createItem(
+                    enemy.x, 
+                    enemy.y, 
+                    null,  // 랜덤 아이템
+                    this.wave,
+                    this.hp,
+                    this.weaponLevel,
+                    this  // GameScene 전달
+                );
+                
+                if (item) {
+                    this.items.add(item);
+                }
+            }
+        } else {
+            // 폴백: 기존 코드
+            const waveConfig = this.game.waveConfig?.getWaveConfig(this.wave);
+            const itemConfig = waveConfig?.items || { dropRate: 0.05 };
+            
+            const rand = Math.random();
+            if (rand < itemConfig.dropRate) {
+                const weights = itemConfig.weights || 
+                    this.game.waveConfig?.calculateDynamicWeights(
+                        this.game.waveConfig.config.waves.default.items.dynamicWeights, 
+                        this.wave, 
+                        this.hp
+                    ) || {
+                        weapon: 25,
+                        hp: 25,
+                        bomb: 25,
+                        shield: 25
+                    };
+                
+                const type = this.weightedRandom(weights);
+                let color;
+                switch (type) {
+                    case 'weapon': color = 0x0000ff; break;
+                    case 'hp': color = 0x00ff00; break;
+                    case 'bomb': color = 0xffff00; break;
+                    case 'shield': color = 0xff00ff; break;
+                }
+                const item = this.add.rectangle(enemy.x, enemy.y, 20, 20, color);
+                this.physics.add.existing(item);
+                item.setData('type', type);
+                this.items.add(item);
+                
+                this.tweens.add({
+                    targets: item,
+                    alpha: 0.5,
+                    duration: 500,
+                    yoyo: true,
+                    repeat: -1
+                });
+            }
+        }
+    }
+    
+    dropBossItem(x, y) {
+        if (this.game.itemManager) {
+            const items = this.game.itemManager.dropBossItems(
+                x, 
+                y,
+                this.wave,
+                this.hp,
+                this.weaponLevel,
+                this  // GameScene 전달
+            );
+            
+            items.forEach(item => {
+                if (item) {
+                    this.items.add(item);
+                }
+            });
+        } else {
+            // 폴백: 기존 코드
+            const bossItemConfig = this.game.waveConfig?.getBossItemConfig();
+            const weights = bossItemConfig?.weights || {
+                weapon: 35,
+                hp: 35,
+                bomb: 15,
+                shield: 15
+            };
             
             const type = this.weightedRandom(weights);
             let color;
@@ -548,59 +696,25 @@ export default class GameScene extends Phaser.Scene {
                 case 'weapon': color = 0x0000ff; break;
                 case 'hp': color = 0x00ff00; break;
                 case 'bomb': color = 0xffff00; break;
-                case 'shield': color = 0xff00ff; break;  // 보라색
+                case 'shield': color = 0xff00ff; break;
             }
-            const item = this.add.rectangle(enemy.x, enemy.y, 20, 20, color);
+            
+            const offsetX = Phaser.Math.Between(-50, 50);
+            const offsetY = Phaser.Math.Between(-50, 50);
+            const item = this.add.rectangle(x + offsetX, y + offsetY, 30, 30, color);
             this.physics.add.existing(item);
             item.setData('type', type);
             this.items.add(item);
             
-            // 아이템 반짝임 효과
             this.tweens.add({
                 targets: item,
+                scale: 1.2,
                 alpha: 0.5,
                 duration: 500,
                 yoyo: true,
                 repeat: -1
             });
         }
-    }
-    
-    dropBossItem(x, y) {
-        // 보스는 아이템 드롭 확정 (100%)
-        const bossItemConfig = this.game.waveConfig?.getBossItemConfig();
-        const weights = bossItemConfig?.weights || {
-            weapon: 35,
-            hp: 35,
-            bomb: 15,
-            shield: 15
-        };
-        
-        const type = this.weightedRandom(weights);
-        let color;
-        switch (type) {
-            case 'weapon': color = 0x0000ff; break;
-            case 'hp': color = 0x00ff00; break;
-            case 'bomb': color = 0xffff00; break;
-            case 'shield': color = 0xff00ff; break;
-        }
-        
-        const offsetX = Phaser.Math.Between(-50, 50);
-        const offsetY = Phaser.Math.Between(-50, 50);
-        const item = this.add.rectangle(x + offsetX, y + offsetY, 30, 30, color);
-        this.physics.add.existing(item);
-        item.setData('type', type);
-        this.items.add(item);
-        
-        // 보스 아이템은 더 화려하게
-        this.tweens.add({
-            targets: item,
-            scale: 1.2,
-            alpha: 0.5,
-            duration: 500,
-            yoyo: true,
-            repeat: -1
-        });
     }
     
     weightedRandom(weights) {
@@ -620,7 +734,8 @@ export default class GameScene extends Phaser.Scene {
     endGame() {
         this.gameOver = true;
         this.physics.pause();
-        this.player.setFillStyle(0xff0000);
+        // 플레이어 이미지를 빨간색으로 tint
+        this.player.setTint(0xff0000);
         
         // 방어막 타이머 정리
         this.shieldTimers.forEach(timer => {
@@ -745,6 +860,10 @@ export default class GameScene extends Phaser.Scene {
     }
 
     updateShields() {
+        if (!this.shields || !this.shields.children) {
+            return;
+        }
+        
         this.shields.children.entries.forEach(shield => {
             const angle = shield.getData('angle');
             const radius = shield.getData('radius');
@@ -858,11 +977,11 @@ export default class GameScene extends Phaser.Scene {
             });
         }
         
-        this.pauseInstructions = this.add.text(centerX, centerY + 30, instructions.join('\n'), {
-            fontSize: this.scaleManager.getFontSize(24),
+        this.pauseInstructions = this.add.text(centerX, centerY + 60, instructions.join('\n'), {
+            fontSize: this.scaleManager.getFontSize(18),
             fill: '#ffff00',
             align: 'center',
-            lineSpacing: 10
+            lineSpacing: 8
         }).setOrigin(0.5);
         this.pauseInstructions.setDepth(1001);
     }

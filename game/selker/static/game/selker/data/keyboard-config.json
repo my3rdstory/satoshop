@@ -12,10 +12,18 @@
       "T": {
         "action": "openSettings",
         "description": "설정"
+      },
+      "M": {
+        "action": "toggleMusic",
+        "description": "음악 켜기/끄기"
       }
     },
     "GameScene": {
       "P": {
+        "action": "togglePause",
+        "description": "일시정지"
+      },
+      "ESC": {
         "action": "togglePause",
         "description": "일시정지"
       },

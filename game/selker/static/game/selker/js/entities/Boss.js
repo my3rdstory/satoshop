@@ -29,6 +29,15 @@ export default class Boss {
         this.sprite.setData('isBoss', true);
         this.sprite.setData('boss', this);
         
+        // "Big Blocker" 텍스트를 보스 몸통에 추가
+        this.nameText = scene.add.text(x, y, 'Big Blocker', {
+            fontSize: '14px',
+            fill: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 2
+        }).setOrigin(0.5);
+        
         // 체력바 생성
         this.createHealthBar();
         
@@ -200,6 +209,12 @@ export default class Boss {
     update() {
         if (!this.sprite || !this.sprite.body) return;
         
+        // "Big Blocker" 텍스트 위치 업데이트
+        if (this.nameText) {
+            this.nameText.x = this.sprite.x;
+            this.nameText.y = this.sprite.y;
+        }
+        
         // 플레이어 추적 (느리게)
         const bossSpeed = this.scaleManager ? this.scaleManager.getBossSpeed() : 20;
         this.scene.physics.moveToObject(this.sprite, this.scene.player, bossSpeed);
@@ -211,6 +226,11 @@ export default class Boss {
     destroy() {
         // 이미 제거된 경우 중복 실행 방지
         if (!this.sprite || !this.sprite.active) return;
+        
+        // "Big Blocker" 텍스트 제거
+        if (this.nameText) {
+            this.nameText.destroy();
+        }
         
         // 보스 격파 시 대량의 점수와 아이템
         this.scene.score += this.scoreMultiplier;

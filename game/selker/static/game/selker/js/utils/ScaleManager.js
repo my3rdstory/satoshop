@@ -40,7 +40,7 @@ export default class ScaleManager {
     
     // 크기 변환 메서드들
     getPlayerSize() {
-        return 50 * this.scaleFactor;
+        return 25 * this.scaleFactor;  // 50에서 25로 축소 (50% 크기)
     }
     
     getEnemySize() {

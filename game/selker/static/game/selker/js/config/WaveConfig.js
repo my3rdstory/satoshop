@@ -32,6 +32,8 @@ export default class WaveConfig {
         const defaults = this.config.waves.default;
         const config = {
             spawnCount: Math.min(eval(defaults.spawnCountFormula.replace(/wave/g, wave)), defaults.maxSpawnCount),
+            spawnDelay: eval(defaults.spawnDelayFormula.replace(/wave/g, wave)),
+            spawnPattern: defaults.spawnPattern || 'random',
             enemyTypes: defaults.enemyTypes,
             boss: {
                 hp: eval(defaults.boss.hpFormula.replace('wave', wave)),
@@ -132,5 +134,63 @@ export default class WaveConfig {
             explosionRadius: 100,
             explosionDuration: 500
         };
+    }
+    
+    getSpawnSettings() {
+        if (!this.config?.spawnSettings) {
+            return {
+                currentDifficulty: 'normal',
+                spawnDelay: 1500,
+                spawnDelayReduction: 50,
+                minSpawnDelay: 800,
+                spawnCountMultiplier: 1.0,
+                difficultyMultiplier: 1.0,
+                maxEnemiesOnScreen: 20
+            };
+        }
+        
+        const difficulty = this.config.spawnSettings.currentDifficulty || 'normal';
+        const settings = this.config.spawnSettings[difficulty] || this.config.spawnSettings.default;
+        
+        return {
+            ...settings,
+            currentDifficulty: difficulty
+        };
+    }
+    
+    getSpawnDelay(wave) {
+        const waveConfig = this.getWaveConfig(wave);
+        if (waveConfig?.spawnDelay) {
+            return waveConfig.spawnDelay;
+        }
+        
+        const settings = this.getSpawnSettings();
+        const reduction = wave * (settings.spawnDelayReduction || 50);
+        return Math.max(settings.minSpawnDelay || 800, (settings.spawnDelay || 1500) - reduction);
+    }
+    
+    getSpawnCount(wave) {
+        const waveConfig = this.getWaveConfig(wave);
+        const settings = this.getSpawnSettings();
+        const multiplier = settings.spawnCountMultiplier || 1.0;
+        
+        const baseCount = waveConfig?.spawnCount || 1;
+        return Math.floor(baseCount * multiplier);
+    }
+    
+    getMaxEnemiesOnScreen() {
+        const settings = this.getSpawnSettings();
+        return settings.maxEnemiesOnScreen || 20;
+    }
+    
+    getDifficultyMultiplier() {
+        const settings = this.getSpawnSettings();
+        return settings.difficultyMultiplier || 1.0;
+    }
+    
+    setDifficulty(difficulty) {
+        if (this.config?.spawnSettings) {
+            this.config.spawnSettings.currentDifficulty = difficulty;
+        }
     }
 }

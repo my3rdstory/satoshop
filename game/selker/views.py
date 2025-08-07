@@ -41,7 +41,8 @@ def get_rankings(request):
     offset = int(request.GET.get('offset', 0))
     nickname = request.GET.get('nickname', None)
     
-    rankings = Ranking.objects.all()
+    # 점수 내림차순, 동점일 경우 weapon_level 내림차순으로 정렬
+    rankings = Ranking.objects.all().order_by('-score', '-weapon_level')
     if nickname:
         rankings = rankings.filter(nickname=nickname)
     
@@ -69,7 +70,8 @@ def get_rankings(request):
 @require_http_methods(["GET"])
 def get_top_rankings(request):
     limit = int(request.GET.get('limit', 10))
-    rankings = Ranking.objects.all()[:limit]
+    # 점수 내림차순, 동점일 경우 weapon_level 내림차순으로 정렬
+    rankings = Ranking.objects.all().order_by('-score', '-weapon_level')[:limit]
     
     rankings_data = []
     for idx, ranking in enumerate(rankings, start=1):
@@ -87,7 +89,13 @@ def get_top_rankings(request):
     return JsonResponse({'rankings': rankings_data})
 
 def get_rank(ranking):
-    return Ranking.objects.filter(score__gt=ranking.score).count() + 1
+    # 점수가 더 높거나, 점수가 같고 weapon_level이 더 높은 경우 계산
+    higher_score = Ranking.objects.filter(score__gt=ranking.score).count()
+    same_score_higher_weapon = Ranking.objects.filter(
+        score=ranking.score, 
+        weapon_level__gt=ranking.weapon_level
+    ).count()
+    return higher_score + same_score_higher_weapon + 1
 
 @csrf_exempt
 @require_http_methods(["POST"])
