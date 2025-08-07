@@ -36,14 +36,21 @@ export default class ShooterEnemy {
         this.sprite.setData('isShooter', true);
         this.sprite.setData('shooter', this);
         
-        // 발사 타이머
+        // 발사 타이머 - 첫 발사를 좀 더 빠르게
         const shootDelay = enemyConfig.shootDelay;
-        this.shootTimer = scene.time.addEvent({
-            delay: shootDelay.min + Math.random() * (shootDelay.max - shootDelay.min),
-            callback: this.shoot,
-            callbackScope: this,
-            loop: true
-        });
+        const delayTime = shootDelay.min + Math.random() * (shootDelay.max - shootDelay.min);
+        
+        // 첫 발사는 1초 후에
+        scene.time.delayedCall(1000, () => {
+            this.shoot();
+            // 이후 반복 타이머 설정
+            this.shootTimer = scene.time.addEvent({
+                delay: delayTime,
+                callback: this.shoot,
+                callbackScope: this,
+                loop: true
+            });
+        }, null, this);
         
         // 체력과 기타 스텟
         this.hp = enemyConfig.hp;
@@ -53,7 +60,14 @@ export default class ShooterEnemy {
     }
     
     shoot() {
-        if (!this.sprite || !this.sprite.active || this.scene.gameOver) return;
+        if (!this.sprite || !this.sprite.active || this.scene.gameOver) {
+            return;
+        }
+        
+        // 플레이어가 없으면 리턴
+        if (!this.scene.player || !this.scene.player.active) {
+            return;
+        }
         
         // 플레이어 방향으로 탄환 발사
         const bulletSize = this.scaleManager ? this.scaleManager.getBulletSize() : 5;
@@ -118,9 +132,11 @@ export default class ShooterEnemy {
     
     update() {
         // 텍스트 위치 업데이트
-        if (this.nameText && this.sprite && this.sprite.active) {
-            this.nameText.x = this.sprite.x;
-            this.nameText.y = this.sprite.y;
+        if (this.sprite && this.sprite.active) {
+            if (this.nameText) {
+                this.nameText.x = this.sprite.x;
+                this.nameText.y = this.sprite.y;
+            }
         }
     }
     

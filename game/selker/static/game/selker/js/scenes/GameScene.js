@@ -49,6 +49,11 @@ export default class GameScene extends Phaser.Scene {
             this.load.svg('player', '/static/game/selker/img/Bitcoin.svg', { width: 25, height: 25 });
         }
         
+        // 보스 총알용 poo 이미지 로드
+        if (!this.textures.exists('poo')) {
+            this.load.svg('poo', '/static/game/selker/img/poo.svg', { width: 20, height: 20 });
+        }
+        
         // 적 매니저가 없으면 생성 및 로드
         if (!this.game.enemyManager) {
             this.game.enemyManager = new EnemyManager(this);

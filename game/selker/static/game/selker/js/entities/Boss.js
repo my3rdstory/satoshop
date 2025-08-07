@@ -38,6 +38,7 @@ export default class Boss {
             stroke: '#000000',
             strokeThickness: 2
         }).setOrigin(0.5);
+        this.nameText.setDepth(10);  // 깊이 설정으로 항상 보이도록
         
         // 체력바 생성
         this.createHealthBar();
@@ -132,7 +133,9 @@ export default class Boss {
         const bullets = this.waveConfig?.boss?.radialBullets || Math.min(4 + this.wave, 8);
         for (let i = 0; i < bullets; i++) {
             const angle = (Math.PI * 2 / bullets) * i;
-            const bullet = this.scene.add.circle(this.sprite.x, this.sprite.y, 10, 0xff00ff);
+            // poo 이미지로 총알 생성
+            const bullet = this.scene.add.image(this.sprite.x, this.sprite.y, 'poo');
+            bullet.setDisplaySize(20, 20);
             this.scene.physics.add.existing(bullet);
             
             const speed = this.bulletSpeed;
@@ -166,7 +169,9 @@ export default class Boss {
     }
     
     homingShot() {
-        const missile = this.scene.add.circle(this.sprite.x, this.sprite.y, 8, 0xffff00);
+        // poo 이미지로 추적 미사일 생성
+        const missile = this.scene.add.image(this.sprite.x, this.sprite.y, 'poo');
+        missile.setDisplaySize(25, 25);  // 추적 미사일은 조금 더 크게
         this.scene.physics.add.existing(missile);
         
         // enemyWeapons 그룹에 추가
@@ -210,10 +215,9 @@ export default class Boss {
     update() {
         if (!this.sprite || !this.sprite.body) return;
         
-        // "Central Bank" 텍스트 위치 업데이트
-        if (this.nameText) {
-            this.nameText.x = this.sprite.x;
-            this.nameText.y = this.sprite.y;
+        // "Central Bank" 텍스트 위치를 매 프레임마다 정확히 동기화
+        if (this.nameText && this.nameText.active) {
+            this.nameText.setPosition(this.sprite.x, this.sprite.y);
         }
         
         // 플레이어 추적 (느리게)
