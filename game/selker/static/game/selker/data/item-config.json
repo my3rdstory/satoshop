@@ -1,0 +1,185 @@
+{
+  "items": {
+    "weapon": {
+      "name": "밋업",
+      "color": "0x00ff00",
+      "size": 20,
+      "shape": "circle",
+      "text": "W",
+      "textColor": "#ffffff",
+      "textSize": "14px",
+      "effect": "weaponLevelUp",
+      "description": "무기 레벨 증가",
+      "dropWeight": 30,
+      "floatSpeed": 20,
+      "rotationSpeed": 45
+    },
+    "hp": {
+      "name": "대출!",
+      "color": "0xff0000",
+      "size": 20,
+      "shape": "circle",
+      "text": "HP",
+      "textColor": "#ffffff",
+      "textSize": "12px",
+      "effect": "heal",
+      "healAmount": 30,
+      "description": "체력 30 회복",
+      "dropWeight": 25,
+      "floatSpeed": 25,
+      "rotationSpeed": 30
+    },
+    "bomb": {
+      "name": "DCA",
+      "color": "0xffff00",
+      "size": 25,
+      "shape": "star",
+      "text": "B",
+      "textColor": "#000000",
+      "textSize": "16px",
+      "effect": "screenClear",
+      "damage": 50,
+      "description": "화면의 모든 적에게 50 데미지",
+      "dropWeight": 20,
+      "floatSpeed": 15,
+      "rotationSpeed": 60
+    },
+    "shield": {
+      "name": "에어갭",
+      "color": "0xF7931A",
+      "size": 22,
+      "shape": "hexagon",
+      "text": "S",
+      "textColor": "#000080",
+      "textSize": "14px",
+      "effect": "shield",
+      "duration": 10000,
+      "orbitCount": 3,
+      "description": "10초간 보호막 생성",
+      "dropWeight": 15,
+      "floatSpeed": 18,
+      "rotationSpeed": 90
+    },
+    "speed": {
+      "name": "풀노드",
+      "color": "0xff00ff",
+      "size": 18,
+      "shape": "triangle",
+      "text": ">>",
+      "textColor": "#ffffff",
+      "textSize": "12px",
+      "effect": "speedBoost",
+      "speedMultiplier": 1.5,
+      "duration": 8000,
+      "description": "8초간 이동속도 1.5배",
+      "dropWeight": 10,
+      "floatSpeed": 30,
+      "rotationSpeed": 120
+    },
+    "multishot": {
+      "name": "하드월렛",
+      "color": "0x9900ff",
+      "size": 24,
+      "shape": "diamond",
+      "text": "M",
+      "textColor": "#ffff00",
+      "textSize": "14px",
+      "effect": "multishot",
+      "duration": 15000,
+      "description": "15초간 다중 발사",
+      "dropWeight": 8,
+      "floatSpeed": 22,
+      "rotationSpeed": 75
+    },
+    "coin": {
+      "name": "금리인하",
+      "color": "0xffd700",
+      "size": 16,
+      "shape": "circle",
+      "text": "$",
+      "textColor": "#000000",
+      "textSize": "14px",
+      "effect": "bonusScore",
+      "scoreAmount": 100,
+      "description": "보너스 점수 100점",
+      "dropWeight": 12,
+      "floatSpeed": 35,
+      "rotationSpeed": 180
+    },
+    "maxhp": {
+      "name": "ERM",
+      "color": "0xff6600",
+      "size": 22,
+      "shape": "heart",
+      "text": "+",
+      "textColor": "#ffffff",
+      "textSize": "16px",
+      "effect": "maxHpIncrease",
+      "hpIncrease": 20,
+      "description": "최대 체력 20 증가",
+      "dropWeight": 5,
+      "floatSpeed": 20,
+      "rotationSpeed": 40
+    }
+  },
+  "dropRates": {
+    "default": 0.05,
+    "byWave": {
+      "1-5": 0.05,
+      "6-10": 0.06,
+      "11-15": 0.07,
+      "16-20": 0.08,
+      "21-25": 0.09,
+      "26+": 0.10
+    },
+    "boss": 1.0,
+    "bossItemCount": 3
+  },
+  "dynamicWeights": {
+    "weapon": {
+      "base": 30,
+      "perWave": -0.5,
+      "minWeight": 15
+    },
+    "hp": {
+      "base": 25,
+      "lowHpBonus": 20,
+      "hpThreshold": 50
+    },
+    "bomb": {
+      "base": 20,
+      "waveBonus": 0.3,
+      "maxWeight": 30
+    },
+    "shield": {
+      "base": 15,
+      "waveBonus": 0.2,
+      "maxWeight": 25
+    },
+    "speed": {
+      "base": 10,
+      "constant": true
+    },
+    "multishot": {
+      "base": 8,
+      "weaponLevelBonus": -1,
+      "minWeight": 3
+    },
+    "coin": {
+      "base": 12,
+      "waveBonus": 0.1
+    },
+    "maxhp": {
+      "base": 5,
+      "waveBonus": 0.1,
+      "maxWeight": 10
+    }
+  },
+  "visualEffects": {
+    "floatAnimation": true,
+    "glowEffect": true,
+    "particleTrail": false,
+    "magnetRange": 100,
+    "magnetSpeed": 200
+  }
+}

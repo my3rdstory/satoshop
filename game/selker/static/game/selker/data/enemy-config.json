@@ -1,0 +1,137 @@
+{
+  "enemies": {
+    "whale": {
+      "name": "Whale",
+      "sprite": "/static/game/selker/img/whale.svg",
+      "size": 30,
+      "hp": 1,
+      "damage": 10,
+      "speed": 50,
+      "score": 10,
+      "color": null,
+      "description": "기본 적 - 고래"
+    },
+    "eth": {
+      "name": "Ethereum",
+      "sprite": "/static/game/selker/img/eth.svg",
+      "size": 28,
+      "hp": 1,
+      "damage": 10,
+      "speed": 60,
+      "score": 15,
+      "color": null,
+      "description": "빠른 적 - 이더리움"
+    },
+    "xrp": {
+      "name": "XRP",
+      "sprite": "/static/game/selker/img/xrp.svg",
+      "size": 25,
+      "hp": 1,
+      "damage": 10,
+      "speed": 70,
+      "score": 20,
+      "color": null,
+      "description": "매우 빠른 적 - 리플"
+    },
+    "monero": {
+      "name": "Monero",
+      "sprite": "/static/game/selker/img/monero.svg",
+      "size": 32,
+      "hp": 2,
+      "damage": 15,
+      "speed": 40,
+      "score": 25,
+      "color": null,
+      "description": "강한 적 - 모네로"
+    },
+    "tron": {
+      "name": "Tron",
+      "sprite": "/static/game/selker/img/tron.svg",
+      "size": 26,
+      "hp": 1,
+      "damage": 10,
+      "speed": 65,
+      "score": 18,
+      "color": null,
+      "description": "중간 속도 적 - 트론"
+    },
+    "worldcoin": {
+      "name": "Worldcoin",
+      "sprite": "/static/game/selker/img/worldcoin.svg",
+      "size": 35,
+      "hp": 3,
+      "damage": 20,
+      "speed": 35,
+      "score": 30,
+      "color": null,
+      "description": "탱커 적 - 월드코인"
+    },
+    "bitcoincash": {
+      "name": "Bitcoin Cash",
+      "sprite": "/static/game/selker/img/bitcoin-cash.svg",
+      "size": 30,
+      "hp": 2,
+      "damage": 12,
+      "speed": 45,
+      "score": 22,
+      "color": null,
+      "description": "중간 강도 적 - 비트코인 캐시"
+    }
+  },
+  "waveEnemyTypes": {
+    "1-3": ["whale"],
+    "4-6": ["whale", "eth"],
+    "7-9": ["whale", "eth", "xrp"],
+    "10-12": ["whale", "eth", "xrp", "tron"],
+    "13-15": ["eth", "xrp", "tron", "monero"],
+    "16-20": ["xrp", "tron", "monero", "bitcoincash"],
+    "21-25": ["tron", "monero", "bitcoincash", "worldcoin"],
+    "26+": ["monero", "bitcoincash", "worldcoin"]
+  },
+  "spawnWeights": {
+    "1-2": {
+      "whale": 1.0
+    },
+    "3-4": {
+      "whale": 0.5,
+      "eth": 0.5
+    },
+    "4-5": {
+      "whale": 0.3,
+      "eth": 0.4,
+      "xrp": 0.3
+    },
+    "6-9": {
+      "whale": 0.2,
+      "eth": 0.3,
+      "xrp": 0.3,
+      "tron": 0.2
+    },
+    "9-13": {
+      "eth": 0.2,
+      "xrp": 0.2,
+      "tron": 0.3,
+      "monero": 0.3
+    },
+    "13-16": {
+      "xrp": 0.1,
+      "tron": 0.2,
+      "monero": 0.2,
+      "bitcoincash": 0.4
+    },
+    "16-20": {
+      "tron": 0.1,
+      "monero": 0.2,
+      "bitcoincash": 0.2,
+      "worldcoin": 0.5
+    },
+    "21+": {
+      "whale": 0.1,
+      "eth": 0.2,
+      "xrp": 0.1,
+      "monero": 0.2,
+      "bitcoincash": 0.2,
+      "worldcoin": 0.2
+    }
+  }
+}
