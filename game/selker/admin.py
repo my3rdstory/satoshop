@@ -79,7 +79,3 @@ class GamePlayHistoryAdmin(admin.ModelAdmin):
         
         return super().changelist_view(request, extra_context=extra_context)
     
-    class Media:
-        css = {
-            'all': ('admin/css/gameplay_history_admin.css',)
-        }
