@@ -92,7 +92,7 @@
       }
     },
     "3": {
-      "spawnCount": 3,
+      "spawnCount": 2,
       "spawnDelay": 1600,
       "spawnPattern": "random",
       "enemyTypes": {
@@ -120,7 +120,7 @@
       }
     },
     "4": {
-      "spawnCount": 4,
+      "spawnCount": 3,
       "spawnDelay": 1400,
       "spawnPattern": "wave",
       "enemyTypes": {
@@ -148,7 +148,7 @@
       }
     },
     "5": {
-      "spawnCount": 5,
+      "spawnCount": 4,
       "spawnDelay": 1200,
       "spawnPattern": "circle",
       "enemyTypes": {
@@ -177,15 +177,15 @@
       }
     },
     "default": {
-      "spawnCountFormula": "Math.floor(wave * 0.85)",
+      "spawnCountFormula": "Math.floor(wave * 0.68)",
       "spawnDelayFormula": "Math.max(800, 2000 - (wave * 100))",
       "spawnPattern": "mixed",
-      "spawnCountReduction": 0.85,
+      "spawnCountReduction": 0.68,
       "weaponLevelBonus": {
         "startLevel": 3,
         "bonusFormula": "(weaponLevel - 2) * 0.5"
       },
-      "maxSpawnCount": 12,
+      "maxSpawnCount": 10,
       "enemyTypes": {
         "normal": 0.7,
         "shooter": 0.3
@@ -275,7 +275,7 @@
     "color": "0xff00ff",
     "alpha": 0.8
   },
-  "waveTimer": 15,
+  "waveTimer": 10,
   "autoFireDelay": 500,
   "bomb": {
     "bossDamagePercent": 0.5,

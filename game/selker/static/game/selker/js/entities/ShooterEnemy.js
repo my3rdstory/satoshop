@@ -23,6 +23,15 @@ export default class ShooterEnemy {
         this.sprite.setStrokeStyle(2, 0xffff00); // 노란 테두리
         scene.physics.add.existing(this.sprite);
         
+        // "Big Blocker" 텍스트 추가
+        this.nameText = scene.add.text(x, y, 'Big Blocker', {
+            fontSize: '10px',
+            fill: '#ffffff',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 1
+        }).setOrigin(0.5);
+        
         // 총 쏘는 적 표시
         this.sprite.setData('isShooter', true);
         this.sprite.setData('shooter', this);
@@ -106,9 +115,20 @@ export default class ShooterEnemy {
         return false;
     }
     
+    update() {
+        // 텍스트 위치 업데이트
+        if (this.nameText && this.sprite && this.sprite.active) {
+            this.nameText.x = this.sprite.x;
+            this.nameText.y = this.sprite.y;
+        }
+    }
+    
     destroy() {
         if (this.shootTimer) {
             this.shootTimer.remove();
+        }
+        if (this.nameText) {
+            this.nameText.destroy();
         }
         if (this.sprite) {
             // 점수 추가

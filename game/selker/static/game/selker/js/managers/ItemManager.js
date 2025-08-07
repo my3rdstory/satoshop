@@ -119,8 +119,7 @@ export default class ItemManager {
             return null;
         }
         
-        // 아이템 그룹 생성 (아이템 본체 + 텍스트)
-        const itemGroup = scene.add.container(x, y);
+        // 아이템 스프라이트 생성 (Container 대신 Sprite 사용)
         
         // 아이템 모양 생성
         let itemShape;
@@ -150,33 +149,22 @@ export default class ItemManager {
                 itemShape = scene.add.rectangle(0, 0, size, size, color);
         }
         
-        // 아이템 텍스트 추가
-        if (itemConfig.text) {
-            const itemText = scene.add.text(0, 0, itemConfig.text, {
-                fontSize: itemConfig.textSize || '14px',
-                fill: itemConfig.textColor || '#ffffff',
-                fontStyle: 'bold',
-                stroke: '#000000',
-                strokeThickness: 1
-            }).setOrigin(0.5);
-            
-            itemGroup.add([itemShape, itemText]);
-        } else {
-            itemGroup.add(itemShape);
-        }
+        // 아이템을 단순화 - 텍스트 없이 도형만 사용
+        itemShape.x = x;
+        itemShape.y = y;
         
         // 물리 속성 추가
-        scene.physics.add.existing(itemGroup);
-        itemGroup.body.setSize(size, size);
+        scene.physics.add.existing(itemShape);
+        itemShape.body.setSize(size, size);
         
         // 아이템 데이터 저장
-        itemGroup.setData('itemType', itemType);
-        itemGroup.setData('itemConfig', itemConfig);
+        itemShape.setData('itemType', itemType);
+        itemShape.setData('itemConfig', itemConfig);
         
         // 회전 애니메이션
         if (itemConfig.rotationSpeed) {
             scene.tweens.add({
-                targets: itemGroup,
+                targets: itemShape,
                 rotation: Math.PI * 2,
                 duration: 60000 / itemConfig.rotationSpeed,
                 repeat: -1
@@ -186,7 +174,7 @@ export default class ItemManager {
         // 부유 애니메이션
         if (this.config.visualEffects?.floatAnimation && itemConfig.floatSpeed) {
             scene.tweens.add({
-                targets: itemGroup,
+                targets: itemShape,
                 y: y - 10,
                 duration: 2000 / (itemConfig.floatSpeed / 20),
                 yoyo: true,
@@ -200,7 +188,7 @@ export default class ItemManager {
             itemShape.setStrokeStyle(2, 0xffffff, 0.5);
         }
         
-        return itemGroup;
+        return itemShape;
     }
     
     createStar(x, y, radius, color, scene) {
@@ -260,6 +248,22 @@ export default class ItemManager {
     applyItemEffect(itemType, player, scene) {
         const itemConfig = this.config.items[itemType];
         if (!itemConfig) return;
+        
+        // 아이템 name을 메시지로 표시 (밝은 색상)
+        if (itemConfig.name && scene.showMessage) {
+            const colorMap = {
+                'weaponLevelUp': 0x6666ff,  // 밝은 파란색
+                'heal': 0x66ff66,            // 밝은 초록색
+                'screenClear': 0xffff66,      // 밝은 노란색
+                'shield': 0x66ffff,           // 밝은 청록색
+                'speedBoost': 0xff66ff,       // 밝은 보라색
+                'multishot': 0xff66ff,        // 밝은 보라색
+                'bonusScore': 0xffaa66,       // 밝은 주황색
+                'maxHpIncrease': 0x66ff66     // 밝은 초록색
+            };
+            const color = colorMap[itemConfig.effect] || 0xffffff;
+            scene.showMessage(itemConfig.name, color);
+        }
         
         switch (itemConfig.effect) {
             case 'weaponLevelUp':

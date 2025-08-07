@@ -6,6 +6,7 @@ import ApiService from '../services/api.js';
 import KeyboardManager from '../managers/KeyboardManager.js';
 import EnemyManager from '../managers/EnemyManager.js';
 import ItemManager from '../managers/ItemManager.js';
+import WaveConfig from '../config/WaveConfig.js';
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -21,7 +22,7 @@ export default class GameScene extends Phaser.Scene {
         this.wave = 1;
         this.waveText = null;
         this.waveTimerText = null;
-        this.waveTimer = this.game.waveConfig?.getWaveTimer() || 15;
+        this.waveTimer = this.game.waveConfig?.getWaveTimer() || WaveConfig.DEFAULT_WAVE_TIMER;
         this.weapons = null;
         this.hp = 100;
         this.hpText = null;
@@ -122,7 +123,8 @@ export default class GameScene extends Phaser.Scene {
         this.poos = this.physics.add.group();
 
         this.waveText = this.add.text(16, 16, 'Wave: 1', { fontSize: this.scaleManager.getFontSize(32), fill: '#fff' });
-        this.waveTimerText = this.add.text(16, 84, 'Next wave: 15s', { fontSize: this.scaleManager.getFontSize(24), fill: '#ff0' });
+        const initialTimer = this.game.waveConfig?.getWaveTimer() || WaveConfig.DEFAULT_WAVE_TIMER;
+        this.waveTimerText = this.add.text(16, 84, `Next wave: ${initialTimer}s`, { fontSize: this.scaleManager.getFontSize(24), fill: '#ff0' });
         this.hpText = this.add.text(16, 50, 'HP: 100', { fontSize: this.scaleManager.getFontSize(32), fill: '#fff' });
         this.scoreText = this.add.text(this.scale.width - 16, 16, 'Score: 0', { fontSize: this.scaleManager.getFontSize(32), fill: '#fff' }).setOrigin(1, 0);
         
@@ -139,7 +141,7 @@ export default class GameScene extends Phaser.Scene {
         });
 
         this.time.addEvent({
-            delay: (this.game.waveConfig?.getWaveTimer() || 15) * 1000,  // 설정된 시간마다 웨이브 증가
+            delay: (this.game.waveConfig?.getWaveTimer() || WaveConfig.DEFAULT_WAVE_TIMER) * 1000,  // WaveConfig에서 가져온 시간마다 웨이브 증가
             callback: this.increaseWave,
             callbackScope: this,
             loop: true
@@ -152,7 +154,7 @@ export default class GameScene extends Phaser.Scene {
                 if (!this.gameOver && !this.isPaused) {
                     this.waveTimer--;
                     if (this.waveTimer <= 0) {
-                        this.waveTimer = this.game.waveConfig?.getWaveTimer() || 15;
+                        this.waveTimer = this.game.waveConfig?.getWaveTimer() || WaveConfig.DEFAULT_WAVE_TIMER;
                     }
                     this.waveTimerText.setText(`Next wave: ${this.waveTimer}s`);
                 }
@@ -250,8 +252,10 @@ export default class GameScene extends Phaser.Scene {
                             alpha: 0,
                             duration: 300,
                             onComplete: () => {
-                                this.shieldSprite.destroy();
-                                this.shieldSprite = null;
+                                if (this.shieldSprite) {
+                                    this.shieldSprite.destroy();
+                                    this.shieldSprite = null;
+                                }
                             }
                         });
                     }
@@ -259,7 +263,7 @@ export default class GameScene extends Phaser.Scene {
                         this.shieldTimer.destroy();
                         this.shieldTimer = null;
                     }
-                    this.showMessage('SHIELD BROKEN!', 0xff0000);
+                    this.showMessage('에어갭 파괴!', 0xff6666);
                 } else {
                     // 실드가 없으면 데미지 받음
                     this.hp -= damage;
@@ -296,7 +300,7 @@ export default class GameScene extends Phaser.Scene {
             poo.destroy();
             
             // 메시지 표시
-            this.showMessage('HP 25% 없애!', 0xff0000);
+            this.showMessage('HP 25% 없애!', 0xff6666);
             
             // 체력이 0이면 게임 오버
             if (this.hp <= 0) {
@@ -368,8 +372,10 @@ export default class GameScene extends Phaser.Scene {
                 if (message) {
                 const text = this.add.text(this.player.x, this.player.y - 40, message, { 
                     fontSize: '24px', 
-                    fill: '#ffff00',
-                    fontStyle: 'bold'
+                    fill: '#ffff66',
+                    fontStyle: 'bold',
+                    stroke: '#000000',
+                    strokeThickness: 2
                 }).setOrigin(0.5);
                 
                 // 텍스트를 위로 올라가면서 사라지게 하는 애니메이션
@@ -412,6 +418,16 @@ export default class GameScene extends Phaser.Scene {
 
         // 방어막 업데이트
         this.updateShields();
+        
+        // ShooterEnemy 텍스트 위치 업데이트
+        this.enemies.children.entries.forEach(enemy => {
+            if (enemy.getData('isShooter')) {
+                const shooter = enemy.getData('shooter');
+                if (shooter && shooter.update) {
+                    shooter.update();
+                }
+            }
+        });
 
         // 플레이어가 초기화되지 않았으면 리턴
         if (!this.player || !this.player.body) {
@@ -560,9 +576,9 @@ export default class GameScene extends Phaser.Scene {
         this.spawnBoss();
         
         // 보스와 함께 추가 적들 스폰 (무기 레벨도 고려)
-        let bossWaveSpawn = Math.floor(this.wave * 2 * 0.85); // 15% 감소 적용
+        let bossWaveSpawn = Math.floor(this.wave * 2 * 0.68); // 32% 감소 적용 (기존 15% + 추가 20%)
         if (this.weaponLevel > 3) {
-            bossWaveSpawn += this.weaponLevel - 3;
+            bossWaveSpawn += Math.floor((this.weaponLevel - 3) * 0.8); // 무기 레벨 보너스도 20% 감소
         }
         for (let i = 0; i < bossWaveSpawn; i++) {
             this.spawnEnemy();
@@ -943,9 +959,9 @@ export default class GameScene extends Phaser.Scene {
         const message = `Shield +${duration/1000}s`;
         const text = this.add.text(this.player.x, this.player.y + 60, message, { 
             fontSize: '20px', 
-            fill: '#ff00ff',
+            fill: '#ff66ff',
             fontStyle: 'bold',
-            stroke: '#ffffff',
+            stroke: '#000000',
             strokeThickness: 2
         }).setOrigin(0.5);
         
@@ -1150,8 +1166,7 @@ export default class GameScene extends Phaser.Scene {
             this.hasShield = false;
         });
         
-        // 실드 획득 메시지
-        this.showMessage('SHIELD ACTIVATED!', 0x00ffff);
+        // 메시지는 ItemManager에서 처리함
     }
     
     applySpeedBoost(speedMultiplier, duration) {
@@ -1174,8 +1189,7 @@ export default class GameScene extends Phaser.Scene {
             }
         });
         
-        // 속도 증가 메시지
-        this.showMessage('SPEED BOOST!', 0xffff00);
+        // 메시지는 ItemManager에서 처리함
     }
     
     showMessage(message, color = 0xffff00) {
@@ -1217,8 +1231,7 @@ export default class GameScene extends Phaser.Scene {
             }
         });
         
-        // 메시지 표시
-        this.showMessage('MULTISHOT!', 0xff00ff);
+        // 메시지는 ItemManager에서 처리함
     }
     
     screenBomb(damage) {
@@ -1295,8 +1308,7 @@ export default class GameScene extends Phaser.Scene {
             }
         });
         
-        // 메시지 표시
-        this.showMessage('SCREEN CLEAR!', 0xffff00);
+        // 메시지는 ItemManager에서 처리함
     }
     
     spawnPoos() {

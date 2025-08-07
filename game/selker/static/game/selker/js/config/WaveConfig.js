@@ -1,4 +1,7 @@
 export default class WaveConfig {
+    // 기본값을 상수로 정의 - 한 곳에서만 관리
+    static DEFAULT_WAVE_TIMER = 10;  // 웨이브 타이머 기본값 (초)
+    
     constructor() {
         this.config = null;
         this.loaded = false;
@@ -92,7 +95,7 @@ export default class WaveConfig {
     }
     
     getWaveTimer() {
-        return this.config?.waveTimer || 15;
+        return this.config?.waveTimer || WaveConfig.DEFAULT_WAVE_TIMER;
     }
     
     getAutoFireDelay() {
