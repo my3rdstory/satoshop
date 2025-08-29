@@ -1,0 +1,37 @@
+{% if hall_of_fame_list %}
+    {% for item in hall_of_fame_list %}
+    <div class="hall-of-fame-item" data-id="{{ item.id }}">
+        <div class="hall-of-fame-image-container">
+            <img src="{{ item.thumbnail_url }}" 
+                 alt="{{ item.title }}" 
+                 class="hall-of-fame-image"
+                 loading="lazy">
+        </div>
+        <div class="hall-of-fame-info">
+            <div class="hall-of-fame-date">
+                <span class="badge-year">{{ item.year }}년</span>
+                <span class="badge-month">{{ item.month }}월</span>
+            </div>
+            {% if can_delete and user.is_authenticated %}
+                {% if user.is_staff or user.is_superuser or item.created_by == user %}
+                <div class="hall-of-fame-actions">
+                    <form method="post" action="{% url 'boards:hall_of_fame_delete' item.pk %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="btn-delete-small"
+                                onclick="return confirm('정말로 {{ item.year }}년 {{ item.month }}월 Hall of Fame을 삭제하시겠습니까?\n\n⚠️ 삭제된 이미지는 복구할 수 없습니다.')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">🏆</div>
+        <div class="empty-state-text">선택한 조건에 해당하는 Hall of Fame이 없습니다</div>
+    </div>
+{% endif %}

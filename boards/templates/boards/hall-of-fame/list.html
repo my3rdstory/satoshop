@@ -1,0 +1,102 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}Hall of Fame - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/hall-of-fame-list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="hall-of-fame-container">
+    <div class="hall-of-fame-header">
+        <h1 class="hall-of-fame-title">🏆 Hall of Fame</h1>
+        {% if can_create %}
+        <a href="{% url 'boards:hall_of_fame_create' %}" class="btn btn-create">
+            <i class="fas fa-plus"></i> 등록하기
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="filter-section">
+        <div class="filter-group">
+            <label class="filter-label">년도:</label>
+            <div class="filter-tags">
+                <a href="{% url 'boards:hall_of_fame_list' %}{% if selected_month %}?month={{ selected_month }}{% endif %}" 
+                   class="filter-tag {% if not selected_year %}active{% endif %}">
+                    전체
+                </a>
+                {% for year in years %}
+                <a href="{% url 'boards:hall_of_fame_list' %}?year={{ year }}{% if selected_month %}&month={{ selected_month }}{% endif %}" 
+                   class="filter-tag {% if selected_year == year|stringformat:"s" %}active{% endif %}">
+                    {{ year }}년
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <label class="filter-label">월:</label>
+            <div class="filter-tags">
+                <a href="{% url 'boards:hall_of_fame_list' %}{% if selected_year %}?year={{ selected_year }}{% endif %}" 
+                   class="filter-tag {% if not selected_month %}active{% endif %}">
+                    전체
+                </a>
+                {% for month in months %}
+                <a href="{% url 'boards:hall_of_fame_list' %}?month={{ month }}{% if selected_year %}&year={{ selected_year }}{% endif %}" 
+                   class="filter-tag {% if selected_month == month|stringformat:"s" %}active{% endif %}">
+                    {{ month }}월
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="hall-of-fame-grid">
+        {% include 'boards/hall-of-fame/grid_partial.html' %}
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">이전</a>
+            </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">다음</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% if not hall_of_fame_list and can_create %}
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{% url 'boards:hall_of_fame_create' %}" class="btn btn-create">
+            <i class="fas fa-plus"></i> 첫 번째 Hall of Fame 등록하기
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/hall-of-fame-list.js' %}"></script>
+{% endblock %}

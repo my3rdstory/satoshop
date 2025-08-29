@@ -1,0 +1,95 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}Hall of Fame 등록 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/hall-of-fame-create.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="create-header">
+        <h1 class="create-title">🏆 Hall of Fame 등록</h1>
+    </div>
+
+    <form id="hallOfFameForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <div class="form-group">
+                <label class="form-label">
+                    년도 선택 <span class="required">*</span>
+                </label>
+                <div class="year-tags" id="yearTags">
+                </div>
+                <input type="hidden" name="year" id="selectedYear" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    월 선택 <span class="required">*</span>
+                </label>
+                <div class="month-tags" id="monthTags">
+                    {% for month in "123456789" %}
+                    <button type="button" class="tag-btn month-tag" data-month="{{ forloop.counter }}">
+                        {{ forloop.counter }}월
+                    </button>
+                    {% endfor %}
+                    <button type="button" class="tag-btn month-tag" data-month="10">10월</button>
+                    <button type="button" class="tag-btn month-tag" data-month="11">11월</button>
+                    <button type="button" class="tag-btn month-tag" data-month="12">12월</button>
+                </div>
+                <input type="hidden" name="month" id="selectedMonth" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    이미지 업로드 <span class="required">*</span>
+                </label>
+                <div class="image-upload-area" id="imageUploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">클릭하거나 이미지를 드래그하여 업로드</div>
+                    <div class="upload-subtext">JPG, PNG, GIF, WebP (최대 10MB, 1:1 비율 권장)</div>
+                    <input type="file" 
+                           name="image" 
+                           id="imageInput" 
+                           accept="image/*" 
+                           style="display: none;"
+                           required>
+                </div>
+                
+                <div class="image-preview-container" id="imagePreviewContainer">
+                    <button type="button" class="remove-image-btn" onclick="removeImage()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <img id="imagePreview" class="image-preview" alt="Preview">
+                    <div class="image-info" id="imageInfo"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="btn-group-form">
+            <a href="{% url 'boards:hall_of_fame_list' %}" class="btn-cancel">취소</a>
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <i class="fas fa-check"></i> 등록하기
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-content">
+        <div class="spinner"></div>
+        <div>이미지를 처리중입니다...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/hall-of-fame-create.js' %}"></script>
+{% endblock %}

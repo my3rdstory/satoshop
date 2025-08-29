@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import meme_views
+from . import hall_of_fame_views
 
 app_name = 'boards'
 
@@ -26,4 +27,12 @@ urlpatterns = [
     path('meme/upload/', meme_views.meme_upload_image, name='meme_upload_image'),
     path('meme/tags/', meme_views.get_tag_cloud, name='meme_tag_cloud'),
     path('meme/<int:pk>/stat/', meme_views.meme_increment_stat, name='meme_increment_stat'),
+    
+    # Hall of Fame URL
+    path('hall-of-fame/', hall_of_fame_views.HallOfFameListView.as_view(), name='hall_of_fame_list'),
+    path('hall-of-fame/create/', hall_of_fame_views.hall_of_fame_create, name='hall_of_fame_create'),
+    path('hall-of-fame/<int:pk>/delete/', hall_of_fame_views.hall_of_fame_delete, name='hall_of_fame_delete'),
+    path('api/hall-of-fame/check/', hall_of_fame_views.check_hall_of_fame, name='api_hall_of_fame_check'),
+    path('api/hall-of-fame/list/', hall_of_fame_views.hall_of_fame_list_api, name='api_hall_of_fame_list'),
+    path('api/hall-of-fame/months/', hall_of_fame_views.hall_of_fame_months_api, name='api_hall_of_fame_months'),
 ] 

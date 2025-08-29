@@ -147,3 +147,90 @@ class MemePost(models.Model):
         # 클래스 메서드를 사용하여 self를 참조하지 않고 업데이트
         MemePost.objects.filter(pk=self.pk).update(views=F('views') + 1)
         self.refresh_from_db(fields=['views'])
+
+
+class HallOfFame(models.Model):
+    """Hall of Fame 모델"""
+    year = models.PositiveIntegerField('년도', db_index=True, default=2025)
+    month = models.PositiveIntegerField('월', db_index=True, default=1)
+    image_path = models.CharField('이미지 경로', max_length=500)
+    image_url = models.URLField('이미지 URL', max_length=500)
+    thumbnail_path = models.CharField('썸네일 경로', max_length=500)
+    thumbnail_url = models.URLField('썸네일 URL', max_length=500)
+    original_filename = models.CharField('원본 파일명', max_length=255)
+    file_size = models.PositiveIntegerField('파일 크기', default=0)
+    width = models.PositiveIntegerField('이미지 너비', default=0)
+    height = models.PositiveIntegerField('이미지 높이', default=0)
+    views = models.PositiveIntegerField('조회수', default=0, db_index=True)
+    created_at = models.DateTimeField('작성일', default=timezone.now)
+    updated_at = models.DateTimeField('수정일', auto_now=True)
+    is_active = models.BooleanField('활성화', default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, 
+                                   related_name='created_hall_of_fame', verbose_name='등록자')
+    
+    class Meta:
+        verbose_name = 'Hall of Fame'
+        verbose_name_plural = 'Hall of Fame'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['year', 'month', '-created_at']),
+            models.Index(fields=['is_active', '-created_at']),
+            models.Index(fields=['year']),
+            models.Index(fields=['month']),
+            models.Index(fields=['created_at']),
+        ]
+        unique_together = ['year', 'month']
+    
+    def __str__(self):
+        return f"{self.year}년 {self.month}월 Hall of Fame"
+    
+    def get_absolute_url(self):
+        return reverse('boards:hall_of_fame_list')
+    
+    def delete(self, *args, **kwargs):
+        """삭제 시 S3에서 관련 파일들도 함께 삭제"""
+        from storage.utils import delete_file_from_s3
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # S3에서 원본 이미지 삭제
+        if self.image_path:
+            try:
+                delete_result = delete_file_from_s3(self.image_path)
+                if delete_result['success']:
+                    logger.info(f"원본 이미지 삭제 성공: {self.image_path}")
+                else:
+                    logger.warning(f"원본 이미지 삭제 실패: {self.image_path} - {delete_result.get('error', '알 수 없는 오류')}")
+            except Exception as e:
+                logger.error(f"원본 이미지 삭제 중 오류: {self.image_path} - {str(e)}")
+        
+        # S3에서 썸네일 이미지 삭제
+        if self.thumbnail_path:
+            try:
+                delete_result = delete_file_from_s3(self.thumbnail_path)
+                if delete_result['success']:
+                    logger.info(f"썸네일 이미지 삭제 성공: {self.thumbnail_path}")
+                else:
+                    logger.warning(f"썸네일 이미지 삭제 실패: {self.thumbnail_path} - {delete_result.get('error', '알 수 없는 오류')}")
+            except Exception as e:
+                logger.error(f"썸네일 이미지 삭제 중 오류: {self.thumbnail_path} - {str(e)}")
+        
+        # 모델 인스턴스 삭제
+        super().delete(*args, **kwargs)
+
+
+class HallOfFamePermission(models.Model):
+    """Hall of Fame 등록 권한 모델"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name='사용자')
+    can_upload = models.BooleanField('업로드 권한', default=True)
+    created_at = models.DateTimeField('권한 부여일', auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='granted_permissions', verbose_name='권한 부여자')
+    
+    class Meta:
+        verbose_name = 'Hall of Fame 권한'
+        verbose_name_plural = 'Hall of Fame 권한'
+        
+    def __str__(self):
+        return f"{self.user.username} - Hall of Fame 권한"
