@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.db.models import F
 from django.contrib.auth.models import User
-from .models import Notice, NoticeComment, MemePost, MemeTag, HallOfFame
+from .models import Notice, NoticeComment, MemePost, MemeTag, HallOfFame, HallOfFamePermission
 
 
 @admin.register(Notice)
@@ -122,21 +122,19 @@ class MemePostAdmin(admin.ModelAdmin):
 
 @admin.register(HallOfFame)
 class HallOfFameAdmin(admin.ModelAdmin):
-    list_display = ['user_display', 'title', 'created_at', 'views', 'order', 'is_active', 'created_by']
-    list_filter = ['is_active', 'created_at']
-    search_fields = ['user__username', 'user__email', 'user__first_name', 'user__last_name', 
-                     'title', 'description', 'created_by__username']
+    list_display = ['year_month_display', 'created_at', 'views', 'is_active', 'created_by']
+    list_filter = ['is_active', 'year', 'month', 'created_at']
+    search_fields = ['year', 'month', 'created_by__username']
     readonly_fields = ['views', 'created_at', 'updated_at', 'image_url', 'thumbnail_url', 
                       'file_size', 'width', 'height', 'file_size_mb']
-    list_editable = ['order', 'is_active']
-    ordering = ['order', '-created_at']
+    list_editable = ['is_active']
+    ordering = ['-created_at']
     list_per_page = 20
-    autocomplete_fields = ['user']
     raw_id_fields = ['created_by']
     
     fieldsets = (
         ('기본 정보', {
-            'fields': ('user', 'title', 'description', 'order')
+            'fields': ('year', 'month')
         }),
         ('이미지 정보', {
             'fields': ('image_url', 'thumbnail_url', 'original_filename', 
@@ -160,16 +158,13 @@ class HallOfFameAdmin(admin.ModelAdmin):
     )
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user', 'created_by')
+        return super().get_queryset(request).select_related('created_by')
     
-    def user_display(self, obj):
-        """사용자 표시 (username과 실명 함께 표시)"""
-        full_name = obj.user.get_full_name()
-        if full_name:
-            return f"{obj.user.username} ({full_name})"
-        return obj.user.username
-    user_display.short_description = '사용자'
-    user_display.admin_order_field = 'user__username'
+    def year_month_display(self, obj):
+        """년월 표시"""
+        return f"{obj.year}년 {obj.month}월"
+    year_month_display.short_description = '년월'
+    year_month_display.admin_order_field = 'year'
     
     def file_size_mb(self, obj):
         """파일 크기를 MB 단위로 표시"""
@@ -189,6 +184,35 @@ class HallOfFameAdmin(admin.ModelAdmin):
             'all': ('admin/css/autocomplete.css',)
         }
         js = ('admin/js/autocomplete.js',)
+
+
+@admin.register(HallOfFamePermission)
+class HallOfFamePermissionAdmin(admin.ModelAdmin):
+    list_display = ['user', 'can_upload', 'created_at', 'created_by']
+    list_filter = ['can_upload', 'created_at']
+    search_fields = ['user__username', 'user__email', 'created_by__username']
+    list_editable = ['can_upload']
+    ordering = ['-created_at']
+    autocomplete_fields = ['user']
+    raw_id_fields = ['created_by']
+    
+    fieldsets = (
+        ('권한 정보', {
+            'fields': ('user', 'can_upload')
+        }),
+        ('관리 정보', {
+            'fields': ('created_by', 'created_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ['created_at']
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # 새로 생성하는 경우
+            if not obj.created_by:
+                obj.created_by = request.user
+        super().save_model(request, obj, form, change)
 
 
 # User 모델에 자동완성 기능 추가를 위한 Admin 설정

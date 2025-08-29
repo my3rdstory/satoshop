@@ -20,9 +20,16 @@ except ImportError:
     PIL_AVAILABLE = False
 
 
-def is_staff_or_superuser(user):
-    """스태프 또는 슈퍼유저인지 확인"""
-    return user.is_staff or user.is_superuser
+def has_hall_of_fame_permission(user):
+    """Hall of Fame 등록 권한 확인"""
+    from .models import HallOfFamePermission
+    if user.is_staff or user.is_superuser:
+        return True
+    try:
+        permission = HallOfFamePermission.objects.get(user=user, can_upload=True)
+        return True
+    except HallOfFamePermission.DoesNotExist:
+        return False
 
 
 class HallOfFameListView(ListView):
@@ -33,32 +40,78 @@ class HallOfFameListView(ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        return HallOfFame.objects.filter(is_active=True).order_by('order', '-created_at')
+        queryset = HallOfFame.objects.filter(is_active=True)
+        
+        # 년도 필터
+        year = self.request.GET.get('year')
+        if year:
+            queryset = queryset.filter(year=year)
+        
+        # 월 필터
+        month = self.request.GET.get('month')
+        if month:
+            queryset = queryset.filter(month=month)
+        
+        # 최신순 정렬
+        return queryset.order_by('-created_at')
+    
+    def get_context_data(self, **kwargs):
+        from datetime import datetime
+        context = super().get_context_data(**kwargs)
+        
+        # 등록된 년도들 가져오기
+        years = HallOfFame.objects.filter(
+            is_active=True
+        ).values_list('year', flat=True).distinct().order_by('year')
+        context['years'] = list(years)
+        
+        # 현재 선택된 년도에 따른 월 목록
+        selected_year = self.request.GET.get('year', '')
+        if selected_year:
+            months = HallOfFame.objects.filter(
+                is_active=True, 
+                year=selected_year
+            ).values_list('month', flat=True).distinct().order_by('month')
+        else:
+            months = HallOfFame.objects.filter(
+                is_active=True
+            ).values_list('month', flat=True).distinct().order_by('month')
+        context['months'] = list(months)
+        
+        # 현재 필터 값
+        context['selected_year'] = self.request.GET.get('year', '')
+        context['selected_month'] = self.request.GET.get('month', '')
+        
+        # 권한 체크
+        context['can_create'] = has_hall_of_fame_permission(self.request.user) if self.request.user.is_authenticated else False
+        context['can_delete'] = self.request.user.is_authenticated and (
+            self.request.user.is_staff or self.request.user.is_superuser or 
+            has_hall_of_fame_permission(self.request.user)
+        )
+        
+        return context
 
 
 @login_required
-@user_passes_test(is_staff_or_superuser)
+@user_passes_test(has_hall_of_fame_permission)
 def hall_of_fame_create(request):
     """Hall of Fame 등록 뷰"""
     if request.method == 'POST':
         try:
             # 폼 데이터 추출
-            user_id = request.POST.get('user_id')
-            title = request.POST.get('title')
-            description = request.POST.get('description', '')
-            order = request.POST.get('order', 0)
+            year = request.POST.get('year')
+            month = request.POST.get('month')
             image_file = request.FILES.get('image')
             
             # 유효성 검사
-            if not user_id or not title or not image_file:
+            if not year or not month or not image_file:
                 messages.error(request, '필수 항목을 모두 입력해주세요.')
                 return render(request, 'boards/hall-of-fame/create.html')
             
-            # 사용자 확인
-            try:
-                user = User.objects.get(id=user_id)
-            except User.DoesNotExist:
-                messages.error(request, '선택한 사용자를 찾을 수 없습니다.')
+            # 중복 확인
+            from .models import HallOfFame
+            if HallOfFame.objects.filter(year=year, month=month).exists():
+                messages.error(request, f'{year}년 {month}월은 이미 등록되어 있습니다.')
                 return render(request, 'boards/hall-of-fame/create.html')
             
             # 이미지 처리 (1:1 비율로 썸네일 생성)
@@ -89,9 +142,8 @@ def hall_of_fame_create(request):
             
             # Hall of Fame 생성
             hall_of_fame = HallOfFame.objects.create(
-                user=user,
-                title=title,
-                description=description,
+                year=int(year),
+                month=int(month),
                 image_path=original_upload_result['file_path'],
                 image_url=original_upload_result['file_url'],
                 thumbnail_path=thumbnail_upload_result['file_path'],
@@ -100,7 +152,6 @@ def hall_of_fame_create(request):
                 file_size=original_upload_result['file_size'],
                 width=process_result['original_size'][0],
                 height=process_result['original_size'][1],
-                order=int(order),
                 created_by=request.user
             )
             
@@ -199,31 +250,125 @@ def process_hall_of_fame_image(image_file, thumbnail_size=400):
 
 
 @login_required
-def search_users(request):
-    """사용자 검색 API"""
-    if not is_staff_or_superuser(request.user):
+def check_hall_of_fame(request):
+    """Hall of Fame 중복 확인 API"""
+    if not has_hall_of_fame_permission(request.user):
         return JsonResponse({'error': '권한이 없습니다.'}, status=403)
     
-    query = request.GET.get('q', '').strip()
-    if len(query) < 2:
-        return JsonResponse({'users': []})
+    year = request.GET.get('year')
+    month = request.GET.get('month')
     
-    # 사용자 검색
-    users = User.objects.filter(
-        Q(username__icontains=query) | 
-        Q(email__icontains=query) |
-        Q(first_name__icontains=query) |
-        Q(last_name__icontains=query)
-    )[:10]
+    if not year or not month:
+        return JsonResponse({'exists': False})
     
-    # JSON 응답 생성
-    user_list = []
-    for user in users:
-        user_list.append({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'full_name': user.get_full_name() or ''
+    from .models import HallOfFame
+    exists = HallOfFame.objects.filter(year=year, month=month).exists()
+    
+    return JsonResponse({'exists': exists})
+
+
+@login_required
+@user_passes_test(has_hall_of_fame_permission)
+def hall_of_fame_delete(request, pk):
+    """Hall of Fame 삭제"""
+    hall_of_fame = get_object_or_404(HallOfFame, pk=pk)
+    
+    # 권한 확인 (관리자이거나 등록한 본인만 삭제 가능)
+    if not (request.user.is_staff or request.user.is_superuser or hall_of_fame.created_by == request.user):
+        messages.error(request, '삭제 권한이 없습니다.')
+        return redirect('boards:hall_of_fame_list')
+    
+    # POST 요청일 때만 삭제 (확인창에서 확인 후)
+    if request.method == 'POST':
+        try:
+            year = hall_of_fame.year
+            month = hall_of_fame.month
+            
+            # 삭제 (모델의 delete 메서드가 S3 파일도 함께 삭제)
+            hall_of_fame.delete()
+            
+            messages.success(request, f'{year}년 {month}월 Hall of Fame이 성공적으로 삭제되었습니다.')
+            logger.info(f"Hall of Fame 삭제 완료: {year}년 {month}월 (사용자: {request.user.username})")
+            
+        except Exception as e:
+            logger.error(f"Hall of Fame 삭제 오류 (ID: {pk}): {str(e)}")
+            messages.error(request, f'삭제 중 오류가 발생했습니다: {str(e)}')
+    
+    return redirect('boards:hall_of_fame_list')
+
+
+def hall_of_fame_list_api(request):
+    """Hall of Fame 목록 API (비동기 필터링용)"""
+    from django.template.loader import render_to_string
+    
+    try:
+        # 필터링
+        queryset = HallOfFame.objects.filter(is_active=True)
+        
+        year = request.GET.get('year')
+        if year:
+            queryset = queryset.filter(year=year)
+        
+        month = request.GET.get('month')
+        if month:
+            queryset = queryset.filter(month=month)
+        
+        hall_of_fame_list = queryset.order_by('-created_at')
+        
+        # 권한 체크
+        can_delete = request.user.is_authenticated and (
+            request.user.is_staff or request.user.is_superuser or 
+            has_hall_of_fame_permission(request.user)
+        )
+        
+        # HTML 렌더링
+        html = render_to_string('boards/hall-of-fame/grid_partial.html', {
+            'hall_of_fame_list': hall_of_fame_list,
+            'can_delete': can_delete,
+            'user': request.user
+        }, request=request)
+        
+        return JsonResponse({
+            'success': True,
+            'html': html,
+            'count': hall_of_fame_list.count()
         })
-    
-    return JsonResponse({'users': user_list})
+        
+    except Exception as e:
+        logger.error(f"Hall of Fame 목록 API 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+def hall_of_fame_months_api(request):
+    """특정 년도의 월 목록 API"""
+    try:
+        year = request.GET.get('year')
+        
+        if year:
+            # 특정 년도의 월 목록
+            months = HallOfFame.objects.filter(
+                is_active=True, 
+                year=year
+            ).values_list('month', flat=True).distinct().order_by('month')
+            months_list = list(months)
+        else:
+            # 전체 월 목록
+            months = HallOfFame.objects.filter(
+                is_active=True
+            ).values_list('month', flat=True).distinct().order_by('month')
+            months_list = list(months)
+        
+        return JsonResponse({
+            'success': True,
+            'months': months_list
+        })
+        
+    except Exception as e:
+        logger.error(f"Hall of Fame 월 목록 API 오류: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

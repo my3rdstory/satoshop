@@ -1,0 +1,173 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}Hall of Fame 삭제 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delete-container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .delete-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .delete-icon {
+        font-size: 4rem;
+        color: #dc3545;
+        margin-bottom: 20px;
+    }
+
+    .delete-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #dc3545;
+        margin-bottom: 10px;
+    }
+
+    .delete-message {
+        color: #6c757d;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .hall-of-fame-preview {
+        display: inline-block;
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #dc3545;
+    }
+
+    .hall-of-fame-info {
+        text-align: left;
+    }
+
+    .hall-of-fame-date {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+
+    .hall-of-fame-meta {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .warning-text {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 20px 0;
+        color: #856404;
+        font-size: 0.95rem;
+    }
+
+    .warning-text i {
+        color: #f39c12;
+        margin-right: 8px;
+    }
+
+    .btn-group-delete {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 30px;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: background 0.2s ease, transform 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: background 0.2s ease, transform 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="delete-container">
+    <div class="delete-card">
+        <div class="delete-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        
+        <h1 class="delete-title">Hall of Fame 삭제</h1>
+        
+        <p class="delete-message">
+            정말로 이 Hall of Fame을 삭제하시겠습니까?
+        </p>
+        
+        <div class="hall-of-fame-preview">
+            <div class="hall-of-fame-info">
+                <div class="hall-of-fame-date">
+                    🏆 {{ hall_of_fame.year }}년 {{ hall_of_fame.month }}월
+                </div>
+                <div class="hall-of-fame-meta">
+                    <i class="far fa-calendar"></i> {{ hall_of_fame.created_at|date:"Y.m.d H:i" }}
+                    {% if hall_of_fame.created_by %}
+                    | <i class="far fa-user"></i> {{ hall_of_fame.created_by.username }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="warning-text">
+            <i class="fas fa-exclamation-circle"></i>
+            <strong>주의:</strong> 삭제된 Hall of Fame과 관련 이미지는 복구할 수 없습니다. 
+            원본 이미지와 썸네일이 오브젝트 스토리지에서도 완전히 삭제됩니다.
+        </div>
+        
+        <form method="post" style="display: inline;">
+            {% csrf_token %}
+            <div class="btn-group-delete">
+                <a href="{% url 'boards:hall_of_fame_list' %}" class="btn-secondary">
+                    <i class="fas fa-times"></i> 취소
+                </a>
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-trash"></i> 삭제하기
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
