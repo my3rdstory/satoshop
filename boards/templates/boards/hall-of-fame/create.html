@@ -1,0 +1,637 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load static_versioned %}
+
+{% block title %}Hall of Fame 등록 - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .create-header {
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .create-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #212529;
+    }
+
+    .form-section {
+        background: #fff;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .form-label .required {
+        color: #dc3545;
+        margin-left: 3px;
+    }
+
+    .form-control {
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 1rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .user-search-container {
+        position: relative;
+    }
+
+    .user-search-input {
+        width: 100%;
+        padding-right: 40px;
+    }
+
+    .user-search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-top: 5px;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-search-results.show {
+        display: block;
+    }
+
+    .user-search-item {
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+    .user-search-item:last-child {
+        border-bottom: none;
+    }
+
+    .user-search-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .user-search-item.selected {
+        background-color: #e7f5ff;
+    }
+
+    .selected-user {
+        display: inline-flex;
+        align-items: center;
+        background: #e7f5ff;
+        color: #1c7ed6;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-weight: 500;
+    }
+
+    .selected-user .remove-btn {
+        margin-left: 10px;
+        cursor: pointer;
+        color: #868e96;
+        transition: color 0.2s ease;
+    }
+
+    .selected-user .remove-btn:hover {
+        color: #dc3545;
+    }
+
+    .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .image-upload-area.dragover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+
+    .image-upload-area:hover {
+        border-color: #adb5bd;
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 15px;
+    }
+
+    .upload-text {
+        color: #495057;
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    .upload-subtext {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .image-preview-container {
+        display: none;
+        position: relative;
+        margin-top: 20px;
+    }
+
+    .image-preview-container.show {
+        display: block;
+    }
+
+    .image-preview {
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+        display: block;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .image-info {
+        margin-top: 15px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .remove-image-btn:hover {
+        background: #dc3545;
+    }
+
+    .btn-group-form {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 30px;
+    }
+
+    .btn-submit {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        background: #f8f9fa;
+        color: #495057;
+        border: 1px solid #dee2e6;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: background 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel:hover {
+        background: #e9ecef;
+        color: #495057;
+        text-decoration: none;
+    }
+
+    .processing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .processing-overlay.show {
+        display: flex;
+    }
+
+    .processing-content {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .alert {
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+    }
+
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="create-header">
+        <h1 class="create-title">🏆 Hall of Fame 등록</h1>
+    </div>
+
+    <form id="hallOfFameForm" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <div class="form-group">
+                <label for="userSearch" class="form-label">
+                    사용자 선택 <span class="required">*</span>
+                </label>
+                <div class="user-search-container">
+                    <input type="text" 
+                           id="userSearch" 
+                           class="form-control user-search-input" 
+                           placeholder="사용자명 또는 이메일로 검색..."
+                           autocomplete="off">
+                    <div id="userSearchResults" class="user-search-results"></div>
+                </div>
+                <div id="selectedUser" style="display: none;">
+                    <div class="selected-user">
+                        <span id="selectedUsername"></span>
+                        <i class="fas fa-times remove-btn" onclick="removeSelectedUser()"></i>
+                    </div>
+                </div>
+                <input type="hidden" name="user_id" id="userId" required>
+                <div class="help-text">Hall of Fame에 등록할 사용자를 검색하여 선택하세요.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="title" class="form-label">
+                    제목 <span class="required">*</span>
+                </label>
+                <input type="text" 
+                       name="title" 
+                       id="title" 
+                       class="form-control" 
+                       placeholder="Hall of Fame 제목을 입력하세요"
+                       maxlength="200"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">설명</label>
+                <textarea name="description" 
+                          id="description" 
+                          class="form-control" 
+                          rows="4"
+                          placeholder="설명을 입력하세요 (선택사항)"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    이미지 업로드 <span class="required">*</span>
+                </label>
+                <div class="image-upload-area" id="imageUploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">클릭하거나 이미지를 드래그하여 업로드</div>
+                    <div class="upload-subtext">JPG, PNG, GIF, WebP (최대 10MB, 1:1 비율 권장)</div>
+                    <input type="file" 
+                           name="image" 
+                           id="imageInput" 
+                           accept="image/*" 
+                           style="display: none;"
+                           required>
+                </div>
+                
+                <div class="image-preview-container" id="imagePreviewContainer">
+                    <button type="button" class="remove-image-btn" onclick="removeImage()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <img id="imagePreview" class="image-preview" alt="Preview">
+                    <div class="image-info" id="imageInfo"></div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="order" class="form-label">순서</label>
+                <input type="number" 
+                       name="order" 
+                       id="order" 
+                       class="form-control" 
+                       value="0"
+                       min="0">
+                <div class="help-text">낮은 숫자가 먼저 표시됩니다. 같은 순서인 경우 최신순으로 정렬됩니다.</div>
+            </div>
+        </div>
+
+        <div class="btn-group-form">
+            <a href="{% url 'boards:hall_of_fame_list' %}" class="btn-cancel">취소</a>
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <i class="fas fa-check"></i> 등록하기
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="processing-overlay" id="processingOverlay">
+    <div class="processing-content">
+        <div class="spinner"></div>
+        <div>이미지를 처리중입니다...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedFile = null;
+let searchTimeout = null;
+
+// 사용자 검색
+document.getElementById('userSearch').addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+        document.getElementById('userSearchResults').classList.remove('show');
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        searchUsers(query);
+    }, 300);
+});
+
+function searchUsers(query) {
+    fetch(`/api/users/search/?q=${encodeURIComponent(query)}`, {
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        displaySearchResults(data.users || []);
+    })
+    .catch(error => {
+        console.error('Search error:', error);
+        // 임시 데이터 (실제로는 API 구현 필요)
+        displaySearchResults([
+            {id: 1, username: query, email: query + '@example.com'}
+        ]);
+    });
+}
+
+function displaySearchResults(users) {
+    const resultsContainer = document.getElementById('userSearchResults');
+    
+    if (users.length === 0) {
+        resultsContainer.innerHTML = '<div class="user-search-item">검색 결과가 없습니다</div>';
+    } else {
+        resultsContainer.innerHTML = users.map(user => `
+            <div class="user-search-item" onclick="selectUser(${user.id}, '${user.username}')">
+                <strong>${user.username}</strong>
+                ${user.email ? `<span style="color: #6c757d; margin-left: 10px;">${user.email}</span>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    resultsContainer.classList.add('show');
+}
+
+function selectUser(userId, username) {
+    document.getElementById('userId').value = userId;
+    document.getElementById('selectedUsername').textContent = username;
+    document.getElementById('selectedUser').style.display = 'block';
+    document.getElementById('userSearch').value = '';
+    document.getElementById('userSearchResults').classList.remove('show');
+}
+
+function removeSelectedUser() {
+    document.getElementById('userId').value = '';
+    document.getElementById('selectedUser').style.display = 'none';
+}
+
+// 이미지 업로드 처리
+const imageUploadArea = document.getElementById('imageUploadArea');
+const imageInput = document.getElementById('imageInput');
+
+imageUploadArea.addEventListener('click', () => {
+    imageInput.click();
+});
+
+// 드래그 앤 드롭
+imageUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.add('dragover');
+});
+
+imageUploadArea.addEventListener('dragleave', () => {
+    imageUploadArea.classList.remove('dragover');
+});
+
+imageUploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    imageUploadArea.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+        handleImageSelect(files[0]);
+    }
+});
+
+imageInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        handleImageSelect(e.target.files[0]);
+    }
+});
+
+function handleImageSelect(file) {
+    // 파일 크기 체크 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+        alert('파일 크기는 10MB를 초과할 수 없습니다.');
+        return;
+    }
+    
+    // 이미지 타입 체크
+    if (!file.type.startsWith('image/')) {
+        alert('이미지 파일만 업로드 가능합니다.');
+        return;
+    }
+    
+    selectedFile = file;
+    
+    // 미리보기 표시
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('imagePreviewContainer').classList.add('show');
+        document.getElementById('imageUploadArea').style.display = 'none';
+        
+        // 이미지 정보 표시
+        const fileSize = (file.size / 1024).toFixed(2);
+        document.getElementById('imageInfo').innerHTML = `
+            <strong>파일명:</strong> ${file.name}<br>
+            <strong>크기:</strong> ${fileSize} KB<br>
+            <strong>타입:</strong> ${file.type}
+        `;
+    };
+    reader.readAsDataURL(file);
+    
+    // 파일 input에 설정
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    imageInput.files = dataTransfer.files;
+}
+
+function removeImage() {
+    selectedFile = null;
+    imageInput.value = '';
+    document.getElementById('imagePreviewContainer').classList.remove('show');
+    document.getElementById('imageUploadArea').style.display = 'block';
+}
+
+// 폼 제출
+document.getElementById('hallOfFameForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // 유효성 검사
+    if (!document.getElementById('userId').value) {
+        alert('사용자를 선택해주세요.');
+        return;
+    }
+    
+    if (!document.getElementById('title').value.trim()) {
+        alert('제목을 입력해주세요.');
+        return;
+    }
+    
+    if (!selectedFile) {
+        alert('이미지를 업로드해주세요.');
+        return;
+    }
+    
+    // 처리 중 표시
+    document.getElementById('processingOverlay').classList.add('show');
+    document.getElementById('submitBtn').disabled = true;
+    
+    // 폼 제출
+    this.submit();
+});
+
+// CSRF 토큰 가져오기
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 페이지 떠날 때 경고
+let formChanged = false;
+document.querySelectorAll('input, textarea').forEach(element => {
+    element.addEventListener('change', () => {
+        formChanged = true;
+    });
+});
+
+window.addEventListener('beforeunload', (e) => {
+    if (formChanged && !document.getElementById('processingOverlay').classList.contains('show')) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+</script>
+{% endblock %}
