@@ -2,7 +2,7 @@
 
 <!-- 밋업 목록 그리드 -->
 {% if meetups %}
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:gap-6">
   {% for meetup in meetups %}
   <!-- 공개 뷰에서는 활성화된 밋업만 표시 -->
   {% if not is_public_view or meetup.is_active %}
