@@ -617,31 +617,31 @@ def store_detail(request, store_id):
     
     if store.is_active:
         # 활성화된 스토어는 정상적으로 표시
-        # 상품 목록도 함께 가져오기 (최대 4개만)
-        products = store.products.filter(is_active=True).order_by('-created_at')[:4]
+        # 상품 목록도 함께 가져오기 (최대 8개만)
+        products = store.products.filter(is_active=True).order_by('-created_at')[:8]
         
-        # 밋업 목록도 함께 가져오기 (최대 4개만)
+        # 밋업 목록도 함께 가져오기 (최대 8개만)
         from meetup.models import Meetup
         meetups = Meetup.objects.filter(
             store=store, 
             is_active=True
-        ).order_by('-created_at')[:4]
+        ).order_by('-created_at')[:8]
         
-        # 라이브 강의 목록도 함께 가져오기 (최대 4개만)
+        # 라이브 강의 목록도 함께 가져오기 (최대 8개만)
         from lecture.models import LiveLecture
         live_lectures = LiveLecture.objects.filter(
             store=store,
             is_active=True,
             deleted_at__isnull=True
-        ).order_by('-created_at')[:4]
+        ).order_by('-created_at')[:8]
         
-        # 디지털 파일 목록도 함께 가져오기 (최대 4개만)
+        # 디지털 파일 목록도 함께 가져오기 (최대 8개만)
         from file.models import DigitalFile
         digital_files = DigitalFile.objects.filter(
             store=store,
             is_active=True,
             deleted_at__isnull=True
-        ).order_by('-created_at')[:4]
+        ).order_by('-created_at')[:8]
         
         return render(request, 'stores/store_detail.html', {
             'store': store,
@@ -1800,7 +1800,6 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
     }
     return render(request, 'products/product_detail.html', context)
-
 
 
 

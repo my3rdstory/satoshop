@@ -151,8 +151,8 @@
       </a>
     </div>
 
-    <!-- 상품 그리드 (최대 4개만 표시) -->
-    {% with products|slice:":4" as limited_products %}
+    <!-- 상품 그리드 (최대 8개만 표시) -->
+    {% with products|slice:":8" as limited_products %}
     {% with True as is_public_view %}
     {% include 'products/product_grid.html' with products=limited_products %}
     {% endwith %}
@@ -177,8 +177,8 @@
       </a>
     </div>
 
-    <!-- 밋업 그리드 (최대 4개만 표시) -->
-    {% with meetups|slice:":4" as limited_meetups %}
+    <!-- 밋업 그리드 (최대 8개만 표시) -->
+    {% with meetups|slice:":8" as limited_meetups %}
     {% with True as is_public_view %}
     {% include 'meetup/meetup_grid.html' with meetups=limited_meetups %}
     {% endwith %}
@@ -203,8 +203,8 @@
       </a>
     </div>
 
-    <!-- 라이브 강의 그리드 (최대 4개만 표시) -->
-    {% with live_lectures|slice:":4" as limited_live_lectures %}
+    <!-- 라이브 강의 그리드 (최대 8개만 표시) -->
+    {% with live_lectures|slice:":8" as limited_live_lectures %}
     {% with True as is_public_view %}
     {% include 'lecture/lecture_live_grid.html' with live_lectures=limited_live_lectures %}
     {% endwith %}
@@ -229,8 +229,8 @@
       </a>
     </div>
 
-    <!-- 파일 그리드 (최대 4개만 표시) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- 파일 그리드 (최대 8개만 표시) -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:gap-6">
       {% for file in digital_files %}
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
         <a href="{% url 'file:file_detail' store.store_id file.id %}" class="block">
