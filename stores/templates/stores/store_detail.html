@@ -230,7 +230,7 @@
     </div>
 
     <!-- 파일 그리드 (최대 8개만 표시) -->
-    <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:gap-6">
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:gap-6">
       {% for file in digital_files %}
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
         <a href="{% url 'file:file_detail' store.store_id file.id %}" class="block">
