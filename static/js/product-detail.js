@@ -8,6 +8,7 @@ let basePrice = 0;
 let shippingFee = 0;
 let productData = null;
 let freeShippingThreshold = null;
+let shippingOverride = false;
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -18,6 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
     basePrice = productData.basePrice;
     shippingFee = productData.shippingFee;
     freeShippingThreshold = productData.freeShippingThreshold;
+    shippingOverride = Boolean(productData.shippingOverride);
+
+    if (shippingOverride) {
+      shippingFee = 0;
+      freeShippingThreshold = null;
+    }
     
     // 전역 변수로 설정
     window.productData = productData;
@@ -137,8 +144,8 @@ function updateTotalPrice() {
     
     // 총 계산
     const productTotal = (productPrice + optionsPrice) * quantity;
-    let applicableShippingFee = productData.shippingFee;
-    if (freeShippingThreshold && productTotal >= freeShippingThreshold) {
+    let applicableShippingFee = shippingOverride ? 0 : productData.shippingFee;
+    if (!shippingOverride && freeShippingThreshold && productTotal >= freeShippingThreshold) {
         applicableShippingFee = 0;
     }
     const finalTotal = productTotal + applicableShippingFee;
@@ -160,10 +167,13 @@ function updateTotalPrice() {
 
     const shippingFeeElement = document.getElementById('shippingFeeValue');
     if (shippingFeeElement) {
-        if (applicableShippingFee === 0) {
-            shippingFeeElement.textContent = '무료';
-        } else {
-            shippingFeeElement.textContent = `${applicableShippingFee.toLocaleString()} sats`;
+        const amountElement = shippingFeeElement.querySelector('.shipping-amount');
+        if (amountElement) {
+            if (applicableShippingFee === 0) {
+                amountElement.textContent = '무료';
+            } else {
+                amountElement.textContent = `${applicableShippingFee.toLocaleString()} sats`;
+            }
         }
     }
 

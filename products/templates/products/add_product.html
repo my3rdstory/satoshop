@@ -1,5 +1,6 @@
 {% extends 'stores/store_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ store.store_name }} - 상품 추가{% endblock %}
 
@@ -194,6 +195,47 @@
             <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
                    type="number" id="stock_quantity" name="stock_quantity" required min="0" placeholder="재고 수량을 입력하세요">
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">재고가 0개가 되면 자동으로 '품절'로 표시됩니다</p>
+          </div>
+
+          <!-- 배송 정책 -->
+          <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">배송 정책</h3>
+            <div class="bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-xl p-4 space-y-3">
+              {% if store_shipping.mode == 'free' %}
+                <p class="text-sm text-gray-700 dark:text-gray-300">
+                  이 스토어는 현재 <strong class="text-green-600 dark:text-green-300">무료 배송</strong>으로 설정되어 있습니다. 모든 상품이 자동으로 배송비 없이 노출됩니다.
+                </p>
+              {% else %}
+                <p class="text-sm text-gray-700 dark:text-gray-300">
+                  기본 배송비: <strong>{{ store_shipping.sats|intcomma }} sats</strong>
+                  {% if store_shipping.krw %}
+                    <span class="text-xs text-gray-500 dark:text-gray-400">({{ store_shipping.krw|intcomma }}원 기준)</span>
+                  {% endif %}
+                </p>
+                {% if store_shipping.threshold_krw %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 배송비가 자동으로 무료 처리됩니다.</p>
+                {% elif store_shipping.threshold_sats %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 배송비가 무료가 됩니다.</p>
+                {% endif %}
+              {% endif %}
+
+              <label class="flex items-start space-x-3 p-3 bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-600 rounded-lg">
+                <input type="checkbox" id="force_free_shipping" name="force_free_shipping"
+                       class="mt-1 w-4 h-4 text-bitcoin bg-gray-100 border-gray-300 rounded focus:ring-bitcoin dark:focus:ring-bitcoin dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                       {% if store_shipping.mode != 'flat' %}disabled{% endif %}>
+                <div>
+                  <span class="text-sm font-medium text-gray-800 dark:text-gray-200">이 상품만 무조건 배송비 무료로 표시</span>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    스토어 기본 배송비가 유료일 때만 선택할 수 있으며, 선택 시 이 상품이 단독으로 주문되면 배송비가 0 sats로 계산됩니다.
+                  </p>
+                  {% if store_shipping.mode != 'flat' %}
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                      현재 스토어 배송 정책이 무료이므로 별도 설정이 필요하지 않습니다.
+                    </p>
+                  {% endif %}
+                </div>
+              </label>
+            </div>
           </div>
         </div>
       </div>

@@ -174,25 +174,34 @@
                 <span>배송비</span>
               </div>
               <div class="font-medium text-gray-900 dark:text-white text-right">
-                {% if store_shipping.mode == 'free' or store_shipping.sats == 0 %}
-                  무료
-                {% else %}
-                  {{ store_shipping.sats|intcomma }} sats
-                  {% if store_shipping.krw %}
-                  <div class="text-xs text-gray-500 dark:text-gray-500">
-                    ({{ store_shipping.krw|intcomma }}원)
-                  </div>
+                {% with shipping=product_shipping %}
+                  {% if shipping.override_free %}
+                    무료
+                    <div class="text-xs text-green-600 dark:text-green-400 font-semibold mt-1">이 상품은 스토어 기본 배송비를 무시하고 무료로 배송됩니다.</div>
+                    {% if store_shipping.mode == 'flat' and store_shipping.sats %}
+                      <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">(스토어 기본 배송비 {{ store_shipping.sats|intcomma }} sats{% if store_shipping.krw %}, {{ store_shipping.krw|intcomma }}원{% endif %})</div>
+                    {% endif %}
+                  {% elif shipping.mode == 'free' or shipping.sats == 0 %}
+                    무료
+                    {% if shipping.threshold_krw %}
+                      <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-1">{{ shipping.threshold_sats|intcomma }} sats ({{ shipping.threshold_krw|intcomma }}원) 이상 주문 시 무료 배송</div>
+                    {% elif shipping.threshold_sats %}
+                      <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-1">{{ shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
+                    {% endif %}
+                  {% else %}
+                    {{ shipping.sats|intcomma }} sats
+                    {% if shipping.krw %}
+                      <div class="text-xs text-gray-500 dark:text-gray-500">
+                        ({{ shipping.krw|intcomma }}원)
+                      </div>
+                    {% endif %}
+                    {% if shipping.threshold_krw %}
+                      <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-1">{{ shipping.threshold_sats|intcomma }} sats ({{ shipping.threshold_krw|intcomma }}원) 이상 주문 시 무료 배송</div>
+                    {% elif shipping.threshold_sats %}
+                      <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold mt-1">{{ shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
+                    {% endif %}
                   {% endif %}
-                {% endif %}
-                {% if store_shipping.threshold_krw %}
-                <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold">
-                  {{ store_shipping.threshold_sats|intcomma }} sats{% if store_shipping.threshold_sats %} ({{ store_shipping.threshold_krw|intcomma }}원){% endif %} 이상 주문 시 무료 배송
-                </div>
-                {% elif store_shipping.threshold_sats %}
-                <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold">
-                  {{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송                  
-                </div>
-                {% endif %}
+                {% endwith %}
               </div>
             </div>
           </div>
@@ -311,22 +320,34 @@
               <span class="text-gray-600 dark:text-gray-400">수량</span>
               <span class="font-medium text-gray-900 dark:text-white" id="quantityDisplay">1개</span>
             </div>
-            {% with shipping_sats=store_shipping.sats %}
+            {% with shipping=product_shipping %}
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">배송비</span>
-              <span class="font-medium text-gray-900 dark:text-white" id="shippingFeeValue" data-base-sats="{{ shipping_sats }}">
-                {% if store_shipping.mode == 'free' or shipping_sats == 0 %}
-                  무료
-                {% else %}
-                  {{ shipping_sats|intcomma }} sats
+              <span class="font-medium text-gray-900 dark:text-white" id="shippingFeeValue" data-base-sats="{{ shipping.sats }}" data-override="{% if shipping.override_free %}true{% else %}false{% endif %}">
+                <span class="shipping-amount">
+                  {% if shipping.override_free or shipping.mode == 'free' or shipping.sats|default_if_none:0 == 0 %}
+                    무료
+                  {% else %}
+                    {{ shipping.sats|intcomma }} sats
+                  {% endif %}
+                </span>
+                {% if shipping.override_free %}
+                  <span class="block text-xs text-green-600 dark:text-green-400">상품 전용 무료 배송 적용</span>
                 {% endif %}
               </span>
             </div>
+            {% if not shipping.override_free %}
+              {% if shipping.threshold_krw %}
+                <div class="text-right text-xs text-orange-600 dark:text-orange-400 font-semibold">{{ shipping.threshold_sats|intcomma }} sats ({{ shipping.threshold_krw|intcomma }}원) 이상 주문 시 무료 배송</div>
+              {% elif shipping.threshold_sats %}
+                <div class="text-right text-xs text-orange-600 dark:text-orange-400 font-semibold">{{ shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
+              {% endif %}
+            {% endif %}
             <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
               <div class="flex justify-between">
                 <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제금액</span>
                 <span class="text-xl font-bold text-bitcoin" id="finalTotal">
-                  {% with base_price=product.public_discounted_price|default:product.public_price %}{% with total_price=base_price|add:shipping_sats %}{{ total_price|floatformat:0|intcomma }}{% endwith %}{% endwith %} sats
+                  {% with base_price=product.public_discounted_price|default:product.public_price %}{% with total_price=base_price|add:shipping.sats %}{{ total_price|floatformat:0|intcomma }}{% endwith %}{% endwith %} sats
                 </span>
               </div>
             </div>
@@ -398,8 +419,9 @@
 <script type="application/json" id="product-data">
 {
   "basePrice": {% if product.is_discounted and product.public_discounted_price %}{{ product.public_discounted_price }}{% else %}{{ product.public_price }}{% endif %},
-  "shippingFee": {{ store_shipping.sats|default:0 }},
-  "freeShippingThreshold": {% if store_shipping.threshold_sats %}{{ store_shipping.threshold_sats }}{% else %}null{% endif %},
+  "shippingFee": {{ product_shipping.sats|default:0 }},
+  "shippingOverride": {{ product_shipping.override_free|yesno:"true,false" }},
+  "freeShippingThreshold": {% if product_shipping.override_free %}null{% elif product_shipping.threshold_sats %}{{ product_shipping.threshold_sats }}{% else %}null{% endif %},
   "productId": {{ product.id }},
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
   "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},

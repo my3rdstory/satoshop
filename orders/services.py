@@ -309,7 +309,8 @@ class CartService:
                     'options_display': options_display,
                     'store_id': cart_item.product.store.store_id,
                     'store_name': cart_item.product.store.store_name,
-                    'is_db_item': True
+                    'is_db_item': True,
+                    'force_free_shipping': cart_item.product.force_free_shipping,
                 })
             
             return items
@@ -451,7 +452,8 @@ class CartService:
                     'options_display': options_display,
                     'store_id': product.store.store_id,
                     'store_name': product.store.store_name,
-                    'is_db_item': False
+                    'is_db_item': False,
+                    'force_free_shipping': product.force_free_shipping,
                 })
                 
             except Product.DoesNotExist:
@@ -476,7 +478,8 @@ class CartService:
             'product_id': product.id,
             'quantity': quantity,
             'selected_options': selected_options,
-            'added_at': time.time()
+            'added_at': time.time(),
+            'force_free_shipping': product.force_free_shipping,
         }
         
         # 환율 고정 데이터 추가

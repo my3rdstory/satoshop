@@ -1,5 +1,6 @@
 {% extends 'stores/store_base.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ store.store_name }} - 상품 수정{% endblock %}
 
@@ -116,7 +117,46 @@
                    value="{{ product.discounted_price|default:'' }}">
             <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 price-unit">sats</span>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">할인가는 정가보다 낮아야 합니다</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">할인가는 정가보다 낮아야 합니다</p>
+        </div>
+
+        <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">배송 정책</h3>
+          <div class="bg-gray-50 dark:bg-gray-700/40 border border-gray-200 dark:border-gray-600 rounded-xl p-4 space-y-3">
+            {% if store_shipping.mode == 'free' %}
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                이 스토어는 현재 <strong class="text-green-600 dark:text-green-300">무료 배송</strong>으로 설정되어 있습니다. 모든 상품이 배송비 없이 노출됩니다.
+              </p>
+            {% else %}
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                기본 배송비: <strong>{{ store_shipping.sats|intcomma }} sats</strong>
+                {% if store_shipping.krw %}
+                  <span class="text-xs text-gray-500 dark:text-gray-400">({{ store_shipping.krw|intcomma }}원 기준)</span>
+                {% endif %}
+              </p>
+              {% if store_shipping.threshold_krw %}
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 배송비가 무료 처리됩니다.</p>
+              {% elif store_shipping.threshold_sats %}
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 배송비가 무료가 됩니다.</p>
+              {% endif %}
+            {% endif %}
+
+            <label class="flex items-start space-x-3 p-3 bg-white dark:bg-gray-800/60 border border-gray-200 dark:border-gray-600 rounded-lg">
+              <input type="checkbox" id="force_free_shipping" name="force_free_shipping"
+                     class="mt-1 w-4 h-4 text-orange-500 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 dark:focus:ring-orange-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                     {% if store_shipping.mode != 'flat' %}disabled{% endif %}
+                     {% if product.force_free_shipping and store_shipping.mode == 'flat' %}checked{% endif %}>
+              <div>
+                <span class="text-sm font-medium text-gray-800 dark:text-gray-200">이 상품만 배송비 무료로 표시</span>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  스토어 기본 배송비가 유료일 때만 사용할 수 있으며, 선택 시 해당 상품이 포함된 주문의 배송비가 0 sats로 계산됩니다.
+                </p>
+                {% if store_shipping.mode != 'flat' %}
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">현재 스토어 배송 정책이 무료이므로 추가 설정이 필요하지 않습니다.</p>
+                {% endif %}
+              </div>
+            </label>
+          </div>
         </div>
 
       </div>

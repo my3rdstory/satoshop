@@ -1036,6 +1036,7 @@ def edit_completion_message(request, store_id):
     
     context = {
         'store': store,
+        'store_shipping': store.get_shipping_fee_display(),
     }
     
     return render(request, 'stores/edit_completion_message.html', context)
@@ -1387,6 +1388,9 @@ def add_product(request, store_id):
                     is_discounted=request.POST.get('is_discounted') == 'on',
                     discounted_price=int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None,
                     completion_message=request.POST.get('completion_message', '').strip(),
+                    force_free_shipping=(
+                        store.shipping_fee_mode == 'flat' and request.POST.get('force_free_shipping') == 'on'
+                    ),
                 )
                 
                 # 옵션 추가
@@ -1439,6 +1443,9 @@ def edit_product(request, store_id, product_id):
                 product.discounted_price = int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None
                 product.shipping_fee = 0
                 product.shipping_fee_krw = None
+                product.force_free_shipping = (
+                    store.shipping_fee_mode == 'flat' and request.POST.get('force_free_shipping') == 'on'
+                )
                 product.completion_message = request.POST.get('completion_message', '').strip()
                 product.save()
                 
@@ -1490,6 +1497,7 @@ def edit_product(request, store_id, product_id):
         'store': store,
         'product': product,
         'options_data': json.dumps(options_data),
+        'store_shipping': store.get_shipping_fee_display(),
     }
     return render(request, 'stores/edit_product.html', context)
 

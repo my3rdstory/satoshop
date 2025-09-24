@@ -168,20 +168,25 @@
               <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 text-right text-sm">
                 <span class="text-gray-600 dark:text-gray-400">
                   스토어 소계: {{ order.subtotal|floatformat:0|intcomma }} sats + 배송비: 
-                  {% if order.shipping_fee == 0 %}
+                  {% if order.force_free_override %}
+                    <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
+                    <span class="block text-xs text-gray-500 dark:text-gray-400">상품 전용 무료 배송 적용</span>
+                  {% elif order.shipping_fee == 0 %}
                     <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
                   {% else %}
                     {{ order.shipping_fee|floatformat:0|intcomma }} sats
                   {% endif %}
                   = <span class="font-bold text-bitcoin">{{ order.total_amount|floatformat:0|intcomma }} sats</span>
                 </span>
-                {% with shipping_info=order.store.get_shipping_fee_display %}
-                  {% if shipping_info.threshold_krw %}
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</div>
-                  {% elif shipping_info.threshold_sats %}
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
-                  {% endif %}
-                {% endwith %}
+                {% if not order.force_free_override %}
+                  {% with shipping_info=order.store.get_shipping_fee_display %}
+                    {% if shipping_info.threshold_krw %}
+                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</div>
+                    {% elif shipping_info.threshold_sats %}
+                      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
               </div>
             </div>
             {% endfor %}

@@ -112,19 +112,26 @@
           {% endif %}
           {% with store_shipping=store.get_shipping_fee_display %}
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            배송비:
-            {% if store_shipping.mode == 'free' or store_shipping.sats == 0 %}
-              무료
-            {% else %}
-              {{ store_shipping.sats|floatformat:0|intcomma }} sats
-              {% if store_shipping.krw %}
-                ({{ store_shipping.krw|intcomma }}원)
+            {% if product.force_free_shipping and store_shipping.mode == 'flat' %}
+              배송비: <span class="text-green-600 dark:text-green-400 font-medium">무료</span>
+              <span class="block text-xs text-gray-400">(상품 전용 무료 배송)</span>
+            {% elif store_shipping.mode == 'free' or store_shipping.sats == 0 %}
+              배송비: <span class="text-green-600 dark:text-green-400 font-medium">무료</span>
+              {% if store_shipping.threshold_krw %}
+                <span class="block text-xs text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
+              {% elif store_shipping.threshold_sats %}
+                <span class="block text-xs text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
               {% endif %}
-            {% endif %}
-            {% if store_shipping.threshold_krw %}
-              <span class="block text-xs text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
-            {% elif store_shipping.threshold_sats %}
-              <span class="block text-xs text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
+            {% else %}
+              배송비: <span class="font-medium">{{ store_shipping.sats|floatformat:0|intcomma }} sats</span>
+              {% if store_shipping.krw %}
+                <span class="text-xs text-gray-400">({{ store_shipping.krw|intcomma }}원)</span>
+              {% endif %}
+              {% if store_shipping.threshold_krw %}
+                <span class="block text-xs text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
+              {% elif store_shipping.threshold_sats %}
+                <span class="block text-xs text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
+              {% endif %}
             {% endif %}
           </p>
           {% endwith %}
