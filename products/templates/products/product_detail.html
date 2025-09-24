@@ -173,16 +173,25 @@
                 <i class="fas fa-truck mr-2"></i>
                 <span>배송비</span>
               </div>
-              <div class="font-medium text-gray-900 dark:text-white">
-                {% if product.public_shipping_fee == 0 %}
+              <div class="font-medium text-gray-900 dark:text-white text-right">
+                {% if store_shipping.mode == 'free' or store_shipping.sats == 0 %}
                   무료
                 {% else %}
-                  {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
-                  {% if product.price_display == 'krw' and product.shipping_fee_krw %}
+                  {{ store_shipping.sats|intcomma }} sats
+                  {% if store_shipping.krw %}
                   <div class="text-xs text-gray-500 dark:text-gray-500">
-                    ({{ product.shipping_fee_krw|floatformat:0|intcomma }}원)
+                    ({{ store_shipping.krw|intcomma }}원)
                   </div>
                   {% endif %}
+                {% endif %}
+                {% if store_shipping.threshold_krw %}
+                <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                  {{ store_shipping.threshold_sats|intcomma }} sats{% if store_shipping.threshold_sats %} ({{ store_shipping.threshold_krw|intcomma }}원){% endif %} 이상 주문 시 무료 배송
+                </div>
+                {% elif store_shipping.threshold_sats %}
+                <div class="text-xs text-orange-600 dark:text-orange-400 font-semibold">
+                  {{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송                  
+                </div>
                 {% endif %}
               </div>
             </div>
@@ -302,20 +311,26 @@
               <span class="text-gray-600 dark:text-gray-400">수량</span>
               <span class="font-medium text-gray-900 dark:text-white" id="quantityDisplay">1개</span>
             </div>
+            {% with shipping_sats=store_shipping.sats %}
             <div class="flex justify-between">
               <span class="text-gray-600 dark:text-gray-400">배송비</span>
-              <span class="font-medium text-gray-900 dark:text-white">
-                {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
+              <span class="font-medium text-gray-900 dark:text-white" id="shippingFeeValue" data-base-sats="{{ shipping_sats }}">
+                {% if store_shipping.mode == 'free' or shipping_sats == 0 %}
+                  무료
+                {% else %}
+                  {{ shipping_sats|intcomma }} sats
+                {% endif %}
               </span>
             </div>
             <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
               <div class="flex justify-between">
                 <span class="text-lg font-semibold text-gray-900 dark:text-white">총 결제금액</span>
                 <span class="text-xl font-bold text-bitcoin" id="finalTotal">
-                  {% with base_price=product.public_discounted_price|default:product.public_price %}{% with total_price=base_price|add:product.public_shipping_fee %}{{ total_price|floatformat:0|intcomma }}{% endwith %}{% endwith %} sats
+                  {% with base_price=product.public_discounted_price|default:product.public_price %}{% with total_price=base_price|add:shipping_sats %}{{ total_price|floatformat:0|intcomma }}{% endwith %}{% endwith %} sats
                 </span>
               </div>
             </div>
+            {% endwith %}
           </div>
         </div>
 
@@ -371,7 +386,8 @@
 <script type="application/json" id="product-data">
 {
   "basePrice": {% if product.is_discounted and product.public_discounted_price %}{{ product.public_discounted_price }}{% else %}{{ product.public_price }}{% endif %},
-  "shippingFee": {{ product.public_shipping_fee }},
+  "shippingFee": {{ store_shipping.sats|default:0 }},
+  "freeShippingThreshold": {% if store_shipping.threshold_sats %}{{ store_shipping.threshold_sats }}{% else %}null{% endif %},
   "productId": {{ product.id }},
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
   "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},

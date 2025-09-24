@@ -175,6 +175,13 @@
                   {% endif %}
                   = <span class="font-bold text-bitcoin">{{ order.total_amount|floatformat:0|intcomma }} sats</span>
                 </span>
+                {% with shipping_info=order.store.get_shipping_fee_display %}
+                  {% if shipping_info.threshold_krw %}
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</div>
+                  {% elif shipping_info.threshold_sats %}
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ shipping_info.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</div>
+                  {% endif %}
+                {% endwith %}
               </div>
             </div>
             {% endfor %}

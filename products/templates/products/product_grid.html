@@ -110,17 +110,24 @@
           </div>
           {% endif %}
           {% endif %}
+          {% with store_shipping=store.get_shipping_fee_display %}
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            배송비: 
-            {% if product.public_shipping_fee == 0 %}
+            배송비:
+            {% if store_shipping.mode == 'free' or store_shipping.sats == 0 %}
               무료
             {% else %}
-              {{ product.public_shipping_fee|floatformat:0|intcomma }} sats
-              {% if product.price_display == 'krw' and product.shipping_fee_krw %}
-                ({{ product.shipping_fee_krw|floatformat:0|intcomma }}원)
+              {{ store_shipping.sats|floatformat:0|intcomma }} sats
+              {% if store_shipping.krw %}
+                ({{ store_shipping.krw|intcomma }}원)
               {% endif %}
             {% endif %}
+            {% if store_shipping.threshold_krw %}
+              <span class="block text-xs text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
+            {% elif store_shipping.threshold_sats %}
+              <span class="block text-xs text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
+            {% endif %}
           </p>
+          {% endwith %}
         </div>
 
         <!-- 재고 상태 정보 -->

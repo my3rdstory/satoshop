@@ -149,6 +149,9 @@
                 <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
                   <i class="fas fa-shopping-cart mr-2"></i>주문관리
                 </a>                
+                <a href="{% url 'stores:edit_shipping_settings' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-truck mr-2"></i>배송비 설정
+                </a>
                 <div class="border-t border-gray-600 mx-4"></div>
                 <a href="{% url 'meetup:meetup_list' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
                   <i class="fas fa-users mr-2"></i>밋업 관리

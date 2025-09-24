@@ -25,6 +25,7 @@ from orders.models import (
 )
 from django.conf import settings
 from storage.utils import upload_store_image, delete_file_from_s3
+from myshop.services import UpbitExchangeService
 
 # 로거 설정
 logger = logging.getLogger(__name__)
@@ -1039,6 +1040,96 @@ def edit_completion_message(request, store_id):
     
     return render(request, 'stores/edit_completion_message.html', context)
 
+
+
+@login_required
+def edit_shipping_settings(request, store_id):
+    """스토어 배송비 설정"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    if request.method == 'POST':
+        mode = request.POST.get('shipping_fee_mode', 'free')
+        mode = mode if mode in dict(Store.SHIPPING_FEE_MODE_CHOICES) else 'free'
+
+        shipping_fee_krw_input = request.POST.get('shipping_fee_krw', '').strip()
+        threshold_krw_input = request.POST.get('free_shipping_threshold_krw', '').strip()
+
+        shipping_fee_krw = 0
+        shipping_fee_sats = 0
+        threshold_krw = None
+        threshold_sats = None
+
+        if mode == 'flat':
+            if not shipping_fee_krw_input:
+                messages.error(request, '배송비를 원화로 입력해주세요.')
+                return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+            try:
+                shipping_fee_krw = int(shipping_fee_krw_input)
+            except ValueError:
+                messages.error(request, '배송비는 숫자로 입력해주세요.')
+                return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+            if shipping_fee_krw < 0:
+                messages.error(request, '배송비는 0 이상이어야 합니다.')
+                return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+            shipping_fee_sats = UpbitExchangeService.convert_krw_to_sats(shipping_fee_krw)
+            if shipping_fee_sats <= 0 and shipping_fee_krw > 0:
+                messages.error(request, '환율 정보를 가져올 수 없어 배송비를 변환하지 못했습니다. 잠시 후 다시 시도해주세요.')
+                return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+            if threshold_krw_input:
+                try:
+                    threshold_krw = int(threshold_krw_input)
+                except ValueError:
+                    messages.error(request, '무료 배송 기준 금액은 숫자로 입력해주세요.')
+                    return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+                if threshold_krw <= 0:
+                    messages.error(request, '무료 배송 기준 금액은 0보다 커야 합니다.')
+                    return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+                if threshold_krw <= shipping_fee_krw:
+                    messages.warning(request, '무료 배송 기준 금액이 배송비보다 낮거나 같으면 의미가 없을 수 있습니다.')
+
+                threshold_sats = UpbitExchangeService.convert_krw_to_sats(threshold_krw)
+                if threshold_sats <= 0:
+                    messages.error(request, '환율 정보를 가져올 수 없어 무료 배송 기준을 변환하지 못했습니다. 잠시 후 다시 시도해주세요.')
+                    return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+        store.set_shipping_fees(
+            mode=mode,
+            fee_krw=shipping_fee_krw,
+            fee_sats=shipping_fee_sats,
+            threshold_krw=threshold_krw,
+            threshold_sats=threshold_sats,
+        )
+        store.save()
+
+        messages.success(request, '배송비 설정이 업데이트되었습니다.')
+        return redirect('stores:edit_shipping_settings', store_id=store_id)
+
+    shipping_info = store.get_shipping_fee_display()
+    converted_threshold_krw = shipping_info['threshold_krw']
+    converted_threshold_sats = shipping_info['threshold_sats']
+
+    if converted_threshold_krw is None and shipping_info['threshold_sats']:
+        converted_threshold_krw = UpbitExchangeService.convert_sats_to_krw(shipping_info['threshold_sats'])
+    if converted_threshold_sats is None and shipping_info['threshold_krw']:
+        converted_threshold_sats = UpbitExchangeService.convert_krw_to_sats(shipping_info['threshold_krw'])
+
+    context = {
+        'store': store,
+        'shipping_info': shipping_info,
+        'threshold_preview': {
+            'krw': converted_threshold_krw,
+            'sats': converted_threshold_sats,
+        },
+    }
+
+    return render(request, 'stores/edit_shipping_settings.html', context)
+
 @login_required
 def manage_store(request, store_id):
     """스토어 관리 (활성화/비활성화, 삭제 등)"""
@@ -1295,7 +1386,6 @@ def add_product(request, store_id):
                     price=int(request.POST.get('price', 0)),
                     is_discounted=request.POST.get('is_discounted') == 'on',
                     discounted_price=int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None,
-                    shipping_fee=int(request.POST.get('shipping_fee', 0)),
                     completion_message=request.POST.get('completion_message', '').strip(),
                 )
                 
@@ -1347,7 +1437,8 @@ def edit_product(request, store_id, product_id):
                 product.price = int(request.POST.get('price', 0))
                 product.is_discounted = request.POST.get('is_discounted') == 'on'
                 product.discounted_price = int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None
-                product.shipping_fee = int(request.POST.get('shipping_fee', 0))
+                product.shipping_fee = 0
+                product.shipping_fee_krw = None
                 product.completion_message = request.POST.get('completion_message', '').strip()
                 product.save()
                 
@@ -1660,7 +1751,7 @@ def checkout_step3(request):
                         shipping_detail_address=order_data['shipping_detail_address'],
                         order_memo=order_data['order_memo'],
                         subtotal=0,  # 나중에 계산
-                        shipping_fee=item.product.shipping_fee,  # 첫 번째 상품의 배송비 사용
+                        shipping_fee=0,
                         total_amount=0,  # 나중에 계산
                         status='payment_pending'
                     )
@@ -1682,7 +1773,8 @@ def checkout_step3(request):
             # 각 주문의 총액 계산
             for order in stores_orders.values():
                 order.subtotal = sum(item.total_price for item in order.items.all())
-                order.total_amount = order.subtotal  # 사토시는 배송비 별도
+                order.shipping_fee = order.store.get_shipping_fee_sats(order.subtotal)
+                order.total_amount = order.subtotal + order.shipping_fee
                 order.save()
             
             # 첫 번째 주문으로 리다이렉트 (여러 주문이 있을 경우 향후 개선 필요)
@@ -1800,6 +1892,3 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
     }
     return render(request, 'products/product_detail.html', context)
-
-
-

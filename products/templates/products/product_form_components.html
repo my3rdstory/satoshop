@@ -67,8 +67,9 @@
         unitElement.textContent = unit;
       });
       
-      // 배송비 도움말 텍스트도 업데이트
-      const shippingHelp = document.querySelector('#shipping_fee').closest('.field').querySelector('.help');
+      // 배송비 도움말 텍스트도 업데이트 (배송비 입력 필드가 있을 때만)
+      const shippingInput = document.querySelector('#shipping_fee');
+      const shippingHelp = shippingInput ? shippingInput.closest('.field')?.querySelector('.help') : null;
       if (shippingHelp) {
         if (selectedValue === 'sats') {
           shippingHelp.textContent = '배송비는 사토시 단위로 입력하세요 (0sats인 경우 배송비 무료로 표시됩니다)';

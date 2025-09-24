@@ -139,6 +139,13 @@
                     {% else %}
                       <span class="font-semibold">{{ store_data.shipping_fee|floatformat:0|intcomma }} sats</span>
                     {% endif %}
+                    {% with store_shipping=store_data.shipping_info %}
+                      {% if store_shipping.threshold_krw %}
+                        <span class="block text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
+                      {% elif store_shipping.threshold_sats %}
+                        <span class="block text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
+                      {% endif %}
+                    {% endwith %}
                   </div>
                   <span class="font-bold text-xl text-bitcoin">
                     {{ store_data.total|floatformat:0|intcomma }} sats

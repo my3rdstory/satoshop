@@ -7,6 +7,11 @@ import os
 import base64
 
 class Store(models.Model):
+    SHIPPING_FEE_MODE_CHOICES = [
+        ('free', '무료 배송'),
+        ('flat', '유료 고정 배송비'),
+    ]
+
     # 1단계 - 스토어 기본 정보
     store_id = models.CharField(
         max_length=50, 
@@ -48,7 +53,34 @@ class Store(models.Model):
     hero_color1 = models.CharField(max_length=7, default="#667eea", help_text="히어로 섹션 그라데이션 시작 색상")
     hero_color2 = models.CharField(max_length=7, default="#764ba2", help_text="히어로 섹션 그라데이션 끝 색상")
     hero_text_color = models.CharField(max_length=7, default="#ffffff", help_text="히어로 섹션 텍스트 색상")
-    
+
+    # 배송비 설정
+    shipping_fee_mode = models.CharField(
+        max_length=10,
+        choices=SHIPPING_FEE_MODE_CHOICES,
+        default='free',
+        help_text="스토어 배송비 정책"
+    )
+    shipping_fee_sats = models.PositiveIntegerField(
+        default=0,
+        help_text="사토시 단위 고정 배송비"
+    )
+    shipping_fee_krw = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="원화 기준 배송비"
+    )
+    free_shipping_threshold_krw = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="원화 기준 무료 배송 조건"
+    )
+    free_shipping_threshold_sats = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="사토시 기준 무료 배송 조건"
+    )
+
     # 스토어 결제완료 안내 메시지
     completion_message = models.TextField(blank=True, help_text="결제 완료 후 고객에게 보여줄 기본 안내 메시지")
     
@@ -214,7 +246,7 @@ class Store(models.Model):
         """Gmail 앱 비밀번호 가져오기"""
         if not self.email_host_password_encrypted:
             return ""
-        
+
         try:
             return self.decrypt_data(self.email_host_password_encrypted)
         except:
@@ -222,6 +254,67 @@ class Store(models.Model):
             if settings.DEBUG:
                 print(f"DEBUG: 이메일 비밀번호 복호화 실패 - 평문으로 간주")
             return self.email_host_password_encrypted
+
+    # =====================
+    # 배송비 관련 유틸
+    # =====================
+
+    def set_shipping_fees(self, mode, fee_krw=None, fee_sats=None, threshold_krw=None, threshold_sats=None):
+        """배송비 설정을 일관되게 업데이트"""
+        self.shipping_fee_mode = mode or 'free'
+
+        if self.shipping_fee_mode != 'flat':
+            self.shipping_fee_sats = 0
+            self.shipping_fee_krw = 0
+            self.free_shipping_threshold_krw = None
+            self.free_shipping_threshold_sats = None
+            return
+
+        self.shipping_fee_krw = fee_krw or 0
+        self.shipping_fee_sats = fee_sats or 0
+
+        if threshold_krw:
+            self.free_shipping_threshold_krw = threshold_krw
+            self.free_shipping_threshold_sats = threshold_sats or 0
+        else:
+            self.free_shipping_threshold_krw = None
+            self.free_shipping_threshold_sats = None
+
+    def shipping_is_free(self):
+        """현재 설정 기준으로 배송비가 무료인지 여부"""
+        return self.shipping_fee_mode != 'flat' or (self.shipping_fee_sats or 0) == 0
+
+    def get_shipping_fee_sats(self, subtotal_sats=None):
+        """주문 합계(사토시)를 기준으로 배송비 계산"""
+        if self.shipping_is_free():
+            return 0
+
+        threshold_sats = self.free_shipping_threshold_sats or 0
+        if subtotal_sats is not None and threshold_sats and subtotal_sats >= threshold_sats:
+            return 0
+
+        return self.shipping_fee_sats or 0
+
+    def get_shipping_fee_krw(self, subtotal_krw=None):
+        """주문 합계(원화)를 기준으로 배송비 계산"""
+        if self.shipping_is_free():
+            return 0
+
+        threshold_krw = self.free_shipping_threshold_krw or 0
+        if subtotal_krw is not None and threshold_krw and subtotal_krw >= threshold_krw:
+            return 0
+
+        return self.shipping_fee_krw or 0
+
+    def get_shipping_fee_display(self):
+        """템플릿용 배송비 정보 반환"""
+        return {
+            'mode': self.shipping_fee_mode,
+            'sats': 0 if self.shipping_is_free() else (self.shipping_fee_sats or 0),
+            'krw': 0 if self.shipping_is_free() else (self.shipping_fee_krw or 0),
+            'threshold_sats': self.free_shipping_threshold_sats,
+            'threshold_krw': self.free_shipping_threshold_krw,
+        }
     
     @property
     def email_from_display(self):

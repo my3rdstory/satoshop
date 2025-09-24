@@ -36,7 +36,6 @@ def cart_view(request):
     if cart_items:
         # 첫 번째 상품의 스토어 정보 가져오기
         first_item = cart_items[0]
-        from stores.models import Store
         try:
             store = Store.objects.filter(store_id=first_item['store_id'], deleted_at__isnull=True).first()
         except Exception:
@@ -687,18 +686,17 @@ def shipping_info(request):
             for store, items in groupby(cart_items_sorted, key=lambda x: x.product.store):
                 store_items = list(items)
                 store_subtotal = sum(item.total_price for item in store_items)
-                
-                # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-                store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
+                store_shipping_fee = store.get_shipping_fee_sats(store_subtotal)
                 store_total = store_subtotal + store_shipping_fee
                 total_shipping_fee += store_shipping_fee
-                
+
                 stores_with_items.append({
                     'store': store,
                     'items': store_items,
                     'subtotal': store_subtotal,
                     'shipping_fee': store_shipping_fee,
-                    'total': store_total
+                    'total': store_total,
+                    'shipping_info': store.get_shipping_fee_display(),
                 })
             
             # 전체 총액 계산
@@ -740,17 +738,12 @@ def shipping_info(request):
         
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
-            
-            # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store_obj:
+                continue
+
+            store_subtotal = sum(item['total_price'] for item in store_items)
+            store_shipping_fee = store_obj.get_shipping_fee_sats(store_subtotal)
             total_shipping_fee += store_shipping_fee
         
         # 전체 총액 계산
@@ -801,36 +794,22 @@ def shipping_info(request):
     
     for store_id, store_data in stores_data.items():
         store_items = store_data['items']
+        store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+        if not store_obj:
+            continue
+
         store_subtotal = sum(item['total_price'] for item in store_items)
-        
-        # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-        shipping_fees = []
-        for item in store_items:
-            try:
-                product = Product.objects.get(id=item['product_id'])
-                shipping_fees.append(product.display_shipping_fee)
-            except Product.DoesNotExist:
-                shipping_fees.append(0)
-        
-        store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+        store_shipping_fee = store_obj.get_shipping_fee_sats(store_subtotal)
         store_total = store_subtotal + store_shipping_fee
         total_shipping_fee += store_shipping_fee
-        
-        # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-        try:
-            from stores.models import Store
-            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-            if not store_obj:
-                continue
-        except Exception:
-            continue
-            
+
         stores_with_items.append({
             'store': store_obj,
             'items': store_items,
             'subtotal': store_subtotal,
             'shipping_fee': store_shipping_fee,
-            'total': store_total
+            'total': store_total,
+            'shipping_info': store_obj.get_shipping_fee_display(),
         })
     
     # 전체 총액 계산
@@ -910,35 +889,20 @@ def checkout(request):
     
     for store_id, store_data in stores_data.items():
         store_items = store_data['items']
+        store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+        if not store_obj:
+            continue
+
         store_subtotal = sum(item['total_price'] for item in store_items)
-        
-        # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-        shipping_fees = []
-        for item in store_items:
-            try:
-                product = Product.objects.get(id=item['product_id'])
-                shipping_fees.append(product.display_shipping_fee)
-            except Product.DoesNotExist:
-                shipping_fees.append(0)
-        
-        store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+        store_shipping_fee = store_obj.get_shipping_fee_sats(store_subtotal)
         store_total = store_subtotal + store_shipping_fee
         total_shipping_fee += store_shipping_fee
-        
-        # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-        try:
-            from stores.models import Store
-            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-            if not store_obj:
-                continue
-        except Exception:
-            continue
         
         if settings.DEBUG:
             logger.debug(f"[CHECKOUT] 스토어: {store_obj.store_name}")
             logger.debug(f"[CHECKOUT]   - 상품 수: {len(store_items)}")
             logger.debug(f"[CHECKOUT]   - 상품 소계: {store_subtotal} sats")
-            logger.debug(f"[CHECKOUT]   - 배송비: {store_shipping_fee} sats (최대 배송비)")
+            logger.debug(f"[CHECKOUT]   - 배송비: {store_shipping_fee} sats (스토어 정책)")
             logger.debug(f"[CHECKOUT]   - 스토어 총액: {store_total} sats")
             for item in store_items:
                 logger.debug(f"[CHECKOUT]     * {item['product_title']}: {item['quantity']}개 x {item['unit_price']} = {item['total_price']} sats")
@@ -948,7 +912,8 @@ def checkout(request):
             'items': store_items,
             'subtotal': store_subtotal,
             'shipping_fee': store_shipping_fee,
-            'total': store_total
+            'total': store_total,
+            'shipping_info': store_obj.get_shipping_fee_display(),
         })
     
     # 전체 총액 계산
@@ -1121,35 +1086,20 @@ def create_checkout_invoice(request):
         stores_with_items = []
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
+            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store_obj:
+                continue
+
             store_subtotal = sum(item['total_price'] for item in store_items)
-            
-            # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            store_shipping_fee = store_obj.get_shipping_fee_sats(store_subtotal)
             store_total = store_subtotal + store_shipping_fee
             total_shipping_fee += store_shipping_fee
-            
-            # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-            try:
-                from stores.models import Store
-                store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-                if not store_obj:
-                    continue
-            except Exception:
-                continue
             
             if settings.DEBUG:
                 logger.debug(f"[INVOICE] 스토어: {store_obj.store_name}")
                 logger.debug(f"[INVOICE]   - 상품 수: {len(store_items)}")
                 logger.debug(f"[INVOICE]   - 상품 소계: {store_subtotal} sats")
-                logger.debug(f"[INVOICE]   - 배송비: {store_shipping_fee} sats (최대 배송비)")
+                logger.debug(f"[INVOICE]   - 배송비: {store_shipping_fee} sats (스토어 정책)")
                 logger.debug(f"[INVOICE]   - 스토어 총액: {store_total} sats")
                 for item in store_items:
                     logger.debug(f"[INVOICE]     * {item['product_title']}: {item['quantity']}개 x {item['unit_price']} = {item['total_price']} sats")
@@ -1159,7 +1109,8 @@ def create_checkout_invoice(request):
                 'items': store_items,
                 'subtotal': store_subtotal,
                 'shipping_fee': store_shipping_fee,
-                'total': store_total
+                'total': store_total,
+                'shipping_info': store_obj.get_shipping_fee_display(),
             })
         
         # 전체 총액 계산
@@ -1353,7 +1304,6 @@ def check_checkout_payment(request):
         # 첫 번째 스토어 가져오기
         first_item = cart_items[0]
         try:
-            from stores.models import Store
             first_store = Store.objects.filter(store_id=first_item['store_id'], deleted_at__isnull=True).first()
             if not first_store:
                 return JsonResponse({'success': False, 'error': '스토어를 찾을 수 없습니다.'}, status=400)
@@ -1694,14 +1644,8 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
     with transaction.atomic():
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
-            
-            # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-            try:
-                from stores.models import Store
-                store = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-                if not store:
-                    continue
-            except Exception:
+            store = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store:
                 continue
             
             if settings.DEBUG:
@@ -1709,16 +1653,8 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             
             # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
             
-            # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            store_subtotal = sum(item['total_price'] for item in store_items)
+            store_shipping_fee = store.get_shipping_fee_sats(store_subtotal)
             
             # 주문 생성
             order = Order.objects.create(
@@ -1900,8 +1836,9 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             
             # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
             
-            # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-            store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
+            # 스토어별 배송비 계산 (스토어 정책 기준)
+            store_subtotal = sum(item.total_price for item in store_items)
+            store_shipping_fee = store.get_shipping_fee_sats(store_subtotal)
             
             # 주문 생성
             order = Order.objects.create(

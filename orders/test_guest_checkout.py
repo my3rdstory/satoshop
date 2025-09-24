@@ -35,6 +35,14 @@ class GuestCheckoutTestCase(TestCase):
             telecommunication_sales_number='2023-서울-1234',
             is_active=True
         )
+        self.store.shipping_fee_mode = 'flat'
+        self.store.shipping_fee_sats = 100
+        self.store.shipping_fee_krw = 0
+        self.store.save()
+        self.store.shipping_fee_mode = 'flat'
+        self.store.shipping_fee_sats = 100
+        self.store.shipping_fee_krw = 0
+        self.store.save()
         
         # 상품 생성
         self.product = Product.objects.create(
@@ -44,7 +52,6 @@ class GuestCheckoutTestCase(TestCase):
             price=1000,
             is_discounted=True,
             discounted_price=800,
-            shipping_fee=100,
             is_active=True,
             stock_quantity=10
         )
@@ -329,7 +336,6 @@ class CartServiceIntegrationTestCase(TestCase):
             price=1000,
             is_discounted=True,
             discounted_price=800,
-            shipping_fee=100,
             is_active=True,
             stock_quantity=10
         )
