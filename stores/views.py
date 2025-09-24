@@ -1877,19 +1877,27 @@ def product_detail(request, store_id, product_id):
         }
         return render(request, 'products/product_not_found.html', context, status=404)
     
-    # 사용자의 장바구니 정보 가져오기 (로그인된 경우)
-    cart_items_count = 0
-    cart_total_amount = 0
-    cart_items = []
-    if request.user.is_authenticated:
-        try:
-            cart = Cart.objects.get(user=request.user)
-            cart_items_count = cart.total_items
-            cart_total_amount = cart.total_amount
-            cart_items = cart.items.all().select_related('product', 'product__store').order_by('product__store__store_name', '-added_at')
-        except Cart.DoesNotExist:
-            pass
-    
+    from orders.services import CartService
+
+    cart_service = CartService(request)
+    cart_summary = cart_service.get_cart_summary()
+    cart_items = cart_service.get_cart_items()
+
+    cart_items_count = cart_summary['total_items']
+    cart_total_amount = cart_summary['total_amount']
+
+    store_shipping = store.get_shipping_fee_display()
+
+    product_shipping = store_shipping.copy()
+    product_shipping['override_free'] = False
+    if product.force_free_shipping and store_shipping['mode'] == 'flat':
+        product_shipping = {
+            **store_shipping,
+            'sats': 0,
+            'krw': 0 if store_shipping.get('krw') is not None else None,
+            'override_free': True,
+        }
+
     context = {
         'store': store,
         'product': product,
@@ -1898,5 +1906,7 @@ def product_detail(request, store_id, product_id):
         'cart_items_count': cart_items_count,
         'cart_total_amount': cart_total_amount,
         'cart_items': cart_items,
+        'store_shipping': store_shipping,
+        'product_shipping': product_shipping,
     }
     return render(request, 'products/product_detail.html', context)
