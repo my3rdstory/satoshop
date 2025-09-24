@@ -148,6 +148,19 @@ class Command(BaseCommand):
 
                     # 배송비 (2000-5000원)
                     shipping_fee = random.randint(2000, 5000)
+                    store = product.store
+                    store.shipping_fee_mode = 'flat'
+                    store.shipping_fee_sats = shipping_fee
+                    store.shipping_fee_krw = 0
+                    store.free_shipping_threshold_krw = None
+                    store.free_shipping_threshold_sats = None
+                    store.save(update_fields=[
+                        'shipping_fee_mode',
+                        'shipping_fee_sats',
+                        'shipping_fee_krw',
+                        'free_shipping_threshold_krw',
+                        'free_shipping_threshold_sats'
+                    ])
 
                     # 총액 계산
                     subtotal = (product_price + options_price) * quantity

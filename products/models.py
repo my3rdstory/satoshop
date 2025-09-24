@@ -38,6 +38,11 @@ class Product(models.Model):
     # 배송비
     shipping_fee = models.PositiveIntegerField(default=0, verbose_name='배송비', help_text='가격표시방식에 따라 원 또는 사토시 단위')
     shipping_fee_krw = models.PositiveIntegerField(null=True, blank=True, verbose_name='원화 배송비', help_text='원화 단위')
+    force_free_shipping = models.BooleanField(
+        default=False,
+        verbose_name='무조건 무료 배송',
+        help_text='체크 시 스토어 기본 배송비를 무시하고 무료 배송으로 계산'
+    )
     
     # 결제완료 안내 메시지
     completion_message = models.TextField(
@@ -134,9 +139,11 @@ class Product(models.Model):
     @property
     def display_shipping_fee(self):
         """표시 배송비 - 가격 표시 방식에 따라 원화 또는 사토시 반환"""
-        if self.price_display == 'krw' and self.shipping_fee_krw is not None:
-            return self.shipping_fee_krw
-        return self.shipping_fee
+        if self.force_free_shipping:
+            return 0
+        if self.price_display == 'krw':
+            return self.store.get_shipping_fee_krw()
+        return self.store.get_shipping_fee_sats()
 
     @property
     def price_unit(self):
@@ -177,18 +184,9 @@ class Product(models.Model):
     @property
     def public_shipping_fee(self):
         """사용자용 배송비 (항상 사토시) - 원화 연동 시 최신 환율 반영"""
-        if self.price_display == 'krw' and self.shipping_fee_krw is not None:
-            # 원화 연동 상품: 최신 환율로 사토시 배송비 계산
-            from myshop.models import ExchangeRate
-            latest_rate = ExchangeRate.get_latest_rate()
-            if latest_rate and latest_rate.btc_krw_rate > 0:
-                # 원화를 사토시로 변환
-                if self.shipping_fee_krw == 0:
-                    return 0
-                btc_amount = self.shipping_fee_krw / float(latest_rate.btc_krw_rate)
-                sats_amount = btc_amount * 100_000_000
-                return round(sats_amount)
-        return self.shipping_fee
+        if self.force_free_shipping:
+            return 0
+        return self.store.get_shipping_fee_sats()
 
     @property
     def public_discount_rate(self):
@@ -226,24 +224,24 @@ class Product(models.Model):
     @property
     def shipping_fee_display(self):
         """배송비 표시 텍스트 (0원일 때 '배송비 무료')"""
-        if self.shipping_fee == 0:
+        info = self.store.get_shipping_fee_display()
+        if self.force_free_shipping or info['mode'] == 'free' or (info['sats'] or 0) == 0:
             return '배송비 무료'
-        
-        if self.price_display == 'krw':
-            return f"{self.shipping_fee:,}원"
-        else:
-            return f"{self.shipping_fee:,} sats"
+
+        if self.price_display == 'krw' and info['krw'] is not None:
+            return f"{info['krw']:,}원"
+        return f"{info['sats']:,} sats"
 
     @property
     def shipping_fee_display_simple(self):
         """간단한 배송비 표시 (단위만)"""
-        if self.shipping_fee == 0:
+        info = self.store.get_shipping_fee_display()
+        if self.force_free_shipping or info['mode'] == 'free' or (info['sats'] or 0) == 0:
             return '무료'
-        
-        if self.price_display == 'krw':
-            return f"{self.shipping_fee:,}원"
-        else:
-            return f"{self.shipping_fee:,} sats"
+
+        if self.price_display == 'krw' and info['krw'] is not None:
+            return f"{info['krw']:,}원"
+        return f"{info['sats']:,} sats"
 
     @property
     def is_in_stock(self):

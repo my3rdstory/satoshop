@@ -80,8 +80,8 @@ class ProductOptionInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
-        'title', 'store', 'get_price_display_korean', 'price', 'is_discounted', 'discounted_price', 
-        'shipping_fee', 'stock_quantity', 'is_temporarily_out_of_stock', 'get_stock_status', 'is_active', 'get_options_summary', 'created_at'
+        'title', 'store', 'get_price_display_korean', 'price', 'is_discounted', 'discounted_price',
+        'stock_quantity', 'is_temporarily_out_of_stock', 'get_stock_status', 'is_active', 'get_options_summary', 'created_at'
     ]
     list_filter = ['is_active', 'is_discounted', 'is_temporarily_out_of_stock', 'price_display', 'store', 'created_at', 'stock_quantity']
     search_fields = ['title', 'description', 'store__store_name']
@@ -94,7 +94,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('store', 'title', 'description')
         }),
         ('가격 정보', {
-            'fields': ('price_display', 'price', 'price_krw', 'is_discounted', 'discounted_price', 'discounted_price_krw', 'final_price', 'discount_rate', 'shipping_fee', 'shipping_fee_krw')
+            'fields': ('price_display', 'price', 'price_krw', 'is_discounted', 'discounted_price', 'discounted_price_krw', 'final_price', 'discount_rate')
         }),
         ('재고 관리', {
             'fields': ('stock_quantity', 'is_temporarily_out_of_stock')

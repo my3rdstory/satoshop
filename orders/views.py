@@ -23,6 +23,32 @@ from ln_payment.blink_service import get_blink_service_for_store
 logger = logging.getLogger(__name__)
 
 
+def calculate_store_totals(store_obj, store_items):
+    """스토어별 소계, 배송비, 무조건 무료 배송 여부 계산"""
+    subtotal = 0
+    apply_override = store_obj.shipping_fee_mode == 'flat'
+    has_items = False
+
+    for item in store_items:
+        has_items = True
+        if isinstance(item, dict):
+            subtotal += item.get('total_price', 0) or 0
+            item_force_free = item.get('force_free_shipping', False)
+        else:
+            subtotal += getattr(item, 'total_price', 0) or 0
+            product = getattr(item, 'product', None)
+            item_force_free = getattr(product, 'force_free_shipping', False)
+
+        apply_override = apply_override and item_force_free
+
+    if not has_items:
+        apply_override = False
+
+    shipping_fee = 0 if apply_override else store_obj.get_shipping_fee_sats(subtotal)
+    return subtotal, shipping_fee, apply_override
+
+
+@login_required
 def cart_view(request):
     """장바구니 보기"""
     cart_service = CartService(request)
@@ -36,7 +62,6 @@ def cart_view(request):
     if cart_items:
         # 첫 번째 상품의 스토어 정보 가져오기
         first_item = cart_items[0]
-        from stores.models import Store
         try:
             store = Store.objects.filter(store_id=first_item['store_id'], deleted_at__isnull=True).first()
         except Exception:
@@ -100,6 +125,13 @@ def cart_view(request):
 
 def cart_api(request):
     """장바구니 내용을 JSON으로 반환하는 API"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'GET':
         return JsonResponse({'success': False, 'error': 'GET 요청만 허용됩니다.'})
     
@@ -145,6 +177,13 @@ def cart_api(request):
 
 def check_cart_store_conflict(request):
     """장바구니 스토어 충돌 여부 확인"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -191,6 +230,13 @@ def check_cart_store_conflict(request):
 
 def add_to_cart(request):
     """장바구니에 상품 추가"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -221,6 +267,16 @@ def add_to_cart(request):
 
 def remove_from_cart(request, item_id=None):
     """장바구니에서 상품 제거"""
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
+            return JsonResponse({
+                'success': False,
+                'error': 'login_required',
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+        login_url = f"{settings.LOGIN_URL}?next={request.get_full_path()}"
+        return redirect(login_url)
+
     if request.method == 'POST':
         try:
             # JSON 요청 처리
@@ -253,6 +309,13 @@ def remove_from_cart(request, item_id=None):
 
 def update_cart_item(request, item_id):
     """장바구니 상품 수량 업데이트"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -646,6 +709,7 @@ def purchase_detail(request, order_number):
     return render(request, 'orders/purchase_detail.html', context)
 
 
+@login_required
 def shipping_info(request):
     """배송 정보 입력 페이지"""
     cart_service = CartService(request)
@@ -686,19 +750,18 @@ def shipping_info(request):
             
             for store, items in groupby(cart_items_sorted, key=lambda x: x.product.store):
                 store_items = list(items)
-                store_subtotal = sum(item.total_price for item in store_items)
-                
-                # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-                store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
+                store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store, store_items)
                 store_total = store_subtotal + store_shipping_fee
                 total_shipping_fee += store_shipping_fee
-                
+
                 stores_with_items.append({
                     'store': store,
                     'items': store_items,
                     'subtotal': store_subtotal,
                     'shipping_fee': store_shipping_fee,
-                    'total': store_total
+                    'total': store_total,
+                    'shipping_info': store.get_shipping_fee_display(),
+                    'force_free_override': override_free,
                 })
             
             # 전체 총액 계산
@@ -740,17 +803,11 @@ def shipping_info(request):
         
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
-            
-            # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store_obj:
+                continue
+
+            _, store_shipping_fee, _ = calculate_store_totals(store_obj, store_items)
             total_shipping_fee += store_shipping_fee
         
         # 전체 총액 계산
@@ -801,36 +858,22 @@ def shipping_info(request):
     
     for store_id, store_data in stores_data.items():
         store_items = store_data['items']
-        store_subtotal = sum(item['total_price'] for item in store_items)
-        
-        # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-        shipping_fees = []
-        for item in store_items:
-            try:
-                product = Product.objects.get(id=item['product_id'])
-                shipping_fees.append(product.display_shipping_fee)
-            except Product.DoesNotExist:
-                shipping_fees.append(0)
-        
-        store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+        store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+        if not store_obj:
+            continue
+
+        store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store_obj, store_items)
         store_total = store_subtotal + store_shipping_fee
         total_shipping_fee += store_shipping_fee
-        
-        # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-        try:
-            from stores.models import Store
-            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-            if not store_obj:
-                continue
-        except Exception:
-            continue
-            
+
         stores_with_items.append({
             'store': store_obj,
             'items': store_items,
             'subtotal': store_subtotal,
             'shipping_fee': store_shipping_fee,
-            'total': store_total
+            'total': store_total,
+            'shipping_info': store_obj.get_shipping_fee_display(),
+            'force_free_override': override_free,
         })
     
     # 전체 총액 계산
@@ -875,6 +918,7 @@ def shipping_info(request):
     return render(request, 'orders/shipping_info.html', context)
 
 
+@login_required
 def checkout(request):
     """주문/결제 페이지"""
     # 배송 정보가 세션에 있는지 확인
@@ -910,35 +954,19 @@ def checkout(request):
     
     for store_id, store_data in stores_data.items():
         store_items = store_data['items']
-        store_subtotal = sum(item['total_price'] for item in store_items)
-        
-        # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-        shipping_fees = []
-        for item in store_items:
-            try:
-                product = Product.objects.get(id=item['product_id'])
-                shipping_fees.append(product.display_shipping_fee)
-            except Product.DoesNotExist:
-                shipping_fees.append(0)
-        
-        store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+        store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+        if not store_obj:
+            continue
+
+        store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store_obj, store_items)
         store_total = store_subtotal + store_shipping_fee
         total_shipping_fee += store_shipping_fee
-        
-        # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-        try:
-            from stores.models import Store
-            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-            if not store_obj:
-                continue
-        except Exception:
-            continue
-        
+
         if settings.DEBUG:
             logger.debug(f"[CHECKOUT] 스토어: {store_obj.store_name}")
             logger.debug(f"[CHECKOUT]   - 상품 수: {len(store_items)}")
             logger.debug(f"[CHECKOUT]   - 상품 소계: {store_subtotal} sats")
-            logger.debug(f"[CHECKOUT]   - 배송비: {store_shipping_fee} sats (최대 배송비)")
+            logger.debug(f"[CHECKOUT]   - 배송비: {store_shipping_fee} sats (스토어 정책)")
             logger.debug(f"[CHECKOUT]   - 스토어 총액: {store_total} sats")
             for item in store_items:
                 logger.debug(f"[CHECKOUT]     * {item['product_title']}: {item['quantity']}개 x {item['unit_price']} = {item['total_price']} sats")
@@ -948,7 +976,9 @@ def checkout(request):
             'items': store_items,
             'subtotal': store_subtotal,
             'shipping_fee': store_shipping_fee,
-            'total': store_total
+            'total': store_total,
+            'shipping_info': store_obj.get_shipping_fee_display(),
+            'force_free_override': override_free,
         })
     
     # 전체 총액 계산
@@ -1003,6 +1033,7 @@ def checkout(request):
     return render(request, 'orders/checkout.html', context)
 
 
+@login_required
 def checkout_complete(request, order_number):
     """주문 완료 페이지"""
     try:
@@ -1050,6 +1081,16 @@ def checkout_complete(request, order_number):
         # 주문이 존재하지 않는 경우
         raise Http404("주문을 찾을 수 없습니다.")
     
+    # 주문별 무조건 무료 배송 여부 계산 (스토어 유료 배송 + 모든 상품 강제 무료)
+    for order in all_orders:
+        if order.store.shipping_fee_mode == 'flat' and order.shipping_fee == 0:
+            order.force_free_override = all(
+                getattr(item.product, 'force_free_shipping', False)
+                for item in order.items.all()
+            )
+        else:
+            order.force_free_override = False
+
     # 전체 통계 계산
     total_amount = sum(order.total_amount for order in all_orders)
     total_subtotal = sum(order.subtotal for order in all_orders)
@@ -1121,35 +1162,19 @@ def create_checkout_invoice(request):
         stores_with_items = []
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
-            store_subtotal = sum(item['total_price'] for item in store_items)
-            
-            # 스토어별 배송비 계산 (상품 정보에서 가져오기)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
+            store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store_obj:
+                continue
+
+            store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store_obj, store_items)
             store_total = store_subtotal + store_shipping_fee
             total_shipping_fee += store_shipping_fee
-            
-            # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-            try:
-                from stores.models import Store
-                store_obj = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-                if not store_obj:
-                    continue
-            except Exception:
-                continue
             
             if settings.DEBUG:
                 logger.debug(f"[INVOICE] 스토어: {store_obj.store_name}")
                 logger.debug(f"[INVOICE]   - 상품 수: {len(store_items)}")
                 logger.debug(f"[INVOICE]   - 상품 소계: {store_subtotal} sats")
-                logger.debug(f"[INVOICE]   - 배송비: {store_shipping_fee} sats (최대 배송비)")
+                logger.debug(f"[INVOICE]   - 배송비: {store_shipping_fee} sats (스토어 정책)")
                 logger.debug(f"[INVOICE]   - 스토어 총액: {store_total} sats")
                 for item in store_items:
                     logger.debug(f"[INVOICE]     * {item['product_title']}: {item['quantity']}개 x {item['unit_price']} = {item['total_price']} sats")
@@ -1159,7 +1184,9 @@ def create_checkout_invoice(request):
                 'items': store_items,
                 'subtotal': store_subtotal,
                 'shipping_fee': store_shipping_fee,
-                'total': store_total
+                'total': store_total,
+                'shipping_info': store_obj.get_shipping_fee_display(),
+                'force_free_override': override_free,
             })
         
         # 전체 총액 계산
@@ -1353,7 +1380,6 @@ def check_checkout_payment(request):
         # 첫 번째 스토어 가져오기
         first_item = cart_items[0]
         try:
-            from stores.models import Store
             first_store = Store.objects.filter(store_id=first_item['store_id'], deleted_at__isnull=True).first()
             if not first_store:
                 return JsonResponse({'success': False, 'error': '스토어를 찾을 수 없습니다.'}, status=400)
@@ -1694,14 +1720,8 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
     with transaction.atomic():
         for store_id, store_data in stores_data.items():
             store_items = store_data['items']
-            
-            # Store 객체 가져오기 (삭제되지 않은 첫 번째 스토어 사용)
-            try:
-                from stores.models import Store
-                store = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
-                if not store:
-                    continue
-            except Exception:
+            store = Store.objects.filter(store_id=store_id, deleted_at__isnull=True).first()
+            if not store:
                 continue
             
             if settings.DEBUG:
@@ -1709,17 +1729,8 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             
             # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
             
-            # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-            shipping_fees = []
-            for item in store_items:
-                try:
-                    product = Product.objects.get(id=item['product_id'])
-                    shipping_fees.append(product.display_shipping_fee)
-                except Product.DoesNotExist:
-                    shipping_fees.append(0)
-            
-            store_shipping_fee = max(shipping_fees) if shipping_fees else 0
-            
+            store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store, store_items)
+
             # 주문 생성
             order = Order.objects.create(
                 user=user,
@@ -1739,6 +1750,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                 paid_at=timezone.now()
             )
             
+            order.force_free_override = override_free
             stores_orders[store.id] = order
             all_orders.append(order)
             
@@ -1894,15 +1906,15 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
     with transaction.atomic():
         for store, items in groupby(cart_items, key=lambda x: x.product.store):
             store_items = list(items)
-            
+
             if settings.DEBUG:
                 logger.debug(f"[ORDER_CREATE] 스토어: {store.store_name}, 상품 수: {len(store_items)}")
-            
+
             # 주문 번호는 Order 모델의 save() 메소드에서 자동 생성됨
-            
-            # 스토어별 배송비 계산 (스토어 내 상품 중 최대 배송비 사용)
-            store_shipping_fee = max(item.product.display_shipping_fee for item in store_items) if store_items else 0
-            
+
+            # 스토어별 배송비 계산 (스토어 정책 기준)
+            store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store, store_items)
+
             # 주문 생성
             order = Order.objects.create(
                 user=user,
@@ -1922,6 +1934,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                 paid_at=timezone.now()
             )
             
+            order.force_free_override = override_free
             stores_orders[store.id] = order
             all_orders.append(order)
             

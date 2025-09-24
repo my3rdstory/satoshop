@@ -134,11 +134,23 @@
                     <span class="font-medium">{{ store_data.store.store_name }}</span> - 
                     상품 소계: <span class="font-semibold">{{ store_data.subtotal|floatformat:0|intcomma }} sats</span> + 
                     배송비: 
-                    {% if store_data.shipping_fee == 0 %}
+                    {% if store_data.force_free_override %}
+                      <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
+                      <span class="block text-xs text-gray-500 dark:text-gray-400">상품 전용 무료 배송 적용</span>
+                    {% elif store_data.shipping_fee == 0 %}
                       <span class="text-green-600 dark:text-green-400 font-semibold">무료</span>
                     {% else %}
                       <span class="font-semibold">{{ store_data.shipping_fee|floatformat:0|intcomma }} sats</span>
                     {% endif %}
+                    {% with store_shipping=store_data.shipping_info %}
+                      {% if not store_data.force_free_override %}
+                        {% if store_shipping.threshold_krw %}
+                          <span class="block text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_krw|intcomma }}원 이상 주문 시 무료 배송</span>
+                        {% elif store_shipping.threshold_sats %}
+                          <span class="block text-xs text-gray-500 dark:text-gray-400">{{ store_shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</span>
+                        {% endif %}
+                      {% endif %}
+                    {% endwith %}
                   </div>
                   <span class="font-bold text-xl text-bitcoin">
                     {{ store_data.total|floatformat:0|intcomma }} sats

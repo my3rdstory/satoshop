@@ -115,19 +115,30 @@ def product_detail(request, store_id, product_id):
     
     # 상품 이미지 가져오기
     product_images = product.images.all().order_by('order')
-    
+
     # 상품 옵션 가져오기
     product_options = product.options.all().prefetch_related('choices').order_by('order')
-    
+
     # 사용자의 장바구니 정보 가져오기 (CartService 사용)
     from orders.services import CartService
     cart_service = CartService(request)
     cart_summary = cart_service.get_cart_summary()
     cart_items = cart_service.get_cart_items()
-    
+
     cart_items_count = cart_summary['total_items']
     cart_total_amount = cart_summary['total_amount']
-    
+    store_shipping = store.get_shipping_fee_display()
+
+    product_shipping = store_shipping.copy()
+    product_shipping['override_free'] = False
+    if product.force_free_shipping and store_shipping['mode'] == 'flat':
+        product_shipping = {
+            **store_shipping,
+            'sats': 0,
+            'krw': 0 if store_shipping.get('krw') is not None else None,
+            'override_free': True,
+        }
+
     context = {
         'store': store,
         'product': product,
@@ -136,6 +147,8 @@ def product_detail(request, store_id, product_id):
         'cart_items_count': cart_items_count,
         'cart_total_amount': cart_total_amount,
         'cart_items': cart_items,
+        'store_shipping': store_shipping,
+        'product_shipping': product_shipping,
     }
     return render(request, 'products/product_detail.html', context)
 
@@ -154,7 +167,12 @@ def add_product(request, store_id):
             with transaction.atomic():
                 # 가격 처리 - 새로운 규칙에 따라 처리
                 price_display = request.POST.get('price_display', 'sats')
-                
+
+                force_free_shipping = request.POST.get('force_free_shipping') == 'on'
+                if store.shipping_fee_mode != 'flat':
+                    # 무료 배송 모드에서는 강제 옵션을 무시
+                    force_free_shipping = False
+
                 # 상품 생성을 위한 기본 데이터
                 product_data = {
                     'store': store,
@@ -164,6 +182,9 @@ def add_product(request, store_id):
                     'is_discounted': request.POST.get('is_discounted') == 'on',
                     'completion_message': request.POST.get('completion_message', '').strip(),
                     'stock_quantity': int(request.POST.get('stock_quantity', 0)),
+                    'shipping_fee': 0,
+                    'shipping_fee_krw': None,
+                    'force_free_shipping': force_free_shipping,
                 }
                 
                 if price_display == 'krw':
@@ -175,9 +196,6 @@ def add_product(request, store_id):
                     if discounted_price_krw:
                         product_data['discounted_price_krw'] = int(discounted_price_krw)
                         product_data['discounted_price'] = int(request.POST.get('discounted_price_sats', 0))
-                    
-                    product_data['shipping_fee_krw'] = int(request.POST.get('shipping_fee_krw', 0))
-                    product_data['shipping_fee'] = int(request.POST.get('shipping_fee_sats', 0))
                 else:
                     # 사토시 고정: 사토시 값을 저장하고 원화는 JavaScript에서 계산된 값 사용
                     product_data['price'] = int(request.POST.get('price_sats', 0))
@@ -187,9 +205,6 @@ def add_product(request, store_id):
                     if discounted_price_sats:
                         product_data['discounted_price'] = int(discounted_price_sats)
                         product_data['discounted_price_krw'] = int(request.POST.get('discounted_price_krw', 0))
-                    
-                    product_data['shipping_fee'] = int(request.POST.get('shipping_fee_sats', 0))
-                    product_data['shipping_fee_krw'] = int(request.POST.get('shipping_fee_krw', 0))
                 
                 # 할인 설정 처리
                 if not product_data['is_discounted']:
@@ -237,13 +252,14 @@ def add_product(request, store_id):
                                 )
                 
                 return redirect('products:product_list', store_id=store_id)
-                
+
         except Exception as e:
             logger.error(f"상품 추가 오류: {e}", exc_info=True)
             messages.error(request, '상품 추가 중 오류가 발생했습니다.')
-    
+
     context = {
         'store': store,
+        'store_shipping': store.get_shipping_fee_display(),
     }
     return render(request, 'products/add_product.html', context)
 
@@ -268,7 +284,11 @@ def edit_product(request, store_id, product_id):
                 product.price_display = request.POST.get('price_display', 'sats')
                 product.is_discounted = request.POST.get('is_discounted') == 'on'
                 product.discounted_price = int(request.POST.get('discounted_price', 0)) if request.POST.get('discounted_price') else None
-                product.shipping_fee = int(request.POST.get('shipping_fee', 0))
+                product.shipping_fee = 0
+                product.shipping_fee_krw = None
+                product.force_free_shipping = (
+                    store.shipping_fee_mode == 'flat' and request.POST.get('force_free_shipping') == 'on'
+                )
                 product.completion_message = request.POST.get('completion_message', '').strip()
                 product.stock_quantity = int(request.POST.get('stock_quantity', 0))
                 product.save()
@@ -300,6 +320,7 @@ def edit_product(request, store_id, product_id):
     context = {
         'store': store,
         'product': product,
+        'store_shipping': store.get_shipping_fee_display(),
     }
     return render(request, 'products/edit_product.html', context)
 
@@ -334,9 +355,6 @@ def edit_product_unified(request, store_id, product_id):
                         if discounted_price:
                             product.discounted_price_krw = int(discounted_price)
                             product.discounted_price = int(discounted_price)  # 임시로 같은 값 사용
-                        
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee', 0))
-                        product.shipping_fee = int(request.POST.get('shipping_fee', 0))  # 임시로 같은 값 사용
                     else:
                         product.price = int(request.POST.get('price', 0))
                         product.price_krw = None  # 사토시 모드에서는 원화 가격 초기화
@@ -345,9 +363,6 @@ def edit_product_unified(request, store_id, product_id):
                         if discounted_price:
                             product.discounted_price = int(discounted_price)
                             product.discounted_price_krw = None  # 사토시 모드에서는 원화 할인가 초기화
-                        
-                        product.shipping_fee = int(request.POST.get('shipping_fee', 0))
-                        product.shipping_fee_krw = None  # 사토시 모드에서는 원화 배송비 초기화
                 else:
                     if product.price_display == 'krw':
                         # 원화 비율 연동: 원화 값을 저장하고 사토시는 JavaScript에서 계산된 값 사용
@@ -358,30 +373,30 @@ def edit_product_unified(request, store_id, product_id):
                         if discounted_price_krw:
                             product.discounted_price_krw = int(discounted_price_krw)
                             product.discounted_price = int(request.POST.get('discounted_price_sats', 0))
-                        
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
-                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
                     else:
                         product.price = int(request.POST.get('price', 0))
                         
                         discounted_price = request.POST.get('discounted_price')
                         if discounted_price:
                             product.discounted_price = int(discounted_price)
-                        
-                        product.shipping_fee = int(request.POST.get('shipping_fee', 0))
                 
                 # 할인 설정
                 product.is_discounted = request.POST.get('is_discounted') == 'on'
                 if not product.is_discounted:
                     product.discounted_price = None
                     product.discounted_price_krw = None
-                
+
                 # 완료 메시지
                 product.completion_message = request.POST.get('completion_message', '').strip()
-                
+                product.shipping_fee = 0
+                product.shipping_fee_krw = None
+                product.force_free_shipping = (
+                    store.shipping_fee_mode == 'flat' and request.POST.get('force_free_shipping') == 'on'
+                )
+
                 # 재고 수량
                 product.stock_quantity = int(request.POST.get('stock_quantity', 0))
-                
+
                 product.save()
                 
                 # 상품 옵션 처리
@@ -396,6 +411,7 @@ def edit_product_unified(request, store_id, product_id):
     context = {
         'store': store,
         'product': product,
+        'store_shipping': store.get_shipping_fee_display(),
     }
     return render(request, 'products/edit_product_unified.html', context)
 
@@ -600,9 +616,6 @@ def edit_basic_info(request, store_id, product_id):
                         if discounted_price_krw:
                             product.discounted_price_krw = int(discounted_price_krw)
                             product.discounted_price = int(request.POST.get('discounted_price_sats', 0))
-                        
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
-                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
                     else:
                         # 사토시 고정으로 변경: 사토시 값을 저장하고 원화는 JavaScript에서 계산된 값 사용
                         product.price = int(request.POST.get('price_sats', 0))
@@ -612,9 +625,6 @@ def edit_basic_info(request, store_id, product_id):
                         if discounted_price_sats:
                             product.discounted_price = int(discounted_price_sats)
                             product.discounted_price_krw = int(request.POST.get('discounted_price_krw', 0))
-                        
-                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
                 else:
                     # 가격 표시 방식이 변경되지 않은 경우: 기존 방식에 맞게 저장
                     if product.price_display == 'krw':
@@ -626,9 +636,6 @@ def edit_basic_info(request, store_id, product_id):
                         if discounted_price_krw:
                             product.discounted_price_krw = int(discounted_price_krw)
                             product.discounted_price = int(request.POST.get('discounted_price_sats', 0))
-                        
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
-                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
                     else:
                         # 기존이 사토시 고정: 사토시 값을 저장하고 원화는 JavaScript에서 계산된 값 사용
                         product.price = int(request.POST.get('price_sats', 0))
@@ -638,9 +645,6 @@ def edit_basic_info(request, store_id, product_id):
                         if discounted_price_sats:
                             product.discounted_price = int(discounted_price_sats)
                             product.discounted_price_krw = int(request.POST.get('discounted_price_krw', 0))
-                        
-                        product.shipping_fee = int(request.POST.get('shipping_fee_sats', 0))
-                        product.shipping_fee_krw = int(request.POST.get('shipping_fee_krw', 0))
                 
                 # 할인 설정
                 product.is_discounted = request.POST.get('is_discounted') == 'on'
@@ -650,7 +654,9 @@ def edit_basic_info(request, store_id, product_id):
                 
                 # 재고 수량
                 product.stock_quantity = int(request.POST.get('stock_quantity', 0))
-                
+                product.shipping_fee = 0
+                product.shipping_fee_krw = None
+
                 product.save()
                 
                 return redirect('products:manage_product', store_id=store_id, product_id=product_id)

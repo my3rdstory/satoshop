@@ -101,6 +101,29 @@
         </div>
       </a>
 
+      <!-- 배송비 설정 -->
+      <a 
+        href="{% url 'stores:edit_shipping_settings' store_id=store.store_id %}" 
+        class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200"
+      >
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center group-hover:bg-orange-200 dark:group-hover:bg-orange-800/50 transition-colors">
+            <i class="fas fa-truck text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">
+            배송비 설정
+          </h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            스토어 공통 배송비와 무료 배송 조건 관리
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
+        </div>
+      </a>
+
       <!-- 결제완료 안내 메시지 관리 -->
       <a 
         href="{% url 'stores:edit_completion_message' store_id=store.store_id %}" 
@@ -149,4 +172,3 @@
     </div>
   </div>
 </div>
-

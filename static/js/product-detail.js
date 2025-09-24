@@ -7,6 +7,8 @@ let currentQuantity = 1;
 let basePrice = 0;
 let shippingFee = 0;
 let productData = null;
+let freeShippingThreshold = null;
+let shippingOverride = false;
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -16,6 +18,13 @@ document.addEventListener('DOMContentLoaded', function() {
     productData = JSON.parse(productDataElement.textContent);
     basePrice = productData.basePrice;
     shippingFee = productData.shippingFee;
+    freeShippingThreshold = productData.freeShippingThreshold;
+    shippingOverride = Boolean(productData.shippingOverride);
+
+    if (shippingOverride) {
+      shippingFee = 0;
+      freeShippingThreshold = null;
+    }
     
     // 전역 변수로 설정
     window.productData = productData;
@@ -25,10 +34,31 @@ document.addEventListener('DOMContentLoaded', function() {
   if (quantityInput) {
     quantityInput.addEventListener('input', validateQuantity);
   }
-  
+
   // 초기 총액 계산
   updateTotalPrice();
 });
+
+function getLoginRedirectUrl() {
+  if (!productData) {
+    return '/accounts/login/';
+  }
+
+  const baseLoginUrl = productData.loginUrl || '/accounts/login/';
+  const nextUrl = productData.currentUrl || window.location.pathname;
+  const separator = baseLoginUrl.includes('?') ? '&' : '?';
+  return `${baseLoginUrl}${separator}next=${encodeURIComponent(nextUrl)}`;
+}
+
+function redirectToLogin() {
+  const redirectUrl = getLoginRedirectUrl();
+  window.location.href = redirectUrl;
+}
+
+function notifyLoginRequired() {
+  alert('회원 전용 기능입니다. 로그인 후 장바구니를 이용해주세요.');
+  redirectToLogin();
+}
 
 // 장바구니 관련 함수들은 cart.js에서 처리됩니다
 
@@ -114,8 +144,11 @@ function updateTotalPrice() {
     
     // 총 계산
     const productTotal = (productPrice + optionsPrice) * quantity;
-    const shippingFee = productData.shippingFee;
-    const finalTotal = productTotal + shippingFee;
+    let applicableShippingFee = shippingOverride ? 0 : productData.shippingFee;
+    if (!shippingOverride && freeShippingThreshold && productTotal >= freeShippingThreshold) {
+        applicableShippingFee = 0;
+    }
+    const finalTotal = productTotal + applicableShippingFee;
     
     // UI 업데이트
     const productTotalElement = document.getElementById('productTotal');
@@ -130,6 +163,27 @@ function updateTotalPrice() {
     }
     if (finalTotalElement) {
         finalTotalElement.textContent = `${finalTotal.toLocaleString()} sats`;
+    }
+
+    const shippingFeeElement = document.getElementById('shippingFeeValue');
+    if (shippingFeeElement) {
+        const amountElement = shippingFeeElement.querySelector('.shipping-amount');
+        if (amountElement) {
+            if (applicableShippingFee === 0) {
+                amountElement.textContent = '무료';
+            } else {
+                amountElement.textContent = `${applicableShippingFee.toLocaleString()} sats`;
+            }
+        }
+    }
+
+    const shippingStatusNote = document.getElementById('shippingStatusNote');
+    if (shippingStatusNote) {
+        if (freeShippingThreshold && productTotal >= freeShippingThreshold) {
+            shippingStatusNote.classList.remove('hidden');
+        } else {
+            shippingStatusNote.classList.add('hidden');
+        }
     }
     
     // 옵션 추가금액 표시
@@ -149,10 +203,15 @@ function updateTotalPrice() {
 // 장바구니에 추가
 function addToCart(forceReplace = false) {
     if (!productData) return;
-    
+
+    if (!productData.isAuthenticated) {
+        notifyLoginRequired();
+        return;
+    }
+
     const quantity = parseInt(document.getElementById('quantity')?.value || 1);
     const selectedOptions = {};
-    
+
     // 선택된 옵션들 수집 (cart.js와 동일한 형식으로)
     document.querySelectorAll('.option-choice.selected').forEach(option => {
         selectedOptions[option.dataset.optionId] = option.dataset.choiceId;
@@ -171,6 +230,9 @@ function addToCart(forceReplace = false) {
                 }
             })
             .catch(error => {
+                if (error && error.message === 'login_required') {
+                    return;
+                }
                 console.error('충돌 체크 실패:', error);
                 // 충돌 체크 실패 시에도 추가 시도
                 performAddToCart(quantity, selectedOptions, false);
@@ -196,6 +258,10 @@ function checkCartStoreConflict() {
     })
     .then(response => response.json())
     .then(data => {
+        if (data.error === 'login_required') {
+            notifyLoginRequired();
+            throw new Error('login_required');
+        }
         if (data.success) {
             return data;
         } else {
@@ -220,7 +286,13 @@ function performAddToCart(quantity, selectedOptions, forceReplace) {
             force_replace: forceReplace
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.status === 401) {
+            notifyLoginRequired();
+            return Promise.reject(new Error('login_required'));
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             // 장바구니 배지 업데이트
@@ -240,6 +312,9 @@ function performAddToCart(quantity, selectedOptions, forceReplace) {
         }
     })
     .catch(error => {
+        if (error && error.message === 'login_required') {
+            return;
+        }
         console.error('Error:', error);
         alert('오류가 발생했습니다. 다시 시도해주세요.');
     });
@@ -256,7 +331,7 @@ function handleMultiStoreConflict(data) {
         `"${currentStore}" 스토어의 상품을 추가하려면 기존 장바구니를 비워야 합니다.\n\n` +
         `기존 장바구니를 비우고 새 상품을 추가하시겠습니까?`
     );
-    
+
     if (confirmed) {
         // 강제로 장바구니 교체
         const quantity = parseInt(document.getElementById('quantity')?.value || 1);
