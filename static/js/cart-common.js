@@ -38,6 +38,10 @@ function showSuccessMessage(message) {
 async function updateCartContent() {
     try {
         const response = await fetch('/orders/cart/api/');
+        if (response.status === 401) {
+            renderGuestCartState();
+            return;
+        }
         const data = await response.json();
         
         // console.log('장바구니 API 응답:', data); // 디버깅용
@@ -63,6 +67,32 @@ async function updateCartContent() {
         }
     } catch (error) {
         console.error('장바구니 내용 업데이트 오류:', error);
+    }
+}
+
+function renderGuestCartState() {
+    const cartContent = document.getElementById('cartContent');
+    if (!cartContent) return;
+
+    const loginUrl = (window.cartConfig && window.cartConfig.loginUrl) || '/accounts/login/';
+
+    cartContent.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full p-6 text-center space-y-4">
+            <div class="text-6xl">🔒</div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">로그인이 필요합니다</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">회원 전용 기능입니다. 로그인 후 장바구니를 이용해주세요.</p>
+            </div>
+            <a href="${loginUrl}" class="inline-flex items-center px-4 py-2 bg-bitcoin hover:bg-bitcoin/90 text-white rounded-lg shadow-md transition-colors">
+                <i class="fas fa-sign-in-alt mr-2"></i>
+                로그인하러 가기
+            </a>
+        </div>
+    `;
+
+    const cartActions = document.getElementById('cartActions');
+    if (cartActions) {
+        cartActions.style.display = 'none';
     }
 }
 
@@ -231,6 +261,11 @@ async function removeFromCart(itemId) {
                 'item_id': itemId
             })
         });
+
+        if (response.status === 401) {
+            renderGuestCartState();
+            return;
+        }
 
         const data = await response.json();
         

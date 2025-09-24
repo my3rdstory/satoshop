@@ -337,17 +337,29 @@
         <!-- 액션 버튼 -->
         <div class="space-y-3">
           {% if product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
-          <button class="w-full py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
-                  onclick="addToCart()">
-            <i class="fas fa-shopping-cart"></i>
-            <span>장바구니 담기</span>
-          </button>
-          <!-- 비회원 주문 가능 안내 -->
-          <div class="text-center">
-            <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-              <i class="fas fa-user-plus mr-1"></i>비회원 주문 가능
-            </span>
-          </div>
+            {% if user.is_authenticated %}
+            <button class="w-full py-4 bg-bitcoin hover:bg-bitcoin/90 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                    onclick="addToCart()">
+              <i class="fas fa-shopping-cart"></i>
+              <span>장바구니 담기</span>
+            </button>
+            <div class="text-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                <i class="fas fa-user-check mr-1"></i>로그인 상태에서만 주문이 가능합니다.
+              </span>
+            </div>
+            {% else %}
+            <button class="w-full py-4 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-xl transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2" 
+                    onclick="redirectToLogin()">
+              <i class="fas fa-sign-in-alt"></i>
+              <span>로그인 후 장바구니 담기</span>
+            </button>
+            <div class="text-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                <i class="fas fa-lock mr-1"></i>회원 전용 기능입니다. 로그인 후 주문을 진행해주세요.
+              </span>
+            </div>
+            {% endif %}
           {% elif product.is_temporarily_out_of_stock %}
           <button class="w-full py-4 bg-purple-400 text-white font-semibold rounded-xl cursor-not-allowed flex items-center justify-center gap-2" 
                   disabled>
@@ -392,6 +404,7 @@
   "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
   "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},
   "loginUrl": "{% url 'accounts:login' %}",
+  "currentUrl": "{{ request.get_full_path|escapejs }}",
   "addToCartUrl": "{% url 'orders:add_to_cart' %}",
   "cartViewUrl": "{% url 'orders:cart_view' %}",
   "csrfToken": "{{ csrf_token }}"

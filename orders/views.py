@@ -23,6 +23,7 @@ from ln_payment.blink_service import get_blink_service_for_store
 logger = logging.getLogger(__name__)
 
 
+@login_required
 def cart_view(request):
     """장바구니 보기"""
     cart_service = CartService(request)
@@ -99,6 +100,13 @@ def cart_view(request):
 
 def cart_api(request):
     """장바구니 내용을 JSON으로 반환하는 API"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'GET':
         return JsonResponse({'success': False, 'error': 'GET 요청만 허용됩니다.'})
     
@@ -144,6 +152,13 @@ def cart_api(request):
 
 def check_cart_store_conflict(request):
     """장바구니 스토어 충돌 여부 확인"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -190,6 +205,13 @@ def check_cart_store_conflict(request):
 
 def add_to_cart(request):
     """장바구니에 상품 추가"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -220,6 +242,16 @@ def add_to_cart(request):
 
 def remove_from_cart(request, item_id=None):
     """장바구니에서 상품 제거"""
+    if not request.user.is_authenticated:
+        if request.method == 'POST':
+            return JsonResponse({
+                'success': False,
+                'error': 'login_required',
+                'message': '로그인이 필요합니다.'
+            }, status=401)
+        login_url = f"{settings.LOGIN_URL}?next={request.get_full_path()}"
+        return redirect(login_url)
+
     if request.method == 'POST':
         try:
             # JSON 요청 처리
@@ -252,6 +284,13 @@ def remove_from_cart(request, item_id=None):
 
 def update_cart_item(request, item_id):
     """장바구니 상품 수량 업데이트"""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'login_required',
+            'message': '로그인이 필요합니다.'
+        }, status=401)
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST 요청만 허용됩니다.'})
     
@@ -645,6 +684,7 @@ def purchase_detail(request, order_number):
     return render(request, 'orders/purchase_detail.html', context)
 
 
+@login_required
 def shipping_info(request):
     """배송 정보 입력 페이지"""
     cart_service = CartService(request)
@@ -854,6 +894,7 @@ def shipping_info(request):
     return render(request, 'orders/shipping_info.html', context)
 
 
+@login_required
 def checkout(request):
     """주문/결제 페이지"""
     # 배송 정보가 세션에 있는지 확인
@@ -968,6 +1009,7 @@ def checkout(request):
     return render(request, 'orders/checkout.html', context)
 
 
+@login_required
 def checkout_complete(request, order_number):
     """주문 완료 페이지"""
     try:
