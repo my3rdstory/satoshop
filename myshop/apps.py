@@ -16,6 +16,7 @@ class MyshopConfig(AppConfig):
         # 런타임에 데이터베이스 접근이 필요할 때만 실행되도록 AdminSite에 동적 속성 추가
         original_index = admin.site.index
         original_each_context = admin.site.each_context
+        original_get_app_list = admin.site.get_app_list
         
         def dynamic_index(request, extra_context=None):
             # 매번 설정 로드 (설정 변경 반영을 위해)
@@ -45,9 +46,29 @@ class MyshopConfig(AppConfig):
             except Exception:
                 context['site_settings'] = None
             return context
-        
+
+        def prioritized_get_app_list(request):
+            """어드민 메뉴에서 주문 관리를 최상단으로 배치"""
+            app_list = original_get_app_list(request)
+            preferred_order = ['orders']
+            prioritized = []
+            processed = set()
+
+            for label in preferred_order:
+                for app in app_list:
+                    if app.get('app_label') == label and app not in prioritized:
+                        prioritized.append(app)
+                        processed.add(app.get('app_label'))
+
+            for app in app_list:
+                if app.get('app_label') not in processed:
+                    prioritized.append(app)
+
+            return prioritized
+
         admin.site.index = dynamic_index
         admin.site.each_context = enhanced_each_context
+        admin.site.get_app_list = prioritized_get_app_list
     
     def _apply_admin_settings(self):
         """실제 어드민 사이트 설정을 SiteSettings에서 가져와서 적용"""
