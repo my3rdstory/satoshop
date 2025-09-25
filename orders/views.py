@@ -23,6 +23,17 @@ from ln_payment.blink_service import get_blink_service_for_store
 logger = logging.getLogger(__name__)
 
 
+def _format_text_for_csv(value):
+    """CSV 다운로드 시 Excel에서 일반 텍스트로 인식되도록 포맷팅"""
+    if value in (None, ''):
+        return ''
+
+    text_value = str(value)
+    # Excel이 수식으로 처리하지 않도록 큰따옴표 이스케이프 후 텍스트 서식으로 감싼다.
+    escaped = text_value.replace('"', '""')
+    return f'="{escaped}"'
+
+
 def calculate_store_totals(store_obj, store_items):
     """스토어별 소계, 배송비, 무조건 무료 배송 여부 계산"""
     subtotal = 0
@@ -604,7 +615,8 @@ def export_orders_csv(request, store_id):
             ws.cell(row=row, column=6, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
             ws.cell(row=row, column=7, value=order.get_status_display())
             ws.cell(row=row, column=8, value=order.buyer_name)
-            ws.cell(row=row, column=9, value=order.buyer_phone)
+            phone_cell = ws.cell(row=row, column=9, value=str(order.buyer_phone or ''))
+            phone_cell.number_format = '@'
             ws.cell(row=row, column=10, value=order.buyer_email)
             ws.cell(row=row, column=11, value=order.shipping_postal_code)
             ws.cell(row=row, column=12, value=order.shipping_address)
@@ -659,7 +671,7 @@ def export_orders_csv(request, store_id):
                 order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 order.get_status_display(),
                 order.buyer_name,
-                order.buyer_phone,
+                _format_text_for_csv(order.buyer_phone),
                 order.buyer_email,
                 order.shipping_postal_code,
                 order.shipping_address,
