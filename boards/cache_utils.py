@@ -16,6 +16,13 @@ MEME_DETAIL_VERSION_KEY = "boards:meme:detail:version"
 MEME_LIST_CACHE_TIMEOUT = 180  # 3 minutes
 MEME_DETAIL_CACHE_TIMEOUT = 180  # 3 minutes
 
+HALL_OF_FAME_LIST_CACHE_PREFIX = "boards:hall-of-fame:list"
+HALL_OF_FAME_FILTERS_CACHE_PREFIX = "boards:hall-of-fame:filters"
+HALL_OF_FAME_LIST_VERSION_KEY = "boards:hall-of-fame:list:version"
+HALL_OF_FAME_FILTERS_VERSION_KEY = "boards:hall-of-fame:filters:version"
+HALL_OF_FAME_LIST_CACHE_TIMEOUT = 300  # 5 minutes
+HALL_OF_FAME_FILTERS_CACHE_TIMEOUT = 300  # 5 minutes
+
 
 def _ensure_version(key):
     version = cache.get(key)
@@ -101,3 +108,54 @@ def set_meme_detail_cache(pk, data):
 def invalidate_meme_detail_cache():
     _bump_version(MEME_DETAIL_VERSION_KEY)
 
+
+def get_hall_of_fame_list_cache(suffix):
+    return cache.get(
+        _build_versioned_key(
+            HALL_OF_FAME_LIST_CACHE_PREFIX,
+            HALL_OF_FAME_LIST_VERSION_KEY,
+            suffix,
+        )
+    )
+
+
+def set_hall_of_fame_list_cache(suffix, data):
+    cache.set(
+        _build_versioned_key(
+            HALL_OF_FAME_LIST_CACHE_PREFIX,
+            HALL_OF_FAME_LIST_VERSION_KEY,
+            suffix,
+        ),
+        data,
+        HALL_OF_FAME_LIST_CACHE_TIMEOUT,
+    )
+
+
+def invalidate_hall_of_fame_list_cache():
+    _bump_version(HALL_OF_FAME_LIST_VERSION_KEY)
+
+
+def get_hall_of_fame_filters_cache(suffix):
+    return cache.get(
+        _build_versioned_key(
+            HALL_OF_FAME_FILTERS_CACHE_PREFIX,
+            HALL_OF_FAME_FILTERS_VERSION_KEY,
+            suffix,
+        )
+    )
+
+
+def set_hall_of_fame_filters_cache(suffix, data):
+    cache.set(
+        _build_versioned_key(
+            HALL_OF_FAME_FILTERS_CACHE_PREFIX,
+            HALL_OF_FAME_FILTERS_VERSION_KEY,
+            suffix,
+        ),
+        data,
+        HALL_OF_FAME_FILTERS_CACHE_TIMEOUT,
+    )
+
+
+def invalidate_hall_of_fame_filters_cache():
+    _bump_version(HALL_OF_FAME_FILTERS_VERSION_KEY)

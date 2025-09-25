@@ -4,12 +4,14 @@ from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
 from .cache_utils import (
+    invalidate_hall_of_fame_filters_cache,
+    invalidate_hall_of_fame_list_cache,
     invalidate_meme_detail_cache,
     invalidate_meme_list_cache,
     invalidate_notice_detail_cache,
     invalidate_notice_list_cache,
 )
-from .models import MemePost, MemeTag, Notice, NoticeComment
+from .models import HallOfFame, MemePost, MemeTag, Notice, NoticeComment
 
 
 @receiver(post_save, sender=Notice)
@@ -48,3 +50,14 @@ def invalidate_meme_tag_cache(sender, **kwargs):
 def invalidate_meme_tags_relationship_cache(sender, **kwargs):
     invalidate_meme_list_cache()
     invalidate_meme_detail_cache()
+
+
+@receiver(post_save, sender=HallOfFame)
+@receiver(post_delete, sender=HallOfFame)
+def invalidate_hall_of_fame_cache(sender, **kwargs):
+    update_fields = kwargs.get('update_fields')
+    if update_fields and set(update_fields) == {'views'}:
+        return
+
+    invalidate_hall_of_fame_list_cache()
+    invalidate_hall_of_fame_filters_cache()

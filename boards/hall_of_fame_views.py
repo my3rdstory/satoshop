@@ -3,13 +3,18 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.views.generic import ListView
 from django.http import JsonResponse
-from django.contrib.auth.models import User
-from django.db.models import Q
 from .models import HallOfFame
-from storage.utils import upload_file_to_s3, process_product_image
+from storage.utils import upload_file_to_s3
 from django.core.files.base import ContentFile
 import io
 import logging
+
+from .cache_utils import (
+    get_hall_of_fame_filters_cache,
+    get_hall_of_fame_list_cache,
+    set_hall_of_fame_filters_cache,
+    set_hall_of_fame_list_cache,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +37,85 @@ def has_hall_of_fame_permission(user):
         return False
 
 
+def _normalize_year(raw_value):
+    if raw_value in (None, ""):
+        return None
+    try:
+        year = int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return None
+    return year if year > 0 else None
+
+
+def _normalize_month(raw_value):
+    if raw_value in (None, ""):
+        return None
+    try:
+        month = int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return None
+    return month if 1 <= month <= 12 else None
+
+
+def _build_hall_of_fame_list_suffix(year, month):
+    year_part = f"year:{year}" if year is not None else "year:all"
+    month_part = f"month:{month}" if month is not None else "month:all"
+    return f"{year_part}|{month_part}"
+
+
+def _get_cached_hall_of_fame_list(year=None, month=None):
+    cache_suffix = _build_hall_of_fame_list_suffix(year, month)
+    cached = get_hall_of_fame_list_cache(cache_suffix)
+    if cached is not None:
+        return cached
+
+    queryset = HallOfFame.objects.filter(is_active=True)
+    if year is not None:
+        queryset = queryset.filter(year=year)
+    if month is not None:
+        queryset = queryset.filter(month=month)
+
+    queryset = queryset.select_related('created_by').order_by('-created_at')
+    results = list(queryset)
+    set_hall_of_fame_list_cache(cache_suffix, results)
+    return results
+
+
+def _get_cached_hall_of_fame_years():
+    cache_suffix = "years"
+    cached = get_hall_of_fame_filters_cache(cache_suffix)
+    if cached is not None:
+        return cached
+
+    years = list(
+        HallOfFame.objects.filter(is_active=True)
+        .values_list('year', flat=True)
+        .distinct()
+        .order_by('year')
+    )
+    set_hall_of_fame_filters_cache(cache_suffix, years)
+    return years
+
+
+def _get_cached_hall_of_fame_months(year=None):
+    cache_suffix = f"months:{year}" if year is not None else "months:all"
+    cached = get_hall_of_fame_filters_cache(cache_suffix)
+    if cached is not None:
+        return cached
+
+    queryset = HallOfFame.objects.filter(is_active=True)
+    if year is not None:
+        queryset = queryset.filter(year=year)
+
+    months = list(
+        queryset.values_list('month', flat=True)
+        .distinct()
+        .order_by('month')
+    )
+    set_hall_of_fame_filters_cache(cache_suffix, months)
+    return months
+
+
 class HallOfFameListView(ListView):
     """Hall of Fame 목록 뷰"""
     model = HallOfFame
@@ -40,43 +124,18 @@ class HallOfFameListView(ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        queryset = HallOfFame.objects.filter(is_active=True)
-        
-        # 년도 필터
-        year = self.request.GET.get('year')
-        if year:
-            queryset = queryset.filter(year=year)
-        
-        # 월 필터
-        month = self.request.GET.get('month')
-        if month:
-            queryset = queryset.filter(month=month)
-        
-        # 최신순 정렬
-        return queryset.order_by('-created_at')
+        year = _normalize_year(self.request.GET.get('year'))
+        month = _normalize_month(self.request.GET.get('month'))
+        return _get_cached_hall_of_fame_list(year, month)
     
     def get_context_data(self, **kwargs):
-        from datetime import datetime
         context = super().get_context_data(**kwargs)
         
-        # 등록된 년도들 가져오기
-        years = HallOfFame.objects.filter(
-            is_active=True
-        ).values_list('year', flat=True).distinct().order_by('year')
-        context['years'] = list(years)
-        
-        # 현재 선택된 년도에 따른 월 목록
-        selected_year = self.request.GET.get('year', '')
-        if selected_year:
-            months = HallOfFame.objects.filter(
-                is_active=True, 
-                year=selected_year
-            ).values_list('month', flat=True).distinct().order_by('month')
-        else:
-            months = HallOfFame.objects.filter(
-                is_active=True
-            ).values_list('month', flat=True).distinct().order_by('month')
-        context['months'] = list(months)
+        # 등록된 년도와 월 목록은 캐시에서 가져온다.
+        selected_year_value = self.request.GET.get('year', '')
+        normalized_year = _normalize_year(selected_year_value)
+        context['years'] = _get_cached_hall_of_fame_years()
+        context['months'] = _get_cached_hall_of_fame_months(normalized_year)
         
         # 현재 필터 값
         context['selected_year'] = self.request.GET.get('year', '')
@@ -302,18 +361,9 @@ def hall_of_fame_list_api(request):
     from django.template.loader import render_to_string
     
     try:
-        # 필터링
-        queryset = HallOfFame.objects.filter(is_active=True)
-        
-        year = request.GET.get('year')
-        if year:
-            queryset = queryset.filter(year=year)
-        
-        month = request.GET.get('month')
-        if month:
-            queryset = queryset.filter(month=month)
-        
-        hall_of_fame_list = queryset.order_by('-created_at')
+        year = _normalize_year(request.GET.get('year'))
+        month = _normalize_month(request.GET.get('month'))
+        hall_of_fame_list = _get_cached_hall_of_fame_list(year, month)
         
         # 권한 체크
         can_delete = request.user.is_authenticated and (
@@ -331,7 +381,7 @@ def hall_of_fame_list_api(request):
         return JsonResponse({
             'success': True,
             'html': html,
-            'count': hall_of_fame_list.count()
+            'count': len(hall_of_fame_list)
         })
         
     except Exception as e:
@@ -345,22 +395,9 @@ def hall_of_fame_list_api(request):
 def hall_of_fame_months_api(request):
     """특정 년도의 월 목록 API"""
     try:
-        year = request.GET.get('year')
-        
-        if year:
-            # 특정 년도의 월 목록
-            months = HallOfFame.objects.filter(
-                is_active=True, 
-                year=year
-            ).values_list('month', flat=True).distinct().order_by('month')
-            months_list = list(months)
-        else:
-            # 전체 월 목록
-            months = HallOfFame.objects.filter(
-                is_active=True
-            ).values_list('month', flat=True).distinct().order_by('month')
-            months_list = list(months)
-        
+        year = _normalize_year(request.GET.get('year'))
+        months_list = _get_cached_hall_of_fame_months(year)
+
         return JsonResponse({
             'success': True,
             'months': months_list

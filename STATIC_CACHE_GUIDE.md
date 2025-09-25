@@ -204,6 +204,7 @@ python manage.py show_static_hashes --detailed
 - `stores:browse:landing` *(300초)*: 스토어 탐색 기본 화면 데이터. `Store`, `Order`, `OrderItem`, `MeetupOrder`, `LiveLecture`, `FileOrder` 변경 시 시그널에서 삭제합니다.
 - `boards:meme:list` / `boards:meme:detail` *(180초)*: 밈 갤러리 목록·상세. 버전 키 기반으로 관리하며 `MemePost`, `MemeTag`, 태그 M2M 변경 시 버전을 증가시켜 자동 무효화합니다.
 - `boards:notice:list` / `boards:notice:detail` *(300초)*: 공지사항 목록·상세. `Notice`, `NoticeComment` 업데이트 시 버전을 갱신하며, 조회수 증가처럼 `update_fields=['views']`만 저장되는 경우에는 무효화하지 않습니다.
+- `boards:hall-of-fame:list` / `boards:hall-of-fame:filters` *(300초)*: 명예의 전당 목록과 년·월 필터 데이터. `HallOfFame` 저장/삭제 시 버전을 증가시키되 조회수(`views`)만 변경된 저장은 무효화하지 않습니다.
 
 ### 운영 체크리스트
 - 캐시를 강제로 비우려면 `python manage.py shell`에서 `from django.core.cache import cache` 후 `cache.delete('<키>')` 또는 관련 무효화 헬퍼를 호출하세요.
