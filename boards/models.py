@@ -179,7 +179,6 @@ class HallOfFame(models.Model):
             models.Index(fields=['month']),
             models.Index(fields=['created_at']),
         ]
-        unique_together = ['year', 'month']
     
     def __str__(self):
         return f"{self.year}년 {self.month}월 Hall of Fame"

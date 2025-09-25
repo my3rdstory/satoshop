@@ -1,5 +1,4 @@
 let selectedFile = null;
-let searchTimeout = null;
 
 function generateYearTags() {
     const yearTagsContainer = document.getElementById('yearTags');
@@ -23,8 +22,6 @@ function selectYear(year) {
         selectedTag.classList.add('selected');
         document.getElementById('selectedYear').value = year;
     }
-    
-    checkExistingData();
 }
 
 function selectMonth(month) {
@@ -36,34 +33,6 @@ function selectMonth(month) {
     if (selectedTag) {
         selectedTag.classList.add('selected');
         document.getElementById('selectedMonth').value = month;
-    }
-    
-    checkExistingData();
-}
-
-function checkExistingData() {
-    const year = document.getElementById('selectedYear').value;
-    const month = document.getElementById('selectedMonth').value;
-    
-    if (year && month) {
-        fetch(`/boards/api/hall-of-fame/check/?year=${year}&month=${month}`, {
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.exists) {
-                alert(`${year}년 ${month}월은 이미 등록되어 있습니다.`);
-                document.querySelectorAll('.month-tag').forEach(tag => {
-                    tag.classList.remove('selected');
-                });
-                document.getElementById('selectedMonth').value = '';
-            }
-        })
-        .catch(error => {
-            console.error('Check error:', error);
-        });
     }
 }
 
