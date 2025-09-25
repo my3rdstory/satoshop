@@ -201,7 +201,16 @@ class OrderAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         store_qs = Store.objects.filter(deleted_at__isnull=True).order_by('store_name').only('id', 'store_name')
-        extra_context['store_dropdown_options'] = list(store_qs)
+        store_list = list(store_qs)
+        named_stores = []
+        unnamed_stores = []
+        for store in store_list:
+            name = (store.store_name or '').strip()
+            if name:
+                named_stores.append(store)
+            else:
+                unnamed_stores.append(store)
+        extra_context['store_dropdown_options'] = named_stores + unnamed_stores
         selected_store = request.GET.get('store__id__exact', '')
         extra_context['selected_store_id'] = selected_store
         preserved = []
