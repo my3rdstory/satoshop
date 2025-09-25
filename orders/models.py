@@ -224,9 +224,10 @@ class Order(models.Model):
             models.Index(fields=['user', 'created_at']),
             models.Index(fields=['store', 'created_at']),
             models.Index(fields=['status']),
+            models.Index(fields=['status', '-created_at'], name='orders_orde_status_079368_idx'),
             models.Index(fields=['order_number']),
-            models.Index(fields=['user', 'status']),  # 사용자별 상태 조회 최적화
-            models.Index(fields=['user', 'status', 'created_at']),  # 사용자별 구매 내역 조회 최적화
+            models.Index(fields=['user', 'status'], name='orders_orde_user_id_d0bbfd_idx'),  # 사용자별 상태 조회 최적화
+            models.Index(fields=['user', 'status', 'created_at'], name='orders_orde_user_id_8a7f3c_idx'),  # 사용자별 구매 내역 조회 최적화
         ]
     
     def __str__(self):
