@@ -1,0 +1,39 @@
+{% extends "admin/change_list.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+{{ block.super }}
+<style>
+  .store-filter-tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .store-filter-tool form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+  }
+  .store-filter-tool select {
+    min-width: 160px;
+  }
+</style>
+<li class="store-filter-tool">
+  <form method="get">
+    <label for="storeFilter">{% trans "스토어" %}</label>
+    <select id="storeFilter" name="store__id__exact" onchange="this.form.submit()">
+      <option value="">{% trans "전체" %}</option>
+      {% for store in store_dropdown_options %}
+        <option value="{{ store.id }}" {% if store.id|stringformat:"s" == selected_store_id %}selected{% endif %}>{{ store.store_name }}</option>
+      {% endfor %}
+    </select>
+    {% for key, value in store_filter_preserved_query %}
+      <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+    <noscript>
+      <button type="submit" class="button">{% trans "적용" %}</button>
+    </noscript>
+  </form>
+</li>
+{% endblock %}

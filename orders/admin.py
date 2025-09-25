@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.db.models import Count
+from stores.models import Store
 from .models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 )
@@ -167,6 +168,7 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'buyer_phone']
     readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary', 'courier_company', 'tracking_number']
     list_per_page = 10
+    change_list_template = 'admin/orders/order/change_list.html'
     
     fieldsets = (
         ('주문 정보', {
@@ -195,6 +197,22 @@ class OrderAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request).select_related('user', 'store').prefetch_related('items')
         return queryset.annotate(items_count_db=Count('items', distinct=True))
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        store_qs = Store.objects.filter(deleted_at__isnull=True).order_by('store_name').only('id', 'store_name')
+        extra_context['store_dropdown_options'] = list(store_qs)
+        selected_store = request.GET.get('store__id__exact', '')
+        extra_context['selected_store_id'] = selected_store
+        preserved = []
+        for key in request.GET.keys():
+            if key == 'store__id__exact':
+                continue
+            values = request.GET.getlist(key)
+            for value in values:
+                preserved.append((key, value))
+        extra_context['store_filter_preserved_query'] = preserved
+        return super().changelist_view(request, extra_context=extra_context)
     
     def order_number_link(self, obj):
         """주문번호를 링크로 표시"""
