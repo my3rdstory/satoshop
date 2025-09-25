@@ -18,6 +18,8 @@ from .cache_utils import (
 
 logger = logging.getLogger(__name__)
 
+HALL_OF_FAME_LIST_CACHE_VERSION = 'v2'
+
 try:
     from PIL import Image, ImageOps
     PIL_AVAILABLE = True
@@ -60,7 +62,7 @@ def _normalize_month(raw_value):
 def _build_hall_of_fame_list_suffix(year, month):
     year_part = f"year:{year}" if year is not None else "year:all"
     month_part = f"month:{month}" if month is not None else "month:all"
-    return f"{year_part}|{month_part}"
+    return f"{HALL_OF_FAME_LIST_CACHE_VERSION}|{year_part}|{month_part}"
 
 
 def _get_cached_hall_of_fame_list(year=None, month=None):
@@ -75,7 +77,7 @@ def _get_cached_hall_of_fame_list(year=None, month=None):
     if month is not None:
         queryset = queryset.filter(month=month)
 
-    queryset = queryset.select_related('created_by').order_by('-created_at')
+    queryset = queryset.select_related('created_by').order_by('-year', 'month', '-created_at')
     results = list(queryset)
     set_hall_of_fame_list_cache(cache_suffix, results)
     return results
@@ -121,8 +123,6 @@ class HallOfFameListView(ListView):
     model = HallOfFame
     template_name = 'boards/hall-of-fame/list.html'
     context_object_name = 'hall_of_fame_list'
-    paginate_by = 20
-    
     def get_queryset(self):
         year = _normalize_year(self.request.GET.get('year'))
         month = _normalize_month(self.request.GET.get('month'))
