@@ -195,7 +195,7 @@ def browse_recent_stores(request):
     
     # 페이지네이션
     from django.core.paginator import Paginator
-    paginator = Paginator(stores, 16)  # 한 페이지에 16개씩
+    paginator = Paginator(stores, 15)  # 한 페이지에 15개씩
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
