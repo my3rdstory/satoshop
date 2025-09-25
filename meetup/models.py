@@ -74,6 +74,8 @@ class Meetup(models.Model):
             models.Index(fields=['created_at']),              # 정렬용
             models.Index(fields=['updated_at']),              # 관리자 정렬용
             models.Index(fields=['is_temporarily_closed']),   # 일시중단 밋업 조회용
+            models.Index(fields=['is_free']),
+            models.Index(fields=['is_discounted']),
         ]
     
     def __str__(self):
@@ -378,7 +380,10 @@ class MeetupOrder(models.Model):
             models.Index(fields=['paid_at']),                 # 결제일시 필터링용
             models.Index(fields=['confirmed_at']),            # 확정일시 필터링용
             models.Index(fields=['attended_at']),             # 참석체크일시 필터링용
-            
+            models.Index(fields=['meetup', 'status', '-created_at'], name='meetup_order_status_cr_idx'),
+            models.Index(fields=['attended', '-created_at'], name='meetup_order_att_cr_idx'),
+            models.Index(fields=['is_early_bird']),
+
             # 집계 쿼리 최적화
             models.Index(fields=['user', 'total_price']),     # 사용자별 총 지출 집계용
             models.Index(fields=['meetup', 'user']),          # 밋업별 참가자 조회용

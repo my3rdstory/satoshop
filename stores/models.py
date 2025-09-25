@@ -110,6 +110,8 @@ class Store(models.Model):
             
             # 복합 인덱스
             models.Index(fields=['is_active', 'deleted_at', 'created_at']),  # 홈페이지 스토어 목록용
+            models.Index(fields=['email_enabled']),
+            models.Index(fields=['email_enabled', 'deleted_at']),
         ]
         constraints = [
             models.UniqueConstraint(

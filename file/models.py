@@ -153,6 +153,10 @@ class DigitalFile(models.Model):
             models.Index(fields=['store', 'is_active']),
             models.Index(fields=['deleted_at']),
             models.Index(fields=['store', 'deleted_at']),
+            models.Index(fields=['price_display']),
+            models.Index(fields=['is_discounted']),
+            models.Index(fields=['is_temporarily_closed']),
+            models.Index(fields=['store', 'is_discounted']),
         ]
     
     def __str__(self):
@@ -654,6 +658,8 @@ class FileOrder(models.Model):
             models.Index(fields=['digital_file', 'user']),
             models.Index(fields=['digital_file', 'status']),
             models.Index(fields=['user', 'status']),
+            models.Index(fields=['is_discounted']),
+            models.Index(fields=['download_clicked']),
         ]
     
     def __str__(self):
