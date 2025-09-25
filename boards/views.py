@@ -1,3 +1,5 @@
+from hashlib import md5
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -13,6 +15,13 @@ from .models import Notice, NoticeComment
 from .forms import NoticeForm, NoticeCommentForm
 import json
 
+from .cache_utils import (
+    get_notice_detail_cache,
+    get_notice_list_cache,
+    set_notice_detail_cache,
+    set_notice_list_cache,
+)
+
 
 def is_staff_or_superuser(user):
     """스태프 또는 슈퍼유저인지 확인"""
@@ -27,16 +36,29 @@ class NoticeListView(ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        search = self.request.GET.get('search', '').strip()
+
+        cache_suffix = (
+            f"search:{md5(search.lower().encode('utf-8')).hexdigest()}"
+            if search
+            else 'default'
+        )
+
+        cached = get_notice_list_cache(cache_suffix)
+        if cached is not None:
+            return cached
+
         queryset = Notice.objects.filter(is_active=True)
-        
-        # 검색 기능
-        search = self.request.GET.get('search')
+
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) | Q(content__icontains=search)
             )
-        
-        return queryset.order_by('-is_pinned', '-created_at')
+
+        queryset = queryset.select_related('author').order_by('-is_pinned', '-created_at')
+        results = list(queryset)
+        set_notice_list_cache(cache_suffix, results)
+        return results
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -56,14 +78,23 @@ class NoticeDetailView(DetailView):
     context_object_name = 'notice'
     
     def get_object(self):
-        obj = get_object_or_404(Notice, pk=self.kwargs['pk'], is_active=True)
-        # 조회수 증가
-        obj.increase_views()
-        return obj
+        pk = self.kwargs['pk']
+        notice = get_notice_detail_cache(pk)
+        if notice is None:
+            notice = get_object_or_404(
+                Notice.objects.select_related('author'),
+                pk=pk,
+                is_active=True,
+            )
+
+        # 조회수 증가 후 캐시 업데이트
+        notice.increase_views()
+        set_notice_detail_cache(pk, notice)
+        return notice
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        notice = self.get_object()
+        notice = self.object
         
         # 댓글 목록 (대댓글 제외한 최상위 댓글만, 최신 순)
         from django.db.models import Prefetch
@@ -95,7 +126,7 @@ class NoticeDetailView(DetailView):
         # 활성화된 댓글 총 개수 (답글 포함)
         total_comments = NoticeComment.objects.filter(notice=notice, is_active=True).count()
         context['total_comments'] = total_comments
-        
+
         return context
 
 

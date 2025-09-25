@@ -3,10 +3,11 @@ Stores 앱 시그널 처리
 """
 
 import logging
-from django.db.models.signals import post_delete, pre_delete
+from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 from .models import Store, StoreImage
 from storage.utils import delete_file_from_s3
+from .cache_utils import invalidate_store_browse_cache
 
 logger = logging.getLogger(__name__)
 
@@ -76,3 +77,48 @@ def log_store_deleted(sender, instance, **kwargs):
     Store 삭제 후 로그 기록
     """
     logger.info(f"Store 삭제 완료: {instance.store_name} (ID: {instance.store_id})") 
+
+
+@receiver(post_save, sender=Store)
+@receiver(post_delete, sender=Store)
+def invalidate_store_cache_on_store_change(sender, **kwargs):
+    """스토어 변경 시 탐색 페이지 캐시 무효화"""
+    invalidate_store_browse_cache()
+
+
+def _invalidate_store_cache(sender, **kwargs):
+    """외부 모델 변경 시 탐색 페이지 캐시 무효화"""
+    invalidate_store_browse_cache()
+
+
+def _register_external_cache_signals():
+    """스토어 탐색 캐시를 무효화해야 하는 타 앱 모델과 연결"""
+    from django.apps import apps
+
+    external_models = [
+        ('orders', 'Order'),
+        ('orders', 'OrderItem'),
+        ('meetup', 'MeetupOrder'),
+        ('lecture', 'LiveLecture'),
+        ('file', 'FileOrder'),
+    ]
+
+    for app_label, model_name in external_models:
+        try:
+            model = apps.get_model(app_label, model_name)
+        except LookupError:
+            continue
+
+        post_save.connect(
+            _invalidate_store_cache,
+            sender=model,
+            dispatch_uid=f'stores.cache.{app_label}.{model_name}.save',
+        )
+        post_delete.connect(
+            _invalidate_store_cache,
+            sender=model,
+            dispatch_uid=f'stores.cache.{app_label}.{model_name}.delete',
+        )
+
+
+_register_external_cache_signals()

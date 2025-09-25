@@ -12,6 +12,8 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 import logging
 
+from .cache_utils import invalidate_home_context_cache
+
 logger = logging.getLogger(__name__)
 
 def get_current_year_copyright():
@@ -484,10 +486,11 @@ class SiteSettings(models.Model):
             self.footer_copyright = get_current_year_copyright()
         
         super().save(*args, **kwargs)
-        
+
         # 설정이 변경되면 캐시 무효화
         from django.core.cache import cache
         cache.delete('site_settings_singleton')
+        invalidate_home_context_cache()
     
     def __str__(self):
         return f"사이트 설정 ({self.updated_at.strftime('%Y-%m-%d %H:%M')})"
@@ -598,6 +601,14 @@ class DocumentContent(models.Model):
     def __str__(self):
         return f"{self.get_document_type_display()}"
     
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        invalidate_home_context_cache()
+
+    def delete(self, *args, **kwargs):
+        super().delete(*args, **kwargs)
+        invalidate_home_context_cache()
+
     @classmethod
     def get_active_documents(cls):
         """활성화된 문서들을 가져오기"""

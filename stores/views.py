@@ -27,13 +27,15 @@ from django.conf import settings
 from storage.utils import upload_store_image, delete_file_from_s3
 from myshop.services import UpbitExchangeService
 
+from .cache_utils import get_store_browse_cache, set_store_browse_cache
+
 # 로거 설정
 logger = logging.getLogger(__name__)
 
 def browse_stores(request):
     """스토어 탐색 페이지"""
     search_query = request.GET.get('q', '').strip()
-    
+
     # 활성화된 스토어만 가져오기
     active_stores = Store.objects.filter(
         is_active=True, 
@@ -57,6 +59,10 @@ def browse_stores(request):
             'live_lectures': None,
         }
     else:
+        cached_context = get_store_browse_cache()
+        if cached_context is not None:
+            return render(request, 'stores/browse_stores.html', cached_context)
+
         # 최근 개설된 스토어 5개 (생성일 기준)
         recent_stores = active_stores.order_by('-created_at')[:5]
         
@@ -166,14 +172,16 @@ def browse_stores(request):
             'stores': None,
             'search_query': search_query,
             'total_count': 0,
-            'recent_stores': recent_stores,
-            'active_stores': active_order_stores_final,
-            'live_lectures': live_lectures,
-            'recent_file_orders': recent_file_orders,
-            'recent_ordered_products': recent_ordered_products,
-            'recent_meetup_orders': recent_meetup_orders,
+            'recent_stores': list(recent_stores),
+            'active_stores': list(active_order_stores_final),
+            'live_lectures': list(live_lectures),
+            'recent_file_orders': list(recent_file_orders),
+            'recent_ordered_products': list(recent_ordered_products),
+            'recent_meetup_orders': list(recent_meetup_orders),
         }
-    
+
+        set_store_browse_cache(context)
+
     return render(request, 'stores/browse_stores.html', context)
 
 
