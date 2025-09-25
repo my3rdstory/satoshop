@@ -167,12 +167,6 @@ def hall_of_fame_create(request):
                 messages.error(request, '필수 항목을 모두 입력해주세요.')
                 return render(request, 'boards/hall-of-fame/create.html')
             
-            # 중복 확인
-            from .models import HallOfFame
-            if HallOfFame.objects.filter(year=year, month=month).exists():
-                messages.error(request, f'{year}년 {month}월은 이미 등록되어 있습니다.')
-                return render(request, 'boards/hall-of-fame/create.html')
-            
             # 이미지 처리 (1:1 비율로 썸네일 생성)
             process_result = process_hall_of_fame_image(image_file)
             if not process_result['success']:
@@ -310,7 +304,7 @@ def process_hall_of_fame_image(image_file, thumbnail_size=400):
 
 @login_required
 def check_hall_of_fame(request):
-    """Hall of Fame 중복 확인 API"""
+    """Hall of Fame 연/월 충돌 여부와 기존 등록 수를 조회하는 API"""
     if not has_hall_of_fame_permission(request.user):
         return JsonResponse({'error': '권한이 없습니다.'}, status=403)
     
@@ -318,12 +312,13 @@ def check_hall_of_fame(request):
     month = request.GET.get('month')
     
     if not year or not month:
-        return JsonResponse({'exists': False})
-    
+        return JsonResponse({'exists': False, 'count': 0})
+
     from .models import HallOfFame
-    exists = HallOfFame.objects.filter(year=year, month=month).exists()
-    
-    return JsonResponse({'exists': exists})
+    queryset = HallOfFame.objects.filter(year=year, month=month)
+    count = queryset.count()
+
+    return JsonResponse({'exists': count > 0, 'count': count})
 
 
 @login_required
