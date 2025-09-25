@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 from django.shortcuts import render, redirect
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -84,7 +84,11 @@ class MeetupAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """삭제된 밋업을 어드민 목록에서 제외하고 쿼리 최적화"""
         qs = super().get_queryset(request)
-        return qs.filter(deleted_at__isnull=True).select_related('store').prefetch_related('orders')
+        qs = qs.filter(deleted_at__isnull=True).select_related('store')
+        return qs.annotate(
+            confirmed_order_count=Count('orders', filter=Q(orders__status__in=['confirmed', 'completed']), distinct=True),
+            cancelled_order_count=Count('orders', filter=Q(orders__status='cancelled'), distinct=True)
+        )
     
     def price_display(self, obj):
         """가격 표시"""
@@ -102,8 +106,8 @@ class MeetupAdmin(admin.ModelAdmin):
     
     def participants_display(self, obj):
         """참가자 현황 표시"""
+        confirmed = getattr(obj, 'confirmed_order_count', obj.current_participants)
         if obj.max_participants:
-            confirmed = obj.current_participants
             max_participants = obj.max_participants
             
             # 확정된 참가자 / 최대 정원
@@ -113,7 +117,6 @@ class MeetupAdmin(admin.ModelAdmin):
                 confirmed, max_participants
             )
         else:
-            confirmed = obj.current_participants
             return format_html(
                 '<strong>{}</strong><br>'
                 '<small style="color: #7f8c8d;">확정 (무제한)</small>',
@@ -123,8 +126,11 @@ class MeetupAdmin(admin.ModelAdmin):
     
     def remaining_spots_display(self, obj):
         """남은 자리 표시"""
+        confirmed = getattr(obj, 'confirmed_order_count', obj.current_participants)
         if obj.max_participants:
-            remaining = obj.remaining_spots
+            remaining = None
+            if obj.max_participants is not None:
+                remaining = max(0, obj.max_participants - confirmed)
             if remaining is not None:
                 if remaining == 0:
                     return format_html('<span style="color: #e74c3c; font-weight: bold;">🔴 마감</span>')
@@ -137,14 +143,12 @@ class MeetupAdmin(admin.ModelAdmin):
     
     def cancelled_orders_count(self, obj):
         """취소된 주문 수"""
-        # prefetch_related로 이미 로드된 orders 사용
-        return len([o for o in obj.orders.all() if o.status == 'cancelled'])
+        return getattr(obj, 'cancelled_order_count', len([o for o in obj.orders.all() if o.status == 'cancelled']))
     cancelled_orders_count.short_description = '취소된 주문'
     
     def view_participants_button(self, obj):
         """참가자 목록 보기 버튼 - 어드민 내에서 밋업 주문 목록으로 이동"""
-        # prefetch_related로 이미 로드된 orders 사용
-        participants_count = len([o for o in obj.orders.all() if o.status in ['confirmed', 'completed']])
+        participants_count = getattr(obj, 'confirmed_order_count', len([o for o in obj.orders.all() if o.status in ['confirmed', 'completed']]))
         if participants_count > 0:
             # 장고 어드민의 MeetupOrder 목록으로 이동하면서 현재 밋업 필터 적용
             admin_url = reverse('admin:meetup_meetuporder_changelist')

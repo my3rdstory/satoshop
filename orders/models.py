@@ -228,6 +228,10 @@ class Order(models.Model):
             models.Index(fields=['order_number']),
             models.Index(fields=['user', 'status'], name='orders_orde_user_id_d0bbfd_idx'),  # 사용자별 상태 조회 최적화
             models.Index(fields=['user', 'status', 'created_at'], name='orders_orde_user_id_8a7f3c_idx'),  # 사용자별 구매 내역 조회 최적화
+            models.Index(fields=['delivery_status', '-created_at'], name='orders_deliv_created_idx'),
+            models.Index(fields=['store', 'status', '-created_at'], name='orders_store_stat_cr_idx'),
+            models.Index(fields=['delivery_status']),
+            models.Index(fields=['paid_at'], name='orders_paid_not_null_idx', condition=models.Q(paid_at__isnull=False)),
         ]
     
     def __str__(self):
@@ -388,6 +392,8 @@ class Invoice(models.Model):
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['user', 'status']),
             models.Index(fields=['store', 'status']),
+            models.Index(fields=['store', 'status', '-created_at'], name='invoice_store_stat_cr_idx'),
+            models.Index(fields=['expires_at']),
         ]
     
     def __str__(self):

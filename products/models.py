@@ -73,6 +73,9 @@ class Product(models.Model):
             models.Index(fields=['store', 'is_active', 'created_at']),  # 스토어 상품 목록용
             models.Index(fields=['is_active', 'created_at']),           # 전체 활성 상품 목록용
             models.Index(fields=['store', 'created_at']),               # 관리자용 스토어별 상품
+            models.Index(fields=['is_temporarily_out_of_stock']),
+            models.Index(fields=['stock_quantity']),
+            models.Index(fields=['store', 'is_temporarily_out_of_stock']),
         ]
     
     def __str__(self):

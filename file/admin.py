@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Count
 from .models import DigitalFile, FileOrder, FileDownloadLog
 
 
@@ -70,17 +71,23 @@ class DigitalFileAdmin(admin.ModelAdmin):
     
     def total_downloads(self, obj):
         """총 다운로드 수 표시 (리스트용)"""
-        count = FileDownloadLog.objects.filter(order__digital_file=obj).count()
+        count = getattr(obj, 'download_count', None)
+        if count is None:
+            count = FileDownloadLog.objects.filter(order__digital_file=obj).count()
         return format_html('<span style="font-weight: bold;">{}</span>', count)
     
     total_downloads.short_description = '총 다운로드'
     
     def total_downloads_display(self, obj):
         """총 다운로드 수 상세 표시 (상세보기용)"""
-        total = FileDownloadLog.objects.filter(order__digital_file=obj).count()
-        unique_users = FileDownloadLog.objects.filter(
-            order__digital_file=obj
-        ).values('order__user').distinct().count()
+        total = getattr(obj, 'download_count', None)
+        if total is None:
+            total = FileDownloadLog.objects.filter(order__digital_file=obj).count()
+        unique_users = getattr(obj, 'download_user_count', None)
+        if unique_users is None:
+            unique_users = FileDownloadLog.objects.filter(
+                order__digital_file=obj
+            ).values('order__user').distinct().count()
         
         return format_html(
             '<div style="font-size: 14px;">'
@@ -134,10 +141,13 @@ class DigitalFileAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         """기본 쿼리셋"""
-        qs = super().get_queryset(request)
+        qs = super().get_queryset(request).annotate(
+            download_count=Count('orders__download_logs', distinct=True),
+            download_user_count=Count('orders__download_logs__order__user', distinct=True),
+        )
         # 필터가 설정되지 않은 경우 기본적으로 삭제되지 않은 항목만 표시
         if not request.GET.get('deleted_status'):
-            return qs.filter(deleted_at__isnull=True)
+            qs = qs.filter(deleted_at__isnull=True)
         return qs
     
     def hard_delete_selected(self, request, queryset):

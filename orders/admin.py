@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django.db.models import Count
 from .models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 )
@@ -192,7 +193,8 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('user', 'store').prefetch_related('items')
+        queryset = super().get_queryset(request).select_related('user', 'store').prefetch_related('items')
+        return queryset.annotate(items_count_db=Count('items', distinct=True))
     
     def order_number_link(self, obj):
         """주문번호를 링크로 표시"""
@@ -237,7 +239,7 @@ class OrderAdmin(admin.ModelAdmin):
     
     def items_count(self, obj):
         """주문 아이템 개수"""
-        return obj.items.count()
+        return getattr(obj, 'items_count_db', obj.items.count())
     items_count.short_description = '상품 수'
     
     def total_amount_formatted(self, obj):
