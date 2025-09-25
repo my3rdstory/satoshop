@@ -1,3 +1,5 @@
+from hashlib import md5
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -14,6 +16,12 @@ from .models import MemePost, MemeTag
 from .meme_forms import MemePostForm
 from .meme_utils import process_meme_image, create_meme_thumbnail, validate_meme_image
 from storage.utils import upload_meme_image, delete_meme_images
+from .cache_utils import (
+    get_meme_detail_cache,
+    get_meme_list_cache,
+    set_meme_detail_cache,
+    set_meme_list_cache,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,22 +34,39 @@ class MemeListView(ListView):
     paginate_by = 18  # 6개 x 3줄
     
     def get_queryset(self):
-        queryset = MemePost.objects.filter(is_active=True).select_related('author').prefetch_related('tags')
-        
-        # 검색 기능
-        search = self.request.GET.get('search')
+        search = self.request.GET.get('search', '').strip()
+        tag = self.request.GET.get('tag', '').strip()
+
+        suffix_parts = []
+        if search:
+            suffix_parts.append(f"search:{md5(search.lower().encode('utf-8')).hexdigest()}")
+        if tag:
+            suffix_parts.append(f"tag:{md5(tag.lower().encode('utf-8')).hexdigest()}")
+        cache_suffix = '|'.join(suffix_parts) if suffix_parts else 'default'
+
+        cached = get_meme_list_cache(cache_suffix)
+        if cached is not None:
+            return cached
+
+        queryset = (
+            MemePost.objects.filter(is_active=True)
+            .select_related('author')
+            .prefetch_related('tags')
+        )
+
         if search:
             queryset = queryset.filter(
-                Q(title__icontains=search) | 
+                Q(title__icontains=search) |
                 Q(tags__name__icontains=search)
             ).distinct()
-        
-        # 태그 필터
-        tag = self.request.GET.get('tag')
+
         if tag:
             queryset = queryset.filter(tags__name=tag)
-        
-        return queryset.order_by('-created_at')
+
+        queryset = queryset.order_by('-created_at')
+        results = list(queryset)
+        set_meme_list_cache(cache_suffix, results)
+        return results
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -58,14 +83,23 @@ class MemeDetailView(DetailView):
     context_object_name = 'meme'
     
     def get_object(self):
-        obj = get_object_or_404(MemePost, pk=self.kwargs['pk'], is_active=True)
-        # 조회수 증가
-        obj.increase_views()
-        return obj
+        pk = self.kwargs['pk']
+        meme = get_meme_detail_cache(pk)
+        if meme is None:
+            meme = get_object_or_404(
+                MemePost.objects.select_related('author').prefetch_related('tags'),
+                pk=pk,
+                is_active=True,
+            )
+
+        # 조회수 증가 후 캐시 업데이트
+        meme.increase_views()
+        set_meme_detail_cache(pk, meme)
+        return meme
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        meme = self.get_object()
+        meme = self.object
         
         # 수정/삭제 권한 체크
         context['can_edit'] = (

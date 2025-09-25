@@ -5,3 +5,6 @@ class BoardsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'boards'
     verbose_name = '게시판'
+
+    def ready(self):
+        import boards.signals  # noqa: F401

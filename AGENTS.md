@@ -360,12 +360,13 @@ A task is **Done** only when **ALL** of the following are complete:
 2. **Implementation notes added**: Use `backlog task edit <id> --notes "..."`
 3. **Status set to Done**: Use `backlog task edit <id> -s Done`
 
-### ✅ Via Code/Testing:
+### ✅ Via Code/Testing & Guidance:
 
-4. **Tests pass**: Run test suite and linting
-5. **Documentation updated**: Update relevant docs if needed
-6. **Code reviewed**: Self-review your changes
-7. **No regressions**: Performance, security checks pass
+4. **Test guidance shared**: 명령어와 전제 조건을 포함해 사용자가 직접 실행할 수 있는 테스트 방법을 정리하고, 실행 여부/결과를 노트에 남긴다.
+5. **Migration guidance shared**: 마이그레이션이 필요한지 여부를 명확히 하고, 필요 시 실행 명령어(`python manage.py migrate` 등)를 안내한다.
+6. **Documentation updated**: Update relevant docs if needed
+7. **Code reviewed**: Self-review your changes
+8. **No regressions**: Performance, security checks pass
 
 ⚠️ **NEVER mark a task as Done without completing ALL items above**
 

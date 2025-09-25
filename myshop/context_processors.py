@@ -7,6 +7,11 @@ import os
 from django.core.cache import cache
 import subprocess
 
+from .cache_utils import (
+    get_home_context_from_cache,
+    set_home_context_cache,
+)
+
 logger = logging.getLogger(__name__)
 
 def user_store(request):
@@ -91,17 +96,31 @@ def get_static_version():
 
 def site_settings(request):
     """모든 템플릿에서 사이트 설정을 사용할 수 있도록 하는 컨텍스트 프로세서"""
+    cached_context = get_home_context_from_cache()
+    if cached_context is not None:
+        return {
+            **cached_context,
+            'STATIC_VERSION': getattr(settings, 'STATIC_VERSION', '1'),
+            'DEBUG': settings.DEBUG,
+        }
+
     try:
         from .models import SiteSettings, DocumentContent
+
         site_settings_obj = SiteSettings.get_settings()
         active_documents = DocumentContent.get_active_documents()
-        
+
         # 문서를 딕셔너리로 변환하여 쉽게 접근 가능하도록
         documents_dict = {doc.document_type: doc for doc in active_documents}
-        
-        return {
+
+        context = {
             'site_settings': site_settings_obj,
             'documents': documents_dict,
+        }
+        set_home_context_cache(context)
+
+        return {
+            **context,
             'STATIC_VERSION': getattr(settings, 'STATIC_VERSION', '1'),
             'DEBUG': settings.DEBUG,
         }
