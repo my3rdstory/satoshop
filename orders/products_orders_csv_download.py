@@ -6,6 +6,16 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from .models import OrderItem
 
+
+def _format_text_for_csv(value):
+    """CSV 다운로드 시 Excel에서 일반 텍스트로 유지되도록 포맷팅"""
+    if value in (None, ''):
+        return ''
+
+    text_value = str(value)
+    escaped = text_value.replace('"', '""')
+    return f'="{escaped}"'
+
 def export_product_orders_csv(request, store, product):
     """
     현재 화면에 표시된 상품 주문 데이터를 CSV로 다운로드
@@ -145,9 +155,8 @@ def export_product_orders_csv(request, store, product):
             options_str = ', '.join(options_list)
         
         # 우편번호 처리 - 0으로 시작하는 경우 문자열로 보존
-        postal_code = order.shipping_postal_code or ''
-        if postal_code and postal_code.startswith('0'):
-            postal_code = f'="{postal_code}"'  # Excel에서 문자열로 인식하도록 처리
+        postal_code = _format_text_for_csv(order.shipping_postal_code or '')
+        phone_value = _format_text_for_csv(order.buyer_phone or '')
         
         writer.writerow([
             order.order_number,
@@ -160,7 +169,7 @@ def export_product_orders_csv(request, store, product):
             order.get_status_display(),
             order.get_delivery_status_display(),
             options_str,
-            order.buyer_phone or '',
+            phone_value,
             order.buyer_email or '',
             postal_code,
             order.shipping_address or '',
