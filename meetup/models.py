@@ -369,7 +369,8 @@ class MeetupOrder(models.Model):
             models.Index(fields=['user', 'created_at']),       # 사용자별 참가 내역 시간순 조회용
             models.Index(fields=['status', 'created_at']),     # 상태별 시간순 조회용
             models.Index(fields=['user', 'status', 'created_at']), # 복합 쿼리 최적화
-            
+            models.Index(fields=['meetup', '-created_at'], name='meetup_meet_meetup__276e50_idx'),    # 밋업별 최신 주문 조회용
+
             # 관리자 페이지 성능 최적화
             models.Index(fields=['is_temporary_reserved']),    # 임시예약 필터링용
             models.Index(fields=['attended']),                # 참석 여부 필터링용
@@ -434,5 +435,3 @@ class MeetupOrderOption(models.Model):
     
     def __str__(self):
         return f"{self.order.order_number} - {self.option.name}: {self.choice.name}"
-
-

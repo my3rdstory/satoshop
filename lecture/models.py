@@ -520,6 +520,7 @@ class LiveLectureOrder(models.Model):
             models.Index(fields=['user']),
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['live_lecture', '-created_at'], name='lecture_liv_live_le_0f102e_idx'),
             models.Index(fields=['live_lecture', 'user']),
             models.Index(fields=['live_lecture', 'status']),
             models.Index(fields=['user', 'status']),

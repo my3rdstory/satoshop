@@ -650,6 +650,7 @@ class FileOrder(models.Model):
             models.Index(fields=['user']),
             models.Index(fields=['status']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['status', '-confirmed_at'], name='file_fileor_status_fc4bb0_idx'),
             models.Index(fields=['digital_file', 'user']),
             models.Index(fields=['digital_file', 'status']),
             models.Index(fields=['user', 'status']),
