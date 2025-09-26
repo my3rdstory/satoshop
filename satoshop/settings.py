@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     'accounts',
     'stores',
     'products',
+    'reviews',
     'orders',
     'ln_payment',
     'storage',

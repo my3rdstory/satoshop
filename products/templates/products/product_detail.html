@@ -63,6 +63,65 @@
 .option-choice.selected .option-price {
     color: white !important;
 }
+
+.rating-dot {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 2px solid #d1d5db;
+    color: #6b7280;
+    background: #f9fafb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.rating-dot:hover {
+    transform: translateY(-2px);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+.rating-dot.active,
+.rating-dot.selected {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #ffffff;
+}
+.rating-dot:focus-visible {
+    outline: 3px solid rgba(245, 158, 11, 0.4);
+    outline-offset: 3px;
+}
+.rating-dot + .rating-dot {
+    margin-left: 0.5rem;
+}
+.rating-dot[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.review-dropzone {
+    transition: all 0.2s ease;
+}
+.review-dropzone.dragover {
+    border-color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.08);
+}
+.review-preview-item {
+    position: relative;
+    width: 96px;
+    height: 96px;
+}
+.review-preview-item img {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.75rem;
+    object-fit: cover;
+}
+.review-preview-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
 </style>
 {% endblock %}
 
@@ -409,6 +468,8 @@
       </div>
     </div>
     {% endif %}
+
+    {% include 'products/product_review.html' %}
   </div>
 </div>
 
@@ -446,9 +507,8 @@
 }
 </script>
 
-
-
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'js/reviews.js' %}"></script>
 <!-- Markdown Renderer -->
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
 <script src="{% static 'js/cart-common.js' %}"></script>

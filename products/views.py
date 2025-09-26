@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.db import transaction
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Avg
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
@@ -16,6 +18,8 @@ import logging
 from stores.models import Store
 from .models import Product, ProductImage, ProductOption, ProductOptionChoice
 from stores.decorators import store_owner_required
+from reviews.models import Review
+from reviews.services import MAX_IMAGES_PER_REVIEW
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +143,38 @@ def product_detail(request, store_id, product_id):
             'override_free': True,
         }
 
+    reviews_qs = (
+        Review.objects.filter(product=product)
+        .select_related('author')
+        .prefetch_related('images')
+        .order_by('-created_at', '-id')
+    )
+
+    paginator = Paginator(reviews_qs, 10)
+    page_number = request.GET.get('page') or 1
+    try:
+        reviews_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        reviews_page = paginator.page(1)
+    except EmptyPage:
+        reviews_page = paginator.page(paginator.num_pages)
+
+    review_stats = reviews_qs.aggregate(avg_rating=Avg('rating'))
+    average_rating = review_stats['avg_rating'] or 0
+    total_reviews = paginator.count
+
+    can_write_review = False
+
+    if request.user.is_authenticated:
+        can_write_review = True
+
+        print(
+            '[Reviews] user=', request.user.username,
+            ' store_owner=', request.user == product.store.owner,
+            ' product=', product.id,
+            ' can_write=', can_write_review
+        )
+
     context = {
         'store': store,
         'product': product,
@@ -149,6 +185,11 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
         'store_shipping': store_shipping,
         'product_shipping': product_shipping,
+        'reviews_page': reviews_page,
+        'review_average': average_rating,
+        'review_total': total_reviews,
+        'can_write_review': can_write_review,
+        'max_review_images': MAX_IMAGES_PER_REVIEW,
     }
     return render(request, 'products/product_detail.html', context)
 
