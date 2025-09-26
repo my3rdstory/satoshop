@@ -1636,3 +1636,93 @@ input:checked + .slider:before {
     color: #60a5fa !important; /* 다크 모드 링크 */
   }
 }
+
+/* 상품 상세 플로팅 장바구니 토글 */
+.floating-cart-toggle {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #1f2937;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  z-index: 60;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.floating-cart-toggle:hover {
+  background: #d1d5db;
+  border-color: #cbd5f5;
+}
+
+.floating-cart-toggle:focus-visible {
+  outline: 2px solid #bfdbfe;
+  outline-offset: 2px;
+}
+
+.floating-cart-toggle .cart-toggle-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.floating-cart-toggle .cart-toggle-icon-close {
+  display: none;
+}
+
+.floating-cart-toggle.is-open {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.floating-cart-toggle.is-open .cart-toggle-icon-close {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .floating-cart-toggle {
+    right: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .floating-cart-toggle {
+    bottom: 96px;
+  }
+}
+
+[data-theme="dark"] .floating-cart-toggle {
+  background: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .floating-cart-toggle.is-open {
+  background: #1f2937;
+  color: #bfdbfe;
+  border-color: #3b82f6;
+}
+
+@media (min-width: 1025px) {
+  .floating-cart-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .floating-cart-toggle .cart-toggle-icon {
+    font-size: 1.1rem;
+  }
+
+  .floating-cart-toggle.is-open {
+    right: calc(24rem + 32px);
+  }
+}

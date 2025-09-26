@@ -412,6 +412,19 @@
   </div>
 </div>
 
+<!-- 플로팅 장바구니 토글 버튼 -->
+<button
+  type="button"
+  id="cartToggleButton"
+  class="floating-cart-toggle"
+  aria-controls="sidebarCart"
+  aria-expanded="false"
+  aria-label="장바구니 열기">
+  <span class="sr-only cart-toggle-label">장바구니 열기</span>
+  <i class="fas fa-shopping-cart cart-toggle-icon cart-toggle-icon-default" aria-hidden="true"></i>
+  <i class="fas fa-times cart-toggle-icon cart-toggle-icon-close" aria-hidden="true"></i>
+</button>
+
 <!-- 플로팅 장바구니 컴포넌트 -->
 {% include 'products/cart.html' %}
 
