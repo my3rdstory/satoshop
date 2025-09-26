@@ -1,10 +1,26 @@
 // 장바구니 관련 모든 JavaScript 함수들
 
+function setCartButtonState(isOpen) {
+  const toggleButton = document.getElementById('cartToggleButton');
+  if (!toggleButton) {
+    return;
+  }
+
+  toggleButton.classList.toggle('is-open', isOpen);
+  toggleButton.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  toggleButton.setAttribute('aria-label', isOpen ? '장바구니 닫기' : '장바구니 열기');
+
+  const label = toggleButton.querySelector('.cart-toggle-label');
+  if (label) {
+    label.textContent = isOpen ? '장바구니 닫기' : '장바구니 열기';
+  }
+
+}
+
 // 장바구니 토글 함수들
 function toggleCart() {
   const cart = document.getElementById('sidebarCart');
-  const overlay = document.getElementById('cartOverlay');
-  
+
   if (cart && cart.classList.contains('translate-x-full')) {
     openCart();
   } else {
@@ -15,22 +31,24 @@ function toggleCart() {
 function openCart() {
   const cart = document.getElementById('sidebarCart');
   const overlay = document.getElementById('cartOverlay');
-  
+
   if (cart) {
     cart.classList.remove('translate-x-full');
   }
-  
+
   // 모바일에서만 오버레이 활성화
   if (window.innerWidth <= 768 && overlay) {
     overlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden'; // 배경 스크롤 방지
   }
+
+  setCartButtonState(true);
 }
 
 function closeCart() {
   const cart = document.getElementById('sidebarCart');
   const overlay = document.getElementById('cartOverlay');
-  
+
   if (cart) {
     cart.classList.add('translate-x-full');
   }
@@ -38,6 +56,8 @@ function closeCart() {
     overlay.classList.add('hidden');
   }
   document.body.style.overflow = ''; // 배경 스크롤 복원
+
+  setCartButtonState(false);
 }
 
 function handleCloseCart() {
@@ -59,10 +79,16 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-// 화면 크기에 따른 장바구니 초기화 (플로팅 버튼 제거로 단순화)
+// 플로팅 장바구니 버튼 초기화
 document.addEventListener('DOMContentLoaded', function() {
-  // 플로팅 버튼이 제거되어 자동 열기 기능 비활성화
-  // 사용자가 직접 네비게이션에서 장바구니 페이지로 이동해야 함
+  const toggleButton = document.getElementById('cartToggleButton');
+  if (toggleButton) {
+    toggleButton.addEventListener('click', toggleCart);
+
+    const cart = document.getElementById('sidebarCart');
+    const isOpen = cart ? !cart.classList.contains('translate-x-full') : false;
+    setCartButtonState(isOpen);
+  }
 });
 
-// removeFromCart 함수는 cart-common.js에서 로드됩니다 
+// removeFromCart 함수는 cart-common.js에서 로드됩니다
