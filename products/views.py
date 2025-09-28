@@ -150,7 +150,7 @@ def product_detail(request, store_id, product_id):
         .order_by('-created_at', '-id')
     )
 
-    paginator = Paginator(reviews_qs, 10)
+    paginator = Paginator(reviews_qs, 5)
     page_number = request.GET.get('page') or 1
     try:
         reviews_page = paginator.page(page_number)

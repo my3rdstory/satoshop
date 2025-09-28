@@ -17,6 +17,8 @@ class ReviewForm(forms.ModelForm):
     def __init__(self, *args, existing_image_count=0, **kwargs):
         self.existing_image_count = existing_image_count
         super().__init__(*args, **kwargs)
+        self.fields['content'].widget.attrs.setdefault('maxlength', 1000)
+        self.fields['content'].widget.attrs.setdefault('data-maxlength', 1000)
 
     class Meta:
         model = Review
@@ -34,6 +36,15 @@ class ReviewForm(forms.ModelForm):
         if not (Review.MIN_RATING <= rating <= Review.MAX_RATING):
             raise forms.ValidationError('평점은 1점에서 5점 사이여야 합니다.')
         return rating
+
+    def clean_content(self):
+        content = self.cleaned_data.get('content') or ''
+        content = content.strip()
+        if not content:
+            raise forms.ValidationError('후기 내용을 입력해주세요.')
+        if len(content) > 1000:
+            raise forms.ValidationError('1000자 이하로 작성해주세요.')
+        return content
 
     def clean_images(self):
         images = self.files.getlist('images')

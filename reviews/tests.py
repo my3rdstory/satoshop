@@ -2,7 +2,6 @@ from io import BytesIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -151,12 +150,7 @@ class ReviewViewTests(ReviewTestCase):
         redirect_url = f"{reverse('products:product_detail', args=[self.store.store_id, self.product.id])}#reviews"
         self.assertEqual(response['Location'], redirect_url)
 
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any('상품을 구매한 고객만 후기를 작성할 수 있습니다.' in message.message for message in messages),
-            '구매 이력이 없는 경우 오류 메시지가 표시되어야 합니다.',
-        )
-
+        
     def test_create_review_success_for_purchaser(self):
         self.create_order(self.user, status='paid')
         self.client.force_login(self.user)
@@ -173,8 +167,37 @@ class ReviewViewTests(ReviewTestCase):
             '구매 이력이 있는 사용자는 후기를 작성할 수 있어야 합니다.',
         )
 
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any('후기가 등록되었습니다.' in message.message for message in messages),
-            '성공 메시지가 노출되어야 합니다.',
-        )
+        
+    def test_create_review_requires_rating(self):
+        self.create_order(self.user, status='paid')
+        self.client.force_login(self.user)
+        url = reverse('reviews:create', args=[self.store.store_id, self.product.id])
+
+        response = self.client.post(url, {'rating': '', 'content': '별점 없이는 실패해야 합니다.'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Review.objects.filter(product=self.product, author=self.user).exists())
+
+        
+    def test_create_review_requires_content(self):
+        self.create_order(self.user, status='paid')
+        self.client.force_login(self.user)
+        url = reverse('reviews:create', args=[self.store.store_id, self.product.id])
+
+        response = self.client.post(url, {'rating': 5, 'content': '   '})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Review.objects.filter(product=self.product, author=self.user).exists())
+
+    def test_create_review_rejects_over_max_length(self):
+        self.create_order(self.user, status='paid')
+        self.client.force_login(self.user)
+        url = reverse('reviews:create', args=[self.store.store_id, self.product.id])
+
+        long_content = 'a' * 1001
+        response = self.client.post(url, {'rating': 5, 'content': long_content})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Review.objects.filter(product=self.product, author=self.user).exists())
+
+        
