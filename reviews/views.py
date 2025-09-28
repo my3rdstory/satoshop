@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -16,7 +18,11 @@ from .services import (
     create_review_images,
     delete_review_image,
     upload_review_images,
+    user_has_purchased_product,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _redirect_to_reviews(request, store_id: str, product_id: int) -> HttpResponseRedirect:
@@ -41,8 +47,37 @@ class ReviewCreateView(LoginRequiredMixin, View):
     def post(self, request, store_id: str, product_id: int):
         product = _get_product(store_id, product_id)
 
+        if not user_has_purchased_product(request.user, product):
+            logger.warning(
+                "ReviewCreateView blocked - user has no purchase",
+                extra={
+                    'user_id': request.user.id,
+                    'product_id': product.id,
+                    'store_id': store_id,
+                },
+            )
+            messages.error(request, _('상품을 구매한 고객만 후기를 작성할 수 있습니다.'))
+            return _redirect_to_reviews(request, store_id, product_id)
+
+        logger.info(
+            "ReviewCreateView received submit",
+            extra={
+                'user_id': request.user.id,
+                'product_id': product.id,
+                'store_id': store_id,
+            },
+        )
+
         form = ReviewForm(request.POST, request.FILES)
         if not form.is_valid():
+            logger.warning(
+                "ReviewCreateView form invalid",
+                extra={
+                    'user_id': request.user.id,
+                    'product_id': product.id,
+                    'errors': form.errors,
+                },
+            )
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, error)
@@ -56,20 +91,58 @@ class ReviewCreateView(LoginRequiredMixin, View):
                 review.product = product
                 review.author = request.user
                 review.save()
+                logger.info(
+                    "ReviewCreateView saved review",
+                    extra={
+                        'review_id': review.id,
+                        'user_id': request.user.id,
+                        'product_id': product.id,
+                        'has_images': bool(images),
+                    },
+                )
 
                 if images:
                     uploaded = upload_review_images(images, product)
+                    logger.info(
+                        "ReviewCreateView uploading images",
+                        extra={
+                            'review_id': review.id,
+                            'uploaded_count': len(uploaded),
+                        },
+                    )
                     create_review_images(review, uploaded)
         except ValidationError as exc:
+            logger.warning(
+                "ReviewCreateView validation error",
+                extra={
+                    'user_id': request.user.id,
+                    'product_id': product.id,
+                    'errors': exc.messages,
+                },
+            )
             for message in exc.messages:
                 messages.error(request, message)
             return _redirect_to_reviews(request, store_id, product_id)
         except Exception as exc:  # pylint: disable=broad-except
             messages.error(request, _('후기 등록 중 오류가 발생했습니다. 다시 시도해주세요.'))
             messages.debug(request, str(exc))
+            logger.exception(
+                "ReviewCreateView unexpected error",
+                extra={
+                    'user_id': request.user.id,
+                    'product_id': product.id,
+                },
+            )
             return _redirect_to_reviews(request, store_id, product_id)
 
         messages.success(request, _('후기가 등록되었습니다. 감사합니다!'))
+        logger.info(
+            "ReviewCreateView completed",
+            extra={
+                'user_id': request.user.id,
+                'product_id': product.id,
+            },
+        )
         return _redirect_to_reviews(request, store_id, product_id)
 
 

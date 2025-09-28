@@ -7,7 +7,7 @@
 ### Assistant Objective
 
 Efficiently manage all project tasks, status, and documentation using the Backlog.md CLI, ensuring all project metadata
-remains fully synchronized and up-to-date.
+remains fully synchronized and up-to-date. **테스트 실행은 사용자가 직접 진행하므로 에이전트는 테스트를 수행하지 말고, 필요한 경우 실행 방법만 안내한다.**
 
 ### Core Capabilities
 

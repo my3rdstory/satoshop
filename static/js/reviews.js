@@ -2,6 +2,7 @@
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('[Reviews] DOMContentLoaded - initializing review modals');
     ['createReviewModal', 'editReviewModal'].forEach((modalId) => {
       setupModal(modalId);
     });
@@ -13,6 +14,7 @@
       }
       setupRatingControls(modal);
       setupDropzones(modal);
+      setupFormDebug(modal);
     });
   });
 
@@ -26,6 +28,7 @@
     const closeButtons = modal.querySelectorAll('[data-close-modal]');
 
     const openModal = () => {
+      console.log('[Reviews] Opening modal:', modalId);
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.classList.add('overflow-hidden');
@@ -33,6 +36,7 @@
     };
 
     const closeModal = () => {
+      console.log('[Reviews] Closing modal:', modalId);
       modal.classList.add('hidden');
       modal.classList.remove('flex');
       document.body.classList.remove('overflow-hidden');
@@ -64,12 +68,20 @@
     modal.querySelectorAll('[data-rating-control]').forEach((control) => {
       const input = control.querySelector('input[name="rating"]');
       if (!input) {
+        console.warn('[Reviews] Rating input not found for control in modal', modal.id);
         return;
       }
 
       const defaultValue = Number(input.dataset.default || input.value || 0);
       const dots = Array.from(control.querySelectorAll('[data-score]'));
       const previewLabel = control.querySelector('[data-rating-preview]');
+
+      console.log('[Reviews] Initializing rating control', {
+        modalId: modal.id,
+        inputId: input.id,
+        defaultValue,
+        dots: dots.length,
+      });
 
       const updateDots = (value) => {
         dots.forEach((dot) => {
@@ -84,6 +96,7 @@
       };
 
       const setRating = (value) => {
+        console.log('[Reviews] setRating', value, '->', input.id);
         input.value = value > 0 ? value : '';
         updateDots(value);
       };
@@ -94,6 +107,7 @@
         dot.setAttribute('tabindex', '0');
         dot.addEventListener('click', (event) => {
           event.preventDefault();
+          console.log('[Reviews] Rating dot clicked', { modalId: modal.id, dotValue });
           setRating(dotValue);
         });
         dot.addEventListener('mouseenter', () => {
@@ -113,15 +127,33 @@
 
       modal.addEventListener('modal:open', () => {
         const currentValue = Number(input.value || defaultValue || 0);
+        console.log('[Reviews] modal:open -> syncing rating', { modalId: modal.id, currentValue });
         setRating(currentValue);
       });
 
       modal.addEventListener('modal:close', () => {
         const currentValue = Number(input.value || defaultValue || 0);
+        console.log('[Reviews] modal:close -> reset rating', { modalId: modal.id, currentValue });
         setRating(currentValue);
       });
 
       setRating(defaultValue);
+    });
+  }
+
+  function setupFormDebug(modal) {
+    modal.querySelectorAll('form').forEach((form) => {
+      form.addEventListener('submit', () => {
+        const ratingInput = form.querySelector('input[name="rating"]');
+        const files = form.querySelector('input[type="file"]');
+        const fileNames = files && files.files ? Array.from(files.files).map((file) => file.name) : [];
+        console.log('[Reviews] Form submit', {
+          modalId: modal.id,
+          ratingValue: ratingInput ? ratingInput.value : null,
+          fileCount: files && files.files ? files.files.length : 0,
+          fileNames,
+        });
+      });
     });
   }
 
@@ -207,19 +239,23 @@
 
       const addFile = (file) => {
         if (existingCount + selectedFiles.length >= maxFiles) {
+          console.warn('[Reviews] Dropzone limit reached', { modalId: modal.id, maxFiles });
           alert(`이미지는 최대 ${maxFiles}개까지 업로드할 수 있습니다.`);
           return;
         }
         if (!file.type.startsWith('image/')) {
+          console.warn('[Reviews] Non-image file rejected', { fileName: file.name, type: file.type });
           alert('이미지 파일만 업로드할 수 있습니다.');
           return;
         }
         if (file.size > MAX_FILE_SIZE) {
           const size = (file.size / 1024 / 1024).toFixed(2);
+          console.warn('[Reviews] Oversize file rejected', { fileName: file.name, sizeMB: size });
           alert(`\"${file.name}\" 파일이 10MB를 초과합니다. (${size}MB)`);
           return;
         }
         selectedFiles.push(file);
+        console.log('[Reviews] File added', { fileName: file.name, totalSelected: selectedFiles.length });
       };
 
       const removeFile = (index) => {
@@ -235,12 +271,14 @@
         syncInput();
         renderPreview();
         updateRemaining();
+        console.log('[Reviews] File removed', { fileName: removed.name, totalSelected: selectedFiles.length });
       };
 
       const handleFiles = (fileList) => {
         const files = Array.from(fileList);
         const availableSlots = maxFiles - existingCount - selectedFiles.length;
         if (availableSlots <= 0) {
+          console.warn('[Reviews] No slots left for files', { modalId: modal.id, maxFiles });
           alert(`이미지는 최대 ${maxFiles}개까지 업로드할 수 있습니다.`);
           return;
         }
@@ -248,6 +286,7 @@
         syncInput();
         renderPreview();
         updateRemaining();
+        console.log('[Reviews] handleFiles complete', { modalId: modal.id, selectedFiles: selectedFiles.length });
       };
 
       const dropTrigger = zone.querySelector('[data-drop-trigger]');
@@ -300,6 +339,7 @@
 
       modal.addEventListener('modal:close', reset);
       updateRemaining();
+      console.log('[Reviews] Dropzone initialized', { modalId: modal.id, maxFiles, existingCount });
     });
   }
 })();

@@ -2,11 +2,13 @@ from io import BytesIO
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.utils import timezone
+from django.urls import reverse
 
 from orders.models import Order, OrderItem
 from products.models import Product
@@ -32,8 +34,9 @@ def make_uploaded_image(width=1200, height=800, color='white'):
     return SimpleUploadedFile('test.jpg', buffer.getvalue(), content_type='image/jpeg')
 
 
-class ReviewServiceTests(TestCase):
+class ReviewTestCase(TestCase):
     def setUp(self):
+        super().setUp()
         self.user = User.objects.create_user(username='alice', password='password', email='alice@example.com')
         self.other_user = User.objects.create_user(username='bob', password='password', email='bob@example.com')
         self.store = Store.objects.create(
@@ -52,6 +55,7 @@ class ReviewServiceTests(TestCase):
         )
 
     def create_order(self, user, status='paid'):
+        paid_at = timezone.now() if status in ('paid', 'shipped', 'delivered') else None
         order = Order.objects.create(
             user=user,
             store=self.store,
@@ -67,7 +71,7 @@ class ReviewServiceTests(TestCase):
             subtotal=1500,
             shipping_fee=0,
             total_amount=1500,
-            paid_at=timezone.now(),
+            paid_at=paid_at,
         )
         OrderItem.objects.create(
             order=order,
@@ -77,6 +81,9 @@ class ReviewServiceTests(TestCase):
             quantity=1,
         )
         return order
+
+
+class ReviewServiceTests(ReviewTestCase):
 
     def test_user_has_purchased_product_returns_true_for_paid_order(self):
         self.create_order(self.user, status='paid')
@@ -131,3 +138,43 @@ class ReviewServiceTests(TestCase):
         with self.assertRaises(ValidationError):
             upload_review_images(files, self.product, existing_count=MAX_IMAGES_PER_REVIEW - 1)
 
+
+class ReviewViewTests(ReviewTestCase):
+    def test_create_review_requires_purchase(self):
+        self.client.force_login(self.user)
+        url = reverse('reviews:create', args=[self.store.store_id, self.product.id])
+
+        response = self.client.post(url, {'rating': 5, 'content': '좋아요'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Review.objects.count(), 0)
+        redirect_url = f"{reverse('products:product_detail', args=[self.store.store_id, self.product.id])}#reviews"
+        self.assertEqual(response['Location'], redirect_url)
+
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(
+            any('상품을 구매한 고객만 후기를 작성할 수 있습니다.' in message.message for message in messages),
+            '구매 이력이 없는 경우 오류 메시지가 표시되어야 합니다.',
+        )
+
+    def test_create_review_success_for_purchaser(self):
+        self.create_order(self.user, status='paid')
+        self.client.force_login(self.user)
+        url = reverse('reviews:create', args=[self.store.store_id, self.product.id])
+
+        response = self.client.post(url, {'rating': 4, 'content': '만족스러운 상품입니다.'})
+
+        self.assertEqual(response.status_code, 302)
+        redirect_url = f"{reverse('products:product_detail', args=[self.store.store_id, self.product.id])}#reviews"
+        self.assertEqual(response['Location'], redirect_url)
+
+        self.assertTrue(
+            Review.objects.filter(product=self.product, author=self.user).exists(),
+            '구매 이력이 있는 사용자는 후기를 작성할 수 있어야 합니다.',
+        )
+
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(
+            any('후기가 등록되었습니다.' in message.message for message in messages),
+            '성공 메시지가 노출되어야 합니다.',
+        )

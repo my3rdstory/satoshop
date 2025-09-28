@@ -11,7 +11,11 @@
           <div class="text-xs text-gray-500 dark:text-gray-400">평균 평점 / 5</div>
         </div>
         {% if user.is_authenticated %}
-        <button type="button" data-open-modal="createReviewModal" class="px-5 py-3 bg-bitcoin text-white font-semibold rounded-xl shadow hover:bg-bitcoin/90 transition">구입 후기 작성</button>
+          {% if can_write_review %}
+          <button type="button" data-open-modal="createReviewModal" class="px-5 py-3 bg-bitcoin text-white font-semibold rounded-xl shadow hover:bg-bitcoin/90 transition">구입 후기 작성</button>
+          {% else %}
+          <span class="text-sm font-semibold text-gray-500 dark:text-gray-300">상품을 구매한 고객만 후기를 작성할 수 있습니다.</span>
+          {% endif %}
         {% else %}
         <a href="{% url 'accounts:login' %}?next={{ request.get_full_path|urlencode }}" class="text-sm font-semibold text-bitcoin">로그인하고 후기를 작성해보세요.</a>
         {% endif %}
@@ -97,7 +101,6 @@
     </div>
     <form method="post" action="{% url 'reviews:create' store.store_id product.id %}" enctype="multipart/form-data">
       {% csrf_token %}
-      <input type="hidden" name="rating" id="createReviewRating" value="0" data-default="0">
       <input type="hidden" name="page" value="{{ reviews_page.number }}">
       <div class="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
         <div>
@@ -105,6 +108,7 @@
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">실제 구매 경험을 기반으로 솔직한 후기를 들려주세요.</p>
         </div>
         <div data-rating-control>
+          <input type="hidden" name="rating" id="createReviewRating" value="0" data-default="0">
           <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">평점</label>
           <div class="flex items-center gap-2 mt-3">
             {% for score in '12345'|make_list %}

@@ -19,7 +19,7 @@ from stores.models import Store
 from .models import Product, ProductImage, ProductOption, ProductOptionChoice
 from stores.decorators import store_owner_required
 from reviews.models import Review
-from reviews.services import MAX_IMAGES_PER_REVIEW
+from reviews.services import MAX_IMAGES_PER_REVIEW, user_has_purchased_product
 
 logger = logging.getLogger(__name__)
 
@@ -164,16 +164,8 @@ def product_detail(request, store_id, product_id):
     total_reviews = paginator.count
 
     can_write_review = False
-
     if request.user.is_authenticated:
-        can_write_review = True
-
-        print(
-            '[Reviews] user=', request.user.username,
-            ' store_owner=', request.user == product.store.owner,
-            ' product=', product.id,
-            ' can_write=', can_write_review
-        )
+        can_write_review = user_has_purchased_product(request.user, product)
 
     context = {
         'store': store,
