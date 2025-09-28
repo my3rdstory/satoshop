@@ -518,7 +518,13 @@
       }
 
       if (contentInput) {
-        contentInput.addEventListener('input', toggleButtonState);
+        const maxLength = Number(contentInput.dataset.maxlength || contentInput.getAttribute('maxlength') || 1000);
+        contentInput.addEventListener('input', () => {
+          if (contentInput.value.length > maxLength) {
+            contentInput.value = contentInput.value.slice(0, maxLength);
+          }
+          toggleButtonState();
+        });
       }
 
       modal.addEventListener('modal:open', toggleButtonState);
