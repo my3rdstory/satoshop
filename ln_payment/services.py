@@ -147,7 +147,7 @@ class LightningPaymentProcessor:
                 or 0
             )
             available_stock = max(product.stock_quantity - active_reserved, 0)
-            if product.stock_quantity and item.quantity > available_stock:
+            if item.quantity > available_stock:
                 raise ValueError("재고가 부족합니다.")
 
             OrderItemReservation.objects.create(
