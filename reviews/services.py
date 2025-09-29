@@ -1,14 +1,21 @@
+import html
 import io
+import logging
+import re
 import uuid
 from dataclasses import dataclass
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
-import logging
+import bleach
+import requests
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
+from django.core.paginator import Paginator
 from django.db import models
+from django.db.models import Avg
+from django.urls import reverse
 from PIL import Image, ImageOps
 
 from orders.models import OrderItem, PurchaseHistory
@@ -40,6 +47,87 @@ QUALIFIED_ORDER_STATUSES = {'paid', 'shipped', 'delivered'}
 MAX_IMAGES_PER_REVIEW = 5
 MAX_REVIEW_IMAGE_WIDTH = 1000
 WEBP_QUALITY = 85
+REVIEWS_PER_PAGE = 5
+X_POST_URL_RE = re.compile(
+    r'https?://(?:www\.)?(?:twitter\.com|x\.com)/[A-Za-z0-9_]+/status/\d+(?:\?[^\s]*)?',
+    re.IGNORECASE,
+)
+X_OEMBED_ENDPOINT = 'https://publish.twitter.com/oembed'
+X_OEMBED_TIMEOUT = 5
+
+
+def normalize_x_post_url(url: str) -> str:
+    """주어진 URL에서 불필요한 공백과 후행 구두점을 제거하고 https로 표준화."""
+    if not url:
+        return ''
+
+    trimmed = url.strip()
+    if trimmed.lower().startswith('http://'):
+        trimmed = 'https://' + trimmed[7:]
+
+    # 문장부호로 닫힌 경우 제거 (예: https://x.com/...)).
+    normalized = trimmed.rstrip(').,')
+    return normalized
+
+
+def _extract_text_from_oembed(html_fragment: str) -> str:
+    if not html_fragment:
+        return ''
+
+    cleaned = bleach.clean(html_fragment, tags=[], strip=True)
+    # 연속 공백을 단일 공백으로 축약하고 HTML 엔티티를 복원.
+    text = re.sub(r'\s+', ' ', html.unescape(cleaned)).strip()
+    return text
+
+
+def find_x_post_url(text: str) -> Optional[str]:
+    if not text:
+        return None
+
+    match = X_POST_URL_RE.search(text)
+    if not match:
+        return None
+
+    return normalize_x_post_url(match.group(0)) or None
+
+
+def fetch_x_post_preview(url: str) -> dict:
+    normalized_url = normalize_x_post_url(url)
+    if not normalized_url or not X_POST_URL_RE.fullmatch(normalized_url):
+        raise ValueError('X(트위터) 게시글 주소만 미리보기 할 수 있습니다.')
+
+    try:
+        response = requests.get(
+            X_OEMBED_ENDPOINT,
+            params={
+                'url': normalized_url,
+                'omit_script': 'true',
+                'hide_thread': 'true',
+            },
+            timeout=X_OEMBED_TIMEOUT,
+        )
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        raise RuntimeError('X 게시글 정보를 불러오지 못했습니다.') from exc
+
+    try:
+        payload = response.json()
+    except ValueError as exc:  # pragma: no cover - requests already validates JSON
+        raise RuntimeError('X 게시글 정보를 불러오지 못했습니다.') from exc
+
+    text = _extract_text_from_oembed(payload.get('html'))
+    if not text:
+        raise RuntimeError('X 게시글 본문을 찾을 수 없습니다.')
+
+    return {
+        'url': normalized_url,
+        'text': text,
+        'author_name': payload.get('author_name'),
+        'author_url': payload.get('author_url'),
+        'provider_name': payload.get('provider_name'),
+        'provider_url': payload.get('provider_url'),
+        'thumbnail_url': payload.get('thumbnail_url'),
+    }
 
 
 @dataclass
@@ -69,6 +157,48 @@ def user_has_purchased_product(user, product) -> bool:
         order__items__product=product,
         order__status__in=qualified_statuses,
     ).exists()
+
+
+def get_paginated_reviews(product, page_number=None):
+    """리뷰 목록과 통계 정보를 페이지네이션과 함께 반환"""
+    reviews_qs = (
+        Review.objects.filter(product=product)
+        .select_related('author')
+        .prefetch_related('images')
+        .order_by('-created_at', '-id')
+    )
+
+    paginator = Paginator(reviews_qs, REVIEWS_PER_PAGE)
+    reviews_page = paginator.get_page(page_number or 1)
+
+    stats = reviews_qs.aggregate(avg_rating=Avg('rating'))
+    average_rating = stats.get('avg_rating') or 0
+    total_reviews = paginator.count
+
+    return {
+        'reviews_page': reviews_page,
+        'review_average': average_rating,
+        'review_total': total_reviews,
+    }
+
+
+def build_reviews_url(store_id: str, product_id: int, page_number=None) -> dict:
+    """리뷰 앵커 페이지로 이동하기 위한 URL 정보를 구성"""
+    base_url = reverse('products:product_detail', args=[store_id, product_id])
+
+    try:
+        page_int = int(page_number) if page_number is not None else 1
+    except (TypeError, ValueError):
+        page_int = 1
+
+    if page_int > 1:
+        base_url = f"{base_url}?page={page_int}"
+
+    return {
+        'path': base_url,
+        'anchor': f"{base_url}#reviews",
+        'page': max(page_int, 1),
+    }
 
 
 def process_image(uploaded_file: UploadedFile) -> ProcessedImage:

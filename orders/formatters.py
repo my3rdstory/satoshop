@@ -52,7 +52,14 @@ class TxtOrderFormatter(OrderFormatter):
         order = data['order']
         store = data['store']
         order_items = data['order_items']
+        created_local = timezone.localtime(order.created_at)
+        paid_local = timezone.localtime(order.paid_at) if order.paid_at else None
+        generated_local = timezone.localtime(data['current_time'])
         
+        created_local = timezone.localtime(order.created_at)
+        paid_local = timezone.localtime(order.paid_at) if order.paid_at else None
+        generated_local = timezone.localtime(data['current_time'])
+
         content = f"""
 ===============================================
                 주 문 서
@@ -61,8 +68,8 @@ class TxtOrderFormatter(OrderFormatter):
 ▣ 주문 정보
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 주문번호: {order.order_number}
-주문일시: {order.created_at.strftime('%Y년 %m월 %d일 %H시 %M분')}
-결제일시: {order.paid_at.strftime('%Y년 %m월 %d일 %H시 %M분') if order.paid_at else '-'}
+주문일시: {created_local.strftime('%Y년 %m월 %d일 %H시 %M분')}
+결제일시: {paid_local.strftime('%Y년 %m월 %d일 %H시 %M분') if paid_local else '-'}
 주문상태: 결제 완료
 결제방식: 라이트닝 네트워크 (Lightning Network)
 
@@ -136,7 +143,7 @@ class TxtOrderFormatter(OrderFormatter):
 ※ 이 주문서는 SatoShop에서 자동 생성된 문서입니다.
    문의사항이 있으시면 스토어 판매자에게 연락해주세요.
 
-생성일시: {data['current_time'].strftime('%Y년 %m월 %d일 %H시 %M분')}
+생성일시: {generated_local.strftime('%Y년 %m월 %d일 %H시 %M분')}
 ===============================================
 """
         return content
@@ -211,8 +218,8 @@ class HtmlOrderFormatter(OrderFormatter):
     
     <div class="section">
         <h3>주문 정보</h3>
-        <p>주문일시: {order.created_at.strftime('%Y년 %m월 %d일 %H시 %M분')}</p>
-        <p>결제일시: {order.paid_at.strftime('%Y년 %m월 %d일 %H시 %M분') if order.paid_at else '-'}</p>
+        <p>주문일시: {created_local.strftime('%Y년 %m월 %d일 %H시 %M분')}</p>
+        <p>결제일시: {paid_local.strftime('%Y년 %m월 %d일 %H시 %M분') if paid_local else '-'}</p>
         <p>주문상태: 결제 완료</p>
         <p>결제방식: 라이트닝 네트워크</p>
     </div>
@@ -280,7 +287,7 @@ class HtmlOrderFormatter(OrderFormatter):
         </ul>
         <p><small>※ 이 주문서는 SatoShop에서 자동 생성된 문서입니다.<br>
         문의사항이 있으시면 스토어 판매자에게 연락해주세요.</small></p>
-        <p><small>생성일시: {data['current_time'].strftime('%Y년 %m월 %d일 %H시 %M분')}</small></p>
+    <p><small>생성일시: {generated_local.strftime('%Y년 %m월 %d일 %H시 %M분')}</small></p>
     </div>
 </body>
 </html>"""

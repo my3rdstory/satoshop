@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 
 class Cart(models.Model):
@@ -244,15 +245,18 @@ class Order(models.Model):
     
     def generate_order_number(self):
         """주문번호 생성: store_id-ord-YYYYMMDD-해시값 (결제완료일 기준)"""
-        import datetime
         import uuid
-        
+
         # 결제완료일을 기준으로 하되, 없으면 현재 날짜 사용
         if self.paid_at:
             base_date = self.paid_at
         else:
-            base_date = datetime.datetime.now()
-            
+            base_date = timezone.now()
+
+        if timezone.is_naive(base_date):
+            base_date = timezone.make_aware(base_date, timezone.get_current_timezone())
+        base_date = timezone.localtime(base_date)
+
         store_id = self.store.store_id
         date_str = base_date.strftime('%Y%m%d')  # 20250606 형식
         hash_value = str(uuid.uuid4())[:8].upper()

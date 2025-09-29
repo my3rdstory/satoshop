@@ -586,7 +586,8 @@ def export_meetup_participants_csv(request, store_id, meetup_id):
     
     # CSV 응답 생성
     response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = f'attachment; filename="{meetup.name}_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+    generated_at = timezone.localtime(timezone.now())
+    response['Content-Disposition'] = f'attachment; filename="{meetup.name}_participants_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
     response.write('\ufeff'.encode('utf8'))  # BOM for Excel
     
     writer = csv.writer(response)
@@ -635,10 +636,10 @@ def export_meetup_participants_csv(request, store_id, meetup_id):
             f"{participant.discount_rate}%" if participant.discount_rate else '',
             "예" if participant.is_early_bird else "아니오",
             participant.payment_hash or '',
-            participant.paid_at.strftime('%Y-%m-%d %H:%M:%S') if participant.paid_at else '',
-            participant.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            timezone.localtime(participant.paid_at).strftime('%Y-%m-%d %H:%M:%S') if participant.paid_at else '',
+            timezone.localtime(participant.created_at).strftime('%Y-%m-%d %H:%M:%S'),
             "참석" if participant.attended else "미참석",
-            participant.attended_at.strftime('%Y-%m-%d %H:%M:%S') if participant.attended_at else '',
+            timezone.localtime(participant.attended_at).strftime('%Y-%m-%d %H:%M:%S') if participant.attended_at else '',
             options_text
         ]
         writer.writerow(row)
@@ -975,10 +976,9 @@ def meetup_checker(request, store_id, meetup_id):
     
     # 티켓 prefix 계산 (스토어id-ticket-YYYYMMDD- 형태)
     if meetup.date_time:
-        date_str = meetup.date_time.strftime('%Y%m%d')
+        date_str = timezone.localtime(meetup.date_time).strftime('%Y%m%d')
     else:
-        from datetime import datetime
-        date_str = datetime.now().strftime('%Y%m%d')
+        date_str = timezone.localtime(timezone.now()).strftime('%Y%m%d')
     
     ticket_prefix = f"{store.store_id}-ticket-{date_str}-"
     
@@ -1047,7 +1047,10 @@ def check_attendance(request, store_id, meetup_id):
         if order.attended:
             return JsonResponse({
                 'success': False,
-                'error': f'{order.participant_name}님은 이미 참석 확인되었습니다. (확인시간: {order.attended_at.strftime("%m/%d %H:%M")})',
+                'error': (
+                    f'{order.participant_name}님은 이미 참석 확인되었습니다. '
+                    f'(확인시간: {timezone.localtime(order.attended_at).strftime("%m/%d %H:%M")})'
+                ),
                 'error_type': 'already_attended',
                 'participant': {
                     'name': order.participant_name,
