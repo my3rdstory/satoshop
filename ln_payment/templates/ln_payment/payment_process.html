@@ -51,7 +51,7 @@
                 <div class="workflow-step-indicator">3</div>
                 <div>
                   <p class="workflow-step-title">사용자 결제 확인</p>
-                  <p class="workflow-step-desc">라이트닝 송금 완료 여부를 실시간으로 감시</p>
+                  <p class="workflow-step-desc">라이트닝 송금을 120초 동안 감시하며 미결제 시 자동 취소 후 화면을 새로고침합니다.</p>
                 </div>
               </li>
               <li class="workflow-step" data-step-index="4">
@@ -136,7 +136,9 @@
 
                   <div id="invoiceArea" class="mt-6 hidden">
                     <div class="flex flex-col items-center gap-6">
-                      <img id="invoiceQrImage" src="" alt="Lightning Invoice QR" class="w-56 h-56 rounded-xl bg-white shadow-inner" loading="lazy">
+                      <div id="invoiceQrContainer" class="invoice-qr-container">
+                        <img id="invoiceQrImage" src="" alt="Lightning Invoice QR" class="w-full h-full">
+                      </div>
                       <div class="w-full">
                         <label for="invoiceText" class="text-xs font-medium text-gray-600 dark:text-gray-400">인보이스 문자열</label>
                         <textarea

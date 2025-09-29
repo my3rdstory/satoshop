@@ -14,6 +14,7 @@
   const startButton = document.getElementById('startPaymentButton');
   const panel = document.getElementById('paymentWorkflowPanel');
   const invoiceArea = document.getElementById('invoiceArea');
+  const invoiceQrContainer = document.getElementById('invoiceQrContainer');
   const invoiceText = document.getElementById('invoiceText');
   const copyInvoiceButton = document.getElementById('copyInvoiceButton');
   const recreateInvoiceButton = document.getElementById('recreateInvoiceButton');
@@ -101,11 +102,13 @@
     invoiceArea.classList.remove('hidden');
     invoiceText.value = invoice.payment_request || '';
     if (invoice.payment_request) {
-      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(invoice.payment_request)}`;
-      invoiceQrImage.classList.add('hidden');
-      invoiceQrImage.onload = () => invoiceQrImage.classList.remove('hidden');
-      invoiceQrImage.onerror = () => invoiceQrImage.classList.add('hidden');
+      const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(invoice.payment_request)}&ts=${Date.now()}`;
+      if (invoiceQrContainer) {
+        invoiceQrContainer.classList.remove('hidden');
+      }
       invoiceQrImage.src = qrApi;
+    } else if (invoiceQrContainer) {
+      invoiceQrContainer.classList.add('hidden');
     }
     if (invoice.expires_at) {
       expiresAt = new Date(invoice.expires_at);
@@ -187,8 +190,11 @@
       if (remaining <= 0) {
         clearInterval(countdownInterval);
         invoiceTimerValue.textContent = '만료됨';
-        updateStatusText('인보이스가 만료되었습니다. “인보이스 다시 생성” 버튼을 눌러 새 인보이스를 발행하세요.');
+        updateStatusText('인보이스가 만료되었습니다. 잠시 후 화면이 새로고침되어 새 결제를 준비할 수 있습니다.');
         stopPolling();
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
         return;
       }
       const minutes = Math.floor(remaining / 1000 / 60);
