@@ -254,10 +254,10 @@ class MeetupAdmin(admin.ModelAdmin):
             row = [
                 order.meetup.name,
                 order.meetup.store.store_name,
-                order.meetup.date_time.strftime('%Y-%m-%d %H:%M') if order.meetup.date_time else '미정',
+                timezone.localtime(order.meetup.date_time).strftime('%Y-%m-%d %H:%M') if order.meetup.date_time else '미정',
                 order.user.username if order.user else '비회원',
                 order.user.email if order.user else '',
-                order.user.date_joined.strftime('%Y-%m-%d') if order.user else '',
+                timezone.localtime(order.user.date_joined).strftime('%Y-%m-%d') if order.user else '',
                 order.participant_name,
                 order.participant_email,
                 order.participant_phone or '',
@@ -270,11 +270,11 @@ class MeetupAdmin(admin.ModelAdmin):
                 f"{order.discount_rate}%" if order.discount_rate else '',
                 "예" if order.is_early_bird else "아니오",
                 order.payment_hash or '',
-                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                timezone.localtime(order.paid_at).strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
                 timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
-                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                timezone.localtime(order.confirmed_at).strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                 "참석" if order.attended else "미참석",
-                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                timezone.localtime(order.attended_at).strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
                 options_text
             ]
             writer.writerow(row)

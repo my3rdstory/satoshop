@@ -8,6 +8,14 @@ from ..models import MeetupOrder
 from .filters import HasPendingOrdersFilter, HasAttendedMeetupsFilter
 
 
+def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
+    if not dt:
+        return default
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt).strftime(fmt)
+
+
 # 밋업 참가자만 보는 별도 어드민 클래스 추가
 class MeetupParticipant(User):
     """밋업 참가 내역이 있는 사용자들만 보여주는 프록시 모델"""
@@ -249,15 +257,15 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
                 order.order_number,
                 status_text,
                 "참석" if order.attended else "미참석",
-                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                _format_local(order.attended_at),
                 f"{order.base_price:,}",
                 f"{order.options_price:,}",
                 f"{order.total_price:,}",
                 payment_status,
                 order.payment_hash or '',
-                timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
-                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
-                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                _format_local(order.created_at),
+                _format_local(order.confirmed_at),
+                _format_local(order.paid_at),
                 "예" if order.is_early_bird else "아니오",
                 order.user.username if order.user else '비회원',
                 options_text
@@ -553,8 +561,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                     participant.email,
                     participant.first_name or '',
                     participant.last_name or '',
-                    participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
-                    participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                    _format_local(participant.date_joined),
+                    _format_local(participant.last_login),
                     pending_orders_count,
                     attended_count,
                     total_confirmed_count,
@@ -589,8 +597,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         participant.email,
                         participant.first_name or '',
                         participant.last_name or '',
-                        participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
-                        participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                        _format_local(participant.date_joined),
+                        _format_local(participant.last_login),
                         pending_orders_count,
                         attended_count,
                         total_confirmed_count,
@@ -608,11 +616,11 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         f"{order.discount_rate}%" if order.discount_rate else '',
                         "예" if order.is_early_bird else "아니오",
                         order.payment_hash or '',
-                        order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                        timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
-                        order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                        _format_local(order.paid_at),
+                        _format_local(order.created_at),
+                        _format_local(order.confirmed_at),
                         "참석" if order.attended else "미참석",
-                        order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                        _format_local(order.attended_at),
                         options_text
                     ]
                     writer.writerow(row)

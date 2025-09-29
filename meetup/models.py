@@ -399,12 +399,16 @@ class MeetupOrder(models.Model):
             if self.meetup and self.meetup.date_time:
                 base_date = self.meetup.date_time
             else:
-                base_date = datetime.datetime.now()
-                
+                base_date = timezone.now()
+
+            if timezone.is_naive(base_date):
+                base_date = timezone.make_aware(base_date, timezone.get_current_timezone())
+            base_date = timezone.localtime(base_date)
+
             store_id = self.meetup.store.store_id
             date_str = base_date.strftime('%Y%m%d')  # 20250606 형식
             hash_value = str(uuid.uuid4())[:8].upper()
-            
+
             self.order_number = f"{store_id}-ticket-{date_str}-{hash_value}"
         
         super().save(*args, **kwargs)
