@@ -12,6 +12,7 @@
 
   const startButton = document.getElementById('startPaymentButton');
   const panel = document.getElementById('paymentWorkflowPanel');
+  const defaultStartButtonMarkup = startButton ? startButton.innerHTML : '';
   const invoicePanel = document.getElementById('invoicePanel');
   const invoiceArea = document.getElementById('invoiceArea');
   const invoiceQrContainer = document.getElementById('invoiceQrContainer');
@@ -131,6 +132,9 @@
     if (!transaction) {
       return;
     }
+    if (panel) {
+      panel.classList.remove('hidden');
+    }
     setStepState(Number(transaction.current_stage || 1), transaction.status);
     renderLogs(transaction.logs || []);
     if (transaction.invoice) {
@@ -162,8 +166,6 @@
     startButton.disabled = true;
     startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> 준비 중...</span>';
     updateStatusText('재고 확인과 결제 준비를 진행하고 있습니다. 잠시만 기다려 주세요.');
-    panel.classList.remove('hidden');
-
     try {
       const response = await fetch(startUrl, {
         method: 'POST',
@@ -193,30 +195,76 @@
       updateStatusText('인보이스가 생성되었습니다. 라이트닝 지갑으로 QR을 스캔하거나 인보이스를 복사해 결제를 진행하세요.');
       startPolling();
     } catch (error) {
-      console.warn(error);
       handleStartError(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.');
     }
   }
 
-  function handleStartError(message) {
-    updateStatusText(message, 'error');
-    startButton.disabled = false;
-    startButton.innerHTML = '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
-    transactionId = null;
+  function resetWorkflowView() {
+    stopPolling();
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+    expiresAt = null;
+
+    if (panel) {
+      panel.classList.add('hidden');
+    }
     if (invoiceArea) {
       invoiceArea.classList.add('hidden');
     }
     if (invoicePanel) {
       invoicePanel.classList.add('hidden');
     }
-    if (workflowLogContainer) {
-      workflowLogContainer.classList.add('hidden');
-    }
     if (invoiceQrContainer) {
       invoiceQrContainer.classList.add('hidden');
     }
+    if (invoiceQrImage) {
+      invoiceQrImage.removeAttribute('src');
+    }
+    if (invoiceText) {
+      invoiceText.value = '';
+    }
+    if (workflowLogContainer) {
+      workflowLogContainer.classList.add('hidden');
+    }
     if (workflowLogList) {
       workflowLogList.innerHTML = '';
+    }
+    if (invoiceTimer) {
+      invoiceTimer.classList.add('hidden');
+    }
+    if (invoiceTimerValue) {
+      invoiceTimerValue.textContent = '02:00';
+    }
+  }
+
+  function handleStartError(message) {
+    updateStatusText(message, 'error');
+    resetWorkflowView();
+    transactionId = null;
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.innerHTML = defaultStartButtonMarkup || '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+    }
+  }
+
+  async function cancelDueToExpiration() {
+    if (!transactionId || !cancelUrlTemplate) {
+      return;
+    }
+    try {
+      await fetch(formatUrl(cancelUrlTemplate, transactionId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+        body: JSON.stringify({ reason: 'invoice_expired_client' }),
+      });
+    } catch (error) {
+      /* no-op: 상태 배너로 안내 */
+    } finally {
+      transactionId = null;
+      resetWorkflowView();
     }
   }
 
@@ -225,23 +273,43 @@
       return;
     }
     clearInterval(countdownInterval);
-    invoiceTimer.classList.remove('hidden');
-    countdownInterval = setInterval(() => {
+    if (invoiceTimer) {
+      invoiceTimer.classList.remove('hidden');
+    }
+
+    const tick = () => {
       const remaining = expiresAt.getTime() - Date.now();
       if (remaining <= 0) {
         clearInterval(countdownInterval);
-        invoiceTimerValue.textContent = '만료됨';
+        countdownInterval = null;
+        if (invoiceTimerValue) {
+          invoiceTimerValue.textContent = '만료됨';
+        }
         updateStatusText('인보이스가 만료되었습니다. 잠시 후 화면이 새로고침되어 새 결제를 준비할 수 있습니다.', 'error');
         stopPolling();
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        resetWorkflowView();
+        cancelDueToExpiration()
+          .catch(() => null)
+          .finally(() => {
+            if (startButton) {
+              startButton.disabled = false;
+              startButton.innerHTML = defaultStartButtonMarkup || '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+            }
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
+          });
         return;
       }
       const minutes = Math.floor(remaining / 1000 / 60);
       const seconds = Math.floor((remaining / 1000) % 60);
-      invoiceTimerValue.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }, 1000);
+      if (invoiceTimerValue) {
+        invoiceTimerValue.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      }
+    };
+
+    tick();
+    countdownInterval = setInterval(tick, 1000);
   }
 
   function startPolling() {
@@ -282,13 +350,12 @@
       }
       updateTransaction(data.transaction);
       if (data.status === 'paid') {
-      updateStatusText('결제가 확인되었습니다. 주문을 저장하고 있습니다...');
+        updateStatusText('결제가 확인되었습니다. 주문을 저장하고 있습니다...');
         stopPolling();
       } else if (data.status === 'pending') {
         updateStatusText('결제를 확인 중입니다. 잠시만 기다려 주세요.');
       }
     } catch (error) {
-      console.warn(error);
       updateStatusText('결제 상태 확인 중 오류가 발생했습니다. 네트워크 상태를 확인한 후 다시 시도해주세요.', 'error');
     }
   }
@@ -320,7 +387,6 @@
         window.location.reload();
       }, 800);
     } catch (error) {
-      console.warn(error);
       updateStatusText(error.message, 'error');
     } finally {
       cancelPaymentButton.disabled = false;

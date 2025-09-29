@@ -668,3 +668,208 @@ def send_order_notification_email(order):
         # 이메일 발송 실패 시 로그 기록 (주문 처리는 계속 진행)
         logger.error(f"주문 알림 이메일 발송 실패 - 주문: {order.order_number}, 오류: {str(e)}")
         return False 
+
+
+
+def restore_order_from_payment_transaction(payment_transaction, *, operator=None):
+    """수동으로 결제 트랜잭션을 주문으로 복구한다."""
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+    from ln_payment.models import PaymentStageLog, OrderItemReservation, PaymentTransaction
+    from ln_payment.services import PaymentStage
+
+    metadata = payment_transaction.metadata if isinstance(payment_transaction.metadata, dict) else {}
+    shipping_data = metadata.get('shipping') or {}
+    cart_snapshot = metadata.get('cart_snapshot') or []
+
+    if payment_transaction.order_id:
+        raise ValueError('이미 주문과 연결된 트랜잭션입니다.')
+    if not shipping_data:
+        raise ValueError('저장된 배송 정보가 없습니다.')
+    if not cart_snapshot:
+        raise ValueError('저장된 장바구니 정보가 없습니다.')
+
+    store = payment_transaction.store
+    if not store:
+        raise ValueError('트랜잭션의 스토어 정보를 확인할 수 없습니다.')
+
+    payment_completed = payment_transaction.stage_logs.filter(
+        stage=PaymentStage.USER_PAYMENT,
+        status=PaymentStageLog.STATUS_COMPLETED,
+    ).exists()
+    if not payment_completed:
+        raise ValueError('결제 완료 단계가 기록되지 않은 트랜잭션입니다.')
+
+    UserModel = get_user_model()
+    user = payment_transaction.user
+    if not user:
+        user, _ = UserModel.objects.get_or_create(
+            username='anonymous_guest',
+            defaults={
+                'email': 'anonymous@satoshop.com',
+                'first_name': 'Anonymous',
+                'last_name': 'Guest',
+            },
+        )
+
+    def _to_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    shipping_fee = _to_int(metadata.get('shipping_fee_sats'))
+    subtotal_hint = _to_int(metadata.get('subtotal_sats'))
+    total_hint = _to_int(metadata.get('total_sats'))
+
+    now = timezone.now()
+
+    with transaction.atomic():
+        order = Order.objects.create(
+            user=user,
+            store=store,
+            status='paid',
+            delivery_status='preparing',
+            buyer_name=shipping_data.get('buyer_name', ''),
+            buyer_phone=shipping_data.get('buyer_phone', ''),
+            buyer_email=shipping_data.get('buyer_email', '') or (user.email or ''),
+            shipping_postal_code=shipping_data.get('shipping_postal_code', ''),
+            shipping_address=shipping_data.get('shipping_address', ''),
+            shipping_detail_address=shipping_data.get('shipping_detail_address', ''),
+            order_memo=shipping_data.get('order_memo', ''),
+            subtotal=0,
+            shipping_fee=shipping_fee,
+            total_amount=0,
+            payment_id=payment_transaction.payment_hash or str(payment_transaction.id),
+            paid_at=payment_transaction.updated_at or now,
+        )
+
+        computed_subtotal = 0
+
+        for item in cart_snapshot:
+            if item.get('store_id') and item.get('store_id') != store.store_id:
+                raise ValueError('장바구니 정보의 스토어와 트랜잭션 스토어가 일치하지 않습니다.')
+
+            product_id = item.get('product_id')
+            if not product_id:
+                raise ValueError('상품 정보가 누락된 항목이 있습니다.')
+
+            product = Product.objects.select_for_update().filter(id=product_id, store=store).first()
+            if not product:
+                raise ValueError(f"상품({item.get('product_title') or product_id})을 찾을 수 없습니다.")
+
+            quantity = _to_int(item.get('quantity'))
+            if quantity <= 0:
+                raise ValueError('유효하지 않은 수량 값이 포함되어 있습니다.')
+
+            if not product.can_purchase(quantity):
+                raise ValueError(f'"{product.title}" 상품의 재고가 부족합니다.')
+            if not product.decrease_stock(quantity):
+                raise ValueError(f'"{product.title}" 상품의 재고 감소에 실패했습니다.')
+
+            options_display = item.get('options_display') or []
+            selected_options_map = {}
+            options_price = 0
+            if options_display:
+                for option in options_display:
+                    name = option.get('option_name')
+                    choice = option.get('choice_name')
+                    if name and choice:
+                        selected_options_map[name] = choice
+                    options_price += _to_int(option.get('choice_price'))
+            else:
+                raw_options = item.get('selected_options') or {}
+                for option_id, choice_id in raw_options.items():
+                    try:
+                        option_obj = ProductOption.objects.get(id=option_id)
+                        choice_obj = ProductOptionChoice.objects.get(id=choice_id)
+                        selected_options_map[option_obj.name] = choice_obj.name
+                        options_price += choice_obj.public_price
+                    except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
+                        continue
+
+            unit_price = _to_int(item.get('unit_price'))
+            base_price = unit_price - options_price if unit_price > options_price else unit_price
+            if base_price <= 0:
+                base_price = _to_int(item.get('frozen_product_price_sats')) or (product.public_price or 0)
+
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=product,
+                product_title=item.get('product_title') or product.title,
+                product_price=base_price,
+                quantity=quantity,
+                selected_options=selected_options_map,
+                options_price=max(options_price, 0),
+            )
+            computed_subtotal += order_item.total_price
+
+        if computed_subtotal <= 0:
+            raise ValueError('주문 금액을 계산할 수 없습니다.')
+
+        order.subtotal = subtotal_hint or computed_subtotal
+        if order.subtotal <= 0:
+            order.subtotal = computed_subtotal
+        order.total_amount = total_hint or (order.subtotal + shipping_fee)
+        if order.total_amount <= 0:
+            order.total_amount = order.subtotal + shipping_fee
+        order.save(update_fields=['subtotal', 'total_amount', 'updated_at'])
+
+        if user:
+            PurchaseHistory.objects.update_or_create(
+                user=user,
+                order=order,
+                defaults={
+                    'store_name': store.store_name,
+                    'total_amount': order.total_amount,
+                    'purchase_date': order.paid_at or now,
+                },
+            )
+
+        OrderItemReservation.objects.filter(transaction=payment_transaction).update(
+            status=OrderItemReservation.STATUS_CONVERTED,
+        )
+
+        payment_transaction.order = order
+        payment_transaction.status = PaymentTransaction.STATUS_COMPLETED
+        payment_transaction.current_stage = PaymentStage.ORDER_FINALIZE
+        payment_transaction.save(update_fields=['order', 'status', 'current_stage', 'updated_at'])
+
+        if not payment_transaction.stage_logs.filter(
+            stage=PaymentStage.MERCHANT_SETTLEMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists():
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.MERCHANT_SETTLEMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 입금을 확인했습니다 (수동)',
+                detail={'manual': True},
+            )
+
+        PaymentStageLog.objects.create(
+            transaction=payment_transaction,
+            stage=PaymentStage.ORDER_FINALIZE,
+            status=PaymentStageLog.STATUS_COMPLETED,
+            message='스토어에서 주문서를 수동으로 생성했습니다.',
+            detail={
+                'operator': getattr(operator, 'username', None) or getattr(operator, 'email', None),
+                'restored_at': now.isoformat(),
+            },
+        )
+
+        meta = dict(metadata)
+        restore_history = meta.setdefault('manual_restore_history', [])
+        restore_history.append({
+            'restored_at': now.isoformat(),
+            'operator': getattr(operator, 'username', None) or getattr(operator, 'email', None),
+        })
+        payment_transaction.metadata = meta
+        payment_transaction.save(update_fields=['metadata'])
+
+        try:
+            send_order_notification_email(order)
+        except Exception:
+            logger.warning('수동 주문 복구 알림 이메일 발송 실패 order=%s', order.order_number, exc_info=True)
+
+    return order

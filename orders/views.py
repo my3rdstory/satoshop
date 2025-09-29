@@ -17,12 +17,41 @@ from stores.models import Store
 from products.models import Product, ProductOption, ProductOptionChoice
 from .models import Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 from .payment_utils import calculate_store_totals, calculate_totals, group_cart_items
-from .services import CartService
+from .services import CartService, restore_order_from_payment_transaction
 from stores.decorators import store_owner_required
 from ln_payment.blink_service import get_blink_service_for_store
 from ln_payment.models import PaymentStageLog, PaymentTransaction
+from ln_payment.services import PaymentStage
 
 logger = logging.getLogger(__name__)
+
+
+TRANSACTION_STATUS_DESCRIPTIONS = {
+    PaymentTransaction.STATUS_PENDING: '대기: 고객이 결제 절차를 시작하기 전 상태입니다.',
+    PaymentTransaction.STATUS_PROCESSING: '진행 중: 인보이스 발행 이후 결제 확인과 주문 저장을 처리하고 있습니다.',
+    PaymentTransaction.STATUS_COMPLETED: '완료: 결제와 주문 저장이 정상적으로 끝났습니다.',
+    PaymentTransaction.STATUS_FAILED: '실패: 결제 과정 중 오류가 발생했거나 사용자가 취소했습니다.',
+}
+
+TRANSACTION_STAGE_DESCRIPTIONS = {
+    PaymentStage.PREPARE: '1단계 · 재고 확인과 소프트락',
+    PaymentStage.INVOICE: '2단계 · Blink 인보이스 발행',
+    PaymentStage.USER_PAYMENT: '3단계 · 고객 결제 확인',
+    PaymentStage.MERCHANT_SETTLEMENT: '4단계 · 스토어 지갑 입금 확인',
+    PaymentStage.ORDER_FINALIZE: '5단계 · 주문 저장 및 알림',
+}
+
+
+def _can_restore_transaction(transaction):
+    metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    shipping_data = metadata.get('shipping') or {}
+    cart_snapshot = metadata.get('cart_snapshot') or []
+    if transaction.order_id or not shipping_data or not cart_snapshot:
+        return False
+    return transaction.stage_logs.filter(
+        stage=PaymentStage.USER_PAYMENT,
+        status=PaymentStageLog.STATUS_COMPLETED,
+    ).exists()
 
 
 def _format_text_for_csv(value):
@@ -432,6 +461,10 @@ def payment_transactions(request, store_id):
     page_number = request.GET.get('page')
     transactions_page = paginator.get_page(page_number)
 
+    for tx in transactions_page:
+        tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
+        tx.manual_restore_enabled = _can_restore_transaction(tx)
+
     base_qs = PaymentTransaction.objects.filter(store=store)
     summary = {
         'total': base_qs.count(),
@@ -449,8 +482,110 @@ def payment_transactions(request, store_id):
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,
+        'status_descriptions': TRANSACTION_STATUS_DESCRIPTIONS,
     }
     return render(request, 'orders/payment_transactions.html', context)
+
+
+@login_required
+@store_owner_required
+def payment_transaction_detail(request, store_id, transaction_id):
+    """단일 결제 트랜잭션 상세"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    transaction = get_object_or_404(
+        PaymentTransaction.objects.select_related('user', 'order'),
+        id=transaction_id,
+        store=store,
+    )
+
+    metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    shipping_data = metadata.get('shipping') or {}
+    cart_snapshot = metadata.get('cart_snapshot') or []
+
+    def _safe_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    cart_items = []
+    for item in cart_snapshot:
+        quantity = _safe_int(item.get('quantity'))
+        unit_price = _safe_int(item.get('unit_price'))
+        total_price = _safe_int(item.get('total_price')) or (unit_price * quantity)
+        cart_items.append({
+            'product_id': item.get('product_id'),
+            'product_title': item.get('product_title'),
+            'product_image_url': item.get('product_image_url'),
+            'quantity': quantity,
+            'unit_price': unit_price,
+            'total_price': total_price,
+            'options_display': item.get('options_display') or [],
+            'selected_options': item.get('selected_options') or {},
+        })
+
+    cart_summary = {
+        'item_count': sum(item['quantity'] for item in cart_items),
+        'subtotal': _safe_int(metadata.get('subtotal_sats')),
+        'shipping_fee': _safe_int(metadata.get('shipping_fee_sats')),
+        'total': _safe_int(metadata.get('total_sats')),
+    }
+    if not cart_summary['subtotal'] and cart_items:
+        cart_summary['subtotal'] = sum(item['total_price'] for item in cart_items)
+    if not cart_summary['total']:
+        cart_summary['total'] = cart_summary['subtotal'] + cart_summary['shipping_fee'] if cart_summary['subtotal'] or cart_summary['shipping_fee'] else _safe_int(transaction.amount_sats)
+
+    stage_logs_queryset = transaction.stage_logs.order_by('-created_at')
+    payment_completed = stage_logs_queryset.filter(
+        stage=PaymentStage.USER_PAYMENT,
+        status=PaymentStageLog.STATUS_COMPLETED,
+    ).exists()
+    stage_logs = list(stage_logs_queryset)
+    for log in stage_logs:
+        log.stage_label = TRANSACTION_STAGE_DESCRIPTIONS.get(log.stage, f'{log.stage}단계')
+        if isinstance(log.detail, dict):
+            log.detail_pairs = list(log.detail.items())
+            log.detail_extra = ''
+        else:
+            log.detail_pairs = []
+            log.detail_extra = log.detail
+    manual_restore_enabled = (
+        not transaction.order_id
+        and bool(shipping_data)
+        and bool(cart_items)
+        and payment_completed
+    )
+
+    if request.method == 'POST' and request.POST.get('action') == 'restore_order':
+        if not manual_restore_enabled:
+            messages.error(request, '수동 주문 생성이 가능한 상태가 아닙니다.')
+        else:
+            try:
+                order = restore_order_from_payment_transaction(transaction, operator=request.user)
+                messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
+                return redirect('orders:checkout_complete', order_number=order.order_number)
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.exception('manual restore failed transaction=%s', transaction_id)
+                messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+        return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
+
+    context = {
+        'store': store,
+        'transaction': transaction,
+        'shipping_data': shipping_data,
+        'cart_items': cart_items,
+        'cart_summary': cart_summary,
+        'stage_logs': stage_logs,
+        'manual_restore_enabled': manual_restore_enabled,
+        'manual_restore_history': metadata.get('manual_restore_history', []),
+        'status_description': TRANSACTION_STATUS_DESCRIPTIONS.get(transaction.status, ''),
+        'status_descriptions': TRANSACTION_STATUS_DESCRIPTIONS,
+        'stage_descriptions': TRANSACTION_STAGE_DESCRIPTIONS,
+        'stage_label': TRANSACTION_STAGE_DESCRIPTIONS.get(transaction.current_stage, f'{transaction.current_stage}단계'),
+    }
+    return render(request, 'orders/payment_transaction_detail.html', context)
 
 
 @login_required

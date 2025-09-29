@@ -141,6 +141,15 @@ def _build_summary_response(cart_summary, totals, shipping_data):
         'shipping_data': shipping_data,
     }
 
+def _workflow_error(message, *, error_code=None, status=200, extra=None):
+    payload = {'success': False, 'error': message}
+    if error_code:
+        payload['error_code'] = error_code
+    if extra:
+        payload.update(extra)
+    return JsonResponse(payload, status=status)
+
+
 
 @login_required
 def payment_process(request):
@@ -176,23 +185,23 @@ def start_payment_workflow(request):
     try:
         data = json.loads(request.body or '{}')
     except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': '요청 형식이 올바르지 않습니다.'}, status=400)
+        return _workflow_error('요청 형식이 올바르지 않습니다.', error_code='invalid_payload')
 
     cart_service = CartService(request)
     cart_items = cart_service.get_cart_items()
     if not cart_items:
-        return JsonResponse({'success': False, 'error': '장바구니가 비어 있습니다.'}, status=400)
+        return _workflow_error('장바구니가 비어 있습니다.', error_code='empty_cart')
 
     groups, subtotal, shipping_fee, total = calculate_totals(cart_items)
     if not groups:
-        return JsonResponse({'success': False, 'error': '스토어 정보를 확인할 수 없습니다.'}, status=400)
+        return _workflow_error('스토어 정보를 확인할 수 없습니다.', error_code='store_missing')
     if len(groups) > 1:
-        return JsonResponse({'success': False, 'error': '복수 스토어 결제는 지원되지 않습니다.'}, status=400)
+        return _workflow_error('복수 스토어 결제는 지원되지 않습니다.', error_code='multiple_stores')
 
     store_group = groups[0]
     shipping_data = request.session.get('shipping_data') or data.get('shipping')
     if not shipping_data:
-        return JsonResponse({'success': False, 'error': '배송 정보가 필요합니다.'}, status=400)
+        return _workflow_error('배송 정보가 필요합니다.', error_code='shipping_missing')
 
     processor = LightningPaymentProcessor(store_group.store)
     try:
@@ -220,7 +229,7 @@ def start_payment_workflow(request):
         message = str(exc) if str(exc) else '결제 준비에 실패했습니다.'
         if '재고' in message:
             message = '재고 부족으로 결제 진행이 어렵습니다. 재고 확인 후 다시 결제 진행해 주세요.'
-        return JsonResponse({'success': False, 'error': message}, status=400)
+        return _workflow_error(message, error_code='inventory_unavailable')
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception('결제 준비 중 오류')
         return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)
@@ -264,7 +273,7 @@ def recreate_invoice(request, transaction_id):
     try:
         payload = json.loads(request.body or '{}')
     except json.JSONDecodeError:
-        return JsonResponse({'success': False, 'error': '요청 형식이 올바르지 않습니다.'}, status=400)
+        return _workflow_error('요청 형식이 올바르지 않습니다.', error_code='invalid_payload')
 
     processor = LightningPaymentProcessor(transaction.store)
     try:
