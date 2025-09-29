@@ -363,6 +363,37 @@ ADMIN_PASSWORD=your-secure-admin-password
 
 각 스토어별로 개별 설정되므로 환경 변수가 아닌 스토어 설정에서 관리됩니다.
 
+### Lightning 결제 워크플로우
+
+새로운 5단계 결제 플로우는 `ln_payment` 앱을 중심으로 동작하며, Blink API 상태에 맞추어 트랜잭션을 기록합니다.
+
+1. **결제 준비** – 장바구니와 재고를 검증하고 `PaymentTransaction` + `OrderItemReservation`을 생성합니다.
+2. **인보이스 생성** – Blink GraphQL을 호출해 인보이스를 발행하고 QR/문자열을 반환합니다.
+3. **결제 확인** – `lnInvoicePaymentStatus`를 폴링하여 사용자의 결제 여부를 확인합니다.
+4. **입금 확인** – Blink webhook(`receive.lightning`) 또는 `transactionsByPaymentHash` 조회 결과로 스토어 지갑 입금을 기록합니다.
+5. **주문 저장** – 결제가 확인되면 기존 주문 생성 로직을 통해 주문/이메일/마이페이지 정보를 완성합니다.
+
+#### 백엔드 연동 포인트
+- `ln_payment/services.py`의 `LightningPaymentProcessor`가 상태 머신, soft-lock, Blink API 호출을 담당합니다.
+- 새 webhook 엔드포인트: `POST /ln-payment/webhook/blink/` (Svix 서명 사용 시 `BLINK_WEBHOOK_SECRET` 환경 변수 필요).
+- `transactionsByPaymentHash`를 활용한 백업 조회를 통해 webhook 누락 시에도 입금 정보를 수집합니다.
+
+#### 프런트엔드 흐름
+- `orders/templates/orders/checkout.html`에서 Tailwind 기반 5단계 안내 UI를 제공합니다.
+- `static/ln_payment/js/payment_workflow.js`는 인보이스 재생성·취소·타이머·상태 폴링을 처리합니다.
+- 결제 실패 시 스토어 연락처와 FAQ 링크가 자동으로 노출됩니다.
+
+#### 운영 시 유의 사항
+- Blink Dashboard에서 webhook 엔드포인트를 `/ln-payment/webhook/blink/`로 등록하고, 시그니처 검증을 위해 `BLINK_WEBHOOK_SECRET`을 설정하세요.
+- WebSocket을 사용하지 않는 환경에서도 폴링 기반으로 동작하지만, 필요 시 `svix` 패키지를 설치하면 서명 검증이 강화됩니다.
+- soft-lock 만료 처리는 결제 시작 시 자동으로 정리됩니다. 장기간 미사용 데이터를 주기적으로 확인하려면 관리 명령을 추가로 구성하세요.
+
+환경 변수 예시:
+```env
+# Blink webhook signature 검증
+BLINK_WEBHOOK_SECRET=whsec_xxxxxxxxxx
+```
+
 ## 🚀 배포
 
 ### 배포 환경 구성

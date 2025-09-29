@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum, Count, F
+from django.db.models import Q, Sum, Count, F, Prefetch
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
@@ -16,9 +16,11 @@ import logging
 from stores.models import Store
 from products.models import Product, ProductOption, ProductOptionChoice
 from .models import Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
+from .payment_utils import calculate_store_totals, calculate_totals, group_cart_items
 from .services import CartService
 from stores.decorators import store_owner_required
 from ln_payment.blink_service import get_blink_service_for_store
+from ln_payment.models import PaymentStageLog, PaymentTransaction
 
 logger = logging.getLogger(__name__)
 
@@ -32,31 +34,6 @@ def _format_text_for_csv(value):
     # Excel이 수식으로 처리하지 않도록 큰따옴표 이스케이프 후 텍스트 서식으로 감싼다.
     escaped = text_value.replace('"', '""')
     return f'="{escaped}"'
-
-
-def calculate_store_totals(store_obj, store_items):
-    """스토어별 소계, 배송비, 무조건 무료 배송 여부 계산"""
-    subtotal = 0
-    apply_override = store_obj.shipping_fee_mode == 'flat'
-    has_items = False
-
-    for item in store_items:
-        has_items = True
-        if isinstance(item, dict):
-            subtotal += item.get('total_price', 0) or 0
-            item_force_free = item.get('force_free_shipping', False)
-        else:
-            subtotal += getattr(item, 'total_price', 0) or 0
-            product = getattr(item, 'product', None)
-            item_force_free = getattr(product, 'force_free_shipping', False)
-
-        apply_override = apply_override and item_force_free
-
-    if not has_items:
-        apply_override = False
-
-    shipping_fee = 0 if apply_override else store_obj.get_shipping_fee_sats(subtotal)
-    return subtotal, shipping_fee, apply_override
 
 
 @login_required
@@ -431,6 +408,44 @@ def order_management(request, store_id):
         'show_next': show_next,
     }
     return render(request, 'orders/order_management.html', context)
+
+
+@login_required
+@store_owner_required
+def payment_transactions(request, store_id):
+    """Blink 결제 트랜잭션 현황"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    status_filter = request.GET.get('status')
+    stage_filter = request.GET.get('stage')
+
+    transactions_qs = PaymentTransaction.objects.filter(store=store)
+    if status_filter in {PaymentTransaction.STATUS_PENDING, PaymentTransaction.STATUS_PROCESSING, PaymentTransaction.STATUS_FAILED, PaymentTransaction.STATUS_COMPLETED}:
+        transactions_qs = transactions_qs.filter(status=status_filter)
+    if stage_filter and stage_filter.isdigit():
+        transactions_qs = transactions_qs.filter(current_stage=int(stage_filter))
+
+    transactions = transactions_qs.select_related('user', 'order').prefetch_related(
+        Prefetch('stage_logs', queryset=PaymentStageLog.objects.order_by('created_at'))
+    ).order_by('-created_at')
+
+    base_qs = PaymentTransaction.objects.filter(store=store)
+    summary = {
+        'total': base_qs.count(),
+        'pending': base_qs.filter(status=PaymentTransaction.STATUS_PENDING).count(),
+        'processing': base_qs.filter(status=PaymentTransaction.STATUS_PROCESSING).count(),
+        'completed': base_qs.filter(status=PaymentTransaction.STATUS_COMPLETED).count(),
+        'failed': base_qs.filter(status=PaymentTransaction.STATUS_FAILED).count(),
+    }
+
+    context = {
+        'store': store,
+        'transactions': transactions,
+        'status_filter': status_filter or '',
+        'stage_filter': stage_filter or '',
+        'summary': summary,
+    }
+    return render(request, 'orders/payment_transactions.html', context)
 
 
 @login_required

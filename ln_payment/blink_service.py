@@ -290,7 +290,7 @@ class BlinkAPIService:
     def get_account_info(self):
         """
         현재 API 키로 접근 가능한 계정 정보와 월렛 목록 조회
-        
+
         Returns:
             dict: {
                 'success': bool,
@@ -348,6 +348,41 @@ class BlinkAPIService:
                 'default_wallet_currency': default_wallet.get('walletCurrency')
             },
             'wallets': wallets
+        }
+
+    def get_transactions_by_hash(self, payment_hash):
+        """payment_hash로 트랜잭션 조회"""
+        query = """
+        query TransactionsByPaymentHash($paymentHash: PaymentHash!) {
+          transactionsByPaymentHash(paymentHash: $paymentHash) {
+            id
+            status
+            settlementAmount
+            settlementCurrency
+            settlementFee
+            settlementVia {
+              type
+            }
+            initiationVia {
+              ... on InitiationViaLn {
+                paymentHash
+              }
+            }
+            createdAt
+          }
+        }
+        """
+
+        variables = {'paymentHash': payment_hash}
+        result = self._make_request(query, variables)
+        if not result['success']:
+            return result
+
+        data = result['data']
+        transactions = data.get('transactionsByPaymentHash', [])
+        return {
+            'success': True,
+            'transactions': transactions,
         }
 
 
