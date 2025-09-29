@@ -69,11 +69,11 @@ class ReviewCreateView(LoginRequiredMixin, View):
         form = ReviewForm(request.POST, request.FILES)
         if not form.is_valid():
             logger.warning(
-                "ReviewCreateView form invalid",
+                "ReviewCreateView form invalid errors=%s",
+                form.errors.get_json_data(),
                 extra={
                     'user_id': request.user.id,
                     'product_id': product.id,
-                    'errors': form.errors,
                 },
             )
             return _redirect_to_reviews(request, store_id, product_id)
@@ -108,11 +108,11 @@ class ReviewCreateView(LoginRequiredMixin, View):
                     create_review_images(review, uploaded)
         except ValidationError as exc:
             logger.warning(
-                "ReviewCreateView validation error",
+                "ReviewCreateView validation error messages=%s",
+                exc.messages,
                 extra={
                     'user_id': request.user.id,
                     'product_id': product.id,
-                    'errors': exc.messages,
                 },
             )
             return _redirect_to_reviews(request, store_id, product_id)
@@ -154,12 +154,12 @@ class ReviewUpdateView(LoginRequiredMixin, View):
 
         if not form.is_valid():
             logger.warning(
-                "ReviewUpdateView form invalid",
+                "ReviewUpdateView form invalid errors=%s",
+                form.errors.get_json_data(),
                 extra={
                     'user_id': request.user.id,
                     'product_id': product.id,
                     'review_id': review.id,
-                    'errors': form.errors,
                 },
             )
             return _redirect_to_reviews(request, store_id, product_id)
@@ -174,12 +174,12 @@ class ReviewUpdateView(LoginRequiredMixin, View):
                     create_review_images(review, uploaded)
         except ValidationError as exc:
             logger.warning(
-                "ReviewUpdateView validation error",
+                "ReviewUpdateView validation error messages=%s",
+                exc.messages,
                 extra={
                     'user_id': request.user.id,
                     'product_id': product.id,
                     'review_id': review.id,
-                    'errors': exc.messages,
                 },
             )
             return _redirect_to_reviews(request, store_id, product_id)

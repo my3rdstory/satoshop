@@ -7,10 +7,40 @@ class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 
+class MultiFileField(forms.FileField):
+    """FileField that accepts multiple files and returns a list of uploads."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('required', False)
+        kwargs.setdefault('widget', MultiFileInput(attrs={'multiple': True}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):  # pylint: disable=signature-differs
+        if not data:
+            if self.required and not initial:
+                raise forms.ValidationError(self.error_messages['required'], code='required')
+            return []
+
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+
+        cleaned_files = []
+        errors = []
+
+        for uploaded in data:
+            try:
+                cleaned_files.append(super().clean(uploaded, initial))
+            except forms.ValidationError as exc:
+                errors.extend(exc.error_list)
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        return cleaned_files
+
+
 class ReviewForm(forms.ModelForm):
-    images = forms.FileField(
-        required=False,
-        widget=MultiFileInput(attrs={'multiple': True}),
+    images = MultiFileField(
         help_text='이미지는 최대 5개까지 업로드할 수 있습니다.',
     )
 
@@ -47,7 +77,7 @@ class ReviewForm(forms.ModelForm):
         return content
 
     def clean_images(self):
-        images = self.files.getlist('images')
+        images = self.cleaned_data.get('images') or []
         total_images = self.existing_image_count + len(images)
         if total_images > 5:
             raise forms.ValidationError('이미지는 최대 5개까지 업로드할 수 있습니다.')

@@ -275,7 +275,6 @@
         return;
       }
       selectedFiles.push(file);
-      console.log('[Reviews] File added', { fileName: file.name, totalSelected: selectedFiles.length });
       hideMessage();
     };
 
@@ -292,7 +291,6 @@
       syncInput();
       renderPreview();
       updateRemaining();
-      console.log('[Reviews] File removed', { fileName: removed.name, totalSelected: selectedFiles.length });
     };
 
     const handleFiles = (fileList) => {
@@ -307,7 +305,6 @@
       syncInput();
       renderPreview();
       updateRemaining();
-      console.log('[Reviews] handleFiles complete', { selectedFiles: selectedFiles.length });
     };
 
     const dropTrigger = zone.querySelector('[data-drop-trigger]');
@@ -356,6 +353,7 @@
       }
       handleFiles(event.target.files);
       event.target.value = '';
+      syncInput();
     });
 
     const modalElement = zone.closest('[data-review-modal]');
@@ -364,31 +362,10 @@
       modalElement.addEventListener('modal:open', hideMessage);
     }
     updateRemaining();
-    console.log('[Reviews] Dropzone initialized', { maxFiles, existingCount });
   }
 
   function initDropzones(root = document) {
     root.querySelectorAll('[data-review-dropzone]').forEach((zone) => setupDropzone(zone));
-  }
-
-  function initFormDebug(root = document) {
-    root.querySelectorAll('[data-review-modal] form').forEach((form) => {
-      if (form.dataset.reviewDebugInitialized === '1') {
-        return;
-      }
-      form.dataset.reviewDebugInitialized = '1';
-      form.addEventListener('submit', () => {
-        const ratingInput = form.querySelector('input[name="rating"]');
-        const filesInput = form.querySelector('input[type="file"]');
-        const fileNames = filesInput && filesInput.files ? Array.from(filesInput.files).map((file) => file.name) : [];
-        console.log('[Reviews] Form submit', {
-          modalId: form.closest('[data-review-modal]')?.id,
-          ratingValue: ratingInput ? ratingInput.value : null,
-          fileCount: filesInput?.files ? filesInput.files.length : 0,
-          fileNames,
-        });
-      });
-    });
   }
 
   function setupDeleteConfirm(root = document) {
@@ -503,12 +480,34 @@
         return;
       }
       submitButton.dataset.reviewSubmitInitialized = '1';
+      if (submitButton.textContent && !submitButton.dataset.reviewSubmitOriginal) {
+        submitButton.dataset.reviewSubmitOriginal = submitButton.textContent.trim();
+      }
+
+      const form = submitButton.closest('form');
+
+      const setLoadingState = (isLoading) => {
+        if (isLoading) {
+          submitButton.textContent = '저장 중...';
+          submitButton.disabled = true;
+          submitButton.classList.add('cursor-wait');
+          submitButton.setAttribute('aria-busy', 'true');
+        } else {
+          if (submitButton.dataset.reviewSubmitOriginal) {
+            submitButton.textContent = submitButton.dataset.reviewSubmitOriginal;
+          }
+          submitButton.classList.remove('cursor-wait');
+          submitButton.removeAttribute('aria-busy');
+        }
+      };
 
       const toggleButtonState = () => {
         const ratingValue = Number(ratingInput?.value || 0);
         const contentValue = (contentInput?.value || '').trim();
         const isValid = ratingValue > 0 && contentValue.length > 0;
-        submitButton.disabled = !isValid;
+        if (!submitButton.classList.contains('cursor-wait')) {
+          submitButton.disabled = !isValid;
+        }
       };
 
       if (ratingInput && ratingInput.dataset.reviewSubmitListener !== '1') {
@@ -527,7 +526,21 @@
         });
       }
 
-      modal.addEventListener('modal:open', toggleButtonState);
+      if (form && form.dataset.reviewSubmitLoadingInitialized !== '1') {
+        form.dataset.reviewSubmitLoadingInitialized = '1';
+        form.addEventListener('submit', () => {
+          setLoadingState(true);
+        });
+      }
+
+      modal.addEventListener('modal:open', () => {
+        setLoadingState(false);
+        toggleButtonState();
+      });
+      modal.addEventListener('modal:close', () => {
+        setLoadingState(false);
+        toggleButtonState();
+      });
       toggleButtonState();
     });
   }
@@ -536,7 +549,6 @@
     initModals(root);
     initRatingControls(root);
     initDropzones(root);
-    initFormDebug(root);
     setupDeleteConfirm(root);
     setupSubmitState(root);
     setupPagination();
@@ -545,7 +557,6 @@
   window.initReviewsUI = () => setupReviewComponents(document);
 
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Reviews] DOMContentLoaded - initializing components');
     setupReviewComponents(document);
     initHistory();
   });
