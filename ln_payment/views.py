@@ -39,6 +39,25 @@ except ImportError:  # pragma: no cover - optional dependency
 
 logger = logging.getLogger(__name__)
 
+
+def _build_invoice_memo(cart_items, total_amount_sats, user):
+    """Blink 인보이스 메모 문자열을 구성한다."""
+    if cart_items:
+        first_title = cart_items[0].get('product_title') or '상품'
+        if len(cart_items) == 1:
+            product_label = first_title
+        else:
+            product_label = f"{first_title} 외 {len(cart_items) - 1}"
+    else:
+        product_label = '상품'
+
+    total_quantity = sum(item.get('quantity', 1) for item in cart_items) if cart_items else 0
+    payer_identifier = getattr(user, 'username', None) or getattr(user, 'email', None) or str(user.id)
+
+    memo = f"{product_label} / 수량 {total_quantity} / 총액 {total_amount_sats} sats / 결제자 {payer_identifier}"
+    # Blink description 필드는 최대 639자 → 넉넉히 절단
+    return memo[:620] + '…' if len(memo) > 620 else memo
+
 def lightning_payment(request):
     """라이트닝 결제 페이지"""
     store_id = request.GET.get('store_id')
@@ -190,9 +209,10 @@ def start_payment_workflow(request):
                 'total_sats': total,
             },
         )
+        memo_text = data.get('memo') or _build_invoice_memo(cart_items, total, request.user)
         invoice = processor.issue_invoice(
             transaction,
-            memo=data.get('memo', '상품 결제'),
+            memo=memo_text,
             expires_in_minutes=data.get('expires_in_minutes', 2),
         )
     except ValueError as exc:  # 재고 부족 등

@@ -27,14 +27,20 @@
 
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <header class="flex items-center justify-center mb-10">
-      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
-        <i class="fas fa-receipt text-3xl text-bitcoin"></i>
+  <div class="w-full px-4 sm:px-6 lg:px-12">
+    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-bitcoin/10 rounded-full">
+          <i class="fas fa-receipt text-3xl text-bitcoin"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">결제 정보 확인</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-2">Blink 결제 트랜잭션의 단계별 상태를 확인하고 고객 문의에 대응하세요.</p>
+        </div>
       </div>
-      <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">결제 정보 확인</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Blink 결제 트랜잭션의 단계별 상태를 확인하고 고객 문의에 대응하세요.</p>
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="block">총 {{ summary.total }}건 모니터링 중</span>
+        <span class="block">마지막 갱신 {% now "Y-m-d H:i" %}</span>
       </div>
     </header>
 
@@ -128,7 +134,13 @@
                 <span class="text-gray-400">-</span>
                 {% endif %}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap">{{ transaction.user.username if transaction.user else '게스트' }}</td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                {% if transaction.user %}
+                  {{ transaction.user.username }}
+                {% else %}
+                  게스트
+                {% endif %}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">{{ transaction.payment_hash|default:'-' }}</td>
             </tr>
             <tr class="bg-gray-50/70 dark:bg-gray-900/50">
