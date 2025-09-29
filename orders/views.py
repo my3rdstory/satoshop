@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Q, Sum, Count, F, Prefetch
+from django.db.models import Q, Sum, Count, F
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
@@ -425,9 +425,12 @@ def payment_transactions(request, store_id):
     if stage_filter and stage_filter.isdigit():
         transactions_qs = transactions_qs.filter(current_stage=int(stage_filter))
 
-    transactions = transactions_qs.select_related('user', 'order').prefetch_related(
-        Prefetch('stage_logs', queryset=PaymentStageLog.objects.order_by('created_at'))
-    ).order_by('-created_at')
+    paginator = Paginator(
+        transactions_qs.select_related('user', 'order').order_by('-created_at'),
+        5,
+    )
+    page_number = request.GET.get('page')
+    transactions_page = paginator.get_page(page_number)
 
     base_qs = PaymentTransaction.objects.filter(store=store)
     summary = {
@@ -440,7 +443,9 @@ def payment_transactions(request, store_id):
 
     context = {
         'store': store,
-        'transactions': transactions,
+        'transactions': transactions_page,
+        'paginator': paginator,
+        'page_obj': transactions_page,
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,

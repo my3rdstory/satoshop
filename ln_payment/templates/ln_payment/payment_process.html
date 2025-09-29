@@ -94,7 +94,6 @@
           data-start-url="{% url 'ln_payment:workflow_start' %}"
           data-status-url-template="{% url 'ln_payment:workflow_status' '11111111-1111-1111-1111-111111111111' %}"
           data-verify-url-template="{% url 'ln_payment:workflow_verify' '11111111-1111-1111-1111-111111111111' %}"
-          data-recreate-url-template="{% url 'ln_payment:workflow_recreate_invoice' '11111111-1111-1111-1111-111111111111' %}"
           data-cancel-url-template="{% url 'ln_payment:workflow_cancel' '11111111-1111-1111-1111-111111111111' %}"
           data-csrf-token="{{ csrf_token }}"
         >
@@ -122,7 +121,7 @@
           <div id="paymentWorkflowPanel" class="mt-8 hidden space-y-8">
             <section class="grid gap-6 lg:grid-cols-5">
               <div class="lg:col-span-3">
-                <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
+                <div id="invoicePanel" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
                   <header class="flex items-center justify-between">
                     <div>
                       <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">인보이스 & QR</h3>
@@ -158,14 +157,6 @@
                           </button>
                           <button
                             type="button"
-                            id="recreateInvoiceButton"
-                            class="inline-flex items-center gap-2 rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 transition hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-400/50"
-                          >
-                            <i class="fas fa-sync-alt"></i>
-                            인보이스 다시 생성
-                          </button>
-                          <button
-                            type="button"
                             id="cancelPaymentButton"
                             class="inline-flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-900 px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-300 transition hover:bg-red-50 dark:hover:bg-red-900/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-red-400/40"
                           >
@@ -180,7 +171,7 @@
               </div>
 
               <aside class="lg:col-span-2">
-                <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
+                <div id="workflowLogContainer" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6">
                   <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">진행 로그</h3>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">실시간으로 단계별 메시지를 확인하세요.</p>
                   <ul id="workflowLogList" class="mt-4 space-y-3 text-xs text-gray-600 dark:text-gray-300">
@@ -189,7 +180,7 @@
               </aside>
             </section>
 
-            <section class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
+            <section id="workflowHelpSection" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">도움이 필요하신가요?</h3>
               <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 결제 진행 중 문제가 발생하면 결제를 취소하고 다시 시도하거나, 아래 정보를 참고해 스토어에 문의해주세요.

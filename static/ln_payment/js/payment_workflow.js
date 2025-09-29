@@ -7,21 +7,21 @@
   const startUrl = app.dataset.startUrl;
   const statusUrlTemplate = app.dataset.statusUrlTemplate;
   const verifyUrlTemplate = app.dataset.verifyUrlTemplate;
-  const recreateUrlTemplate = app.dataset.recreateUrlTemplate;
   const cancelUrlTemplate = app.dataset.cancelUrlTemplate;
   const csrfToken = app.dataset.csrfToken || getCookie('csrftoken');
 
   const startButton = document.getElementById('startPaymentButton');
   const panel = document.getElementById('paymentWorkflowPanel');
+  const invoicePanel = document.getElementById('invoicePanel');
   const invoiceArea = document.getElementById('invoiceArea');
   const invoiceQrContainer = document.getElementById('invoiceQrContainer');
   const invoiceText = document.getElementById('invoiceText');
   const copyInvoiceButton = document.getElementById('copyInvoiceButton');
-  const recreateInvoiceButton = document.getElementById('recreateInvoiceButton');
   const cancelPaymentButton = document.getElementById('cancelPaymentButton');
   const invoiceQrImage = document.getElementById('invoiceQrImage');
   const paymentStatusText = document.getElementById('paymentStatusText');
   const workflowLogList = document.getElementById('workflowLogList');
+  const workflowLogContainer = document.getElementById('workflowLogContainer');
   const stepElements = Array.from(document.querySelectorAll('[data-step-index]'));
   const invoiceTimer = document.getElementById('invoiceTimer');
   const invoiceTimerValue = document.getElementById('invoiceTimerValue');
@@ -73,6 +73,14 @@
       return;
     }
     workflowLogList.innerHTML = '';
+    if (workflowLogContainer) {
+      if (!logs || logs.length === 0) {
+        workflowLogContainer.classList.add('hidden');
+      } else {
+        workflowLogContainer.classList.remove('hidden');
+      }
+    }
+
     logs.forEach((log) => {
       const li = document.createElement('li');
       li.innerHTML = `
@@ -100,6 +108,9 @@
       return;
     }
     invoiceArea.classList.remove('hidden');
+    if (invoicePanel) {
+      invoicePanel.classList.remove('hidden');
+    }
     invoiceText.value = invoice.payment_request || '';
     if (invoice.payment_request) {
       const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(invoice.payment_request)}&ts=${Date.now()}`;
@@ -133,8 +144,15 @@
     }
   }
 
-  function updateStatusText(message) {
+  function updateStatusText(message, variant = 'info') {
+    if (!paymentStatusText) {
+      return;
+    }
     paymentStatusText.textContent = message;
+    paymentStatusText.classList.remove('status-banner--error');
+    if (variant === 'error') {
+      paymentStatusText.classList.add('status-banner--error');
+    }
   }
 
   async function startWorkflow() {
@@ -156,13 +174,16 @@
         body: JSON.stringify({})
       });
 
-      if (!response.ok) {
-        throw new Error('결제 준비에 실패했습니다.');
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = {};
       }
 
-      const data = await response.json();
-      if (!data.success) {
-        throw new Error(data.error || '결제 준비에 실패했습니다.');
+      if (!response.ok || !data.success) {
+        handleStartError((data && data.error) || '결제 준비에 실패했습니다.');
+        return;
       }
 
       transactionId = data.transaction.id;
@@ -172,10 +193,30 @@
       updateStatusText('인보이스가 생성되었습니다. 라이트닝 지갑으로 QR을 스캔하거나 인보이스를 복사해 결제를 진행하세요.');
       startPolling();
     } catch (error) {
-      console.error(error);
-      updateStatusText(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.');
-      startButton.disabled = false;
-      startButton.innerHTML = '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+      console.warn(error);
+      handleStartError(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.');
+    }
+  }
+
+  function handleStartError(message) {
+    updateStatusText(message, 'error');
+    startButton.disabled = false;
+    startButton.innerHTML = '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+    transactionId = null;
+    if (invoiceArea) {
+      invoiceArea.classList.add('hidden');
+    }
+    if (invoicePanel) {
+      invoicePanel.classList.add('hidden');
+    }
+    if (workflowLogContainer) {
+      workflowLogContainer.classList.add('hidden');
+    }
+    if (invoiceQrContainer) {
+      invoiceQrContainer.classList.add('hidden');
+    }
+    if (workflowLogList) {
+      workflowLogList.innerHTML = '';
     }
   }
 
@@ -190,7 +231,7 @@
       if (remaining <= 0) {
         clearInterval(countdownInterval);
         invoiceTimerValue.textContent = '만료됨';
-        updateStatusText('인보이스가 만료되었습니다. 잠시 후 화면이 새로고침되어 새 결제를 준비할 수 있습니다.');
+        updateStatusText('인보이스가 만료되었습니다. 잠시 후 화면이 새로고침되어 새 결제를 준비할 수 있습니다.', 'error');
         stopPolling();
         setTimeout(() => {
           window.location.reload();
@@ -234,53 +275,21 @@
       const data = await response.json();
       if (!data.success) {
         if (data.error) {
-          updateStatusText(data.error);
+          updateStatusText(data.error, 'error');
           stopPolling();
         }
         return;
       }
       updateTransaction(data.transaction);
       if (data.status === 'paid') {
-        updateStatusText('결제가 확인되었습니다. 주문을 저장하고 있습니다...');
+      updateStatusText('결제가 확인되었습니다. 주문을 저장하고 있습니다...');
         stopPolling();
       } else if (data.status === 'pending') {
         updateStatusText('결제를 확인 중입니다. 잠시만 기다려 주세요.');
       }
     } catch (error) {
-      console.error(error);
-      updateStatusText('결제 상태 확인 중 오류가 발생했습니다. 네트워크 상태를 확인한 후 다시 시도해주세요.');
-    }
-  }
-
-  async function recreateInvoice() {
-    if (!transactionId) {
-      return;
-    }
-    recreateInvoiceButton.disabled = true;
-    recreateInvoiceButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>재생성 중';
-    try {
-      const response = await fetch(formatUrl(recreateUrlTemplate, transactionId), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': csrfToken,
-        },
-        body: JSON.stringify({})
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || '인보이스 재생성에 실패했습니다.');
-      }
-      updateTransaction(data.transaction);
-      updateInvoice(data.invoice);
-      updateStatusText('새로운 인보이스가 발행되었습니다. 새 QR을 사용해 결제를 진행해주세요.');
-      startPolling();
-    } catch (error) {
-      console.error(error);
-      updateStatusText(error.message);
-    } finally {
-      recreateInvoiceButton.disabled = false;
-      recreateInvoiceButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>인보이스 다시 생성';
+      console.warn(error);
+      updateStatusText('결제 상태 확인 중 오류가 발생했습니다. 네트워크 상태를 확인한 후 다시 시도해주세요.', 'error');
     }
   }
 
@@ -311,8 +320,8 @@
         window.location.reload();
       }, 800);
     } catch (error) {
-      console.error(error);
-      updateStatusText(error.message);
+      console.warn(error);
+      updateStatusText(error.message, 'error');
     } finally {
       cancelPaymentButton.disabled = false;
       cancelPaymentButton.innerHTML = '<i class="fas fa-ban mr-2"></i>결제 취소';
@@ -328,12 +337,11 @@
         updateStatusText('인보이스가 복사되었습니다. 라이트닝 지갑에 붙여넣어 결제를 진행하세요.');
       })
       .catch(() => {
-        updateStatusText('인보이스 복사에 실패했습니다. 직접 선택하여 복사해주세요.');
+        updateStatusText('인보이스 복사에 실패했습니다. 직접 선택하여 복사해주세요.', 'error');
       });
   }
 
   startButton?.addEventListener('click', startWorkflow);
-  recreateInvoiceButton?.addEventListener('click', recreateInvoice);
   cancelPaymentButton?.addEventListener('click', cancelPayment);
   copyInvoiceButton?.addEventListener('click', copyInvoice);
 

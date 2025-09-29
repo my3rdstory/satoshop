@@ -217,7 +217,10 @@ def start_payment_workflow(request):
         )
     except ValueError as exc:  # 재고 부족 등
         logger.warning('결제 준비 실패: %s', exc)
-        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+        message = str(exc) if str(exc) else '결제 준비에 실패했습니다.'
+        if '재고' in message:
+            message = '재고 부족으로 결제 진행이 어렵습니다. 재고 확인 후 다시 결제 진행해 주세요.'
+        return JsonResponse({'success': False, 'error': message}, status=400)
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception('결제 준비 중 오류')
         return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)

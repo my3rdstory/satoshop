@@ -9,7 +9,7 @@ from .services import PaymentStage
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
     list_display = (
-        "id",
+        "id_with_hash",
         "store",
         "user",
         "status",
@@ -21,6 +21,15 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
     list_filter = ("status", "current_stage", "store")
     search_fields = ("id", "payment_hash", "user__username", "store__store_id")
     ordering = ("-created_at",)
+
+    @admin.display(description="결제 ID / 해시")
+    def id_with_hash(self, obj):
+        hash_display = obj.payment_hash or "-"
+        return format_html(
+            '<div class="text-sm font-mono">{}</div><div class="text-xs text-gray-500">{}</div>',
+            obj.id,
+            hash_display,
+        )
 
 
 @admin.register(PaymentStageLog)
