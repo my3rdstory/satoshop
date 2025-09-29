@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     ReviewCreateView,
     ReviewDeleteView,
+    ReviewEmbedPreviewView,
     ReviewImageDeleteView,
     ReviewUpdateView,
 )
@@ -10,6 +11,7 @@ from .views import (
 app_name = 'reviews'
 
 urlpatterns = [
+    path('embed-preview/', ReviewEmbedPreviewView.as_view(), name='embed_preview'),
     path('<str:store_id>/<int:product_id>/create/', ReviewCreateView.as_view(), name='create'),
     path('<str:store_id>/<int:product_id>/<int:review_id>/update/', ReviewUpdateView.as_view(), name='update'),
     path('<str:store_id>/<int:product_id>/<int:review_id>/delete/', ReviewDeleteView.as_view(), name='delete'),

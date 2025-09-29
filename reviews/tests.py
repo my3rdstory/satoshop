@@ -1,5 +1,5 @@
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -9,16 +9,21 @@ from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
 
+import requests
+
 from orders.models import Order, OrderItem
 from products.models import Product
 from reviews.models import Review
 from reviews.services import (
     MAX_IMAGES_PER_REVIEW,
     ProcessedImage,
+    fetch_x_post_preview,
+    find_x_post_url,
     process_image,
     upload_review_images,
     user_has_purchased_product,
 )
+from reviews.templatetags.review_extras import linkify_review
 from stores.models import Store
 
 
@@ -136,6 +141,61 @@ class ReviewServiceTests(ReviewTestCase):
         files = [SimpleUploadedFile('extra.png', b'data', content_type='image/png') for _ in range(2)]
         with self.assertRaises(ValidationError):
             upload_review_images(files, self.product, existing_count=MAX_IMAGES_PER_REVIEW - 1)
+
+    @patch('reviews.services.requests.get')
+    def test_fetch_x_post_preview_returns_clean_text(self, mock_get):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'html': '<blockquote class="twitter-tweet"><p>테스트 &amp; 본문 https://t.co/example</p></blockquote>',
+            'author_name': 'Alice',
+            'author_url': 'https://x.com/alice',
+            'provider_name': 'Twitter',
+            'provider_url': 'https://x.com',
+        }
+        mock_get.return_value = mock_response
+
+        preview = fetch_x_post_preview('https://twitter.com/alice/status/12345?s=20')
+
+        self.assertEqual(preview['text'], '테스트 & 본문 https://t.co/example')
+        self.assertEqual(preview['author_name'], 'Alice')
+        self.assertEqual(preview['url'], 'https://twitter.com/alice/status/12345?s=20')
+        mock_get.assert_called_once()
+        call_kwargs = getattr(mock_get.call_args, 'kwargs', {}) or mock_get.call_args[1]
+        self.assertEqual(call_kwargs['params']['url'], 'https://twitter.com/alice/status/12345?s=20')
+
+    def test_fetch_x_post_preview_rejects_invalid_url(self):
+        with self.assertRaises(ValueError):
+            fetch_x_post_preview('https://example.com/invalid')
+
+    @patch('reviews.services.requests.get')
+    def test_fetch_x_post_preview_handles_request_error(self, mock_get):
+        mock_get.side_effect = requests.RequestException('boom')
+
+        with self.assertRaises(RuntimeError):
+            fetch_x_post_preview('https://x.com/alice/status/67890')
+
+    def test_find_x_post_url_extracts_first_url(self):
+        text = '본문과 함께 https://x.com/alice/status/67890?t=1).'  # trailing paren should be stripped
+        result = find_x_post_url(text)
+        self.assertEqual(result, 'https://x.com/alice/status/67890?t=1')
+
+    def test_find_x_post_url_returns_none_when_missing(self):
+        self.assertIsNone(find_x_post_url('링크가 없습니다.'))
+
+
+class ReviewTemplateFilterTests(TestCase):
+
+    def test_linkify_review_adds_target_blank(self):
+        html = linkify_review('방문: https://example.com/page')
+        self.assertIn('href="https://example.com/page"', html)
+        self.assertIn('target="_blank"', html)
+        self.assertIn('rel="noopener noreferrer"', html)
+
+    def test_linkify_review_strips_scripts(self):
+        html = linkify_review('<script>alert(1)</script>https://example.com')
+        self.assertNotIn('<script>', html)
+        self.assertIn('https://example.com', html)
 
 
 class ReviewViewTests(ReviewTestCase):

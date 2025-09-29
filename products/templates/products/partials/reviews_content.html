@@ -30,7 +30,28 @@
       </form>
       {% endif %}
     </div>
-    <div class="mt-4 text-gray-800 dark:text-gray-100 whitespace-pre-line leading-relaxed">{{ review.content|truncatechars:1000 }}</div>
+    <div class="mt-4 text-gray-800 dark:text-gray-100 whitespace-pre-line leading-relaxed">{{ review.content|truncatechars:1000|linkify_review }}</div>
+    {% with review.content|first_x_post_url as review_x_url %}
+      {% if review_x_url %}
+      <div class="mt-4 hidden" data-review-embed-container data-review-embed-url="{{ review_x_url }}">
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="space-y-1 text-xs text-gray-500 dark:text-gray-400">
+              <p data-review-embed-author class="font-semibold text-gray-700 dark:text-gray-200 hidden"></p>
+              <p data-review-embed-source class="hidden"></p>
+            </div>
+            <a href="{{ review_x_url }}" target="_blank" rel="noopener" class="text-xs font-semibold text-bitcoin hover:text-bitcoin/90 hidden" data-review-embed-link>
+              원문 보기
+              <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+          <p class="mt-3 text-sm text-gray-800 dark:text-gray-100 whitespace-pre-line" data-review-embed-text></p>
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 hidden" data-review-embed-loading>미리보기를 불러오는 중...</p>
+          <p class="mt-2 text-xs text-red-500 dark:text-red-400 hidden" data-review-embed-error></p>
+        </div>
+      </div>
+      {% endif %}
+    {% endwith %}
     {% if review.images.all %}
     <div class="mt-4 flex flex-wrap gap-3">
       {% for image in review.images.all %}

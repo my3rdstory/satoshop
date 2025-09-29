@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Optional, Tuple
 
@@ -18,6 +19,7 @@ from .services import (
     build_reviews_url,
     create_review_images,
     delete_review_image,
+    fetch_x_post_preview,
     get_paginated_reviews,
     upload_review_images,
     user_has_purchased_product,
@@ -341,6 +343,53 @@ class ReviewDeleteView(LoginRequiredMixin, View):
         if current_page != navigation['page']:
             navigation = build_reviews_url(store_id, product_id, current_page)
         return _success_response(request, navigation, html=html, page=current_page)
+
+
+class ReviewEmbedPreviewView(View):
+    http_method_names = ['get', 'post']
+
+    def _extract_url(self, request):
+        content_type = request.headers.get('Content-Type', '')
+        payload = {}
+
+        if request.method == 'GET':
+            payload = request.GET
+        elif 'application/json' in content_type:
+            try:
+                payload = json.loads(request.body.decode('utf-8') or '{}')
+            except json.JSONDecodeError:
+                payload = {}
+        else:
+            payload = request.POST
+
+        return (payload.get('url') or '').strip()
+
+    def _handle(self, request):
+        url = self._extract_url(request)
+        if not url:
+            return JsonResponse({'success': False, 'message': _('미리보기 URL을 입력해주세요.')}, status=400)
+
+        try:
+            preview = fetch_x_post_preview(url)
+        except ValueError as exc:
+            return JsonResponse({'success': False, 'message': str(exc)}, status=400)
+        except RuntimeError as exc:
+            logger.warning('ReviewEmbedPreviewView fetch failed: %s', exc, extra={'url': url})
+            return JsonResponse({'success': False, 'message': str(exc)}, status=502)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.exception('ReviewEmbedPreviewView unexpected error', extra={'url': url})
+            return JsonResponse(
+                {'success': False, 'message': _('X 게시글 정보를 불러오지 못했습니다.')},
+                status=502,
+            )
+
+        return JsonResponse({'success': True, 'preview': preview})
+
+    def get(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        return self._handle(request)
+
+    def post(self, request, *args, **kwargs):  # pylint: disable=unused-argument
+        return self._handle(request)
 
 
 class ReviewImageDeleteView(LoginRequiredMixin, View):

@@ -1,5 +1,8 @@
 (function () {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const X_POST_URL_REGEX = /(https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/[A-Za-z0-9_]+\/status\/\d+(?:\?[^\s]*)?)/i;
+  const TRAILING_PUNCTUATION_REGEX = /[).,]+$/;
+  const EMBED_DEBOUNCE_MS = 350;
   let historyInitialized = false;
 
   function openModal(modal) {
@@ -368,6 +371,394 @@
     root.querySelectorAll('[data-review-dropzone]').forEach((zone) => setupDropzone(zone));
   }
 
+  function normalizeXPostUrl(url) {
+    if (!url) {
+      return '';
+    }
+    let trimmed = url.trim();
+    if (!trimmed) {
+      return '';
+    }
+    if (trimmed.slice(0, 7).toLowerCase() === 'http://') {
+      trimmed = `https://${trimmed.slice(7)}`;
+    }
+    return trimmed.replace(TRAILING_PUNCTUATION_REGEX, '');
+  }
+
+  function extractXPostUrl(text) {
+    if (!text) {
+      return null;
+    }
+    const match = text.match(X_POST_URL_REGEX);
+    if (!match) {
+      return null;
+    }
+    return normalizeXPostUrl(match[0]);
+  }
+
+  function createCsrfFetch() {
+    if (typeof window.fetchWithCsrf === 'function') {
+      return window.fetchWithCsrf;
+    }
+    return (url, options = {}) => {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+      const token = typeof window.getCsrfToken === 'function' ? window.getCsrfToken() : null;
+      if (token) {
+        headers['X-CSRFToken'] = token;
+      }
+      return fetch(url, {
+        ...options,
+        headers,
+        credentials: 'same-origin',
+      });
+    };
+  }
+
+  function resolveEmbedEndpoint(element) {
+    if (!element) {
+      return null;
+    }
+    if (element.dataset && element.dataset.reviewEmbedEndpoint) {
+      return element.dataset.reviewEmbedEndpoint;
+    }
+    if (typeof element.closest === 'function') {
+      const ancestor = element.closest('[data-review-embed-endpoint]');
+      if (ancestor && ancestor.dataset) {
+        return ancestor.dataset.reviewEmbedEndpoint || null;
+      }
+    }
+    return null;
+  }
+
+  const fetchEmbedPreview = (() => {
+    let cachedFetcher = null;
+    const cache = new Map();
+
+    return (endpoint, url, options = {}) => {
+      const { signal, useCache = true } = options || {};
+      const cacheKey = useCache ? url : null;
+
+      if (cacheKey && cache.has(cacheKey)) {
+        return cache.get(cacheKey);
+      }
+
+      if (!cachedFetcher) {
+        cachedFetcher = createCsrfFetch();
+      }
+
+      const request = cachedFetcher(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ url }),
+        signal,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            const error = new Error(`HTTP_${response.status}`);
+            error.status = response.status;
+            throw error;
+          }
+          return response.json();
+        })
+        .catch((error) => {
+          if (cacheKey) {
+            cache.delete(cacheKey);
+          }
+          throw error;
+        });
+
+      if (cacheKey) {
+        cache.set(cacheKey, request);
+      }
+
+      return request;
+    };
+  })();
+
+  function createEmbedView(wrapper) {
+    if (!wrapper) {
+      return null;
+    }
+
+    const authorElement = wrapper.querySelector('[data-review-embed-author]');
+    const sourceElement = wrapper.querySelector('[data-review-embed-source]');
+    const textElement = wrapper.querySelector('[data-review-embed-text]');
+    const linkElement = wrapper.querySelector('[data-review-embed-link]');
+    const loadingElement = wrapper.querySelector('[data-review-embed-loading]');
+    const errorElement = wrapper.querySelector('[data-review-embed-error]');
+    const fallbackLink = linkElement?.getAttribute('href') || null;
+
+    const showElement = (element, show = true) => {
+      if (!element) {
+        return;
+      }
+      element.classList.toggle('hidden', !show);
+    };
+
+    const clearContent = () => {
+      if (textElement) {
+        textElement.textContent = '';
+      }
+      if (authorElement) {
+        authorElement.textContent = '';
+        showElement(authorElement, false);
+      }
+      if (sourceElement) {
+        sourceElement.textContent = '';
+        showElement(sourceElement, false);
+      }
+      if (linkElement) {
+        if (fallbackLink) {
+          linkElement.setAttribute('href', fallbackLink);
+        } else {
+          linkElement.removeAttribute('href');
+        }
+        showElement(linkElement, false);
+      }
+    };
+
+    const hideStatuses = () => {
+      showElement(loadingElement, false);
+      showElement(errorElement, false);
+      if (errorElement) {
+        errorElement.textContent = '';
+      }
+    };
+
+    const showWrapper = () => {
+      wrapper.classList.remove('hidden');
+    };
+
+    const hideWrapper = () => {
+      wrapper.classList.add('hidden');
+      clearContent();
+      hideStatuses();
+    };
+
+    return {
+      showLoading() {
+        showWrapper();
+        hideStatuses();
+        clearContent();
+        showElement(loadingElement, true);
+      },
+      showError(message) {
+        showWrapper();
+        hideStatuses();
+        clearContent();
+        if (errorElement) {
+          errorElement.textContent = message || '미리보기를 불러오지 못했습니다.';
+          showElement(errorElement, true);
+        }
+      },
+      showPreview(preview) {
+        if (!preview) {
+          hideWrapper();
+          return;
+        }
+        showWrapper();
+        hideStatuses();
+
+        if (textElement) {
+          textElement.textContent = preview.text || '';
+        }
+
+        if (authorElement) {
+          if (preview.author_name) {
+            authorElement.textContent = `작성자: ${preview.author_name}`;
+            showElement(authorElement, true);
+          } else {
+            showElement(authorElement, false);
+          }
+        }
+
+        if (sourceElement) {
+          const provider = preview.provider_name || 'X';
+          sourceElement.textContent = `출처: ${provider}`;
+          showElement(sourceElement, true);
+        }
+
+        if (linkElement) {
+          const linkUrl = preview.url || fallbackLink;
+          if (linkUrl) {
+            linkElement.setAttribute('href', linkUrl);
+            showElement(linkElement, true);
+          } else {
+            showElement(linkElement, false);
+          }
+        }
+      },
+      hide() {
+        hideWrapper();
+      },
+    };
+  }
+
+  function setupEmbedPreview(modal, form, contentInput) {
+    if (!modal || !form || !contentInput) {
+      return;
+    }
+    if (modal.dataset.reviewEmbedInitialized === '1') {
+      return;
+    }
+
+    const endpoint = form.dataset.reviewEmbedEndpoint;
+    if (!endpoint) {
+      return;
+    }
+
+    const wrapper = modal.querySelector('[data-review-embed-wrapper]');
+    if (!wrapper) {
+      return;
+    }
+
+    const view = createEmbedView(wrapper);
+    if (!view) {
+      return;
+    }
+
+    modal.dataset.reviewEmbedInitialized = '1';
+
+    const clearButton = wrapper.querySelector('[data-review-embed-clear]');
+
+    let currentUrl = null;
+    let debounceTimer = null;
+    let abortController = null;
+
+    const resetView = () => {
+      if (abortController) {
+        abortController.abort();
+      }
+      abortController = null;
+      currentUrl = null;
+      view.hide();
+    };
+
+    const requestPreview = (url) => {
+      if (abortController) {
+        abortController.abort();
+      }
+      abortController = new AbortController();
+      const requestedUrl = url;
+
+      view.showLoading();
+      fetchEmbedPreview(endpoint, url, { signal: abortController.signal })
+        .then((payload) => {
+          if (!payload) {
+            throw new Error('EMPTY_RESPONSE');
+          }
+          if (!payload.success) {
+            const error = new Error(payload.message || '미리보기를 불러오지 못했습니다.');
+            error.userMessage = payload.message;
+            throw error;
+          }
+          if (currentUrl !== requestedUrl) {
+            return;
+          }
+          view.showPreview(payload.preview);
+        })
+        .catch((error) => {
+          if (error && error.name === 'AbortError') {
+            return;
+          }
+          if (currentUrl !== requestedUrl) {
+            return;
+          }
+          const message = (error && error.userMessage) || '미리보기를 불러오지 못했습니다.';
+          view.showError(message);
+        });
+    };
+
+    const handleContentChange = () => {
+      const url = extractXPostUrl(contentInput.value);
+      if (!url) {
+        resetView();
+        return;
+      }
+      if (url === currentUrl) {
+        return;
+      }
+      currentUrl = url;
+      requestPreview(url);
+    };
+
+    const scheduleContentCheck = () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(handleContentChange, EMBED_DEBOUNCE_MS);
+    };
+
+    contentInput.addEventListener('input', scheduleContentCheck);
+    contentInput.addEventListener('paste', () => {
+      setTimeout(scheduleContentCheck, 0);
+    });
+
+    if (clearButton) {
+      clearButton.addEventListener('click', () => {
+        resetView();
+      });
+    }
+
+    modal.addEventListener('modal:open', () => {
+      setTimeout(scheduleContentCheck, 0);
+    });
+
+    modal.addEventListener('modal:close', () => {
+      resetView();
+    });
+  }
+
+  function setupReviewListEmbeds(root = document) {
+    if (!root) {
+      return;
+    }
+
+    root.querySelectorAll('[data-review-embed-container]').forEach((container) => {
+      if (container.dataset.reviewEmbedInitialized === '1') {
+        return;
+      }
+
+      const url = normalizeXPostUrl(container.dataset.reviewEmbedUrl || '');
+      if (!url) {
+        return;
+      }
+
+      const endpoint = resolveEmbedEndpoint(container);
+      if (!endpoint) {
+        return;
+      }
+
+      const view = createEmbedView(container);
+      if (!view) {
+        return;
+      }
+
+      container.dataset.reviewEmbedInitialized = '1';
+      container.dataset.reviewEmbedUrl = url;
+
+      view.showLoading();
+      fetchEmbedPreview(endpoint, url)
+        .then((payload) => {
+          if (!payload) {
+            throw new Error('EMPTY_RESPONSE');
+          }
+          if (!payload.success) {
+            const error = new Error(payload.message || '미리보기를 불러오지 못했습니다.');
+            error.userMessage = payload.message;
+            throw error;
+          }
+          view.showPreview(payload.preview);
+        })
+        .catch((error) => {
+          const message = (error && error.userMessage) || '미리보기를 불러오지 못했습니다.';
+          view.showError(message);
+        });
+    });
+  }
+
   function setupDeleteConfirm(root = document) {
     root.querySelectorAll('form[data-confirm-message]').forEach((form) => {
       if (form.dataset.reviewConfirmInitialized === '1') {
@@ -595,7 +986,8 @@
     }
 
     const [fetchUrl] = url.split('#');
-    const requestUrl = new URL(fetchUrl, window.location.origin);
+    const baseUrl = window.location.href;
+    const requestUrl = new URL(fetchUrl, baseUrl);
     requestUrl.searchParams.set('fragment', 'reviews');
 
     reviewsContent.classList.add('opacity-50', 'pointer-events-none');
@@ -751,6 +1143,10 @@
         });
       }
 
+      if (modal && form && contentInput) {
+        setupEmbedPreview(modal, form, contentInput);
+      }
+
       if (form && form.dataset.reviewSubmitLoadingInitialized !== '1') {
         form.dataset.reviewSubmitLoadingInitialized = '1';
         form.addEventListener('submit', () => {
@@ -777,6 +1173,7 @@
     setupDeleteConfirm(root);
     setupAjaxForms(root);
     setupSubmitState(root);
+    setupReviewListEmbeds(root);
     setupPagination();
   }
 
