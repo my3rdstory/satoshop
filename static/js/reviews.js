@@ -383,48 +383,267 @@
     });
   }
 
-  function loadReviews(url, pushHistory = true) {
-    const reviewsContent = document.getElementById('reviewsContent');
-    if (!reviewsContent) {
+  function formatReviewErrors(errors) {
+    if (!errors) {
+      return null;
+    }
+
+    if (Array.isArray(errors)) {
+      return errors
+        .map((item) => {
+          if (!item) {
+            return null;
+          }
+          if (typeof item === 'string') {
+            return item;
+          }
+          if (typeof item === 'object' && 'message' in item) {
+            return item.message;
+          }
+          return String(item);
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    if (typeof errors === 'object') {
+      const messages = [];
+      Object.values(errors).forEach((value) => {
+        if (!value) {
+          return;
+        }
+        if (Array.isArray(value)) {
+          const nested = formatReviewErrors(value);
+          if (nested) {
+            messages.push(nested);
+          }
+          return;
+        }
+        if (typeof value === 'object' && 'message' in value) {
+          messages.push(value.message);
+          return;
+        }
+        messages.push(String(value));
+      });
+      return messages.join('\n');
+    }
+
+    return String(errors);
+  }
+
+  function setFormError(form, message) {
+    const errorElement = form.querySelector('[data-review-error]');
+    if (!errorElement) {
+      if (message) {
+        console.warn('[Reviews] Form error:', message);
+      }
       return;
     }
 
-    const [fetchUrl, hash] = url.split('#');
+    if (message) {
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+    } else {
+      errorElement.textContent = '';
+      errorElement.classList.add('hidden');
+    }
+  }
+
+  function setupAjaxForms(root = document) {
+    root.querySelectorAll('form[data-review-form]').forEach((form) => {
+      if (form.dataset.reviewFormAjaxInitialized === '1') {
+        return;
+      }
+      form.dataset.reviewFormAjaxInitialized = '1';
+
+      form.addEventListener('submit', (event) => {
+        if (event.defaultPrevented) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        const submitButton =
+          form.querySelector('[data-review-submit]') || form.querySelector('button[type="submit"]');
+        const modal = form.closest('[data-review-modal]');
+        const formType = form.dataset.reviewForm;
+
+        const setLoadingState = (isLoading) => {
+          if (typeof form.__reviewsSetLoadingState === 'function') {
+            form.__reviewsSetLoadingState(isLoading);
+            return;
+          }
+          if (!submitButton) {
+            return;
+          }
+          if (isLoading) {
+            submitButton.disabled = true;
+            submitButton.classList.add('cursor-wait');
+            submitButton.setAttribute('aria-busy', 'true');
+          } else {
+            submitButton.disabled = false;
+            submitButton.classList.remove('cursor-wait');
+            submitButton.removeAttribute('aria-busy');
+          }
+        };
+
+        const revalidateButtonState = () => {
+          if (typeof form.__reviewsToggleSubmitState === 'function') {
+            form.__reviewsToggleSubmitState();
+          }
+        };
+
+        const requestOptions = {
+          method: (form.getAttribute('method') || 'post').toUpperCase(),
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: new FormData(form),
+          credentials: 'same-origin',
+        };
+
+        setFormError(form, null);
+        setLoadingState(true);
+
+        fetch(form.getAttribute('action'), requestOptions)
+          .then((response) => {
+            if (response.status === 403) {
+              throw new Error('FORBIDDEN');
+            }
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+              return response.json();
+            }
+            return response.text().then((text) => {
+              throw new Error(text || 'UNEXPECTED_RESPONSE');
+            });
+          })
+          .then((data) => {
+            if (!data || !data.success) {
+              const message = data && (data.message || formatReviewErrors(data.errors));
+              setFormError(form, message || '요청을 처리하지 못했습니다.');
+              throw new Error('VALIDATION');
+            }
+
+            const reviewsUrl = data.reviews_url || data.anchor || data.url || window.location.href;
+            if (modal) {
+              closeModal(modal);
+            }
+
+            const reviewsContent = document.getElementById('reviewsContent');
+            let updatePromise;
+
+            if (data.html && reviewsContent) {
+              reviewsContent.innerHTML = data.html;
+              setupReviewComponents(reviewsContent);
+              if (data.page) {
+                updateReviewCurrentPage(data.page);
+              }
+              if (data.anchor || data.url) {
+                const historyUrl = data.anchor || data.url;
+                window.history.pushState({ reviewsUrl: historyUrl }, '', historyUrl);
+              }
+              updatePromise = Promise.resolve({ page: data.page });
+            } else {
+              updatePromise = loadReviews(reviewsUrl, true);
+            }
+
+            return updatePromise.then((payload) => {
+              setFormError(form, null);
+              if (formType === 'create') {
+                form.reset();
+                updateReviewCurrentPage((payload && payload.page) || data.page || 1);
+              }
+              return data;
+            });
+          })
+          .catch((error) => {
+            if (error.message === 'VALIDATION') {
+              return;
+            }
+            if (error.message === 'FORBIDDEN') {
+              setFormError(form, '권한이 없습니다.');
+              return;
+            }
+            console.error('[Reviews] 요청 처리 중 오류', error);
+            window.location.href = form.getAttribute('action');
+          })
+          .finally(() => {
+            setLoadingState(false);
+            revalidateButtonState();
+          });
+      });
+    });
+  }
+
+  function updateReviewCurrentPage(page) {
+    if (!page) {
+      return;
+    }
+    document.querySelectorAll('[data-review-current-page]').forEach((input) => {
+      if (input instanceof HTMLInputElement) {
+        input.value = String(page);
+      }
+    });
+  }
+
+  function loadReviews(url, pushHistory = true) {
+    const reviewsContent = document.getElementById('reviewsContent');
+    if (!reviewsContent) {
+      return Promise.resolve(null);
+    }
+
+    const [fetchUrl] = url.split('#');
+    const requestUrl = new URL(fetchUrl, window.location.origin);
+    requestUrl.searchParams.set('fragment', 'reviews');
+
     reviewsContent.classList.add('opacity-50', 'pointer-events-none');
 
-    fetch(fetchUrl, {
+    return fetch(requestUrl.toString(), {
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
       },
+      credentials: 'same-origin',
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
-        return response.text();
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          return response.json();
+        }
+        return response.text().then((text) => {
+          throw new Error(`Unexpected response: ${text.slice(0, 100)}`);
+        });
       })
-      .then((html) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const newContent = doc.getElementById('reviewsContent');
-        if (!newContent) {
-          window.location.href = url;
-          return;
+      .then((payload) => {
+        if (!payload || typeof payload.html !== 'string') {
+          throw new Error('Invalid review fragment payload');
         }
-        reviewsContent.replaceWith(newContent);
-        const finalUrl = hash ? `${fetchUrl}#${hash}` : fetchUrl;
+        reviewsContent.innerHTML = payload.html;
+        updateReviewCurrentPage(payload.page);
+        setupReviewComponents(reviewsContent);
+
+        const historyUrl = payload.anchor || payload.url || fetchUrl;
+        if (pushHistory && historyUrl) {
+          window.history.pushState({ reviewsUrl: historyUrl }, '', historyUrl);
+        }
+
         if (pushHistory) {
-          window.history.pushState({ reviewsUrl: finalUrl }, '', finalUrl);
+          const reviewsSection = document.getElementById('reviews');
+          if (reviewsSection) {
+            reviewsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
         }
-        setupReviewComponents(document);
-        const reviewsSection = document.getElementById('reviews');
-        if (reviewsSection) {
-          reviewsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+
+        return payload;
       })
       .catch((error) => {
         console.error('[Reviews] Failed to load review page', error);
         window.location.href = url;
+        throw error;
       })
       .finally(() => {
         const refreshedContent = document.getElementById('reviewsContent');
@@ -498,6 +717,7 @@
           }
           submitButton.classList.remove('cursor-wait');
           submitButton.removeAttribute('aria-busy');
+          toggleButtonState();
         }
       };
 
@@ -509,6 +729,11 @@
           submitButton.disabled = !isValid;
         }
       };
+
+      if (form) {
+        form.__reviewsSetLoadingState = setLoadingState;
+        form.__reviewsToggleSubmitState = toggleButtonState;
+      }
 
       if (ratingInput && ratingInput.dataset.reviewSubmitListener !== '1') {
         ratingInput.dataset.reviewSubmitListener = '1';
@@ -550,6 +775,7 @@
     initRatingControls(root);
     initDropzones(root);
     setupDeleteConfirm(root);
+    setupAjaxForms(root);
     setupSubmitState(root);
     setupPagination();
   }

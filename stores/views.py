@@ -6,8 +6,7 @@ from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
 from django.db import transaction, models
 from django.utils import timezone
-from django.db.models import Q, Max, Avg
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.db.models import Q, Max
 import json
 import qrcode
 import io
@@ -25,10 +24,15 @@ from orders.models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory
 )
 from django.conf import settings
+from django.template.loader import render_to_string
 from storage.utils import upload_store_image, delete_file_from_s3
 from myshop.services import UpbitExchangeService
-from reviews.models import Review
-from reviews.services import MAX_IMAGES_PER_REVIEW, user_has_purchased_product
+from reviews.services import (
+    MAX_IMAGES_PER_REVIEW,
+    build_reviews_url,
+    get_paginated_reviews,
+    user_has_purchased_product,
+)
 
 from .cache_utils import get_store_browse_cache, set_store_browse_cache
 
@@ -1909,30 +1913,33 @@ def product_detail(request, store_id, product_id):
             'override_free': True,
         }
 
-    reviews_qs = (
-        Review.objects.filter(product=product)
-        .select_related('author')
-        .prefetch_related('images')
-        .order_by('-created_at', '-id')
-    )
-
-    reviews_paginator = Paginator(reviews_qs, 5)
     reviews_page_number = request.GET.get('page') or 1
-    try:
-        reviews_page = reviews_paginator.page(reviews_page_number)
-    except PageNotAnInteger:
-        reviews_page = reviews_paginator.page(1)
-    except EmptyPage:
-        last_page = reviews_paginator.num_pages or 1
-        reviews_page = reviews_paginator.page(last_page)
-
-    review_stats = reviews_qs.aggregate(avg_rating=Avg('rating'))
-    average_rating = review_stats.get('avg_rating') or 0
-    total_reviews = reviews_paginator.count
+    review_context = get_paginated_reviews(product, reviews_page_number)
+    reviews_page = review_context['reviews_page']
 
     can_write_review = False
     if request.user.is_authenticated:
         can_write_review = user_has_purchased_product(request.user, product)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.GET.get('fragment') == 'reviews':
+        navigation = build_reviews_url(store.store_id, product.id, reviews_page.number)
+        html = render_to_string(
+            'products/partials/reviews_content.html',
+            {
+                'store': store,
+                'product': product,
+                **review_context,
+            },
+            request=request,
+        )
+        return JsonResponse(
+            {
+                'html': html,
+                'page': navigation['page'],
+                'url': navigation['path'],
+                'anchor': navigation['anchor'],
+            }
+        )
 
     context = {
         'store': store,
@@ -1944,9 +1951,7 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
         'store_shipping': store_shipping,
         'product_shipping': product_shipping,
-        'reviews_page': reviews_page,
-        'review_average': average_rating,
-        'review_total': total_reviews,
+        **review_context,
         'can_write_review': can_write_review,
         'max_review_images': MAX_IMAGES_PER_REVIEW,
     }

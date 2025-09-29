@@ -25,73 +25,7 @@
     </div>
 
     <div id="reviewsContent">
-      {% if reviews_page.object_list %}
-      <div class="divide-y divide-gray-200 dark:divide-gray-700 mt-8">
-        {% for review in reviews_page.object_list %}
-        <article class="py-6">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1">
-                  {% for _ in '12345'|make_list %}
-                  <i class="fas fa-star {% if forloop.counter <= review.rating %}text-yellow-400{% else %}text-gray-300{% endif %}"></i>
-                  {% endfor %}
-                </div>
-                <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ review.rating }}점</span>
-              </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {{ review.author.get_full_name|default:review.author.username|mask_middle }} · {{ review.created_at|date:"Y.m.d H:i" }}
-              </div>
-            </div>
-            {% if user == review.author %}
-            <form method="post" action="{% url 'reviews:delete' store.store_id product.id review.id %}" class="flex items-center gap-2" data-confirm-message="해당 후기를 삭제하시겠습니까?">
-              {% csrf_token %}
-              <input type="hidden" name="page" value="{{ reviews_page.number }}">
-              <button type="submit" class="px-3 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">삭제</button>
-            </form>
-            {% endif %}
-          </div>
-          <div class="mt-4 text-gray-800 dark:text-gray-100 whitespace-pre-line leading-relaxed">{{ review.content|truncatechars:1000 }}</div>
-          {% if review.images.all %}
-          <div class="mt-4 flex flex-wrap gap-3">
-            {% for image in review.images.all %}
-            <div class="relative group">
-              <img src="{{ image.file_url }}" alt="구입 후기 이미지" class="w-32 h-32 object-cover rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-              {% if user == review.author %}
-              <form method="post" action="{% url 'reviews:delete_image' store.store_id product.id review.id image.id %}" class="absolute top-2 right-2" data-confirm-message="해당 이미지를 삭제하시겠습니까?">
-                {% csrf_token %}
-                <input type="hidden" name="page" value="{{ reviews_page.number }}">
-                <button type="submit" class="bg-black/60 text-white text-xs px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition">삭제</button>
-              </form>
-              {% endif %}
-            </div>
-            {% endfor %}
-          </div>
-          {% endif %}
-        </article>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="mt-8 text-center text-gray-500 dark:text-gray-400 py-12 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-        아직 등록된 후기가 없습니다. 첫 번째 후기를 남겨보세요!
-      </div>
-      {% endif %}
-
-      {% if reviews_page.paginator.num_pages > 1 %}
-      <div class="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6" data-review-pagination>
-        {% if reviews_page.has_previous %}
-        <a href="?page={{ reviews_page.previous_page_number }}#reviews" class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-review-page-link>이전</a>
-        {% else %}
-        <span class="px-4 py-2 text-sm text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg cursor-not-allowed">이전</span>
-        {% endif %}
-        <span class="text-sm text-gray-500 dark:text-gray-400">페이지 {{ reviews_page.number }} / {{ reviews_page.paginator.num_pages }}</span>
-        {% if reviews_page.has_next %}
-        <a href="?page={{ reviews_page.next_page_number }}#reviews" class="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-review-page-link>다음</a>
-        {% else %}
-        <span class="px-4 py-2 text-sm text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg cursor-not-allowed">다음</span>
-        {% endif %}
-      </div>
-      {% endif %}
+      {% include 'products/partials/reviews_content.html' %}
     </div>
   </div>
 </div>
@@ -103,14 +37,18 @@
         <i class="fas fa-times text-xl"></i>
       </button>
     </div>
-    <form method="post" action="{% url 'reviews:create' store.store_id product.id %}" enctype="multipart/form-data">
+    <form method="post"
+          action="{% url 'reviews:create' store.store_id product.id %}"
+          enctype="multipart/form-data"
+          data-review-form="create">
       {% csrf_token %}
-      <input type="hidden" name="page" value="{{ reviews_page.number }}">
+      <input type="hidden" name="page" value="{{ reviews_page.number }}" data-review-current-page>
       <div class="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
         <div>
           <h3 class="text-xl font-bold text-gray-900 dark:text-white">구입 후기 작성</h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">실제 구매 경험을 기반으로 솔직한 후기를 들려주세요.</p>
         </div>
+        <div class="hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600" data-review-error></div>
         <div data-rating-control>
           <input type="hidden" name="rating" id="createReviewRating" value="0" data-default="0" data-review-rating-input>
           <label class="text-sm font-semibold text-gray-700 dark:text-gray-200">평점</label>

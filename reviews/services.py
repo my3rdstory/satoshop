@@ -8,7 +8,10 @@ import logging
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
+from django.core.paginator import Paginator
 from django.db import models
+from django.db.models import Avg
+from django.urls import reverse
 from PIL import Image, ImageOps
 
 from orders.models import OrderItem, PurchaseHistory
@@ -40,6 +43,7 @@ QUALIFIED_ORDER_STATUSES = {'paid', 'shipped', 'delivered'}
 MAX_IMAGES_PER_REVIEW = 5
 MAX_REVIEW_IMAGE_WIDTH = 1000
 WEBP_QUALITY = 85
+REVIEWS_PER_PAGE = 5
 
 
 @dataclass
@@ -69,6 +73,48 @@ def user_has_purchased_product(user, product) -> bool:
         order__items__product=product,
         order__status__in=qualified_statuses,
     ).exists()
+
+
+def get_paginated_reviews(product, page_number=None):
+    """리뷰 목록과 통계 정보를 페이지네이션과 함께 반환"""
+    reviews_qs = (
+        Review.objects.filter(product=product)
+        .select_related('author')
+        .prefetch_related('images')
+        .order_by('-created_at', '-id')
+    )
+
+    paginator = Paginator(reviews_qs, REVIEWS_PER_PAGE)
+    reviews_page = paginator.get_page(page_number or 1)
+
+    stats = reviews_qs.aggregate(avg_rating=Avg('rating'))
+    average_rating = stats.get('avg_rating') or 0
+    total_reviews = paginator.count
+
+    return {
+        'reviews_page': reviews_page,
+        'review_average': average_rating,
+        'review_total': total_reviews,
+    }
+
+
+def build_reviews_url(store_id: str, product_id: int, page_number=None) -> dict:
+    """리뷰 앵커 페이지로 이동하기 위한 URL 정보를 구성"""
+    base_url = reverse('products:product_detail', args=[store_id, product_id])
+
+    try:
+        page_int = int(page_number) if page_number is not None else 1
+    except (TypeError, ValueError):
+        page_int = 1
+
+    if page_int > 1:
+        base_url = f"{base_url}?page={page_int}"
+
+    return {
+        'path': base_url,
+        'anchor': f"{base_url}#reviews",
+        'page': max(page_int, 1),
+    }
 
 
 def process_image(uploaded_file: UploadedFile) -> ProcessedImage:
