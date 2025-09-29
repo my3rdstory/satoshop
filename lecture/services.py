@@ -12,6 +12,15 @@ from django.template import Context, Template
 logger = logging.getLogger(__name__)
 
 
+def _localize_datetime(dt):
+    """Return the datetime converted to the current timezone."""
+    if not dt:
+        return None
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt)
+
+
 def send_live_lecture_notification_email(live_lecture_order):
     """
     라이브 강의 참가 확정 시 스토어 주인장에게 이메일 발송
@@ -66,17 +75,22 @@ def send_live_lecture_notification_email(live_lecture_order):
         subject = f'[{store.store_name}] 새로운 라이브 강의 참가 신청 - {live_lecture_order.order_number}'
         
         # TXT 참가확인서 내용 생성 (단순한 문자열로 생성)
+        confirmed_local = _localize_datetime(live_lecture_order.confirmed_at)
+        lecture_time_local = _localize_datetime(live_lecture_order.live_lecture.date_time)
+
+        confirmed_text = confirmed_local.strftime('%Y년 %m월 %d일 %H시 %M분') if confirmed_local else '미확정'
+
         lecture_content = f"""
 ▣ 라이브 강의 참가 확정 내역
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 강의명: {live_lecture_order.live_lecture.name}
 주문번호: {live_lecture_order.order_number}
 참가자: {live_lecture_order.user.username} ({live_lecture_order.user.email})
-참가 확정일시: {live_lecture_order.confirmed_at.strftime('%Y년 %m월 %d일 %H시 %M분') if live_lecture_order.confirmed_at else '미확정'}
+참가 확정일시: {confirmed_text}
 """
-        
-        if live_lecture_order.live_lecture.date_time:
-            lecture_content += f"강의 일시: {live_lecture_order.live_lecture.date_time.strftime('%Y년 %m월 %d일 (%A) %H시 %M분')}\n"
+
+        if lecture_time_local:
+            lecture_content += f"강의 일시: {lecture_time_local.strftime('%Y년 %m월 %d일 (%A) %H시 %M분')}\n"
         
         if live_lecture_order.price > 0:
             lecture_content += f"결제금액: {live_lecture_order.price:,.0f} sats\n"
@@ -201,11 +215,12 @@ def send_live_lecture_participant_confirmation_email(live_lecture_order):
                 template_content = f.read()
             
             template = Template(template_content)
+            confirmed_context = _localize_datetime(live_lecture_order.confirmed_at) or _localize_datetime(timezone.now())
             context = Context({
                 'store': store,
                 'live_lecture': live_lecture_order.live_lecture,
                 'user': live_lecture_order.user,
-                'confirmed_at': live_lecture_order.confirmed_at or timezone.now(),
+                'confirmed_at': confirmed_context,
                 'order_number': live_lecture_order.order_number,
                 'total_price': live_lecture_order.price
             })
