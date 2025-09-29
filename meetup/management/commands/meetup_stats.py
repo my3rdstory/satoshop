@@ -234,7 +234,7 @@ class Command(BaseCommand):
                         f'{attendance_rate:.1f}',
                         revenue,
                         f'{avg_price:.0f}',
-                        meetup.created_at.strftime('%Y-%m-%d')
+                        timezone.localtime(meetup.created_at).strftime('%Y-%m-%d')
                     ])
             
             self.stdout.write(

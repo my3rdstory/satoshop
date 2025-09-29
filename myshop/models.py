@@ -69,7 +69,7 @@ class ExchangeRate(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"1 BTC = {self.btc_krw_rate:,} KRW ({self.created_at.strftime('%Y-%m-%d %H:%M:%S')})"
+        return f"1 BTC = {self.btc_krw_rate:,} KRW ({timezone.localtime(self.created_at).strftime('%Y-%m-%d %H:%M:%S')})"
     
     @classmethod
     def get_latest_rate(cls):

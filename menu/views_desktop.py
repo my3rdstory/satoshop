@@ -292,7 +292,8 @@ def process_free_order_desktop(request, store_id):
             import uuid
             
             # 무료 주문용 고유 해시 생성
-            payment_hash = f"FREE-{timezone.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+            payment_time = timezone.localtime(timezone.now())
+            payment_hash = f"FREE-{payment_time.strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
             
             # 주문 생성
             menu_order = MenuOrder.objects.create(

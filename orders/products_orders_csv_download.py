@@ -165,7 +165,7 @@ def export_product_orders_csv(request, store, product):
             item.product_price,
             item.options_price,
             item.total_price,
-            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
             order.get_status_display(),
             order.get_delivery_status_display(),
             options_str,
@@ -311,7 +311,7 @@ def export_product_orders_excel(request, store, product):
             ws.cell(row=row, column=4, value=item.product_price)
             ws.cell(row=row, column=5, value=item.options_price)
             ws.cell(row=row, column=6, value=item.total_price)
-            ws.cell(row=row, column=7, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
+            ws.cell(row=row, column=7, value=timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'))
             ws.cell(row=row, column=8, value=order.get_status_display())
             ws.cell(row=row, column=9, value=order.get_delivery_status_display())
             ws.cell(row=row, column=10, value=options_str)

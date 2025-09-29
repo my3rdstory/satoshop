@@ -586,7 +586,8 @@ def export_meetup_participants_csv(request, store_id, meetup_id):
     
     # CSV 응답 생성
     response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = f'attachment; filename="{meetup.name}_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+    generated_at = timezone.localtime(timezone.now())
+    response['Content-Disposition'] = f'attachment; filename="{meetup.name}_participants_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
     response.write('\ufeff'.encode('utf8'))  # BOM for Excel
     
     writer = csv.writer(response)
@@ -636,7 +637,7 @@ def export_meetup_participants_csv(request, store_id, meetup_id):
             "예" if participant.is_early_bird else "아니오",
             participant.payment_hash or '',
             participant.paid_at.strftime('%Y-%m-%d %H:%M:%S') if participant.paid_at else '',
-            participant.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            timezone.localtime(participant.created_at).strftime('%Y-%m-%d %H:%M:%S'),
             "참석" if participant.attended else "미참석",
             participant.attended_at.strftime('%Y-%m-%d %H:%M:%S') if participant.attended_at else '',
             options_text

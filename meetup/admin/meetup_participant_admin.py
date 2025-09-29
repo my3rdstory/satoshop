@@ -149,7 +149,7 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
     
     def created_at_display(self, obj):
         """신청일시 표시"""
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return timezone.localtime(obj.created_at).strftime('%Y.%m.%d %H:%M')
     created_at_display.short_description = '신청일시'
     created_at_display.admin_order_field = 'created_at'
     
@@ -188,7 +188,8 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_participant_entries_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_participant_entries_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -254,7 +255,7 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
                 f"{order.total_price:,}",
                 payment_status,
                 order.payment_hash or '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                 order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                 order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
                 "예" if order.is_early_bird else "아니오",
@@ -408,7 +409,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 latest_order.meetup.store.store_name,
                 status_color,
                 status_label,
-                latest_order.created_at.strftime('%Y.%m.%d')
+                timezone.localtime(latest_order.created_at).strftime('%Y.%m.%d')
             )
         return '-'
     latest_meetup.short_description = '최근 신청 밋업'
@@ -477,7 +478,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">'
                 f'<span style="color: {status_color}; font-weight: bold;">● {status_label}</span></td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; color: #28a745;">{price_display}</td>'
-                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{order.created_at.strftime("%Y.%m.%d %H:%M")}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{timezone.localtime(order.created_at).strftime("%Y.%m.%d %H:%M")}</td>'
                 f'</tr>'
             )
         
@@ -504,7 +505,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -607,7 +609,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         "예" if order.is_early_bird else "아니오",
                         order.payment_hash or '',
                         order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                        order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                        timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                         order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                         "참석" if order.attended else "미참석",
                         order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',

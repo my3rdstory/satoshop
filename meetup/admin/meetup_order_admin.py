@@ -145,7 +145,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     
     def created_at_display(self, obj):
         """신청일시 표시"""
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return timezone.localtime(obj.created_at).strftime('%Y.%m.%d %H:%M')
     created_at_display.short_description = '신청일시'
     created_at_display.admin_order_field = 'created_at'
     
@@ -350,7 +350,8 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_orders_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_orders_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -404,7 +405,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                 "예" if order.is_early_bird else "아니오",
                 order.payment_hash or '',
                 order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                 order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                 "참석" if order.attended else "미참석",
                 order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
@@ -430,7 +431,8 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="all_meetup_orders_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="all_meetup_orders_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -484,7 +486,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                 "예" if order.is_early_bird else "아니오",
                 order.payment_hash or '',
                 order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                 order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
                 "참석" if order.attended else "미참석",
                 order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',

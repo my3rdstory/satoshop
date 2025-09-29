@@ -612,7 +612,7 @@ def export_orders_csv(request, store_id):
             ws.cell(row=row, column=3, value=item.quantity)
             ws.cell(row=row, column=4, value=item.product_price)
             ws.cell(row=row, column=5, value=item.total_price)
-            ws.cell(row=row, column=6, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
+            ws.cell(row=row, column=6, value=timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'))
             ws.cell(row=row, column=7, value=order.get_status_display())
             ws.cell(row=row, column=8, value=order.buyer_name)
             phone_cell = ws.cell(row=row, column=9, value=str(order.buyer_phone or ''))
@@ -668,7 +668,7 @@ def export_orders_csv(request, store_id):
                 item.quantity,
                 item.product_price,
                 item.total_price,
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
                 order.get_status_display(),
                 order.buyer_name,
                 _format_text_for_csv(order.buyer_phone),
@@ -833,7 +833,8 @@ def shipping_info(request):
                 from django.utils import timezone
                 
                 # 임시 결제 해시 생성 (무료 주문용)
-                payment_hash = f"FREE-{timezone.now().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
+                payment_time = timezone.localtime(timezone.now())
+                payment_hash = f"FREE-{payment_time.strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:8].upper()}"
                 
                 # 주문 생성
                 order_result = create_order_from_cart_service(request, payment_hash, shipping_data)
@@ -2055,7 +2056,8 @@ def download_order_txt_public(request, order_number):
     response = HttpResponse(content_with_bom, content_type='text/plain; charset=utf-8')
     
     # 파일명 인코딩 처리 (모바일 브라우저 호환성 개선)
-    filename = f"주문서_{order.order_number}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    generated_at = timezone.localtime(timezone.now())
+    filename = f"주문서_{order.order_number}_{generated_at.strftime('%Y%m%d_%H%M%S')}.txt"
     try:
         # RFC 5987 방식으로 UTF-8 파일명 인코딩
         from urllib.parse import quote
@@ -2063,7 +2065,7 @@ def download_order_txt_public(request, order_number):
         response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{encoded_filename}'
     except:
         # 백업 방식: 영문 파일명 사용
-        fallback_filename = f"order_{order.order_number}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        fallback_filename = f"order_{order.order_number}_{generated_at.strftime('%Y%m%d_%H%M%S')}.txt"
         response['Content-Disposition'] = f'attachment; filename="{fallback_filename}"'
     
     return response

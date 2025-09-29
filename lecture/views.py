@@ -834,7 +834,7 @@ def export_live_lecture_participants_csv(request, store_id, live_lecture_id):
             order.user.email,
             f"{order.price} sats" if order.price > 0 else "무료",
             order.order_number,
-            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
             order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
             '참가확정' if order.status == 'confirmed' else '신청완료' if order.status == 'completed' else '취소됨'
         ]
