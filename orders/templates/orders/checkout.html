@@ -2,276 +2,73 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}결제 진행{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'ln_payment/css/payment_workflow.css' %}">
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'ln_payment/js/payment_workflow.js' %}"></script>
-{% endblock %}
+{% block title %}결제 준비{% endblock %}
 
 {% block store_content %}
-<div id="paymentWorkflowApp"
-     class="py-12 bg-gray-50 dark:bg-gray-900"
-     data-start-url="{% url 'ln_payment:workflow_start' %}"
-     data-status-url-template="{% url 'ln_payment:workflow_status' transaction_id='11111111-1111-1111-1111-111111111111' %}"
-     data-verify-url-template="{% url 'ln_payment:workflow_verify' transaction_id='11111111-1111-1111-1111-111111111111' %}"
-     data-recreate-url-template="{% url 'ln_payment:workflow_recreate_invoice' transaction_id='11111111-1111-1111-1111-111111111111' %}"
-     data-cancel-url-template="{% url 'ln_payment:workflow_cancel' transaction_id='11111111-1111-1111-1111-111111111111' %}"
-     data-csrf-token="{{ csrf_token }}">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
-      <div>
-        <p class="text-sm uppercase tracking-wide text-bitcoin font-semibold">Checkout</p>
-        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mt-2">주문 내역을 확인하고 결제를 진행하세요</h1>
-        <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-2xl">
-          모든 결제 단계는 안전하게 기록되며, 문제가 발생하면 언제든지 스토어 관리자에게 문의하실 수 있습니다.
-        </p>
-      </div>
-      <div class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 shadow-sm">
-        <i class="fas fa-shield-alt text-bitcoin text-xl"></i>
-        <div class="text-sm text-gray-700 dark:text-gray-300">
-          <div class="font-semibold">Blink Lightning 결제</div>
-          <div>실시간 진행 상황과 안전한 상태 추적</div>
-        </div>
-      </div>
-    </header>
-
-    <div class="grid gap-8 lg:grid-cols-3">
-      <section class="lg:col-span-2 space-y-8">
-        <article class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-900 to-gray-700 text-white">
-            <h2 class="text-xl font-semibold flex items-center gap-3">
-              <i class="fas fa-box-open text-bitcoin"></i>
-              상품 및 주문 요약
-            </h2>
-          </div>
-          <div class="divide-y divide-gray-100 dark:divide-gray-700">
-            {% for group in stores_with_items %}
-            <div class="p-6">
-              <div class="mb-4 flex items-center gap-3 text-gray-800 dark:text-gray-100">
-                <i class="fas fa-store text-bitcoin"></i>
-                <div>
-                  <p class="font-semibold text-lg">{{ group.store.store_name }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ group.store.owner_name }} / {{ group.store.owner_email }}</p>
-                </div>
-              </div>
-              <ul class="space-y-4">
-                {% for item in group.items %}
-                <li class="flex items-start justify-between gap-4">
-                  <div>
-                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ item.product_title }}</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">수량 {{ item.quantity }}개</p>
-                    {% if item.options_display %}
-                    <ul class="mt-1 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                      {% for option in item.options_display %}
-                      <li class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ option.option_name }}: {{ option.choice_name }}</li>
-                      {% endfor %}
-                    </ul>
-                    {% endif %}
-                  </div>
-                  <p class="text-right text-bitcoin font-semibold">{{ item.total_price|floatformat:0|intcomma }} sats</p>
-                </li>
-                {% endfor %}
-              </ul>
-              <div class="mt-6 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-4 py-3 text-sm text-gray-600 dark:text-gray-300 grid grid-cols-2 gap-3">
-                <div>
-                  <p class="font-medium text-gray-700 dark:text-gray-200">상품 소계</p>
-                  <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ group.subtotal|floatformat:0|intcomma }} sats</p>
-                </div>
-                <div>
-                  <p class="font-medium text-gray-700 dark:text-gray-200">배송비</p>
-                  {% if group.force_free_override or group.shipping_fee == 0 %}
-                  <p class="text-lg font-semibold text-green-500">무료</p>
-                  {% else %}
-                  <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ group.shipping_fee|floatformat:0|intcomma }} sats</p>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-            {% endfor %}
-          </div>
-        </article>
-
-        <article class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-900 to-gray-700 text-white">
-            <h2 class="text-xl font-semibold flex items-center gap-3">
-              <i class="fas fa-truck text-bitcoin"></i>
-              배송 및 연락처 정보
-            </h2>
-          </div>
-          <dl class="px-6 py-6 grid gap-5 sm:grid-cols-2 text-sm text-gray-700 dark:text-gray-300">
-            <div>
-              <dt class="font-semibold text-gray-900 dark:text-gray-100">받는 분</dt>
-              <dd class="mt-1">{{ shipping_data.buyer_name }}</dd>
-            </div>
-            <div>
-              <dt class="font-semibold text-gray-900 dark:text-gray-100">연락처</dt>
-              <dd class="mt-1">{{ shipping_data.buyer_phone }}</dd>
-            </div>
-            <div class="sm:col-span-2">
-              <dt class="font-semibold text-gray-900 dark:text-gray-100">배송지</dt>
-              <dd class="mt-1">({{ shipping_data.shipping_postal_code }}) {{ shipping_data.shipping_address }} {{ shipping_data.shipping_detail_address }}</dd>
-            </div>
-            <div class="sm:col-span-2">
-              <dt class="font-semibold text-gray-900 dark:text-gray-100">이메일</dt>
-              <dd class="mt-1">{{ shipping_data.buyer_email }}</dd>
-            </div>
-            {% if shipping_data.order_memo %}
-            <div class="sm:col-span-2">
-              <dt class="font-semibold text-gray-900 dark:text-gray-100">요청 사항</dt>
-              <dd class="mt-1">{{ shipping_data.order_memo }}</dd>
-            </div>
-            {% endif %}
-          </dl>
-        </article>
-      </section>
-
-      <aside class="space-y-8">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-900 text-white">
-            <h2 class="text-lg font-semibold flex items-center gap-3">
-              <i class="fas fa-coins text-bitcoin"></i>
-              결제 요약
-            </h2>
-          </div>
-          <div class="p-5 space-y-4 text-sm text-gray-700 dark:text-gray-300">
-            <div class="flex justify-between">
-              <span>상품 총액</span>
-              <span class="font-semibold text-gray-900 dark:text-gray-100">{{ subtotal_amount|floatformat:0|intcomma }} sats</span>
-            </div>
-            <div class="flex justify-between">
-              <span>배송비</span>
-              {% if total_shipping_fee == 0 %}
-              <span class="font-semibold text-green-500">무료</span>
-              {% else %}
-              <span class="font-semibold text-gray-900 dark:text-gray-100">{{ total_shipping_fee|floatformat:0|intcomma }} sats</span>
-              {% endif %}
-            </div>
-            <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-4 flex justify-between items-center">
-              <span class="text-base font-semibold text-gray-900 dark:text-gray-100">최종 결제 금액</span>
-              <span class="text-2xl font-extrabold text-bitcoin">{{ total_amount|floatformat:0|intcomma }} sats</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-5 space-y-5">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">결제 진행 단계</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">모든 단계는 자동으로 진행되며, 진행 상황이 여기 표시됩니다.</p>
-          </div>
-          <ol class="workflow-steps space-y-3" aria-live="polite">
-            <li class="workflow-step is-active" data-step-index="1">
-              <div class="workflow-step-indicator">1</div>
-              <div>
-                <p class="workflow-step-title">결제 준비</p>
-                <p class="workflow-step-desc">재고 확보 및 결제 정보 준비</p>
-              </div>
-            </li>
-            <li class="workflow-step" data-step-index="2">
-              <div class="workflow-step-indicator">2</div>
-              <div>
-                <p class="workflow-step-title">인보이스 생성</p>
-                <p class="workflow-step-desc">Lightning 인보이스 발행 및 표시</p>
-              </div>
-            </li>
-            <li class="workflow-step" data-step-index="3">
-              <div class="workflow-step-indicator">3</div>
-              <div>
-                <p class="workflow-step-title">결제 확인</p>
-                <p class="workflow-step-desc">사용자 결제 상태 확인</p>
-              </div>
-            </li>
-            <li class="workflow-step" data-step-index="4">
-              <div class="workflow-step-indicator">4</div>
-              <div>
-                <p class="workflow-step-title">입금 확인</p>
-                <p class="workflow-step-desc">스토어 지갑 입금 검증</p>
-              </div>
-            </li>
-            <li class="workflow-step" data-step-index="5">
-              <div class="workflow-step-indicator">5</div>
-              <div>
-                <p class="workflow-step-title">주문 저장</p>
-                <p class="workflow-step-desc">주문 생성 및 안내</p>
-              </div>
-            </li>
-          </ol>
-          <button id="startPaymentButton" type="button" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white bg-bitcoin hover:bg-[#e47f00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition">
-            <i class="fas fa-bolt"></i>
-            결제 절차 진행하기
-          </button>
-        </div>
-      </aside>
+<div class="bg-gray-50 dark:bg-gray-900 min-h-[60vh] flex items-center">
+  <div class="max-w-3xl mx-auto px-6 py-16 text-center text-sm">
+    <p class="uppercase tracking-[0.3em] text-xs font-semibold text-bitcoin">Lightning Checkout</p>
+    <h1 class="mt-4 text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">결제 준비가 완료되었습니다</h1>
+    <p class="mt-4 text-gray-600 dark:text-gray-400">
+      다음 단계에서 실시간 결제 절차를 진행하며 인보이스 생성부터 주문 완료까지 안내받게 됩니다.
+    </p>
+    <div class="mt-10">
+      <span class="block text-xs text-gray-500 dark:text-gray-400">총 결제 금액</span>
+      <span class="mt-1 block text-2xl font-extrabold text-bitcoin">{{ total_amount|floatformat:0|intcomma }} sats</span>
     </div>
-
-    <section id="paymentWorkflowPanel" class="mt-12 hidden">
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden">
-        <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">실시간 결제 진행 상황</h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400">각 단계가 완료될 때까지 창을 닫지 말아 주세요.</p>
+    <div class="mt-6 mx-auto max-w-xl text-left">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-800/80 backdrop-blur px-6 py-5">
+        <p class="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">금액 산출 근거</p>
+        <dl class="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-200">
+          <div class="flex items-center justify-between">
+            <dt>상품 총액</dt>
+            <dd class="font-semibold text-gray-900 dark:text-white">{{ subtotal_amount|floatformat:0|intcomma }} sats</dd>
           </div>
-          <div id="invoiceTimer" class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hidden">
-            <i class="fas fa-clock"></i>
-            <span>인보이스 만료까지 <span id="invoiceTimerValue">--:--</span></span>
+          <div class="flex items-center justify-between">
+            <dt>배송비 합계</dt>
+            <dd class="font-semibold text-gray-900 dark:text-white">
+              {% if total_shipping_fee == 0 %}
+              무료
+              {% else %}
+              {{ total_shipping_fee|floatformat:0|intcomma }} sats
+              {% endif %}
+            </dd>
           </div>
-        </div>
-        <div class="grid lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-gray-200 dark:divide-gray-700">
-          <div class="p-6 space-y-6">
-            <div id="invoiceArea" class="space-y-4 hidden">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Lightning 인보이스</h3>
-              <div class="flex flex-col sm:flex-row sm:items-start gap-5">
-                <div id="invoiceQrContainer" class="invoice-qr-container">
-                  <img id="invoiceQrImage" alt="Lightning Invoice QR" class="hidden">
-                </div>
-                <div class="flex-1 space-y-3">
-                  <div>
-                    <label for="invoiceText" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Invoice</label>
-                    <textarea id="invoiceText" readonly class="mt-1 w-full text-sm bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-gray-800 dark:text-gray-200"></textarea>
-                  </div>
-                  <div class="flex flex-wrap gap-3">
-                    <button id="copyInvoiceButton" type="button" class="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-bitcoin">
-                      <i class="fas fa-copy mr-2"></i>인보이스 복사
-                    </button>
-                    <button id="recreateInvoiceButton" type="button" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-bitcoin">
-                      <i class="fas fa-sync-alt mr-2"></i>인보이스 다시 생성
-                    </button>
-                    <button id="cancelPaymentButton" type="button" class="px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-red-500/40 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-400">
-                      <i class="fas fa-ban mr-2"></i>결제 취소
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">진행 메시지</h3>
-              <div id="paymentStatusText" class="mt-3 p-4 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300">
-                결제 진행 버튼을 누르면 실시간 상태가 표시됩니다.
-              </div>
-              <div class="mt-3 text-xs text-gray-500 dark:text-gray-400 leading-relaxed space-y-1">
-                <p>문제가 계속된다면 <span class="font-semibold text-gray-700 dark:text-gray-200">{{ store.owner_name }}</span> 님에게 문의하세요.</p>
-                <p>이메일 <span class="text-bitcoin font-medium">{{ store.owner_email }}</span>{% if store.owner_phone %}, 전화 {{ store.owner_phone }}{% endif %}{% if store.chat_channel %}, 채널 {{ store.chat_channel }}{% endif %}</p>
-                <p>자주 묻는 질문은 <a href="{% url 'boards:notice_list' %}" class="text-bitcoin underline">공지/FAQ</a>에서 확인하실 수 있습니다.</p>
-              </div>
-            </div>
+          <div class="flex items-center justify-between border-t border-dashed border-gray-200 dark:border-gray-700 pt-2">
+            <dt class="font-semibold text-gray-900 dark:text-white">= 결제 금액</dt>
+            <dd class="text-lg font-extrabold text-bitcoin">{{ total_amount|floatformat:0|intcomma }} sats</dd>
           </div>
-          <div class="p-6 bg-gray-50 dark:bg-gray-900 space-y-5" aria-live="polite">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <i class="fas fa-list"></i>
-                단계 로그
-              </h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">각 단계의 세부 진행 내용이 순서대로 기록됩니다.</p>
-            </div>
-            <ul id="workflowLogList" class="space-y-3 text-sm text-gray-700 dark:text-gray-300"></ul>
-          </div>
+        </dl>
+        <div class="mt-4 space-y-2 text-xs text-gray-500 dark:text-gray-400">
+          <p>스토어별 배송 정책</p>
+          <ul class="space-y-1">
+            {% for group in stores_with_items %}
+            <li class="flex items-start gap-2">
+              <span class="mt-0.5 text-bitcoin"><i class="fas fa-store"></i></span>
+              <span>
+                {{ group.store.store_name }}
+                {% if group.shipping_fee == 0 %}
+                – 배송비 무료 적용
+                {% else %}
+                – 배송비 {{ group.shipping_fee|floatformat:0|intcomma }} sats 포함
+                {% endif %}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
         </div>
       </div>
-    </section>
+    </div>
+    <a
+      href="{% url 'ln_payment:payment_process' %}"
+      class="mt-10 inline-flex items-center justify-center gap-3 rounded-2xl bg-bitcoin px-10 py-5 text-lg font-semibold text-white shadow-[0_20px_45px_-15px_rgba(255,153,0,0.7)] transition hover:bg-[#e47f00] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/60"
+    >
+      <i class="fas fa-bolt text-xl"></i>
+      결제 절차 진행하기
+    </a>
+    <p class="mt-8 text-xs text-gray-500 dark:text-gray-400">
+      버튼을 누르면 결제 진행 화면으로 이동하여 QR 인보이스 확인, 재발급, 상태 추적을 할 수 있습니다.
+    </p>
   </div>
 </div>
 {% endblock %}

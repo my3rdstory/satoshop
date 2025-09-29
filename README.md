@@ -379,9 +379,11 @@ ADMIN_PASSWORD=your-secure-admin-password
 - `transactionsByPaymentHash`를 활용한 백업 조회를 통해 webhook 누락 시에도 입금 정보를 수집합니다.
 
 #### 프런트엔드 흐름
-- `orders/templates/orders/checkout.html`에서 Tailwind 기반 5단계 안내 UI를 제공합니다.
+- `orders/templates/orders/checkout.html`은 사용자가 결제 절차를 시작하도록 CTA만 강조하고 `ln_payment:payment_process`로 이동시킵니다.
+- `ln_payment/templates/ln_payment/payment_process.html`에서 5단계 진행 UI와 인보이스, 단계 로그, 스토어 연락처 안내를 제공합니다.
 - `static/ln_payment/js/payment_workflow.js`는 인보이스 재생성·취소·타이머·상태 폴링을 처리합니다.
-- 결제 실패 시 스토어 연락처와 FAQ 링크가 자동으로 노출됩니다.
+- `static/ln_payment/js/payment_process.js`와 `static/ln_payment/css/payment_process.css`는 접근성/스크롤 보조, 상태 배너, 다크 모드 스타일을 담당합니다.
+- 결제 실패 시 상태 배너와 스토어 연락처 안내로 재시도/문의 경로를 제공합니다.
 
 #### 운영 시 유의 사항
 - Blink Dashboard에서 webhook 엔드포인트를 `/ln-payment/webhook/blink/`로 등록하고, 시그니처 검증을 위해 `BLINK_WEBHOOK_SECRET`을 설정하세요.
@@ -722,4 +724,3 @@ SOFTWARE.
 ---
 
 **⚡ 비트코인 라이트닝 네트워크로 더 빠르고 저렴한 전자상거래를 경험해보세요!**
-

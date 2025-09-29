@@ -301,6 +301,9 @@
       clearInterval(countdownInterval);
       updateTransaction(data.transaction);
       updateStatusText('결제가 취소되었습니다. 새로운 결제를 진행하려면 다시 시도하세요.');
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
     } catch (error) {
       console.error(error);
       updateStatusText(error.message);

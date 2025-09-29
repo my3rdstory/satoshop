@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
@@ -121,6 +121,34 @@ def _build_summary_response(cart_summary, totals, shipping_data):
         ],
         'shipping_data': shipping_data,
     }
+
+
+@login_required
+def payment_process(request):
+    cart_service = CartService(request)
+    cart_items = cart_service.get_cart_items()
+    if not cart_items:
+        return redirect('orders:cart_view')
+
+    shipping_data = request.session.get('shipping_data')
+    if not shipping_data:
+        return redirect('orders:shipping_info')
+
+    groups, subtotal, shipping_fee, total = calculate_totals(cart_items)
+    if not groups or len(groups) > 1:
+        return redirect('orders:cart_view')
+
+    primary_store = groups[0].store
+
+    context = {
+        'stores_with_items': groups,
+        'subtotal_amount': subtotal,
+        'total_shipping_fee': shipping_fee,
+        'total_amount': total,
+        'shipping_data': shipping_data,
+        'store': primary_store,
+    }
+    return render(request, 'ln_payment/payment_process.html', context)
 
 
 @login_required
