@@ -1,0 +1,47 @@
+/.vscode
+/deps
+/docs/.vuepress/dist
+/node_modules
+
+# External repos
+/docs/BigCommerce
+/docs/Breez
+/docs/Bringin
+/docs/BTCPayServer
+/docs/Configurator
+/docs/Docker
+/docs/Drupal
+/docs/DynamicReports
+/docs/Ecwid
+/docs/Grandnode
+/docs/Ghost
+/docs/LNDhubAPI
+/docs/NBXplorer
+/docs/Nopcommerce
+/docs/Nostr
+/docs/Odoo
+/docs/Payroll
+/docs/PodServer
+/docs/SideShift
+/docs/Smartstore
+/docs/TicketTailor
+/docs/Transmuter
+/docs/Trocador
+/docs/Vendorpay
+/docs/Wabisabi
+/docs/Wix
+/docs/Vault
+/docs/Xenforo
+/docs/Zapier
+/docs/.vuepress/public/API/Greenfield/**/*.json
+
+# Files copied from external repos
+/docs/img/fastsync
+/docs/img/btcpayexposecloudflare*
+/docs/img/cloudflare*
+/docs/img/Cloudflare*
+/swagger/plugins/btcpay.json
+
+# Constructed docs
+/docs/Development/LocalDevelopment.md
+.idea
