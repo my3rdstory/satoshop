@@ -8,12 +8,15 @@ import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
-from django.core.files.uploadedfile import UploadedFile
-from django.conf import settings
-from .backends import S3Storage
-from django.core.files.base import ContentFile
-from django.db import models
 import io
+
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import UploadedFile
+from django.db import models
+
+from .backends import S3Storage
 
 # 조건부 import
 try:
@@ -87,19 +90,19 @@ def upload_file_to_s3(
     logger.info(f"prefix: {prefix}")
     
     if storage is None:
-        logger.debug("새로운 S3Storage 인스턴스 생성")
+        logger.debug("스토리지 인스턴스 생성 시도")
         try:
             storage = S3Storage()
             logger.info("S3Storage 인스턴스 생성 성공")
-        except Exception as e:
-            logger.error(f"S3Storage 인스턴스 생성 실패: {e}")
+        except Exception as exc:
+            logger.error("S3Storage 인스턴스 생성 실패: %s", exc)
             return {
                 'success': False,
-                'error': f'S3Storage 초기화 실패: {str(e)}',
+                'error': f'S3Storage 초기화 실패: {exc}',
                 'original_name': file.name,
                 'file_size': file.size if hasattr(file, 'size') else 0,
             }
-    
+
     try:
         # 파일 검증
         logger.debug(f"파일 정보: name={file.name}, size={file.size}, content_type={getattr(file, 'content_type', 'unknown')}")
@@ -115,7 +118,7 @@ def upload_file_to_s3(
         
         saved_path = storage.save(file_path, file)
         logger.info(f"파일 저장 완료: {saved_path}")
-        
+
         # 파일 URL 생성
         logger.debug("파일 URL 생성 시작")
         try:
@@ -123,14 +126,16 @@ def upload_file_to_s3(
             logger.info(f"생성된 파일 URL: {file_url}")
         except Exception as url_error:
             logger.warning(f"파일 URL 생성 실패: {url_error}, 기본 URL 사용")
-            file_url = f"/media/{saved_path}"  # fallback URL
-        
+            media_url = getattr(settings, 'MEDIA_URL', '/media/')
+            file_url = f"{media_url.rstrip('/')}/{saved_path}"
+
         result = {
             'success': True,
             'file_path': saved_path,
             'file_url': file_url,
             'original_name': file.name,
             'file_size': file.size,
+            'storage': 's3',
         }
         
         logger.info(f"=== S3 파일 업로드 성공: {file.name} ===")
@@ -168,15 +173,15 @@ def delete_file_from_s3(file_path: str, storage: S3Storage = None) -> Dict[str, 
     """
     if storage is None:
         storage = S3Storage()
-    
+
     try:
         storage.delete(file_path)
         return {'success': True}
-    
-    except Exception as e:
+    except Exception as exc:
+        logger.error("S3 파일 삭제 실패: %s", exc)
         return {
             'success': False,
-            'error': str(e)
+            'error': str(exc),
         }
 
 

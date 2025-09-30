@@ -8,6 +8,14 @@ from ..models import MeetupOrder
 from .filters import HasPendingOrdersFilter, HasAttendedMeetupsFilter
 
 
+def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
+    if not dt:
+        return default
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt).strftime(fmt)
+
+
 # 밋업 참가자만 보는 별도 어드민 클래스 추가
 class MeetupParticipant(User):
     """밋업 참가 내역이 있는 사용자들만 보여주는 프록시 모델"""
@@ -149,7 +157,7 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
     
     def created_at_display(self, obj):
         """신청일시 표시"""
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return timezone.localtime(obj.created_at).strftime('%Y.%m.%d %H:%M')
     created_at_display.short_description = '신청일시'
     created_at_display.admin_order_field = 'created_at'
     
@@ -188,7 +196,8 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_participant_entries_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_participant_entries_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -248,15 +257,15 @@ class MeetupParticipantEntryAdmin(admin.ModelAdmin):
                 order.order_number,
                 status_text,
                 "참석" if order.attended else "미참석",
-                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                _format_local(order.attended_at),
                 f"{order.base_price:,}",
                 f"{order.options_price:,}",
                 f"{order.total_price:,}",
                 payment_status,
                 order.payment_hash or '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
-                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+                _format_local(order.created_at),
+                _format_local(order.confirmed_at),
+                _format_local(order.paid_at),
                 "예" if order.is_early_bird else "아니오",
                 order.user.username if order.user else '비회원',
                 options_text
@@ -408,7 +417,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 latest_order.meetup.store.store_name,
                 status_color,
                 status_label,
-                latest_order.created_at.strftime('%Y.%m.%d')
+                timezone.localtime(latest_order.created_at).strftime('%Y.%m.%d')
             )
         return '-'
     latest_meetup.short_description = '최근 신청 밋업'
@@ -477,7 +486,7 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center;">'
                 f'<span style="color: {status_color}; font-weight: bold;">● {status_label}</span></td>'
                 f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; color: #28a745;">{price_display}</td>'
-                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{order.created_at.strftime("%Y.%m.%d %H:%M")}</td>'
+                f'<td style="padding: 8px; border: 1px solid #dee2e6; text-align: center; color: #868e96;">{timezone.localtime(order.created_at).strftime("%Y.%m.%d %H:%M")}</td>'
                 f'</tr>'
             )
         
@@ -504,7 +513,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_participants_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -551,8 +561,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                     participant.email,
                     participant.first_name or '',
                     participant.last_name or '',
-                    participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
-                    participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                    _format_local(participant.date_joined),
+                    _format_local(participant.last_login),
                     pending_orders_count,
                     attended_count,
                     total_confirmed_count,
@@ -587,8 +597,8 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         participant.email,
                         participant.first_name or '',
                         participant.last_name or '',
-                        participant.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
-                        participant.last_login.strftime('%Y-%m-%d %H:%M:%S') if participant.last_login else '',
+                        _format_local(participant.date_joined),
+                        _format_local(participant.last_login),
                         pending_orders_count,
                         attended_count,
                         total_confirmed_count,
@@ -606,11 +616,11 @@ class MeetupParticipantAdmin(admin.ModelAdmin):
                         f"{order.discount_rate}%" if order.discount_rate else '',
                         "예" if order.is_early_bird else "아니오",
                         order.payment_hash or '',
-                        order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                        order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                        order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                        _format_local(order.paid_at),
+                        _format_local(order.created_at),
+                        _format_local(order.confirmed_at),
                         "참석" if order.attended else "미참석",
-                        order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                        _format_local(order.attended_at),
                         options_text
                     ]
                     writer.writerow(row)

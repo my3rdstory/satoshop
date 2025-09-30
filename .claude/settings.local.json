@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(cp:*)",
+      "Bash(python manage.py:*)",
+      "Bash(ls:*)",
+      "Bash(uv run:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(tree:*)",
+      "Bash(source:*)",
+      "Bash(rm:*)",
+      "Bash(wget:*)"
+    ],
+    "deny": []
+  }
+}

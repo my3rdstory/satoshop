@@ -670,7 +670,7 @@ class FileOrder(models.Model):
         if not self.order_number:
             import uuid
             store_id = self.digital_file.store.store_id
-            date_str = timezone.now().strftime('%Y%m%d')
+            date_str = timezone.localtime(timezone.now()).strftime('%Y%m%d')
             unique_id = str(uuid.uuid4())[:8].upper()
             self.order_number = f"{store_id}-FILE-{date_str}-{unique_id}"
         

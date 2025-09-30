@@ -80,7 +80,7 @@
               <div class="flex flex-col items-end gap-2 mt-2">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                   <i class="fas fa-check-circle mr-1"></i>
-                  결제 완료
+                  {{ purchase.order.get_status_display_with_manual }}
                 </span>
                 {% if purchase.order.delivery_status %}
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {% if purchase.order.delivery_status == 'completed' %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200{% else %}bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200{% endif %}">

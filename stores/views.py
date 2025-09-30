@@ -24,8 +24,15 @@ from orders.models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory
 )
 from django.conf import settings
+from django.template.loader import render_to_string
 from storage.utils import upload_store_image, delete_file_from_s3
 from myshop.services import UpbitExchangeService
+from reviews.services import (
+    MAX_IMAGES_PER_REVIEW,
+    build_reviews_url,
+    get_paginated_reviews,
+    user_has_purchased_product,
+)
 
 from .cache_utils import get_store_browse_cache, set_store_browse_cache
 
@@ -1906,6 +1913,34 @@ def product_detail(request, store_id, product_id):
             'override_free': True,
         }
 
+    reviews_page_number = request.GET.get('page') or 1
+    review_context = get_paginated_reviews(product, reviews_page_number)
+    reviews_page = review_context['reviews_page']
+
+    can_write_review = False
+    if request.user.is_authenticated:
+        can_write_review = user_has_purchased_product(request.user, product)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.GET.get('fragment') == 'reviews':
+        navigation = build_reviews_url(store.store_id, product.id, reviews_page.number)
+        html = render_to_string(
+            'products/partials/reviews_content.html',
+            {
+                'store': store,
+                'product': product,
+                **review_context,
+            },
+            request=request,
+        )
+        return JsonResponse(
+            {
+                'html': html,
+                'page': navigation['page'],
+                'url': navigation['path'],
+                'anchor': navigation['anchor'],
+            }
+        )
+
     context = {
         'store': store,
         'product': product,
@@ -1916,5 +1951,8 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
         'store_shipping': store_shipping,
         'product_shipping': product_shipping,
+        **review_context,
+        'can_write_review': can_write_review,
+        'max_review_images': MAX_IMAGES_PER_REVIEW,
     }
     return render(request, 'products/product_detail.html', context)

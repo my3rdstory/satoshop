@@ -810,7 +810,10 @@ def export_live_lecture_participants_csv(request, store_id, live_lecture_id):
     
     # CSV 응답 생성
     response = HttpResponse(content_type='text/csv; charset=utf-8')
-    response['Content-Disposition'] = f'attachment; filename="라이브강의_참가자_{live_lecture.name}_{datetime.now().strftime("%Y%m%d")}.csv"'
+    exported_at = timezone.localtime(timezone.now())
+    response['Content-Disposition'] = (
+        f'attachment; filename="라이브강의_참가자_{live_lecture.name}_{exported_at.strftime("%Y%m%d")}.csv"'
+    )
     
     # BOM 추가 (Excel에서 한글 깨짐 방지)
     response.write('\ufeff')
@@ -834,8 +837,8 @@ def export_live_lecture_participants_csv(request, store_id, live_lecture_id):
             order.user.email,
             f"{order.price} sats" if order.price > 0 else "무료",
             order.order_number,
-            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
+            timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+            timezone.localtime(order.paid_at).strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
             '참가확정' if order.status == 'confirmed' else '신청완료' if order.status == 'completed' else '취소됨'
         ]
         

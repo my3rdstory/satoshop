@@ -1,0 +1,283 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - 결제 트랜잭션 상세{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'orders/css/payment_transaction_detail.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-sm">
+    <nav class="mb-6 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
+      <a href="{% url 'orders:payment_transactions' store.store_id %}" class="hover:text-bitcoin transition"><i class="fas fa-arrow-left mr-1"></i>결제 정보 목록으로 돌아가기</a>
+      <span>/</span>
+      <span class="text-gray-700 dark:text-gray-200">{{ transaction.id }}</span>
+    </nav>
+
+    <header class="rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl p-6 md:p-8 mb-8">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white dark:bg-gray-200 dark:text-gray-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide">트랜잭션 상세</span>
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white break-words">{{ store.store_name }} · {{ transaction.amount_sats|floatformat:0|intcomma }} sats</h1>
+          {% if status_description %}
+          <p class="text-sm text-gray-600 dark:text-gray-400">{{ status_description }}</p>
+          {% endif %}
+          <div class="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <span><i class="fas fa-clock mr-1"></i>생성 {{ transaction.created_at|date:'Y-m-d H:i' }}</span>
+            <span><i class="fas fa-sync-alt mr-1"></i>최종 업데이트 {{ transaction.updated_at|date:'Y-m-d H:i' }}</span>
+          </div>
+        </div>
+        <div class="flex flex-col gap-4 min-w-[220px]">
+          <div class="flex items-center justify-end gap-2">
+            {% if transaction.status == 'completed' %}
+            <span class="status-badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"><i class="fas fa-check-circle"></i>완료{% if transaction.metadata.manual_restored or transaction.metadata.manual_restore_history %}(수동저장){% endif %}</span>
+            {% elif transaction.status == 'failed' %}
+            <span class="status-badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"><i class="fas fa-times-circle"></i>실패</span>
+            {% elif transaction.status == 'processing' %}
+            <span class="status-badge bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"><i class="fas fa-spinner fa-spin"></i>진행 중</span>
+            {% else %}
+            <span class="status-badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"><i class="fas fa-hourglass-half"></i>대기</span>
+            {% endif %}
+          </div>
+          <dl class="meta-grid">
+            <div>
+              <dt>현재 단계</dt>
+              <dd>{{ stage_label }}</dd>
+            </div>
+            <div>
+              <dt>결제 해시</dt>
+              <dd class="flex items-center gap-2">
+                <span id="paymentHashValue" class="break-all">{{ transaction.payment_hash|default:'-' }}</span>
+                {% if transaction.payment_hash %}
+                <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-1 text-[0.7rem] font-semibold text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-copy-target="#paymentHashValue" data-label="복사">복사</button>
+                {% endif %}
+              </dd>
+            </div>
+            <div>
+              <dt>결제 ID</dt>
+              <dd class="break-all">{{ transaction.id }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </header>
+
+    {% if payment_request %}
+    <section class="mb-8 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div class="flex-1 space-y-3">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Lightning 인보이스</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">주문자의 지갑에서 받은 인보이스와 비교하거나 재확인할 때 사용하세요.</p>
+          <div id="paymentRequestValue" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-xs font-mono break-all text-gray-800 dark:text-gray-100">{{ payment_request }}</div>
+        </div>
+        <div class="flex flex-col gap-3 md:w-56">
+          <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/50 rounded-lg px-3 py-2">
+            <span class="font-semibold text-gray-700 dark:text-gray-200">인보이스 만료</span><br>
+            {% if transaction.invoice_expires_at %}
+            {{ transaction.invoice_expires_at|date:'Y-m-d H:i' }}
+            {% else %}
+            -
+            {% endif %}
+          </div>
+          <div class="flex flex-wrap md:flex-col gap-2">
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-copy-target="#paymentRequestValue" data-label="인보이스 복사">인보이스 복사</button>
+            {% if invoice_uri %}
+            <a href="{{ invoice_uri }}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-bitcoin px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#e08113] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/40 transition" rel="nofollow noopener">지갑에서 열기</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if manual_restore_enabled %}
+    <section class="mb-8 rounded-2xl border border-amber-200 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 px-6 py-5 flex flex-col gap-3">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-tools text-amber-600 dark:text-amber-300 mt-1"></i>
+        <div>
+          <h2 class="text-base font-semibold text-amber-800 dark:text-amber-200">주문으로 저장</h2>
+          <p class="text-xs text-amber-700/80 dark:text-amber-200/80 leading-relaxed">결제는 완료되었지만 주문이 생성되지 않은 경우 수동으로 주문서를 만들 수 있습니다. 실행 시 재고가 차감되고 주문 내역이 생성됩니다.</p>
+        </div>
+      </div>
+      <form method="post" class="flex flex-wrap items-center gap-3" onsubmit="return confirm('주문을 수동으로 저장하면 구매자 마이페이지에도 즉시 표시됩니다. 재고가 부족한 상품은 차감 없이 주문만 생성되고 재고 수량은 0으로 조정됩니다. 계속 진행할까요?');">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="restore_order">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-bitcoin px-4 py-2 text-xs font-semibold text-white shadow-lg hover:bg-[#e08113] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/50 transition">
+          <i class="fas fa-clipboard-check"></i>
+          주문으로 저장하기
+        </button>
+        <p class="text-[0.7rem] text-amber-700/80 dark:text-amber-200/80">주문이 생성되면 결제 리스트에서도 완료 상태로 전환됩니다.</p>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="grid gap-6 lg:grid-cols-2 mb-8">
+      <article class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-4">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">배송 정보</h2>
+        {% if shipping_data %}
+        <dl class="meta-grid">
+          <div>
+            <dt>받는 분</dt>
+            <dd>{{ shipping_data.buyer_name|default:'-' }}</dd>
+          </div>
+          <div>
+            <dt>연락처</dt>
+            <dd>{{ shipping_data.buyer_phone|default:'-' }}</dd>
+          </div>
+          <div>
+            <dt>이메일</dt>
+            <dd>{{ shipping_data.buyer_email|default:'-' }}</dd>
+          </div>
+          <div>
+            <dt>우편번호</dt>
+            <dd>{{ shipping_data.shipping_postal_code|default:'-' }}</dd>
+          </div>
+          <div>
+            <dt>주소</dt>
+            <dd>{{ shipping_data.shipping_address|default:'-' }}</dd>
+          </div>
+          <div>
+            <dt>상세주소</dt>
+            <dd>{{ shipping_data.shipping_detail_address|default:'-' }}</dd>
+          </div>
+        </dl>
+        {% if shipping_data.order_memo %}
+        <div class="rounded-xl bg-gray-50 dark:bg-gray-900/50 px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+          <span class="font-semibold text-gray-800 dark:text-gray-100 mr-2">요청 사항</span>{{ shipping_data.order_memo }}
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="text-xs text-gray-500 dark:text-gray-400">저장된 배송 정보가 없습니다.</p>
+        {% endif %}
+      </article>
+
+      <article class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-4">
+        <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">결제 · 주문 요약</h2>
+        <dl class="meta-grid">
+          <div>
+            <dt>결제 금액</dt>
+            <dd>{{ transaction.amount_sats|floatformat:0|intcomma }} sats</dd>
+          </div>
+          <div>
+            <dt>장바구니 합계</dt>
+            <dd>{{ cart_summary.subtotal|floatformat:0|intcomma }} sats</dd>
+          </div>
+          <div>
+            <dt>배송비</dt>
+            <dd>{{ cart_summary.shipping_fee|floatformat:0|intcomma }} sats</dd>
+          </div>
+          <div>
+            <dt>총 결제 금액</dt>
+            <dd>{{ cart_summary.total|floatformat:0|intcomma }} sats</dd>
+          </div>
+          <div>
+            <dt>연결 주문</dt>
+            <dd>
+              {% if transaction.order %}
+              <a href="{% url 'orders:checkout_complete' transaction.order.order_number %}" class="text-bitcoin underline">{{ transaction.order.order_number }}</a>
+              {% else %}
+              <span class="text-gray-400">미생성</span>
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 mb-8">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">장바구니 구성</h2>
+      {% if cart_items %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-900 text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">
+            <tr>
+              <th class="px-4 py-2 text-left">상품</th>
+              <th class="px-4 py-2 text-center">수량</th>
+              <th class="px-4 py-2 text-right">단가</th>
+              <th class="px-4 py-2 text-right">금액</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-xs text-gray-700 dark:text-gray-200">
+            {% for item in cart_items %}
+            <tr>
+              <td class="px-4 py-3 align-top">
+                <p class="font-semibold text-gray-900 dark:text-gray-100">{{ item.product_title|default:'상품' }}</p>
+                {% if item.options_display %}
+                <ul class="mt-1 space-y-1 text-[0.7rem] text-gray-500 dark:text-gray-400">
+                  {% for option in item.options_display %}
+                  <li>• {{ option.option_name }}: {{ option.choice_name }}</li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-center">{{ item.quantity }}</td>
+              <td class="px-4 py-3 text-right">{{ item.unit_price|floatformat:0|intcomma }} sats</td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">{{ item.total_price|floatformat:0|intcomma }} sats</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-xs text-gray-500 dark:text-gray-400">장바구니 정보가 비어 있습니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 mb-8">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4">단계 로그</h2>
+      {% if stage_logs %}
+      <ol class="timeline-list">
+        {% for log in stage_logs %}
+        <li class="timeline-item">
+          <div class="timeline-marker"></div>
+          <div class="rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 px-4 py-3 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">{{ log.stage_label }}</span>
+              <span class="text-[0.7rem] text-gray-500 dark:text-gray-400">{{ log.created_at|date:'Y-m-d H:i:s' }}</span>
+            </div>
+            <p class="text-xs text-gray-700 dark:text-gray-200">{{ log.message|default:'단계 업데이트' }}</p>
+            {% if log.detail_pairs %}
+            <div class="bg-white dark:bg-gray-800/80 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2 text-[0.7rem] text-gray-500 dark:text-gray-400 space-y-1">
+              {% for key, value in log.detail_pairs %}
+              <div class="flex justify-between gap-3">
+                <span class="font-medium text-gray-600 dark:text-gray-300">{{ key }}</span>
+                <span class="text-right break-all">{{ value }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% if log.detail_extra %}
+            <p class="text-[0.7rem] text-gray-500 dark:text-gray-400 break-all">{{ log.detail_extra }}</p>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="text-xs text-gray-500 dark:text-gray-400">로그가 아직 기록되지 않았습니다.</p>
+      {% endif %}
+    </section>
+
+    {% if manual_restore_history %}
+    <section class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6">
+      <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100 mb-3">수동 복구 기록</h2>
+      <ul class="space-y-2 text-xs text-gray-600 dark:text-gray-300">
+        {% for entry in manual_restore_history|slice:':10' %}
+        <li class="flex items-center justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 px-4 py-2">
+          <span>복구 시각: {{ entry.restored_at }}</span>
+          <span>담당: {{ entry.operator|default:'-' }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'orders/js/payment_transaction_detail.js' %}"></script>
+{% endblock %}

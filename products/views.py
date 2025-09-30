@@ -7,6 +7,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.views.decorators.http import require_POST
+from django.template.loader import render_to_string
 from PIL import Image
 import json
 import uuid
@@ -16,6 +17,14 @@ import logging
 from stores.models import Store
 from .models import Product, ProductImage, ProductOption, ProductOptionChoice
 from stores.decorators import store_owner_required
+from reviews.models import Review
+
+from reviews.services import (
+    MAX_IMAGES_PER_REVIEW,
+    build_reviews_url,
+    get_paginated_reviews,
+    user_has_purchased_product,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +148,34 @@ def product_detail(request, store_id, product_id):
             'override_free': True,
         }
 
+    page_number = request.GET.get('page') or 1
+    review_context = get_paginated_reviews(product, page_number)
+    reviews_page = review_context['reviews_page']
+
+    can_write_review = False
+    if request.user.is_authenticated:
+        can_write_review = user_has_purchased_product(request.user, product)
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.GET.get('fragment') == 'reviews':
+        navigation = build_reviews_url(store.store_id, product.id, reviews_page.number)
+        html = render_to_string(
+            'products/partials/reviews_content.html',
+            {
+                'store': store,
+                'product': product,
+                **review_context,
+            },
+            request=request,
+        )
+        return JsonResponse(
+            {
+                'html': html,
+                'page': navigation['page'],
+                'url': navigation['path'],
+                'anchor': navigation['anchor'],
+            }
+        )
+
     context = {
         'store': store,
         'product': product,
@@ -149,6 +186,9 @@ def product_detail(request, store_id, product_id):
         'cart_items': cart_items,
         'store_shipping': store_shipping,
         'product_shipping': product_shipping,
+        **review_context,
+        'can_write_review': can_write_review,
+        'max_review_images': MAX_IMAGES_PER_REVIEW,
     }
     return render(request, 'products/product_detail.html', context)
 

@@ -8,6 +8,14 @@ from ..models import MeetupOrder, MeetupOrderOption
 from .filters import PaymentHashFilter
 
 
+def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
+    if not dt:
+        return default
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt).strftime(fmt)
+
+
 class MeetupOrderOptionInline(admin.TabularInline):
     """밋업 주문 옵션 인라인 어드민"""
     model = MeetupOrderOption
@@ -145,7 +153,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
     
     def created_at_display(self, obj):
         """신청일시 표시"""
-        return obj.created_at.strftime('%Y.%m.%d %H:%M')
+        return timezone.localtime(obj.created_at).strftime('%Y.%m.%d %H:%M')
     created_at_display.short_description = '신청일시'
     created_at_display.admin_order_field = 'created_at'
     
@@ -206,7 +214,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                 return format_html(
                     '<span style="color: #e74c3c; font-weight: bold;">⏱ 만료</span><br>'
                     '<small style="color: #7f8c8d;">{}</small>',
-                    obj.reservation_expires_at.strftime("%m/%d %H:%M")
+                    _format_local(obj.reservation_expires_at, "%m/%d %H:%M")
                 )
             else:
                 time_left = obj.reservation_expires_at - now
@@ -223,7 +231,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                     '<small style="color: {};">{} 남음 ({}분)</small>',
                     color,
                     color,
-                    obj.reservation_expires_at.strftime("%m/%d %H:%M"),
+                    _format_local(obj.reservation_expires_at, "%m/%d %H:%M"),
                     minutes_left
                 )
         
@@ -263,7 +271,7 @@ class MeetupOrderAdmin(admin.ModelAdmin):
             if obj.attended_at:
                 return mark_safe(
                     f'<span style="color: #27ae60; font-weight: bold;">✓ 참석</span><br>'
-                    f'<small style="color: #7f8c8d;">{obj.attended_at.strftime("%m/%d %H:%M")}</small>'
+                    f'<small style="color: #7f8c8d;">{_format_local(obj.attended_at, "%m/%d %H:%M")}</small>'
                 )
             else:
                 return mark_safe('<span style="color: #27ae60; font-weight: bold;">✓ 참석</span>')
@@ -350,7 +358,8 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="meetup_orders_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="meetup_orders_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -403,13 +412,13 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                 f"{order.discount_rate}%" if order.discount_rate else '',
                 "예" if order.is_early_bird else "아니오",
                 order.payment_hash or '',
-                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                _format_local(order.paid_at),
+                _format_local(order.created_at),
+                _format_local(order.confirmed_at),
                 "참석" if order.attended else "미참석",
-                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                _format_local(order.attended_at),
                 "예" if order.is_temporary_reserved else "아니오",
-                order.reservation_expires_at.strftime('%Y-%m-%d %H:%M:%S') if order.reservation_expires_at else '',
+                _format_local(order.reservation_expires_at),
                 order.auto_cancelled_reason or '',
                 options_text
             ]
@@ -430,7 +439,8 @@ class MeetupOrderAdmin(admin.ModelAdmin):
         
         # CSV 응답 생성
         response = HttpResponse(content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = f'attachment; filename="all_meetup_orders_{timezone.now().strftime("%Y%m%d_%H%M")}.csv"'
+        generated_at = timezone.localtime(timezone.now())
+        response['Content-Disposition'] = f'attachment; filename="all_meetup_orders_{generated_at.strftime("%Y%m%d_%H%M")}.csv"'
         response.write('\ufeff'.encode('utf8'))  # BOM for Excel
         
         writer = csv.writer(response)
@@ -483,13 +493,13 @@ class MeetupOrderAdmin(admin.ModelAdmin):
                 f"{order.discount_rate}%" if order.discount_rate else '',
                 "예" if order.is_early_bird else "아니오",
                 order.payment_hash or '',
-                order.paid_at.strftime('%Y-%m-%d %H:%M:%S') if order.paid_at else '',
-                order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-                order.confirmed_at.strftime('%Y-%m-%d %H:%M:%S') if order.confirmed_at else '',
+                _format_local(order.paid_at),
+                _format_local(order.created_at),
+                _format_local(order.confirmed_at),
                 "참석" if order.attended else "미참석",
-                order.attended_at.strftime('%Y-%m-%d %H:%M:%S') if order.attended_at else '',
+                _format_local(order.attended_at),
                 "예" if order.is_temporary_reserved else "아니오",
-                order.reservation_expires_at.strftime('%Y-%m-%d %H:%M:%S') if order.reservation_expires_at else '',
+                _format_local(order.reservation_expires_at),
                 order.auto_cancelled_reason or '',
                 options_text
             ]

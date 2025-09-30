@@ -536,7 +536,11 @@ class LiveLectureOrder(models.Model):
     def save(self, *args, **kwargs):
         # 주문번호 자동 생성
         if not self.order_number:
-            date_str = self.live_lecture.date_time.strftime('%Y%m%d') if self.live_lecture.date_time else timezone.now().strftime('%Y%m%d')
+            date_str = (
+                timezone.localtime(self.live_lecture.date_time).strftime('%Y%m%d')
+                if self.live_lecture and self.live_lecture.date_time
+                else timezone.localtime(timezone.now()).strftime('%Y%m%d')
+            )
             unique_id = str(uuid.uuid4())[:8]
             self.order_number = f"{self.live_lecture.store.store_id}-lecture-live-{date_str}-{unique_id}"
         

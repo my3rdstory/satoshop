@@ -11,6 +11,14 @@ import csv
 from .models import LightningUser, UserPurchaseHistory
 
 
+def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
+    if not dt:
+        return default
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt).strftime(fmt)
+
+
 @admin.register(LightningUser)
 class LightningUserAdmin(admin.ModelAdmin):
     list_display = ['user', 'public_key_short', 'created_at', 'last_login_at']
@@ -324,10 +332,10 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
                 user.username,
                 user.email,
                 f"{user.first_name} {user.last_name}".strip() or '-',
-                user.date_joined.strftime('%Y-%m-%d %H:%M:%S'),
+                _format_local(user.date_joined),
                 total_orders,
                 total_amount,
-                last_purchase_date.strftime('%Y-%m-%d %H:%M:%S') if last_purchase_date else '-'
+                _format_local(last_purchase_date, default='-')
             ])
         
         return response
@@ -342,6 +350,4 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
         extra_context['has_export_all'] = True
         
         return super().changelist_view(request, extra_context)
-
-
 

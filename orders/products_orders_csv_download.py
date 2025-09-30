@@ -57,7 +57,7 @@ def export_product_orders_csv(request, store, product):
     # 기본 쿼리셋
     order_items = OrderItem.objects.filter(
         product=product
-    ).select_related('order')
+    ).select_related('order').prefetch_related('order__payment_transactions')
     
     # 날짜 필터링 적용 (화면과 동일한 로직)
     if filter_type == 'this_month':
@@ -165,8 +165,8 @@ def export_product_orders_csv(request, store, product):
             item.product_price,
             item.options_price,
             item.total_price,
-            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            order.get_status_display(),
+            timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
+            order.get_status_display_with_manual(),
             order.get_delivery_status_display(),
             options_str,
             phone_value,
@@ -221,7 +221,7 @@ def export_product_orders_excel(request, store, product):
         # 기본 쿼리셋
         order_items = OrderItem.objects.filter(
             product=product
-        ).select_related('order')
+        ).select_related('order').prefetch_related('order__payment_transactions')
         
         # 날짜 필터링 적용 (화면과 동일한 로직)
         if filter_type == 'this_month':
@@ -311,8 +311,8 @@ def export_product_orders_excel(request, store, product):
             ws.cell(row=row, column=4, value=item.product_price)
             ws.cell(row=row, column=5, value=item.options_price)
             ws.cell(row=row, column=6, value=item.total_price)
-            ws.cell(row=row, column=7, value=order.created_at.strftime('%Y-%m-%d %H:%M:%S'))
-            ws.cell(row=row, column=8, value=order.get_status_display())
+            ws.cell(row=row, column=7, value=timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'))
+            ws.cell(row=row, column=8, value=order.get_status_display_with_manual())
             ws.cell(row=row, column=9, value=order.get_delivery_status_display())
             ws.cell(row=row, column=10, value=options_str)
             # 우편번호 처리 - 0으로 시작하는 경우 문자열로 보존

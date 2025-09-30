@@ -63,12 +63,85 @@
 .option-choice.selected .option-price {
     color: white !important;
 }
+
+.rating-dot {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 9999px;
+    border: 2px solid #d1d5db;
+    color: #6b7280;
+    background: #f9fafb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+.rating-dot:hover {
+    transform: translateY(-2px);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+.rating-dot.active,
+.rating-dot.selected {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #ffffff;
+}
+.rating-dot:focus-visible {
+    outline: 3px solid rgba(245, 158, 11, 0.4);
+    outline-offset: 3px;
+}
+.rating-dot + .rating-dot {
+    margin-left: 0.5rem;
+}
+.rating-dot[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+.review-dropzone {
+    transition: all 0.2s ease;
+}
+.review-dropzone.dragover {
+    border-color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.08);
+}
+.review-preview-item {
+    position: relative;
+    width: 96px;
+    height: 96px;
+}
+.review-preview-item img {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.75rem;
+    object-fit: cover;
+}
+.review-preview-remove {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+}
 </style>
 {% endblock %}
 
 {% block store_content %}
 <div class="bg-gray-50 dark:bg-gray-900 py-8">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    {% if messages %}
+    <div class="mb-6 space-y-2" aria-live="polite">
+      {% for message in messages %}
+      <div class="px-4 py-3 rounded-xl border text-sm
+                  {% if 'success' in message.tags %}bg-green-50 border-green-200 text-green-800 dark:bg-green-900/50 dark:border-green-700 dark:text-green-200
+                  {% elif 'error' in message.tags %}bg-red-50 border-red-200 text-red-800 dark:bg-red-900/50 dark:border-red-700 dark:text-red-200
+                  {% elif 'warning' in message.tags %}bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/50 dark:border-yellow-700 dark:text-yellow-200
+                  {% else %}bg-gray-50 border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100{% endif %}">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
       <!-- 상품 이미지 -->
       <div class="space-y-4">
@@ -409,6 +482,8 @@
       </div>
     </div>
     {% endif %}
+
+    {% include 'products/product_review.html' %}
   </div>
 </div>
 
@@ -446,9 +521,8 @@
 }
 </script>
 
-
-
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'js/reviews.js' %}"></script>
 <!-- Markdown Renderer -->
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
 <script src="{% static 'js/cart-common.js' %}"></script>

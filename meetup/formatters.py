@@ -54,6 +54,18 @@ class MeetupTxtFormatter(MeetupOrderFormatter):
         store = data['store']
         selected_options = data['selected_options']
         
+        def _to_local(dt):
+            if not dt:
+                return None
+            if timezone.is_naive(dt):
+                return timezone.make_aware(dt, timezone.get_current_timezone())
+            return timezone.localtime(dt)
+
+        meetup_datetime = _to_local(meetup.date_time)
+        confirmed_local = _to_local(order.confirmed_at)
+        paid_local = _to_local(order.paid_at)
+        generated_local = _to_local(data['current_time'])
+
         content = f"""
 ===============================================
               밋업 참가 확인서
@@ -65,8 +77,8 @@ class MeetupTxtFormatter(MeetupOrderFormatter):
 주최: {store.store_name}
 주최자: {store.owner_name}"""
 
-        if meetup.date_time:
-            content += f"\n일시: {meetup.date_time.strftime('%Y년 %m월 %d일 (%A) %H시 %M분')}"
+        if meetup_datetime:
+            content += f"\n일시: {meetup_datetime.strftime('%Y년 %m월 %d일 (%A) %H시 %M분')}"
         else:
             content += f"\n일시: 미정"
 
@@ -87,7 +99,7 @@ class MeetupTxtFormatter(MeetupOrderFormatter):
 이름: {order.participant_name}
 이메일: {order.participant_email}
 주문번호: {order.order_number}
-참가 확정일시: {order.confirmed_at.strftime('%Y년 %m월 %d일 %H시 %M분') if order.confirmed_at else '-'}"""
+참가 확정일시: {confirmed_local.strftime('%Y년 %m월 %d일 %H시 %M분') if confirmed_local else '-'}"""
 
         if order.participant_phone:
             content += f"\n연락처: {order.participant_phone}"
@@ -118,7 +130,7 @@ class MeetupTxtFormatter(MeetupOrderFormatter):
         content += f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 최종 결제금액: {order.total_price:,.0f} sats
-결제일시: {order.paid_at.strftime('%Y년 %m월 %d일 %H시 %M분') if order.paid_at else '-'}
+결제일시: {paid_local.strftime('%Y년 %m월 %d일 %H시 %M분') if paid_local else '-'}
 결제방식: 라이트닝 네트워크 (Lightning Network)
 
 ▣ 참가 안내
@@ -144,7 +156,7 @@ class MeetupTxtFormatter(MeetupOrderFormatter):
 ※ 이 참가 확인서는 SatoShop에서 자동 생성된 문서입니다.
    문의사항이 있으시면 밋업 주최자에게 연락해주세요.
 
-생성일시: {data['current_time'].strftime('%Y년 %m월 %d일 %H시 %M분')}
+생성일시: {generated_local.strftime('%Y년 %m월 %d일 %H시 %M분') if generated_local else '-'}
 ===============================================
 """
         return content

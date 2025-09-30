@@ -69,6 +69,7 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **QR 코드 생성**: 모바일 지갑 연동
 - **실시간 결제 확인**: 자동 결제 상태 추적
 - **인보이스 관리**: 결제 내역 및 상태 관리
+- **수동 주문 복구 도구**: 스토어 주인장이 결제 트랜잭션 상세 화면에서 배송 정보와 장바구니를 확인 후 주문으로 저장
 - **환율 자동 업데이트**: 업비트 API를 통한 BTC/KRW 환율 자동 갱신
 - **환율 요약 이메일**: 1시간마다 최근 5개 환율 데이터를 모아서 요약 내용을 텔레그램으로 전송
 
@@ -362,6 +363,43 @@ ADMIN_PASSWORD=your-secure-admin-password
 ### Blink API 설정
 
 각 스토어별로 개별 설정되므로 환경 변수가 아닌 스토어 설정에서 관리됩니다.
+
+### Lightning 결제 워크플로우
+
+새로운 5단계 결제 플로우는 `ln_payment` 앱을 중심으로 동작하며, Blink API 상태에 맞추어 트랜잭션을 기록합니다.
+
+1. **결제 준비** – 장바구니와 재고를 검증하고 `PaymentTransaction` + `OrderItemReservation`을 생성합니다.
+2. **인보이스 생성** – Blink GraphQL을 호출해 인보이스를 발행하고 QR/문자열을 반환합니다.
+3. **결제 확인** – `lnInvoicePaymentStatus`를 폴링하여 사용자의 결제 여부를 확인합니다.
+4. **입금 확인** – Blink webhook(`receive.lightning`) 또는 `transactionsByPaymentHash` 조회 결과로 스토어 지갑 입금을 기록합니다.
+5. **주문 저장** – 결제가 확인되면 기존 주문 생성 로직을 통해 주문/이메일/마이페이지 정보를 완성합니다.
+
+#### 백엔드 연동 포인트
+- `ln_payment/services.py`의 `LightningPaymentProcessor`가 상태 머신, soft-lock, Blink API 호출을 담당합니다.
+- 새 webhook 엔드포인트: `POST /ln-payment/webhook/blink/` (Svix 서명 사용 시 `BLINK_WEBHOOK_SECRET` 환경 변수 필요).
+- `transactionsByPaymentHash`를 활용한 백업 조회를 통해 webhook 누락 시에도 입금 정보를 수집합니다.
+
+#### 프런트엔드 흐름
+- `orders/templates/orders/checkout.html`은 사용자가 결제 절차를 시작하도록 CTA만 강조하고 `ln_payment:payment_process`로 이동시킵니다.
+- `ln_payment/templates/ln_payment/payment_process.html`에서 5단계 진행 UI와 인보이스, 단계 로그, 스토어 연락처 안내를 제공합니다.
+- `static/ln_payment/js/payment_workflow.js`는 인보이스 재생성·취소·타이머·상태 폴링을 처리합니다.
+- `static/ln_payment/js/payment_process.js`와 `static/ln_payment/css/payment_process.css`는 접근성/스크롤 보조, 상태 배너, 다크 모드 스타일을 담당합니다.
+- 결제 실패 시 상태 배너와 스토어 연락처 안내로 재시도/문의 경로를 제공합니다.
+- 재고 부족 안내 시 상태 배너와 CTA 전환으로 상품 상세 화면에서 재고를 다시 확인하도록 유도합니다.
+- 모바일 화면에서는 `lightning:` 스킴을 사용하는 “지갑 열기” 버튼을 노출해 지갑 앱으로 즉시 이동할 수 있습니다.
+- 진행 로그는 단계 이름·시간과 함께 사용자 친화 문구로 갱신되어 결제 흐름을 직관적으로 파악할 수 있습니다.
+- Django Admin에는 주문을 수동으로 저장한 결제 트랜잭션만 모아서 확인하는 전용 메뉴가 추가되었습니다.
+
+#### 운영 시 유의 사항
+- Blink Dashboard에서 webhook 엔드포인트를 `/ln-payment/webhook/blink/`로 등록하고, 시그니처 검증을 위해 `BLINK_WEBHOOK_SECRET`을 설정하세요.
+- WebSocket을 사용하지 않는 환경에서도 폴링 기반으로 동작하지만, 필요 시 `svix` 패키지를 설치하면 서명 검증이 강화됩니다.
+- soft-lock 만료 처리는 결제 시작 시 자동으로 정리됩니다. 장기간 미사용 데이터를 주기적으로 확인하려면 관리 명령을 추가로 구성하세요.
+
+환경 변수 예시:
+```env
+# Blink webhook signature 검증
+BLINK_WEBHOOK_SECRET=whsec_xxxxxxxxxx
+```
 
 ## 🚀 배포
 
@@ -691,4 +729,3 @@ SOFTWARE.
 ---
 
 **⚡ 비트코인 라이트닝 네트워크로 더 빠르고 저렴한 전자상거래를 경험해보세요!**
-

@@ -1,0 +1,154 @@
+.workflow-steps {
+  counter-reset: workflow-step;
+}
+
+.workflow-step {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background-color: rgba(255, 255, 255, 0.8);
+  transition: all 0.2s ease;
+  align-items: flex-start;
+}
+
+.dark .workflow-step {
+  border-color: rgba(71, 85, 105, 0.4);
+  background-color: rgba(15, 23, 42, 0.8);
+}
+
+.workflow-step:not(:last-child) {
+  position: relative;
+}
+
+.workflow-step-indicator {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  color: #1f2937;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  flex: 0 0 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+}
+
+.dark .workflow-step-indicator {
+  background: rgba(37, 99, 235, 0.15);
+  color: #f8fafc;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.workflow-step-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.dark .workflow-step-title {
+  color: #f8fafc;
+}
+
+.workflow-step-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+.dark .workflow-step-desc {
+  color: #94a3b8;
+}
+
+.workflow-step.is-active {
+  border-color: rgba(247, 147, 26, 0.45);
+  background: rgba(247, 147, 26, 0.08);
+}
+
+.dark .workflow-step.is-active {
+  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.workflow-step.is-active .workflow-step-indicator {
+  background: linear-gradient(135deg, #f7931a, #fbbf24);
+  color: #0f172a;
+  border-color: rgba(247, 147, 26, 0.6);
+}
+
+.workflow-step.is-complete {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.dark .workflow-step.is-complete {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.workflow-step.is-complete .workflow-step-indicator {
+  background: linear-gradient(135deg, #10b981, #22c55e);
+  color: #052e16;
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
+.invoice-qr-container {
+  width: 220px;
+  height: 220px;
+  border-radius: 1rem;
+  border: 1px dashed rgba(99, 102, 241, 0.3);
+  background: rgba(248, 250, 252, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.dark .invoice-qr-container {
+  border-color: rgba(99, 102, 241, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+#paymentStatusText {
+  min-height: 90px;
+  line-height: 1.6;
+}
+
+#workflowLogList li {
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 0.75rem 1rem;
+}
+
+.dark #workflowLogList li {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(71, 85, 105, 0.35);
+}
+
+#workflowLogList li .log-time {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.dark #workflowLogList li .log-time {
+  color: #94a3b8;
+}
+
+#workflowLogList li .log-message {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+.dark #workflowLogList li .log-message {
+  color: #f1f5f9;
+}

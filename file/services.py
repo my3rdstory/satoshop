@@ -12,6 +12,14 @@ from django.template import Context, Template
 logger = logging.getLogger(__name__)
 
 
+def _localize_datetime(dt):
+    if not dt:
+        return None
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    return timezone.localtime(dt)
+
+
 def send_file_purchase_notification_email(file_order):
     """
     파일 구매 확정 시 스토어 주인장에게 이메일 발송
@@ -65,13 +73,14 @@ def send_file_purchase_notification_email(file_order):
         subject = f'[{store.store_name}] 새로운 파일 구매 - {file_order.order_number}'
         
         # 구매 내역 생성
+        confirmed_local = _localize_datetime(file_order.confirmed_at)
         purchase_content = f"""
 ▣ 파일 구매 확정 내역
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 파일명: {file_order.digital_file.name}
 주문번호: {file_order.order_number}
 구매자: {file_order.user.username} ({file_order.user.email})
-구매 확정일시: {file_order.confirmed_at.strftime('%Y년 %m월 %d일 %H시 %M분') if file_order.confirmed_at else '미확정'}
+구매 확정일시: {confirmed_local.strftime('%Y년 %m월 %d일 %H시 %M분') if confirmed_local else '미확정'}
 """
         
         if file_order.price > 0:
@@ -178,6 +187,9 @@ def send_file_buyer_confirmation_email(file_order):
         if file_order.digital_file.purchase_message:
             custom_message = f"\n\n▣ 판매자 안내사항\n{file_order.digital_file.purchase_message}"
         
+        confirmed_local = _localize_datetime(file_order.confirmed_at)
+        confirmed_text = confirmed_local.strftime('%Y년 %m월 %d일 %H시 %M분') if confirmed_local else ''
+
         message = f"""안녕하세요, {file_order.user.username}님!
 
 "{file_order.digital_file.name}" 파일 구매가 성공적으로 완료되었습니다. 🎉
@@ -187,7 +199,7 @@ def send_file_buyer_confirmation_email(file_order):
 주문번호: {file_order.order_number}
 파일명: {file_order.digital_file.name}
 판매자: {store.store_name}
-구매일시: {file_order.confirmed_at.strftime('%Y년 %m월 %d일 %H시 %M분') if file_order.confirmed_at else ''}
+구매일시: {confirmed_text}
 {download_info}
 
 ▣ 다운로드 방법
