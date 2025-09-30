@@ -9,6 +9,8 @@
   const verifyUrlTemplate = app.dataset.verifyUrlTemplate;
   const cancelUrlTemplate = app.dataset.cancelUrlTemplate;
   const csrfToken = app.dataset.csrfToken || getCookie('csrftoken');
+  const inventoryRedirectUrl = app.dataset.inventoryRedirectUrl || '';
+  const cartFallbackUrl = app.dataset.cartUrl || '';
 
   const startButton = document.getElementById('startPaymentButton');
   const panel = document.getElementById('paymentWorkflowPanel');
@@ -26,11 +28,40 @@
   const stepElements = Array.from(document.querySelectorAll('[data-step-index]'));
   const invoiceTimer = document.getElementById('invoiceTimer');
   const invoiceTimerValue = document.getElementById('invoiceTimerValue');
+  const openWalletButton = document.getElementById('openWalletButton');
 
   let transactionId = null;
   let countdownInterval = null;
   let pollInterval = null;
   let expiresAt = null;
+  let isInventoryRedirectMode = false;
+
+  const stageLabelMap = {
+    1: '1단계 · 재고 확인',
+    2: '2단계 · 인보이스 발행',
+    3: '3단계 · 결제 확인',
+    4: '4단계 · 입금 확인',
+    5: '5단계 · 주문 확정',
+  };
+
+  const statusLabelMap = {
+    pending: '대기 중',
+    processing: '진행 중',
+    failed: '문제 발생',
+    completed: '완료',
+  };
+
+  const logMessageMap = {
+    '재고 예약 및 결제 준비 완료': '재고 확보가 완료되어 결제를 준비했습니다.',
+    '인보이스 생성 완료': '결제에 사용할 인보이스를 발급했습니다.',
+    '사용자 결제 대기 중': '지갑에서 결제 승인 신호를 기다리고 있습니다.',
+    '사용자 결제 완료 감지': '결제 완료 신호를 받아 후속 단계를 진행합니다.',
+    '인보이스 만료': '인보이스가 만료되었습니다. 새 결제가 필요합니다.',
+    '결제 상태 확인 실패': '결제 상태 확인에 실패했습니다.',
+    '스토어 지갑 입금 확인': '스토어 지갑으로 입금이 확인되었습니다.',
+    '주문 저장 완료': '결제가 완료되어 주문을 저장했습니다.',
+    '인보이스 생성 실패': '인보이스 생성에 실패했습니다.',
+  };
 
   function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -84,10 +115,18 @@
 
     logs.forEach((log) => {
       const li = document.createElement('li');
+      const translated = translateLogMessage(log);
+      const statusText = statusLabelMap[log.status] || '진행 업데이트';
+      const detailHint = extractDetailHint(log.detail, log.status);
       li.innerHTML = `
-        <p class="log-title">${escapeHtml(log.message || '단계 업데이트')}</p>
-        <span class="log-timestamp">${new Date(log.created_at).toLocaleString()}</span>
-        ${log.detail && Object.keys(log.detail).length ? `<pre class="mt-2 text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(JSON.stringify(log.detail, null, 2))}</pre>` : ''}
+        <div class="log-entry">
+          <div class="log-meta">
+            <span class="log-time">${formatLogTime(log.created_at)}</span>
+            <span class="log-status ${getStatusBadgeClass(log.status)}">${escapeHtml(statusText)}</span>
+          </div>
+          <p class="log-message"><span class="log-stage-label">${escapeHtml(translated.stage)}</span>${escapeHtml(translated.message)}</p>
+          ${detailHint ? `<p class="log-detail">${escapeHtml(detailHint)}</p>` : ''}
+        </div>
       `;
       workflowLogList.prepend(li);
     });
@@ -102,6 +141,74 @@
       "'": '&#039;'
     };
     return text ? text.replace(/[&<>"']/g, (m) => map[m]) : '';
+  }
+
+  function formatLogTime(isoString) {
+    if (!isoString) {
+      return '';
+    }
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    return date.toLocaleTimeString(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+  }
+
+  function getStatusBadgeClass(status) {
+    switch (status) {
+      case 'completed':
+        return 'log-status--completed';
+      case 'failed':
+        return 'log-status--failed';
+      case 'processing':
+        return 'log-status--processing';
+      case 'pending':
+      default:
+        return 'log-status--pending';
+    }
+  }
+
+  function translateLogMessage(log) {
+    const stage = stageLabelMap[log.stage] || '단계 진행';
+    const mappedMessage = logMessageMap[log.message] || log.message || '단계가 업데이트되었습니다.';
+    return {
+      stage,
+      message: mappedMessage,
+    };
+  }
+
+  function extractDetailHint(detail, status) {
+    if (!detail || typeof detail !== 'object') {
+      return '';
+    }
+    if (typeof detail.error === 'string' && detail.error.trim()) {
+      return detail.error;
+    }
+    if (typeof detail.status === 'string') {
+      if (detail.status === 'paid') {
+        return '결제 완료 신호를 확인했습니다.';
+      }
+      if (detail.status === 'pending') {
+        return '결제 승인 신호를 기다리는 중입니다.';
+      }
+      if (detail.status === 'expired') {
+        return '결제 시간이 만료되었습니다.';
+      }
+    }
+    if (detail.previous_payment_hash) {
+      return '이전 인보이스를 취소하고 새 인보이스를 준비했습니다.';
+    }
+    if (detail.order_number) {
+      return `주문 번호 ${detail.order_number}로 저장되었습니다.`;
+    }
+    if (status === 'failed') {
+      return '문제를 해결한 뒤 다시 시도해주세요.';
+    }
+    return '';
   }
 
   function updateInvoice(invoice) {
@@ -119,8 +226,19 @@
         invoiceQrContainer.classList.remove('hidden');
       }
       invoiceQrImage.src = qrApi;
+      if (openWalletButton) {
+        const lightningUri = invoice.payment_request.startsWith('lightning:')
+          ? invoice.payment_request
+          : `lightning:${invoice.payment_request}`;
+        openWalletButton.href = lightningUri;
+        openWalletButton.classList.remove('hidden');
+      }
     } else if (invoiceQrContainer) {
       invoiceQrContainer.classList.add('hidden');
+      if (openWalletButton) {
+        openWalletButton.classList.add('hidden');
+        openWalletButton.removeAttribute('href');
+      }
     }
     if (invoice.expires_at) {
       expiresAt = new Date(invoice.expires_at);
@@ -163,6 +281,7 @@
     if (!startUrl) {
       return;
     }
+    restoreStartButtonDefault();
     startButton.disabled = true;
     startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> 준비 중...</span>';
     updateStatusText('재고 확인과 결제 준비를 진행하고 있습니다. 잠시만 기다려 주세요.');
@@ -184,7 +303,7 @@
       }
 
       if (!response.ok || !data.success) {
-        handleStartError((data && data.error) || '결제 준비에 실패했습니다.');
+        handleStartError((data && data.error) || '결제 준비에 실패했습니다.', data && data.error_code);
         return;
       }
 
@@ -195,7 +314,7 @@
       updateStatusText('인보이스가 생성되었습니다. 라이트닝 지갑으로 QR을 스캔하거나 인보이스를 복사해 결제를 진행하세요.');
       startPolling();
     } catch (error) {
-      handleStartError(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.');
+      handleStartError(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.', error && error.code);
     }
   }
 
@@ -223,6 +342,10 @@
     if (invoiceText) {
       invoiceText.value = '';
     }
+    if (openWalletButton) {
+      openWalletButton.classList.add('hidden');
+      openWalletButton.removeAttribute('href');
+    }
     if (workflowLogContainer) {
       workflowLogContainer.classList.add('hidden');
     }
@@ -237,14 +360,54 @@
     }
   }
 
-  function handleStartError(message) {
-    updateStatusText(message, 'error');
+  function handleStartError(message, errorCode) {
+    const displayMessage = errorCode === 'inventory_unavailable'
+      ? '재고가 부족하여 결제를 진행할 수 없습니다. 상품 정보를 다시 확인한 뒤 다시 시도해주세요.'
+      : message;
+    updateStatusText(displayMessage || '결제 준비에 실패했습니다.', 'error');
     resetWorkflowView();
     transactionId = null;
-    if (startButton) {
-      startButton.disabled = false;
-      startButton.innerHTML = defaultStartButtonMarkup || '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+    if (!startButton) {
+      return;
     }
+    startButton.disabled = false;
+    if (errorCode === 'inventory_unavailable') {
+      setStartButtonToRedirect();
+    } else {
+      restoreStartButtonDefault();
+    }
+  }
+
+  function redirectToProduct(event) {
+    if (event) {
+      event.preventDefault();
+    }
+    const targetUrl = inventoryRedirectUrl || cartFallbackUrl || '/';
+    window.location.href = targetUrl;
+  }
+
+  function setStartButtonToRedirect() {
+    if (!startButton) {
+      return;
+    }
+    if (!isInventoryRedirectMode) {
+      startButton.removeEventListener('click', startWorkflow);
+      startButton.addEventListener('click', redirectToProduct);
+    }
+    startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-store"></i> 상품 다시 확인하기</span>';
+    isInventoryRedirectMode = true;
+  }
+
+  function restoreStartButtonDefault() {
+    if (!startButton) {
+      return;
+    }
+    if (isInventoryRedirectMode) {
+      startButton.removeEventListener('click', redirectToProduct);
+      startButton.addEventListener('click', startWorkflow);
+    }
+    startButton.innerHTML = defaultStartButtonMarkup || '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+    isInventoryRedirectMode = false;
   }
 
   async function cancelDueToExpiration() {
@@ -293,7 +456,7 @@
           .finally(() => {
             if (startButton) {
               startButton.disabled = false;
-              startButton.innerHTML = defaultStartButtonMarkup || '<i class="fas fa-bolt"></i> 결제 절차 진행하기';
+              restoreStartButtonDefault();
             }
             setTimeout(() => {
               window.location.reload();
@@ -407,8 +570,26 @@
       });
   }
 
+  function openWallet(event) {
+    if (!openWalletButton || !invoiceText) {
+      return;
+    }
+    if (event) {
+      event.preventDefault();
+    }
+    const invoiceValue = invoiceText.value.trim();
+    if (!invoiceValue) {
+      updateStatusText('인보이스가 준비되면 지갑을 열 수 있습니다.', 'error');
+      return;
+    }
+    const lightningUri = invoiceValue.startsWith('lightning:') ? invoiceValue : `lightning:${invoiceValue}`;
+    openWalletButton.href = lightningUri;
+    window.location.href = lightningUri;
+  }
+
   startButton?.addEventListener('click', startWorkflow);
   cancelPaymentButton?.addEventListener('click', cancelPayment);
   copyInvoiceButton?.addEventListener('click', copyInvoice);
+  openWalletButton?.addEventListener('click', openWallet);
 
 })();

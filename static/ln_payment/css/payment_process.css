@@ -102,15 +102,18 @@
   background-color: rgba(71, 85, 105, 0.5);
 }
 
-.invoice-actions button {
+.invoice-actions button,
+.invoice-actions a {
   transition: transform 0.2s ease;
 }
 
-.invoice-actions button:hover {
+.invoice-actions button:hover,
+.invoice-actions a:hover {
   transform: translateY(-1px);
 }
 
-.invoice-actions button:active {
+.invoice-actions button:active,
+.invoice-actions a:active {
   transform: translateY(0);
 }
 

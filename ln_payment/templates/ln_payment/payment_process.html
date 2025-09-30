@@ -96,6 +96,8 @@
           data-verify-url-template="{% url 'ln_payment:workflow_verify' '11111111-1111-1111-1111-111111111111' %}"
           data-cancel-url-template="{% url 'ln_payment:workflow_cancel' '11111111-1111-1111-1111-111111111111' %}"
           data-csrf-token="{{ csrf_token }}"
+          data-inventory-redirect-url="{{ inventory_redirect_url|default:'' }}"
+          data-cart-url="{% url 'orders:cart_view' %}"
         >
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -155,6 +157,15 @@
                             <i class="fas fa-copy"></i>
                             인보이스 복사
                           </button>
+                          <a
+                            id="openWalletButton"
+                            href="#"
+                            class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-4 py-2 text-xs font-semibold transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40 hidden md:hidden"
+                            rel="nofollow"
+                          >
+                            <i class="fas fa-wallet"></i>
+                            지갑 열기
+                          </a>
                           <button
                             type="button"
                             id="cancelPaymentButton"

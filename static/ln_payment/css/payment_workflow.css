@@ -127,22 +127,105 @@
   border-color: rgba(71, 85, 105, 0.35);
 }
 
-#workflowLogList li .log-title {
+#workflowLogList li .log-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#workflowLogList li .log-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#workflowLogList li .log-time {
+  font-size: 0.8rem;
   font-weight: 600;
+  color: #475569;
+}
+
+.dark #workflowLogList li .log-time {
+  color: #cbd5f5;
+}
+
+#workflowLogList li .log-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.log-status--pending {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+.dark .log-status--pending {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+}
+
+.log-status--processing {
+  background: rgba(249, 115, 22, 0.12);
+  color: #c2410c;
+}
+
+.dark .log-status--processing {
+  background: rgba(249, 115, 22, 0.2);
+  color: #f97316;
+}
+
+.log-status--completed {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+.dark .log-status--completed {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.log-status--failed {
+  background: rgba(248, 113, 113, 0.16);
+  color: #b91c1c;
+}
+
+.dark .log-status--failed {
+  background: rgba(248, 113, 113, 0.22);
+  color: #fecaca;
+}
+
+#workflowLogList li .log-message {
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: #0f172a;
 }
 
-.dark #workflowLogList li .log-title {
-  color: #f8fafc;
+.dark #workflowLogList li .log-message {
+  color: #f1f5f9;
 }
 
-#workflowLogList li .log-timestamp {
-  display: block;
-  font-size: 0.75rem;
-  margin-top: 0.35rem;
-  color: #94a3b8;
+.log-stage-label {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-.dark #workflowLogList li .log-timestamp {
+.dark .log-stage-label {
+  color: #e2e8f0;
+}
+
+#workflowLogList li .log-detail {
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
   color: #64748b;
+}
+
+.dark #workflowLogList li .log-detail {
+  color: #94a3b8;
 }

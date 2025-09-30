@@ -5,6 +5,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.urls import reverse
 
 import json
 import qrcode
@@ -168,6 +169,14 @@ def payment_process(request):
 
     primary_store = groups[0].store
 
+    primary_product_url = None
+    if groups and groups[0].items:
+        first_item = groups[0].items[0]
+        try:
+            primary_product_url = reverse('products:product_detail', args=[groups[0].store.store_id, first_item['product_id']])
+        except Exception:  # pragma: no cover - 가용성 확보용 방어 코드
+            primary_product_url = None
+
     context = {
         'stores_with_items': groups,
         'subtotal_amount': subtotal,
@@ -175,6 +184,7 @@ def payment_process(request):
         'total_amount': total,
         'shipping_data': shipping_data,
         'store': primary_store,
+        'inventory_redirect_url': primary_product_url,
     }
     return render(request, 'ln_payment/payment_process.html', context)
 
