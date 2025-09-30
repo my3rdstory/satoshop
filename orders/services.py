@@ -703,8 +703,15 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
     UserModel = get_user_model()
     user = payment_transaction.user
     if not user:
+        email_hint = None
+        if isinstance(shipping_data, dict):
+            email_hint = shipping_data.get('buyer_email') or shipping_data.get('buyerEmail')
+        if email_hint:
+            user = UserModel.objects.filter(email__iexact=email_hint).first()
+    if not user:
+        fallback_username = 'anonymous_guest'
         user, _ = UserModel.objects.get_or_create(
-            username='anonymous_guest',
+            username=fallback_username,
             defaults={
                 'email': 'anonymous@satoshop.com',
                 'first_name': 'Anonymous',
@@ -864,6 +871,7 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
             'restored_at': now.isoformat(),
             'operator': getattr(operator, 'username', None) or getattr(operator, 'email', None),
         })
+        meta['manual_restored'] = True
         payment_transaction.metadata = meta
         payment_transaction.save(update_fields=['metadata'])
 

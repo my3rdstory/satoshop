@@ -42,6 +42,32 @@ TRANSACTION_STAGE_DESCRIPTIONS = {
 }
 
 
+def _is_manual_restored(order):
+    cache = getattr(order, 'manual_restored', None)
+    if cache is not None:
+        return cache
+    flag = order.payment_transactions.filter(
+        Q(metadata__manual_restored=True) | Q(metadata__manual_restore_history__isnull=False)
+    ).exists()
+    order.manual_restored = flag
+    return flag
+
+
+def _mark_manual_restored(iterable):
+    seen = {}
+    for obj in iterable:
+        order = getattr(obj, 'order', obj)
+        if order is None:
+            continue
+        order_id = getattr(order, 'id', None)
+        if order_id in seen:
+            order.manual_restored = seen[order_id]
+            continue
+        flag = _is_manual_restored(order)
+        if order_id is not None:
+            seen[order_id] = flag
+
+
 def _can_restore_transaction(transaction):
     metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
     shipping_data = metadata.get('shipping') or {}
@@ -462,8 +488,25 @@ def payment_transactions(request, store_id):
     transactions_page = paginator.get_page(page_number)
 
     for tx in transactions_page:
+        metadata = tx.metadata if isinstance(tx.metadata, dict) else {}
+        shipping = metadata.get('shipping') or {}
+        cart_snapshot = metadata.get('cart_snapshot') or []
+
         tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
-        tx.manual_restore_enabled = _can_restore_transaction(tx)
+        tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
+        label = shipping.get('buyer_name') or shipping.get('buyer_email')
+        if not label and tx.user:
+            label = tx.user.username
+        tx.list_buyer_label = label or '미상'
+        total_items = 0
+        for item in cart_snapshot:
+            try:
+                total_items += int(item.get('quantity') or 0)
+            except (TypeError, ValueError):
+                continue
+        if total_items <= 0:
+            total_items = metadata.get('items_count') or 0
+        tx.list_items_count = total_items
 
     base_qs = PaymentTransaction.objects.filter(store=store)
     summary = {
@@ -482,7 +525,6 @@ def payment_transactions(request, store_id):
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,
-        'status_descriptions': TRANSACTION_STATUS_DESCRIPTIONS,
     }
     return render(request, 'orders/payment_transactions.html', context)
 
@@ -536,10 +578,6 @@ def payment_transaction_detail(request, store_id, transaction_id):
         cart_summary['total'] = cart_summary['subtotal'] + cart_summary['shipping_fee'] if cart_summary['subtotal'] or cart_summary['shipping_fee'] else _safe_int(transaction.amount_sats)
 
     stage_logs_queryset = transaction.stage_logs.order_by('-created_at')
-    payment_completed = stage_logs_queryset.filter(
-        stage=PaymentStage.USER_PAYMENT,
-        status=PaymentStageLog.STATUS_COMPLETED,
-    ).exists()
     stage_logs = list(stage_logs_queryset)
     for log in stage_logs:
         log.stage_label = TRANSACTION_STAGE_DESCRIPTIONS.get(log.stage, f'{log.stage}단계')
@@ -549,26 +587,21 @@ def payment_transaction_detail(request, store_id, transaction_id):
         else:
             log.detail_pairs = []
             log.detail_extra = log.detail
-    manual_restore_enabled = (
-        not transaction.order_id
-        and bool(shipping_data)
-        and bool(cart_items)
-        and payment_completed
-    )
+    manual_restore_enabled = transaction.status != PaymentTransaction.STATUS_COMPLETED
 
     if request.method == 'POST' and request.POST.get('action') == 'restore_order':
         if not manual_restore_enabled:
-            messages.error(request, '수동 주문 생성이 가능한 상태가 아닙니다.')
-        else:
-            try:
-                order = restore_order_from_payment_transaction(transaction, operator=request.user)
-                messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
-                return redirect('orders:checkout_complete', order_number=order.order_number)
-            except ValueError as exc:
-                messages.error(request, str(exc))
-            except Exception as exc:  # pylint: disable=broad-except
-                logger.exception('manual restore failed transaction=%s', transaction_id)
-                messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+            messages.info(request, '이미 완료된 결제입니다. 주문 저장이 필요하지 않습니다.')
+            return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
+        try:
+            order = restore_order_from_payment_transaction(transaction, operator=request.user)
+            messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
+            return redirect('orders:checkout_complete', order_number=order.order_number)
+        except ValueError as exc:
+            messages.warning(request, str(exc))
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.exception('manual restore failed transaction=%s', transaction_id)
+            messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
         return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
 
     context = {
@@ -590,6 +623,30 @@ def payment_transaction_detail(request, store_id, transaction_id):
 
 @login_required
 @store_owner_required
+@require_POST
+def payment_transaction_restore(request, store_id, transaction_id):
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    transaction = get_object_or_404(
+        PaymentTransaction.objects.select_related('user', 'order'),
+        id=transaction_id,
+        store=store,
+    )
+
+    if not _can_restore_transaction(transaction):
+        messages.warning(request, '재시도 주문 생성: 주문이 이미 존재하거나 데이터가 부족할 수 있습니다. 생성 후 반드시 주문 내역을 확인하세요.')
+    try:
+        order = restore_order_from_payment_transaction(transaction, operator=request.user)
+        messages.success(request, f'주문 {order.order_number} 으로 저장했습니다.')
+    except ValueError as exc:
+        messages.error(request, str(exc))
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('manual restore failed on list view transaction=%s', transaction_id)
+        messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    return redirect('orders:payment_transactions', store_id=store.store_id)
+
+
+@login_required
+@store_owner_required
 def product_orders(request, store_id, product_id):
     """특정 상품의 주문 목록"""
     import calendar
@@ -602,7 +659,7 @@ def product_orders(request, store_id, product_id):
     # 기본 쿼리셋
     order_items = OrderItem.objects.filter(
         product=product
-    ).select_related('order')
+    ).select_related('order').prefetch_related('order__payment_transactions')
     
     # 현재 날짜 정보
     now = timezone.now()
@@ -701,13 +758,21 @@ def product_orders(request, store_id, product_id):
             total_quantity=Sum('quantity'),
             total_revenue=Sum(F('quantity') * (F('product_price') + F('options_price')))
         )
-    
+
+    if filter_type == 'all' and page_obj:
+        _mark_manual_restored(page_obj.object_list)
+        order_items_for_context = None
+    else:
+        order_items_list = list(order_items)
+        _mark_manual_restored(order_items_list)
+        order_items_for_context = order_items_list
+
     context = {
         'store': store,
         'product': product,
         'page_obj': page_obj,
         'page_numbers': page_numbers,
-        'order_items': order_items if filter_type != 'all' else None,  # 페이지네이션이 없을 때 전체 데이터
+        'order_items': order_items_for_context,  # 페이지네이션이 없을 때 전체 데이터
         'filter_type': filter_type,
         'start_date': start_date,
         'end_date': end_date,
@@ -757,7 +822,7 @@ def export_orders_csv(request, store_id):
         # 데이터 조회
         order_items = OrderItem.objects.filter(
             product__store=store
-        ).select_related('order', 'product').order_by('-order__created_at')
+        ).select_related('order', 'product').prefetch_related('order__payment_transactions').order_by('-order__created_at')
         
         # 데이터 작성
         for row, item in enumerate(order_items, 2):
@@ -768,7 +833,7 @@ def export_orders_csv(request, store_id):
             ws.cell(row=row, column=4, value=item.product_price)
             ws.cell(row=row, column=5, value=item.total_price)
             ws.cell(row=row, column=6, value=timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'))
-            ws.cell(row=row, column=7, value=order.get_status_display())
+            ws.cell(row=row, column=7, value=order.get_status_display_with_manual())
             ws.cell(row=row, column=8, value=order.buyer_name)
             phone_cell = ws.cell(row=row, column=9, value=str(order.buyer_phone or ''))
             phone_cell.number_format = '@'
@@ -824,7 +889,7 @@ def export_orders_csv(request, store_id):
                 item.product_price,
                 item.total_price,
                 timezone.localtime(order.created_at).strftime('%Y-%m-%d %H:%M:%S'),
-                order.get_status_display(),
+                order.get_status_display_with_manual(),
                 order.buyer_name,
                 _format_text_for_csv(order.buyer_phone),
                 order.buyer_email,
@@ -856,9 +921,11 @@ def my_purchases(request):
     purchases = PurchaseHistory.objects.filter(user=request.user).select_related(
         'order', 'order__store'
     ).prefetch_related(
-        'order__items', 'order__items__product', 'order__items__product__images'
+        'order__items', 'order__items__product', 'order__items__product__images', 'order__payment_transactions'
     ).order_by('-purchase_date')
-    
+
+    _mark_manual_restored([p.order for p in purchases if p.order])
+
     context = {
         'purchases': purchases,
     }

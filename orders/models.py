@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.utils import timezone
 
@@ -243,6 +244,29 @@ class Order(models.Model):
             self.order_number = self.generate_order_number()
         super().save(*args, **kwargs)
     
+    def get_status_display_with_manual(self):
+        base_label = self.get_status_display()
+        manual_flag = getattr(self, 'manual_restored', None)
+        if manual_flag is None:
+            cache = getattr(self, '_prefetched_objects_cache', {}) or {}
+            prefetched = cache.get('payment_transactions')
+            if prefetched is not None:
+                manual_flag = any(
+                    isinstance(getattr(tx, 'metadata', None), dict) and (
+                        tx.metadata.get('manual_restored') or tx.metadata.get('manual_restore_history')
+                    )
+                    for tx in prefetched
+                )
+            else:
+                manual_flag = self.payment_transactions.filter(
+                    Q(metadata__manual_restored=True) | Q(metadata__manual_restore_history__isnull=False)
+                ).exists()
+            self.manual_restored = manual_flag
+        if manual_flag:
+            return f"{base_label}(수동저장)"
+        return base_label
+
+
     def generate_order_number(self):
         """주문번호 생성: store_id-ord-YYYYMMDD-해시값 (결제완료일 기준)"""
         import uuid
