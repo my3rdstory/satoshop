@@ -586,6 +586,13 @@ def payment_transaction_detail(request, store_id, transaction_id):
         else:
             log.detail_pairs = []
             log.detail_extra = log.detail
+    payment_request = transaction.payment_request or ''
+    invoice_uri = ''
+    if payment_request:
+        if payment_request.startswith('lightning:'):
+            invoice_uri = payment_request
+        else:
+            invoice_uri = f'lightning:{payment_request}'
     manual_restore_enabled = transaction.status != PaymentTransaction.STATUS_COMPLETED
 
     if request.method == 'POST' and request.POST.get('action') == 'restore_order':
@@ -616,6 +623,8 @@ def payment_transaction_detail(request, store_id, transaction_id):
         'cart_items': cart_items,
         'cart_summary': cart_summary,
         'stage_logs': stage_logs,
+        'payment_request': payment_request,
+        'invoice_uri': invoice_uri,
         'manual_restore_enabled': manual_restore_enabled,
         'manual_restore_history': metadata.get('manual_restore_history', []),
         'status_description': TRANSACTION_STATUS_DESCRIPTIONS.get(transaction.status, ''),

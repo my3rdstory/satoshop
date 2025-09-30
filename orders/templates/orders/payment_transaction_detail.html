@@ -65,6 +65,34 @@
       </div>
     </header>
 
+    {% if payment_request %}
+    <section class="mb-8 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+        <div class="flex-1 space-y-3">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Lightning 인보이스</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">주문자의 지갑에서 받은 인보이스와 비교하거나 재확인할 때 사용하세요.</p>
+          <div id="paymentRequestValue" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-xs font-mono break-all text-gray-800 dark:text-gray-100">{{ payment_request }}</div>
+        </div>
+        <div class="flex flex-col gap-3 md:w-56">
+          <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/50 rounded-lg px-3 py-2">
+            <span class="font-semibold text-gray-700 dark:text-gray-200">인보이스 만료</span><br>
+            {% if transaction.invoice_expires_at %}
+            {{ transaction.invoice_expires_at|date:'Y-m-d H:i' }}
+            {% else %}
+            -
+            {% endif %}
+          </div>
+          <div class="flex flex-wrap md:flex-col gap-2">
+            <button type="button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-copy-target="#paymentRequestValue" data-label="인보이스 복사">인보이스 복사</button>
+            {% if invoice_uri %}
+            <a href="{{ invoice_uri }}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-bitcoin px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#e08113] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/40 transition" rel="nofollow noopener">지갑에서 열기</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
     {% if manual_restore_enabled %}
     <section class="mb-8 rounded-2xl border border-amber-200 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20 px-6 py-5 flex flex-col gap-3">
       <div class="flex items-start gap-3">
