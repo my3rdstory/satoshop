@@ -15,6 +15,7 @@ import logging
 
 from stores.models import Store
 from products.models import Product, ProductOption, ProductOptionChoice
+from myshop.models import SiteSettings
 from .models import Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 from .payment_utils import calculate_store_totals, calculate_totals, group_cart_items
 from .services import CartService, restore_order_from_payment_transaction
@@ -1163,7 +1164,29 @@ def shipping_info(request):
             self.total_items = total_items
     
     dummy_cart = DummyCart(cart_summary['total_amount'], cart_summary['total_items'])
-    
+
+    session_shipping_data = request.session.get('shipping_data') or {}
+    form_data = dict(session_shipping_data)
+
+    if not form_data and request.user.is_superuser:
+        try:
+            site_settings = SiteSettings.get_settings()
+            form_data = site_settings.get_superuser_checkout_defaults()
+        except Exception:  # pragma: no cover - 설정 조회 실패 시 기본값 유지
+            form_data = {}
+
+    default_keys = [
+        'buyer_name',
+        'buyer_phone',
+        'buyer_email',
+        'shipping_postal_code',
+        'shipping_address',
+        'shipping_detail_address',
+        'order_memo',
+    ]
+    for key in default_keys:
+        form_data.setdefault(key, '')
+
     context = {
         'cart': dummy_cart,
         'cart_items': cart_items,
@@ -1173,6 +1196,7 @@ def shipping_info(request):
         'total_amount': total_amount,
         'store': store,
         'has_krw_products': has_krw_products,
+        'form_data': form_data,
     }
     return render(request, 'orders/shipping_info.html', context)
 

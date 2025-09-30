@@ -448,6 +448,48 @@ class SiteSettings(models.Model):
         verbose_name="주문 활발한 스토어에서 제외할 스토어 ID",
         help_text="주문이 활발한 스토어 목록에서 제외할 스토어 ID들을 쉼표로 구분하여 입력하세요 (예: demo,test,sample)"
     )
+
+    # 수퍼어드민 테스트용 기본 배송 정보
+    superuser_checkout_buyer_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="수퍼어드민 기본 주문자 이름",
+        help_text="수퍼어드민이 테스트 주문을 진행할 때 기본값으로 사용할 주문자 이름"
+    )
+    superuser_checkout_buyer_phone = models.CharField(
+        max_length=30,
+        blank=True,
+        verbose_name="수퍼어드민 기본 연락처",
+        help_text="수퍼어드민 테스트 주문 시 기본값으로 사용할 연락처"
+    )
+    superuser_checkout_buyer_email = models.EmailField(
+        blank=True,
+        verbose_name="수퍼어드민 기본 이메일",
+        help_text="수퍼어드민 테스트 주문 시 기본값으로 사용할 이메일 주소"
+    )
+    superuser_checkout_postal_code = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name="수퍼어드민 기본 우편번호",
+        help_text="수퍼어드민 테스트 주문 시 사용할 기본 우편번호"
+    )
+    superuser_checkout_address = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="수퍼어드민 기본 주소",
+        help_text="수퍼어드민 테스트 주문 시 사용할 기본 주소"
+    )
+    superuser_checkout_detail_address = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="수퍼어드민 기본 상세주소",
+        help_text="수퍼어드민 테스트 주문 시 사용할 상세 주소"
+    )
+    superuser_checkout_memo = models.TextField(
+        blank=True,
+        verbose_name="수퍼어드민 기본 배송 요청사항",
+        help_text="수퍼어드민 테스트 주문 시 사용할 기본 배송 요청사항"
+    )
     
     # 메타 정보
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
@@ -499,7 +541,7 @@ class SiteSettings(models.Model):
     def get_settings(cls):
         """현재 사이트 설정 가져오기"""
         from django.core.cache import cache
-        
+
         # 캐시 키 정의
         cache_key = 'site_settings_singleton'
         
@@ -512,6 +554,18 @@ class SiteSettings(models.Model):
             cache.set(cache_key, settings, 3600)
         
         return settings
+
+    def get_superuser_checkout_defaults(self):
+        """수퍼어드민 테스트 주문 시 사용할 기본 배송 정보"""
+        return {
+            'buyer_name': self.superuser_checkout_buyer_name or '',
+            'buyer_phone': self.superuser_checkout_buyer_phone or '',
+            'buyer_email': self.superuser_checkout_buyer_email or '',
+            'shipping_postal_code': self.superuser_checkout_postal_code or '',
+            'shipping_address': self.superuser_checkout_address or '',
+            'shipping_detail_address': self.superuser_checkout_detail_address or '',
+            'order_memo': self.superuser_checkout_memo or '',
+        }
     
     def get_youtube_embed_url(self):
         """유튜브 임베드 URL 생성 (UI 요소 최대한 숨김)"""

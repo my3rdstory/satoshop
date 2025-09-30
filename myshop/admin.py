@@ -94,6 +94,18 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('excluded_active_store_ids',),
             'description': '스토어 탐색 페이지에서 특정 스토어들을 제외하는 설정'
         }),
+        ('수퍼어드민 테스트 기본값', {
+            'fields': (
+                'superuser_checkout_buyer_name',
+                'superuser_checkout_buyer_phone',
+                'superuser_checkout_buyer_email',
+                'superuser_checkout_postal_code',
+                'superuser_checkout_address',
+                'superuser_checkout_detail_address',
+                'superuser_checkout_memo',
+            ),
+            'description': '수퍼어드민이 상품 결제 플로우를 테스트할 때 자동으로 채워질 기본 배송 정보를 설정합니다.'
+        }),
 
         ('고급 설정', {
             'fields': ('created_at', 'updated_at'),
