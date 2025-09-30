@@ -90,7 +90,8 @@ class LightningPaymentProcessor:
         detail: Optional[Dict[str, Any]] = None,
     ) -> PaymentStageLog:
         transaction.current_stage = stage
-        if status == PaymentStatus.COMPLETED:
+        if status == PaymentStatus.COMPLETED and transaction.status != PaymentTransaction.STATUS_COMPLETED:
+            # 이미 완료 처리된 트랜잭션은 진행 중 상태로 되돌리지 않는다.
             transaction.status = PaymentTransaction.STATUS_PROCESSING
         elif status == PaymentStatus.FAILED:
             transaction.status = PaymentTransaction.STATUS_FAILED
