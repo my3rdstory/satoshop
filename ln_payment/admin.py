@@ -2,7 +2,12 @@ from django.contrib import admin
 from django.db.models import OuterRef, Subquery
 from django.utils.html import format_html
 
-from .models import OrderItemReservation, PaymentStageLog, PaymentTransaction
+from .models import (
+    ManualPaymentTransaction,
+    OrderItemReservation,
+    PaymentStageLog,
+    PaymentTransaction,
+)
 from .services import PaymentStage
 
 
@@ -30,6 +35,11 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
             obj.id,
             hash_display,
         )
+
+
+@admin.register(ManualPaymentTransaction)
+class ManualPaymentTransactionAdmin(PaymentTransactionAdmin):
+    list_display = PaymentTransactionAdmin.list_display + ("order",)
 
 
 @admin.register(PaymentStageLog)

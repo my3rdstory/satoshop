@@ -388,6 +388,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 - 재고 부족 안내 시 상태 배너와 CTA 전환으로 상품 상세 화면에서 재고를 다시 확인하도록 유도합니다.
 - 모바일 화면에서는 `lightning:` 스킴을 사용하는 “지갑 열기” 버튼을 노출해 지갑 앱으로 즉시 이동할 수 있습니다.
 - 진행 로그는 단계 이름·시간과 함께 사용자 친화 문구로 갱신되어 결제 흐름을 직관적으로 파악할 수 있습니다.
+- Django Admin에는 주문을 수동으로 저장한 결제 트랜잭션만 모아서 확인하는 전용 메뉴가 추가되었습니다.
 
 #### 운영 시 유의 사항
 - Blink Dashboard에서 webhook 엔드포인트를 `/ln-payment/webhook/blink/`로 등록하고, 시그니처 검증을 위해 `BLINK_WEBHOOK_SECRET`을 설정하세요.

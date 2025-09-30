@@ -101,12 +101,10 @@
     logs.forEach((log) => {
       const li = document.createElement('li');
       const translated = translateLogMessage(log);
-      const detailHint = extractDetailHint(log.detail, log.status);
       const timeText = formatLogTime(log.created_at);
       li.innerHTML = `
         ${timeText ? `<span class="log-time">${escapeHtml(timeText)}</span>` : ''}
         <p class="log-message">${escapeHtml(translated)}</p>
-        ${detailHint ? `<p class="log-detail">${escapeHtml(detailHint)}</p>` : ''}
       `;
       workflowLogList.prepend(li);
     });
@@ -140,36 +138,6 @@
 
   function translateLogMessage(log) {
     return logMessageMap[log.message] || log.message || '진행 상황을 갱신하고 있습니다.';
-  }
-
-  function extractDetailHint(detail, status) {
-    if (!detail || typeof detail !== 'object') {
-      return '';
-    }
-    if (typeof detail.error === 'string' && detail.error.trim()) {
-      return detail.error;
-    }
-    if (typeof detail.status === 'string') {
-      if (detail.status === 'paid') {
-        return '결제 완료 신호를 확인했습니다.';
-      }
-      if (detail.status === 'pending') {
-        return '결제 승인 신호를 기다리는 중입니다.';
-      }
-      if (detail.status === 'expired') {
-        return '결제 시간이 만료되었습니다.';
-      }
-    }
-    if (detail.previous_payment_hash) {
-      return '이전 인보이스를 취소하고 새 인보이스를 준비했습니다.';
-    }
-    if (detail.order_number) {
-      return `주문 번호 ${detail.order_number}로 저장되었습니다.`;
-    }
-    if (status === 'failed') {
-      return '문제를 해결한 뒤 다시 시도해주세요.';
-    }
-    return '';
   }
 
   function updateInvoice(invoice) {

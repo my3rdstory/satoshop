@@ -180,3 +180,24 @@ class OrderItemReservation(models.Model):
 
     def __str__(self):
         return f"{self.product_id} x{self.quantity} ({self.get_status_display()})"
+
+
+class ManualPaymentTransactionManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .filter(order__isnull=False, stage_logs__detail__manual=True)
+            .distinct()
+        )
+
+
+class ManualPaymentTransaction(PaymentTransaction):
+    """주문을 수동으로 저장한 결제 트랜잭션만 노출하는 프록시 모델."""
+
+    objects = ManualPaymentTransactionManager()
+
+    class Meta:
+        proxy = True
+        verbose_name = "수동 저장 결제 트랜잭션"
+        verbose_name_plural = "수동 저장 결제 트랜잭션"

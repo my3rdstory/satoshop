@@ -10,6 +10,7 @@
   border: 1px solid rgba(148, 163, 184, 0.25);
   background-color: rgba(255, 255, 255, 0.8);
   transition: all 0.2s ease;
+  align-items: flex-start;
 }
 
 .dark .workflow-step {
@@ -33,6 +34,9 @@
   background: rgba(59, 130, 246, 0.08);
   color: #1f2937;
   border: 2px solid rgba(59, 130, 246, 0.2);
+  flex: 0 0 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
 }
 
 .dark .workflow-step-indicator {
@@ -147,14 +151,4 @@
 
 .dark #workflowLogList li .log-message {
   color: #f1f5f9;
-}
-
-#workflowLogList li .log-detail {
-  margin-top: 0.3rem;
-  font-size: 0.72rem;
-  color: #64748b;
-}
-
-.dark #workflowLogList li .log-detail {
-  color: #94a3b8;
 }
