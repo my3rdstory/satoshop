@@ -73,7 +73,7 @@ class ReviewForm(forms.ModelForm):
         if not content:
             raise forms.ValidationError('후기 내용을 입력해주세요.')
         if len(content) > 1000:
-            raise forms.ValidationError('후기는 1000자 이내로 작성해주세요.')
+            content = content[:1000]
         return content
 
     def clean_images(self):

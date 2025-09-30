@@ -224,6 +224,7 @@ class Product(models.Model):
         from myshop.models import ExchangeRate
         return ExchangeRate.get_latest_rate()
 
+    @property
     def shipping_fee_display(self):
         """배송비 표시 텍스트 (0원일 때 '배송비 무료')"""
         info = self.store.get_shipping_fee_display()
@@ -234,6 +235,7 @@ class Product(models.Model):
             return f"{info['krw']:,}원"
         return f"{info['sats']:,} sats"
 
+    @property
     def shipping_fee_display_simple(self):
         """간단한 배송비 표시 (단위만)"""
         info = self.store.get_shipping_fee_display()
