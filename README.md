@@ -385,7 +385,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 - `static/ln_payment/js/payment_workflow.js`는 인보이스 재생성·취소·타이머·상태 폴링을 처리합니다.
 - `static/ln_payment/js/payment_process.js`와 `static/ln_payment/css/payment_process.css`는 접근성/스크롤 보조, 상태 배너, 다크 모드 스타일을 담당합니다.
 - 결제 실패 시 상태 배너와 스토어 연락처 안내로 재시도/문의 경로를 제공합니다.
-- 재고 부족 안내가 발생하면 결제 CTA가 상품 상세 페이지로 전환되어 재시작이 아닌 재확인을 유도합니다.
+- 재고 부족 안내 시 상태 배너와 CTA 전환으로 상품 상세 화면에서 재고를 다시 확인하도록 유도합니다.
 - 모바일 화면에서는 `lightning:` 스킴을 사용하는 “지갑 열기” 버튼을 노출해 지갑 앱으로 즉시 이동할 수 있습니다.
 - 진행 로그는 단계 이름·시간과 함께 사용자 친화 문구로 갱신되어 결제 흐름을 직관적으로 파악할 수 있습니다.
 

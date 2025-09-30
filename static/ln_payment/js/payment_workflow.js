@@ -36,21 +36,6 @@
   let expiresAt = null;
   let isInventoryRedirectMode = false;
 
-  const stageLabelMap = {
-    1: '1단계 · 재고 확인',
-    2: '2단계 · 인보이스 발행',
-    3: '3단계 · 결제 확인',
-    4: '4단계 · 입금 확인',
-    5: '5단계 · 주문 확정',
-  };
-
-  const statusLabelMap = {
-    pending: '대기 중',
-    processing: '진행 중',
-    failed: '문제 발생',
-    completed: '완료',
-  };
-
   const logMessageMap = {
     '재고 예약 및 결제 준비 완료': '재고 확보가 완료되어 결제를 준비했습니다.',
     '인보이스 생성 완료': '결제에 사용할 인보이스를 발급했습니다.',
@@ -116,17 +101,12 @@
     logs.forEach((log) => {
       const li = document.createElement('li');
       const translated = translateLogMessage(log);
-      const statusText = statusLabelMap[log.status] || '진행 업데이트';
       const detailHint = extractDetailHint(log.detail, log.status);
+      const timeText = formatLogTime(log.created_at);
       li.innerHTML = `
-        <div class="log-entry">
-          <div class="log-meta">
-            <span class="log-time">${formatLogTime(log.created_at)}</span>
-            <span class="log-status ${getStatusBadgeClass(log.status)}">${escapeHtml(statusText)}</span>
-          </div>
-          <p class="log-message"><span class="log-stage-label">${escapeHtml(translated.stage)}</span>${escapeHtml(translated.message)}</p>
-          ${detailHint ? `<p class="log-detail">${escapeHtml(detailHint)}</p>` : ''}
-        </div>
+        ${timeText ? `<span class="log-time">${escapeHtml(timeText)}</span>` : ''}
+        <p class="log-message">${escapeHtml(translated)}</p>
+        ${detailHint ? `<p class="log-detail">${escapeHtml(detailHint)}</p>` : ''}
       `;
       workflowLogList.prepend(li);
     });
@@ -158,27 +138,8 @@
     });
   }
 
-  function getStatusBadgeClass(status) {
-    switch (status) {
-      case 'completed':
-        return 'log-status--completed';
-      case 'failed':
-        return 'log-status--failed';
-      case 'processing':
-        return 'log-status--processing';
-      case 'pending':
-      default:
-        return 'log-status--pending';
-    }
-  }
-
   function translateLogMessage(log) {
-    const stage = stageLabelMap[log.stage] || '단계 진행';
-    const mappedMessage = logMessageMap[log.message] || log.message || '단계가 업데이트되었습니다.';
-    return {
-      stage,
-      message: mappedMessage,
-    };
+    return logMessageMap[log.message] || log.message || '진행 상황을 갱신하고 있습니다.';
   }
 
   function extractDetailHint(detail, status) {
@@ -361,8 +322,9 @@
   }
 
   function handleStartError(message, errorCode) {
+    const inventoryLockedCopy = '현재 결제 진행 중인 주문을 처리하여 재고가 임시로 잠겼습니다. 해당 주문이 취소되면 다시 진행할 수 있습니다. 이전 주문 절차가 완료될 때까지 최대 120초가 소요됩니다. 이후 상품 정보를 확인한 뒤 다시 시도해주세요.';
     const displayMessage = errorCode === 'inventory_unavailable'
-      ? '재고가 부족하여 결제를 진행할 수 없습니다. 상품 정보를 다시 확인한 뒤 다시 시도해주세요.'
+      ? inventoryLockedCopy
       : message;
     updateStatusText(displayMessage || '결제 준비에 실패했습니다.', 'error');
     resetWorkflowView();
@@ -394,7 +356,7 @@
       startButton.removeEventListener('click', startWorkflow);
       startButton.addEventListener('click', redirectToProduct);
     }
-    startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-store"></i> 상품 다시 확인하기</span>';
+    startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-store"></i> 상품 정보 확인하기</span>';
     isInventoryRedirectMode = true;
   }
 

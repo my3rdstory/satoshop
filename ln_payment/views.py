@@ -174,7 +174,7 @@ def payment_process(request):
         first_item = groups[0].items[0]
         try:
             primary_product_url = reverse('products:product_detail', args=[groups[0].store.store_id, first_item['product_id']])
-        except Exception:  # pragma: no cover - 가용성 확보용 방어 코드
+        except Exception:  # pragma: no cover - 방어적 처리
             primary_product_url = None
 
     context = {
