@@ -29,12 +29,17 @@
   const invoiceTimer = document.getElementById('invoiceTimer');
   const invoiceTimerValue = document.getElementById('invoiceTimerValue');
   const openWalletButton = document.getElementById('openWalletButton');
+  const DB_DELAY_MESSAGE = '데이터베이스 동작 오류로 저장이 지연되고 있습니다. 다시 연결을 시도하고 있습니다.';
 
   let transactionId = null;
   let countdownInterval = null;
   let pollInterval = null;
   let expiresAt = null;
   let isInventoryRedirectMode = false;
+  let cachedLogs = [];
+  let dbDelayActive = false;
+  let dbDelayTimestamp = null;
+  let dbDelayMessage = DB_DELAY_MESSAGE;
 
   const logMessageMap = {
     '재고 예약 및 결제 준비 완료': '재고 확보가 완료되어 결제를 준비했습니다.',
@@ -89,16 +94,18 @@
     if (!workflowLogList) {
       return;
     }
+    const safeLogs = Array.isArray(logs) ? logs : [];
+    cachedLogs = safeLogs.slice();
     workflowLogList.innerHTML = '';
     if (workflowLogContainer) {
-      if (!logs || logs.length === 0) {
+      if (safeLogs.length === 0 && !dbDelayActive) {
         workflowLogContainer.classList.add('hidden');
       } else {
         workflowLogContainer.classList.remove('hidden');
       }
     }
 
-    logs.forEach((log) => {
+    safeLogs.forEach((log) => {
       const li = document.createElement('li');
       const translated = translateLogMessage(log);
       const timeText = formatLogTime(log.created_at);
@@ -108,6 +115,12 @@
       `;
       workflowLogList.prepend(li);
     });
+
+    if (dbDelayActive) {
+      renderDatabaseDelayLog();
+    } else {
+      removeDatabaseDelayLog();
+    }
   }
 
   function escapeHtml(text) {
@@ -134,6 +147,72 @@
       minute: '2-digit',
       second: '2-digit',
     });
+  }
+
+  function ensureLogContainerVisible() {
+    if (workflowLogContainer) {
+      workflowLogContainer.classList.remove('hidden');
+    }
+  }
+
+  function removeDatabaseDelayLog() {
+    if (!workflowLogList) {
+      return;
+    }
+    const existing = workflowLogList.querySelector('li[data-system-log="db-delay"]');
+    if (existing) {
+      existing.remove();
+    }
+    if (workflowLogContainer && workflowLogList.children.length === 0) {
+      workflowLogContainer.classList.add('hidden');
+    }
+  }
+
+  function renderDatabaseDelayLog() {
+    if (!workflowLogList) {
+      return;
+    }
+    const existing = workflowLogList.querySelector('li[data-system-log="db-delay"]');
+    if (existing) {
+      existing.remove();
+    }
+    if (!dbDelayActive) {
+      if (workflowLogContainer && workflowLogList.children.length === 0) {
+        workflowLogContainer.classList.add('hidden');
+      }
+      return;
+    }
+
+    ensureLogContainerVisible();
+    const li = document.createElement('li');
+    li.dataset.systemLog = 'db-delay';
+    const isoTime = dbDelayTimestamp ? dbDelayTimestamp.toISOString() : new Date().toISOString();
+    const timeText = formatLogTime(isoTime);
+    li.innerHTML = `
+      ${timeText ? `<span class="log-time">${escapeHtml(timeText)}</span>` : ''}
+      <p class="log-message">${escapeHtml(dbDelayMessage)}</p>
+    `;
+    workflowLogList.prepend(li);
+  }
+
+  function activateDatabaseDelay(message = DB_DELAY_MESSAGE) {
+    if (!dbDelayActive) {
+      dbDelayActive = true;
+      dbDelayTimestamp = new Date();
+    }
+    dbDelayMessage = message || DB_DELAY_MESSAGE;
+    updateStatusText(dbDelayMessage, 'error');
+    renderLogs(cachedLogs);
+  }
+
+  function deactivateDatabaseDelay() {
+    if (!dbDelayActive) {
+      return;
+    }
+    dbDelayActive = false;
+    dbDelayTimestamp = null;
+    dbDelayMessage = DB_DELAY_MESSAGE;
+    removeDatabaseDelayLog();
   }
 
   function translateLogMessage(log) {
@@ -182,6 +261,7 @@
     if (panel) {
       panel.classList.remove('hidden');
     }
+    deactivateDatabaseDelay();
     setStepState(Number(transaction.current_stage || 1), transaction.status);
     renderLogs(transaction.logs || []);
     if (transaction.invoice) {
@@ -232,7 +312,12 @@
       }
 
       if (!response.ok || !data.success) {
-        handleStartError((data && data.error) || '결제 준비에 실패했습니다.', data && data.error_code);
+        if (!response.ok && response.status >= 500) {
+          handleStartError(DB_DELAY_MESSAGE, data && data.error_code);
+          activateDatabaseDelay();
+        } else {
+          handleStartError((data && data.error) || '결제 준비에 실패했습니다.', data && data.error_code);
+        }
         return;
       }
 
@@ -244,6 +329,7 @@
       startPolling();
     } catch (error) {
       handleStartError(error.message || '결제 준비 중 오류가 발생했습니다. 다시 시도해 주세요.', error && error.code);
+      activateDatabaseDelay();
     }
   }
 
@@ -252,6 +338,7 @@
     clearInterval(countdownInterval);
     countdownInterval = null;
     expiresAt = null;
+    deactivateDatabaseDelay();
 
     if (panel) {
       panel.classList.add('hidden');
@@ -290,7 +377,7 @@
   }
 
   function handleStartError(message, errorCode) {
-    const inventoryLockedCopy = '현재 결제 진행 중인 주문을 처리하여 재고가 임시로 잠겼습니다. 해당 주문이 취소되면 다시 진행할 수 있습니다. 이전 주문 절차가 완료될 때까지 최대 120초가 소요됩니다. 이후 상품 정보를 확인한 뒤 다시 시도해주세요.';
+    const inventoryLockedCopy = '현재 결제 진행 중인 주문을 처리하여 재고가 임시로 잠겼습니다. 해당 주문이 취소되면 다시 진행할 수 있습니다. 이전 주문 절차 완료까지 최대 120초가 소요됩니다. 이후 상품 정보를 확인한 뒤 다시 시도해주세요.';
     const displayMessage = errorCode === 'inventory_unavailable'
       ? inventoryLockedCopy
       : message;
@@ -431,6 +518,9 @@
         body: JSON.stringify({})
       });
       if (!response.ok) {
+        if (response.status >= 500) {
+          activateDatabaseDelay();
+        }
         throw new Error('결제 상태를 확인할 수 없습니다.');
       }
       const data = await response.json();
@@ -449,7 +539,7 @@
         updateStatusText('결제를 확인 중입니다. 잠시만 기다려 주세요.');
       }
     } catch (error) {
-      updateStatusText('결제 상태 확인 중 오류가 발생했습니다. 네트워크 상태를 확인한 후 다시 시도해주세요.', 'error');
+      activateDatabaseDelay();
     }
   }
 
