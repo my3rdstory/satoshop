@@ -89,6 +89,21 @@ class LightningPaymentProcessor:
         message: str,
         detail: Optional[Dict[str, Any]] = None,
     ) -> PaymentStageLog:
+        current_stage = transaction.current_stage or PaymentStage.PREPARE
+
+        # 결제가 이미 완료된 트랜잭션은 단계를 되돌리지 않는다.
+        if (
+            transaction.status == PaymentTransaction.STATUS_COMPLETED
+            and stage < current_stage
+        ):
+            logger.debug(
+                'skip stage downgrade after completion transaction=%s current_stage=%s attempted_stage=%s',
+                transaction.id,
+                current_stage,
+                stage,
+            )
+            return transaction.stage_logs.filter(stage=current_stage).order_by('-created_at').first()
+
         transaction.current_stage = stage
         if status == PaymentStatus.COMPLETED and transaction.status != PaymentTransaction.STATUS_COMPLETED:
             # 이미 완료 처리된 트랜잭션은 진행 중 상태로 되돌리지 않는다.
