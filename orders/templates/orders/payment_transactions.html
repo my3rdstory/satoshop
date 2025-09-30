@@ -160,7 +160,7 @@
                     상세보기
                   </a>
                   {% if transaction.manual_restore_enabled %}
-                  <form method="post" action="{% url 'orders:payment_transaction_restore' store.store_id transaction.id %}" class="inline-flex" onsubmit="return confirm('주문을 수동으로 저장하면 구매자 마이페이지에도 즉시 표시됩니다. 계속 진행할까요?');">
+                  <form method="post" action="{% url 'orders:payment_transaction_restore' store.store_id transaction.id %}" class="inline-flex" onsubmit="return confirm('주문을 수동으로 저장하면 구매자 마이페이지에도 즉시 표시됩니다. 재고가 부족한 상품은 차감 없이 주문만 생성되고 재고 수량은 0으로 조정됩니다. 계속 진행할까요?');">
                     {% csrf_token %}
                     <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-bitcoin px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[#e08113] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/40 transition">
                       <i class="fas fa-clipboard-check text-xs"></i>주문 저장

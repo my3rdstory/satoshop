@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.contrib.auth.models import User
 from products.models import Product, ProductOption, ProductOptionChoice
-from .models import Cart, CartItem
+from .models import Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 import json
 import logging
 from django.core.mail.backends.smtp import EmailBackend
@@ -693,13 +693,6 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
     if not store:
         raise ValueError('트랜잭션의 스토어 정보를 확인할 수 없습니다.')
 
-    payment_completed = payment_transaction.stage_logs.filter(
-        stage=PaymentStage.USER_PAYMENT,
-        status=PaymentStageLog.STATUS_COMPLETED,
-    ).exists()
-    if not payment_completed:
-        raise ValueError('결제 완료 단계가 기록되지 않은 트랜잭션입니다.')
-
     UserModel = get_user_model()
     user = payment_transaction.user
     if not user:
@@ -730,8 +723,29 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
     total_hint = _to_int(metadata.get('total_sats'))
 
     now = timezone.now()
+    operator_label = getattr(operator, 'username', None) or getattr(operator, 'email', None)
+
+    stock_issues = []
 
     with transaction.atomic():
+        payment_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.USER_PAYMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+
+        if not payment_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 확인을 수동으로 완료 처리했습니다.',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
         order = Order.objects.create(
             user=user,
             store=store,
@@ -769,10 +783,17 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
             if quantity <= 0:
                 raise ValueError('유효하지 않은 수량 값이 포함되어 있습니다.')
 
-            if not product.can_purchase(quantity):
-                raise ValueError(f'"{product.title}" 상품의 재고가 부족합니다.')
-            if not product.decrease_stock(quantity):
-                raise ValueError(f'"{product.title}" 상품의 재고 감소에 실패했습니다.')
+            if quantity > 0:
+                if not product.decrease_stock(quantity):
+                    stock_issues.append({
+                        'product_id': product.id,
+                        'product_title': product.title,
+                        'requested': quantity,
+                        'available': product.stock_quantity,
+                    })
+                    # 재고 부족 시에는 재고를 0으로 맞춘 뒤 그대로 진행한다.
+                    product.stock_quantity = 0
+                    product.save(update_fields=['stock_quantity'])
 
             options_display = item.get('options_display') or []
             selected_options_map = {}
@@ -851,7 +872,12 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
                 stage=PaymentStage.MERCHANT_SETTLEMENT,
                 status=PaymentStageLog.STATUS_COMPLETED,
                 message='스토어에서 결제 입금을 확인했습니다 (수동)',
-                detail={'manual': True},
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                    'stock_issues': stock_issues,
+                },
             )
 
         PaymentStageLog.objects.create(
@@ -860,8 +886,9 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
             status=PaymentStageLog.STATUS_COMPLETED,
             message='스토어에서 주문서를 수동으로 생성했습니다.',
             detail={
-                'operator': getattr(operator, 'username', None) or getattr(operator, 'email', None),
+                'operator': operator_label,
                 'restored_at': now.isoformat(),
+                'stock_issues': stock_issues,
             },
         )
 
@@ -869,9 +896,12 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
         restore_history = meta.setdefault('manual_restore_history', [])
         restore_history.append({
             'restored_at': now.isoformat(),
-            'operator': getattr(operator, 'username', None) or getattr(operator, 'email', None),
+            'operator': operator_label,
+            'stock_issues': stock_issues,
         })
         meta['manual_restored'] = True
+        if stock_issues:
+            meta['manual_stock_issues'] = stock_issues
         payment_transaction.metadata = meta
         payment_transaction.save(update_fields=['metadata'])
 
@@ -880,4 +910,5 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
         except Exception:
             logger.warning('수동 주문 복구 알림 이메일 발송 실패 order=%s', order.order_number, exc_info=True)
 
+    order.manual_stock_issues = stock_issues
     return order

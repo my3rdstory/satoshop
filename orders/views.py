@@ -20,7 +20,7 @@ from .payment_utils import calculate_store_totals, calculate_totals, group_cart_
 from .services import CartService, restore_order_from_payment_transaction
 from stores.decorators import store_owner_required
 from ln_payment.blink_service import get_blink_service_for_store
-from ln_payment.models import PaymentStageLog, PaymentTransaction
+from ln_payment.models import PaymentTransaction
 from ln_payment.services import PaymentStage
 
 logger = logging.getLogger(__name__)
@@ -72,12 +72,11 @@ def _can_restore_transaction(transaction):
     metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
     shipping_data = metadata.get('shipping') or {}
     cart_snapshot = metadata.get('cart_snapshot') or []
-    if transaction.order_id or not shipping_data or not cart_snapshot:
+    if transaction.order_id or transaction.status == PaymentTransaction.STATUS_COMPLETED:
         return False
-    return transaction.stage_logs.filter(
-        stage=PaymentStage.USER_PAYMENT,
-        status=PaymentStageLog.STATUS_COMPLETED,
-    ).exists()
+    if not shipping_data or not cart_snapshot:
+        return False
+    return True
 
 
 def _format_text_for_csv(value):
@@ -596,6 +595,12 @@ def payment_transaction_detail(request, store_id, transaction_id):
         try:
             order = restore_order_from_payment_transaction(transaction, operator=request.user)
             messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
+            stock_issues = getattr(order, 'manual_stock_issues', [])
+            if stock_issues:
+                messages.warning(
+                    request,
+                    '일부 상품의 재고가 부족해 재고 차감 없이 주문이 생성되었습니다. 재고 수량을 확인해주세요.',
+                )
             return redirect('orders:checkout_complete', order_number=order.order_number)
         except ValueError as exc:
             messages.warning(request, str(exc))
@@ -633,15 +638,25 @@ def payment_transaction_restore(request, store_id, transaction_id):
     )
 
     if not _can_restore_transaction(transaction):
-        messages.warning(request, '재시도 주문 생성: 주문이 이미 존재하거나 데이터가 부족할 수 있습니다. 생성 후 반드시 주문 내역을 확인하세요.')
+        logger.warning(
+            'manual restore skipped: order already exists or snapshot missing transaction=%s',
+            transaction_id,
+        )
+        return redirect('orders:payment_transactions', store_id=store.store_id)
+
     try:
         order = restore_order_from_payment_transaction(transaction, operator=request.user)
-        messages.success(request, f'주문 {order.order_number} 으로 저장했습니다.')
+        stock_issues = getattr(order, 'manual_stock_issues', [])
+        if stock_issues:
+            logger.info(
+                'manual restore completed with stock issues transaction=%s issues=%s',
+                transaction_id,
+                stock_issues,
+            )
     except ValueError as exc:
-        messages.error(request, str(exc))
+        logger.warning('manual restore validation failed transaction=%s error=%s', transaction_id, exc)
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception('manual restore failed on list view transaction=%s', transaction_id)
-        messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     return redirect('orders:payment_transactions', store_id=store.store_id)
 
 
