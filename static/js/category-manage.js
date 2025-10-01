@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
         editCategoryForm.addEventListener('submit', handleEditCategory);
     }
 
+    // 초기 정렬 버튼 상태 업데이트
+    updateReorderControls();
+
     // 카테고리 추가 함수
     function handleAddCategory(e) {
         e.preventDefault();
@@ -112,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const categoryCard = createCategoryCard(category);
         categoryGrid.appendChild(categoryCard);
+        updateReorderControls();
+        persistCategoryOrder();
     }
 
     // 카테고리 카드 생성
@@ -119,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const cardDiv = document.createElement('div');
         cardDiv.className = 'category-card';
         cardDiv.setAttribute('data-category-id', category.id);
-        cardDiv.setAttribute('draggable', 'true');
         
         const date = new Date(category.created_at).toLocaleDateString('ko-KR', {
             year: 'numeric',
@@ -128,25 +132,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }).replace(/\./g, '.').replace(/ /g, '');
 
         cardDiv.innerHTML = `
-            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200 cursor-move">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-grip-vertical text-gray-400 drag-handle"></i>
-                        <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
-                            ${category.name}
-                        </h3>
+            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-600 hover:shadow-md transition-all duration-200">
+                <div class="flex items-start gap-4 mb-3">
+                    <div class="flex flex-col items-center gap-2">
+                        <button onclick="moveCategory('${category.id}', 'up')" class="reorder-btn move-up" title="위로 이동">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                        <button onclick="moveCategory('${category.id}', 'down')" class="reorder-btn move-down" title="아래로 이동">
+                            <i class="fas fa-arrow-down"></i>
+                        </button>
                     </div>
-                    <div class="flex space-x-1">
-                        <button onclick="editCategory('${category.id}', '${category.name}')" 
-                                class="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
-                                title="수정">
-                            <i class="fas fa-edit text-sm"></i>
-                        </button>
-                        <button onclick="deleteCategory('${category.id}', '${category.name}')" 
-                                class="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
-                                title="삭제">
-                            <i class="fas fa-trash text-sm"></i>
-                        </button>
+                    <div class="flex-1">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="category-name text-lg font-medium text-gray-900 dark:text-white truncate">
+                                ${category.name}
+                            </h3>
+                            <div class="flex space-x-2">
+                                <button onclick="editCategory('${category.id}', '${category.name}')" 
+                                        class="action-btn text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900"
+                                        title="수정">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deleteCategory('${category.id}', '${category.name}')" 
+                                        class="action-btn text-red-500 hover:bg-red-100 dark:hover:bg-red-900"
+                                        title="삭제">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="text-sm text-gray-500 dark:text-gray-400">
@@ -155,11 +168,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-
-        // 새 카드에 드래그 기능 추가 (별도 파일에서 처리)
-        if (window.addDragToNewCard) {
-            window.addDragToNewCard(cardDiv);
-        }
 
         return cardDiv;
     }
@@ -190,6 +198,8 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 categoryCard.remove();
                 updateCategoryCount();
+                updateReorderControls();
+                persistCategoryOrder();
                 
                 // 카테고리가 모두 제거되면 빈 상태 표시
                 const remainingCards = document.querySelectorAll('.category-card');
@@ -198,6 +208,82 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }, 300);
         }
+    }
+
+    function moveCategory(categoryId, direction) {
+        const categoryCard = document.querySelector(`[data-category-id="${categoryId}"]`);
+        if (!categoryCard || !categoryGrid) return;
+
+        if (direction === 'up') {
+            const previous = categoryCard.previousElementSibling;
+            if (!previous) {
+                showNotification('이미 맨 위에 있습니다.', 'info');
+                return;
+            }
+            categoryGrid.insertBefore(categoryCard, previous);
+        } else if (direction === 'down') {
+            const next = categoryCard.nextElementSibling;
+            if (!next) {
+                showNotification('이미 맨 아래에 있습니다.', 'info');
+                return;
+            }
+            categoryGrid.insertBefore(next, categoryCard);
+        }
+
+        updateReorderControls();
+        persistCategoryOrder();
+    }
+
+    function updateReorderControls() {
+        if (!categoryGrid) return;
+
+        const cards = Array.from(categoryGrid.querySelectorAll('.category-card'));
+        cards.forEach((card, index) => {
+            const upButton = card.querySelector('.move-up');
+            const downButton = card.querySelector('.move-down');
+
+            if (upButton) {
+                upButton.disabled = index === 0;
+            }
+
+            if (downButton) {
+                downButton.disabled = index === cards.length - 1;
+            }
+        });
+    }
+
+    function persistCategoryOrder() {
+        const cards = categoryGrid ? categoryGrid.querySelectorAll('.category-card') : [];
+        const orders = [];
+
+        cards.forEach((card, index) => {
+            const categoryId = card.getAttribute('data-category-id');
+            if (categoryId) {
+                orders.push({ id: categoryId, order: index + 1 });
+            }
+        });
+
+        if (!orders.length || !window.storeId || !window.csrfToken) {
+            return;
+        }
+
+        fetch(`/menu/${window.storeId}/categories/reorder/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': window.csrfToken,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ orders })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showNotification(data.error || '순서 저장에 실패했습니다.', 'error');
+            }
+        })
+        .catch(() => {
+            showNotification('순서 저장 중 오류가 발생했습니다.', 'error');
+        });
     }
 
     // 빈 상태 표시
@@ -326,6 +412,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     };
 
+    window.moveCategory = moveCategory;
+
     // 수정 모달 열기
     function openEditModal() {
         editModal.classList.remove('hidden');
@@ -352,5 +440,5 @@ document.addEventListener('DOMContentLoaded', function() {
         notification.addEventListener('click', hideNotification);
     }
 
-    // 드래그&드롭 기능은 별도 파일(category-drag-drop.js)에서 처리
+    // 정렬 버튼 외 기능 추가 시 여기에 연결
 }); 
