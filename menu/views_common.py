@@ -14,10 +14,84 @@ from .models import Menu, MenuCategory, MenuOrder, MenuOrderItem
 from .forms import MenuForm, MenuCategoryForm
 import logging
 import json
-import os
-from django.conf import settings
+
+from myshop.models import ExchangeRate
+from storage import utils as storage_utils
 
 logger = logging.getLogger(__name__)
+
+
+def _apply_menu_pricing(menu, cleaned_data):
+    """폼 데이터 기반으로 메뉴 가격 정보를 갱신합니다."""
+    price_display = cleaned_data.get('price_display', menu.price_display)
+    price = cleaned_data.get('price') or 0
+    is_discounted = cleaned_data.get('is_discounted')
+    discounted_price = cleaned_data.get('discounted_price')
+
+    latest_rate = ExchangeRate.get_latest_rate()
+
+    menu.price_display = price_display
+
+    if price_display == 'krw':
+        menu.price_krw = price
+        if latest_rate:
+            menu.price = latest_rate.get_sats_from_krw(price)
+        elif menu.price is None:
+            menu.price = 0
+
+        if is_discounted and discounted_price:
+            menu.discounted_price_krw = discounted_price
+            if latest_rate:
+                menu.discounted_price = latest_rate.get_sats_from_krw(discounted_price)
+            else:
+                menu.discounted_price = None
+        else:
+            menu.discounted_price = None
+            menu.discounted_price_krw = None
+    else:
+        menu.price = price
+        if latest_rate:
+            menu.price_krw = latest_rate.get_krw_from_sats(price)
+        else:
+            menu.price_krw = None
+
+        if is_discounted and discounted_price:
+            menu.discounted_price = discounted_price
+            if latest_rate:
+                menu.discounted_price_krw = latest_rate.get_krw_from_sats(discounted_price)
+            else:
+                menu.discounted_price_krw = None
+        else:
+            menu.discounted_price = None
+            menu.discounted_price_krw = None
+
+
+def _delete_menu_image(menu_image):
+    """S3와 DB에서 메뉴 이미지를 제거합니다."""
+    try:
+        delete_result = storage_utils.delete_file_from_s3(menu_image.file_path)
+        if isinstance(delete_result, dict) and not delete_result.get('success', True):
+            logger.warning(
+                "메뉴 이미지 S3 삭제 실패 (id=%s): %s",
+                menu_image.id,
+                delete_result.get('error') or '알 수 없는 오류'
+            )
+    except Exception as exc:
+        logger.warning("메뉴 이미지 S3 삭제 실패 (id=%s): %s", menu_image.id, exc)
+    finally:
+        menu_image.delete()
+
+
+def _handle_menu_image_upload(menu, image_file, user):
+    """메뉴 이미지 업로드를 처리합니다."""
+    if not image_file:
+        return None
+
+    upload_result = storage_utils.upload_menu_image(image_file, menu, user)
+    if not upload_result.get('success'):
+        logger.warning("메뉴 이미지 업로드 실패: %s", upload_result.get('error'))
+        return None
+    return upload_result.get('menu_image')
 
 
 def get_store_or_404(store_id, user):
@@ -65,28 +139,35 @@ def add_menu(request, store_id):
     if request.method == 'POST':
         form = MenuForm(request.POST, request.FILES, store=store)
         if form.is_valid():
-            menu = form.save(commit=False)
-            menu.store = store
-            
-            # 가격 검증
-            if menu.public_price <= 0:
+            price_value = form.cleaned_data.get('price')
+            if price_value is None or price_value <= 0:
                 messages.error(request, '가격은 0보다 큰 값이어야 합니다.')
                 return render(request, 'menu/add_menu.html', {'form': form, 'store': store})
-            
-            # 메뉴 저장
-            menu.save()
-            
-            # 이미지 업로드 처리
-            if 'images' in request.FILES:
-                for image in request.FILES.getlist('images'):
-                    # 이미지 저장 로직 (필요시 구현)
-                    pass
-            
-            messages.success(request, f'메뉴 "{menu.name}"이(가) 성공적으로 추가되었습니다.')
-            return redirect('menu:menu_list', store_id=store_id)
+
+            try:
+                with transaction.atomic():
+                    menu = form.save(commit=False)
+                    menu.store = store
+                    _apply_menu_pricing(menu, form.cleaned_data)
+                    menu.save()
+                    form.save_m2m()
+
+                    image_file = request.FILES.get('images')
+                    if image_file:
+                        for existing_image in menu.images.all():
+                            _delete_menu_image(existing_image)
+                        uploaded_image = _handle_menu_image_upload(menu, image_file, request.user)
+                        if not uploaded_image:
+                            messages.warning(request, '이미지 업로드에 실패하여 메뉴는 이미지 없이 저장되었습니다.')
+
+                messages.success(request, f'메뉴 "{menu.name}"이(가) 성공적으로 추가되었습니다.')
+                return redirect('menu:menu_list', store_id=store_id)
+            except Exception as exc:
+                logger.error('메뉴 추가 중 오류 발생: %s', exc, exc_info=True)
+                messages.error(request, '메뉴를 저장하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     else:
         form = MenuForm(store=store)
-    
+
     return render(request, 'menu/add_menu.html', {
         'form': form,
         'store': store,
@@ -102,17 +183,42 @@ def edit_menu(request, store_id, menu_id):
     if request.method == 'POST':
         form = MenuForm(request.POST, request.FILES, instance=menu, store=store)
         if form.is_valid():
-            # 가격 검증
-            if form.cleaned_data['public_price'] <= 0:
+            price_value = form.cleaned_data.get('price')
+            if price_value is None or price_value <= 0:
                 messages.error(request, '가격은 0보다 큰 값이어야 합니다.')
                 return render(request, 'menu/edit_menu.html', {'form': form, 'store': store, 'menu': menu})
-            
-            menu = form.save()
-            messages.success(request, f'메뉴 "{menu.name}"이(가) 성공적으로 수정되었습니다.')
-            return redirect('menu:menu_list', store_id=store_id)
+
+            try:
+                with transaction.atomic():
+                    menu = form.save(commit=False)
+                    _apply_menu_pricing(menu, form.cleaned_data)
+                    menu.save()
+                    form.save_m2m()
+
+                    new_image_file = request.FILES.get('images')
+                    existing_images = list(menu.images.all())
+
+                    if new_image_file:
+                        uploaded_image = _handle_menu_image_upload(menu, new_image_file, request.user)
+                        if uploaded_image:
+                            for image in existing_images:
+                                _delete_menu_image(image)
+                        else:
+                            messages.warning(request, '새 이미지 업로드에 실패했습니다. 기존 이미지를 유지했습니다.')
+                    else:
+                        for image in existing_images:
+                            keep_flag = request.POST.get(f'keep_image_{image.id}', 'true')
+                            if keep_flag.lower() == 'false':
+                                _delete_menu_image(image)
+
+                messages.success(request, f'메뉴 "{menu.name}"이(가) 성공적으로 수정되었습니다.')
+                return redirect('menu:menu_list', store_id=store_id)
+            except Exception as exc:
+                logger.error('메뉴 수정 중 오류 발생: %s', exc, exc_info=True)
+                messages.error(request, '메뉴를 수정하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
     else:
         form = MenuForm(instance=menu, store=store)
-    
+
     return render(request, 'menu/edit_menu.html', {
         'form': form,
         'store': store,
@@ -132,9 +238,9 @@ def upload_menu_image(request, store_id, menu_id):
     
     image_file = request.FILES['image']
     
-    # 파일 크기 체크 (5MB 제한)
-    if image_file.size > 5 * 1024 * 1024:
-        return JsonResponse({'success': False, 'error': '이미지 파일 크기는 5MB를 초과할 수 없습니다.'})
+    # 파일 크기 체크 (10MB 제한)
+    if image_file.size > 10 * 1024 * 1024:
+        return JsonResponse({'success': False, 'error': '이미지 파일 크기는 10MB를 초과할 수 없습니다.'})
     
     # 파일 형식 체크
     allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -142,19 +248,17 @@ def upload_menu_image(request, store_id, menu_id):
         return JsonResponse({'success': False, 'error': '지원하지 않는 이미지 형식입니다.'})
     
     try:
-        # 기존 이미지 삭제
-        if menu.image:
-            old_image_path = menu.image.path
-            if os.path.exists(old_image_path):
-                os.remove(old_image_path)
-        
-        # 새 이미지 저장
-        menu.image = image_file
-        menu.save()
-        
+        with transaction.atomic():
+            for existing_image in menu.images.all():
+                _delete_menu_image(existing_image)
+
+            uploaded_image = _handle_menu_image_upload(menu, image_file, request.user)
+            if not uploaded_image:
+                return JsonResponse({'success': False, 'error': '이미지 업로드에 실패했습니다.'})
+
         return JsonResponse({
             'success': True,
-            'image_url': menu.image.url if menu.image else None
+            'image_url': uploaded_image.file_url if uploaded_image else None
         })
     except Exception as e:
         logger.error(f"이미지 업로드 실패: {str(e)}")
@@ -489,4 +593,4 @@ def menu_orders_detail(request, store_id, menu_id):
         'total_revenue': total_revenue,
     }
     
-    return render(request, 'menu/menu_orders_detail.html', context) 
+    return render(request, 'menu/menu_orders_detail.html', context)
