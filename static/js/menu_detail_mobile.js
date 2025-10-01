@@ -3,6 +3,7 @@
 // 전역 변수
 let currentQuantity = 1;
 let basePrice = 0;
+let mobileFeedbackTimeout = null;
 
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
@@ -96,7 +97,7 @@ function addToMobileCart() {
     updateCartBadge();
     
     // 성공 메시지
-    showToast(`${window.menuName}이(가) 장바구니에 추가되었습니다.`);
+    showInlineFeedback(`${window.menuName}이(가) 장바구니에 추가되었습니다.`, 'success');
     
     // 수량 초기화
     currentQuantity = 1;
@@ -331,29 +332,42 @@ function clearCart() {
     renderMobileCartItems();
     updateCartBadge();
     closeMobileCart();
-    showToast('장바구니가 비워졌습니다.');
+    showInlineFeedback('장바구니가 비워졌습니다.', 'info');
 }
 
-// 토스트 메시지 표시
-function showToast(message) {
-    // 기존 토스트 제거
-    const existingToast = document.querySelector('.toast-message');
-    if (existingToast) {
-        existingToast.remove();
+// 인라인 안내 메시지 출력
+function showInlineFeedback(message, variant = 'info') {
+    const wrapper = document.getElementById('mobile-feedback');
+    const box = document.getElementById('mobile-feedback-box');
+
+    if (!wrapper || !box) {
+        return;
     }
-    
-    // 토스트 생성
-    const toast = document.createElement('div');
-    toast.className = 'toast-message fixed top-20 left-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50 text-center';
-    toast.textContent = message;
-    
-    document.body.appendChild(toast);
-    
-    // 3초 후 자동 제거
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.remove();
-        }
+
+    const baseClasses = 'px-4 py-3 rounded-lg text-sm font-medium border transition-opacity duration-300';
+    const variants = {
+        success: 'border-green-300 bg-green-50 text-green-800 dark:border-green-600 dark:bg-green-900/40 dark:text-green-200',
+        info: 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-500 dark:bg-blue-900/40 dark:text-blue-100',
+        warning: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500 dark:bg-amber-900/40 dark:text-amber-100',
+        error: 'border-red-300 bg-red-50 text-red-800 dark:border-red-500 dark:bg-red-900/40 dark:text-red-100'
+    };
+
+    box.className = `${baseClasses} ${variants[variant] || variants.info}`;
+    box.textContent = message;
+
+    wrapper.classList.remove('hidden');
+    box.style.opacity = '1';
+
+    if (mobileFeedbackTimeout) {
+        clearTimeout(mobileFeedbackTimeout);
+    }
+
+    mobileFeedbackTimeout = setTimeout(() => {
+        box.style.opacity = '0';
+        setTimeout(() => {
+            wrapper.classList.add('hidden');
+            box.style.opacity = '1';
+        }, 300);
     }, 3000);
 }
 

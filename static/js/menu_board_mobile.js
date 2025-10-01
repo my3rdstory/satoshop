@@ -638,7 +638,7 @@ function generateMobilePaymentInvoice() {
     }));
     
     // 서버에 인보이스 생성 요청
-    fetch(`/menu/${storeId}/cart/create-invoice/`, {
+    fetch(`/menu/${storeId}/m/cart/create-invoice/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

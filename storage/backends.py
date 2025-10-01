@@ -32,7 +32,7 @@ class S3Storage(Storage):
     """
     
     def __init__(self, **kwargs):
-        logger.info("S3Storage 초기화 시작")
+        logger.debug("S3Storage 초기화 시작")
         
         self.access_key_id = getattr(settings, 'S3_ACCESS_KEY_ID', None)
         self.secret_access_key = getattr(settings, 'S3_SECRET_ACCESS_KEY', None)
@@ -63,7 +63,7 @@ class S3Storage(Storage):
         # S3 클라이언트 초기화
         self._client = None
         self._connection = None
-        logger.info("S3Storage 초기화 완료")
+        logger.debug("S3Storage 초기화 완료")
     
     @property
     def client(self):

@@ -333,7 +333,7 @@ LOGGING = {
         },
         'storage': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': False,
         },
     },

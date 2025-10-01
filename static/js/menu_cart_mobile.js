@@ -3,6 +3,14 @@
  * 바텀 시트 형태의 모바일 최적화된 장바구니 UI 관리
  */
 
+const CART_FEEDBACK_BASE_CLASS = 'px-4 py-3 rounded-lg text-sm font-medium border transition-opacity duration-300';
+const CART_FEEDBACK_VARIANTS = {
+    success: 'border-green-300 bg-green-50 text-green-800 dark:border-green-600 dark:bg-green-900/40 dark:text-green-200',
+    info: 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-500 dark:bg-blue-900/40 dark:text-blue-100',
+    warning: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500 dark:bg-amber-900/40 dark:text-amber-100',
+    error: 'border-red-300 bg-red-50 text-red-800 dark:border-red-500 dark:bg-red-900/40 dark:text-red-100'
+};
+
 class MobileCartManager {
     constructor() {
         this.cart = {};
@@ -12,6 +20,7 @@ class MobileCartManager {
         this.touchCurrentY = 0;
         this.isDragging = false;
         this.startHeight = 0;
+        this.feedbackTimeout = null;
         
         this.init();
     }
@@ -332,18 +341,34 @@ class MobileCartManager {
 
     // 장바구니 추가 피드백
     showAddToCartFeedback(itemName) {
-        // 간단한 토스트 메시지
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-        toast.textContent = `${itemName}이(가) 장바구니에 추가되었습니다`;
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translate(-50%, -20px)';
-            setTimeout(() => document.body.removeChild(toast), 300);
-        }, 2000);
+        this.showFeedback(`${itemName}이(가) 장바구니에 추가되었습니다`, 'success');
+    }
+
+    showFeedback(message, variant = 'info') {
+        const wrapper = document.getElementById('mobile-cart-feedback');
+        const box = document.getElementById('mobile-cart-feedback-box');
+
+        if (!wrapper || !box) {
+            return;
+        }
+
+        box.className = `${CART_FEEDBACK_BASE_CLASS} ${CART_FEEDBACK_VARIANTS[variant] || CART_FEEDBACK_VARIANTS.info}`;
+        box.textContent = message;
+
+        wrapper.classList.remove('hidden');
+        box.style.opacity = '1';
+
+        if (this.feedbackTimeout) {
+            clearTimeout(this.feedbackTimeout);
+        }
+
+        this.feedbackTimeout = setTimeout(() => {
+            box.style.opacity = '0';
+            setTimeout(() => {
+                wrapper.classList.add('hidden');
+                box.style.opacity = '1';
+            }, 250);
+        }, 2500);
     }
 
     // 결제 진행

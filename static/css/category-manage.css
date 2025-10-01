@@ -127,11 +127,11 @@
 
 /* 버튼 호버 효과 개선 */
 .category-card button {
-    transition: all 0.2s ease-in-out;
+    transition: transform 0.2s ease, background 0.2s ease, filter 0.2s ease;
 }
 
 .category-card button:hover {
-    transform: scale(1.1);
+    filter: brightness(1.05);
 }
 
 /* 폼 입력 필드 포커스 효과 */
@@ -153,49 +153,75 @@ input:focus {
     position: relative;
 }
 
-.category-card[draggable="true"] {
-    cursor: move;
+.reorder-btn {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    color: #4338ca;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
-.category-card.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg) scale(1.02);
-    z-index: 1000;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+.reorder-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(67, 56, 202, 0.2);
 }
 
-.drag-handle {
-    cursor: grab;
-    transition: color 0.2s ease;
-    user-select: none;
+.reorder-btn:active {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 6px rgba(67, 56, 202, 0.25);
 }
 
-.drag-handle:hover {
-    color: #6366f1 !important;
+.reorder-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
-.drag-handle:active {
-    cursor: grabbing;
+.dark .reorder-btn {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(55, 48, 163, 0.35));
+    color: #c7d2fe;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.drop-indicator {
-    height: 3px !important;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6) !important;
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
-    animation: pulse-drop 1s infinite;
-    border-radius: 2px;
-    margin: 4px 0;
+.dark .reorder-btn:hover {
+    box-shadow: 0 6px 14px rgba(99, 102, 241, 0.25);
 }
 
-@keyframes pulse-drop {
-    0%, 100% {
-        opacity: 1;
-        transform: scaleY(1);
-    }
-    50% {
-        opacity: 0.7;
-        transform: scaleY(1.5);
-    }
+.dark .reorder-btn:disabled {
+    background: rgba(67, 56, 202, 0.2);
+    color: rgba(199, 210, 254, 0.5);
+}
+
+.action-btn {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.75);
+    transition: transform 0.2s ease, background 0.2s ease;
+    font-size: 1rem;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(59, 130, 246, 0.12);
+}
+
+.dark .action-btn {
+    background: rgba(31, 41, 55, 0.8);
+}
+
+.dark .action-btn:hover {
+    background: rgba(79, 70, 229, 0.25);
 }
 
 /* 드래그 중일 때 다른 요소들 스타일 */
