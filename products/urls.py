@@ -8,6 +8,8 @@ urlpatterns = [
     # 상품 목록 및 관리
     path('<str:store_id>/', views.product_list, name='product_list'),
     path('<str:store_id>/list/', views.public_product_list, name='public_product_list'),
+    path('<str:store_id>/categories/sections/', views.owner_category_sections_partial, name='owner_category_sections_partial'),
+    path('<str:store_id>/list/categories/sections/', views.public_category_sections_partial, name='public_category_sections_partial'),
     path('<str:store_id>/add/', views.add_product, name='add_product'),
 
     # 카테고리 관리
@@ -17,6 +19,8 @@ urlpatterns = [
     path('<str:store_id>/categories/<int:category_id>/', views_category.category_update_api, name='category_update_api'),
     path('<str:store_id>/categories/<int:category_id>/delete/', views_category.category_delete_api, name='category_delete_api'),
     path('<str:store_id>/categories/reorder/', views_category.category_reorder_api, name='category_reorder_api'),
+    path('<str:store_id>/categories/products/', views_category.category_products_api, name='category_products_api'),
+    path('<str:store_id>/categories/assign/', views_category.category_assign_api, name='category_assign_api'),
 
     path('<str:store_id>/<int:product_id>/', views.product_detail, name='product_detail'),
     path('<str:store_id>/<int:product_id>/edit/', views.edit_product, name='edit_product'),

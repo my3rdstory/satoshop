@@ -18,7 +18,7 @@
     </div>
 
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 mb-8">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
         <div class="flex items-center gap-4">
           <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 dark:from-amber-400 dark:to-orange-500 flex items-center justify-center shadow-lg">
             <i class="fas fa-tags text-white text-2xl"></i>
@@ -28,9 +28,17 @@
             <p class="text-sm text-gray-600 dark:text-gray-400">카테고리를 생성하고 순서를 정리하여 상품을 깔끔하게 분류하세요.</p>
           </div>
         </div>
-        <div class="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-          <div class="flex items-center gap-2"><span class="inline-block w-2 h-2 rounded-full bg-teal-500"></span> 드래그 대신 위/아래 버튼으로 순서 변경</div>
-          <div class="flex items-center gap-2"><span class="inline-block w-2 h-2 rounded-full bg-gray-400"></span> 기본 카테고리는 삭제 및 이름 변경 불가</div>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 w-full lg:w-auto">
+          <div class="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
+            <div class="flex items-center gap-2"><span class="inline-block w-2 h-2 rounded-full bg-teal-500"></span> 드래그 대신 위/아래 버튼으로 순서 변경</div>
+            <div class="flex items-center gap-2"><span class="inline-block w-2 h-2 rounded-full bg-gray-400"></span> 기본 카테고리는 삭제 및 이름 변경 불가</div>
+          </div>
+          <button id="openProductMatchPanel"
+                  type="button"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg shadow-md hover:from-amber-600 hover:to-orange-600 transition-colors">
+            <i class="fas fa-exchange-alt"></i>
+            상품 일괄 매칭
+          </button>
         </div>
       </div>
     </div>
@@ -41,7 +49,9 @@
          data-create-url="{% url 'products:category_create_api' store.store_id %}"
          data-update-url-template="{% url 'products:category_update_api' store.store_id 0 %}"
          data-delete-url-template="{% url 'products:category_delete_api' store.store_id 0 %}"
-         data-reorder-url="{% url 'products:category_reorder_api' store.store_id %}">
+         data-reorder-url="{% url 'products:category_reorder_api' store.store_id %}"
+         data-products-url="{% url 'products:category_products_api' store.store_id %}"
+         data-assign-url="{% url 'products:category_assign_api' store.store_id %}">
 
       <section class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">새 카테고리 추가</h2>
@@ -120,6 +130,74 @@
           <p class="text-sm mt-2">첫 번째 카테고리를 추가해 상품을 정리해보세요.</p>
         </div>
         {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- 상품 일괄 매칭 패널 -->
+<div id="productMatchPanel" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
+  <div class="absolute inset-0 bg-black/50" data-match-dismiss></div>
+  <div class="relative z-10 w-full max-w-6xl h-full max-h-[95vh] md:h-auto md:max-h-[90vh] lg:h-[85vh] bg-white dark:bg-gray-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-500/20 dark:to-orange-500/10">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">상품 일괄 매칭</h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400">카테고리를 선택한 뒤 오른쪽 상품을 클릭하면 해당 카테고리에 즉시 매칭됩니다.</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="refreshMatchData" class="inline-flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <i class="fas fa-sync-alt"></i>
+          새로고침
+        </button>
+        <button type="button" data-match-dismiss class="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-800 dark:hover:bg-gray-600 transition-colors">
+          <i class="fas fa-times"></i>
+          닫기
+        </button>
+      </div>
+    </div>
+    <div class="flex-1 flex overflow-hidden">
+      <!-- 왼쪽: 카테고리 목록 -->
+      <aside class="match-panel__categories w-full md:w-1/3 border-r border-gray-200 dark:border-gray-800 overflow-y-auto bg-gray-50 dark:bg-gray-900/60 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">카테고리 목록</h3>
+          <span id="matchCategoryCount" class="text-xs text-gray-500 dark:text-gray-500"></span>
+        </div>
+        <ul id="matchCategoryList" class="space-y-2"></ul>
+      </aside>
+
+      <!-- 오른쪽: 상품 목록 -->
+      <section class="match-panel__products flex-1 p-4 flex flex-col gap-4">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div class="relative flex-1 max-w-xl">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input id="matchProductSearch" type="search" placeholder="상품명으로 검색"
+                   class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent" />
+          </div>
+          <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <i class="fas fa-mouse-pointer"></i>
+            상품을 클릭하면 선택된 카테고리에 바로 매칭되고, 여러 상품을 연속으로 클릭해도 즉시 반영됩니다.
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto" id="matchProductContainer">
+          <div id="matchProductList" class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3"></div>
+          <div id="matchProductEmpty" class="hidden text-center py-20 text-gray-500 dark:text-gray-400">
+            <i class="fas fa-box-open text-3xl mb-3"></i>
+            <p class="text-sm">표시할 상품이 없습니다. 검색어나 필터를 조정해보세요.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-800 pt-3">
+          <div id="matchProductStats" class="text-sm text-gray-500 dark:text-gray-400"></div>
+          <div class="flex items-center gap-2">
+            <button id="matchPrevPage" class="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled>
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button id="matchNextPage" class="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled>
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
       </section>
     </div>
   </div>

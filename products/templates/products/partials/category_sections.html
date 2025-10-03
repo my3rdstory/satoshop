@@ -1,0 +1,21 @@
+{% if sections %}
+  {% for section in sections %}
+    {% include 'products/partials/category_section.html' with section=section store=store is_public_view=is_public_view %}
+  {% endfor %}
+{% else %}
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
+    <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+      <i class="fas fa-box text-orange-500 text-3xl"></i>
+    </div>
+    <h2 class="text-xl font-semibold text-gray-900 dark:text-white">등록된 상품이 없습니다.</h2>
+    {% if not is_public_view %}
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">첫 상품을 추가해 스토어를 채워보세요.</p>
+    <a href="{% url 'products:add_product' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 mt-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
+      <i class="fas fa-plus"></i>
+      상품 추가
+    </a>
+    {% else %}
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">다른 스토어 또는 섹션을 둘러봐 주세요.</p>
+    {% endif %}
+  </div>
+{% endif %}

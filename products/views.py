@@ -7,7 +7,7 @@ from django.db.models import Prefetch
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.template.loader import render_to_string
 from PIL import Image
 import json
@@ -79,6 +79,18 @@ def _ensure_default_category(store):
     return default_category
 
 
+def _filter_sections_by_category_id(sections, category_id):
+    if not category_id:
+        return sections
+
+    try:
+        target_id = int(category_id)
+    except (TypeError, ValueError):
+        return []
+
+    return [section for section in sections if section['category'].id == target_id]
+
+
 def public_product_list(request, store_id):
     """일반 사용자용 상품 목록"""
     try:
@@ -144,6 +156,84 @@ def product_list(request, store_id):
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
     }
     return render(request, 'products/product_list.html', context)
+
+
+@require_GET
+def public_category_sections_partial(request, store_id):
+    """공개 상품 목록에서 카테고리별 섹션을 비동기로 제공"""
+
+    store = get_object_or_404(Store, store_id=store_id, is_active=True, deleted_at__isnull=True)
+
+    category_id = request.GET.get('category_id')
+
+    sections = _get_category_sections(store, include_inactive=False)
+    filtered_sections = _filter_sections_by_category_id(sections, category_id)
+
+    if category_id and not filtered_sections:
+        return JsonResponse({'success': False, 'error': '선택한 카테고리를 찾을 수 없습니다.'}, status=404)
+
+    html = render_to_string(
+        'products/partials/category_sections.html',
+        {
+            'store': store,
+            'sections': filtered_sections,
+            'is_public_view': True,
+        },
+        request=request,
+    )
+
+    counts = {str(section['category'].id): len(section['products']) for section in sections}
+    total_count = sum(counts.values())
+    selected_category = filtered_sections[0]['category'] if category_id and filtered_sections else None
+
+    return JsonResponse({
+        'success': True,
+        'html': html,
+        'categoryId': int(category_id) if category_id else None,
+        'categoryName': selected_category.name if selected_category else '전체',
+        'counts': counts,
+        'totalCount': total_count,
+    })
+
+
+@login_required
+@store_owner_required
+@require_GET
+def owner_category_sections_partial(request, store_id):
+    """스토어 관리자용 상품 목록에서 카테고리 섹션을 비동기로 제공"""
+
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    category_id = request.GET.get('category_id')
+
+    sections = _get_category_sections(store, include_inactive=True)
+    filtered_sections = _filter_sections_by_category_id(sections, category_id)
+
+    if category_id and not filtered_sections:
+        return JsonResponse({'success': False, 'error': '선택한 카테고리를 찾을 수 없습니다.'}, status=404)
+
+    html = render_to_string(
+        'products/partials/category_sections.html',
+        {
+            'store': store,
+            'sections': filtered_sections,
+            'is_public_view': False,
+        },
+        request=request,
+    )
+
+    counts = {str(section['category'].id): len(section['products']) for section in sections}
+    total_count = sum(counts.values())
+    selected_category = filtered_sections[0]['category'] if category_id and filtered_sections else None
+
+    return JsonResponse({
+        'success': True,
+        'html': html,
+        'categoryId': int(category_id) if category_id else None,
+        'categoryName': selected_category.name if selected_category else '전체',
+        'counts': counts,
+        'totalCount': total_count,
+    })
 
 
 def product_detail(request, store_id, product_id):

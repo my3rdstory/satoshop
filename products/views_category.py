@@ -223,3 +223,136 @@ def category_reorder_api(request, store_id):
         return JsonResponse({'success': False, 'error': '카테고리 순서 변경에 실패했습니다.'})
 
     return JsonResponse({'success': True, 'message': '카테고리 순서가 변경되었습니다.'})
+
+
+@login_required
+@store_owner_required
+@require_http_methods(["GET"])
+def category_products_api(request, store_id):
+    """카테고리 매칭용 상품 목록 API"""
+
+    store = _get_store_for_owner(store_id, request.user)
+
+    try:
+        page = max(int(request.GET.get('page', 1)), 1)
+    except (TypeError, ValueError):
+        page = 1
+
+    try:
+        page_size = int(request.GET.get('page_size', 30))
+    except (TypeError, ValueError):
+        page_size = 30
+
+    page_size = min(max(page_size, 10), 60)
+
+    search = (request.GET.get('search') or '').strip()
+    category_filter = request.GET.get('category_id')
+
+    products = (
+        Product.objects.filter(store=store)
+        .select_related('category')
+        .order_by('-created_at')
+    )
+
+    if search:
+        products = products.filter(
+            Q(title__icontains=search) |
+            Q(description__icontains=search)
+        )
+
+    if category_filter not in (None, '', 'null'):
+        try:
+            category_id = int(category_filter)
+            products = products.filter(category_id=category_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': '유효하지 않은 카테고리 필터입니다.'})
+
+    total = products.count()
+    offset = (page - 1) * page_size
+    product_list = list(products[offset:offset + page_size])
+
+    data = []
+    for product in product_list:
+        if product.price_display == 'krw' and product.price_krw is not None:
+            price_label = f"{product.price_krw:,} 원"
+        else:
+            price_label = '무료' if product.price == 0 else f"{product.price:,} sats"
+
+        data.append({
+            'id': product.id,
+            'title': product.title,
+            'category_id': product.category_id,
+            'category_name': product.category.name if product.category else DEFAULT_CATEGORY_NAME,
+            'is_active': product.is_active,
+            'is_temporarily_out_of_stock': product.is_temporarily_out_of_stock,
+            'created_at_display': product.created_at.strftime('%Y-%m-%d'),
+            'price_label': price_label,
+        })
+
+    has_next = offset + len(product_list) < total
+
+    return JsonResponse({
+        'success': True,
+        'products': data,
+        'total': total,
+        'page': page,
+        'page_size': page_size,
+        'has_next': has_next,
+    })
+
+
+@login_required
+@store_owner_required
+@require_http_methods(["POST"])
+def category_assign_api(request, store_id):
+    """상품을 카테고리에 매칭"""
+
+    store = _get_store_for_owner(store_id, request.user)
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '잘못된 JSON 형식입니다.'})
+
+    product_id = payload.get('product_id')
+    category_id = payload.get('category_id')
+
+    if not isinstance(product_id, int):
+        return JsonResponse({'success': False, 'error': '상품 ID가 필요합니다.'})
+
+    product = get_object_or_404(Product, id=product_id, store=store)
+
+    if category_id in (None, '', 'null', 'default'):
+        category = _get_default_category(store)
+    else:
+        try:
+            category = ProductCategory.objects.get(id=int(category_id), store=store)
+        except (ValueError, ProductCategory.DoesNotExist):
+            return JsonResponse({'success': False, 'error': '카테고리를 찾을 수 없습니다.'})
+
+    previous_category_id = product.category_id
+
+    if previous_category_id == category.id:
+        return JsonResponse({
+            'success': True,
+            'message': '이미 선택한 카테고리에 속해 있는 상품입니다.',
+            'product': {
+                'id': product.id,
+                'category_id': product.category_id,
+                'category_name': product.category.name if product.category else DEFAULT_CATEGORY_NAME,
+            },
+            'previous_category_id': previous_category_id,
+        })
+
+    product.category = category
+    product.save(update_fields=['category', 'updated_at'])
+
+    return JsonResponse({
+        'success': True,
+        'product': {
+            'id': product.id,
+            'category_id': product.category_id,
+            'category_name': product.category.name if product.category else DEFAULT_CATEGORY_NAME,
+        },
+        'previous_category_id': previous_category_id,
+    })

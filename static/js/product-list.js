@@ -77,66 +77,161 @@ function initProductCardClicks() {
 
 // 카테고리 빠른 이동 내비게이션
 function initCategoryNavigation() {
-    const pills = document.querySelectorAll('.category-pill');
-    if (!pills.length) {
+    const root = document.getElementById('productListRoot');
+    if (!root) return;
+
+    const fetchUrl = root.dataset.categoryUrl;
+    const pills = Array.from(root.querySelectorAll('.category-pill'));
+    const sectionsContainer = document.getElementById('categorySectionsContainer');
+    if (!fetchUrl || !pills.length || !sectionsContainer) {
         return;
     }
 
-    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const loadingIndicator = document.getElementById('categoryLoadingIndicator');
+    const supportsAbort = typeof AbortController !== 'undefined';
 
-    const activatePill = (targetId) => {
-        const normalized = targetId.startsWith('category-') ? targetId : `category-${targetId}`;
+    let activeCategoryId = '';
+    let abortController = null;
+
+    const setActivePillById = (categoryId) => {
         pills.forEach((pill) => {
-            const hash = pill.getAttribute('href').split('#')[1];
-            if (hash === normalized) {
+            const pillId = pill.dataset.categoryId || '';
+            if (pillId === categoryId) {
                 pill.classList.add('category-pill--active');
+                pill.setAttribute('aria-pressed', 'true');
             } else {
                 pill.classList.remove('category-pill--active');
+                pill.setAttribute('aria-pressed', 'false');
             }
         });
     };
 
-    pills.forEach((pill) => {
-        pill.addEventListener('click', (event) => {
-            const hash = pill.getAttribute('href').split('#')[1];
-            if (!hash) return;
+    const showLoading = (visible) => {
+        if (!loadingIndicator) return;
+        loadingIndicator.classList.toggle('hidden', !visible);
+    };
 
-            const target = document.getElementById(hash);
-            if (!target) return;
+    const updateCounts = (counts, totalCount) => {
+        if (!counts) return;
+        pills.forEach((pill) => {
+            const countElement = pill.querySelector('.category-pill__count');
+            if (!countElement) {
+                return;
+            }
 
-            event.preventDefault();
-            const offset = 120;
-            const top = target.getBoundingClientRect().top + window.scrollY - offset;
-            window.scrollTo({ top, behavior: 'smooth' });
-            activatePill(hash);
-            if (history.replaceState) {
-                history.replaceState(null, '', `#${hash}`);
+            const pillId = pill.dataset.categoryId || '';
+            if (!pillId) {
+                if (typeof totalCount === 'number') {
+                    countElement.textContent = totalCount;
+                }
+                return;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(counts, pillId)) {
+                countElement.textContent = counts[pillId];
             }
         });
+    };
+
+    const fetchCategory = (categoryId, previousCategoryId) => {
+
+        if (supportsAbort && abortController) {
+            abortController.abort();
+        }
+        abortController = supportsAbort ? new AbortController() : null;
+
+        showLoading(true);
+
+        const url = new URL(fetchUrl, window.location.origin);
+        if (categoryId) {
+            url.searchParams.set('category_id', categoryId);
+        }
+
+        const fetchOptions = {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        };
+        if (abortController) {
+            fetchOptions.signal = abortController.signal;
+        }
+
+        console.log('[category-filter] 요청 시작', {
+            categoryId: categoryId || null,
+            requestUrl: url.toString(),
+        });
+
+        fetch(url.toString(), fetchOptions)
+            .then((response) => {
+                if (!response.ok) {
+                    console.error('[category-filter] 응답 오류 상태', response.status, response.statusText);
+                    throw new Error('카테고리 데이터를 불러오지 못했습니다.');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (!data.success) {
+                    console.error('[category-filter] 응답 실패', data);
+                    throw new Error(data.error || '카테고리 데이터를 불러오지 못했습니다.');
+                }
+
+                sectionsContainer.innerHTML = data.html || '';
+                activeCategoryId = data.categoryId === null ? '' : String(data.categoryId);
+                setActivePillById(activeCategoryId);
+                updateCounts(data.counts || {}, data.totalCount);
+
+                // 새로 로드한 상품 카드에 이벤트 재연결
+                initProductCardEffects();
+                initImageLoading();
+                initProductCardClicks();
+
+                console.log('[category-filter] 로드 완료', {
+                    activeCategoryId,
+                    totalCount: data.totalCount,
+                    counts: data.counts,
+                });
+            })
+            .catch((error) => {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                console.error('[category-filter] 로드 실패', error);
+                window.alert(error.message || '카테고리 데이터를 불러오지 못했습니다.');
+                activeCategoryId = previousCategoryId;
+                setActivePillById(previousCategoryId);
+            })
+            .finally(() => {
+                console.log('[category-filter] 요청 종료');
+                showLoading(false);
+            });
+    };
+
+    const handlePillClick = (event) => {
+        event.preventDefault();
+        const target = event.currentTarget;
+        const categoryId = target.dataset.categoryId || '';
+
+        if (categoryId === activeCategoryId) {
+            return;
+        }
+
+        const previousCategoryId = activeCategoryId;
+        activeCategoryId = categoryId;
+        setActivePillById(categoryId);
+        fetchCategory(categoryId, previousCategoryId);
+    };
+
+    pills.forEach((pill) => {
+        pill.addEventListener('click', handlePillClick);
     });
 
-    if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
-            const visible = entries
-                .filter((entry) => entry.isIntersecting)
-                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-            if (visible.length) {
-                activatePill(visible[0].target.id);
-            }
-        }, {
-            rootMargin: '-45% 0px -45% 0px',
-            threshold: 0.1,
-        });
-
-        sections.forEach((section) => observer.observe(section));
+    const hasAllPill = pills.some((pill) => (pill.dataset.categoryId || '') === '');
+    if (hasAllPill) {
+        activeCategoryId = '';
+    } else if (root.dataset.defaultCategoryId) {
+        activeCategoryId = String(root.dataset.defaultCategoryId);
     }
 
-    const initialHash = window.location.hash.replace('#', '');
-    if (initialHash) {
-        activatePill(initialHash);
-    } else if (sections.length) {
-        activatePill(sections[0].id);
-    }
+    setActivePillById(activeCategoryId);
 }
 
 // 상품 상태 표시 업데이트

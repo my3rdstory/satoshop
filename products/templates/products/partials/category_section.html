@@ -1,0 +1,42 @@
+{% load humanize %}
+
+<section id="category-{{ section.category.id }}"
+         class="category-section"
+         data-category-id="{{ section.category.id }}">
+  <div class="category-section__header">
+    <div>
+      <h2 class="category-section__title">
+        {{ section.category.name }}
+        {% if section.is_default %}
+        <span class="category-default-badge">기본</span>
+        {% endif %}
+      </h2>
+      <p class="category-section__description">
+        이 카테고리에 속한 상품 {{ section.products|length }}개
+      </p>
+    </div>
+    {% if not is_public_view %}
+    <a href="{% url 'products:category_manage' store.store_id %}#category-{{ section.category.id }}"
+       class="category-section__manage-link">
+      <i class="fas fa-sliders-h mr-1"></i>
+      카테고리 관리
+    </a>
+    {% endif %}
+  </div>
+
+  {% if section.products %}
+    {% include 'products/product_grid.html' with products=section.products %}
+  {% else %}
+  <div class="category-section__empty">
+    <div class="empty-icon">
+      <i class="fas fa-box-open"></i>
+    </div>
+    <p class="empty-title">표시할 상품이 없습니다.</p>
+    {% if not is_public_view %}
+    <p class="empty-subtitle">상품 등록 시 자동으로 이 영역에 표시됩니다.</p>
+    {% else %}
+    <p class="empty-subtitle">다른 카테고리를 둘러보거나 새 상품을 기다려주세요.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>

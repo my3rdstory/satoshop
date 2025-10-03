@@ -10,8 +10,19 @@
 <link rel="stylesheet" href="{% static 'css/product_list.css' %}">
 {% endblock %}
 
+{% if is_public_view %}
+  {% url 'products:public_category_sections_partial' store.store_id as category_partial_url %}
+{% else %}
+  {% url 'products:owner_category_sections_partial' store.store_id as category_partial_url %}
+{% endif %}
+
 {% block store_content %}
-<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8">
+<div id="productListRoot"
+     class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8"
+     data-category-url="{{ category_partial_url }}"
+     data-store-id="{{ store.store_id }}"
+     data-is-public="{{ is_public_view|yesno:'true,false' }}"
+     data-default-category-id="{% if category_sections %}{{ category_sections.0.category.id }}{% endif %}">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
@@ -72,73 +83,39 @@
       </div>
       <div class="overflow-x-auto">
         <div class="category-pill-list">
+          <button type="button"
+                  class="category-pill category-pill--active"
+                  data-category-id=""
+                  data-category-name="전체"
+                  aria-pressed="true">
+            <span class="category-pill__name">전체</span>
+            <span class="category-pill__count">{{ products|length }}</span>
+          </button>
           {% for section in category_sections %}
-          <a href="#category-{{ section.category.id }}" class="category-pill">
+          <button type="button"
+                  class="category-pill"
+                  data-category-id="{{ section.category.id }}"
+                  data-category-name="{{ section.category.name }}"
+                  aria-pressed="false">
             <span class="category-pill__name">{{ section.category.name }}</span>
             <span class="category-pill__count">{{ section.products|length }}</span>
-          </a>
+          </button>
           {% endfor %}
         </div>
       </div>
     </nav>
     {% endif %}
 
-    {% for section in category_sections %}
-    <section id="category-{{ section.category.id }}" class="category-section">
-      <div class="category-section__header">
-        <div>
-          <h2 class="category-section__title">
-            {{ section.category.name }}
-            {% if section.is_default %}
-            <span class="category-default-badge">기본</span>
-            {% endif %}
-          </h2>
-          <p class="category-section__description">
-            이 카테고리에 속한 상품 {{ section.products|length }}개
-          </p>
-        </div>
-        {% if not is_public_view %}
-        <a href="{% url 'products:category_manage' store.store_id %}#category-{{ section.category.id }}"
-           class="category-section__manage-link">
-          <i class="fas fa-sliders-h mr-1"></i>
-          카테고리 관리
-        </a>
-        {% endif %}
+    <div id="categoryLoadingIndicator" class="hidden mb-6">
+      <div class="flex items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+        <span class="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-orange-500 border-t-transparent"></span>
+        <span class="text-sm">카테고리 데이터를 불러오는 중입니다...</span>
       </div>
-
-      {% if section.products %}
-        {% include 'products/product_grid.html' with products=section.products %}
-      {% else %}
-      <div class="category-section__empty">
-        <div class="empty-icon">
-          <i class="fas fa-box-open"></i>
-        </div>
-        <p class="empty-title">표시할 상품이 없습니다.</p>
-        {% if not is_public_view %}
-        <p class="empty-subtitle">상품 등록 시 자동으로 이 영역에 표시됩니다.</p>
-        {% else %}
-        <p class="empty-subtitle">다른 카테고리를 둘러보거나 새 상품을 기다려주세요.</p>
-        {% endif %}
-      </div>
-      {% endif %}
-    </section>
-    {% empty %}
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-12 text-center">
-      <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-        <i class="fas fa-box text-orange-500 text-3xl"></i>
-      </div>
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">등록된 상품이 없습니다.</h2>
-      {% if not is_public_view %}
-      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">첫 상품을 추가해 스토어를 채워보세요.</p>
-      <a href="{% url 'products:add_product' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 mt-4 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
-        <i class="fas fa-plus"></i>
-        상품 추가
-      </a>
-      {% else %}
-      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">다른 스토어 또는 섹션을 둘러봐 주세요.</p>
-      {% endif %}
     </div>
-    {% endfor %}
+
+    <div id="categorySectionsContainer">
+      {% include 'products/partials/category_sections.html' with sections=category_sections store=store is_public_view=is_public_view %}
+    </div>
   </div>
 </div>
 {% endblock %}

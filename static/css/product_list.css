@@ -15,27 +15,25 @@
   color: rgb(194, 65, 12);
   font-size: 0.9rem;
   font-weight: 500;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 }
 
 .category-pill--active {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.45), rgba(251, 146, 60, 0.4));
-  border-color: rgba(251, 146, 60, 0.6);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.4), rgba(251, 146, 60, 0.38));
+  border-color: rgba(251, 146, 60, 0.75);
   color: rgb(124, 45, 18);
-  box-shadow: 0 12px 22px rgba(251, 146, 60, 0.35);
 }
 
 .dark .category-pill--active {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.35), rgba(251, 146, 60, 0.32));
-  border-color: rgba(253, 186, 116, 0.65);
+  background: linear-gradient(135deg, rgba(253, 186, 116, 0.32), rgba(249, 115, 22, 0.28));
+  border-color: rgba(253, 186, 116, 0.75);
   color: rgb(255, 237, 213);
-  box-shadow: 0 16px 28px rgba(251, 146, 60, 0.45);
 }
 
 .category-pill:hover {
-  transform: translateY(-1px);
-  background: rgba(251, 191, 36, 0.25);
-  box-shadow: 0 10px 20px rgba(251, 146, 60, 0.18);
+  background: rgba(251, 191, 36, 0.22);
+  border-color: rgba(251, 146, 60, 0.5);
 }
 
 .category-pill__name {
@@ -60,7 +58,7 @@
 
 .dark .category-pill:hover {
   background: rgba(253, 186, 116, 0.2);
-  box-shadow: 0 12px 24px rgba(251, 146, 60, 0.22);
+  border-color: rgba(253, 186, 116, 0.5);
 }
 
 .category-section {
