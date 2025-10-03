@@ -34,7 +34,25 @@
   const editNameInput = document.getElementById('product-category-edit-name');
   let editingCategoryId = null;
 
-  const csrfToken = config.csrfToken || document.querySelector('input[name=csrfmiddlewaretoken]')?.value;
+  const rawCsrfFromDom = document.querySelector('input[name=csrfmiddlewaretoken]')?.value;
+  const csrfToken = config.csrfToken || rawCsrfFromDom;
+
+  function getCsrfToken() {
+    if (csrfToken && csrfToken !== 'undefined' && csrfToken !== 'null' && csrfToken !== 'csrf_token') {
+      return csrfToken;
+    }
+
+    const cookieEntry = document.cookie
+      .split(';')
+      .map((pair) => pair.trim())
+      .find((pair) => pair.startsWith('csrftoken='));
+
+    if (cookieEntry) {
+      return decodeURIComponent(cookieEntry.split('=')[1]);
+    }
+
+    return null;
+  }
 
   function escapeHtml(value) {
     return value.replace(/[&<>'"]/g, (match) => ({
@@ -236,9 +254,11 @@
   function fetchWithCsrf(url, options = {}) {
     const headers = options.headers ? { ...options.headers } : {};
     headers['Content-Type'] = 'application/json';
-    if (csrfToken) {
-      headers['X-CSRFToken'] = csrfToken;
+    const token = getCsrfToken();
+    if (token) {
+      headers['X-CSRFToken'] = token;
     }
+    headers['X-Requested-With'] = 'XMLHttpRequest';
 
     return fetch(url, {
       credentials: 'same-origin',

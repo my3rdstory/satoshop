@@ -68,9 +68,6 @@
     <a href="{% url 'stores:product_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-box mr-2"></i>상품관리
     </a>
-    <a href="{% url 'products:category_manage' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
-      <i class="fas fa-tags mr-2"></i>카테고리 관리
-    </a>
     <a href="{% url 'orders:order_management' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-shopping-cart mr-2"></i>주문관리
     </a>

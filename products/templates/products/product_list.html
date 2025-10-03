@@ -45,6 +45,11 @@
           </a>
           {% endif %}
           {% else %}
+          <a href="{% url 'products:category_manage' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-tags mr-2"></i>
+            카테고리 관리
+          </a>
           <a href="{% url 'products:add_product' store.store_id %}" 
              class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
             <i class="fas fa-plus mr-2"></i>
