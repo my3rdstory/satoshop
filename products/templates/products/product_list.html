@@ -7,10 +7,16 @@
 
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/product_list.css' %}">
 {% endblock %}
 
 {% block store_content %}
-<div class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8">
+<div id="productListRoot"
+     class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8"
+     data-category-url="{% if is_public_view %}{% url 'products:public_category_sections_partial' store.store_id %}{% else %}{% url 'products:owner_category_sections_partial' store.store_id %}{% endif %}"
+     data-store-id="{{ store.store_id }}"
+     data-is-public="{{ is_public_view|yesno:'true,false' }}"
+     data-default-category-id="{% if display_category_sections %}{{ display_category_sections.0.category.id }}{% endif %}">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
@@ -44,6 +50,11 @@
           </a>
           {% endif %}
           {% else %}
+          <a href="{% url 'products:category_manage' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-tags mr-2"></i>
+            카테고리 관리
+          </a>
           <a href="{% url 'products:add_product' store.store_id %}" 
              class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
             <i class="fas fa-plus mr-2"></i>
@@ -58,8 +69,47 @@
       </div>
     </div>
 
-    <!-- 상품 목록 -->
-    {% include 'products/product_grid.html' %}
+    {% if display_category_sections %}
+    <nav class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-8">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">카테고리 필터</h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">총 {{ visible_category_count }}개 카테고리</span>
+      </div>
+      <div class="overflow-x-auto">
+        <div class="category-pill-list">
+          <button type="button"
+                  class="category-pill category-pill--active"
+                  data-category-id=""
+                  data-category-name="전체"
+                  aria-pressed="true">
+            <span class="category-pill__name">전체</span>
+            <span class="category-pill__count">{{ products|length }}</span>
+          </button>
+          {% for section in display_category_sections %}
+          <button type="button"
+                  class="category-pill"
+                  data-category-id="{{ section.category.id }}"
+                  data-category-name="{{ section.category.name }}"
+                  aria-pressed="false">
+            <span class="category-pill__name">{{ section.category.name }}</span>
+            <span class="category-pill__count">{{ section.products|length }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </nav>
+    {% endif %}
+
+    <div id="categoryLoadingIndicator" class="hidden mb-6">
+      <div class="flex items-center justify-center gap-3 text-gray-500 dark:text-gray-400">
+        <span class="inline-flex h-5 w-5 animate-spin rounded-full border-2 border-orange-500 border-t-transparent"></span>
+        <span class="text-sm">카테고리 데이터를 불러오는 중입니다...</span>
+      </div>
+    </div>
+
+    <div id="categorySectionsContainer">
+      {% include 'products/partials/category_sections.html' with sections=display_category_sections store=store is_public_view=is_public_view %}
+    </div>
   </div>
 </div>
 {% endblock %}

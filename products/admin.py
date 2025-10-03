@@ -1,9 +1,12 @@
+from collections import OrderedDict
+
 from django.contrib import admin
 from django.utils.html import format_html
-from django.urls import reverse
+from django.urls import reverse, NoReverseMatch
 from django.utils.safestring import mark_safe
+from django.db.models import Count
 from .models import (
-    Product, ProductImage, ProductOption, ProductOptionChoice
+    Product, ProductImage, ProductOption, ProductOptionChoice, ProductCategory
 )
 
 # 기존 등록 해제 (만약 있다면)
@@ -81,9 +84,9 @@ class ProductOptionInline(admin.TabularInline):
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
         'title', 'store', 'get_price_display_korean', 'price', 'is_discounted', 'discounted_price',
-        'stock_quantity', 'is_temporarily_out_of_stock', 'get_stock_status', 'is_active', 'get_options_summary', 'created_at'
+        'stock_quantity', 'is_temporarily_out_of_stock', 'get_stock_status', 'is_active', 'category', 'get_options_summary', 'created_at'
     ]
-    list_filter = ['is_active', 'is_discounted', 'is_temporarily_out_of_stock', 'price_display', 'store', 'created_at', 'stock_quantity']
+    list_filter = ['is_active', 'is_discounted', 'is_temporarily_out_of_stock', 'price_display', 'store', 'category', 'created_at', 'stock_quantity']
     search_fields = ['title', 'description', 'store__store_name']
     readonly_fields = ['created_at', 'updated_at', 'final_price', 'discount_rate', 'get_options_display']
     list_per_page = 10  # 페이지당 항목 수 제한으로 성능 개선
@@ -213,6 +216,91 @@ class ProductOptionChoiceAdmin(admin.ModelAdmin):
         """옵션명 표시"""
         return obj.option.name
     get_option_name.short_description = '옵션'
+
+
+@admin.register(ProductCategory)
+class ProductCategoryAdmin(admin.ModelAdmin):
+    change_list_template = 'admin/products/productcategory/change_list.html'
+
+    list_display = ('name', 'store_link', 'order', 'product_count', 'view_products_link', 'created_at')
+    list_display_links = ('name',)
+    list_filter = ('store',)
+    search_fields = ('name', 'store__store_name', 'store__store_id')
+    ordering = ('store', 'order', 'name')
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        (None, {
+            'fields': ('store', 'name', 'order')
+        }),
+        ('메타 정보', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request).select_related('store')
+        return queryset.annotate(_product_count=Count('products'))
+
+    def store_link(self, obj):
+        store = obj.store
+        try:
+            url = reverse(f"admin:{store._meta.app_label}_{store._meta.model_name}_change", args=[store.pk])
+            return format_html('<a href="{}">{}</a>', url, store.store_name)
+        except NoReverseMatch:
+            return store.store_name
+
+    store_link.short_description = '스토어'
+    store_link.admin_order_field = 'store__store_name'
+
+    def product_count(self, obj):
+        return getattr(obj, '_product_count', obj.products.count())
+
+    product_count.short_description = '상품 수'
+
+    def view_products_link(self, obj):
+        url = reverse('admin:products_product_changelist')
+        count = self.product_count(obj)
+        return format_html(
+            '<a href="{}?category__id__exact={}" target="_blank">상품 목록 ({})</a>',
+            url,
+            obj.pk,
+            count,
+        )
+
+    view_products_link.short_description = '상품 보기'
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        response = super().changelist_view(request, extra_context=extra_context)
+
+        if hasattr(response, 'context_data') and 'cl' in response.context_data:
+            cl = response.context_data['cl']
+            queryset = cl.queryset.select_related('store').annotate(_product_count=Count('products')).order_by('store__store_name', 'order', 'name')
+
+            store_groups = OrderedDict()
+            for category in queryset:
+                store = category.store
+                store_groups.setdefault(store, []).append(category)
+
+            group_data = []
+            for store, categories in store_groups.items():
+                try:
+                    store_url = reverse(f"admin:{store._meta.app_label}_{store._meta.model_name}_change", args=[store.pk])
+                except NoReverseMatch:
+                    store_url = ''
+
+                group_data.append({
+                    'store': store,
+                    'store_url': store_url,
+                    'categories': categories,
+                    'category_count': len(categories),
+                })
+
+            response.context_data['store_groups'] = group_data
+
+        return response
 
 
 # @admin.register(ProductImage)

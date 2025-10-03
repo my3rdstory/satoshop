@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 상품 카드 클릭 이벤트
     initProductCardClicks();
+
+    // 카테고리 내비게이션 초기화
+    initCategoryNavigation();
 });
 
 // 상품 카드 호버 효과
@@ -70,6 +73,152 @@ function initProductCardClicks() {
             }
         });
     });
+}
+
+// 카테고리 빠른 이동 내비게이션
+function initCategoryNavigation() {
+    const root = document.getElementById('productListRoot');
+    if (!root) {
+        return;
+    }
+
+    const fetchUrl = root.dataset.categoryUrl;
+    const pills = Array.from(root.querySelectorAll('.category-pill'));
+    const sectionsContainer = document.getElementById('categorySectionsContainer');
+    if (!fetchUrl || !pills.length || !sectionsContainer) {
+        return;
+    }
+
+    const loadingIndicator = document.getElementById('categoryLoadingIndicator');
+    const supportsAbort = typeof AbortController !== 'undefined';
+
+    let activeCategoryId = '';
+    let abortController = null;
+
+    const setActivePillById = (categoryId) => {
+        pills.forEach((pill) => {
+            const pillId = pill.dataset.categoryId || '';
+            if (pillId === categoryId) {
+                pill.classList.add('category-pill--active');
+                pill.setAttribute('aria-pressed', 'true');
+            } else {
+                pill.classList.remove('category-pill--active');
+                pill.setAttribute('aria-pressed', 'false');
+            }
+        });
+    };
+
+    const showLoading = (visible) => {
+        if (!loadingIndicator) return;
+        loadingIndicator.classList.toggle('hidden', !visible);
+    };
+
+    const updateCounts = (counts, totalCount) => {
+        if (!counts) return;
+        pills.forEach((pill) => {
+            const countElement = pill.querySelector('.category-pill__count');
+            if (!countElement) {
+                return;
+            }
+
+            const pillId = pill.dataset.categoryId || '';
+            if (!pillId) {
+                if (typeof totalCount === 'number') {
+                    countElement.textContent = totalCount;
+                }
+                return;
+            }
+
+            if (Object.prototype.hasOwnProperty.call(counts, pillId)) {
+                countElement.textContent = counts[pillId];
+            }
+        });
+    };
+
+    const fetchCategory = (categoryId, previousCategoryId) => {
+
+        if (supportsAbort && abortController) {
+            abortController.abort();
+        }
+        abortController = supportsAbort ? new AbortController() : null;
+
+        showLoading(true);
+
+        const url = new URL(fetchUrl, window.location.origin);
+        if (categoryId) {
+            url.searchParams.set('category_id', categoryId);
+        }
+
+        const fetchOptions = {
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        };
+        if (abortController) {
+            fetchOptions.signal = abortController.signal;
+        }
+
+        fetch(url.toString(), fetchOptions)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('카테고리 데이터를 불러오지 못했습니다.');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                if (!data.success) {
+                    throw new Error(data.error || '카테고리 데이터를 불러오지 못했습니다.');
+                }
+
+                sectionsContainer.innerHTML = data.html || '';
+                activeCategoryId = data.categoryId === null ? '' : String(data.categoryId);
+                setActivePillById(activeCategoryId);
+                updateCounts(data.counts || {}, data.totalCount);
+
+                // 새로 로드한 상품 카드에 이벤트 재연결
+                initProductCardEffects();
+                initImageLoading();
+                initProductCardClicks();
+            })
+            .catch((error) => {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+                window.alert(error.message || '카테고리 데이터를 불러오지 못했습니다.');
+                activeCategoryId = previousCategoryId;
+                setActivePillById(previousCategoryId);
+            })
+            .finally(() => {
+                showLoading(false);
+            });
+    };
+
+    const handlePillClick = (event) => {
+        event.preventDefault();
+        const target = event.currentTarget;
+        const categoryId = target.dataset.categoryId || '';
+
+        if (categoryId === activeCategoryId) {
+            return;
+        }
+
+        const previousCategoryId = activeCategoryId;
+        activeCategoryId = categoryId;
+        setActivePillById(categoryId);
+        fetchCategory(categoryId, previousCategoryId);
+    };
+
+    pills.forEach((pill) => {
+        pill.addEventListener('click', handlePillClick);
+    });
+
+    const hasAllPill = pills.some((pill) => (pill.dataset.categoryId || '') === '');
+    if (hasAllPill) {
+        activeCategoryId = '';
+    } else if (root.dataset.defaultCategoryId) {
+        activeCategoryId = String(root.dataset.defaultCategoryId);
+    }
+
+    setActivePillById(activeCategoryId);
 }
 
 // 상품 상태 표시 업데이트

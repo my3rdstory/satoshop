@@ -1,0 +1,64 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+{% if cl.opts.verbose_name_plural %}
+  {{ cl.opts.verbose_name_plural|capfirst }}
+{% else %}
+  {{ title }}
+{% endif %}
+{% endblock %}
+
+{% block object-tools %}
+{{ block.super }}
+{% endblock %}
+
+{% block content %}
+  {% if store_groups %}
+    <div class="module" style="margin-bottom: 24px;">
+      <h2 style="margin-bottom: 12px;">스토어별 카테고리</h2>
+      <div class="store-groups" style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        {% for group in store_groups %}
+          <div class="store-group" style="border: 1px solid var(--hairline-color); border-radius: 8px; padding: 16px; background: var(--body-bg);">
+            <div class="store-group__header" style="margin-bottom: 12px;">
+              <h3 style="margin: 0; font-size: 1rem;">
+                {% if group.store_url %}
+                  <a href="{{ group.store_url }}" style="text-decoration: none;">
+                    {{ group.store.store_name }}
+                  </a>
+                {% else %}
+                  {{ group.store.store_name }}
+                {% endif %}
+              </h3>
+              <p style="margin: 4px 0 0 0; color: var(--body-quiet-color); font-size: 0.85rem;">
+                {{ group.category_count }}개의 카테고리
+              </p>
+            </div>
+            <ul style="list-style: none; margin: 0; padding: 0;">
+              {% for category in group.categories %}
+                <li style="margin-bottom: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                    <div>
+                      <a href="{% url 'admin:products_productcategory_change' category.pk %}">
+                        {{ category.name }}
+                      </a>
+                      <div style="font-size: 0.8rem; color: var(--body-quiet-color);">
+                        정렬: {{ category.order }} · 상품 {{ category._product_count|default:category.products.count }}개
+                      </div>
+                    </div>
+                    <a href="{% url 'admin:products_product_changelist' %}?category__id__exact={{ category.pk }}" class="button" style="white-space: nowrap;">
+                      상품 보기
+                    </a>
+                  </div>
+                </li>
+              {% empty %}
+                <li style="color: var(--body-quiet-color);">등록된 카테고리가 없습니다.</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {{ block.super }}
+{% endblock %}

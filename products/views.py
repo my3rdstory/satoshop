@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.db import transaction
+from django.db.models import Prefetch
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from django.template.loader import render_to_string
 from PIL import Image
 import json
@@ -15,7 +16,8 @@ import os
 import logging
 
 from stores.models import Store
-from .models import Product, ProductImage, ProductOption, ProductOptionChoice
+from .models import Product, ProductImage, ProductOption, ProductOptionChoice, ProductCategory
+from .views_category import DEFAULT_CATEGORY_NAME
 from stores.decorators import store_owner_required
 from reviews.models import Review
 
@@ -27,6 +29,73 @@ from reviews.services import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _get_category_sections(store, include_inactive=False):
+    """스토어의 카테고리별 상품 목록을 정렬 순서대로 준비"""
+
+    _ensure_default_category(store)
+
+    base_queryset = Product.objects.filter(store=store)
+    if not include_inactive:
+        base_queryset = base_queryset.filter(is_active=True)
+
+    base_queryset = (
+        base_queryset
+        .select_related('category')
+        .order_by('-created_at')
+    )
+
+    categories = (
+        ProductCategory.objects.filter(store=store)
+        .order_by('order', 'created_at')
+        .prefetch_related(
+            Prefetch(
+                'products',
+                queryset=base_queryset,
+                to_attr='prefetched_products',
+            )
+        )
+    )
+
+    sections = []
+    for category in categories:
+        products = getattr(category, 'prefetched_products', [])
+        sections.append({
+            'category': category,
+            'products': products,
+            'is_default': category.name == DEFAULT_CATEGORY_NAME,
+        })
+
+    return sections
+
+
+def _ensure_default_category(store):
+    default_category, _created = ProductCategory.objects.get_or_create(
+        store=store,
+        name=DEFAULT_CATEGORY_NAME,
+        defaults={'order': 0},
+    )
+    return default_category
+
+
+def _filter_sections_by_category_id(sections, category_id):
+    if not category_id:
+        filtered = [
+            section for section in sections
+            if not (section['is_default'] and len(section['products']) == 0)
+        ]
+        if filtered:
+            return filtered
+        return sections
+    else:
+        try:
+            target_id = int(category_id)
+        except (TypeError, ValueError):
+            return []
+        filtered = [section for section in sections if section['category'].id == target_id]
+
+    return filtered
 
 
 def public_product_list(request, store_id):
@@ -41,7 +110,16 @@ def public_product_list(request, store_id):
         }
         return render(request, 'products/store_not_found.html', context, status=404)
     
-    products = Product.objects.filter(store=store, is_active=True).order_by('-created_at')
+    category_sections = _get_category_sections(store, include_inactive=False)
+    products = [product for section in category_sections for product in section['products']]
+
+    visible_category_sections = [
+        section for section in category_sections
+        if not (section['is_default'] and len(section['products']) == 0)
+    ]
+    if not visible_category_sections:
+        visible_category_sections = category_sections
+    visible_category_count = len(visible_category_sections)
     
     # 사용자의 장바구니 정보 가져오기 (로그인/비로그인 모두 지원)
     cart_items_count = 0
@@ -58,6 +136,10 @@ def public_product_list(request, store_id):
     context = {
         'store': store,
         'products': products,
+        'category_sections': category_sections,
+        'display_category_sections': visible_category_sections,
+        'visible_category_count': visible_category_count,
+        'categories': [section['category'] for section in category_sections],
         'cart_items_count': cart_items_count,
         'cart_total_amount': cart_total_amount,
         'is_public_view': True,
@@ -80,14 +162,105 @@ def product_list(request, store_id):
         return render(request, 'products/store_access_denied.html', context, status=404)
     
     # 관리자 뷰에서는 비활성화된 상품도 포함하여 표시
-    products = Product.objects.filter(store=store).order_by('-created_at')
-    
+    category_sections = _get_category_sections(store, include_inactive=True)
+    products = [product for section in category_sections for product in section['products']]
+
+    visible_category_sections = [
+        section for section in category_sections
+        if not (section['is_default'] and len(section['products']) == 0)
+    ]
+    if not visible_category_sections:
+        visible_category_sections = category_sections
+    visible_category_count = len(visible_category_sections)
+
     context = {
         'store': store,
         'products': products,
+        'category_sections': category_sections,
+        'display_category_sections': visible_category_sections,
+        'visible_category_count': visible_category_count,
+        'categories': [section['category'] for section in category_sections],
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
     }
     return render(request, 'products/product_list.html', context)
+
+
+@require_GET
+def public_category_sections_partial(request, store_id):
+    """공개 상품 목록에서 카테고리별 섹션을 비동기로 제공"""
+
+    store = get_object_or_404(Store, store_id=store_id, is_active=True, deleted_at__isnull=True)
+
+    category_id = request.GET.get('category_id')
+
+    sections = _get_category_sections(store, include_inactive=False)
+    filtered_sections = _filter_sections_by_category_id(sections, category_id)
+
+    if category_id and not filtered_sections:
+        return JsonResponse({'success': False, 'error': '선택한 카테고리를 찾을 수 없습니다.'}, status=404)
+
+    html = render_to_string(
+        'products/partials/category_sections.html',
+        {
+            'store': store,
+            'sections': filtered_sections,
+            'is_public_view': True,
+        },
+        request=request,
+    )
+
+    counts = {str(section['category'].id): len(section['products']) for section in sections}
+    total_count = sum(counts.values())
+    selected_category = filtered_sections[0]['category'] if category_id and filtered_sections else None
+
+    return JsonResponse({
+        'success': True,
+        'html': html,
+        'categoryId': int(category_id) if category_id else None,
+        'categoryName': selected_category.name if selected_category else '전체',
+        'counts': counts,
+        'totalCount': total_count,
+    })
+
+
+@login_required
+@store_owner_required
+@require_GET
+def owner_category_sections_partial(request, store_id):
+    """스토어 관리자용 상품 목록에서 카테고리 섹션을 비동기로 제공"""
+
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    category_id = request.GET.get('category_id')
+
+    sections = _get_category_sections(store, include_inactive=True)
+    filtered_sections = _filter_sections_by_category_id(sections, category_id)
+
+    if category_id and not filtered_sections:
+        return JsonResponse({'success': False, 'error': '선택한 카테고리를 찾을 수 없습니다.'}, status=404)
+
+    html = render_to_string(
+        'products/partials/category_sections.html',
+        {
+            'store': store,
+            'sections': filtered_sections,
+            'is_public_view': False,
+        },
+        request=request,
+    )
+
+    counts = {str(section['category'].id): len(section['products']) for section in sections}
+    total_count = sum(counts.values())
+    selected_category = filtered_sections[0]['category'] if category_id and filtered_sections else None
+
+    return JsonResponse({
+        'success': True,
+        'html': html,
+        'categoryId': int(category_id) if category_id else None,
+        'categoryName': selected_category.name if selected_category else '전체',
+        'counts': counts,
+        'totalCount': total_count,
+    })
 
 
 def product_detail(request, store_id, product_id):
@@ -250,7 +423,20 @@ def add_product(request, store_id):
                 if not product_data['is_discounted']:
                     product_data['discounted_price'] = None
                     product_data['discounted_price_krw'] = None
-                
+
+                category_id = request.POST.get('category_id')
+                category = None
+                if category_id:
+                    try:
+                        category = ProductCategory.objects.get(id=int(category_id), store=store)
+                    except (ProductCategory.DoesNotExist, ValueError):
+                        category = None
+
+                if category is None:
+                    category = _ensure_default_category(store)
+
+                product_data['category'] = category
+
                 # 상품 생성
                 product = Product.objects.create(**product_data)
                 
@@ -300,6 +486,7 @@ def add_product(request, store_id):
     context = {
         'store': store,
         'store_shipping': store.get_shipping_fee_display(),
+        'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
     }
     return render(request, 'products/add_product.html', context)
 
@@ -331,6 +518,18 @@ def edit_product(request, store_id, product_id):
                 )
                 product.completion_message = request.POST.get('completion_message', '').strip()
                 product.stock_quantity = int(request.POST.get('stock_quantity', 0))
+
+                category = None
+                category_id = request.POST.get('category_id')
+                if category_id:
+                    try:
+                        category = ProductCategory.objects.get(id=int(category_id), store=store)
+                    except (ProductCategory.DoesNotExist, ValueError):
+                        category = None
+                if category is None:
+                    category = _ensure_default_category(store)
+                product.category = category
+
                 product.save()
                 
                 # 상품 옵션 처리 (기존 옵션 삭제 후 새로 추가)
@@ -361,6 +560,7 @@ def edit_product(request, store_id, product_id):
         'store': store,
         'product': product,
         'store_shipping': store.get_shipping_fee_display(),
+        'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
     }
     return render(request, 'products/edit_product.html', context)
 
@@ -437,6 +637,17 @@ def edit_product_unified(request, store_id, product_id):
                 # 재고 수량
                 product.stock_quantity = int(request.POST.get('stock_quantity', 0))
 
+                category = None
+                category_id = request.POST.get('category_id')
+                if category_id:
+                    try:
+                        category = ProductCategory.objects.get(id=int(category_id), store=store)
+                    except (ProductCategory.DoesNotExist, ValueError):
+                        category = None
+                if category is None:
+                    category = _ensure_default_category(store)
+                product.category = category
+
                 product.save()
                 
                 # 상품 옵션 처리
@@ -452,6 +663,7 @@ def edit_product_unified(request, store_id, product_id):
         'store': store,
         'product': product,
         'store_shipping': store.get_shipping_fee_display(),
+        'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
     }
     return render(request, 'products/edit_product_unified.html', context)
 
