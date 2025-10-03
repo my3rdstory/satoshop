@@ -10,19 +10,13 @@
 <link rel="stylesheet" href="{% static 'css/product_list.css' %}">
 {% endblock %}
 
-{% if is_public_view %}
-  <span id="productListCategoryPartial" data-url="{% url 'products:public_category_sections_partial' store.store_id %}"></span>
-{% else %}
-  <span id="productListCategoryPartial" data-url="{% url 'products:owner_category_sections_partial' store.store_id %}"></span>
-{% endif %}
-
 {% block store_content %}
 <div id="productListRoot"
      class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8"
      data-category-url="{% if is_public_view %}{% url 'products:public_category_sections_partial' store.store_id %}{% else %}{% url 'products:owner_category_sections_partial' store.store_id %}{% endif %}"
      data-store-id="{{ store.store_id }}"
      data-is-public="{{ is_public_view|yesno:'true,false' }}"
-     data-default-category-id="{% if category_sections %}{{ category_sections.0.category.id }}{% endif %}">
+     data-default-category-id="{% if display_category_sections %}{{ display_category_sections.0.category.id }}{% endif %}">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- 헤더 -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
@@ -75,11 +69,11 @@
       </div>
     </div>
 
-    {% if category_sections %}
+    {% if display_category_sections %}
     <nav class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 mb-8">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">카테고리 빠른 이동</h2>
-        <span class="text-xs text-gray-500 dark:text-gray-400">총 {{ category_sections|length }}개 카테고리</span>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">카테고리 필터</h2>
+        <span class="text-xs text-gray-500 dark:text-gray-400">총 {{ visible_category_count }}개 카테고리</span>
       </div>
       <div class="overflow-x-auto">
         <div class="category-pill-list">
@@ -91,7 +85,7 @@
             <span class="category-pill__name">전체</span>
             <span class="category-pill__count">{{ products|length }}</span>
           </button>
-          {% for section in category_sections %}
+          {% for section in display_category_sections %}
           <button type="button"
                   class="category-pill"
                   data-category-id="{{ section.category.id }}"
@@ -114,7 +108,7 @@
     </div>
 
     <div id="categorySectionsContainer">
-      {% include 'products/partials/category_sections.html' with sections=category_sections store=store is_public_view=is_public_view %}
+      {% include 'products/partials/category_sections.html' with sections=display_category_sections store=store is_public_view=is_public_view %}
     </div>
   </div>
 </div>

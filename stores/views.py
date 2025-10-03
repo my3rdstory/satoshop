@@ -1424,10 +1424,20 @@ def product_list(request, store_id):
     category_sections = _get_product_category_sections(store, include_inactive=True)
     products = [product for section in category_sections for product in section['products']]
 
+    display_category_sections = [
+        section for section in category_sections
+        if not (section['is_default'] and len(section['products']) == 0)
+    ]
+    if not display_category_sections:
+        display_category_sections = category_sections
+    visible_category_count = len(display_category_sections)
+
     context = {
         'store': store,
         'products': products,
         'category_sections': category_sections,
+        'display_category_sections': display_category_sections,
+        'visible_category_count': visible_category_count,
         'categories': [section['category'] for section in category_sections],
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
     }

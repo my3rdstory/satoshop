@@ -81,14 +81,21 @@ def _ensure_default_category(store):
 
 def _filter_sections_by_category_id(sections, category_id):
     if not category_id:
+        filtered = [
+            section for section in sections
+            if not (section['is_default'] and len(section['products']) == 0)
+        ]
+        if filtered:
+            return filtered
         return sections
+    else:
+        try:
+            target_id = int(category_id)
+        except (TypeError, ValueError):
+            return []
+        filtered = [section for section in sections if section['category'].id == target_id]
 
-    try:
-        target_id = int(category_id)
-    except (TypeError, ValueError):
-        return []
-
-    return [section for section in sections if section['category'].id == target_id]
+    return filtered
 
 
 def public_product_list(request, store_id):
@@ -105,6 +112,14 @@ def public_product_list(request, store_id):
     
     category_sections = _get_category_sections(store, include_inactive=False)
     products = [product for section in category_sections for product in section['products']]
+
+    visible_category_sections = [
+        section for section in category_sections
+        if not (section['is_default'] and len(section['products']) == 0)
+    ]
+    if not visible_category_sections:
+        visible_category_sections = category_sections
+    visible_category_count = len(visible_category_sections)
     
     # 사용자의 장바구니 정보 가져오기 (로그인/비로그인 모두 지원)
     cart_items_count = 0
@@ -122,6 +137,8 @@ def public_product_list(request, store_id):
         'store': store,
         'products': products,
         'category_sections': category_sections,
+        'display_category_sections': visible_category_sections,
+        'visible_category_count': visible_category_count,
         'categories': [section['category'] for section in category_sections],
         'cart_items_count': cart_items_count,
         'cart_total_amount': cart_total_amount,
@@ -148,10 +165,20 @@ def product_list(request, store_id):
     category_sections = _get_category_sections(store, include_inactive=True)
     products = [product for section in category_sections for product in section['products']]
 
+    visible_category_sections = [
+        section for section in category_sections
+        if not (section['is_default'] and len(section['products']) == 0)
+    ]
+    if not visible_category_sections:
+        visible_category_sections = category_sections
+    visible_category_count = len(visible_category_sections)
+
     context = {
         'store': store,
         'products': products,
         'category_sections': category_sections,
+        'display_category_sections': visible_category_sections,
+        'visible_category_count': visible_category_count,
         'categories': [section['category'] for section in category_sections],
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
     }
