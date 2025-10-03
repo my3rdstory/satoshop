@@ -19,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 상품 카드 호버 효과
 function initProductCardEffects() {
-    console.log('[category-filter] initProductCardEffects invoked');
     const productCards = document.querySelectorAll('.product-card');
     
     productCards.forEach(card => {
@@ -38,7 +37,6 @@ function initProductCardEffects() {
 
 // 이미지 로딩 처리
 function initImageLoading() {
-    console.log('[category-filter] initImageLoading invoked');
     const productImages = document.querySelectorAll('.product-card img');
     
     productImages.forEach(img => {
@@ -57,7 +55,6 @@ function initImageLoading() {
 
 // 상품 카드 클릭 이벤트
 function initProductCardClicks() {
-    console.log('[category-filter] initProductCardClicks invoked');
     const productCards = document.querySelectorAll('.product-card');
     
     productCards.forEach(card => {
@@ -82,25 +79,13 @@ function initProductCardClicks() {
 function initCategoryNavigation() {
     const root = document.getElementById('productListRoot');
     if (!root) {
-        console.warn('[category-filter] initCategoryNavigation: root element not found');
         return;
     }
-
-    console.log('[category-filter] initCategoryNavigation invoked', {
-        fetchUrl: root.dataset.categoryUrl,
-        isPublic: root.dataset.isPublic,
-        defaultCategoryId: root.dataset.defaultCategoryId,
-    });
 
     const fetchUrl = root.dataset.categoryUrl;
     const pills = Array.from(root.querySelectorAll('.category-pill'));
     const sectionsContainer = document.getElementById('categorySectionsContainer');
     if (!fetchUrl || !pills.length || !sectionsContainer) {
-        console.warn('[category-filter] initCategoryNavigation: required elements missing', {
-            fetchUrlPresent: Boolean(fetchUrl),
-            pillsCount: pills.length,
-            hasSectionsContainer: Boolean(sectionsContainer),
-        });
         return;
     }
 
@@ -151,15 +136,8 @@ function initCategoryNavigation() {
     };
 
     const fetchCategory = (categoryId, previousCategoryId) => {
-        console.log('[category-filter] fetchCategory invoked', {
-            categoryId,
-            previousCategoryId,
-            supportsAbort,
-            abortControllerExists: Boolean(abortController),
-        });
 
         if (supportsAbort && abortController) {
-            console.log('[category-filter] aborting previous request');
             abortController.abort();
         }
         abortController = supportsAbort ? new AbortController() : null;
@@ -179,22 +157,15 @@ function initCategoryNavigation() {
             fetchOptions.signal = abortController.signal;
         }
 
-        console.log('[category-filter] 요청 시작', {
-            categoryId: categoryId || null,
-            requestUrl: url.toString(),
-        });
-
         fetch(url.toString(), fetchOptions)
             .then((response) => {
                 if (!response.ok) {
-                    console.error('[category-filter] 응답 오류 상태', response.status, response.statusText);
                     throw new Error('카테고리 데이터를 불러오지 못했습니다.');
                 }
                 return response.json();
             })
             .then((data) => {
                 if (!data.success) {
-                    console.error('[category-filter] 응답 실패', data);
                     throw new Error(data.error || '카테고리 데이터를 불러오지 못했습니다.');
                 }
 
@@ -207,24 +178,16 @@ function initCategoryNavigation() {
                 initProductCardEffects();
                 initImageLoading();
                 initProductCardClicks();
-
-                console.log('[category-filter] 로드 완료', {
-                    activeCategoryId,
-                    totalCount: data.totalCount,
-                    counts: data.counts,
-                });
             })
             .catch((error) => {
                 if (error.name === 'AbortError') {
                     return;
                 }
-                console.error('[category-filter] 로드 실패', error);
                 window.alert(error.message || '카테고리 데이터를 불러오지 못했습니다.');
                 activeCategoryId = previousCategoryId;
                 setActivePillById(previousCategoryId);
             })
             .finally(() => {
-                console.log('[category-filter] 요청 종료');
                 showLoading(false);
             });
     };
@@ -234,10 +197,7 @@ function initCategoryNavigation() {
         const target = event.currentTarget;
         const categoryId = target.dataset.categoryId || '';
 
-        console.log('[category-filter] pill click', { categoryId });
-
         if (categoryId === activeCategoryId) {
-            console.log('[category-filter] 동일 카테고리 클릭 – 요청 생략');
             return;
         }
 
@@ -258,7 +218,6 @@ function initCategoryNavigation() {
         activeCategoryId = String(root.dataset.defaultCategoryId);
     }
 
-    console.log('[category-filter] 초기화 완료', { activeCategoryId });
     setActivePillById(activeCategoryId);
 }
 
