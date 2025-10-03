@@ -1,5 +1,6 @@
 from django.urls import path
-from . import views
+
+from . import views, views_category
 
 app_name = 'products'
 
@@ -8,6 +9,15 @@ urlpatterns = [
     path('<str:store_id>/', views.product_list, name='product_list'),
     path('<str:store_id>/list/', views.public_product_list, name='public_product_list'),
     path('<str:store_id>/add/', views.add_product, name='add_product'),
+
+    # 카테고리 관리
+    path('<str:store_id>/categories/manage/', views_category.category_manage, name='category_manage'),
+    path('<str:store_id>/categories/', views_category.category_list_api, name='category_list_api'),
+    path('<str:store_id>/categories/create/', views_category.category_create_api, name='category_create_api'),
+    path('<str:store_id>/categories/<int:category_id>/', views_category.category_update_api, name='category_update_api'),
+    path('<str:store_id>/categories/<int:category_id>/delete/', views_category.category_delete_api, name='category_delete_api'),
+    path('<str:store_id>/categories/reorder/', views_category.category_reorder_api, name='category_reorder_api'),
+
     path('<str:store_id>/<int:product_id>/', views.product_detail, name='product_detail'),
     path('<str:store_id>/<int:product_id>/edit/', views.edit_product, name='edit_product'),
     path('<str:store_id>/<int:product_id>/edit-unified/', views.edit_product_unified, name='edit_product_unified'),

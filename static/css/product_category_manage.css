@@ -1,0 +1,174 @@
+.product-category-card {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-category-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(251, 146, 60, 0.15);
+}
+
+.category-card-surface {
+  height: 100%;
+  padding: 1.25rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(254, 243, 199, 0.6));
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+}
+
+.dark .category-card-surface {
+  background: linear-gradient(145deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.7));
+  border-color: rgba(251, 191, 36, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.reorder-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  background: rgba(251, 191, 36, 0.12);
+  color: rgb(234, 88, 12);
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.reorder-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(251, 146, 60, 0.2);
+  border-color: rgba(234, 88, 12, 0.6);
+}
+
+.dark .reorder-btn {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.45);
+  color: rgb(253, 186, 116);
+}
+
+.dark .reorder-btn:hover {
+  background: rgba(249, 115, 22, 0.28);
+  border-color: rgba(253, 186, 116, 0.65);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  background: rgba(249, 250, 251, 0.9);
+  color: rgb(37, 99, 235);
+  transition: transform 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.action-btn.edit:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.action-btn.delete {
+  color: rgb(239, 68, 68);
+}
+
+.action-btn.delete:hover {
+  transform: translateY(-1px);
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.dark .action-btn {
+  background: rgba(31, 41, 55, 0.85);
+  border-color: rgba(148, 163, 184, 0.15);
+  color: rgb(191, 219, 254);
+}
+
+.dark .action-btn.edit:hover {
+  background: rgba(96, 165, 250, 0.18);
+  border-color: rgba(147, 197, 253, 0.4);
+}
+
+.dark .action-btn.delete {
+  color: rgb(254, 202, 202);
+}
+
+.dark .action-btn.delete:hover {
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(254, 202, 202, 0.5);
+}
+
+.notification-panel {
+  min-width: 18rem;
+  max-width: 24rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+  color: rgb(22, 101, 52);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.notification-panel.error {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: rgb(185, 28, 28);
+}
+
+.notification-panel .icon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, 0.18);
+  color: rgb(22, 163, 74);
+}
+
+.notification-panel.error .icon {
+  background: rgba(248, 113, 113, 0.18);
+  color: rgb(220, 38, 38);
+}
+
+.dark .notification-panel {
+  background: rgba(17, 24, 39, 0.92);
+  border-color: rgba(34, 197, 94, 0.45);
+  color: rgb(187, 247, 208);
+}
+
+.dark .notification-panel.error {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: rgb(254, 205, 211);
+}
+
+.dark .notification-panel .icon {
+  background: rgba(22, 163, 74, 0.3);
+  color: rgb(187, 247, 208);
+}
+
+.dark .notification-panel.error .icon {
+  background: rgba(248, 113, 113, 0.3);
+  color: rgb(254, 205, 211);
+}
+
+#product-category-edit-modal .dark\:bg-gray-800 {
+  background-color: rgba(17, 24, 39, 0.98);
+}
+
+#product-category-edit-modal input {
+  transition: box-shadow 0.2s ease;
+}
+
+#product-category-edit-modal input:focus {
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.25);
+}

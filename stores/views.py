@@ -5,6 +5,7 @@ from django.http import JsonResponse, Http404, HttpResponse
 from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
 from django.db import transaction, models
+from django.db.models import Prefetch
 from django.utils import timezone
 from django.db.models import Q, Max
 import json
@@ -18,7 +19,7 @@ from .models import (
     Store, StoreCreationStep, ReservedStoreId, StoreImage
 )
 from products.models import (
-    Product, ProductImage, ProductOption, ProductOptionChoice
+    Product, ProductImage, ProductOption, ProductOptionChoice, ProductCategory
 )
 from orders.models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory
@@ -38,6 +39,50 @@ from .cache_utils import get_store_browse_cache, set_store_browse_cache
 
 # 로거 설정
 logger = logging.getLogger(__name__)
+
+
+DEFAULT_PRODUCT_CATEGORY_NAME = '카테고리 없음'
+
+
+def _ensure_default_product_category(store):
+    category, _ = ProductCategory.objects.get_or_create(
+        store=store,
+        name=DEFAULT_PRODUCT_CATEGORY_NAME,
+        defaults={'order': 0},
+    )
+    return category
+
+
+def _get_product_category_sections(store, include_inactive=False):
+    _ensure_default_product_category(store)
+
+    base_queryset = store.products.all()
+    if not include_inactive:
+        base_queryset = base_queryset.filter(is_active=True)
+
+    base_queryset = base_queryset.select_related('category').order_by('-created_at')
+
+    categories = (
+        ProductCategory.objects.filter(store=store)
+        .order_by('order', 'created_at')
+        .prefetch_related(
+            Prefetch(
+                'products',
+                queryset=base_queryset,
+                to_attr='prefetched_products',
+            )
+        )
+    )
+
+    sections = []
+    for category in categories:
+        sections.append({
+            'category': category,
+            'products': getattr(category, 'prefetched_products', []),
+            'is_default': category.name == DEFAULT_PRODUCT_CATEGORY_NAME,
+        })
+
+    return sections
 
 def browse_stores(request):
     """스토어 탐색 페이지"""
@@ -1376,11 +1421,14 @@ def product_list(request, store_id):
     """상품 목록"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     # 관리자 뷰에서는 비활성화된 상품도 포함하여 표시
-    products = store.products.all().order_by('-created_at')
-    
+    category_sections = _get_product_category_sections(store, include_inactive=True)
+    products = [product for section in category_sections for product in section['products']]
+
     context = {
         'store': store,
         'products': products,
+        'category_sections': category_sections,
+        'categories': [section['category'] for section in category_sections],
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
     }
     return render(request, 'products/product_list.html', context)
@@ -1394,9 +1442,20 @@ def add_product(request, store_id):
     if request.method == 'POST':
         try:
             with transaction.atomic():
+                category = None
+                category_id = request.POST.get('category_id')
+                if category_id:
+                    try:
+                        category = ProductCategory.objects.get(id=int(category_id), store=store)
+                    except (ProductCategory.DoesNotExist, ValueError):
+                        category = None
+                if category is None:
+                    category = _ensure_default_product_category(store)
+
                 # 상품 생성
                 product = Product.objects.create(
                     store=store,
+                    category=category,
                     title=request.POST.get('title', '').strip(),
                     description=request.POST.get('description', '').strip(),
                     price=int(request.POST.get('price', 0)),
@@ -1437,6 +1496,7 @@ def add_product(request, store_id):
     
     context = {
         'store': store,
+        'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
     }
     return render(request, 'stores/add_product.html', context)
 
@@ -1462,6 +1522,18 @@ def edit_product(request, store_id, product_id):
                     store.shipping_fee_mode == 'flat' and request.POST.get('force_free_shipping') == 'on'
                 )
                 product.completion_message = request.POST.get('completion_message', '').strip()
+
+                category = None
+                category_id = request.POST.get('category_id')
+                if category_id:
+                    try:
+                        category = ProductCategory.objects.get(id=int(category_id), store=store)
+                    except (ProductCategory.DoesNotExist, ValueError):
+                        category = None
+                if category is None:
+                    category = _ensure_default_product_category(store)
+                product.category = category
+
                 product.save()
                 
                 # 기존 옵션 삭제 후 새로 추가
@@ -1513,6 +1585,7 @@ def edit_product(request, store_id, product_id):
         'product': product,
         'options_data': json.dumps(options_data),
         'store_shipping': store.get_shipping_fee_display(),
+        'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
     }
     return render(request, 'stores/edit_product.html', context)
 

@@ -5,6 +5,34 @@ import requests
 from decimal import Decimal
 
 
+class ProductCategory(models.Model):
+    """스토어별 상품 카테고리 모델"""
+
+    store = models.ForeignKey(
+        'stores.Store',
+        on_delete=models.CASCADE,
+        related_name='product_categories',
+        verbose_name='스토어',
+    )
+    name = models.CharField(max_length=50, verbose_name='카테고리명')
+    order = models.PositiveIntegerField(default=0, verbose_name='정렬 순서')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '상품 카테고리'
+        verbose_name_plural = '상품 카테고리'
+        unique_together = ('store', 'name')
+        ordering = ['order', 'created_at']
+        indexes = [
+            models.Index(fields=['store']),
+            models.Index(fields=['store', 'order']),
+        ]
+
+    def __str__(self):
+        return f"{self.store.store_name} - {self.name}"
+
+
 class Product(models.Model):
     """상품 모델"""
     PRICE_DISPLAY_CHOICES = [
@@ -13,6 +41,14 @@ class Product(models.Model):
     ]
     
     store = models.ForeignKey('stores.Store', on_delete=models.CASCADE, related_name='products')
+    category = models.ForeignKey(
+        'ProductCategory',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products',
+        verbose_name='카테고리',
+    )
     
     # 기본 정보
     title = models.CharField(max_length=200, verbose_name='제목')
@@ -76,6 +112,8 @@ class Product(models.Model):
             models.Index(fields=['is_temporarily_out_of_stock']),
             models.Index(fields=['stock_quantity']),
             models.Index(fields=['store', 'is_temporarily_out_of_stock']),
+            models.Index(fields=['store', 'category']),
+            models.Index(fields=['category']),
         ]
     
     def __str__(self):

@@ -92,6 +92,27 @@
                       placeholder="상품에 대한 자세한 설명을 마크다운 형식으로 작성하세요">{{ product.description }}</textarea>
           </div>
 
+          <!-- 카테고리 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="category_id">
+              카테고리 <span class="text-red-500">*</span>
+            </label>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+              <select id="category_id" name="category_id"
+                      class="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent">
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if product.category_id == category.id %}selected{% elif product.category_id is None and category.name == '카테고리 없음' %}selected{% endif %}>{{ category.name }}</option>
+                {% endfor %}
+              </select>
+              <a href="{% url 'products:category_manage' store.store_id %}" target="_blank"
+                 class="inline-flex items-center justify-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-external-link-alt mr-2 text-xs"></i>
+                카테고리 관리
+              </a>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">카테고리를 선택하면 상품 목록에서 섹션이 변경됩니다.</p>
+          </div>
+
           <!-- 가격 표시 방식 -->
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">가격 표시 방식</label>

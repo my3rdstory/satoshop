@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 상품 카드 클릭 이벤트
     initProductCardClicks();
+
+    // 카테고리 내비게이션 초기화
+    initCategoryNavigation();
 });
 
 // 상품 카드 호버 효과
@@ -70,6 +73,70 @@ function initProductCardClicks() {
             }
         });
     });
+}
+
+// 카테고리 빠른 이동 내비게이션
+function initCategoryNavigation() {
+    const pills = document.querySelectorAll('.category-pill');
+    if (!pills.length) {
+        return;
+    }
+
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+
+    const activatePill = (targetId) => {
+        const normalized = targetId.startsWith('category-') ? targetId : `category-${targetId}`;
+        pills.forEach((pill) => {
+            const hash = pill.getAttribute('href').split('#')[1];
+            if (hash === normalized) {
+                pill.classList.add('category-pill--active');
+            } else {
+                pill.classList.remove('category-pill--active');
+            }
+        });
+    };
+
+    pills.forEach((pill) => {
+        pill.addEventListener('click', (event) => {
+            const hash = pill.getAttribute('href').split('#')[1];
+            if (!hash) return;
+
+            const target = document.getElementById(hash);
+            if (!target) return;
+
+            event.preventDefault();
+            const offset = 120;
+            const top = target.getBoundingClientRect().top + window.scrollY - offset;
+            window.scrollTo({ top, behavior: 'smooth' });
+            activatePill(hash);
+            if (history.replaceState) {
+                history.replaceState(null, '', `#${hash}`);
+            }
+        });
+    });
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+            if (visible.length) {
+                activatePill(visible[0].target.id);
+            }
+        }, {
+            rootMargin: '-45% 0px -45% 0px',
+            threshold: 0.1,
+        });
+
+        sections.forEach((section) => observer.observe(section));
+    }
+
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash) {
+        activatePill(initialHash);
+    } else if (sections.length) {
+        activatePill(sections[0].id);
+    }
 }
 
 // 상품 상태 표시 업데이트

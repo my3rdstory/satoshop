@@ -147,6 +147,29 @@
         </div>
       </a>
 
+      <!-- 상품 카테고리 관리 -->
+      <a 
+        href="{% url 'products:category_manage' store_id=store.store_id %}" 
+        class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-200"
+      >
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center group-hover:bg-teal-200 dark:group-hover:bg-teal-800/50 transition-colors">
+            <i class="fas fa-tags text-teal-600 dark:text-teal-400 group-hover:text-teal-700 dark:group-hover:text-teal-300"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
+            상품 카테고리 관리
+          </h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            카테고리를 생성하고 순서를 정리하세요
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-chevron-right text-gray-400 group-hover:text-teal-500 transition-colors"></i>
+        </div>
+      </a>
+
       <!-- 스토어 관리 -->
       <a 
         href="{% url 'stores:manage_store' store_id=store.store_id %}" 

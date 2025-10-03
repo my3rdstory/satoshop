@@ -1,21 +1,6 @@
-# LN 결제 프로세스 구현 TODO
+# 상품 카테고리 관리 TODO
 
-## 백엔드 핵심
-- [x] PaymentTransaction / PaymentStageLog / OrderItemReservation 모델 설계 및 마이그레이션
-- [x] Blink GraphQL/WebSocket/Webhook 연결 서비스 정리 (API 키 로딩, connection_init, 재시도 정책 포함)
-- [x] Soft lock 생성/만료/전환 로직 구현 및 스케줄러 작업 등록
-- [x] 단계별 상태 머신 서비스 구현 (stage 1~5 전환, 재시도/실패 처리, 로그 남기기)
-- [x] Webhook 수신 뷰 및 시그니처 검증, transactionsByPaymentHash 폴링 백업 로직 추가
-
-## 프런트엔드(UI)
-- [x] 결제 진행 라우트 템플릿/뷰/JS 작성 (Tailwind 진행 표시줄, 실시간 안내 문구, 타이머 포함)
-- [x] WebSocket/SSE/폴링 기반 상태 갱신 모듈 구성 및 사용자 액션(재생성/취소/문의) 버튼 처리
-- [x] 완료 화면/에러 안내 화면 UX 작성, FAQ/문의 링크 연결
-
-## 관리자/스토어 기능
-- [x] “결제 정보 확인” 메뉴 신설 및 리스트/디테일 뷰 구현 (단계 로그/트랜잭션 정보 표시)
-- [x] 실패/지연 주문 필터링 및 연락처 안내 UI 구성
-
-## 문서/운영
-- [x] README 및 운영 문서에 Blink webhook 설정, WebSocket 인증 절차, 재시도 정책 업데이트
-- [x] 배포/환경 변수 점검 (BLINK API 키, 웹훅 엔드포인트, Celery/Redis 설정 등)
+- [x] `/products/<store_id>/list/` 라우터에서 사용할 상품 카테고리 데이터 모델과 마이그레이션 설계·구현 (카테고리 순서 기반 정렬, 기존 상품은 "카테고리 없음"으로 매핑).
+- [x] `/products/<store_id>/list/` 뷰 로직을 카테고리 순서에 따라 상품들을 한 화면에 묶어 내려주도록 확장하고, 카테고리 CRUD/정렬 API를 추가.
+- [x] 스토어 관리 UI에 카테고리 관리 메뉴 및 `/products/<store_id>/list/` 템플릿/정적 자산 업데이트(다크모드·Tailwind, 토스트 미사용)로 카테고리별 섹션 렌더링과 상품 등록/수정 시 카테고리 선택 지원.
+- [x] `README.md`에 상품 카테고리 관리 사용법과 마이그레이션 가이드를 업데이트하고, 대장이 수행할 수동 테스트 절차를 정리.
