@@ -17,6 +17,7 @@
   font-weight: 500;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
+  outline: none;
 }
 
 .category-pill--active {
@@ -34,6 +35,11 @@
 .category-pill:hover {
   background: rgba(251, 191, 36, 0.22);
   border-color: rgba(251, 146, 60, 0.5);
+}
+
+.category-pill:focus-visible {
+  outline: 2px solid rgba(251, 146, 60, 0.75);
+  outline-offset: 2px;
 }
 
 .category-pill__name {

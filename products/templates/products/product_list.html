@@ -11,15 +11,15 @@
 {% endblock %}
 
 {% if is_public_view %}
-  {% url 'products:public_category_sections_partial' store.store_id as category_partial_url %}
+  <span id="productListCategoryPartial" data-url="{% url 'products:public_category_sections_partial' store.store_id %}"></span>
 {% else %}
-  {% url 'products:owner_category_sections_partial' store.store_id as category_partial_url %}
+  <span id="productListCategoryPartial" data-url="{% url 'products:owner_category_sections_partial' store.store_id %}"></span>
 {% endif %}
 
 {% block store_content %}
 <div id="productListRoot"
      class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8"
-     data-category-url="{{ category_partial_url }}"
+     data-category-url="{% if is_public_view %}{% url 'products:public_category_sections_partial' store.store_id %}{% else %}{% url 'products:owner_category_sections_partial' store.store_id %}{% endif %}"
      data-store-id="{{ store.store_id }}"
      data-is-public="{{ is_public_view|yesno:'true,false' }}"
      data-default-category-id="{% if category_sections %}{{ category_sections.0.category.id }}{% endif %}">

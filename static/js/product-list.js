@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 상품 카드 호버 효과
 function initProductCardEffects() {
+    console.log('[category-filter] initProductCardEffects invoked');
     const productCards = document.querySelectorAll('.product-card');
     
     productCards.forEach(card => {
@@ -37,6 +38,7 @@ function initProductCardEffects() {
 
 // 이미지 로딩 처리
 function initImageLoading() {
+    console.log('[category-filter] initImageLoading invoked');
     const productImages = document.querySelectorAll('.product-card img');
     
     productImages.forEach(img => {
@@ -55,6 +57,7 @@ function initImageLoading() {
 
 // 상품 카드 클릭 이벤트
 function initProductCardClicks() {
+    console.log('[category-filter] initProductCardClicks invoked');
     const productCards = document.querySelectorAll('.product-card');
     
     productCards.forEach(card => {
@@ -78,12 +81,26 @@ function initProductCardClicks() {
 // 카테고리 빠른 이동 내비게이션
 function initCategoryNavigation() {
     const root = document.getElementById('productListRoot');
-    if (!root) return;
+    if (!root) {
+        console.warn('[category-filter] initCategoryNavigation: root element not found');
+        return;
+    }
+
+    console.log('[category-filter] initCategoryNavigation invoked', {
+        fetchUrl: root.dataset.categoryUrl,
+        isPublic: root.dataset.isPublic,
+        defaultCategoryId: root.dataset.defaultCategoryId,
+    });
 
     const fetchUrl = root.dataset.categoryUrl;
     const pills = Array.from(root.querySelectorAll('.category-pill'));
     const sectionsContainer = document.getElementById('categorySectionsContainer');
     if (!fetchUrl || !pills.length || !sectionsContainer) {
+        console.warn('[category-filter] initCategoryNavigation: required elements missing', {
+            fetchUrlPresent: Boolean(fetchUrl),
+            pillsCount: pills.length,
+            hasSectionsContainer: Boolean(sectionsContainer),
+        });
         return;
     }
 
@@ -134,8 +151,15 @@ function initCategoryNavigation() {
     };
 
     const fetchCategory = (categoryId, previousCategoryId) => {
+        console.log('[category-filter] fetchCategory invoked', {
+            categoryId,
+            previousCategoryId,
+            supportsAbort,
+            abortControllerExists: Boolean(abortController),
+        });
 
         if (supportsAbort && abortController) {
+            console.log('[category-filter] aborting previous request');
             abortController.abort();
         }
         abortController = supportsAbort ? new AbortController() : null;
@@ -210,7 +234,10 @@ function initCategoryNavigation() {
         const target = event.currentTarget;
         const categoryId = target.dataset.categoryId || '';
 
+        console.log('[category-filter] pill click', { categoryId });
+
         if (categoryId === activeCategoryId) {
+            console.log('[category-filter] 동일 카테고리 클릭 – 요청 생략');
             return;
         }
 
@@ -231,6 +258,7 @@ function initCategoryNavigation() {
         activeCategoryId = String(root.dataset.defaultCategoryId);
     }
 
+    console.log('[category-filter] 초기화 완료', { activeCategoryId });
     setActivePillById(activeCategoryId);
 }
 
