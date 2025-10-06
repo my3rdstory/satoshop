@@ -1,0 +1,23 @@
+/* Wallet of Satoshi 가이드 전용 스타일 */
+
+.guide-section[data-open="true"] [data-icon] {
+  transform: rotate(180deg);
+}
+
+.guide-section[data-open="true"] {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 16px 36px -24px rgba(245, 158, 11, 0.7);
+}
+
+.guide-section[data-open="true"] [data-content] {
+  display: block;
+}
+
+.guide-section [data-content] {
+  display: none;
+}
+
+.dark .guide-section[data-open="true"] {
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 16px 36px -24px rgba(245, 158, 11, 0.65);
+}

@@ -1,0 +1,22 @@
+/* BAH 홍보요청 전용 스타일 */
+
+#addressSearchModal.flex {
+  display: flex;
+}
+
+#addressSearchContainer {
+  min-height: 24rem;
+  width: 100%;
+}
+
+#bahPromotionApp .shadow-xl {
+  box-shadow: 0 20px 45px -20px rgba(15, 23, 42, 0.35);
+}
+
+#bahPromotionApp .shadow-lg {
+  box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+.dark #addressSearchModal .shadow-2xl {
+  box-shadow: 0 25px 60px -25px rgba(0, 0, 0, 0.6);
+}

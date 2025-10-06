@@ -3,8 +3,51 @@ from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from cryptography.fernet import Fernet
 from django.conf import settings
+from django.utils import timezone
 import os
 import base64
+
+
+MAX_PROMOTION_IMAGES = 4
+PROMOTION_STATUS_PENDING = 'pending'
+PROMOTION_STATUS_SHIPPED = 'shipped'
+PROMOTION_STATUS_CHOICES = [
+    (PROMOTION_STATUS_PENDING, '발송예정'),
+    (PROMOTION_STATUS_SHIPPED, '발송'),
+]
+
+
+class BahPromotionLinkSettings(models.Model):
+    """BAH 홍보요청 화면에 노출할 가이드 링크 설정"""
+
+    login_guide_url = models.URLField(
+        blank=True,
+        help_text='월오사 라이트닝 로그인 사용법 문서 링크'
+    )
+    usage_guide_url = models.URLField(
+        blank=True,
+        help_text='월오사 사용법 상세 문서 링크'
+    )
+    package_request_url = models.URLField(
+        blank=True,
+        help_text='홍보 패키지 신청 링크 (예: 사토샵 상품 페이지)'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'BAH 링크 설정'
+        verbose_name_plural = 'BAH 링크 설정'
+
+    def __str__(self):
+        return 'BAH 링크 설정'
+
+    @classmethod
+    def get_solo(cls):
+        instance = cls.objects.first()
+        if instance is None:
+            instance = cls.objects.create()
+        return instance
 
 class Store(models.Model):
     SHIPPING_FEE_MODE_CHOICES = [
@@ -466,3 +509,122 @@ class StoreImage(models.Model):
                 return f"{self.file_size:.1f} {unit}"
             self.file_size /= 1024.0
         return f"{self.file_size:.1f} TB"
+
+
+class BahPromotionRequest(models.Model):
+    """BAH 스토어 홍보 요청 정보"""
+
+    user = models.OneToOneField(
+        'auth.User',
+        on_delete=models.CASCADE,
+        related_name='bah_promotion_request',
+    )
+    store_name = models.CharField(max_length=120, help_text="매장 이름")
+    postal_code = models.CharField(max_length=10, blank=True, help_text="우편번호")
+    address = models.CharField(max_length=255, help_text="매장 주소")
+    address_detail = models.CharField(max_length=255, blank=True, help_text="상세 주소")
+    phone_number = models.CharField(max_length=30, help_text="매장 연락처")
+    email = models.EmailField(help_text="홍보 관련 연락 이메일")
+    introduction = models.TextField(help_text="매장 소개")
+    lightning_public_key = models.CharField(max_length=66, blank=True, help_text="라이트닝 인증 공개키")
+    lightning_verified_at = models.DateTimeField(null=True, blank=True, help_text="라이트닝 인증 시각")
+    shipping_status = models.CharField(
+        max_length=16,
+        choices=PROMOTION_STATUS_CHOICES,
+        default=PROMOTION_STATUS_PENDING,
+        help_text="홍보 패키지 발송 상태",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'BAH 홍보 요청'
+        verbose_name_plural = 'BAH 홍보 요청'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['updated_at']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"{self.store_name} ({self.user.username})"
+
+    @property
+    def has_lightning_verification(self) -> bool:
+        return bool(self.lightning_public_key and self.lightning_verified_at)
+
+    def mark_lightning_verified(self, public_key: str) -> None:
+        self.lightning_public_key = public_key
+        self.lightning_verified_at = timezone.now()
+        self.save(update_fields=['lightning_public_key', 'lightning_verified_at', 'updated_at'])
+
+    def toggle_shipping_status(self) -> None:
+        self.shipping_status = (
+            PROMOTION_STATUS_SHIPPED
+            if self.shipping_status == PROMOTION_STATUS_PENDING
+            else PROMOTION_STATUS_PENDING
+        )
+        self.save(update_fields=['shipping_status', 'updated_at'])
+
+
+class BahPromotionImage(models.Model):
+    """BAH 홍보 요청 이미지"""
+
+    promotion_request = models.ForeignKey(
+        BahPromotionRequest,
+        on_delete=models.CASCADE,
+        related_name='images',
+    )
+    original_name = models.CharField(max_length=255, verbose_name='원본 파일명')
+    file_path = models.CharField(max_length=500, verbose_name='파일 경로')
+    file_url = models.URLField(max_length=800, verbose_name='파일 URL')
+    file_size = models.PositiveIntegerField(null=True, blank=True, verbose_name='파일 크기 (bytes)')
+    width = models.PositiveIntegerField(default=1000, verbose_name='이미지 너비')
+    height = models.PositiveIntegerField(default=563, verbose_name='이미지 높이')
+    order = models.PositiveIntegerField(default=0, verbose_name='정렬 순서')
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name='업로드 시간')
+    uploaded_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name='업로드 사용자',
+    )
+
+    class Meta:
+        verbose_name = 'BAH 홍보 이미지'
+        verbose_name_plural = 'BAH 홍보 이미지'
+        ordering = ['order', 'uploaded_at']
+        indexes = [
+            models.Index(fields=['promotion_request', 'order']),
+            models.Index(fields=['uploaded_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.promotion_request.store_name} - {self.original_name}"
+
+    def get_file_size_display(self):
+        if not self.file_size:
+            return "크기 정보 없음"
+
+        size = float(self.file_size)
+        for unit in ['bytes', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
+
+
+class BahPromotionAdmin(models.Model):
+    """BAH 홍보요청 관리자 지정"""
+
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='bah_admin_profile')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'BAH 관리자'
+        verbose_name_plural = 'BAH 관리자'
+
+    def __str__(self):
+        return self.user.username
