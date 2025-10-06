@@ -1,370 +1,513 @@
-/* 밋업 체크아웃 페이지 스타일 */
+/* Meetup checkout workflow styles */
 
-/* 옵션 선택 스타일 */
-.option-choice-label {
-    transition: all 0.2s ease-in-out;
+.info-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1.5rem;
+  backdrop-filter: blur(6px);
 }
 
-.option-choice-input:checked + .option-choice-label {
-    border-color: #8b5cf6;
-    background-color: rgba(139, 92, 246, 0.1);
+.dark .info-card {
+  border-color: rgba(71, 85, 105, 0.4);
+  background: rgba(15, 23, 42, 0.8);
 }
 
-.option-choice-input:checked ~ .option-choice-indicator {
-    border-color: #8b5cf6;
+.info-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
 }
 
-.option-choice-input:checked ~ .option-choice-indicator .option-choice-dot {
-    display: block;
+.info-card__eyebrow {
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #f7931a;
 }
 
-/* 다크 모드에서 옵션 선택 스타일 */
-.dark .option-choice-input:checked + .option-choice-label {
-    background-color: rgba(139, 92, 246, 0.2);
+.dark .info-card__eyebrow {
+  color: #fbbf24;
 }
 
-/* 인보이스 생성 버튼 스타일 */
-.invoice-btn {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    transition: all 0.3s ease;
+.info-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
 }
 
-.invoice-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+.dark .info-card__title {
+  color: #f8fafc;
 }
 
-.invoice-btn:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+.info-list {
+  display: grid;
+  gap: 0.75rem;
 }
 
-/* QR 코드 컨테이너 */
-#qrCodeContainer {
-    transition: all 0.3s ease;
+.info-list__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
-#qrCodeContainer:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+.info-list__item dt {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
 }
 
-/* 결제 상태 메시지 */
-#paymentStatus.success {
-    background-color: #dcfce7;
-    border-color: #16a34a;
-    color: #166534;
+.dark .info-list__item dt {
+  color: #94a3b8;
 }
 
-#paymentStatus.error {
-    background-color: #fef2f2;
-    border-color: #dc2626;
-    color: #991b1b;
+.info-list__item dd {
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
 }
 
-#paymentStatus.pending {
-    background-color: #fefce8;
-    border-color: #eab308;
-    color: #854d0e;
+.dark .info-list__item dd {
+  color: #f1f5f9;
 }
 
-.dark #paymentStatus.success {
-    background-color: rgba(34, 197, 94, 0.1);
-    border-color: #16a34a;
-    color: #4ade80;
+.workflow-card {
+  border-radius: 1.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1.75rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
 }
 
-.dark #paymentStatus.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: #dc2626;
-    color: #f87171;
+.dark .workflow-card {
+  border-color: rgba(71, 85, 105, 0.45);
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
 }
 
-.dark #paymentStatus.pending {
-    background-color: rgba(234, 179, 8, 0.1);
-    border-color: #eab308;
-    color: #fbbf24;
+.workflow-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-/* 로딩 스피너 */
-.animate-spin {
-    animation: spin 1s linear infinite;
+@media (min-width: 768px) {
+  .workflow-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+.workflow-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
 }
 
-/* 폼 스타일 개선 */
-.form-input:focus {
-    ring-width: 2px;
-    ring-color: #8b5cf6;
-    border-color: transparent;
-    outline: none;
+.dark .workflow-title {
+  color: #f8fafc;
 }
 
-/* 체크아웃 카드 */
-.checkout-card {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.9);
+.workflow-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.4rem;
 }
 
-.dark .checkout-card {
-    background: rgba(31, 41, 55, 0.9);
+.dark .workflow-subtitle {
+  color: #94a3b8;
 }
 
-/* 가격 표시 */
-.text-bitcoin {
-    color: #f7931a;
+.workflow-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 1.5rem;
+  padding: 0.85rem 1.8rem;
+  background: linear-gradient(135deg, #f7931a, #fbbf24);
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 10px 25px rgba(247, 147, 26, 0.24);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.dark .text-bitcoin {
-    color: #fbbf24;
+.workflow-start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 35px rgba(247, 147, 26, 0.32);
 }
 
-/* 애니메이션 */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.workflow-start-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
-.fade-in {
-    animation: fadeIn 0.3s ease-out;
+.status-banner {
+  min-height: 90px;
+  border-radius: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(248, 250, 252, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  color: #0f172a;
+  line-height: 1.6;
 }
 
-/* 반응형 스타일 */
+.dark .status-banner {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(71, 85, 105, 0.35);
+  color: #f1f5f9;
+}
+
+.status-banner--error {
+  background: rgba(254, 226, 226, 0.85);
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #b91c1c;
+}
+
+.dark .status-banner--error {
+  background: rgba(153, 27, 27, 0.25);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fecaca;
+}
+
+.invoice-panel {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(248, 250, 252, 0.75);
+  padding: 1.5rem;
+}
+
+.dark .invoice-panel {
+  border-color: rgba(71, 85, 105, 0.4);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.invoice-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.invoice-panel__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dark .invoice-panel__title {
+  color: #f8fafc;
+}
+
+.invoice-panel__subtitle {
+  font-size: 0.78rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.dark .invoice-panel__subtitle {
+  color: #94a3b8;
+}
+
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #dc2626;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.invoice-qr-container {
+  width: 220px;
+  height: 220px;
+  border-radius: 1.25rem;
+  border: 1px dashed rgba(99, 102, 241, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem;
+}
+
+.dark .invoice-qr-container {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.invoice-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dark .invoice-label {
+  color: #94a3b8;
+}
+
+.invoice-textarea {
+  margin-top: 0.75rem;
+  width: 100%;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 0.85rem;
+  font-size: 0.8rem;
+  color: #0f172a;
+}
+
+.dark .invoice-textarea {
+  background: rgba(15, 23, 42, 0.85);
+  border-color: rgba(71, 85, 105, 0.45);
+  color: #e2e8f0;
+}
+
+.invoice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.9rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-secondary {
+  background: #111827;
+  color: #f8fafc;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(17, 24, 39, 0.25);
+}
+
+.btn-outline {
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #0f172a;
+  background: transparent;
+}
+
+.dark .btn-outline {
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #f1f5f9;
+}
+
+.btn-outline:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(148, 163, 184, 0.2);
+}
+
+.btn-outline-danger {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  color: #dc2626;
+  background: transparent;
+}
+
+.btn-outline-danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(248, 113, 113, 0.25);
+}
+
+.log-card {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  padding: 1.25rem;
+}
+
+.dark .log-card {
+  border-color: rgba(71, 85, 105, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.log-card__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dark .log-card__title {
+  color: #f8fafc;
+}
+
+.log-card__subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 0.3rem;
+}
+
+.dark .log-card__subtitle {
+  color: #94a3b8;
+}
+
+.log-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.log-list li {
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.85rem 1rem;
+}
+
+.dark .log-list li {
+  border-color: rgba(71, 85, 105, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.log-list li .log-time {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+}
+
+.dark .log-list li .log-time {
+  color: #94a3b8;
+}
+
+.log-list li .log-message {
+  font-size: 0.82rem;
+  color: #0f172a;
+  line-height: 1.45;
+}
+
+.dark .log-list li .log-message {
+  color: #f1f5f9;
+}
+
+.workflow-steps {
+  counter-reset: workflow-step;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.workflow-step {
+  display: flex;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.85);
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.dark .workflow-step {
+  border-color: rgba(71, 85, 105, 0.35);
+  background: rgba(15, 23, 42, 0.85);
+}
+
+.workflow-step-indicator {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  color: #1f2937;
+  border: 2px solid rgba(59, 130, 246, 0.25);
+  flex-shrink: 0;
+}
+
+.dark .workflow-step-indicator {
+  background: rgba(37, 99, 235, 0.18);
+  color: #f8fafc;
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.workflow-step-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.dark .workflow-step-title {
+  color: #f8fafc;
+}
+
+.workflow-step-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+.dark .workflow-step-desc {
+  color: #94a3b8;
+}
+
+.workflow-step.is-active {
+  border-color: rgba(247, 147, 26, 0.45);
+  background: rgba(247, 147, 26, 0.08);
+}
+
+.dark .workflow-step.is-active {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.workflow-step.is-active .workflow-step-indicator {
+  background: linear-gradient(135deg, #f7931a, #fbbf24);
+  color: #0f172a;
+  border-color: rgba(247, 147, 26, 0.6);
+}
+
+.workflow-step.is-complete {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.dark .workflow-step.is-complete {
+  border-color: rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.workflow-step.is-complete .workflow-step-indicator {
+  background: linear-gradient(135deg, #10b981, #22c55e);
+  color: #052e16;
+  border-color: rgba(16, 185, 129, 0.6);
+}
+
 @media (max-width: 640px) {
-    .checkout-container {
-        padding: 1rem;
-    }
-    
-    .checkout-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    
-    #qrCodeContainer {
-        padding: 1rem;
-    }
-    
-    #qrCodeImage {
-        max-width: 200px;
-    }
-}
+  .workflow-card,
+  .info-card {
+    padding: 1.35rem;
+  }
 
-/* 호버 효과 */
-.hover-lift {
-    transition: all 0.2s ease;
-}
+  .invoice-qr-container {
+    width: 200px;
+    height: 200px;
+  }
 
-.hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  .workflow-start-btn {
+    width: 100%;
+  }
 }
-
-.dark .hover-lift:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* 버튼 상태 */
-.btn-loading {
-    position: relative;
-}
-
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    margin: auto;
-    border: 2px solid transparent;
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-}
-
-/* 스티키 결제 패널 */
-.sticky {
-    position: sticky;
-    top: 2rem;
-}
-
-/* 반응형 스타일 */
-@media (max-width: 1279px) {
-    .sticky {
-        position: static;
-    }
-}
-
-@media (max-width: 640px) {
-    .checkout-container {
-        padding: 1rem;
-    }
-    
-    .checkout-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    
-    #qrCodeContainer {
-        padding: 1rem;
-    }
-    
-    #qrCodeImage {
-        max-width: 200px;
-    }
-    
-    /* 모바일에서 페이지 헤더 조정 */
-    .page-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .page-header .icon-container {
-        margin-right: 0;
-        margin-bottom: 1rem;
-    }
-}
-
-/* 그라디언트 헤더 스타일 */
-.gradient-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.gradient-header.purple {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-}
-
-.gradient-header.green {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-/* 인보이스 텍스트 영역 */
-#invoiceTextArea {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    line-height: 1.4;
-    word-break: break-all;
-}
-
-/* 카드 그림자 효과 */
-.card-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.dark .card-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-}
-
-.dark .card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-}
-
-/* 정보 섹션 아이콘 */
-.info-section-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* 결제 안내 박스 */
-.payment-info-box {
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-    border: 1px solid #93c5fd;
-}
-
-.dark .payment-info-box {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
-}
-
-/* 경고 박스 */
-.warning-box {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid #f59e0b;
-}
-
-.dark .warning-box {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    border-color: #d97706;
-    color: #78350f;
-}
-
-/* 플로팅 카운트다운 스타일 */
-.floating-countdown {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-
-.floating-countdown.show {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.floating-countdown.urgent {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    animation: pulse-red 1s infinite;
-}
-
-@keyframes pulse-red {
-    0%, 100% { 
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    }
-    50% { 
-        box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
-        transform: scale(1.02);
-    }
-}
-
-.countdown-time {
-    font-size: 18px;
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-}
-
-.countdown-label {
-    font-size: 12px;
-    opacity: 0.9;
-    margin-top: 2px;
-}
-
-/* 모바일에서 위치 조정 */
-@media (max-width: 640px) {
-    .floating-countdown {
-        bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-    }
-    
-    .floating-countdown.show {
-        transform: translateX(-50%) translateY(0);
-    }
-} 

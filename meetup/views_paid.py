@@ -2,13 +2,15 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
+from django.urls import reverse
+from django.views.decorators.http import require_POST, require_http_methods
 from django.db import transaction
 from django.utils import timezone
 from stores.models import Store
 from .models import Meetup, MeetupOrder, MeetupOption, MeetupChoice, MeetupOrderOption
 from ln_payment.blink_service import get_blink_service_for_store
+from ln_payment.models import PaymentTransaction
+from ln_payment.services import LightningPaymentProcessor
 from datetime import timedelta
 import json
 import logging
@@ -196,7 +198,6 @@ def meetup_checkout(request, store_id, meetup_id):
 
 def create_meetup_order(meetup, participant_data, is_free=False, user=None):
     """밋업 주문 생성 함수"""
-    # 주문 생성
     order = MeetupOrder.objects.create(
         meetup=meetup,
         user=user,
@@ -216,13 +217,21 @@ def create_meetup_order(meetup, participant_data, is_free=False, user=None):
         base_price=participant_data.get('base_price', 0),
         options_price=participant_data.get('options_price', 0),
     )
-    
-    # 선택된 옵션 처리
+
+    _sync_meetup_order_options(order, participant_data)
+
+    return order
+
+
+def _sync_meetup_order_options(order, participant_data):
+    """선택된 옵션 정보를 주문에 반영한다."""
+    MeetupOrderOption.objects.filter(order=order).delete()
+
     for option_data in participant_data.get('selected_options', []):
         try:
             option = MeetupOption.objects.get(id=option_data['option_id'])
             choice = MeetupChoice.objects.get(id=option_data['choice_id'])
-            
+
             MeetupOrderOption.objects.create(
                 order=order,
                 option=option,
@@ -230,357 +239,496 @@ def create_meetup_order(meetup, participant_data, is_free=False, user=None):
                 additional_price=option_data['additional_price']
             )
         except (MeetupOption.DoesNotExist, MeetupChoice.DoesNotExist):
-            logger.warning(f"옵션 또는 선택지를 찾을 수 없음: option_id={option_data['option_id']}, choice_id={option_data['choice_id']}")
-    
+            logger.warning(
+                "옵션 또는 선택지를 찾을 수 없음: option_id=%s, choice_id=%s",
+                option_data.get('option_id'),
+                option_data.get('choice_id'),
+            )
+
+
+def create_pending_meetup_order(meetup, participant_data, *, user=None, reservation_seconds=180):
+    """결제 진행을 위한 임시 밋업 주문을 생성한다."""
+    reservation_expires_at = timezone.now() + timedelta(seconds=reservation_seconds)
+
+    order = MeetupOrder.objects.create(
+        meetup=meetup,
+        user=user,
+        participant_name=participant_data['participant_name'],
+        participant_email=participant_data['participant_email'],
+        participant_phone=participant_data.get('participant_phone', ''),
+        total_price=participant_data['total_price'],
+        status='pending',
+        is_temporary_reserved=True,
+        reservation_expires_at=reservation_expires_at,
+        base_price=participant_data.get('base_price', meetup.current_price),
+        options_price=participant_data.get('options_price', 0),
+        is_early_bird=participant_data.get('is_early_bird', False),
+        discount_rate=participant_data.get('discount_rate', 0),
+        original_price=participant_data.get('original_price', 0) or None,
+    )
+
     return order
+
+
+def finalize_meetup_order_from_transaction(order, participant_data, *, payment_hash='', payment_request=''):
+    """결제 완료 정보로 임시 주문을 확정 상태로 전환한다."""
+    order.participant_name = participant_data['participant_name']
+    order.participant_email = participant_data['participant_email']
+    order.participant_phone = participant_data.get('participant_phone', '')
+    order.base_price = participant_data.get('base_price', order.base_price)
+    order.options_price = participant_data.get('options_price', order.options_price)
+    order.total_price = participant_data.get('total_price', order.total_price)
+    order.is_early_bird = participant_data.get('is_early_bird', order.is_early_bird)
+    order.discount_rate = participant_data.get('discount_rate', order.discount_rate)
+    order.original_price = participant_data.get('original_price', order.original_price)
+    order.payment_hash = payment_hash
+    order.payment_request = payment_request
+    now = timezone.now()
+    if not order.paid_at:
+        order.paid_at = now
+    if not order.confirmed_at:
+        order.confirmed_at = now
+    order.status = 'confirmed'
+    order.is_temporary_reserved = False
+    order.auto_cancelled_reason = ''
+    order.save(update_fields=[
+        'participant_name',
+        'participant_email',
+        'participant_phone',
+        'base_price',
+        'options_price',
+        'total_price',
+        'is_early_bird',
+        'discount_rate',
+        'original_price',
+        'payment_hash',
+        'payment_request',
+        'paid_at',
+        'confirmed_at',
+        'status',
+        'is_temporary_reserved',
+        'auto_cancelled_reason',
+        'updated_at',
+    ])
+
+    _sync_meetup_order_options(order, participant_data)
+
+    return order
+
+
+def serialize_transaction(transaction: PaymentTransaction) -> dict:
+    logs = [
+        {
+            'stage': log.stage,
+            'status': log.status,
+            'message': log.message,
+            'detail': log.detail,
+            'created_at': log.created_at.isoformat(),
+        }
+        for log in transaction.stage_logs.order_by('created_at')
+    ]
+
+    payload = {
+        'id': str(transaction.id),
+        'status': transaction.status,
+        'current_stage': transaction.current_stage,
+        'payment_hash': transaction.payment_hash,
+        'invoice_expires_at': transaction.invoice_expires_at.isoformat() if transaction.invoice_expires_at else None,
+        'logs': logs,
+        'created_at': transaction.created_at.isoformat(),
+        'updated_at': transaction.updated_at.isoformat(),
+    }
+
+    if transaction.payment_request:
+        payload['invoice'] = {
+            'payment_request': transaction.payment_request,
+            'payment_hash': transaction.payment_hash,
+            'expires_at': transaction.invoice_expires_at.isoformat() if transaction.invoice_expires_at else None,
+        }
+
+    if transaction.meetup_order:
+        payload['meetup_order_id'] = transaction.meetup_order.id
+        payload['order_number'] = transaction.meetup_order.order_number
+
+    if transaction.order:
+        payload['order_number'] = transaction.order.order_number
+
+    return payload
+
+
+def build_meetup_invoice_memo(meetup: Meetup, participant_data: dict, user) -> str:
+    participant_name = participant_data.get('participant_name') or '참가자'
+    quantity_label = len(participant_data.get('selected_options', []))
+    quantity_text = f"옵션 {quantity_label}개" if quantity_label else "옵션 없음"
+    payer_identifier = getattr(user, 'username', None) or getattr(user, 'email', None) or str(user.id)
+    memo = f"{meetup.name} / {participant_name} / {quantity_text} / 결제자 {payer_identifier}"
+    return memo[:620] + '…' if len(memo) > 620 else memo
 
 def meetup_checkout_payment(request, store_id, meetup_id):
     """밋업 결제 페이지"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     meetup = get_object_or_404(
-        Meetup, 
-        id=meetup_id, 
-        store=store, 
+        Meetup,
+        id=meetup_id,
+        store=store,
         deleted_at__isnull=True
     )
-    # 🔄 세션에서 참가자 정보 확인 (상품과 동일한 방식)
+
     participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
     if not participant_data:
         messages.error(request, '참가자 정보가 없습니다. 다시 신청해주세요.')
         return redirect('meetup:meetup_checkout', store_id=store_id, meetup_id=meetup_id)
-    
-    # 무료 밋업인 경우 POST 요청 처리
-    if request.method == 'POST' and participant_data.get('total_price', 0) == 0:
+
+    total_price = int(participant_data.get('total_price', 0))
+
+    if request.method == 'POST' and total_price == 0:
         try:
-            # 무료 밋업 주문 생성
             order = create_meetup_order(
                 meetup=meetup,
                 participant_data=participant_data,
                 is_free=True,
-                user=request.user
+                user=request.user,
             )
-            
-            # 세션에서 참가자 정보 제거
             if f'meetup_participant_data_{meetup_id}' in request.session:
                 del request.session[f'meetup_participant_data_{meetup_id}']
-            
-            # 성공 메시지 및 리다이렉션
             messages.success(request, '무료 밋업 참가 신청이 완료되었습니다!')
             return redirect('meetup:meetup_checkout_complete', store_id=store_id, meetup_id=meetup_id, order_id=order.id)
-            
-        except Exception as e:
-            logger.error(f"무료 밋업 주문 생성 실패: {str(e)}")
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error("무료 밋업 주문 생성 실패: %s", exc)
             messages.error(request, '참가 신청 중 오류가 발생했습니다. 다시 시도해주세요.')
-    
-    # 블링크 서비스 연결 확인
-    blink_service = get_blink_service_for_store(store)
-    payment_service_available = blink_service is not None
-    
-    # 사이트 설정에서 카운트다운 시간 가져오기
+
+    payment_service_available = get_blink_service_for_store(store) is not None
+
     from myshop.models import SiteSettings
     site_settings = SiteSettings.get_settings()
     countdown_seconds = site_settings.meetup_countdown_seconds
-    
+    placeholder_uuid = '11111111-1111-1111-1111-111111111111'
+
+    existing_transaction = None
+    transaction_payload = None
+    transaction_id = participant_data.get('transaction_id')
+    if transaction_id:
+        try:
+            existing_transaction = PaymentTransaction.objects.select_related('meetup_order').get(
+                id=transaction_id,
+                user=request.user,
+                store=store,
+            )
+            transaction_payload = serialize_transaction(existing_transaction)
+        except (PaymentTransaction.DoesNotExist, ValueError):
+            transaction_payload = None
+
     context = {
         'store': store,
         'meetup': meetup,
         'participant_data': participant_data,
         'payment_service_available': payment_service_available,
         'countdown_seconds': countdown_seconds,
+        'workflow_start_url': reverse('meetup:meetup_start_payment_workflow', args=[store_id, meetup_id]),
+        'workflow_status_url_template': reverse('meetup:meetup_payment_status', args=[store_id, meetup_id, placeholder_uuid]),
+        'workflow_verify_url_template': reverse('meetup:meetup_verify_payment', args=[store_id, meetup_id, placeholder_uuid]),
+        'workflow_cancel_url_template': reverse('meetup:meetup_cancel_payment', args=[store_id, meetup_id, placeholder_uuid]),
+        'workflow_inventory_redirect_url': reverse('meetup:meetup_detail', args=[store_id, meetup_id]),
+        'workflow_cart_url': reverse('meetup:meetup_checkout', args=[store_id, meetup_id]),
+        'placeholder_uuid': placeholder_uuid,
+        'existing_transaction': transaction_payload,
+        'total_price': total_price,
     }
-    
+
     return render(request, 'meetup/meetup_checkout.html', context)
 
-@require_POST
-@csrf_exempt
-def create_meetup_invoice(request, store_id, meetup_id):
-    """밋업 결제 인보이스 생성"""
-    try:
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        # 🔄 세션에서 참가자 정보 확인 (상품과 동일한 방식)
-        participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
-        if not participant_data:
-            return JsonResponse({
-                'success': False,
-                'error': '참가자 정보가 없습니다.'
-            })
-        
-        # 블링크 서비스 가져오기
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 인보이스 생성
-        amount_sats = participant_data['total_price']
-        memo = f"{meetup.name}"
-        
-        result = blink_service.create_invoice(
-            amount_sats=amount_sats,
-            memo=memo,
-            expires_in_minutes=15
-        )
-        
-        if result['success']:
-            # 🔄 세션에 인보이스 정보 저장 (상품과 동일한 방식)
-            participant_data['payment_hash'] = result['payment_hash']
-            participant_data['payment_request'] = result['invoice']
-            request.session[f'meetup_participant_data_{meetup_id}'] = participant_data
-            
-            return JsonResponse({
-                'success': True,
-                'payment_hash': result['payment_hash'],
-                'invoice': result['invoice'],
-                'amount_sats': participant_data['total_price'],
-                'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else None
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', '인보이스 생성에 실패했습니다.')
-            })
-            
-    except Exception:
-        return JsonResponse({
-            'success': False,
-            'error': '인보이스 생성 중 오류가 발생했습니다.'
-        })
 
+@login_required
 @require_POST
-@csrf_exempt
-def check_meetup_payment_status(request, store_id, meetup_id):
-    """밋업 결제 상태 확인 (최적화된 버전)"""
-    import time
-    start_time = time.time()
-    
-    try:
-        # 🔄 스토어와 밋업 정보 조회
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        
-        # 🔄 세션에서 참가자 정보 확인
-        participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
-        if not participant_data:
-            return JsonResponse({
-                'success': False,
-                'error': '참가자 정보가 없습니다.'
-            })
-        
-        # 결제 정보가 없거나 빈 문자열인 경우
-        payment_hash = participant_data.get('payment_hash')
-        if not payment_hash or payment_hash.strip() == '':
-            logger.warning(f"결제 정보 없음 - meetup_id: {meetup_id}")
-            return JsonResponse({
-                'success': False,
-                'error': '결제 정보가 없습니다.'
-            })
-        
-        # 블링크 서비스 가져오기
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            logger.error(f"결제 서비스 설정 없음 - store_id: {store_id}")
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 결제 상태 확인 (외부 API 호출)
-        logger.debug(f"결제 상태 확인 시작 - payment_hash: {payment_hash}")
-        result = blink_service.check_invoice_status(payment_hash)
-        
-        logger.debug(f"결제 상태 확인 완료 - 소요 시간: {time.time() - start_time:.3f}s")
-        
-        if result['success']:
-            if result['status'] == 'paid':
-                # 🔄 결제 완료 처리 - 상품과 동일: 결제 완료 후 즉시 주문 생성
-                logger.info(f"결제 완료 감지 - meetup_id: {meetup_id}, payment_hash: {payment_hash}")
-                
-                # 🛡️ 중복 주문 생성 방지: 이미 해당 payment_hash로 주문이 존재하는지 확인
-                existing_orders = MeetupOrder.objects.filter(payment_hash=payment_hash)
-                if existing_orders.exists():
-                    logger.debug(f"이미 결제 완료된 주문 발견: {payment_hash}")
-                    order = existing_orders.first()
-                    return JsonResponse({
-                        'success': True,
-                        'paid': True,
-                        'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
-                    })
-                
-                with transaction.atomic():
-                    # 🔄 상품과 동일: 결제 완료 후 즉시 주문 생성
-                    order = create_meetup_order(
-                        meetup=meetup,
-                        participant_data=participant_data,
-                        is_free=False,
-                        user=request.user
-                    )
-                    
-                    logger.info(f"주문 생성 완료 - order_id: {order.id}, 티켓번호: {order.order_number}")
-                    
-                # 세션에서 참가자 정보 삭제 (주문 생성 완료)
-                if f'meetup_participant_data_{meetup_id}' in request.session:
-                    del request.session[f'meetup_participant_data_{meetup_id}']
-                    
-                # 밋업 참가 확정 이메일 발송 - 트랜잭션 외부에서 비동기로 실행
-                try:
-                    from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
-                    
-                    # 주인장에게 알림 이메일
-                    send_meetup_notification_email(order)
-                    
-                    # 참가자에게 확인 이메일
-                    send_meetup_participant_confirmation_email(order)
-                    
-                    logger.debug(f"결제 완료 이메일 발송 완료 - order_id: {order.id}")
-                        
-                except Exception as e:
-                    # 이메일 발송 실패해도 주문 처리는 계속 진행
-                    logger.error(f"이메일 발송 실패 - order_id: {order.id}, error: {e}")
-                    pass
-                
-                return JsonResponse({
-                    'success': True,
-                    'paid': True,
-                    'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
-                })
-            else:
-                # 결제 대기 중
-                logger.debug(f"결제 대기 중 - meetup_id: {meetup_id}, status: {result['status']}")
-                return JsonResponse({
-                    'success': True,
-                    'paid': False,
-                    'status': result['status']
-                })
-        else:
-            logger.error(f"결제 상태 확인 실패 - meetup_id: {meetup_id}, error: {result.get('error')}")
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', '결제 상태 확인에 실패했습니다.')
-            })
-            
-    except Exception as e:
-        logger.error(f"결제 상태 확인 중 오류 - meetup_id: {meetup_id}, error: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '결제 상태 확인 중 오류가 발생했습니다.'
-        })
+def meetup_start_payment_workflow(request, store_id, meetup_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    meetup = get_object_or_404(
+        Meetup,
+        id=meetup_id,
+        store=store,
+        deleted_at__isnull=True,
+        is_active=True,
+    )
 
-@require_POST
-@csrf_exempt
-def cancel_meetup_invoice(request, store_id, meetup_id):
-    """밋업 인보이스 취소"""
-    try:
-        data = json.loads(request.body)
-        payment_hash = data.get('payment_hash')
-        
-        if not payment_hash:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 해시가 필요합니다.'
-            })
-        
-        store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
-        meetup = get_object_or_404(
-            Meetup, 
-            id=meetup_id, 
-            store=store, 
-            deleted_at__isnull=True
-        )
-        
-        # 🔄 세션에서 참가자 정보 확인 (상품과 동일한 방식)
-        participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
-        if not participant_data:
-            return JsonResponse({
-                'success': False,
-                'error': '참가자 정보가 없습니다.'
-            })
-        
-        stored_payment_hash = participant_data.get('payment_hash')
-        if not stored_payment_hash or stored_payment_hash != payment_hash:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 정보가 일치하지 않습니다.'
-            })
-        
-        # 🛡️ 이미 결제 완료된 주문이 있는지 확인 (취소 불가)
-        existing_orders = MeetupOrder.objects.filter(payment_hash=payment_hash)
-        if existing_orders.exists():
-            order = existing_orders.first()
-            logger.warning(f"이미 결제 완료된 주문의 취소 시도 - 주문: {order.order_number}")
-            return JsonResponse({
-                'success': False,
-                'error': '이미 결제가 완료된 주문은 취소할 수 없습니다.',
-                'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
-            })
-        
-        # 결제 상태를 한 번 더 확인 (마지막 안전장치)
+    participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
+    if not participant_data:
+        return JsonResponse({'success': False, 'error': '참가자 정보가 없습니다.'}, status=400)
+
+    amount_sats = int(participant_data.get('total_price', 0))
+    if amount_sats <= 0:
+        return JsonResponse({'success': False, 'error': '결제 금액이 올바르지 않습니다.'}, status=400)
+
+    from myshop.models import SiteSettings
+    site_settings = SiteSettings.get_settings()
+    reservation_seconds = max(120, site_settings.meetup_countdown_seconds)
+    soft_lock_minutes = max(1, (reservation_seconds + 59) // 60)
+
+    processor = LightningPaymentProcessor(store)
+
+    previous_transaction_id = participant_data.get('transaction_id')
+    if previous_transaction_id:
         try:
-            blink_service = get_blink_service_for_store(store)
-            if blink_service:
-                result = blink_service.check_invoice_status(payment_hash)
-                if result['success'] and result['status'] == 'paid':
-                    # 실제로는 결제가 완료된 경우 - 즉시 주문 생성 후 리다이렉트
-                    logger.warning(f"취소 시도 중 결제 완료 발견 - payment_hash: {payment_hash}")
-                    
-                    # 즉시 주문 생성 (위의 결제 완료 로직과 동일)
-                    with transaction.atomic():
-                        order = create_meetup_order(
-                            meetup=meetup,
-                            participant_data=participant_data,
-                            is_free=False,
-                            user=request.user
-                        )
-                    
-                    # 세션에서 참가자 정보 삭제 (결제 완료되었으므로 삭제)
-                    if f'meetup_participant_data_{meetup_id}' in request.session:
-                        del request.session[f'meetup_participant_data_{meetup_id}']
-                    
-                    return JsonResponse({
-                        'success': False,
-                        'error': '결제가 이미 완료되었습니다.',
-                        'redirect_url': f'/meetup/{store_id}/{meetup_id}/complete/{order.id}/'
-                    })
-        except Exception as e:
-            # 결제 상태 확인 실패는 무시하고 취소 계속 진행
-            logger.warning(f"취소 시 결제 상태 확인 실패 (계속 진행): {e}")
-        
-        # 🔄 세션에서 결제 정보만 삭제하고 참가자 정보는 유지
-        if f'meetup_participant_data_{meetup_id}' in request.session:
-            participant_data = request.session[f'meetup_participant_data_{meetup_id}']
-            # 결제 관련 정보만 삭제
-            participant_data.pop('payment_hash', None)
-            participant_data.pop('payment_request', None)
-            # 업데이트된 데이터를 세션에 다시 저장
-            request.session[f'meetup_participant_data_{meetup_id}'] = participant_data
-        
-        logger.info(f"밋업 인보이스 취소 - meetup_id: {meetup_id}, payment_hash: {payment_hash}")
-        
-        return JsonResponse({
-            'success': True,
-            'message': '결제가 취소되었습니다.'
-        })
-        
+            previous_transaction = PaymentTransaction.objects.select_related('meetup_order').get(
+                id=previous_transaction_id,
+                user=request.user,
+                store=store,
+            )
+            if previous_transaction.status != PaymentTransaction.STATUS_COMPLETED:
+                processor.cancel_transaction(previous_transaction, '밋업 결제 재시작', detail={'reason': 'restart'})
+                if previous_transaction.meetup_order and previous_transaction.meetup_order.status == 'pending':
+                    previous_transaction.meetup_order.status = 'cancelled'
+                    previous_transaction.meetup_order.is_temporary_reserved = False
+                    previous_transaction.meetup_order.auto_cancelled_reason = '밋업 결제 재시작'
+                    previous_transaction.meetup_order.save(update_fields=[
+                        'status',
+                        'is_temporary_reserved',
+                        'auto_cancelled_reason',
+                        'updated_at',
+                    ])
+        except (PaymentTransaction.DoesNotExist, ValueError):
+            pass
+        participant_data.pop('transaction_id', None)
+        participant_data.pop('payment_hash', None)
+        participant_data.pop('payment_request', None)
+
+    try:
+        with transaction.atomic():
+            locked_meetup = Meetup.objects.select_for_update().get(
+                id=meetup.id,
+                store=store,
+                deleted_at__isnull=True,
+            )
+            if locked_meetup.max_participants and locked_meetup.current_participants >= locked_meetup.max_participants:
+                return JsonResponse({'success': False, 'error': '밋업 정원이 가득 찼습니다.'}, status=409)
+
+            pending_order = create_pending_meetup_order(
+                locked_meetup,
+                participant_data,
+                user=request.user,
+                reservation_seconds=reservation_seconds,
+            )
+
+        transaction = processor.create_transaction(
+            user=request.user,
+            amount_sats=amount_sats,
+            currency='BTC',
+            cart_items=None,
+            soft_lock_ttl_minutes=soft_lock_minutes,
+            metadata={
+                'participant': participant_data,
+                'meetup_id': meetup.id,
+                'meetup_order_id': pending_order.id,
+            },
+            prepare_message='밋업 참가 정보 확인 완료',
+            prepare_detail={
+                'meetup_order_id': pending_order.id,
+                'reservation_expires_at': pending_order.reservation_expires_at.isoformat() if pending_order.reservation_expires_at else None,
+                'amount_sats': amount_sats,
+            },
+        )
+        transaction.meetup_order = pending_order
+        transaction.save(update_fields=['meetup_order', 'updated_at'])
+
+        invoice = processor.issue_invoice(
+            transaction,
+            memo=build_meetup_invoice_memo(meetup, participant_data, request.user),
+            expires_in_minutes=max(1, min(soft_lock_minutes, 15)),
+        )
+    except ValueError as exc:
+        logger.warning('밋업 결제 준비 실패: %s', exc)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('밋업 결제 준비 중 오류')
+        return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)
+
+    participant_data['transaction_id'] = str(transaction.id)
+    participant_data['meetup_order_id'] = pending_order.id
+    participant_data['payment_hash'] = invoice['payment_hash']
+    participant_data['payment_request'] = invoice['invoice']
+    request.session[f'meetup_participant_data_{meetup_id}'] = participant_data
+
+    return JsonResponse({
+        'success': True,
+        'transaction': serialize_transaction(transaction),
+        'invoice': {
+            'payment_hash': invoice['payment_hash'],
+            'payment_request': invoice['invoice'],
+            'expires_at': invoice.get('expires_at').isoformat() if invoice.get('expires_at') else None,
+        },
+        'reservation_expires_at': pending_order.reservation_expires_at.isoformat() if pending_order.reservation_expires_at else None,
+    })
+
+
+@login_required
+@require_http_methods(['GET'])
+def meetup_payment_status(request, store_id, meetup_id, transaction_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    meetup = get_object_or_404(
+        Meetup,
+        id=meetup_id,
+        store=store,
+        deleted_at__isnull=True,
+    )
+
+    try:
+        transaction = PaymentTransaction.objects.select_related('meetup_order').get(
+            id=transaction_id,
+            user=request.user,
+            store=store,
+        )
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    payload = serialize_transaction(transaction)
+    payload['meetup_id'] = meetup.id
+
+    return JsonResponse({'success': True, 'transaction': payload})
+
+
+@login_required
+@require_POST
+def meetup_verify_payment(request, store_id, meetup_id, transaction_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    meetup = get_object_or_404(
+        Meetup,
+        id=meetup_id,
+        store=store,
+        deleted_at__isnull=True,
+    )
+
+    try:
+        transaction = PaymentTransaction.objects.select_related('meetup_order').get(
+            id=transaction_id,
+            user=request.user,
+            store=store,
+        )
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    processor = LightningPaymentProcessor(store)
+
+    try:
+        status_result = processor.check_user_payment(transaction)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('밋업 결제 상태 확인 실패 transaction=%s', transaction_id)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+    status_value = status_result.get('status')
+    participant_data = transaction.metadata.get('participant') if isinstance(transaction.metadata, dict) else None
+    if not participant_data:
+        participant_data = request.session.get(f'meetup_participant_data_{meetup_id}', {})
+
+    if status_value == 'expired':
+        processor.cancel_transaction(transaction, '인보이스 만료', detail=status_result)
+        if transaction.meetup_order and transaction.meetup_order.status == 'pending':
+            transaction.meetup_order.status = 'cancelled'
+            transaction.meetup_order.is_temporary_reserved = False
+            transaction.meetup_order.auto_cancelled_reason = '인보이스 만료'
+            transaction.meetup_order.save(update_fields=[
+                'status',
+                'is_temporary_reserved',
+                'auto_cancelled_reason',
+                'updated_at',
+            ])
+        session_data = request.session.get(f'meetup_participant_data_{meetup_id}', {})
+        session_data.pop('transaction_id', None)
+        session_data.pop('payment_hash', None)
+        session_data.pop('payment_request', None)
+        request.session[f'meetup_participant_data_{meetup_id}'] = session_data
+        return JsonResponse({'success': False, 'error': '인보이스가 만료되었습니다.', 'transaction': serialize_transaction(transaction)}, status=400)
+
+    if status_value != 'paid':
+        return JsonResponse({'success': True, 'status': status_value, 'transaction': serialize_transaction(transaction)})
+
+    meetup_order = transaction.meetup_order
+    if not meetup_order and isinstance(transaction.metadata, dict):
+        meetup_order_id = transaction.metadata.get('meetup_order_id')
+        if meetup_order_id:
+            meetup_order = MeetupOrder.objects.filter(id=meetup_order_id).first()
+
+    if not meetup_order:
+        return JsonResponse({'success': False, 'error': '주문 정보를 찾을 수 없습니다.'}, status=500)
+
+    participant_data['payment_hash'] = transaction.payment_hash
+    participant_data['payment_request'] = transaction.payment_request
+    finalize_meetup_order_from_transaction(
+        meetup_order,
+        participant_data,
+        payment_hash=transaction.payment_hash,
+        payment_request=transaction.payment_request,
+    )
+
+    settlement_payload = {'status': status_result.get('raw_status'), 'provider': 'blink'}
+    processor.mark_settlement(transaction, tx_payload=settlement_payload)
+    processor.finalize_meetup_order(transaction, meetup_order)
+
+    try:
+        from .services import send_meetup_notification_email, send_meetup_participant_confirmation_email
+
+        send_meetup_notification_email(meetup_order)
+        send_meetup_participant_confirmation_email(meetup_order)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error('밋업 결제 이메일 발송 실패 - order_id=%s, error=%s', meetup_order.id, exc)
+
+    if f'meetup_participant_data_{meetup_id}' in request.session:
+        del request.session[f'meetup_participant_data_{meetup_id}']
+
+    redirect_url = reverse('meetup:meetup_checkout_complete', args=[store_id, meetup_id, meetup_order.id])
+
+    payload = serialize_transaction(transaction)
+    payload['redirect_url'] = redirect_url
+
+    return JsonResponse({
+        'success': True,
+        'status': status_value,
+        'transaction': payload,
+        'order': {
+            'id': meetup_order.id,
+            'order_number': meetup_order.order_number,
+            'total_price': meetup_order.total_price,
+        },
+        'redirect_url': redirect_url,
+    })
+
+
+@login_required
+@require_POST
+def meetup_cancel_payment(request, store_id, meetup_id, transaction_id):
+    try:
+        payload = json.loads(request.body or '{}')
     except json.JSONDecodeError:
-        return JsonResponse({
-            'success': False,
-            'error': '잘못된 요청 형식입니다.'
-        })
-    except Exception as e:
-        logger.error(f"밋업 인보이스 취소 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '취소 처리 중 오류가 발생했습니다.'
-        }) 
+        payload = {}
+
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+
+    try:
+        transaction = PaymentTransaction.objects.select_related('meetup_order').get(
+            id=transaction_id,
+            user=request.user,
+            store=store,
+        )
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    processor = LightningPaymentProcessor(store)
+    processor.cancel_transaction(transaction, '사용자 취소', detail=payload)
+
+    if transaction.meetup_order and transaction.meetup_order.status == 'pending':
+        order = transaction.meetup_order
+        order.status = 'cancelled'
+        order.is_temporary_reserved = False
+        order.auto_cancelled_reason = '사용자 취소'
+        order.save(update_fields=[
+            'status',
+            'is_temporary_reserved',
+            'auto_cancelled_reason',
+            'updated_at',
+        ])
+
+    session_data = request.session.get(f'meetup_participant_data_{meetup_id}', {})
+    session_data.pop('transaction_id', None)
+    session_data.pop('payment_hash', None)
+    session_data.pop('payment_request', None)
+    request.session[f'meetup_participant_data_{meetup_id}'] = session_data
+
+    return JsonResponse({'success': True, 'transaction': serialize_transaction(transaction)})

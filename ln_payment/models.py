@@ -47,6 +47,14 @@ class PaymentTransaction(models.Model):
         related_name="payment_transactions",
         verbose_name="연결 주문",
     )
+    meetup_order = models.ForeignKey(
+        "meetup.MeetupOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payment_transactions",
+        verbose_name="연결 밋업 주문",
+    )
     amount_sats = models.PositiveIntegerField(verbose_name="결제 금액(사토시)")
     currency = models.CharField(
         max_length=10,

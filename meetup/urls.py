@@ -47,10 +47,11 @@ urlpatterns = [
     path('<str:store_id>/<int:meetup_id>/checkout/', views.meetup_checkout, name='meetup_checkout'),
     path('<str:store_id>/<int:meetup_id>/checkout/payment/', views_paid.meetup_checkout_payment, name='meetup_checkout_payment'),
     
-    # 밋업 결제 관련 API (🔄 order_id 제거 - 상품과 통일)
-    path('<str:store_id>/<int:meetup_id>/checkout/create_invoice/', views_paid.create_meetup_invoice, name='create_meetup_invoice'),
-    path('<str:store_id>/<int:meetup_id>/checkout/check_payment/', views_paid.check_meetup_payment_status, name='check_meetup_payment_status'),
-    path('<str:store_id>/<int:meetup_id>/checkout/cancel_invoice/', views_paid.cancel_meetup_invoice, name='cancel_meetup_invoice'),
+    # 밋업 결제 워크플로우 API
+    path('<str:store_id>/<int:meetup_id>/checkout/workflow/start/', views_paid.meetup_start_payment_workflow, name='meetup_start_payment_workflow'),
+    path('<str:store_id>/<int:meetup_id>/checkout/workflow/<uuid:transaction_id>/status/', views_paid.meetup_payment_status, name='meetup_payment_status'),
+    path('<str:store_id>/<int:meetup_id>/checkout/workflow/<uuid:transaction_id>/verify/', views_paid.meetup_verify_payment, name='meetup_verify_payment'),
+    path('<str:store_id>/<int:meetup_id>/checkout/workflow/<uuid:transaction_id>/cancel/', views_paid.meetup_cancel_payment, name='meetup_cancel_payment'),
     
     # 밋업 결제 완료
     path('<str:store_id>/<int:meetup_id>/complete/<int:order_id>/', views.meetup_checkout_complete, name='meetup_checkout_complete'),
