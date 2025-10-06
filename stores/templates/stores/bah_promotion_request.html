@@ -308,14 +308,6 @@
     </section>
   </div>
 
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
-<script src="{% static 'js/bah_promotion_request.js' %}"></script>
-{% endblock %}
-
 <!-- 주소 검색 모달 -->
 <div id="addressSearchModal" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/70 backdrop-blur">
   <div class="relative w-full max-w-md mx-4">
@@ -325,3 +317,11 @@
     <div id="addressSearchContainer" class="h-[26rem] bg-white dark:bg-gray-900 shadow-2xl"></div>
   </div>
 </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="{% static 'js/bah_promotion_request.js' %}"></script>
+{% endblock %}
