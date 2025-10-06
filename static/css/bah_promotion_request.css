@@ -1,0 +1,66 @@
+/* BAH 홍보요청 전용 스타일 */
+
+#bahPromotionApp .shadow-xl {
+  box-shadow: 0 20px 45px -20px rgba(15, 23, 42, 0.35);
+}
+
+#bahPromotionApp .shadow-lg {
+  box-shadow: 0 12px 30px -18px rgba(15, 23, 42, 0.35);
+}
+
+.dark #addressSearchModal .shadow-2xl {
+  box-shadow: 0 25px 60px -25px rgba(0, 0, 0, 0.6);
+}
+
+.bah-toast {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: auto;
+  min-width: 14rem;
+  max-width: 20rem;
+}
+
+.bah-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.bah-toast-success {
+  background: rgba(16, 185, 129, 0.95);
+  color: #0b1f17;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 35px -18px rgba(16, 185, 129, 0.6);
+}
+
+.dark .bah-toast-success {
+  background: rgba(16, 185, 129, 0.85);
+  color: #0f172a;
+}
+
+.bah-toast-error {
+  background: rgba(248, 113, 113, 0.95);
+  color: #330a0a;
+  border-radius: 0.75rem;
+  box-shadow: 0 12px 35px -18px rgba(248, 113, 113, 0.6);
+}
+
+.dark .bah-toast-error {
+  background: rgba(248, 113, 113, 0.85);
+  color: #fee2e2;
+}
+
+.bah-toast-body {
+  padding: 0.85rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+#addressSearchModal.flex {
+  display: flex;
+}
+
+#addressSearchContainer {
+  width: 100%;
+  min-height: 24rem;
+}

@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, promotion_views
 
 app_name = 'stores'
 
@@ -60,7 +60,14 @@ urlpatterns = [
     path('checkout/step2/', views.checkout_step2, name='checkout_step2'),
     path('checkout/step3/', views.checkout_step3, name='checkout_step3'),
     path('checkout/complete/<str:order_number>/', views.checkout_complete, name='checkout_complete'),
-    
+
+    # BAH 홍보 요청
+    path('bah/promotion-request/', promotion_views.bah_promotion_request_view, name='bah_promotion_request'),
+    path('bah/promotion-request/admin', promotion_views.bah_promotion_admin_view, name='bah_promotion_admin'),
+    path('bah/promotion-request/admin/<int:pk>/toggle', promotion_views.bah_promotion_admin_toggle_status, name='bah_promotion_admin_toggle'),
+    path('bah/promotion-request/admin/<int:pk>/export', promotion_views.bah_promotion_admin_export_csv, name='bah_promotion_admin_export_csv'),
+    path('bah/wallet-of-satoshi-guide/', promotion_views.bah_wallet_of_satoshi_guide_view, name='bah_wallet_of_satoshi_guide'),
+
 
     
     # 스토어 페이지

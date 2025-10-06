@@ -1,0 +1,279 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}BAH 홍보요청 관리자 - SatoShop{% endblock %}
+{% block og_title %}BAH 홍보요청 관리자{% endblock %}
+{% block og_description %}Bitcoin Accepted Here 신청 내역을 검토하고 발송 상태를 관리하세요.{% endblock %}
+{% block twitter_description %}Bitcoin Accepted Here 신청 내역을 검토하고 발송 상태를 관리하세요.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bah_promotion_request.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen pb-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 space-y-10">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">BAH (Bitcoin Accepted Here) 신청 내역</h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          라이트닝 지갑으로 접수된 1:1 신청서를 검토하고 홍보 패키지 발송 상태를 업데이트하세요.
+        </p>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <a href="{% url 'stores:bah_promotion_request' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 rounded-lg shadow">
+          <i class="fas fa-arrow-left"></i>신청 페이지로 돌아가기
+        </a>
+      </div>
+    </div>
+
+    {% if messages %}
+    <script>
+      window.__bahMessages = [
+        {% for message in messages %}
+          { text: "{{ message|escapejs }}", level: "{{ message.level_tag }}" },
+        {% endfor %}
+      ];
+    </script>
+    {% endif %}
+
+    <div id="bahToastContainer" class="fixed top-5 right-5 z-50 space-y-3 pointer-events-none"></div>
+
+    <div class="space-y-6">
+      {% for item in promotion_requests %}
+      <article class="rounded-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
+        <div class="flex flex-col lg:flex-row">
+          <div class="flex-1 p-6 space-y-4">
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200">
+                <i class="fas fa-store"></i>{{ item.store_name }}
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200">
+                <i class="fas fa-user"></i>{{ item.user.username }}
+              </span>
+              <span class="status-pill inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold {% if item.shipping_status == promotion_status_shipped %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200{% endif %}"
+                    data-status-pill="{{ item.id }}" data-status="{{ item.shipping_status }}">
+                <i class="fas fa-box-open"></i><span class="status-pill-text">{{ item.get_shipping_status_display }}</span>
+              </span>
+              <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-gray-900/70 text-gray-600 dark:text-gray-300">
+                <i class="fas fa-clock"></i>{{ item.created_at|date:'Y-m-d H:i' }}
+              </span>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4 text-xs text-gray-600 dark:text-gray-300">
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-1">연락처</p>
+                <p><i class="fas fa-phone mr-2"></i>{{ item.phone_number }}</p>
+                <p class="mt-1"><i class="fas fa-envelope mr-2"></i>{{ item.email }}</p>
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900 dark:text-white mb-1">주소</p>
+                <p>{{ item.postal_code }} {{ item.address }}</p>
+                {% if item.address_detail %}<p class="mt-1">{{ item.address_detail }}</p>{% endif %}
+              </div>
+            </div>
+
+            <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">
+              {{ item.introduction }}
+            </div>
+
+            {% if item.images.all %}
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {% for image in item.images.all %}
+              <a href="{{ image.file_url }}" target="_blank" class="group block rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <img src="{{ image.file_url }}" alt="{{ image.original_name }}" class="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200">
+              </a>
+              {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+              <a href="{% url 'stores:bah_promotion_admin_export_csv' item.id %}" class="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-300 text-gray-900 dark:text-gray-900 hover:bg-amber-200 transition-colors inline-flex items-center gap-2">
+                <i class="fas fa-file-csv"></i>CSV 다운로드
+              </a>
+              <button type="button"
+                      class="bah-status-toggle inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-colors {% if item.shipping_status == promotion_status_shipped %}bg-amber-500 text-white hover:bg-amber-400{% else %}bg-emerald-600 text-white hover:bg-emerald-500{% endif %}"
+                      data-status-toggle="{{ item.id }}"
+                      data-status="{{ item.shipping_status }}"
+                      data-toggle-url="{% url 'stores:bah_promotion_admin_toggle' item.id %}">
+                {% if item.shipping_status == promotion_status_shipped %}
+                <i class="fas fa-undo mr-1"></i>발송예정으로 되돌리기
+                {% else %}
+                <i class="fas fa-truck mr-1"></i>발송 완료로 표시
+                {% endif %}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+      {% empty %}
+      <div class="rounded-3xl bg-white dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
+        <p class="text-sm text-gray-500 dark:text-gray-400">접수된 BAH 홍보요청이 아직 없습니다.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="flex items-center justify-between mt-8" aria-label="Pagination">
+      <div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          총 {{ page_obj.paginator.count }}건 중 {{ page_obj.start_index }}-{{ page_obj.end_index }} 표시
+        </p>
+      </div>
+      <div class="inline-flex items-center gap-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          이전
+        </a>
+        {% else %}
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-transparent text-gray-400 dark:text-gray-600">이전</span>
+        {% endif %}
+
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+          {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          다음
+        </a>
+        {% else %}
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-transparent text-gray-400 dark:text-gray-600">다음</span>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function() {
+    const toastContainer = document.getElementById('bahToastContainer');
+
+    function getCsrfToken() {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      if (match) {
+        return decodeURIComponent(match[1]);
+      }
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input ? input.value : '';
+    }
+
+    const csrfToken = getCsrfToken();
+
+    function showToast(text, level) {
+      if (!toastContainer) {
+        return;
+      }
+      const toast = document.createElement('div');
+      toast.className = 'bah-toast ' + (level === 'error' ? 'bah-toast-error' : 'bah-toast-success');
+      toast.innerHTML = '<div class="bah-toast-body">' + text + '</div>';
+      toastContainer.appendChild(toast);
+
+      requestAnimationFrame(function() {
+        toast.classList.add('bah-toast-show');
+      });
+
+      setTimeout(function() {
+        toast.classList.remove('bah-toast-show');
+      }, 3600);
+
+      setTimeout(function() {
+        toast.remove();
+      }, 4000);
+    }
+
+    (window.__bahMessages || []).forEach(function(message) {
+      showToast(message.text, message.level || 'success');
+    });
+    window.__bahMessages = [];
+
+    const statusDisplayMap = {
+      pending: '발송예정',
+      shipped: '발송',
+    };
+    const pillClassMap = {
+      pending: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-200',
+      shipped: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
+    };
+    const buttonClassMap = {
+      pending: {
+        classes: 'bg-emerald-600 text-white hover:bg-emerald-500',
+        html: '<i class="fas fa-truck mr-1"></i>발송 완료로 표시',
+      },
+      shipped: {
+        classes: 'bg-amber-500 text-white hover:bg-amber-400',
+        html: '<i class="fas fa-undo mr-1"></i>발송예정으로 되돌리기',
+      },
+    };
+
+    const basePillClass = 'status-pill inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold';
+    const baseButtonClass = 'bah-status-toggle inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-colors';
+
+    function applyStatus(requestId, status, statusDisplay) {
+      const pill = document.querySelector('[data-status-pill="' + requestId + '"]');
+      if (pill) {
+        pill.className = basePillClass + ' ' + (pillClassMap[status] || pillClassMap.pending);
+        pill.dataset.status = status;
+        const textSpan = pill.querySelector('.status-pill-text');
+        if (textSpan) {
+          textSpan.textContent = statusDisplay;
+        } else {
+          pill.innerHTML = '<i class="fas fa-box-open"></i><span class="status-pill-text">' + statusDisplay + '</span>';
+        }
+      }
+
+      const button = document.querySelector('[data-status-toggle="' + requestId + '"]');
+      if (button) {
+        button.disabled = false;
+        button.classList.remove('opacity-70');
+        button.className = baseButtonClass + ' ' + (buttonClassMap[status].classes || 'bg-emerald-600 text-white hover:bg-emerald-500');
+        button.innerHTML = buttonClassMap[status].html || buttonClassMap.pending.html;
+        button.dataset.status = status;
+      }
+    }
+
+    document.querySelectorAll('.bah-status-toggle').forEach(function(button) {
+      button.addEventListener('click', function() {
+        const requestId = button.dataset.statusToggle;
+        const toggleUrl = button.dataset.toggleUrl;
+        const previousStatus = button.dataset.status || 'pending';
+        const previousDisplay = statusDisplayMap[previousStatus] || '';
+
+        button.disabled = true;
+        button.classList.add('opacity-70');
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>업데이트 중...';
+
+        fetch(toggleUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+          credentials: 'same-origin',
+          body: JSON.stringify({}),
+        })
+          .then(function(response) {
+            if (!response.ok) {
+              throw new Error('Server error');
+            }
+            return response.json();
+          })
+          .then(function(data) {
+            if (data.error) {
+              throw new Error(data.error);
+            }
+            applyStatus(requestId, data.status, data.status_display);
+            showToast('발송 상태가 업데이트되었습니다.', 'success');
+          })
+          .catch(function() {
+            applyStatus(requestId, previousStatus, previousDisplay);
+            showToast('발송 상태 업데이트에 실패했습니다.', 'error');
+          });
+      });
+    });
+  })();
+</script>
+{% endblock %}

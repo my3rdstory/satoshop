@@ -3,7 +3,15 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import (
-    Store, StoreCreationStep, ReservedStoreId, StoreImage
+    Store,
+    StoreCreationStep,
+    ReservedStoreId,
+    StoreImage,
+    BahPromotionRequest,
+    BahPromotionImage,
+    BahPromotionAdmin,
+    PROMOTION_STATUS_SHIPPED,
+    BahPromotionLinkSettings,
 )
 
 
@@ -33,6 +41,30 @@ class StoreImageInline(admin.TabularInline):
         if obj:
             return obj.get_file_size_display()
         return ""
+    file_size_display.short_description = '파일 크기'
+
+
+class BahPromotionImageInline(admin.TabularInline):
+    """BAH 홍보 이미지 인라인 관리"""
+
+    model = BahPromotionImage
+    extra = 0
+    readonly_fields = ('preview_image', 'file_size_display', 'uploaded_at', 'uploaded_by')
+    fields = ('preview_image', 'original_name', 'file_size_display', 'order', 'uploaded_at', 'uploaded_by')
+    ordering = ('order', 'uploaded_at')
+
+    def preview_image(self, obj):
+        if obj and obj.file_url:
+            return format_html('<img src="{}" style="max-height: 120px; border-radius: 6px;" />', obj.file_url)
+        return '미리보기 없음'
+
+    preview_image.short_description = '미리보기'
+
+    def file_size_display(self, obj):
+        if obj:
+            return obj.get_file_size_display()
+        return ''
+
     file_size_display.short_description = '파일 크기'
 
 
@@ -178,6 +210,80 @@ class StoreAdmin(admin.ModelAdmin):
     email_status_display.short_description = "이메일 상태"
 
 
+@admin.register(BahPromotionRequest)
+class BahPromotionRequestAdmin(admin.ModelAdmin):
+    """BAH 홍보 요청 관리"""
+
+    list_display = (
+        'store_name',
+        'user',
+        'phone_number',
+        'email',
+        'shipping_status_badge',
+        'lightning_public_key_short',
+        'created_at',
+    )
+    search_fields = ('store_name', 'user__username', 'phone_number', 'email')
+    list_filter = ('created_at', 'shipping_status')
+    readonly_fields = ('lightning_public_key', 'lightning_verified_at', 'created_at', 'updated_at')
+    ordering = ('-created_at',)
+    inlines = [BahPromotionImageInline]
+    date_hierarchy = 'created_at'
+
+    fieldsets = (
+        ('매장 기본 정보', {
+            'fields': ('store_name', 'postal_code', 'address', 'address_detail')
+        }),
+        ('연락처', {
+            'fields': ('phone_number', 'email')
+        }),
+        ('소개', {
+            'fields': ('introduction',)
+        }),
+        ('라이트닝 인증', {
+            'fields': ('user', 'lightning_public_key', 'lightning_verified_at'),
+            'classes': ('collapse',)
+        }),
+        ('기록', {
+            'fields': ('shipping_status', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def lightning_public_key_short(self, obj):
+        if obj.lightning_public_key:
+            return f"{obj.lightning_public_key[:12]}…"
+        return '-'
+
+    lightning_public_key_short.short_description = '라이트닝 키'
+
+    def shipping_status_badge(self, obj):
+        color = '#f59e0b'
+        label = '발송예정'
+        if obj.shipping_status == PROMOTION_STATUS_SHIPPED:
+            color = '#10b981'
+            label = '발송'
+        return format_html('<span style="color:{}; font-weight:600;">{}</span>', color, label)
+
+    shipping_status_badge.short_description = '발송 상태'
+
+
+@admin.register(BahPromotionAdmin)
+class BahPromotionAdminAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    autocomplete_fields = ['user']
+
+
+@admin.register(BahPromotionLinkSettings)
+class BahPromotionLinkSettingsAdmin(admin.ModelAdmin):
+    list_display = ('login_guide_url', 'usage_guide_url', 'email_store_id', 'updated_at')
+
+    def has_add_permission(self, request):
+        if BahPromotionLinkSettings.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
 class DeletedStoreAdmin(admin.ModelAdmin):
     """삭제된 스토어만 보여주는 어드민"""
     list_display = ('store_name', 'store_id', 'owner', 'deleted_at')
@@ -271,4 +377,3 @@ User._meta.verbose_name = '사용자'
 User._meta.verbose_name_plural = '사용자들'
 Group._meta.verbose_name = '그룹'
 Group._meta.verbose_name_plural = '그룹들'
-

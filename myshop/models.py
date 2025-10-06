@@ -593,8 +593,6 @@ class SiteSettings(models.Model):
             "cc_load_policy=0",     # 자막 비활성화
             "playsinline=1",        # 인라인 재생
             "enablejsapi=1",        # JavaScript API 활성화
-            "origin=" + "localhost", # 도메인 제한 (보안)
-            "widget_referrer=" + "localhost",  # 참조자 설정
             "start=0",              # 시작 시간
             "end=999999",           # 종료 시간 (매우 긴 시간)
             "color=white",          # 진행바 색상
