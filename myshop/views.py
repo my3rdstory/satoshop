@@ -10,13 +10,82 @@ from django.http import Http404
 from django.conf import settings
 import hashlib
 
+
+def _build_home_context():
+    """수치 기반 랜딩 페이지 정보를 구성한다."""
+    from stores.models import Store
+    from products.models import Product
+    from meetup.models import Meetup
+    from file.models import DigitalFile
+    from lecture.models import LiveLecture
+    from menu.models import Menu
+    from .models import ExchangeRate
+
+    total_stores = Store.objects.filter(deleted_at__isnull=True).count()
+    active_stores = Store.objects.filter(deleted_at__isnull=True, is_active=True).count()
+
+    product_count = Product.objects.filter(
+        is_active=True,
+        store__deleted_at__isnull=True,
+        store__is_active=True,
+    ).count()
+    meetup_count = Meetup.objects.filter(
+        is_active=True,
+        deleted_at__isnull=True,
+        store__deleted_at__isnull=True,
+        store__is_active=True,
+    ).count()
+    digital_file_count = DigitalFile.objects.filter(
+        is_active=True,
+        deleted_at__isnull=True,
+        store__deleted_at__isnull=True,
+        store__is_active=True,
+    ).count()
+    live_lecture_count = LiveLecture.objects.filter(
+        is_active=True,
+        deleted_at__isnull=True,
+        store__deleted_at__isnull=True,
+        store__is_active=True,
+    ).count()
+    menu_count = Menu.objects.filter(
+        is_active=True,
+        store__deleted_at__isnull=True,
+        store__is_active=True,
+    ).count()
+
+    items_total = product_count + meetup_count + digital_file_count + live_lecture_count + menu_count
+
+    latest_rate = ExchangeRate.get_latest_rate()
+    exchange_rate = None
+    if latest_rate:
+        exchange_rate = {
+            'btc_krw_rate': latest_rate.btc_krw_rate,
+            'updated_at': timezone.localtime(latest_rate.created_at),
+        }
+
+    return {
+        'home_metrics': {
+            'total_stores': total_stores,
+            'active_stores': active_stores,
+            'items': {
+                'total': items_total,
+                'products': product_count,
+                'meetups': meetup_count,
+                'digital_files': digital_file_count,
+                'live_lectures': live_lecture_count,
+                'menus': menu_count,
+            },
+            'exchange_rate': exchange_rate,
+        }
+    }
+
 # Create your views here.
 
 def home(request):
     """홈페이지 뷰"""
     # force_home 파라미터가 있으면 리다이렉트하지 않고 홈페이지 표시
     if request.GET.get('force_home'):
-        return render(request, 'myshop/home.html')
+        return render(request, 'myshop/home.html', _build_home_context())
     
     # 로그인한 사용자가 스토어를 가지고 있으면 스토어 홈으로 이동
     if request.user.is_authenticated:
@@ -33,7 +102,7 @@ def home(request):
         except Exception:
             pass  # 에러 발생 시 홈페이지 계속 표시
     
-    return render(request, 'myshop/home.html')
+    return render(request, 'myshop/home.html', _build_home_context())
 
 @require_http_methods(["GET"])
 def get_exchange_rate(request):
