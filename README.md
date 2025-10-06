@@ -380,6 +380,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 - 새 webhook 엔드포인트: `POST /ln-payment/webhook/blink/` (Svix 서명 사용 시 `BLINK_WEBHOOK_SECRET` 환경 변수 필요).
 - `transactionsByPaymentHash`를 활용한 백업 조회를 통해 webhook 누락 시에도 입금 정보를 수집합니다.
 - 밋업 결제는 `meetup/views_paid.py`의 워크플로우 엔드포인트를 통해 동일한 상태 머신을 재사용하며, `PaymentTransaction.meetup_order`로 참가 예약을 추적합니다.
+- 디지털 파일 결제는 `file/views.py`의 워크플로우 엔드포인트를 통해 동일 로직을 재사용하며, `PaymentTransaction.file_order`로 다운로드 권한 부여 상태를 추적합니다.
 
 #### 프런트엔드 흐름
 - `orders/templates/orders/checkout.html`은 사용자가 결제 절차를 시작하도록 CTA만 강조하고 `ln_payment:payment_process`로 이동시킵니다.
@@ -392,6 +393,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 - 진행 로그는 단계 이름·시간과 함께 사용자 친화 문구로 갱신되어 결제 흐름을 직관적으로 파악할 수 있습니다.
 - Django Admin에는 주문을 수동으로 저장한 결제 트랜잭션만 모아서 확인하는 전용 메뉴가 추가되었습니다.
 - 밋업 결제 화면(`meetup/templates/meetup/meetup_checkout.html`) 역시 동일한 5단계 UI와 `static/js/meetup_checkout.js`, `static/css/meetup_checkout.css`를 사용해 참가 예약부터 확정까지 흐름을 안내합니다.
+- 디지털 파일 결제 화면(`file/templates/file/file_checkout.html`)도 5단계 UI와 `static/js/file_checkout.js`, `static/css/file_checkout.css`를 사용해 인보이스 발행부터 다운로드 권한 확정까지 안내합니다.
 
 #### 운영 시 유의 사항
 - Blink Dashboard에서 webhook 엔드포인트를 `/ln-payment/webhook/blink/`로 등록하고, 시그니처 검증을 위해 `BLINK_WEBHOOK_SECRET`을 설정하세요.

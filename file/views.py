@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Q, Count, Sum
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_POST, require_http_methods
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.core.files.storage import default_storage
@@ -25,6 +25,8 @@ from .services import (
     send_file_buyer_confirmation_email
 )
 from ln_payment.blink_service import get_blink_service_for_store
+from ln_payment.models import PaymentTransaction
+from ln_payment.services import LightningPaymentProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -501,320 +503,535 @@ def file_checkout(request, store_id, file_id):
     """파일 구매 체크아웃"""
     store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
     digital_file = get_object_or_404(
-        DigitalFile, 
-        id=file_id, 
-        store=store, 
+        DigitalFile,
+        id=file_id,
+        store=store,
         deleted_at__isnull=True,
         is_active=True,
-        is_temporarily_closed=False
+        is_temporarily_closed=False,
     )
-    
-    # 이미 구매했는지 확인
+
     existing_order = FileOrder.objects.filter(
         digital_file=digital_file,
         user=request.user,
-        status='confirmed'
+        status='confirmed',
     ).first()
-    
+
     if existing_order:
         messages.info(request, "이미 구매하신 파일입니다.")
         return redirect('file:file_detail', store_id=store.id, file_id=digital_file.id)
-    
-    # 매진 확인
+
     if digital_file.is_sold_out:
         messages.error(request, "죄송합니다. 매진되었습니다.")
         return redirect('file:file_detail', store_id=store.id, file_id=digital_file.id)
-    
-    # 무료 파일인 경우 즉시 확정
-    if digital_file.price_display == 'free':
-        with transaction.atomic():
-            order = FileOrder.objects.create(
-                digital_file=digital_file,
-                user=request.user,
-                price=0,
-                status='confirmed',
-                is_temporary_reserved=False,
-                confirmed_at=timezone.now()
-            )
-            
-            # 이메일 발송
+
+    price_sats = digital_file.current_price_sats
+    session_key = _get_file_payment_session_key(file_id)
+
+    if price_sats == 0:
+        if request.method == 'POST':
+            with transaction.atomic():
+                order = FileOrder.objects.create(
+                    digital_file=digital_file,
+                    user=request.user,
+                    price=0,
+                    status='confirmed',
+                    is_temporary_reserved=False,
+                    confirmed_at=timezone.now(),
+                    paid_at=timezone.now(),
+                )
+
             try:
                 send_file_buyer_confirmation_email(order)
                 send_file_purchase_notification_email(order)
-            except Exception as e:
-                logger.error(f"이메일 발송 실패: {e}")
-            
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error("파일 구매 이메일 발송 실패 - order_id=%s, error=%s", order.id, exc)
+
+            request.session.pop(session_key, None)
             messages.success(request, "무료 파일이 다운로드 가능합니다.")
             return redirect('file:file_complete', order_id=order.id)
-    
-    # 유료 파일 체크아웃
+
+        context = {
+            'store': store,
+            'file': digital_file,
+            'price_sats': price_sats,
+            'payment_service_available': False,
+            'countdown_seconds': 0,
+            'is_free': True,
+        }
+        return render(request, 'file/file_checkout.html', context)
+
+    payment_service_available = get_blink_service_for_store(store) is not None
+
+    from myshop.models import SiteSettings
+
+    site_settings = SiteSettings.get_settings()
+    countdown_seconds = max(60, site_settings.meetup_countdown_seconds)
+    placeholder_uuid = '11111111-1111-1111-1111-111111111111'
+
+    session_data = request.session.get(session_key, {})
+    existing_transaction = None
+    transaction_payload = None
+    transaction_id = session_data.get('transaction_id')
+
+    if transaction_id:
+        try:
+            existing_transaction = PaymentTransaction.objects.select_related('file_order').get(
+                id=transaction_id,
+                user=request.user,
+                store=store,
+            )
+            if existing_transaction.status == PaymentTransaction.STATUS_COMPLETED:
+                request.session.pop(session_key, None)
+            else:
+                transaction_payload = serialize_file_transaction(existing_transaction)
+        except (PaymentTransaction.DoesNotExist, ValueError):
+            request.session.pop(session_key, None)
+
     context = {
         'store': store,
         'file': digital_file,
-        'price_sats': digital_file.current_price_sats,
+        'price_sats': price_sats,
+        'payment_service_available': payment_service_available,
+        'countdown_seconds': countdown_seconds,
+        'workflow_start_url': reverse('file:file_start_payment_workflow', args=[store_id, file_id]),
+        'workflow_status_url_template': reverse('file:file_payment_status', args=[store_id, file_id, placeholder_uuid]),
+        'workflow_verify_url_template': reverse('file:file_verify_payment', args=[store_id, file_id, placeholder_uuid]),
+        'workflow_cancel_url_template': reverse('file:file_cancel_payment', args=[store_id, file_id, placeholder_uuid]),
+        'workflow_inventory_redirect_url': reverse('file:file_detail', args=[store_id, file_id]),
+        'workflow_cart_url': reverse('file:file_checkout', args=[store_id, file_id]),
+        'placeholder_uuid': placeholder_uuid,
+        'existing_transaction': transaction_payload,
+        'total_price': price_sats,
+        'is_free': False,
     }
     return render(request, 'file/file_checkout.html', context)
 
 
+def _get_file_payment_session_key(file_id: int) -> str:
+    return f'file_payment_state_{file_id}'
+
+
+def build_file_invoice_memo(digital_file, order, user) -> str:
+    payer_identifier = getattr(user, 'username', None) or getattr(user, 'email', None) or str(user.id)
+    memo = f"파일 구매: {digital_file.name} / 주문 {order.order_number} / 결제자 {payer_identifier}"
+    return memo[:620] + '…' if len(memo) > 620 else memo
+
+
+def create_pending_file_order(digital_file, user, *, reservation_seconds: int) -> FileOrder:
+    reservation_expires_at = timezone.now() + timedelta(seconds=reservation_seconds)
+    current_price = digital_file.current_price_sats
+    is_discounted = digital_file.is_discount_active
+    original_price = digital_file.price if is_discounted else None
+    discount_rate = 0
+    if is_discounted and digital_file.price:
+        try:
+            discount_rate = max(0, round((1 - (current_price / digital_file.price)) * 100))
+        except ZeroDivisionError:
+            discount_rate = 0
+
+    return FileOrder.objects.create(
+        digital_file=digital_file,
+        user=user,
+        price=current_price,
+        status='pending',
+        is_temporary_reserved=True,
+        reservation_expires_at=reservation_expires_at,
+        is_discounted=is_discounted,
+        original_price=original_price,
+        discount_rate=discount_rate,
+    )
+
+
+def finalize_file_order_from_transaction(order: FileOrder, *, payment_hash: str = '', payment_request: str = '') -> FileOrder:
+    now = timezone.now()
+    order.payment_hash = payment_hash
+    order.payment_request = payment_request
+    order.status = 'confirmed'
+    order.is_temporary_reserved = False
+    order.auto_cancelled_reason = ''
+    if not order.paid_at:
+        order.paid_at = now
+    if not order.confirmed_at:
+        order.confirmed_at = now
+    if order.digital_file.download_expiry_days:
+        order.download_expires_at = now + timedelta(days=order.digital_file.download_expiry_days)
+
+    order.save(update_fields=[
+        'payment_hash',
+        'payment_request',
+        'status',
+        'is_temporary_reserved',
+        'auto_cancelled_reason',
+        'paid_at',
+        'confirmed_at',
+        'download_expires_at',
+        'updated_at',
+    ])
+    return order
+
+
+def serialize_file_transaction(transaction: PaymentTransaction) -> dict:
+    logs = [
+        {
+            'stage': log.stage,
+            'status': log.status,
+            'message': log.message,
+            'detail': log.detail,
+            'created_at': log.created_at.isoformat(),
+        }
+        for log in transaction.stage_logs.order_by('created_at')
+    ]
+
+    payload = {
+        'id': str(transaction.id),
+        'status': transaction.status,
+        'current_stage': transaction.current_stage,
+        'payment_hash': transaction.payment_hash,
+        'invoice_expires_at': transaction.invoice_expires_at.isoformat() if transaction.invoice_expires_at else None,
+        'logs': logs,
+        'created_at': transaction.created_at.isoformat(),
+        'updated_at': transaction.updated_at.isoformat(),
+    }
+
+    if transaction.file_order:
+        payload['order_number'] = transaction.file_order.order_number
+
+    return payload
+
+
 @login_required
 @require_POST
-@csrf_exempt
-def create_file_invoice(request):
-    """파일 구매 인보이스 생성"""
-    try:
-        data = json.loads(request.body)
-        file_id = data.get('file_id')
-        
-        if not file_id:
-            return JsonResponse({
-                'success': False,
-                'error': '파일 ID가 필요합니다.'
-            })
-        
-        digital_file = get_object_or_404(
-            DigitalFile,
-            id=file_id,
-            deleted_at__isnull=True,
-            is_active=True,
-            is_temporarily_closed=False
-        )
-        
-        # 스토어 가져오기
-        store = digital_file.store
-        
-        # 이미 구매했는지 확인
-        existing_order = FileOrder.objects.filter(
-            digital_file=digital_file,
-            user=request.user,
-            status='confirmed'
-        ).first()
-        
-        if existing_order:
-            return JsonResponse({
-                'success': False,
-                'error': '이미 구매하신 파일입니다.'
-            })
-        
-        # 매진 확인
-        if digital_file.is_sold_out:
-            return JsonResponse({
-                'success': False,
-                'error': '죄송합니다. 매진되었습니다.'
-            })
-        
-        # 기존 pending 주문 취소
-        FileOrder.objects.filter(
-            digital_file=digital_file,
-            user=request.user,
-            status='pending'
-        ).update(
-            status='cancelled',
-            auto_cancelled_reason='새로운 주문 생성으로 자동 취소'
-        )
-        
-        # 현재 가격 계산
-        current_price = digital_file.current_price_sats
-        is_discounted = digital_file.is_discount_active
-        
-        # 블링크 서비스 가져오기
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 주문 생성
-        with transaction.atomic():
-            order = FileOrder.objects.create(
-                digital_file=digital_file,
+def file_start_payment_workflow(request, store_id, file_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    digital_file = get_object_or_404(
+        DigitalFile,
+        id=file_id,
+        store=store,
+        deleted_at__isnull=True,
+        is_active=True,
+        is_temporarily_closed=False,
+    )
+
+    if digital_file.is_sold_out:
+        return JsonResponse({
+            'success': False,
+            'error': '죄송합니다. 현재 파일이 매진되었습니다.',
+            'error_code': 'inventory_unavailable',
+        }, status=409)
+
+    confirmed_exists = FileOrder.objects.filter(
+        digital_file=digital_file,
+        user=request.user,
+        status='confirmed',
+    ).exists()
+    if confirmed_exists:
+        return JsonResponse({'success': False, 'error': '이미 파일을 구매하셨습니다.'}, status=400)
+
+    amount_sats = int(digital_file.current_price_sats or 0)
+    if amount_sats <= 0:
+        return JsonResponse({'success': False, 'error': '결제 가능한 금액이 아닙니다.'}, status=400)
+
+    from myshop.models import SiteSettings
+
+    site_settings = SiteSettings.get_settings()
+    reservation_seconds = max(120, site_settings.meetup_countdown_seconds)
+    soft_lock_minutes = max(1, (reservation_seconds + 59) // 60)
+
+    session_key = _get_file_payment_session_key(file_id)
+    session_data = request.session.get(session_key, {})
+
+    processor = LightningPaymentProcessor(store)
+
+    previous_transaction_id = session_data.get('transaction_id')
+    if previous_transaction_id:
+        try:
+            previous_transaction = PaymentTransaction.objects.select_related('file_order').get(
+                id=previous_transaction_id,
                 user=request.user,
-                price=current_price,
-                is_discounted=is_discounted,
-                original_price=digital_file.price if is_discounted else None,
-                discount_rate=round((1 - current_price / digital_file.price) * 100) if is_discounted and digital_file.price > 0 else 0
+                store=store,
             )
-            
-            # 인보이스 생성
-            memo = f"파일 구매: {digital_file.name} - {order.order_number}"
-            result = blink_service.create_invoice(
-                amount_sats=current_price,
-                memo=memo,
-                expires_in_minutes=15
+            if previous_transaction.status != PaymentTransaction.STATUS_COMPLETED:
+                processor.cancel_transaction(previous_transaction, '디지털 파일 결제 재시작', detail={'reason': 'restart'})
+                if previous_transaction.file_order and previous_transaction.file_order.status == 'pending':
+                    order = previous_transaction.file_order
+                    order.status = 'cancelled'
+                    order.is_temporary_reserved = False
+                    order.auto_cancelled_reason = '디지털 파일 결제 재시작'
+                    order.save(update_fields=[
+                        'status',
+                        'is_temporary_reserved',
+                        'auto_cancelled_reason',
+                        'updated_at',
+                    ])
+        except (PaymentTransaction.DoesNotExist, ValueError):
+            pass
+        session_data = {}
+
+    try:
+        with transaction.atomic():
+            locked_file = DigitalFile.objects.select_for_update().get(
+                id=digital_file.id,
+                store=store,
+                deleted_at__isnull=True,
             )
-            
-            if result['success']:
-                order.payment_hash = result['payment_hash']
-                order.payment_request = result['invoice']
-                order.save()
-                
-                return JsonResponse({
-                    'success': True,
-                    'payment_request': order.payment_request,
-                    'payment_hash': result['payment_hash'],
-                    'order_id': order.id,
-                    'order_number': order.order_number,
-                    'amount_sats': current_price,
-                    'expires_at': result['expires_at'].isoformat() if result.get('expires_at') else order.reservation_expires_at.isoformat()
-                })
-            else:
-                order.delete()
+            if locked_file.is_temporarily_closed:
                 return JsonResponse({
                     'success': False,
-                    'error': result.get('error', '결제 요청 생성에 실패했습니다.')
-                })
-                
-    except Exception as e:
-        logger.error(f"인보이스 생성 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '인보이스 생성 중 오류가 발생했습니다.'
-        })
+                    'error': '현재 파일 판매가 일시 중단되었습니다.',
+                    'error_code': 'inventory_unavailable',
+                }, status=423)
+            if locked_file.is_sold_out:
+                return JsonResponse({
+                    'success': False,
+                    'error': '죄송합니다. 현재 파일이 매진되었습니다.',
+                    'error_code': 'inventory_unavailable',
+                }, status=409)
+
+            FileOrder.objects.filter(
+                digital_file=locked_file,
+                user=request.user,
+                status='pending',
+            ).update(
+                status='cancelled',
+                is_temporary_reserved=False,
+                auto_cancelled_reason='새로운 결제 시도로 자동 취소',
+                updated_at=timezone.now(),
+            )
+
+            pending_order = create_pending_file_order(
+                locked_file,
+                request.user,
+                reservation_seconds=reservation_seconds,
+            )
+    except DigitalFile.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '파일 정보를 찾을 수 없습니다.'}, status=404)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('디지털 파일 결제 준비 중 오류')
+        return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)
+
+    digital_file = pending_order.digital_file
+
+    try:
+        transaction = processor.create_transaction(
+            user=request.user,
+            amount_sats=amount_sats,
+            currency='BTC',
+            cart_items=None,
+            soft_lock_ttl_minutes=soft_lock_minutes,
+            metadata={
+                'file_id': digital_file.id,
+                'file_order_id': pending_order.id,
+            },
+            prepare_message='디지털 파일 구매 준비 완료',
+            prepare_detail={
+                'file_order_id': pending_order.id,
+                'reservation_expires_at': pending_order.reservation_expires_at.isoformat() if pending_order.reservation_expires_at else None,
+                'amount_sats': amount_sats,
+            },
+        )
+        transaction.file_order = pending_order
+        transaction.save(update_fields=['file_order', 'updated_at'])
+
+        invoice = processor.issue_invoice(
+            transaction,
+            memo=build_file_invoice_memo(digital_file, pending_order, request.user),
+            expires_in_minutes=max(1, min(soft_lock_minutes, 15)),
+        )
+    except ValueError as exc:
+        logger.warning('디지털 파일 결제 준비 실패: %s', exc)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+    except RuntimeError as exc:
+        logger.warning('디지털 파일 인보이스 생성 실패: %s', exc)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('디지털 파일 결제 플로우 중 오류')
+        return JsonResponse({'success': False, 'error': '결제 요청 처리 중 문제가 발생했습니다.'}, status=500)
+
+    session_data = {
+        'transaction_id': str(transaction.id),
+        'file_order_id': pending_order.id,
+        'payment_hash': invoice['payment_hash'],
+        'payment_request': invoice['invoice'],
+    }
+    request.session[session_key] = session_data
+
+    return JsonResponse({
+        'success': True,
+        'transaction': serialize_file_transaction(transaction),
+        'invoice': {
+            'payment_hash': invoice['payment_hash'],
+            'payment_request': invoice['invoice'],
+            'expires_at': invoice.get('expires_at').isoformat() if invoice.get('expires_at') else None,
+        },
+        'reservation_expires_at': pending_order.reservation_expires_at.isoformat() if pending_order.reservation_expires_at else None,
+    })
 
 
 @login_required
-@require_POST  
-@csrf_exempt
-def check_file_payment(request):
-    """파일 구매 결제 상태 확인"""
+@require_http_methods(['GET'])
+def file_payment_status(request, store_id, file_id, transaction_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    digital_file = get_object_or_404(
+        DigitalFile,
+        id=file_id,
+        store=store,
+        deleted_at__isnull=True,
+    )
+
     try:
-        data = json.loads(request.body)
-        order_id = data.get('order_id')
-        
-        if not order_id:
-            return JsonResponse({
-                'success': False,
-                'error': '주문 ID가 필요합니다.'
-            })
-        
-        order = get_object_or_404(
-            FileOrder,
-            id=order_id,
+        transaction = PaymentTransaction.objects.select_related('file_order').get(
+            id=transaction_id,
             user=request.user,
-            status='pending'
+            store=store,
         )
-        
-        # 예약 만료 확인
-        if order.reservation_expires_at and timezone.now() > order.reservation_expires_at:
-            order.status = 'cancelled'
-            order.auto_cancelled_reason = '예약 시간 만료'
-            order.save()
-            return JsonResponse({
-                'success': False,
-                'paid': False,
-                'error': '예약 시간이 만료되었습니다.'
-            })
-        
-        # 스토어 및 블링크 서비스 가져오기
-        store = order.digital_file.store
-        blink_service = get_blink_service_for_store(store)
-        if not blink_service:
-            logger.error(f"결제 서비스 설정 없음 - store_id: {store.store_id}")
-            return JsonResponse({
-                'success': False,
-                'error': '결제 서비스가 설정되지 않았습니다.'
-            })
-        
-        # 결제 상태 확인
-        logger.debug(f"결제 상태 확인 시작 - order_id: {order_id}, payment_hash: {order.payment_hash}")
-        result = blink_service.check_invoice_status(order.payment_hash)
-        logger.debug(f"결제 상태 확인 결과 - result: {result}")
-        
-        if result['success']:
-            if result['status'] == 'paid':
-                with transaction.atomic():
-                    order.status = 'confirmed'
-                    order.paid_at = timezone.now()
-                    order.confirmed_at = timezone.now()
-                    order.is_temporary_reserved = False
-                    order.save()
-                    
-                    # 이메일 발송
-                    try:
-                        send_file_buyer_confirmation_email(order)
-                        send_file_purchase_notification_email(order)
-                    except Exception as e:
-                        logger.error(f"이메일 발송 실패: {e}")
-                
-                return JsonResponse({
-                    'success': True,
-                    'paid': True,
-                    'redirect_url': reverse('file:file_complete', kwargs={'order_id': order.id})
-                })
-            elif result['status'] == 'expired':
-                # 인보이스가 만료된 경우
-                order.status = 'cancelled'
-                order.auto_cancelled_reason = '인보이스 만료'
-                order.save()
-                return JsonResponse({
-                    'success': False,
-                    'paid': False,
-                    'error': '인보이스가 만료되었습니다.'
-                })
-            else:
-                # pending 상태
-                return JsonResponse({
-                    'success': True,
-                    'paid': False
-                })
-        else:
-            logger.error(f"결제 상태 확인 실패: {result.get('error', 'Unknown error')}")
-            return JsonResponse({
-                'success': False,
-                'error': result.get('error', '결제 상태 확인에 실패했습니다.')
-            })
-            
-    except FileOrder.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'error': '주문을 찾을 수 없습니다.'
-        })
-    except Exception as e:
-        logger.error(f"결제 상태 확인 오류: {e}", exc_info=True)
-        # 오류가 발생해도 결제 상태는 계속 확인해야 함
-        return JsonResponse({
-            'success': True,
-            'paid': False
-        })
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    payload = serialize_file_transaction(transaction)
+    payload['file_id'] = digital_file.id
+
+    return JsonResponse({'success': True, 'transaction': payload})
 
 
 @login_required
 @require_POST
-@csrf_exempt
-def cancel_file_payment(request):
-    """파일 구매 취소"""
+def file_verify_payment(request, store_id, file_id, transaction_id):
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+    digital_file = get_object_or_404(
+        DigitalFile,
+        id=file_id,
+        store=store,
+        deleted_at__isnull=True,
+    )
+
     try:
-        data = json.loads(request.body)
-        order_id = data.get('order_id')
-        
-        if not order_id:
-            return JsonResponse({
-                'success': False,
-                'error': '주문 ID가 필요합니다.'
-            })
-        
-        order = get_object_or_404(
-            FileOrder,
-            id=order_id,
+        transaction = PaymentTransaction.objects.select_related('file_order').get(
+            id=transaction_id,
             user=request.user,
-            status='pending'
+            store=store,
         )
-        
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    processor = LightningPaymentProcessor(store)
+
+    try:
+        status_result = processor.check_user_payment(transaction)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.exception('파일 결제 상태 확인 실패 transaction=%s', transaction_id)
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+    status_value = status_result.get('status')
+    session_key = _get_file_payment_session_key(file_id)
+    session_data = request.session.get(session_key, {})
+
+    if status_value == 'expired':
+        processor.cancel_transaction(transaction, '인보이스 만료', detail=status_result)
+        if transaction.file_order and transaction.file_order.status == 'pending':
+            order = transaction.file_order
+            order.status = 'cancelled'
+            order.is_temporary_reserved = False
+            order.auto_cancelled_reason = '인보이스 만료'
+            order.save(update_fields=[
+                'status',
+                'is_temporary_reserved',
+                'auto_cancelled_reason',
+                'updated_at',
+            ])
+        session_data.pop('transaction_id', None)
+        session_data.pop('payment_hash', None)
+        session_data.pop('payment_request', None)
+        session_data.pop('file_order_id', None)
+        request.session[session_key] = session_data
+        return JsonResponse({'success': False, 'error': '인보이스가 만료되었습니다.', 'transaction': serialize_file_transaction(transaction)}, status=400)
+
+    if status_value != 'paid':
+        return JsonResponse({'success': True, 'status': status_value, 'transaction': serialize_file_transaction(transaction)})
+
+    file_order = transaction.file_order
+    if not file_order and isinstance(transaction.metadata, dict):
+        file_order_id = transaction.metadata.get('file_order_id')
+        if file_order_id:
+            file_order = FileOrder.objects.filter(id=file_order_id, user=request.user).first()
+
+    if not file_order:
+        return JsonResponse({'success': False, 'error': '주문 정보를 찾을 수 없습니다.'}, status=500)
+
+    finalize_file_order_from_transaction(
+        file_order,
+        payment_hash=transaction.payment_hash,
+        payment_request=transaction.payment_request,
+    )
+
+    settlement_payload = {'status': status_result.get('raw_status'), 'provider': 'blink'}
+    processor.mark_settlement(transaction, tx_payload=settlement_payload)
+    processor.finalize_file_order(transaction, file_order)
+
+    try:
+        send_file_buyer_confirmation_email(file_order)
+        send_file_purchase_notification_email(file_order)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error('파일 결제 이메일 발송 실패 - order_id=%s, error=%s', file_order.id, exc)
+
+    request.session.pop(session_key, None)
+
+    redirect_url = reverse('file:file_complete', args=[file_order.id])
+
+    payload = serialize_file_transaction(transaction)
+    payload['redirect_url'] = redirect_url
+
+    return JsonResponse({
+        'success': True,
+        'status': status_value,
+        'transaction': payload,
+        'order': {
+            'id': file_order.id,
+            'order_number': file_order.order_number,
+            'price': file_order.price,
+        },
+        'redirect_url': redirect_url,
+    })
+
+
+@login_required
+@require_POST
+def file_cancel_payment(request, store_id, file_id, transaction_id):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        payload = {}
+
+    store = get_object_or_404(Store, store_id=store_id, deleted_at__isnull=True)
+
+    try:
+        transaction = PaymentTransaction.objects.select_related('file_order').get(
+            id=transaction_id,
+            user=request.user,
+            store=store,
+        )
+    except (PaymentTransaction.DoesNotExist, ValueError):
+        return JsonResponse({'success': False, 'error': '결제 정보를 찾을 수 없습니다.'}, status=404)
+
+    processor = LightningPaymentProcessor(store)
+    processor.cancel_transaction(transaction, '사용자 취소', detail=payload)
+
+    if transaction.file_order and transaction.file_order.status == 'pending':
+        order = transaction.file_order
         order.status = 'cancelled'
+        order.is_temporary_reserved = False
         order.auto_cancelled_reason = '사용자 취소'
-        order.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': '주문이 취소되었습니다.'
-        })
-        
-    except Exception as e:
-        logger.error(f"주문 취소 오류: {e}", exc_info=True)
-        return JsonResponse({
-            'success': False,
-            'error': '주문 취소 중 오류가 발생했습니다.'
-        })
+        order.save(update_fields=[
+            'status',
+            'is_temporary_reserved',
+            'auto_cancelled_reason',
+            'updated_at',
+        ])
+
+    session_key = _get_file_payment_session_key(file_id)
+    request.session.pop(session_key, None)
+
+    return JsonResponse({'success': True, 'transaction': serialize_file_transaction(transaction)})
 
 
 @login_required

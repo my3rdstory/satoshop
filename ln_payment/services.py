@@ -420,6 +420,42 @@ class LightningPaymentProcessor:
             },
         )
 
+    def finalize_file_order(self, transaction: PaymentTransaction, file_order) -> None:
+        """디지털 파일 주문을 결제 완료 상태로 연결한다."""
+        with db_transaction.atomic():
+            now = timezone.now()
+            transaction.file_order = file_order
+            transaction.status = PaymentTransaction.STATUS_COMPLETED
+            transaction.current_stage = PaymentStage.ORDER_FINALIZE
+            transaction.save(update_fields=["file_order", "status", "current_stage", "updated_at"])
+
+            file_order.status = "confirmed"
+            file_order.is_temporary_reserved = False
+            if not file_order.paid_at:
+                file_order.paid_at = now
+            if not file_order.confirmed_at:
+                file_order.confirmed_at = now
+            file_order.auto_cancelled_reason = ""
+            file_order.save(update_fields=[
+                "status",
+                "is_temporary_reserved",
+                "paid_at",
+                "confirmed_at",
+                "auto_cancelled_reason",
+                "updated_at",
+            ])
+
+        self._log_stage(
+            transaction,
+            PaymentStage.ORDER_FINALIZE,
+            PaymentStatus.COMPLETED,
+            "디지털 파일 다운로드 권한 부여",
+            {
+                "file_order_id": file_order.id,
+                "order_number": file_order.order_number,
+            },
+        )
+
     def release_reservations(self, transaction: PaymentTransaction) -> None:
         updated = OrderItemReservation.objects.filter(
             transaction=transaction,
