@@ -1,0 +1,234 @@
+/* Home landing page custom styles (tailwind 기반 보조 스타일) */
+.hero-gradient {
+  background: radial-gradient(circle at top left, rgba(255, 184, 0, 0.35), transparent 45%),
+              radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 50%),
+              linear-gradient(135deg, #0f172a, #111827 55%, #020617 100%);
+}
+
+.pattern-layer {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                    linear-gradient(0deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+.stat-card,
+.feature-card,
+.usecase-card,
+.testimonial-card,
+.workflow-card,
+.faq-item,
+.demo-card {
+  border-radius: 1.25rem;
+}
+
+.stat-card,
+.demo-card {
+  padding: 1.25rem;
+  background-color: rgba(15, 23, 42, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.badge-success,
+.badge-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+}
+
+.badge-success {
+  background: rgba(74, 222, 128, 0.18);
+  color: #4ade80;
+}
+
+.badge-neutral {
+  background: rgba(148, 163, 184, 0.2);
+  color: #e2e8f0;
+}
+
+.feature-card,
+.usecase-card,
+.workflow-card,
+.testimonial-card {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 2rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.feature-card:hover,
+.usecase-card:hover,
+.workflow-card:hover,
+.testimonial-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0px 18px 35px rgba(15, 23, 42, 0.12);
+}
+
+.icon-circle {
+  display: inline-flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 9999px;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.process-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem;
+  border-radius: 1.25rem;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.step-index {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(253, 224, 71, 0.35), rgba(250, 204, 21, 0.9));
+  color: #0f172a;
+}
+
+.workflow-card {
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.icon-bullet {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.12);
+  color: #38bdf8;
+}
+
+.integration-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1.1rem;
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.07);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.faq-item {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faq-item[aria-expanded="true"],
+.faq-item.is-open {
+  border-color: rgba(255, 184, 0, 0.65);
+  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+}
+
+.faq-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-trigger i {
+  transition: transform 0.2s ease;
+}
+
+.faq-item.is-open .faq-trigger i {
+  transform: rotate(45deg);
+}
+
+.faq-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease;
+  padding: 0 1.5rem;
+  color: rgba(71, 85, 105, 0.9);
+  font-size: 0.95rem;
+}
+
+.faq-content p {
+  padding-bottom: 1.5rem;
+}
+
+/* 다크 모드 보정 */
+.dark .stat-card,
+.dark .demo-card {
+  background-color: rgba(15, 23, 42, 0.55);
+  border-color: rgba(226, 232, 240, 0.08);
+}
+
+.dark .feature-card,
+.dark .usecase-card,
+.dark .workflow-card,
+.dark .testimonial-card {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #e2e8f0;
+}
+
+.dark .process-item {
+  background: rgba(15, 23, 42, 0.55);
+  border-color: rgba(148, 163, 184, 0.28);
+}
+
+.dark .icon-bullet {
+  background: rgba(14, 116, 144, 0.35);
+  color: #67e8f9;
+}
+
+.dark .integration-pill {
+  background: rgba(148, 163, 184, 0.15);
+  color: #e2e8f0;
+}
+
+.dark .faq-item {
+  background: rgba(2, 6, 23, 0.9);
+  border-color: rgba(71, 85, 105, 0.6);
+}
+
+.dark .faq-content {
+  color: rgba(226, 232, 240, 0.8);
+}
+
+@media (max-width: 640px) {
+  .hero-gradient {
+    padding-top: 5rem;
+  }
+  .feature-card,
+  .usecase-card,
+  .workflow-card,
+  .testimonial-card {
+    padding: 1.75rem;
+  }
+}
