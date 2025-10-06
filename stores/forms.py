@@ -24,10 +24,28 @@ class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 
+class MultiFileField(forms.FileField):
+    """여러 개 파일을 제출할 수 있도록 확장한 FileField"""
+
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+
+        if not isinstance(data, (list, tuple)):
+            data = [data]
+
+        cleaned = []
+        for uploaded in data:
+            if not uploaded:
+                continue
+            cleaned.append(uploaded)
+        return cleaned
+
+
 class BahPromotionRequestForm(forms.ModelForm):
     """BAH 홍보요청 입력 폼"""
 
-    images = forms.FileField(
+    images = MultiFileField(
         label='매장 홍보 사진',
         required=False,
         widget=MultiFileInput(
@@ -133,16 +151,7 @@ class BahPromotionRequestForm(forms.ModelForm):
         return value
 
     def clean_images(self) -> List:
-        raw_files: List = list(self.files.getlist('images') or [])
-
-        if not raw_files:
-            for field_name, value_list in self.files.lists():
-                if field_name == 'images' or field_name.startswith('images['):
-                    if not value_list:
-                        continue
-                    raw_files.extend(uploaded for uploaded in value_list if uploaded)
-
-        files: List = [uploaded for uploaded in raw_files if uploaded]
+        files = self.cleaned_data.get('images', []) or []
 
         if not files:
             return []

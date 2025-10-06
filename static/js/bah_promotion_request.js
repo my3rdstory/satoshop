@@ -38,6 +38,7 @@
     const addressTriggers = document.querySelectorAll('[data-address-trigger]');
     const dataTransferSupported = typeof DataTransfer !== 'undefined';
     let lastDataTransferError = null;
+    let postcodeInstance = null;
 
     const maxImageCount = parseInt(maxImages, 10) || 4;
     const initialExisting = parseInt(existingCount, 10) || 0;
@@ -46,7 +47,6 @@
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     const MAX_SIZE_MB = 5;
 
-    let postcodeInstance = null;
 
     function tryCreateDataTransfer() {
       if (!dataTransferSupported) {
@@ -107,16 +107,7 @@
       return [];
     }
 
-    function logProgress(step, payload) {
-      if (!window.console || typeof window.console.info !== 'function') {
-        return;
-      }
-      const meta = Object.assign({
-        step: String(step),
-        timestamp: new Date().toISOString(),
-      }, payload || {});
-      window.console.info('[BAH Promotion]', meta);
-    }
+    function logProgress() {}
 
     logProgress('init', {
       status,
@@ -525,14 +516,11 @@
       });
     }
 
-    function handleAddressTrigger() {
-      openAddressModal();
-    }
-
-    function handleAddressModalClick(event) {
-      if (event.target === addressModal) {
-        closeAddressModal();
+    function handleAddressTrigger(event) {
+      if (event) {
+        event.preventDefault();
       }
+      openAddressModal();
     }
 
     function handleFormSubmit() {
@@ -595,9 +583,7 @@
     function attachAddressEvents() {
       if (addressTriggers) {
         addressTriggers.forEach(function(trigger) {
-          ['click', 'focus'].forEach(function(evt) {
-            trigger.addEventListener(evt, handleAddressTrigger);
-          });
+          trigger.addEventListener('click', handleAddressTrigger);
         });
       }
 
@@ -606,7 +592,11 @@
       }
 
       if (addressModal) {
-        addressModal.addEventListener('click', handleAddressModalClick);
+        addressModal.addEventListener('click', function(event) {
+          if (event.target === addressModal) {
+            closeAddressModal();
+          }
+        });
       }
     }
 
@@ -624,7 +614,7 @@
       if (!addressModal || !addressContainer) {
         return;
       }
-      if (!addressModal.classList.contains('hidden')) {
+      if (addressModal.classList.contains('flex')) {
         return;
       }
       if (!window.daum || !window.daum.Postcode) {
@@ -664,8 +654,11 @@
           if (detailField) {
             detailField.focus();
           }
-          closeAddressModal();
           validateFormCompleteness();
+          closeAddressModal();
+        },
+        onclose: function() {
+          closeAddressModal();
         },
       });
 
@@ -681,7 +674,7 @@
       setTimeout(function() {
         addressContainer.innerHTML = '';
         postcodeInstance = null;
-      }, 200);
+      }, 150);
     }
     const requiredIds = [
       'id_store_name',

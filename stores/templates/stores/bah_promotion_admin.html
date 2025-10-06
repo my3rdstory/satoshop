@@ -20,20 +20,24 @@
           라이트닝 지갑으로 접수된 1:1 신청서를 검토하고 홍보 패키지 발송 상태를 업데이트하세요.
         </p>
       </div>
-      <a href="{% url 'stores:bah_promotion_request' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 rounded-lg shadow">
-        <i class="fas fa-arrow-left"></i>신청 페이지로 돌아가기
-      </a>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <a href="{% url 'stores:bah_promotion_request' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gray-900 hover:bg-gray-700 rounded-lg shadow">
+          <i class="fas fa-arrow-left"></i>신청 페이지로 돌아가기
+        </a>
+      </div>
     </div>
 
     {% if messages %}
-    <div class="space-y-2">
-      {% for message in messages %}
-      <div class="px-4 py-3 rounded-xl border text-sm font-medium {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200{% else %}bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200{% endif %}">
-        {{ message }}
-      </div>
-      {% endfor %}
-    </div>
+    <script>
+      window.__bahMessages = [
+        {% for message in messages %}
+          { text: "{{ message|escapejs }}", level: "{{ message.level_tag }}" },
+        {% endfor %}
+      ];
+    </script>
     {% endif %}
+
+    <div id="bahToastContainer" class="fixed top-5 right-5 z-50 space-y-3 pointer-events-none"></div>
 
     <div class="space-y-6">
       {% for item in promotion_requests %}
@@ -82,13 +86,16 @@
             </div>
             {% endif %}
 
-            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div class="text-xs text-gray-500 dark:text-gray-400">
-                라이트닝 키: {% if item.lightning_public_key %}{{ item.lightning_public_key }}{% else %}-{% endif %}
-              </div>
+            <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
+              <a href="{% url 'stores:bah_promotion_admin_export_csv' item.id %}" class="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-300 text-gray-900 dark:text-gray-900 hover:bg-amber-200 transition-colors inline-flex items-center gap-2">
+                <i class="fas fa-file-csv"></i>CSV 다운로드
+              </a>
               <form method="post" class="inline-flex items-center gap-2">
                 {% csrf_token %}
                 <input type="hidden" name="toggle_id" value="{{ item.id }}">
+                {% if page_obj %}
+                <input type="hidden" name="page" value="{{ page_obj.number }}">
+                {% endif %}
                 {% if item.shipping_status == promotion_status_shipped %}
                 <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-400 transition-colors">
                   <i class="fas fa-undo mr-1"></i>발송예정으로 되돌리기
@@ -109,6 +116,75 @@
       </div>
       {% endfor %}
     </div>
-  </div>
+
+    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+    <nav class="flex items-center justify-between mt-8" aria-label="Pagination">
+      <div>
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          총 {{ page_obj.paginator.count }}건 중 {{ page_obj.start_index }}-{{ page_obj.end_index }} 표시
+        </p>
+      </div>
+      <div class="inline-flex items-center gap-2">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          이전
+        </a>
+        {% else %}
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-transparent text-gray-400 dark:text-gray-600">이전</span>
+        {% endif %}
+
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200">
+          {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+          다음
+        </a>
+        {% else %}
+        <span class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-transparent text-gray-400 dark:text-gray-600">다음</span>
+        {% endif %}
+      </div>
+    </nav>
+    {% endif %}
 </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function() {
+    const messages = window.__bahMessages || [];
+    if (!messages.length) {
+      return;
+    }
+    const container = document.getElementById('bahToastContainer');
+    if (!container) {
+      return;
+    }
+
+    messages.forEach(function(message, index) {
+      const toast = document.createElement('div');
+      const isError = message.level === 'error';
+      toast.className = 'bah-toast ' + (isError ? 'bah-toast-error' : 'bah-toast-success');
+      toast.innerHTML = '<div class="bah-toast-body">' + message.text + '</div>';
+      container.appendChild(toast);
+
+      requestAnimationFrame(function() {
+        toast.classList.add('bah-toast-show');
+      });
+
+      const hideDelay = 3600 + index * 150;
+      setTimeout(function() {
+        toast.classList.remove('bah-toast-show');
+      }, hideDelay);
+
+      setTimeout(function() {
+        toast.remove();
+      }, hideDelay + 400);
+    });
+
+    window.__bahMessages = [];
+  })();
+</script>
 {% endblock %}

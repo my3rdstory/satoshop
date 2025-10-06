@@ -64,6 +64,7 @@ urlpatterns = [
     # BAH 홍보 요청
     path('bah/promotion-request/', promotion_views.bah_promotion_request_view, name='bah_promotion_request'),
     path('bah/promotion-request/admin', promotion_views.bah_promotion_admin_view, name='bah_promotion_admin'),
+    path('bah/promotion-request/admin/<int:pk>/export', promotion_views.bah_promotion_admin_export_csv, name='bah_promotion_admin_export_csv'),
     path('bah/wallet-of-satoshi-guide/', promotion_views.bah_wallet_of_satoshi_guide_view, name='bah_wallet_of_satoshi_guide'),
 
 

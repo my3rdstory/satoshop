@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import io
 import logging
-import uuid
 from dataclasses import dataclass
 from typing import Iterable, List
 
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
-from PIL import Image, ImageOps
+from PIL import Image
 
 from storage.utils import delete_file_from_s3, upload_file_to_s3
 
@@ -18,61 +15,43 @@ from .models import BahPromotionImage, BahPromotionRequest
 
 logger = logging.getLogger(__name__)
 
-MAX_IMAGE_WIDTH = 1600
-WEBP_QUALITY = 85
-
 
 @dataclass
-class ProcessedPromotionImage:
+class PromotionImagePayload:
     original_name: str
-    file: ContentFile
+    file: UploadedFile
     width: int
     height: int
     file_size: int
 
 
-def _process_image(uploaded_file: UploadedFile) -> ProcessedPromotionImage:
-    """이미지를 WebP로 변환하고 크기를 제한한다."""
+def _prepare_image(uploaded_file: UploadedFile) -> PromotionImagePayload:
+    """원본 이미지를 그대로 업로드하면서 메타데이터를 추출한다."""
     try:
         uploaded_file.seek(0)
     except (AttributeError, OSError):
         pass
 
+    width = 0
+    height = 0
+
     try:
         image = Image.open(uploaded_file)
-    except Exception as exc:  # pragma: no cover - Pillow가 다양한 예외 발생
-        logger.error("BAH 홍보 이미지 열기 실패", exc_info=True)
-        raise ValidationError(f"이미지 파일을 열 수 없습니다: {exc}") from exc
-
-    image = ImageOps.exif_transpose(image)
-
-    if image.mode not in ('RGB', 'RGBA'):
-        image = image.convert('RGB')
-    elif image.mode == 'RGBA':
-        background = Image.new('RGB', image.size, (255, 255, 255))
-        background.paste(image, mask=image.split()[-1])
-        image = background
-
-    width, height = image.size
-    if width > MAX_IMAGE_WIDTH:
-        ratio = MAX_IMAGE_WIDTH / width
-        new_size = (MAX_IMAGE_WIDTH, int(round(height * ratio)))
-        image = image.resize(new_size, Image.Resampling.LANCZOS)
         width, height = image.size
+    except Exception as exc:  # pragma: no cover - Pillow가 다양한 예외 발생
+        logger.warning("BAH 홍보 이미지 메타데이터 추출 실패: %s", exc)
+    finally:
+        try:
+            uploaded_file.seek(0)
+        except (AttributeError, OSError):
+            pass
 
-    buffer = io.BytesIO()
-    image.save(buffer, format='WEBP', quality=WEBP_QUALITY, method=6)
-    buffer.seek(0)
-
-    filename = f"{uuid.uuid4().hex}.webp"
-    processed_file = ContentFile(buffer.getvalue(), name=filename)
-
-    return ProcessedPromotionImage(
+    return PromotionImagePayload(
         original_name=uploaded_file.name,
-        file=processed_file,
+        file=uploaded_file,
         width=width,
         height=height,
-        file_size=processed_file.size,
+        file_size=getattr(uploaded_file, 'size', None) or 0,
     )
 
 
@@ -94,10 +73,14 @@ def save_promotion_images(
 
     try:
         for index, uploaded_file in enumerate(files, start=1):
-            processed = _process_image(uploaded_file)
+            prepared = _prepare_image(uploaded_file)
             prefix = f"bah-promotion/{promotion_request.id}"
-            processed.file.seek(0)
-            upload_result = upload_file_to_s3(processed.file, prefix=prefix)
+            try:
+                prepared.file.seek(0)
+            except (AttributeError, OSError):
+                pass
+
+            upload_result = upload_file_to_s3(prepared.file, prefix=prefix)
             if not upload_result.get('success'):
                 raise ValidationError(upload_result.get('error', '이미지 업로드에 실패했습니다.'))
 
@@ -105,12 +88,12 @@ def save_promotion_images(
 
             bah_image = BahPromotionImage.objects.create(
                 promotion_request=promotion_request,
-                original_name=processed.original_name,
+                original_name=prepared.original_name,
                 file_path=upload_result['file_path'],
                 file_url=upload_result['file_url'],
-                file_size=upload_result.get('file_size') or processed.file_size,
-                width=processed.width,
-                height=processed.height,
+                file_size=upload_result.get('file_size') or prepared.file_size,
+                width=prepared.width,
+                height=prepared.height,
                 order=current_count + index,
                 uploaded_by=uploaded_by,
             )

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import csv
 import logging
+from datetime import datetime
+from io import StringIO
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.http import HttpResponseForbidden
+from django.core.paginator import Paginator
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
@@ -43,6 +47,21 @@ def _get_existing_request(user: User | None) -> BahPromotionRequest | None:
     )
 
 
+def _csv_text(value) -> str:
+    """CSV용 텍스트 값을 생성한다. Zero-width space로 숫자 앞 0 보존."""
+    if value is None:
+        text = ''
+    elif isinstance(value, datetime):
+        text = timezone.localtime(value).strftime('%Y-%m-%d %H:%M:%S')
+    else:
+        text = str(value)
+
+    text = text.replace('\r', ' ').replace('\n', ' ')
+    if text:
+        return f"\u200B{text}"
+    return ''
+
+
 def bah_promotion_request_view(request):
     existing_request = _get_existing_request(request.user)
     existing_images = []
@@ -77,17 +96,6 @@ def bah_promotion_request_view(request):
         instance=existing_request,
         existing_image_count=existing_image_count,
     )
-
-    if wants_post:
-        logger = logging.getLogger(__name__)
-        logger.info(
-            "BAH promotion request POST received",
-            extra={
-                'user': getattr(request.user, 'id', None),
-                'files_count': request.FILES.getlist('images') and len(request.FILES.getlist('images')) or 0,
-                'all_file_keys': list(request.FILES.keys()),
-            },
-        )
 
     if wants_post:
         if not is_authenticated:
@@ -244,6 +252,8 @@ def bah_promotion_admin_view(request):
     if not _is_bah_admin(request.user):
         return HttpResponseForbidden('관리자만 접근할 수 있습니다.')
 
+    page_number = request.GET.get('page') or request.POST.get('page')
+
     if request.method == 'POST':
         toggle_id = request.POST.get('toggle_id')
         if toggle_id:
@@ -253,6 +263,8 @@ def bah_promotion_admin_view(request):
                 request,
                 '발송 상태가 업데이트되었습니다.'
             )
+        if page_number:
+            return redirect(f"{reverse('stores:bah_promotion_admin')}?page={page_number}")
         return redirect('stores:bah_promotion_admin')
 
     requests = (
@@ -262,9 +274,63 @@ def bah_promotion_admin_view(request):
         .order_by('-created_at')
     )
 
+    paginator = Paginator(requests, 5)
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'promotion_requests': requests,
+        'promotion_requests': page_obj.object_list,
+        'page_obj': page_obj,
         'promotion_status_pending': PROMOTION_STATUS_PENDING,
         'promotion_status_shipped': PROMOTION_STATUS_SHIPPED,
     }
     return render(request, 'stores/bah_promotion_admin.html', context)
+
+
+def bah_promotion_admin_export_csv(request, pk: int):
+    if not request.user.is_authenticated:
+        login_url = f"{reverse('accounts:lightning_login')}?next={request.path}"
+        return redirect(login_url)
+
+    if not _is_bah_admin(request.user):
+        return HttpResponseForbidden('관리자만 접근할 수 있습니다.')
+
+    request_obj = get_object_or_404(
+        BahPromotionRequest.objects.select_related('user').prefetch_related('images'),
+        pk=pk,
+    )
+
+    output = StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+
+    headers = [
+        'ID', '신청일', '수정일', '매장명', '우편번호', '주소', '상세주소',
+        '전화번호', '이메일', '소개', '발송상태', '라이트닝 공개키', '라이트닝 인증시각',
+        '신청자'
+    ]
+    writer.writerow(headers)
+
+    row = [
+        _csv_text(request_obj.id),
+        _csv_text(request_obj.created_at),
+        _csv_text(request_obj.updated_at),
+        _csv_text(request_obj.store_name),
+        _csv_text(request_obj.postal_code),
+        _csv_text(request_obj.address),
+        _csv_text(request_obj.address_detail),
+        _csv_text(request_obj.phone_number),
+        _csv_text(request_obj.email),
+        _csv_text(request_obj.introduction),
+        _csv_text(request_obj.get_shipping_status_display()),
+        _csv_text(request_obj.lightning_public_key),
+        _csv_text(request_obj.lightning_verified_at),
+        _csv_text(request_obj.user.username if request_obj.user else ''),
+    ]
+    writer.writerow(row)
+
+    csv_content = output.getvalue()
+    response = HttpResponse(
+        '\ufeff' + csv_content,
+        content_type='text/csv; charset=utf-8',
+    )
+    response['Content-Disposition'] = f'attachment; filename="bah_promotion_request_{request_obj.id}.csv"'
+    return response
