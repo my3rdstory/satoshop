@@ -19,3 +19,8 @@
 ## 문서/운영
 - [x] README 및 운영 문서에 Blink webhook 설정, WebSocket 인증 절차, 재시도 정책 업데이트
 - [x] 배포/환경 변수 점검 (BLINK API 키, 웹훅 엔드포인트, Celery/Redis 설정 등)
+
+## 현재 진행 작업
+- [ ] renewal_ln_payment 브랜치에서 meetup 결제 워크플로우 구조 분석
+- [ ] 상품 결제 단계 재사용을 위한 공통화/리팩터링 범위 정리
+- [ ] 필요한 모델/서비스/템플릿 변경안 작성
