@@ -277,7 +277,7 @@ class BahPromotionAdminAdmin(admin.ModelAdmin):
 
 @admin.register(BahPromotionLinkSettings)
 class BahPromotionLinkSettingsAdmin(admin.ModelAdmin):
-    list_display = ('login_guide_url', 'usage_guide_url', 'package_request_url', 'updated_at')
+    list_display = ('login_guide_url', 'usage_guide_url', 'email_store_id', 'updated_at')
 
     def has_add_permission(self, request):
         if BahPromotionLinkSettings.objects.exists():

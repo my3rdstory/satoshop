@@ -524,11 +524,10 @@
     }
 
     function handleFormSubmit() {
-      logProgress('form_submit', {
-        totalSelected: getSelectedFileCount(),
-        deleteCount: getDeleteCount(),
-        saveDisabled: saveButton ? saveButton.disabled : null,
-        });
+      if (saveButton) {
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>저장 중...';
+      }
       if (formElement && window.FormData) {
         try {
           const formData = new FormData(formElement);
@@ -554,10 +553,9 @@
     }
 
     function handleSaveButtonClick(event) {
-      logProgress('save_button_click', {
-        disabled: saveButton ? saveButton.disabled : null,
-        totalSelected: getSelectedFileCount(),
-      });
+      if (saveButton && !saveButton.disabled) {
+        saveButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>저장 중...';
+      }
     }
 
     function attachDragEvents() {

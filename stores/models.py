@@ -28,9 +28,10 @@ class BahPromotionLinkSettings(models.Model):
         blank=True,
         help_text='월오사 사용법 상세 문서 링크'
     )
-    package_request_url = models.URLField(
+    email_store_id = models.CharField(
+        max_length=50,
         blank=True,
-        help_text='홍보 패키지 신청 링크 (예: 사토샵 상품 페이지)'
+        help_text='이메일 설정 스토어 아이디: 입력된 스토어의 이메일 발송 설정을 사용해 홍보요청 내용을 메일로 전송합니다.'
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -8,11 +8,14 @@ from io import StringIO
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.core.mail import EmailMessage
+from django.core.mail.backends.smtp import EmailBackend
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from .forms import BahPromotionRequestForm
 from .models import (
@@ -22,6 +25,7 @@ from .models import (
     PROMOTION_STATUS_PENDING,
     PROMOTION_STATUS_SHIPPED,
     BahPromotionLinkSettings,
+    Store,
 )
 from .promotion_services import delete_promotion_images, save_promotion_images
 
@@ -46,6 +50,8 @@ def _get_existing_request(user: User | None) -> BahPromotionRequest | None:
         .first()
     )
 
+logger = logging.getLogger(__name__)
+
 
 def _csv_text(value) -> str:
     """CSV용 텍스트 값을 생성한다. Zero-width space로 숫자 앞 0 보존."""
@@ -61,6 +67,89 @@ def _csv_text(value) -> str:
         return f"\u200B{text}"
     return ''
 
+
+def _send_bah_promotion_email(promotion_request: BahPromotionRequest, *, is_new: bool) -> None:
+    settings_obj = BahPromotionLinkSettings.get_solo()
+    store_id = (settings_obj.email_store_id or '').strip() if settings_obj else ''
+    if not store_id:
+        return
+
+    try:
+        store = Store.objects.get(store_id=store_id, deleted_at__isnull=True)
+    except Store.DoesNotExist:
+        logging.getLogger(__name__).warning('BAH email store not found: %s', store_id)
+        return
+
+    if not (store.email_enabled and store.email_host_user and store.email_host_password_encrypted):
+        logging.getLogger(__name__).info('BAH email skipped (email disabled or missing credentials) for store %s', store_id)
+        return
+
+    try:
+        backend = EmailBackend(
+            host='smtp.gmail.com',
+            port=587,
+            username=store.email_host_user,
+            password=store.get_email_host_password(),
+            use_tls=True,
+            fail_silently=False,
+        )
+    except Exception:
+        logging.getLogger(__name__).exception('BAH email backend init failed for store %s', store_id)
+        return
+
+    subject_prefix = '신규' if is_new else '수정'
+    subject = f'[BAH 홍보요청 {subject_prefix}] {promotion_request.store_name}'
+
+    lines = [
+        'BAH 홍보요청이 접수되었습니다.',
+        '',
+        f'요청 종류: {"신규" if is_new else "수정"}',
+        f'신청 저장 시각: {timezone.localtime(promotion_request.updated_at).strftime("%Y-%m-%d %H:%M:%S")}',
+        '',
+        '매장 정보',
+        f'- 매장명: {promotion_request.store_name}',
+        f'- 전화번호: {promotion_request.phone_number}',
+        f'- 이메일: {promotion_request.email}',
+        f'- 주소: {promotion_request.postal_code} {promotion_request.address} {promotion_request.address_detail}',
+        '',
+        '소개 내용',
+        promotion_request.introduction or '',
+    ]
+
+    image_urls = [image.file_url for image in promotion_request.images.order_by('order', 'uploaded_at')]
+    if image_urls:
+        lines.extend(['', '이미지 링크'] + [f'- {url}' for url in image_urls])
+
+    lines.extend([
+        '',
+        '관리자 페이지에서 발송 상태를 업데이트해 주세요.',
+    ])
+
+    body = '\n'.join(lines)
+
+    to_addresses = [addr for addr in [store.email_host_user, store.owner_email] if addr]
+    if not to_addresses:
+        return
+    # deduplicate preserving order
+    seen = set()
+    unique_addresses = []
+    for addr in to_addresses:
+        if addr not in seen:
+            unique_addresses.append(addr)
+            seen.add(addr)
+
+    email = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=f'{store.email_from_display} <{store.email_host_user}>',
+        to=unique_addresses,
+        connection=backend,
+    )
+
+    try:
+        email.send(fail_silently=False)
+    except Exception:
+        logging.getLogger(__name__).exception('BAH 홍보요청 이메일 전송 실패 (store=%s)', store_id)
 
 def bah_promotion_request_view(request):
     existing_request = _get_existing_request(request.user)
@@ -128,6 +217,11 @@ def bah_promotion_request_view(request):
                     uploaded_files,
                     uploaded_by=request.user,
                 )
+
+            try:
+                _send_bah_promotion_email(promotion_request, is_new=is_new_request)
+            except Exception:
+                logger.exception('BAH 홍보요청 이메일 전송 중 오류 발생', extra={'request_id': promotion_request.id})
 
             query_status = 'created' if is_new_request else 'updated'
             return redirect(f"{reverse('stores:bah_promotion_request')}?status={query_status}")
@@ -252,20 +346,7 @@ def bah_promotion_admin_view(request):
     if not _is_bah_admin(request.user):
         return HttpResponseForbidden('관리자만 접근할 수 있습니다.')
 
-    page_number = request.GET.get('page') or request.POST.get('page')
-
-    if request.method == 'POST':
-        toggle_id = request.POST.get('toggle_id')
-        if toggle_id:
-            promotion_request = get_object_or_404(BahPromotionRequest, pk=toggle_id)
-            promotion_request.toggle_shipping_status()
-            messages.success(
-                request,
-                '발송 상태가 업데이트되었습니다.'
-            )
-        if page_number:
-            return redirect(f"{reverse('stores:bah_promotion_admin')}?page={page_number}")
-        return redirect('stores:bah_promotion_admin')
+    page_number = request.GET.get('page')
 
     requests = (
         BahPromotionRequest.objects
@@ -284,6 +365,23 @@ def bah_promotion_admin_view(request):
         'promotion_status_shipped': PROMOTION_STATUS_SHIPPED,
     }
     return render(request, 'stores/bah_promotion_admin.html', context)
+
+
+@require_POST
+def bah_promotion_admin_toggle_status(request, pk: int):
+    if not request.user.is_authenticated:
+        return JsonResponse({'error': '로그인이 필요합니다.'}, status=401)
+
+    if not _is_bah_admin(request.user):
+        return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+
+    promotion_request = get_object_or_404(BahPromotionRequest, pk=pk)
+    promotion_request.toggle_shipping_status()
+
+    return JsonResponse({
+        'status': promotion_request.shipping_status,
+        'status_display': promotion_request.get_shipping_status_display(),
+    })
 
 
 def bah_promotion_admin_export_csv(request, pk: int):
