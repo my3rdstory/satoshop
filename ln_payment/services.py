@@ -375,6 +375,51 @@ class LightningPaymentProcessor:
             },
         )
 
+    def finalize_live_lecture_order(self, transaction: PaymentTransaction, live_lecture_order) -> None:
+        """라이브 강의 주문을 결제 완료 상태로 연결한다."""
+        with db_transaction.atomic():
+            now = timezone.now()
+            transaction.live_lecture_order = live_lecture_order
+            transaction.status = PaymentTransaction.STATUS_COMPLETED
+            transaction.current_stage = PaymentStage.ORDER_FINALIZE
+            transaction.save(
+                update_fields=[
+                    "live_lecture_order",
+                    "status",
+                    "current_stage",
+                    "updated_at",
+                ]
+            )
+
+            live_lecture_order.status = "confirmed"
+            live_lecture_order.is_temporary_reserved = False
+            if not live_lecture_order.paid_at:
+                live_lecture_order.paid_at = now
+            if not live_lecture_order.confirmed_at:
+                live_lecture_order.confirmed_at = now
+            live_lecture_order.auto_cancelled_reason = ""
+            live_lecture_order.save(
+                update_fields=[
+                    "status",
+                    "is_temporary_reserved",
+                    "paid_at",
+                    "confirmed_at",
+                    "auto_cancelled_reason",
+                    "updated_at",
+                ]
+            )
+
+        self._log_stage(
+            transaction,
+            PaymentStage.ORDER_FINALIZE,
+            PaymentStatus.COMPLETED,
+            "라이브 강의 참가 확정",
+            {
+                "live_lecture_order_id": live_lecture_order.id,
+                "order_number": live_lecture_order.order_number,
+            },
+        )
+
     def release_reservations(self, transaction: PaymentTransaction) -> None:
         updated = OrderItemReservation.objects.filter(
             transaction=transaction,
