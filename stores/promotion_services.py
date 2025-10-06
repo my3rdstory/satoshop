@@ -28,10 +28,16 @@ class ProcessedPromotionImage:
     file: ContentFile
     width: int
     height: int
+    file_size: int
 
 
 def _process_image(uploaded_file: UploadedFile) -> ProcessedPromotionImage:
-    """업로드된 이미지를 webp로 변환하고 크기를 제한한다."""
+    """이미지를 WebP로 변환하고 크기를 제한한다."""
+    try:
+        uploaded_file.seek(0)
+    except (AttributeError, OSError):
+        pass
+
     try:
         image = Image.open(uploaded_file)
     except Exception as exc:  # pragma: no cover - Pillow가 다양한 예외 발생
@@ -42,6 +48,10 @@ def _process_image(uploaded_file: UploadedFile) -> ProcessedPromotionImage:
 
     if image.mode not in ('RGB', 'RGBA'):
         image = image.convert('RGB')
+    elif image.mode == 'RGBA':
+        background = Image.new('RGB', image.size, (255, 255, 255))
+        background.paste(image, mask=image.split()[-1])
+        image = background
 
     width, height = image.size
     if width > MAX_IMAGE_WIDTH:
@@ -62,6 +72,7 @@ def _process_image(uploaded_file: UploadedFile) -> ProcessedPromotionImage:
         file=processed_file,
         width=width,
         height=height,
+        file_size=processed_file.size,
     )
 
 
@@ -85,6 +96,7 @@ def save_promotion_images(
         for index, uploaded_file in enumerate(files, start=1):
             processed = _process_image(uploaded_file)
             prefix = f"bah-promotion/{promotion_request.id}"
+            processed.file.seek(0)
             upload_result = upload_file_to_s3(processed.file, prefix=prefix)
             if not upload_result.get('success'):
                 raise ValidationError(upload_result.get('error', '이미지 업로드에 실패했습니다.'))
@@ -96,7 +108,7 @@ def save_promotion_images(
                 original_name=processed.original_name,
                 file_path=upload_result['file_path'],
                 file_url=upload_result['file_url'],
-                file_size=upload_result.get('file_size'),
+                file_size=upload_result.get('file_size') or processed.file_size,
                 width=processed.width,
                 height=processed.height,
                 order=current_count + index,

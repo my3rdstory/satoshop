@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -77,6 +79,17 @@ def bah_promotion_request_view(request):
     )
 
     if wants_post:
+        logger = logging.getLogger(__name__)
+        logger.info(
+            "BAH promotion request POST received",
+            extra={
+                'user': getattr(request.user, 'id', None),
+                'files_count': request.FILES.getlist('images') and len(request.FILES.getlist('images')) or 0,
+                'all_file_keys': list(request.FILES.keys()),
+            },
+        )
+
+    if wants_post:
         if not is_authenticated:
             login_url = f"{reverse('accounts:lightning_login')}?next={request.path}"
             messages.error(request, '라이트닝 지갑으로 로그인 후 다시 시도해주세요.')
@@ -130,11 +143,6 @@ def bah_promotion_request_view(request):
         link_settings.usage_guide_url if link_settings and link_settings.usage_guide_url else default_usage_url
     )
 
-    default_package_url = getattr(settings, 'BAH_PROMOTION_STICKER_URL', 'https://shilla.store/collections')
-    sticker_url = (
-        link_settings.package_request_url if link_settings and link_settings.package_request_url else default_package_url
-    )
-
     is_bah_admin = _is_bah_admin(request.user)
 
     show_form = bool(user_can_submit and (form.errors or existing_request))
@@ -155,7 +163,6 @@ def bah_promotion_request_view(request):
         'lightning_login_url': f"{reverse('accounts:lightning_login')}?next={request.path}",
         'link_lightning_url': reverse('accounts:link_lightning') if request.user.is_authenticated else f"{reverse('accounts:lightning_login')}?next={reverse('accounts:link_lightning')}",
         'status': status,
-        'sticker_url': sticker_url,
         'wos_guide_url': usage_guide_url,
         'wos_login_guide_url': login_guide_url,
         'show_form': show_form,

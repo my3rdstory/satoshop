@@ -133,10 +133,18 @@ class BahPromotionRequestForm(forms.ModelForm):
         return value
 
     def clean_images(self) -> List:
-        files = self.files.getlist('images')
+        raw_files: List = list(self.files.getlist('images') or [])
+
+        if not raw_files:
+            for field_name, value_list in self.files.lists():
+                if field_name == 'images' or field_name.startswith('images['):
+                    if not value_list:
+                        continue
+                    raw_files.extend(uploaded for uploaded in value_list if uploaded)
+
+        files: List = [uploaded for uploaded in raw_files if uploaded]
+
         if not files:
-            if self.existing_image_count == 0:
-                raise forms.ValidationError('홍보 사진을 최소 1장 이상 업로드해주세요.')
             return []
 
         if self.existing_image_count + len(files) > MAX_PROMOTION_IMAGES:

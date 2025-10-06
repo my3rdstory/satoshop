@@ -28,11 +28,16 @@
     const remainingInfo = document.getElementById('imageSlotInfo');
     const remainingValue = document.getElementById('remainingImageCount');
     const consentCheckbox = document.getElementById('id_accept_privacy');
+    const previewWrapper = document.getElementById('imagePreviewWrapper');
+    const previewContainer = document.getElementById('imagePreviewList');
+    const formElement = formSection ? formSection.querySelector('form') : null;
     const deleteCheckboxes = document.querySelectorAll('input[name="delete_images"]');
     const addressModal = document.getElementById('addressSearchModal');
     const addressContainer = document.getElementById('addressSearchContainer');
     const closeAddressModalBtn = document.getElementById('closeAddressModal');
     const addressTriggers = document.querySelectorAll('[data-address-trigger]');
+    const dataTransferSupported = typeof DataTransfer !== 'undefined';
+    let lastDataTransferError = null;
 
     const maxImageCount = parseInt(maxImages, 10) || 4;
     const initialExisting = parseInt(existingCount, 10) || 0;
@@ -42,6 +47,85 @@
     const MAX_SIZE_MB = 5;
 
     let postcodeInstance = null;
+
+    function tryCreateDataTransfer() {
+      if (!dataTransferSupported) {
+        return null;
+      }
+      try {
+        return new DataTransfer();
+      } catch (error) {
+        lastDataTransferError = error;
+        logProgress('data_transfer_unsupported', {
+          message: error && error.message ? error.message : String(error),
+        });
+        return null;
+      }
+    }
+
+    function normalizeFiles(fileLike) {
+      if (!fileLike) {
+        return [];
+      }
+      if (Array.isArray(fileLike)) {
+        return fileLike.filter(Boolean);
+      }
+      if (typeof fileLike.length === 'number') {
+        return Array.from(fileLike).filter(Boolean);
+      }
+      return [];
+    }
+
+    function extractDroppedFiles(dataTransfer) {
+      if (!dataTransfer) {
+        return [];
+      }
+
+      const directFiles = normalizeFiles(dataTransfer.files);
+      if (directFiles.length) {
+        return directFiles;
+      }
+
+      if (dataTransfer.items && typeof dataTransfer.items.length === 'number') {
+        const filesFromItems = [];
+        Array.from(dataTransfer.items).forEach(function(item) {
+          if (!item) {
+            return;
+          }
+          if (item.kind === 'file') {
+            const file = typeof item.getAsFile === 'function' ? item.getAsFile() : null;
+            if (file) {
+              filesFromItems.push(file);
+            }
+          }
+        });
+        if (filesFromItems.length) {
+          return filesFromItems;
+        }
+      }
+
+      return [];
+    }
+
+    function logProgress(step, payload) {
+      if (!window.console || typeof window.console.info !== 'function') {
+        return;
+      }
+      const meta = Object.assign({
+        step: String(step),
+        timestamp: new Date().toISOString(),
+      }, payload || {});
+      window.console.info('[BAH Promotion]', meta);
+    }
+
+    logProgress('init', {
+      status,
+      showForm,
+      existingImageCount: initialExisting,
+      maxImageCount,
+      DataTransferSupported: dataTransferSupported,
+      userCanSubmit,
+    });
 
     function getCsrfToken() {
       if (window.getCsrfToken) {
@@ -88,6 +172,7 @@
         return;
       }
       formSection.classList.remove('hidden');
+      logProgress('reveal_form');
       if (introSection) {
         introSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -101,14 +186,126 @@
         completionTitle.textContent = kind === 'updated' ? '홍보 요청이 수정되었습니다' : '홍보 요청이 저장되었습니다';
       }
       completeSection.classList.remove('hidden');
+      logProgress('show_completion', { status: kind });
     }
 
     function getDeleteCount() {
-      return Array.from(deleteCheckboxes).filter(cb => cb.checked).length;
+      const count = Array.from(deleteCheckboxes).filter(cb => cb.checked).length;
+      return count;
     }
 
     function getSelectedFileCount() {
       return fileInput && fileInput.files ? fileInput.files.length : 0;
+    }
+
+    function formatFileSize(bytes) {
+      if (typeof bytes !== 'number' || Number.isNaN(bytes) || bytes <= 0) {
+        return '';
+      }
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+      return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+    }
+
+    function removeSelectedFile(index) {
+      if (!fileInput || !fileInput.files) {
+        return;
+      }
+
+      if (!dataTransferSupported) {
+        fileInput.value = '';
+        updateImageSlotInfo();
+        logProgress('remove_file_reset', { index });
+        return;
+      }
+
+      const dataTransfer = tryCreateDataTransfer();
+      if (!dataTransfer) {
+        fileInput.value = '';
+        updateImageSlotInfo();
+        logProgress('remove_file_reset_fallback', { index });
+        return;
+      }
+      Array.from(fileInput.files).forEach((file, fileIndex) => {
+        if (fileIndex !== index) {
+          dataTransfer.items.add(file);
+        }
+      });
+
+      fileInput.files = dataTransfer.files;
+      updateImageSlotInfo();
+      logProgress('remove_file', { index, remaining: fileInput.files.length });
+    }
+
+    function renderImagePreviews() {
+      if (!previewContainer || !previewWrapper || !fileInput || !window.FileReader) {
+        return;
+      }
+
+      previewContainer.innerHTML = '';
+
+      const files = Array.from(fileInput.files || []);
+      if (!files.length) {
+        previewWrapper.classList.add('hidden');
+        return;
+      }
+
+      previewWrapper.classList.remove('hidden');
+
+      files.forEach((file, index) => {
+        const card = document.createElement('div');
+        card.className = 'relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all';
+
+        const imageEl = document.createElement('img');
+        imageEl.alt = file.name;
+        imageEl.className = 'w-full h-36 object-cover bg-gray-100 dark:bg-gray-800';
+        card.appendChild(imageEl);
+
+        const meta = document.createElement('div');
+        meta.className = 'absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 px-3 py-2 bg-gray-900/70 dark:bg-gray-950/70 text-white text-xs';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'truncate';
+        nameSpan.textContent = file.name;
+        const sizeSpan = document.createElement('span');
+        sizeSpan.className = 'shrink-0 text-xs uppercase';
+        sizeSpan.textContent = formatFileSize(file.size);
+        meta.appendChild(nameSpan);
+        if (sizeSpan.textContent) {
+          meta.appendChild(sizeSpan);
+        }
+        card.appendChild(meta);
+
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-gray-900/70 text-white hover:bg-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-bitcoin focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900';
+        removeButton.setAttribute('aria-label', '선택한 이미지를 제거합니다');
+        removeButton.innerHTML = '<i class="fas fa-times"></i>';
+        removeButton.addEventListener('click', function() {
+          removeSelectedFile(index);
+        });
+        card.appendChild(removeButton);
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          if (event.target && typeof event.target.result === 'string') {
+            imageEl.src = event.target.result;
+          }
+        };
+        reader.readAsDataURL(file);
+
+        previewContainer.appendChild(card);
+        logProgress('preview_ready', {
+          index,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        });
+      });
     }
 
     function updateImageSlotInfo() {
@@ -131,6 +328,13 @@
       }
 
       validateFormCompleteness();
+      renderImagePreviews();
+      logProgress('slot_update', {
+        selectedFiles,
+        deleteCount,
+        effectiveExisting,
+        remaining,
+      });
     }
 
     function validateFormCompleteness() {
@@ -159,21 +363,83 @@
       const consentGiven = consentCheckbox ? consentCheckbox.checked : true;
       const deleteCount = getDeleteCount();
       const effectiveExisting = Math.max(initialExisting - deleteCount, 0);
-      const hasImages = getSelectedFileCount() + effectiveExisting > 0;
       const slotsOk = !remainingInfo || !remainingInfo.classList.contains('text-red-500');
 
-      const canSave = allFilled && consentGiven && hasImages && slotsOk;
+      const canSave = allFilled && consentGiven && slotsOk;
       saveButton.disabled = !canSave;
+      logProgress('validation', {
+        canSave,
+        allFilled,
+        consentGiven,
+        selectedFiles: getSelectedFileCount(),
+        slotsOk,
+      });
     }
 
-    function addFilesToInput(files) {
+    function addFilesToInput(rawFiles) {
+      const files = normalizeFiles(rawFiles);
       if (!fileInput || !files || !files.length) {
         return;
       }
 
       const deleteCount = getDeleteCount();
       const effectiveExisting = Math.max(initialExisting - deleteCount, 0);
-      const dataTransfer = new DataTransfer();
+      const dataTransfer = tryCreateDataTransfer();
+
+      if (!dataTransfer) {
+        const maxAllowed = Math.max(maxImageCount - effectiveExisting, 0);
+        if (files.length > maxAllowed) {
+          window.alert(`이미지는 최대 ${maxImageCount}장까지 업로드할 수 있습니다.`);
+          logProgress('file_rejected_limit_fallback', {
+            effectiveExisting,
+            attempted: files.length,
+            maxImageCount,
+            fallback: true,
+          });
+          return;
+        }
+
+        for (const file of files) {
+          if (!ALLOWED_TYPES.includes(file.type)) {
+            window.alert('지원하지 않는 파일 형식입니다. JPEG/PNG/WEBP/GIF만 업로드할 수 있습니다.');
+            logProgress('file_rejected_type_fallback', { name: file.name, type: file.type });
+            return;
+          }
+          if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            window.alert(`이미지 크기가 ${MAX_SIZE_MB}MB를 초과했습니다.`);
+            logProgress('file_rejected_size_fallback', { name: file.name, size: file.size });
+            return;
+          }
+        }
+
+        if (getSelectedFileCount() > 0) {
+          window.alert('브라우저 제한으로 드래그한 이미지를 기존 선택과 합칠 수 없습니다. 다시 선택 버튼을 사용해주세요.');
+          logProgress('file_add_failed_merge', {
+            currentSelected: getSelectedFileCount(),
+            incoming: files.length,
+            fallback: true,
+          });
+          return;
+        }
+
+        try {
+          fileInput.files = files;
+          updateImageSlotInfo();
+          logProgress('file_added_direct', {
+            addedCount: files.length,
+            totalSelected: getSelectedFileCount(),
+            fallback: true,
+            lastDataTransferError: lastDataTransferError ? lastDataTransferError.message : null,
+          });
+        } catch (error) {
+          logProgress('file_add_failed', {
+            message: error && error.message ? error.message : String(error),
+            fallback: true,
+          });
+          window.alert('브라우저가 드래그 앤 드롭 업로드를 완전히 지원하지 않습니다. "이미지 선택하기" 버튼을 사용해주세요.');
+        }
+        return;
+      }
 
       Array.from(fileInput.files || []).forEach(file => {
         dataTransfer.items.add(file);
@@ -182,10 +448,12 @@
       for (const file of files) {
         if (!ALLOWED_TYPES.includes(file.type)) {
           window.alert('지원하지 않는 파일 형식입니다. JPEG/PNG/WEBP/GIF만 업로드할 수 있습니다.');
+          logProgress('file_rejected_type', { name: file.name, type: file.type });
           continue;
         }
         if (file.size > MAX_SIZE_MB * 1024 * 1024) {
           window.alert(`이미지 크기가 ${MAX_SIZE_MB}MB를 초과했습니다.`);
+          logProgress('file_rejected_size', { name: file.name, size: file.size });
           continue;
         }
         dataTransfer.items.add(file);
@@ -193,21 +461,153 @@
 
       if (effectiveExisting + dataTransfer.items.length > maxImageCount) {
         window.alert(`이미지는 최대 ${maxImageCount}장까지 업로드할 수 있습니다.`);
+        logProgress('file_rejected_limit', {
+          effectiveExisting,
+          attempted: dataTransfer.items.length,
+          maxImageCount,
+        });
         return;
       }
 
       fileInput.files = dataTransfer.files;
       updateImageSlotInfo();
+      logProgress('file_added', {
+        addedCount: files.length,
+        totalSelected: fileInput.files.length,
+      });
     }
 
     function handleDrop(event) {
       event.preventDefault();
       event.stopPropagation();
-      const files = event.dataTransfer?.files;
-      if (files && files.length) {
-        addFilesToInput(files);
+      const droppedFiles = extractDroppedFiles(event.dataTransfer);
+      if (droppedFiles.length) {
+        addFilesToInput(droppedFiles);
+        logProgress('drop', { dropped: droppedFiles.length });
+      } else {
+        logProgress('drop_no_files', {
+          hasDataTransfer: Boolean(event.dataTransfer),
+          itemCount: event.dataTransfer && event.dataTransfer.items ? event.dataTransfer.items.length : null,
+        });
       }
       dropzone.classList.remove('border-bitcoin', 'bg-bitcoin/10');
+    }
+
+    function handlePaste(event) {
+      if (!event.clipboardData) {
+        return;
+      }
+      const pastedFiles = extractDroppedFiles(event.clipboardData);
+      if (pastedFiles.length) {
+        addFilesToInput(pastedFiles);
+        logProgress('paste', { pasted: pastedFiles.length });
+        event.preventDefault();
+      }
+    }
+
+    function handleFileInputChange() {
+      logProgress('input_change', { totalSelected: getSelectedFileCount() });
+      updateImageSlotInfo();
+    }
+
+    function handleBrowseClick() {
+      if (fileInput) {
+        fileInput.click();
+      }
+      logProgress('dropzone_click');
+    }
+
+    function handleCheckboxChange(cb) {
+      updateImageSlotInfo();
+      logProgress('existing_image_toggle', {
+        imageId: cb.value,
+        checked: cb.checked,
+      });
+    }
+
+    function handleAddressTrigger() {
+      openAddressModal();
+    }
+
+    function handleAddressModalClick(event) {
+      if (event.target === addressModal) {
+        closeAddressModal();
+      }
+    }
+
+    function handleFormSubmit() {
+      logProgress('form_submit', {
+        totalSelected: getSelectedFileCount(),
+        deleteCount: getDeleteCount(),
+        saveDisabled: saveButton ? saveButton.disabled : null,
+        });
+      if (formElement && window.FormData) {
+        try {
+          const formData = new FormData(formElement);
+          const imageEntries = [];
+          formData.forEach(function(value, key) {
+            if (key.startsWith('images')) {
+              if (value && typeof value === 'object' && 'name' in value) {
+                imageEntries.push({ key, name: value.name, size: value.size, type: value.type });
+              } else {
+                imageEntries.push({ key, value: String(value) });
+              }
+            }
+          });
+          logProgress('formdata_snapshot', { images: imageEntries, fieldCount: imageEntries.length });
+        } catch (error) {
+          logProgress('formdata_error', { message: error && error.message ? error.message : String(error) });
+        }
+      }
+    }
+
+    function handleStartButtonClick() {
+      revealFormSection();
+    }
+
+    function handleSaveButtonClick(event) {
+      logProgress('save_button_click', {
+        disabled: saveButton ? saveButton.disabled : null,
+        totalSelected: getSelectedFileCount(),
+      });
+    }
+
+    function attachDragEvents() {
+      if (!dropzone) {
+        return;
+      }
+      dropzone.addEventListener('dragenter', handleDrag);
+      dropzone.addEventListener('dragover', handleDrag);
+      dropzone.addEventListener('dragleave', handleDrag);
+      dropzone.addEventListener('drop', handleDrop);
+      dropzone.addEventListener('click', handleBrowseClick);
+      dropzone.addEventListener('paste', handlePaste);
+    }
+
+    function attachCheckboxEvents() {
+      deleteCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          handleCheckboxChange(cb);
+        });
+      });
+    }
+
+    function attachAddressEvents() {
+      if (addressTriggers) {
+        addressTriggers.forEach(function(trigger) {
+          ['click', 'focus'].forEach(function(evt) {
+            trigger.addEventListener(evt, handleAddressTrigger);
+          });
+        });
+      }
+
+      if (closeAddressModalBtn) {
+        closeAddressModalBtn.addEventListener('click', closeAddressModal);
+      }
+
+      if (addressModal) {
+        addressModal.addEventListener('click', handleAddressModalClick);
+      }
     }
 
     function handleDrag(event) {
@@ -283,67 +683,6 @@
         postcodeInstance = null;
       }, 200);
     }
-
-    if (startButton) {
-      startButton.addEventListener('click', revealFormSection);
-    }
-
-    if (showForm === 'true') {
-      revealFormSection();
-    }
-
-    if (status === 'created' || status === 'updated') {
-      showCompletionSection(status);
-    }
-
-    if (fileInput) {
-      fileInput.addEventListener('change', updateImageSlotInfo);
-    }
-
-    if (browseButton && fileInput) {
-      browseButton.addEventListener('click', function() {
-        fileInput.click();
-      });
-    }
-
-    if (dropzone) {
-      dropzone.addEventListener('dragenter', handleDrag);
-      dropzone.addEventListener('dragover', handleDrag);
-      dropzone.addEventListener('dragleave', handleDrag);
-      dropzone.addEventListener('drop', handleDrop);
-      dropzone.addEventListener('click', function() {
-        if (fileInput) {
-          fileInput.click();
-        }
-      });
-    }
-
-    deleteCheckboxes.forEach(function(cb) {
-      cb.addEventListener('change', updateImageSlotInfo);
-    });
-
-    if (addressTriggers) {
-      addressTriggers.forEach(function(trigger) {
-        ['click', 'focus'].forEach(function(evt) {
-          trigger.addEventListener(evt, function() {
-            openAddressModal();
-          });
-        });
-      });
-    }
-
-    if (closeAddressModalBtn) {
-      closeAddressModalBtn.addEventListener('click', closeAddressModal);
-    }
-
-    if (addressModal) {
-      addressModal.addEventListener('click', function(event) {
-        if (event.target === addressModal) {
-          closeAddressModal();
-        }
-      });
-    }
-
     const requiredIds = [
       'id_store_name',
       'id_postal_code',
@@ -366,6 +705,7 @@
     }
 
     updateImageSlotInfo();
+    logProgress('ready_for_input');
 
     if (!userCanSubmit && startButton) {
       startButton.disabled = true;
@@ -379,5 +719,38 @@
         }
       }, 200);
     }
+
+    if (formElement) {
+      formElement.addEventListener('submit', handleFormSubmit);
+    }
+
+    if (saveButton) {
+      saveButton.addEventListener('click', handleSaveButtonClick);
+    }
+
+    if (startButton) {
+      startButton.addEventListener('click', handleStartButtonClick);
+    }
+
+    if (showForm === 'true') {
+      revealFormSection();
+    }
+
+    if (status === 'created' || status === 'updated') {
+      showCompletionSection(status);
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', handleFileInputChange);
+      fileInput.addEventListener('paste', handlePaste);
+    }
+
+    if (browseButton) {
+      browseButton.addEventListener('click', handleBrowseClick);
+    }
+
+    attachDragEvents();
+    attachCheckboxEvents();
+    attachAddressEvents();
   });
 })();
