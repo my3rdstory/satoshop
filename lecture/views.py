@@ -21,9 +21,25 @@ import logging
 from django.conf import settings
 from ln_payment.blink_service import get_blink_service_for_store
 from ln_payment.models import PaymentTransaction
-from ln_payment.services import LightningPaymentProcessor
+from ln_payment.services import LightningPaymentProcessor, PaymentStage
 
 logger = logging.getLogger(__name__)
+
+
+TRANSACTION_STATUS_DESCRIPTIONS = {
+    PaymentTransaction.STATUS_PENDING: '대기: 고객이 결제 절차를 시작하기 전 상태입니다.',
+    PaymentTransaction.STATUS_PROCESSING: '진행 중: 인보이스 발행 이후 결제 확인을 처리하고 있습니다.',
+    PaymentTransaction.STATUS_COMPLETED: '완료: 결제와 참가 확정이 정상적으로 끝났습니다.',
+    PaymentTransaction.STATUS_FAILED: '실패: 결제 과정 중 오류가 발생했거나 사용자가 취소했습니다.',
+}
+
+TRANSACTION_STAGE_LABELS = {
+    PaymentStage.PREPARE: '1단계 · 참가 정보 확인',
+    PaymentStage.INVOICE: '2단계 · 인보이스 발행',
+    PaymentStage.USER_PAYMENT: '3단계 · 결제 확인',
+    PaymentStage.MERCHANT_SETTLEMENT: '4단계 · 지갑 입금 검증',
+    PaymentStage.ORDER_FINALIZE: '5단계 · 참가 확정',
+}
 
 
 class LectureListView(ListView):
@@ -501,6 +517,93 @@ def live_lecture_status(request, store_id):
     }
     
     return render(request, 'lecture/lecture_live_status.html', context)
+
+
+@login_required
+def live_lecture_payment_transactions(request, store_id):
+    """라이브 강의 결제 트랜잭션 현황"""
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+
+    status_filter = request.GET.get('status')
+    stage_filter = request.GET.get('stage')
+
+    transactions_qs = PaymentTransaction.objects.filter(
+        store=store,
+        live_lecture_order__isnull=False,
+    )
+
+    if status_filter in {
+        PaymentTransaction.STATUS_PENDING,
+        PaymentTransaction.STATUS_PROCESSING,
+        PaymentTransaction.STATUS_FAILED,
+        PaymentTransaction.STATUS_COMPLETED,
+    }:
+        transactions_qs = transactions_qs.filter(status=status_filter)
+
+    if stage_filter and stage_filter.isdigit():
+        transactions_qs = transactions_qs.filter(current_stage=int(stage_filter))
+
+    paginator = Paginator(
+        transactions_qs.select_related(
+            'user',
+            'live_lecture_order',
+            'live_lecture_order__live_lecture',
+        ).order_by('-created_at'),
+        5,
+    )
+    page_number = request.GET.get('page')
+    transactions_page = paginator.get_page(page_number)
+
+    for tx in transactions_page:
+        metadata = tx.metadata if isinstance(tx.metadata, dict) else {}
+        participant_info = metadata.get('participant') or {}
+        order = tx.live_lecture_order
+        lecture = order.live_lecture if order else None
+        user = order.user if order else tx.user
+
+        tx.lecture_title = lecture.name if lecture else metadata.get('live_lecture_name', '라이브 강의')
+        tx.order_number = order.order_number if order else None
+        tx.live_lecture_id = lecture.id if lecture else None
+        tx.live_lecture_order_id = order.id if order else None
+        tx.participant_name = (
+            participant_info.get('participant_name')
+            or (getattr(user, 'get_full_name', lambda: '')() or getattr(user, 'username', ''))
+            or '미상'
+        )
+        tx.participant_email = participant_info.get('participant_email') or getattr(user, 'email', '')
+        tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
+        stage_description = TRANSACTION_STAGE_LABELS.get(tx.current_stage)
+        tx.stage_label = stage_description or f'{tx.current_stage}단계'
+        tx.stage_description = stage_description
+        tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
+        tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+
+    base_qs = PaymentTransaction.objects.filter(
+        store=store,
+        live_lecture_order__isnull=False,
+    )
+    summary = {
+        'total': base_qs.count(),
+        'pending': base_qs.filter(status=PaymentTransaction.STATUS_PENDING).count(),
+        'processing': base_qs.filter(status=PaymentTransaction.STATUS_PROCESSING).count(),
+        'completed': base_qs.filter(status=PaymentTransaction.STATUS_COMPLETED).count(),
+        'failed': base_qs.filter(status=PaymentTransaction.STATUS_FAILED).count(),
+        'total_amount': base_qs.aggregate(total=Sum('amount_sats'))['total'] or 0,
+    }
+
+    context = {
+        'store': store,
+        'transactions': transactions_page,
+        'paginator': paginator,
+        'page_obj': transactions_page,
+        'status_filter': status_filter or '',
+        'stage_filter': stage_filter or '',
+        'summary': summary,
+    }
+    return render(request, 'lecture/lecture_live_payment_transactions.html', context)
+
 
 @login_required
 def live_lecture_status_detail(request, store_id, live_lecture_id):
@@ -1134,14 +1237,41 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
         participant_data.pop('live_lecture_order_id', None)
 
     try:
+        now = timezone.now()
         with transaction.atomic():
             locked_live_lecture = LiveLecture.objects.select_for_update().get(
                 id=live_lecture.id,
                 store=store,
                 deleted_at__isnull=True,
             )
-            if locked_live_lecture.max_participants and locked_live_lecture.current_participants >= locked_live_lecture.max_participants:
-                return JsonResponse({'success': False, 'error': '라이브 강의 정원이 가득 찼습니다.'}, status=409)
+            if locked_live_lecture.max_participants:
+                active_reservations = []
+                pending_reservations = (
+                    LiveLectureOrder.objects.select_for_update()
+                    .filter(
+                        live_lecture=locked_live_lecture,
+                        status='pending',
+                        is_temporary_reserved=True,
+                    )
+                )
+                for reservation in pending_reservations:
+                    expires_at = reservation.reservation_expires_at
+                    if expires_at and expires_at <= now:
+                        reservation.status = 'cancelled'
+                        reservation.is_temporary_reserved = False
+                        reservation.auto_cancelled_reason = '예약 만료'
+                        reservation.save(update_fields=[
+                            'status',
+                            'is_temporary_reserved',
+                            'auto_cancelled_reason',
+                            'updated_at',
+                        ])
+                        continue
+                    active_reservations.append(reservation)
+
+                total_reserved = locked_live_lecture.current_participants + len(active_reservations)
+                if total_reserved >= locked_live_lecture.max_participants:
+                    return JsonResponse({'success': False, 'error': '라이브 강의 정원이 가득 찼습니다.'}, status=409)
 
             pending_order = create_pending_live_lecture_order(
                 locked_live_lecture,
@@ -1150,7 +1280,7 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
                 reservation_seconds=reservation_seconds,
             )
 
-        transaction = processor.create_transaction(
+        payment_tx = processor.create_transaction(
             user=request.user,
             amount_sats=amount_sats,
             currency='BTC',
@@ -1168,11 +1298,11 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
                 'amount_sats': amount_sats,
             },
         )
-        transaction.live_lecture_order = pending_order
-        transaction.save(update_fields=['live_lecture_order', 'updated_at'])
+        payment_tx.live_lecture_order = pending_order
+        payment_tx.save(update_fields=['live_lecture_order', 'updated_at'])
 
         invoice = processor.issue_invoice(
-            transaction,
+            payment_tx,
             memo=build_live_lecture_invoice_memo(live_lecture, participant_data, request.user),
             expires_in_minutes=max(1, min(soft_lock_minutes, 15)),
         )
@@ -1183,7 +1313,7 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
         logger.exception('라이브 강의 결제 준비 중 오류')
         return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)
 
-    participant_data['transaction_id'] = str(transaction.id)
+    participant_data['transaction_id'] = str(payment_tx.id)
     participant_data['live_lecture_order_id'] = pending_order.id
     participant_data['payment_hash'] = invoice['payment_hash']
     participant_data['payment_request'] = invoice['invoice']
@@ -1191,7 +1321,7 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
 
     return JsonResponse({
         'success': True,
-        'transaction': serialize_live_lecture_transaction(transaction),
+        'transaction': serialize_live_lecture_transaction(payment_tx),
         'invoice': {
             'payment_hash': invoice['payment_hash'],
             'payment_request': invoice['invoice'],

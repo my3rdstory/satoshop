@@ -73,6 +73,9 @@
     <a href="{% url 'lecture:live_lecture_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-pie mr-2"></i>라이브 강의 현황
     </a>
+    <a href="{% url 'lecture:live_lecture_payment_transactions' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-receipt mr-2"></i>결제 정보 확인
+    </a>
     {% else %}
     <a href="{% url 'stores:create_store' %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-plus mr-2"></i>스토어 만들기

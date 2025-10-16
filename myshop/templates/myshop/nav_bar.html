@@ -111,6 +111,9 @@
                 <a href="{% url 'lecture:live_lecture_status' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
                   <i class="fas fa-chart-pie mr-2"></i>라이브 강의 현황
                 </a>
+                <a href="{% url 'lecture:live_lecture_payment_transactions' store_id=user_active_store.store_id %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+                  <i class="fas fa-receipt mr-2"></i>결제 정보 확인
+                </a>
               </div>
             </div>
             
