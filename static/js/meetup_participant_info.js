@@ -1,9 +1,6 @@
 // meetup_participant_info.js
-console.log('🚀 meetup_participant_info.js 파일이 로드되었습니다!');
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 DOMContentLoaded 이벤트 발생');
-    console.log('🔍 window.meetupData:', window.meetupData);
     
     // 밋업 데이터 초기화
     initializeMeetupData();
@@ -32,7 +29,6 @@ function initializeMeetupData() {
         
         // URL 파라미터로 전달된 미리 선택된 옵션이 있다면 적용
         if (typeof window.preSelectedOptions !== 'undefined' && window.preSelectedOptions) {
-            console.log('🎯 미리 선택된 옵션 발견:', window.preSelectedOptions);
             
             // 미리 선택된 옵션을 현재 선택된 옵션으로 설정
             selectedOptions = { ...window.preSelectedOptions };
@@ -52,7 +48,6 @@ function initializeMeetupData() {
                 });
             }
             
-            console.log('✅ 보완된 선택된 옵션:', selectedOptions);
             
             // DOM이 로드된 후 옵션 선택 상태 적용
             setTimeout(() => {
@@ -137,7 +132,6 @@ function setupEventListeners() {
                     // 제출 버튼이 활성화되어 있는지 확인
                     const submitBtn = document.getElementById('submit-btn');
                     if (submitBtn && !submitBtn.disabled) {
-                        console.log('⌨️ 엔터키로 폼 제출 트리거');
                         submitBtn.click();
                     }
                 }
@@ -246,31 +240,23 @@ function updateSubmitButton() {
 
 // 카운트다운 중지 및 숨기기
 function stopAndHideCountdown() {
-    console.log('🛑 카운트다운 중지 및 숨기기 함수 호출됨');
-    console.log('🔍 window.meetupCountdownInstance 존재 여부:', !!window.meetupCountdownInstance);
     
     // 새로운 MeetupCountdown 클래스 인스턴스가 있는지 확인
     if (window.meetupCountdownInstance) {
-        console.log('🔄 MeetupCountdown 인스턴스로 카운트다운 중지 시도');
         try {
             window.meetupCountdownInstance.stopAndHide();
-            console.log('✅ MeetupCountdown.stopAndHide() 호출 완료');
         } catch (error) {
-            console.error('❌ MeetupCountdown.stopAndHide() 호출 실패:', error);
         }
         return;
     }
     
-    console.log('🔄 기존 방식으로 카운트다운 중지 시도');
     
     // 기존 방식 (호환성을 위해 유지)
     // 카운트다운 인터벌 중지
     if (countdownInterval) {
         clearInterval(countdownInterval);
         countdownInterval = null;
-        console.log('⏹️ 카운트다운 인터벌 중지됨');
     } else {
-        console.log('⚠️ countdownInterval이 없음');
     }
     
     // 플로팅 카운트다운 숨기기
@@ -278,9 +264,7 @@ function stopAndHideCountdown() {
     if (floatingCountdown) {
         floatingCountdown.classList.remove('show');
         floatingCountdown.classList.add('hidden');
-        console.log('👻 플로팅 카운트다운 숨김 완료');
     } else {
-        console.log('⚠️ floating-countdown 요소를 찾을 수 없음');
     }
 }
 
@@ -292,24 +276,16 @@ function handleFormSubmit(event) {
     const submitButton = form.querySelector('#submit-btn');
     const totalPrice = calculateTotalPrice();
     
-    console.log('📋 폼 제출 시작');
-    console.log('💰 총 가격:', totalPrice);
-    console.log('🎯 meetupData.basePrice:', meetupData.basePrice);
-    console.log('📊 selectedOptions:', selectedOptions);
-    console.log('🌍 window.meetupCountdownInstance:', window.meetupCountdownInstance);
     
     // 폼 유효성 검사
     if (!validateForm(form)) {
-        console.log('❌ 폼 유효성 검사 실패');
         return;
     }
     
     // 무료 밋업인 경우에만 카운트다운 중지 및 숨기기
     if (totalPrice === 0) {
-        console.log('🆓 무료 밋업 감지 - 카운트다운 중지 시작');
         stopAndHideCountdown();
     } else {
-        console.log('💳 유료 밋업 - 카운트다운 유지 (결제 페이지로 이동 후 연장)');
         // 유료 밋업에서는 카운트다운을 유지하고, 서버에서 예약 시간을 연장함
     }
     
@@ -448,29 +424,21 @@ function showError(message) {
 
 // 카운트다운 초기화
 function initializeCountdown() {
-    console.log('📅 카운트다운 초기화 시작');
-    console.log('📅 meetupData:', meetupData);
-    console.log('📅 reservationExpiresAt:', meetupData.reservationExpiresAt);
     
     if (!meetupData.reservationExpiresAt) {
-        console.log('⏰ 예약 만료 시간이 없어서 카운트다운을 표시하지 않음');
         return; // 예약 만료 시간이 없으면 카운트다운을 표시하지 않음
     }
     
     const floatingCountdown = document.getElementById('floating-countdown');
-    console.log('🎈 플로팅 카운트다운 요소:', floatingCountdown);
     
     if (!floatingCountdown) {
-        console.error('❌ floating-countdown 요소를 찾을 수 없음');
         return;
     }
     
-    console.log('✅ 카운트다운 표시 시작');
     
     // 카운트다운 표시
     setTimeout(() => {
         floatingCountdown.classList.add('show');
-        console.log('🎈 카운트다운 show 클래스 추가됨');
     }, 1000);
     
     // 카운트다운 시작
@@ -613,7 +581,6 @@ function releaseReservation(reason = '사용자 취소') {
             xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
             xhr.send(`reason=${encodeURIComponent(reason)}`);
         } catch (e) {
-            console.log('예약 해제 요청 실패:', e);
         }
     }
     

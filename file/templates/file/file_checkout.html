@@ -2,350 +2,325 @@
 {% load static %}
 {% load humanize %}
 
-{% block title %}파일 구매 - {{ file.name }}{% endblock %}
+{% block title %}디지털 파일 결제 - {{ file.name }} | {{ store.store_name }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'ln_payment/css/payment_workflow.css' %}">
+<link rel="stylesheet" href="{% static 'ln_payment/css/payment_process.css' %}">
 <link rel="stylesheet" href="{% static 'css/file_checkout.css' %}">
-<style>
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .status-pending {
-    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200;
-  }
-
-  .status-success {
-    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200;
-  }
-
-  .status-error {
-    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200;
-  }
-
-  .invoice-btn {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  }
-
-  .invoice-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
-  }
-
-  /* QR 코드 컨테이너 스타일 */
-  #qrCodeContainer canvas {
-    max-width: 100%;
-    height: auto;
-  }
-</style>
-{% endblock %}
-
-{% block store_content %}
-<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- 페이지 헤더 -->
-    <div class="flex items-center justify-center mb-8">
-      <div class="p-2 bg-bitcoin/10 rounded-full mr-3">
-        <i class="fas fa-bolt text-3xl text-bitcoin"></i>
-      </div>
-      <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">파일 구매 결제</h1>        
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
-      <!-- 왼쪽: 주문 정보 (3/5 너비) -->
-      <div class="lg:col-span-3">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <!-- 헤더 -->
-          <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-6">
-            <div class="flex items-center">
-              <i class="fas fa-file text-xl mr-3"></i>
-              <h2 class="text-xl font-bold">파일 구매 정보</h2>
-            </div>
-          </div>
-
-          <div class="p-6 space-y-6">
-            <!-- 파일 정보 -->
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <i class="fas fa-file-alt mr-2 text-purple-600"></i>
-                파일 정보
-              </h3>
-              <div class="flex items-start space-x-4">
-                {% if file.preview_image_url %}
-                <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" 
-                     class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
-                {% else %}
-                <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <i class="fas fa-file text-3xl text-purple-600 dark:text-purple-400"></i>
-                </div>
-                {% endif %}
-                
-                <div class="flex-1">
-                  <h4 class="font-bold text-gray-900 dark:text-white text-lg mb-2">{{ file.name }}</h4>
-                  <div class="space-y-2">
-                    <div class="flex">
-                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">파일 크기:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ file.get_file_size_display }}</span>
-                    </div>
-                    {% if file.download_expiry_days %}
-                    <div class="flex">
-                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">다운로드 기한:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">구매 후 {{ file.download_expiry_days }}일</span>
-                    </div>
-                    {% endif %}
-                    {% if file.max_download_limit %}
-                    <div class="flex">
-                      <span class="text-sm text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">최대 다운로드:</span>
-                      <span class="font-medium text-gray-900 dark:text-white">{{ file.max_download_limit }}회</span>
-                    </div>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 결제 정보 -->
-            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-6">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-                <i class="fas fa-receipt mr-2 text-green-600"></i>
-                결제 정보
-              </h3>
-              <div class="space-y-3">
-                <!-- 할인 여부에 따른 가격 표시 -->
-                {% if file.is_discount_active %}
-                <div class="flex justify-between">
-                  <span class="text-gray-600 dark:text-gray-400">기본 가격</span>
-                  <span class="font-medium text-gray-900 dark:text-white line-through">{{ file.price|floatformat:0|intcomma }} sats</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-green-600 dark:text-green-400">
-                    <i class="fas fa-tag mr-1"></i>할인 ({{ file.discount_percentage }}%)
-                  </span>
-                  <span class="text-green-600 dark:text-green-400">-{{ file.discount_amount|floatformat:0|intcomma }} sats</span>
-                </div>
-                {% endif %}
-                
-                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
-                  <div class="flex justify-between">
-                    <span class="font-bold text-gray-900 dark:text-white">최종 결제금액</span>
-                    <span class="font-bold text-xl text-bitcoin">{{ price_sats|floatformat:0|intcomma }} sats</span>
-                  </div>
-                  {% if file.price_display == 'krw' and file.price_krw %}
-                  <div class="flex justify-between mt-1">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">원화 기준</span>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">₩{{ file.price_krw|floatformat:0|intcomma }}</span>
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 오른쪽: 결제 (2/5 너비) -->
-      <div class="lg:col-span-2">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-8">
-          <!-- 헤더 -->
-          <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-6">
-            <div class="flex items-center">
-              <i class="fas fa-credit-card text-xl mr-3"></i>
-              <h2 class="text-xl font-bold">결제 정보</h2>
-            </div>
-          </div>
-
-          <div class="p-6 space-y-6">
-            <!-- 결제 방법 안내 -->
-            <div class="space-y-4">
-              <div class="flex items-center">
-                <i class="fas fa-bolt text-bitcoin mr-2"></i>
-                <h3 class="font-bold text-gray-900 dark:text-white">
-                  {% if price_sats == 0 %}
-                  무료 다운로드
-                  {% else %}
-                  결제 방법
-                  {% endif %}
-                </h3>
-              </div>
-
-              {% if price_sats == 0 %}
-              <!-- 무료 파일 안내 -->
-              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <div class="flex items-center">
-                    <i class="fas fa-gift text-green-600 dark:text-green-400 mr-2"></i>
-                    <p class="text-green-800 dark:text-green-200 text-sm font-medium">
-                      이 파일은 무료로 다운로드할 수 있습니다!
-                    </p>
-                  </div>
-                </div>
-                <p class="mt-3">
-                  아래 버튼을 클릭하여 다운로드를 시작해주세요.
-                </p>
-              </div>
-              {% else %}
-              <!-- 유료 파일 안내 -->
-              <div class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
-                <ol class="list-decimal list-inside space-y-1 ml-2">
-                  <li>아래 "결제 인보이스 생성" 버튼을 클릭</li>
-                  <li>생성된 QR 코드를 라이트닝 지갑으로 스캔</li>
-                  <li>결제 완료 후 파일 다운로드가 가능합니다</li>
-                </ol>
-                
-                <p class="mt-3">
-                  <span class="font-medium text-gray-900 dark:text-white">지원 지갑:</span> Strike, Wallet of Satoshi, Speed, Phoenix, Blue Wallet, Blink 등
-                </p>
-              </div>
-              {% endif %}
-            </div>
-
-            {% if price_sats == 0 %}
-            <!-- 무료 다운로드 버튼 -->
-            <form method="post" action="{% url 'file:file_checkout' store.store_id file.id %}" id="free-download-form">
-              {% csrf_token %}
-              <button 
-                type="submit"
-                class="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg"
-                id="freeDownloadBtn"
-              >
-                <i class="fas fa-download mr-3"></i>
-                무료 다운로드 시작하기
-              </button>
-            </form>
-            {% else %}
-            <!-- 인보이스 생성 버튼 -->
-            <button 
-              class="invoice-btn w-full text-white py-4 px-6 rounded-xl font-bold text-lg flex items-center justify-center transition-all duration-300 hover:shadow-lg" 
-              onclick="generateInvoice()" 
-              id="generateInvoiceBtn"
-            >
-              <i class="fas fa-qrcode mr-3"></i>
-              결제 인보이스 생성
-            </button>
-            
-            <!-- 결제 주의사항 박스 (모바일에서만 표시) -->
-            <div id="mobilePaymentWarning" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4 hidden">
-              <div class="flex items-start">
-                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mr-3 mt-0.5 flex-shrink-0"></i>
-                <div>
-                  <p class="text-blue-800 dark:text-blue-200 text-sm font-medium">
-                    📱 모바일 결제 안내
-                  </p>
-                  <p class="text-blue-700 dark:text-blue-300 text-xs mt-1">
-                    • 라이트닝 지갑에서 결제 후 이 페이지로 돌아와주세요<br>
-                    • 결제 완료 시 자동으로 파일 다운로드가 준비됩니다<br>
-                    • 페이지를 닫지 말고 잠시 대기해주세요
-                  </p>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- QR 코드 및 인보이스 표시 영역 -->
-            <div id="invoiceContainer" class="hidden space-y-4">
-              <!-- QR 코드 -->
-              <div class="text-center">
-                <div id="qrCodeContainer" class="inline-block p-5 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-200 dark:border-gray-600">
-                  <img id="qrCodeImage" src="" alt="결제 QR 코드" class="max-w-[250px] hidden">
-                  <canvas id="qrCodeCanvas" class="hidden"></canvas>
-                  <div id="loadingSpinner" class="hidden">
-                    <div class="w-10 h-10 border-4 border-gray-300 border-t-bitcoin rounded-full animate-spin mx-auto"></div>
-                    <p class="mt-3 text-gray-600 dark:text-gray-400">인보이스 생성 중...</p>
-                  </div>
-                </div>
-                
-                <!-- 라이트닝 지갑 열기 버튼 -->
-                <div id="lightningWalletButton" class="hidden mt-4">
-                  <button 
-                    type="button" 
-                    onclick="openLightningWallet()" 
-                    class="inline-flex items-center px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl"
-                  >
-                    <i class="fas fa-bolt mr-2"></i>
-                    라이트닝 지갑 열기
-                  </button>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    QR 코드 스캔이 어려운 경우 클릭하세요
-                  </p>
-                </div>
-              </div>
-
-              <!-- 인보이스 텍스트 -->
-              <div>
-                <label class="block font-semibold mb-2 text-gray-900 dark:text-white">라이트닝 인보이스</label>
-                <textarea 
-                  id="invoiceTextArea" 
-                  readonly 
-                  class="w-full h-32 font-mono text-sm p-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                  placeholder="인보이스가 여기에 표시됩니다..."
-                ></textarea>
-                <button 
-                  type="button" 
-                  onclick="copyInvoiceToClipboard()" 
-                  class="mt-2 text-bitcoin hover:text-bitcoin/80 text-sm font-medium transition-colors"
-                >
-                  <i class="fas fa-copy mr-1"></i> 인보이스 복사
-                </button>
-              </div>
-
-              <!-- 결제 상태 -->
-              <div id="paymentStatus" class="hidden p-4 rounded-lg border">
-                <div class="text-center">
-                  <p id="paymentMessage" class="text-gray-800 dark:text-gray-200"></p>
-                </div>
-              </div>
-
-              <!-- 취소 버튼 -->
-              <div class="text-center">
-                <button 
-                  type="button" 
-                  onclick="cancelPayment()" 
-                  id="cancelInvoiceBtn"
-                  class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                >
-                  결제 취소
-                </button>
-              </div>
-            </div>
-
-            <!-- 안내 사항 -->
-            <div class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <i class="fas fa-info-circle text-blue-400"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">안내 사항</h3>
-                  <ul class="mt-2 text-sm text-blue-700 dark:text-blue-300 list-disc list-inside space-y-1">
-                    <li>Lightning Network를 지원하는 지갑이 필요합니다</li>
-                    <li>결제는 15분 이내에 완료해주세요</li>
-                    <li>결제 완료 후 즉시 파일을 다운로드할 수 있습니다</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
-<script>
-// Set global variables for the external script
-window.fileId = {{ file.id }};
-window.storeId = {{ store.id }};
-window.createInvoiceUrl = '/file/ajax/create-invoice/';
-window.checkPaymentUrl = '/file/ajax/check-payment/';
-window.cancelPaymentUrl = '/file/ajax/cancel-payment/';
-window.fileDetailUrl = '{% url "file:file_detail" store.store_id file.id %}';
-window.csrfToken = '{{ csrf_token }}';
-</script>
-<script src="{% static 'js/file_checkout.js' %}"></script>
+<script src="{% static 'js/file_payment_workflow.js' %}" defer></script>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-12">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-sm">
+    <header class="mb-10">
+      <p class="text-xs uppercase tracking-widest text-bitcoin font-semibold">Lightning Payment</p>
+      <h1 class="mt-3 text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">디지털 파일 결제 절차</h1>
+      <p class="mt-3 text-gray-600 dark:text-gray-400 max-w-3xl lg:max-w-none">
+        파일 정보를 확인하고 라이트닝 결제로 다운로드 권한을 확보하세요. 상품·밋업·라이브 강의와 동일한 5단계 절차가 적용되며, 모든 단계가 실시간으로 업데이트됩니다.
+      </p>
+    </header>
+
+    {% if not payment_service_available and not is_free %}
+    <div class="mb-8 rounded-2xl border border-red-200 dark:border-red-900 bg-red-50/80 dark:bg-red-900/20 p-5 text-sm text-red-700 dark:text-red-200">
+      <p class="font-semibold">결제 서비스가 아직 설정되지 않았습니다.</p>
+      <p class="mt-2">스토어에서 Blink API 정보를 설정하면 라이트닝 결제를 진행할 수 있습니다.</p>
+    </div>
+    {% endif %}
+
+    <div class="grid gap-8 lg:grid-cols-5">
+      <section class="lg:col-span-2 space-y-6">
+        <article class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-6">
+          <header class="mb-5">
+            <p class="text-xs uppercase tracking-widest text-bitcoin font-semibold">Digital File</p>
+            <h2 class="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100">파일 정보</h2>
+          </header>
+          <div class="flex items-start gap-4">
+            {% if file.preview_image_url %}
+              <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" class="w-24 h-24 rounded-xl object-cover flex-shrink-0">
+            {% else %}
+              <div class="w-24 h-24 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/40 dark:from-purple-400/20 dark:to-purple-500/30 flex items-center justify-center text-purple-600 dark:text-purple-300 text-3xl flex-shrink-0">
+                <i class="fas fa-file"></i>
+              </div>
+            {% endif %}
+            <div class="flex-1 space-y-2">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ file.name }}</h3>
+              {% if file.description %}
+              <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed max-h-24 overflow-hidden">{{ file.description }}</p>
+              {% endif %}
+              <dl class="checkout-info-list mt-4">
+                <div class="checkout-info-row">
+                  <dt>파일 크기</dt>
+                  <dd>{{ file.get_file_size_display }}</dd>
+                </div>
+                <div class="checkout-info-row">
+                  <dt>파일 유형</dt>
+                  <dd>{{ file.get_file_type_display }}</dd>
+                </div>
+                {% if file.download_expiry_days %}
+                <div class="checkout-info-row">
+                  <dt>다운로드 기한</dt>
+                  <dd>구매 후 {{ file.download_expiry_days }}일</dd>
+                </div>
+                {% endif %}
+                {% if file.max_downloads %}
+                <div class="checkout-info-row">
+                  <dt>다운로드 횟수</dt>
+                  <dd>최대 {{ file.max_downloads }}회</dd>
+                </div>
+                {% endif %}
+              </dl>
+            </div>
+          </div>
+        </article>
+
+        <article class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-6">
+          <header class="mb-5">
+            <p class="text-xs uppercase tracking-widest text-bitcoin font-semibold">Download Policy</p>
+            <h2 class="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100">다운로드 안내</h2>
+          </header>
+          <ul class="file-guidelines">
+            <li>
+              <i class="fas fa-shield-check"></i>
+              결제 완료 후 즉시 다운로드 버튼이 활성화됩니다.
+            </li>
+            <li>
+              <i class="fas fa-clock"></i>
+              {% if file.download_expiry_days %}
+                다운로드 기한은 결제 완료 시점부터 {{ file.download_expiry_days }}일입니다.
+              {% else %}
+                다운로드 기한 제한 없이 언제든지 내려받을 수 있습니다.
+              {% endif %}
+            </li>
+            <li>
+              <i class="fas fa-repeat"></i>
+              {% if file.max_downloads %}
+                동일한 파일은 최대 {{ file.max_downloads }}회까지 다운로드할 수 있습니다.
+              {% else %}
+                다운로드 횟수 제한 없이 파일을 이용할 수 있습니다.
+              {% endif %}
+            </li>
+            <li>
+              <i class="fas fa-envelope"></i>
+              결제 확정 시 구매 확인 이메일이 자동 전송됩니다.
+            </li>
+          </ul>
+        </article>
+
+        <article class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg p-6">
+          <header class="mb-5">
+            <p class="text-xs uppercase tracking-widest text-bitcoin font-semibold">Payment</p>
+            <h2 class="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100">결제 요약</h2>
+          </header>
+          <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+            <div class="flex items-center justify-between">
+              <span>정가</span>
+              <span class="font-semibold text-gray-900 dark:text-gray-100">{{ original_price|default:price_sats|intcomma }} sats</span>
+            </div>
+            {% if file.is_discount_active %}
+            <div class="flex items-center justify-between text-emerald-600 dark:text-emerald-300">
+              <span><i class="fas fa-tag mr-1"></i>할인 적용</span>
+              <span>-{{ discount_amount|default:0|intcomma }} sats</span>
+            </div>
+            {% endif %}
+            <div class="border-t border-dashed border-gray-200 dark:border-gray-700 pt-3 flex items-center justify-between">
+              <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">총 결제 금액</span>
+              <span class="text-lg font-bold {% if total_price > 0 %}text-bitcoin{% else %}text-emerald-500{% endif %}">
+                {% if total_price > 0 %}
+                  {{ total_price|intcomma }} sats
+                {% else %}
+                  무료
+                {% endif %}
+              </span>
+            </div>
+            {% if file.price_display == 'krw' and file.current_price %}
+            <p class="text-xs text-gray-500 dark:text-gray-400 text-right">원화 기준 {{ file.current_price|intcomma }}원 (실시간 환율 연동)</p>
+            {% endif %}
+          </div>
+        </article>
+      </section>
+
+      <section class="lg:col-span-3 space-y-8">
+        {% if is_free %}
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-6 md:p-8">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">무료 다운로드</h2>
+              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">버튼을 누르면 즉시 다운로드 권한이 부여됩니다.</p>
+            </div>
+          </div>
+          <div class="mt-6">
+            <div class="status-banner">
+              이 파일은 무료로 제공됩니다. 아래 버튼을 눌러 곧바로 다운로드 페이지로 이동하세요.
+            </div>
+          </div>
+          <form method="post" class="mt-8 space-y-4">
+            {% csrf_token %}
+            <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/60">
+              <i class="fas fa-download"></i>
+              무료 다운로드 확정
+            </button>
+          </form>
+        </div>
+        {% else %}
+        <div
+          id="paymentWorkflowApp"
+          class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl p-6 md:p-8"
+          data-start-url="{{ workflow_start_url }}"
+          data-status-url-template="{{ workflow_status_url_template }}"
+          data-verify-url-template="{{ workflow_verify_url_template }}"
+          data-cancel-url-template="{{ workflow_cancel_url_template }}"
+          data-csrf-token="{{ csrf_token }}"
+          data-countdown-seconds="{{ countdown_seconds }}"
+          data-total-price="{{ total_price }}"
+          data-payment-enabled="{{ payment_service_available|yesno:'true,false' }}"
+          data-initial-transaction-id="{{ existing_transaction.id|default:'' }}"
+          data-inventory-redirect-url="{{ workflow_inventory_redirect_url }}"
+          data-cart-url="{{ workflow_cart_url }}"
+        >
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">결제 진행 패널</h2>
+              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">판매 가능 확인 → 인보이스 발행 → 결제 확인 → 입금 검증 → 다운로드 권한</p>
+            </div>
+            <button
+              id="startPaymentButton"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-2xl bg-bitcoin px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:bg-[#e47f00] focus:outline-none focus-visible:ring-4 focus-visible:ring-bitcoin/60 disabled:opacity-60 disabled:cursor-not-allowed"
+              {% if not payment_service_available %}disabled{% endif %}
+            >
+              <i class="fas fa-bolt"></i>
+              결제 절차 시작
+            </button>
+          </div>
+
+          <div class="mt-6">
+            <div id="paymentStatusText" class="status-banner">
+              결제 절차를 시작하면 파일이 임시 예약되며, 제한 시간 내 결제를 완료해야 합니다.
+            </div>
+          </div>
+
+          <div id="paymentWorkflowPanel" class="mt-8 hidden space-y-8">
+            <section class="grid gap-6 lg:grid-cols-5">
+              <div class="lg:col-span-3">
+                <div id="invoicePanel" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
+                  <header class="flex items-center justify-between">
+                    <div>
+                      <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">인보이스 &amp; QR</h3>
+                      <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">라이트닝 지갑으로 QR을 스캔하거나 인보이스를 복사하세요.</p>
+                    </div>
+                    <div id="invoiceTimer" class="timer hidden" role="status" aria-live="polite">
+                      <i class="fas fa-clock"></i>
+                      <span id="invoiceTimerValue">02:00</span>
+                    </div>
+                  </header>
+
+                  <div id="invoiceArea" class="mt-6 hidden">
+                    <div class="flex flex-col items-center gap-6">
+                      <div id="invoiceQrContainer" class="invoice-qr-container">
+                        <img id="invoiceQrImage" src="" alt="Lightning Invoice QR" class="w-full h-full">
+                      </div>
+                      <div class="w-full">
+                        <label for="invoiceText" class="text-xs font-medium text-gray-600 dark:text-gray-400">인보이스 문자열</label>
+                        <textarea
+                          id="invoiceText"
+                          rows="3"
+                          readonly
+                          class="mt-2 w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-xs text-gray-700 dark:text-gray-200"
+                        ></textarea>
+                        <div class="invoice-actions mt-3 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            id="copyInvoiceButton"
+                            class="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-4 py-2 text-xs font-semibold transition hover:bg-gray-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-500/50"
+                          >
+                            <i class="fas fa-copy"></i>
+                            인보이스 복사
+                          </button>
+                          <a
+                            id="openWalletButton"
+                            href="#"
+                            class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 text-white px-4 py-2 text-xs font-semibold transition hover:bg-emerald-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40 hidden md:hidden"
+                            rel="nofollow"
+                          >
+                            <i class="fas fa-wallet"></i>
+                            지갑 열기
+                          </a>
+                          <button
+                            type="button"
+                            id="cancelPaymentButton"
+                            class="inline-flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-900 px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-300 transition hover:bg-red-50 dark:hover:bg-red-900/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-red-400/40"
+                          >
+                            <i class="fas fa-ban"></i>
+                            결제 취소
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <aside class="lg:col-span-2">
+                <div id="workflowLogContainer" class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 hidden">
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">진행 로그</h3>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">실시간으로 단계별 메시지를 확인하세요.</p>
+                  <ul id="workflowLogList" class="mt-4 space-y-3 text-xs text-gray-600 dark:text-gray-300"></ul>
+                </div>
+              </aside>
+            </section>
+
+            <section class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-6">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">도움이 필요하신가요?</h3>
+              <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                결제 중 문제가 발생하면 결제를 취소하고 다시 시도하거나 아래 연락처로 문의해 주세요.
+              </p>
+              <div class="mt-4 space-y-3 text-xs text-gray-600 dark:text-gray-300">
+                {% if store.owner_email or store.owner_phone %}
+                <div class="help-card flex items-start gap-3">
+                  <i class="fas fa-store mt-0.5 text-bitcoin"></i>
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100">{{ store.store_name }} 문의</p>
+                    {% if store.owner_phone %}
+                    <p class="mt-1">전화: {{ store.owner_phone }}</p>
+                    {% endif %}
+                    {% if store.owner_email %}
+                    <p class="mt-1">이메일: {{ store.owner_email }}</p>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endif %}
+                {% if file.purchase_message %}
+                <div class="help-card flex items-start gap-3">
+                  <i class="fas fa-info-circle mt-0.5 text-bitcoin"></i>
+                  <div>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100">안내 메시지</p>
+                    <p class="mt-1 leading-relaxed">{{ file.purchase_message }}</p>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </section>
+          </div>
+        </div>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="mt-10 text-center">
+      <a href="{% url 'file:file_detail' store.store_id file.id %}" class="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-bitcoin transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        파일 상세로 돌아가기
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if existing_transaction %}
+  {{ existing_transaction|json_script:"file-existing-transaction" }}
+{% endif %}
 {% endblock %}

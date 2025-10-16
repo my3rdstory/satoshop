@@ -13,8 +13,25 @@ import json
 import logging
 from django.core.paginator import Paginator
 from django.db import models
+from ln_payment.models import PaymentTransaction
+from ln_payment.services import PaymentStage
 
 logger = logging.getLogger(__name__)
+
+TRANSACTION_STATUS_DESCRIPTIONS = {
+    PaymentTransaction.STATUS_PENDING: '대기: 결제 절차가 아직 시작되지 않았습니다.',
+    PaymentTransaction.STATUS_PROCESSING: '진행 중: 인보이스 발행과 결제 확인을 처리 중입니다.',
+    PaymentTransaction.STATUS_COMPLETED: '완료: 결제와 참가 확정이 정상적으로 마무리되었습니다.',
+    PaymentTransaction.STATUS_FAILED: '실패: 결제 과정에서 오류가 발생했거나 취소되었습니다.',
+}
+
+TRANSACTION_STAGE_LABELS = {
+    PaymentStage.PREPARE: '1단계 · 참가 정보 확인',
+    PaymentStage.INVOICE: '2단계 · 인보이스 발행',
+    PaymentStage.USER_PAYMENT: '3단계 · 결제 확인',
+    PaymentStage.MERCHANT_SETTLEMENT: '4단계 · 입금 검증',
+    PaymentStage.ORDER_FINALIZE: '5단계 · 참가 확정',
+}
 
 def check_admin_access(request, store):
     """수퍼어드민 특별 접근 확인 및 메시지 표시"""
@@ -509,6 +526,93 @@ def meetup_status(request, store_id):
     }
     
     return render(request, 'meetup/meetup_status.html', context)
+
+
+@login_required
+def meetup_payment_transactions(request, store_id):
+    """밋업 결제 트랜잭션 현황"""
+    store = get_store_with_admin_check(request, store_id)
+    if not store:
+        return redirect('myshop:home')
+
+    status_filter = request.GET.get('status')
+    stage_filter = request.GET.get('stage')
+
+    transactions_qs = PaymentTransaction.objects.filter(
+        store=store,
+        meetup_order__isnull=False,
+    )
+
+    if status_filter in {
+        PaymentTransaction.STATUS_PENDING,
+        PaymentTransaction.STATUS_PROCESSING,
+        PaymentTransaction.STATUS_FAILED,
+        PaymentTransaction.STATUS_COMPLETED,
+    }:
+        transactions_qs = transactions_qs.filter(status=status_filter)
+
+    if stage_filter and stage_filter.isdigit():
+        transactions_qs = transactions_qs.filter(current_stage=int(stage_filter))
+
+    paginator = Paginator(
+        transactions_qs.select_related(
+            'user',
+            'meetup_order',
+            'meetup_order__meetup',
+        ).order_by('-created_at'),
+        5,
+    )
+    page_number = request.GET.get('page')
+    transactions_page = paginator.get_page(page_number)
+
+    for tx in transactions_page:
+        metadata = tx.metadata if isinstance(tx.metadata, dict) else {}
+        participant_info = metadata.get('participant') or {}
+        order = tx.meetup_order
+        meetup = order.meetup if order else None
+        user = order.user if order else tx.user
+
+        tx.meetup_title = meetup.name if meetup else metadata.get('meetup_name', '밋업')
+        tx.order_number = order.order_number if order else None
+        tx.meetup_id = meetup.id if meetup else None
+        tx.meetup_order_id = order.id if order else None
+        tx.participant_name = (
+            participant_info.get('participant_name')
+            or (getattr(user, 'get_full_name', lambda: '')() or getattr(user, 'username', ''))
+            or '미상'
+        )
+        tx.participant_email = participant_info.get('participant_email') or getattr(user, 'email', '')
+        tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
+        stage_label = TRANSACTION_STAGE_LABELS.get(tx.current_stage)
+        tx.stage_label = stage_label or f'{tx.current_stage}단계'
+        tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
+        tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+
+    base_qs = PaymentTransaction.objects.filter(
+        store=store,
+        meetup_order__isnull=False,
+    )
+    summary = {
+        'total': base_qs.count(),
+        'pending': base_qs.filter(status=PaymentTransaction.STATUS_PENDING).count(),
+        'processing': base_qs.filter(status=PaymentTransaction.STATUS_PROCESSING).count(),
+        'completed': base_qs.filter(status=PaymentTransaction.STATUS_COMPLETED).count(),
+        'failed': base_qs.filter(status=PaymentTransaction.STATUS_FAILED).count(),
+        'total_amount': base_qs.aggregate(total=models.Sum('amount_sats'))['total'] or 0,
+    }
+
+    context = {
+        'store': store,
+        'transactions': transactions_page,
+        'paginator': paginator,
+        'page_obj': transactions_page,
+        'status_filter': status_filter or '',
+        'stage_filter': stage_filter or '',
+        'summary': summary,
+    }
+
+    return render(request, 'meetup/meetup_payment_transactions.html', context)
+
 
 @login_required
 def meetup_status_detail(request, store_id, meetup_id):

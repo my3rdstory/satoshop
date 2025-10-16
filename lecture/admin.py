@@ -1,6 +1,18 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import LiveLecture, LiveLectureImage, LiveLectureOrder
+from ln_payment.models import (
+    ManualPaymentTransaction,
+    OrderItemReservation,
+    PaymentStageLog,
+    PaymentTransaction,
+)
+from ln_payment.admin import (
+    ManualPaymentTransactionAdmin,
+    OrderItemReservationAdmin,
+    PaymentStageLogAdmin,
+    PaymentTransactionAdmin,
+)
 
 
 
@@ -134,3 +146,71 @@ class LiveLectureOrderAdmin(admin.ModelAdmin):
         return '-'
     
     invoice_data_display.short_description = '인보이스 문자열'
+
+
+class LiveLecturePaymentTransaction(PaymentTransaction):
+    class Meta:
+        proxy = True
+        verbose_name = '라이브 강의 결제 트랜잭션'
+        verbose_name_plural = '라이브 강의 결제 트랜잭션'
+        app_label = 'lecture'
+
+
+@admin.register(LiveLecturePaymentTransaction)
+class LiveLecturePaymentTransactionAdmin(PaymentTransactionAdmin):
+    """라이브 강의에 연결된 결제 트랜잭션만 표시"""
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.filter(live_lecture_order__isnull=False)
+
+
+class LiveLectureManualPaymentTransaction(ManualPaymentTransaction):
+    class Meta:
+        proxy = True
+        verbose_name = '라이브 강의 수동 저장 결제'
+        verbose_name_plural = '라이브 강의 수동 저장 결제'
+        app_label = 'lecture'
+
+
+@admin.register(LiveLectureManualPaymentTransaction)
+class LiveLectureManualPaymentTransactionAdmin(ManualPaymentTransactionAdmin):
+    """라이브 강의 대상 수동 저장 결제"""
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.filter(live_lecture_order__isnull=False)
+
+
+class LiveLecturePaymentStageLog(PaymentStageLog):
+    class Meta:
+        proxy = True
+        verbose_name = '라이브 강의 결제 단계 로그'
+        verbose_name_plural = '라이브 강의 결제 단계 로그'
+        app_label = 'lecture'
+
+
+@admin.register(LiveLecturePaymentStageLog)
+class LiveLecturePaymentStageLogAdmin(PaymentStageLogAdmin):
+    """라이브 강의 결제 단계 로그 전용 뷰"""
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.filter(transaction__live_lecture_order__isnull=False)
+
+
+class LiveLectureOrderItemReservation(OrderItemReservation):
+    class Meta:
+        proxy = True
+        verbose_name = '라이브 강의 재고 예약'
+        verbose_name_plural = '라이브 강의 재고 예약'
+        app_label = 'lecture'
+
+
+@admin.register(LiveLectureOrderItemReservation)
+class LiveLectureOrderItemReservationAdmin(OrderItemReservationAdmin):
+    """라이브 강의 결제와 연결된 재고 예약 조회"""
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.filter(transaction__live_lecture_order__isnull=False)

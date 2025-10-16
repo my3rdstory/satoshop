@@ -133,9 +133,11 @@ class LightningPaymentProcessor:
         user,
         amount_sats: int,
         currency: str,
-        cart_items: Iterable[CartItemData],
+        cart_items: Optional[Iterable[CartItemData]] = None,
         soft_lock_ttl_minutes: int = 3,
         metadata: Optional[Dict[str, Any]] = None,
+        prepare_message: Optional[str] = None,
+        prepare_detail: Optional[Dict[str, Any]] = None,
     ) -> PaymentTransaction:
         now = timezone.now()
         self._cleanup_expired_reservations()
@@ -149,6 +151,8 @@ class LightningPaymentProcessor:
             soft_lock_expires_at=now + timedelta(minutes=soft_lock_ttl_minutes),
             metadata=metadata or {},
         )
+
+        cart_items = list(cart_items or [])
 
         for item in cart_items:
             product = Product.objects.select_for_update().get(id=item.product_id, store=self.store)
@@ -174,21 +178,22 @@ class LightningPaymentProcessor:
                 metadata=item.metadata,
             )
 
+        default_detail = {
+            "amount_sats": amount_sats,
+            "items": [
+                {
+                    "product_id": item.product_id,
+                    "quantity": item.quantity,
+                }
+                for item in cart_items
+            ],
+        }
         self._log_stage(
             transaction,
             PaymentStage.PREPARE,
             PaymentStatus.COMPLETED,
-            "재고 예약 및 결제 준비 완료",
-            {
-                "amount_sats": amount_sats,
-                "items": [
-                    {
-                        "product_id": item.product_id,
-                        "quantity": item.quantity,
-                    }
-                    for item in cart_items
-                ],
-            },
+            prepare_message or "재고 예약 및 결제 준비 완료",
+            prepare_detail or default_detail,
         )
         transaction.status = PaymentTransaction.STATUS_PROCESSING
         transaction.save(update_fields=["status", "updated_at"])
@@ -350,6 +355,121 @@ class LightningPaymentProcessor:
             PaymentStatus.COMPLETED,
             "주문 저장 완료",
             {"order_number": order.order_number},
+        )
+
+    def finalize_meetup_order(self, transaction: PaymentTransaction, meetup_order) -> None:
+        """밋업 주문을 결제 완료 상태로 연결한다."""
+        with db_transaction.atomic():
+            now = timezone.now()
+            transaction.meetup_order = meetup_order
+            transaction.status = PaymentTransaction.STATUS_COMPLETED
+            transaction.current_stage = PaymentStage.ORDER_FINALIZE
+            transaction.save(update_fields=["meetup_order", "status", "current_stage", "updated_at"])
+
+            meetup_order.status = "confirmed"
+            meetup_order.is_temporary_reserved = False
+            if not meetup_order.paid_at:
+                meetup_order.paid_at = now
+            if not meetup_order.confirmed_at:
+                meetup_order.confirmed_at = now
+            meetup_order.save(update_fields=[
+                "status",
+                "is_temporary_reserved",
+                "paid_at",
+                "confirmed_at",
+                "updated_at",
+            ])
+
+        self._log_stage(
+            transaction,
+            PaymentStage.ORDER_FINALIZE,
+            PaymentStatus.COMPLETED,
+            "밋업 참가 확정",
+            {
+                "meetup_order_id": meetup_order.id,
+                "order_number": meetup_order.order_number,
+            },
+        )
+
+    def finalize_live_lecture_order(self, transaction: PaymentTransaction, live_lecture_order) -> None:
+        """라이브 강의 주문을 결제 완료 상태로 연결한다."""
+        with db_transaction.atomic():
+            now = timezone.now()
+            transaction.live_lecture_order = live_lecture_order
+            transaction.status = PaymentTransaction.STATUS_COMPLETED
+            transaction.current_stage = PaymentStage.ORDER_FINALIZE
+            transaction.save(
+                update_fields=[
+                    "live_lecture_order",
+                    "status",
+                    "current_stage",
+                    "updated_at",
+                ]
+            )
+
+            live_lecture_order.status = "confirmed"
+            live_lecture_order.is_temporary_reserved = False
+            if not live_lecture_order.paid_at:
+                live_lecture_order.paid_at = now
+            if not live_lecture_order.confirmed_at:
+                live_lecture_order.confirmed_at = now
+            live_lecture_order.auto_cancelled_reason = ""
+            live_lecture_order.save(
+                update_fields=[
+                    "status",
+                    "is_temporary_reserved",
+                    "paid_at",
+                    "confirmed_at",
+                    "auto_cancelled_reason",
+                    "updated_at",
+                ]
+            )
+
+        self._log_stage(
+            transaction,
+            PaymentStage.ORDER_FINALIZE,
+            PaymentStatus.COMPLETED,
+            "라이브 강의 참가 확정",
+            {
+                "live_lecture_order_id": live_lecture_order.id,
+                "order_number": live_lecture_order.order_number,
+            },
+        )
+
+    def finalize_file_order(self, transaction: PaymentTransaction, file_order) -> None:
+        """디지털 파일 주문을 결제 완료 상태로 연결한다."""
+        with db_transaction.atomic():
+            now = timezone.now()
+            transaction.file_order = file_order
+            transaction.status = PaymentTransaction.STATUS_COMPLETED
+            transaction.current_stage = PaymentStage.ORDER_FINALIZE
+            transaction.save(update_fields=["file_order", "status", "current_stage", "updated_at"])
+
+            file_order.status = "confirmed"
+            file_order.is_temporary_reserved = False
+            if not file_order.paid_at:
+                file_order.paid_at = now
+            if not file_order.confirmed_at:
+                file_order.confirmed_at = now
+            file_order.auto_cancelled_reason = ""
+            file_order.save(update_fields=[
+                "status",
+                "is_temporary_reserved",
+                "paid_at",
+                "confirmed_at",
+                "auto_cancelled_reason",
+                "updated_at",
+            ])
+
+        self._log_stage(
+            transaction,
+            PaymentStage.ORDER_FINALIZE,
+            PaymentStatus.COMPLETED,
+            "디지털 파일 다운로드 권한 부여",
+            {
+                "file_order_id": file_order.id,
+                "order_number": file_order.order_number,
+            },
         )
 
     def release_reservations(self, transaction: PaymentTransaction) -> None:

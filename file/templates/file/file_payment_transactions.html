@@ -1,0 +1,199 @@
+{% extends 'stores/store_base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 디지털 파일 결제 정보{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<style>
+  .summary-card { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+  .dark .summary-card { background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%); }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
+  <div class="w-full px-4 sm:px-6 lg:px-12 text-sm">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-10">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-bitcoin/10 rounded-full">
+          <i class="fas fa-receipt text-3xl text-bitcoin"></i>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">디지털 파일 결제 정보</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-2">파일 예약부터 다운로드 권한 부여까지의 흐름을 추적해 고객 문의와 재고 관리를 빠르게 처리하세요.</p>
+        </div>
+      </div>
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        <span class="block">총 {{ summary.total|intcomma }}건 추적 중</span>
+        <span class="block">누적 결제 {{ summary.total_amount|intcomma }} sats</span>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+      <article class="summary-card rounded-2xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">총 트랜잭션</p>
+        <p class="text-2xl font-extrabold text-gray-900 dark:text-white mt-2">{{ summary.total|intcomma }}</p>
+      </article>
+      <article class="summary-card rounded-2xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">대기</p>
+        <p class="text-2xl font-extrabold text-blue-500 mt-2">{{ summary.pending|intcomma }}</p>
+      </article>
+      <article class="summary-card rounded-2xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">진행 중</p>
+        <p class="text-2xl font-extrabold text-amber-500 mt-2">{{ summary.processing|intcomma }}</p>
+      </article>
+      <article class="summary-card rounded-2xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">완료</p>
+        <p class="text-2xl font-extrabold text-green-500 mt-2">{{ summary.completed|intcomma }}</p>
+      </article>
+      <article class="summary-card rounded-2xl p-4 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">실패</p>
+        <p class="text-2xl font-extrabold text-rose-500 mt-2">{{ summary.failed|intcomma }}</p>
+      </article>
+    </section>
+
+    <form method="get" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg px-6 py-5 mb-8">
+      <div class="flex flex-col md:flex-row md:items-end gap-4">
+        <div class="flex-1">
+          <label for="status" class="block text-xs font-medium text-gray-700 dark:text-gray-300">상태</label>
+          <select id="status" name="status" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 focus:border-bitcoin focus:ring-bitcoin">
+            <option value="">전체</option>
+            <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>대기</option>
+            <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>진행 중</option>
+            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>완료</option>
+            <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>실패</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label for="stage" class="block text-xs font-medium text-gray-700 dark:text-gray-300">현재 단계</label>
+          <select id="stage" name="stage" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100 focus:border-bitcoin focus:ring-bitcoin">
+            <option value="">전체</option>
+            <option value="1" {% if stage_filter == '1' %}selected{% endif %}>1단계 - 판매 확인</option>
+            <option value="2" {% if stage_filter == '2' %}selected{% endif %}>2단계 - 인보이스</option>
+            <option value="3" {% if stage_filter == '3' %}selected{% endif %}>3단계 - 결제 확인</option>
+            <option value="4" {% if stage_filter == '4' %}selected{% endif %}>4단계 - 입금 검증</option>
+            <option value="5" {% if stage_filter == '5' %}selected{% endif %}>5단계 - 다운로드 권한</option>
+          </select>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="px-5 py-2.5 rounded-lg bg-bitcoin text-white font-semibold hover:bg-[#e08113] transition">필터 적용</button>
+          <a href="?" class="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">초기화</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-900/60 text-xs uppercase tracking-wide text-gray-600 dark:text-gray-300">
+            <tr>
+              <th class="px-6 py-3 text-left">결제 생성</th>
+              <th class="px-6 py-3 text-left">디지털 파일</th>
+              <th class="px-6 py-3 text-left">구매자</th>
+              <th class="px-6 py-3 text-left">결제 금액</th>
+              <th class="px-6 py-3 text-left">현재 단계</th>
+              <th class="px-6 py-3 text-left">상태</th>
+              <th class="px-6 py-3 text-left">트랜잭션 ID</th>
+              <th class="px-6 py-3 text-left">관리</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {% for transaction in transactions %}
+            <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-900/60 transition">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ transaction.created_at|date:"Y-m-d H:i" }}</div>
+                {% if transaction.reservation_expires_at %}
+                <div class="text-xs text-gray-500 dark:text-gray-400">예약 만료 {{ transaction.reservation_expires_at|date:"H:i" }}</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ transaction.file_title }}</div>
+                {% if transaction.order_number %}
+                <div class="text-xs text-gray-500 dark:text-gray-400">주문번호 {{ transaction.order_number }}</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ transaction.buyer_name }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ transaction.amount_sats|intcomma }} sats</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="text-sm text-gray-800 dark:text-gray-200">{{ transaction.stage_label }}</span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                {% if transaction.status == 'completed' %}
+                <span class="status-badge bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"><i class="fas fa-check-circle"></i>완료</span>
+                {% elif transaction.status == 'failed' %}
+                <span class="status-badge bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"><i class="fas fa-times-circle"></i>실패</span>
+                {% elif transaction.status == 'processing' %}
+                <span class="status-badge bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"><i class="fas fa-spinner fa-spin"></i>진행 중</span>
+                {% else %}
+                <span class="status-badge bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"><i class="fas fa-hourglass-half"></i>대기</span>
+                {% endif %}
+                {% if transaction.status_description %}
+                <p class="mt-1 text-[0.68rem] text-gray-500 dark:text-gray-400 leading-relaxed">{{ transaction.status_description }}</p>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-xs font-mono text-gray-700 dark:text-gray-200">{{ transaction.id }}</div>
+                {% if transaction.payment_hash %}
+                <div class="text-[0.7rem] text-gray-500 dark:text-gray-400">{{ transaction.payment_hash }}</div>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                  <a href="{% url 'orders:payment_transaction_detail' store.store_id transaction.id %}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-1.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                    <i class="fas fa-external-link-alt text-xs"></i> 상세보기
+                  </a>
+                  {% if transaction.file_id %}
+                  <a href="{% url 'file:file_detail' store.store_id transaction.file_id %}" class="inline-flex items-center gap-2 rounded-lg bg-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:bg-gray-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-gray-500/40 transition">
+                    <i class="fas fa-file-alt text-xs"></i> 파일 보기
+                  </a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">디지털 파일 결제 트랜잭션이 없습니다.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if transactions.has_other_pages %}
+      <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-gray-600 dark:text-gray-400">
+        <div>총 {{ paginator.count|intcomma }}건 중 {{ transactions.start_index }}-{{ transactions.end_index }} 표시</div>
+        <nav class="flex items-center gap-2" aria-label="디지털 파일 결제 페이지네이션">
+          {% if transactions.has_previous %}
+          <a href="?page={{ transactions.previous_page_number }}&status={{ status_filter }}&stage={{ stage_filter }}" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition">이전</a>
+          {% else %}
+          <span class="px-3 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400">이전</span>
+          {% endif %}
+          <span class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+            {{ transactions.number }} / {{ paginator.num_pages }}
+          </span>
+          {% if transactions.has_next %}
+          <a href="?page={{ transactions.next_page_number }}&status={{ status_filter }}&stage={{ stage_filter }}" class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition">다음</a>
+          {% else %}
+          <span class="px-3 py-1 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-400">다음</span>
+          {% endif %}
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
