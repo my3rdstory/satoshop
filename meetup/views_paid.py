@@ -450,6 +450,13 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
         is_active=True,
     )
 
+    if not meetup.can_participate:
+        return JsonResponse({
+            'success': False,
+            'error': '현재 참가 신청이 불가능합니다.',
+            'error_code': 'inventory_unavailable',
+        })
+
     participant_data = request.session.get(f'meetup_participant_data_{meetup_id}')
     if not participant_data:
         return JsonResponse({'success': False, 'error': '참가자 정보가 없습니다.'}, status=400)
@@ -490,16 +497,48 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
         participant_data.pop('transaction_id', None)
         participant_data.pop('payment_hash', None)
         participant_data.pop('payment_request', None)
+        participant_data.pop('meetup_order_id', None)
 
     try:
+        now = timezone.now()
         with transaction.atomic():
             locked_meetup = Meetup.objects.select_for_update().get(
                 id=meetup.id,
                 store=store,
                 deleted_at__isnull=True,
             )
-            if locked_meetup.max_participants and locked_meetup.current_participants >= locked_meetup.max_participants:
-                return JsonResponse({'success': False, 'error': '밋업 정원이 가득 찼습니다.'}, status=409)
+            if locked_meetup.max_participants:
+                active_reservations = []
+                pending_reservations = (
+                    MeetupOrder.objects.select_for_update()
+                    .filter(
+                        meetup=locked_meetup,
+                        status='pending',
+                        is_temporary_reserved=True,
+                    )
+                )
+                for reservation in pending_reservations:
+                    expires_at = reservation.reservation_expires_at
+                    if expires_at and expires_at <= now:
+                        reservation.status = 'cancelled'
+                        reservation.is_temporary_reserved = False
+                        reservation.auto_cancelled_reason = '예약 만료'
+                        reservation.save(update_fields=[
+                            'status',
+                            'is_temporary_reserved',
+                            'auto_cancelled_reason',
+                            'updated_at',
+                        ])
+                        continue
+                    active_reservations.append(reservation)
+
+                total_reserved = locked_meetup.current_participants + len(active_reservations)
+                if total_reserved >= locked_meetup.max_participants:
+                    return JsonResponse({
+                        'success': False,
+                        'error': '밋업 정원이 가득 찼습니다.',
+                        'error_code': 'inventory_unavailable',
+                    })
 
             pending_order = create_pending_meetup_order(
                 locked_meetup,
@@ -508,7 +547,7 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
                 reservation_seconds=reservation_seconds,
             )
 
-        transaction = processor.create_transaction(
+        payment_tx = processor.create_transaction(
             user=request.user,
             amount_sats=amount_sats,
             currency='BTC',
@@ -526,11 +565,11 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
                 'amount_sats': amount_sats,
             },
         )
-        transaction.meetup_order = pending_order
-        transaction.save(update_fields=['meetup_order', 'updated_at'])
+        payment_tx.meetup_order = pending_order
+        payment_tx.save(update_fields=['meetup_order', 'updated_at'])
 
         invoice = processor.issue_invoice(
-            transaction,
+            payment_tx,
             memo=build_meetup_invoice_memo(meetup, participant_data, request.user),
             expires_in_minutes=max(1, min(soft_lock_minutes, 15)),
         )
@@ -541,7 +580,7 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
         logger.exception('밋업 결제 준비 중 오류')
         return JsonResponse({'success': False, 'error': '결제 준비 중 오류가 발생했습니다.'}, status=500)
 
-    participant_data['transaction_id'] = str(transaction.id)
+    participant_data['transaction_id'] = str(payment_tx.id)
     participant_data['meetup_order_id'] = pending_order.id
     participant_data['payment_hash'] = invoice['payment_hash']
     participant_data['payment_request'] = invoice['invoice']
@@ -549,7 +588,7 @@ def meetup_start_payment_workflow(request, store_id, meetup_id):
 
     return JsonResponse({
         'success': True,
-        'transaction': serialize_transaction(transaction),
+        'transaction': serialize_transaction(payment_tx),
         'invoice': {
             'payment_hash': invoice['payment_hash'],
             'payment_request': invoice['invoice'],
@@ -634,6 +673,7 @@ def meetup_verify_payment(request, store_id, meetup_id, transaction_id):
         session_data.pop('transaction_id', None)
         session_data.pop('payment_hash', None)
         session_data.pop('payment_request', None)
+        session_data.pop('meetup_order_id', None)
         request.session[f'meetup_participant_data_{meetup_id}'] = session_data
         return JsonResponse({'success': False, 'error': '인보이스가 만료되었습니다.', 'transaction': serialize_transaction(transaction)}, status=400)
 
@@ -729,6 +769,7 @@ def meetup_cancel_payment(request, store_id, meetup_id, transaction_id):
     session_data.pop('transaction_id', None)
     session_data.pop('payment_hash', None)
     session_data.pop('payment_request', None)
+    session_data.pop('meetup_order_id', None)
     request.session[f'meetup_participant_data_{meetup_id}'] = session_data
 
     return JsonResponse({'success': True, 'transaction': serialize_transaction(transaction)})
