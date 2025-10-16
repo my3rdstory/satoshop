@@ -15,7 +15,7 @@
 
   let initialTransactionPayload = null;
   try {
-    const existingTransactionScript = document.getElementById('live-lecture-existing-transaction');
+    const existingTransactionScript = document.getElementById('file-existing-transaction');
     if (existingTransactionScript) {
       initialTransactionPayload = JSON.parse(existingTransactionScript.textContent || '{}');
     }
@@ -40,7 +40,7 @@
   const invoiceTimer = document.getElementById('invoiceTimer');
   const invoiceTimerValue = document.getElementById('invoiceTimerValue');
   const openWalletButton = document.getElementById('openWalletButton');
-  const DB_DELAY_MESSAGE = '데이터베이스 동작 오류로 저장이 지연되고 있습니다. 다시 연결을 시도하고 있습니다.';
+  const DB_DELAY_MESSAGE = '시스템 응답이 지연되고 있습니다. 결제 상태를 다시 확인하는 중입니다.';
 
   let transactionId = null;
   let countdownInterval = null;
@@ -53,14 +53,13 @@
   let dbDelayMessage = DB_DELAY_MESSAGE;
 
   const logMessageMap = {
-    '재고 예약 및 결제 준비 완료': '재고 확보가 완료되어 결제를 준비했습니다.',
-    '라이브 강의 참가 정보 확인 완료': '참가 정보를 확인하고 예약을 진행했습니다.',
+    '디지털 파일 구매 준비 완료': '파일이 예약되어 결제 준비가 완료되었습니다.',
     '인보이스 생성 완료': '결제에 사용할 인보이스를 발급했습니다.',
     '사용자 결제 대기 중': '지갑에서 결제 승인 신호를 기다리고 있습니다.',
-    '사용자 결제 완료 감지': '결제 완료 신호를 받아 후속 단계를 진행합니다.',
+    '사용자 결제 완료 감지': '결제 완료 신호를 감지하여 다음 단계를 진행합니다.',
     '스토어 지갑 입금 확인': '스토어 지갑으로 입금이 확인되었습니다.',
-    '라이브 강의 참가 확정': '결제가 완료되어 참가가 확정되었습니다.',
-    '주문 저장 완료': '결제가 완료되어 주문을 저장했습니다.',
+    '디지털 파일 다운로드 권한 부여': '결제가 완료되어 다운로드 권한이 부여되었습니다.',
+    '주문 저장 완료': '결제 데이터가 정상적으로 저장되었습니다.',
     '인보이스 만료': '인보이스가 만료되었습니다. 새 결제가 필요합니다.',
     '결제 상태 확인 실패': '결제 상태 확인에 실패했습니다.',
     '인보이스 생성 실패': '인보이스 생성에 실패했습니다.',
@@ -309,7 +308,7 @@
     restoreStartButtonDefault();
     startButton.disabled = true;
     startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-spinner fa-spin"></i> 준비 중...</span>';
-    updateStatusText('참가 정보를 검증하고 인보이스를 준비하고 있습니다. 잠시만 기다려 주세요.');
+    updateStatusText('파일 구매를 준비하고 인보이스를 발급하고 있습니다. 잠시만 기다려 주세요.');
     try {
       const response = await fetch(startUrl, {
         method: 'POST',
@@ -393,7 +392,7 @@
   }
 
   function handleStartError(message, errorCode) {
-    const inventoryLockedCopy = '다른 참가자의 결제가 진행 중입니다. 잠시 후 다시 시도하거나 라이브 강의 상세 정보를 확인해주세요.';
+    const inventoryLockedCopy = '다른 사용자의 결제가 진행 중입니다. 잠시 후 다시 시도하거나 파일 상세 페이지를 확인해주세요.';
     const displayMessage = errorCode === 'inventory_unavailable'
       ? inventoryLockedCopy
       : message;
@@ -427,7 +426,7 @@
       startButton.removeEventListener('click', startWorkflow);
       startButton.addEventListener('click', redirectToProduct);
     }
-    startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-calendar"></i> 라이브 강의 상세 보기</span>';
+    startButton.innerHTML = '<span class="flex items-center gap-2"><i class="fas fa-file"></i> 파일 상세 보기</span>';
     isInventoryRedirectMode = true;
   }
 
@@ -549,7 +548,7 @@
       }
       updateTransaction(data.transaction);
       if (data.status === 'paid') {
-        updateStatusText('결제가 확인되었습니다. 주문을 저장하고 있습니다...');
+        updateStatusText('결제가 확인되었습니다. 다운로드 권한을 확정하고 있습니다...');
         stopPolling();
       } else if (data.status === 'pending') {
         updateStatusText('결제를 확인 중입니다. 잠시만 기다려 주세요.');

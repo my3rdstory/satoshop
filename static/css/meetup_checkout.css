@@ -1,370 +1,61 @@
-/* 밋업 체크아웃 페이지 스타일 */
+/* Meetup checkout aligns styling with the shared payment workflow */
 
-/* 옵션 선택 스타일 */
-.option-choice-label {
-    transition: all 0.2s ease-in-out;
+.checkout-info-list {
+  display: grid;
+  gap: 0.75rem;
 }
 
-.option-choice-input:checked + .option-choice-label {
-    border-color: #8b5cf6;
-    background-color: rgba(139, 92, 246, 0.1);
+.checkout-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
 
-.option-choice-input:checked ~ .option-choice-indicator {
-    border-color: #8b5cf6;
+.checkout-info-row dt {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #64748b;
 }
 
-.option-choice-input:checked ~ .option-choice-indicator .option-choice-dot {
-    display: block;
+.dark .checkout-info-row dt {
+  color: #94a3b8;
 }
 
-/* 다크 모드에서 옵션 선택 스타일 */
-.dark .option-choice-input:checked + .option-choice-label {
-    background-color: rgba(139, 92, 246, 0.2);
+.checkout-info-row dd {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-/* 인보이스 생성 버튼 스타일 */
-.invoice-btn {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    transition: all 0.3s ease;
+.dark .checkout-info-row dd {
+  color: #f1f5f9;
 }
 
-.invoice-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+.checkout-info-row dd a {
+  color: inherit;
+  text-decoration: underline dotted transparent;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
-.invoice-btn:disabled {
-    background: #9ca3af;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* QR 코드 컨테이너 */
-#qrCodeContainer {
-    transition: all 0.3s ease;
-}
-
-#qrCodeContainer:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-/* 결제 상태 메시지 */
-#paymentStatus.success {
-    background-color: #dcfce7;
-    border-color: #16a34a;
-    color: #166534;
-}
-
-#paymentStatus.error {
-    background-color: #fef2f2;
-    border-color: #dc2626;
-    color: #991b1b;
-}
-
-#paymentStatus.pending {
-    background-color: #fefce8;
-    border-color: #eab308;
-    color: #854d0e;
-}
-
-.dark #paymentStatus.success {
-    background-color: rgba(34, 197, 94, 0.1);
-    border-color: #16a34a;
-    color: #4ade80;
-}
-
-.dark #paymentStatus.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: #dc2626;
-    color: #f87171;
-}
-
-.dark #paymentStatus.pending {
-    background-color: rgba(234, 179, 8, 0.1);
-    border-color: #eab308;
-    color: #fbbf24;
-}
-
-/* 로딩 스피너 */
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* 폼 스타일 개선 */
-.form-input:focus {
-    ring-width: 2px;
-    ring-color: #8b5cf6;
-    border-color: transparent;
-    outline: none;
-}
-
-/* 체크아웃 카드 */
-.checkout-card {
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.9);
-}
-
-.dark .checkout-card {
-    background: rgba(31, 41, 55, 0.9);
-}
-
-/* 가격 표시 */
-.text-bitcoin {
-    color: #f7931a;
-}
-
-.dark .text-bitcoin {
-    color: #fbbf24;
-}
-
-/* 애니메이션 */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.fade-in {
-    animation: fadeIn 0.3s ease-out;
-}
-
-/* 반응형 스타일 */
-@media (max-width: 640px) {
-    .checkout-container {
-        padding: 1rem;
-    }
-    
-    .checkout-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    
-    #qrCodeContainer {
-        padding: 1rem;
-    }
-    
-    #qrCodeImage {
-        max-width: 200px;
-    }
-}
-
-/* 호버 효과 */
-.hover-lift {
-    transition: all 0.2s ease;
-}
-
-.hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.dark .hover-lift:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* 버튼 상태 */
-.btn-loading {
-    position: relative;
-}
-
-.btn-loading::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    margin: auto;
-    border: 2px solid transparent;
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-}
-
-/* 스티키 결제 패널 */
-.sticky {
-    position: sticky;
-    top: 2rem;
-}
-
-/* 반응형 스타일 */
-@media (max-width: 1279px) {
-    .sticky {
-        position: static;
-    }
+.checkout-info-row dd a:hover {
+  color: #f7931a;
+  text-decoration-color: currentColor;
 }
 
 @media (max-width: 640px) {
-    .checkout-container {
-        padding: 1rem;
-    }
-    
-    .checkout-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-    }
-    
-    #qrCodeContainer {
-        padding: 1rem;
-    }
-    
-    #qrCodeImage {
-        max-width: 200px;
-    }
-    
-    /* 모바일에서 페이지 헤더 조정 */
-    .page-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .page-header .icon-container {
-        margin-right: 0;
-        margin-bottom: 1rem;
-    }
-}
+  .checkout-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
 
-/* 그라디언트 헤더 스타일 */
-.gradient-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  .checkout-info-row dd {
+    text-align: left;
+  }
 }
-
-.gradient-header.purple {
-    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-}
-
-.gradient-header.green {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-/* 인보이스 텍스트 영역 */
-#invoiceTextArea {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    line-height: 1.4;
-    word-break: break-all;
-}
-
-/* 카드 그림자 효과 */
-.card-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-.dark .card-shadow {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-}
-
-.dark .card-shadow-lg {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-}
-
-/* 정보 섹션 아이콘 */
-.info-section-icon {
-    width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.5rem;
-    flex-shrink: 0;
-}
-
-/* 결제 안내 박스 */
-.payment-info-box {
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-    border: 1px solid #93c5fd;
-}
-
-.dark .payment-info-box {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
-    border-color: rgba(59, 130, 246, 0.3);
-}
-
-/* 경고 박스 */
-.warning-box {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    border: 1px solid #f59e0b;
-}
-
-.dark .warning-box {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    border-color: #d97706;
-    color: #78350f;
-}
-
-/* 플로팅 카운트다운 스타일 */
-.floating-countdown {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    z-index: 1000;
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    padding: 12px 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transform: translateY(100px);
-    opacity: 0;
-    transition: all 0.3s ease;
-}
-
-.floating-countdown.show {
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.floating-countdown.urgent {
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    animation: pulse-red 1s infinite;
-}
-
-@keyframes pulse-red {
-    0%, 100% { 
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.3);
-    }
-    50% { 
-        box-shadow: 0 4px 30px rgba(239, 68, 68, 0.6);
-        transform: scale(1.02);
-    }
-}
-
-.countdown-time {
-    font-size: 18px;
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-}
-
-.countdown-label {
-    font-size: 12px;
-    opacity: 0.9;
-    margin-top: 2px;
-}
-
-/* 모바일에서 위치 조정 */
-@media (max-width: 640px) {
-    .floating-countdown {
-        bottom: 80px; /* 모바일에서 하단 네비게이션 공간 확보 */
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-    }
-    
-    .floating-countdown.show {
-        transform: translateX(-50%) translateY(0);
-    }
-} 
