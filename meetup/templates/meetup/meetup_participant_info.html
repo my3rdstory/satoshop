@@ -427,26 +427,14 @@ window.preSelectedOptions = {% if selected_options_data %}{{ selected_options_da
 
 <script>
 // DOM 로드 후 실행
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🎯 참가자 정보 페이지 DOMContentLoaded');
-    
-    // 폼 제출 시 처리
+document.addEventListener('DOMContentLoaded', function() {// 폼 제출 시 처리
     const participantForm = document.querySelector('form[method="post"]');
-    if (participantForm) {
-        console.log('📝 참가자 정보 폼 이벤트 리스너 등록');
-        
-        participantForm.addEventListener('submit', function(event) {
-            console.log('📤 참가자 정보 폼 제출됨');
-            
-            // 제출 버튼 상태 변경
+    if (participantForm) {participantForm.addEventListener('submit', function(event) {// 제출 버튼 상태 변경
             const submitBtn = document.getElementById('submit-btn');
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<div class="flex items-center"><div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div><span>처리 중...</span></div>';
-            }
-            
-            console.log('📝 폼 제출 계속 진행');
-        });
+            }});
     }
 });
 </script>
