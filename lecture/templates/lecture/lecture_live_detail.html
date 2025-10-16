@@ -55,7 +55,7 @@
             <i class="fas fa-info-circle text-blue-500 text-lg"></i>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">강의 소개</h3>
           </div>
-          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ live_lecture.description|safe }}">
+          <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ live_lecture.description|escape }}">
             <!-- 마크다운 콘텐츠가 여기에 렌더링됩니다 -->
           </div>
         </div>
