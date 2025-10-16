@@ -5,7 +5,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("lecture", "0005_livelectureorder_lecture_liv_live_le_0f102e_idx"),
-        ("ln_payment", "0003_manualpaymenttransaction"),
+        ("ln_payment", "0002_paymenttransaction_meetup_order"),
     ]
 
     operations = [

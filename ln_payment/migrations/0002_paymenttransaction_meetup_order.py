@@ -5,7 +5,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("meetup", "0017_meetup_meetup_meet_is_free_ed72b4_idx_and_more"),
-        ("ln_payment", "0001_initial"),
+        ("ln_payment", "0002_manualpaymenttransaction"),
     ]
 
     operations = [
