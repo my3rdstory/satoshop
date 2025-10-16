@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="fas fa-check-circle text-blue-500 text-lg"></i>
                 <h4 class="text-lg font-semibold text-gray-900 dark:text-white">강사 안내 메시지</h4>
               </div>
-              <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ order.live_lecture.completion_message|safe }}">
+              <div class="prose max-w-none markdown-content text-gray-900 dark:text-white" data-markdown="{{ order.live_lecture.completion_message|escape }}">
                 <!-- 마크다운 콘텐츠가 여기에 렌더링됩니다 -->
               </div>
             </div>
