@@ -1189,7 +1189,11 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
     )
 
     if not live_lecture.can_participate:
-        return JsonResponse({'success': False, 'error': '현재 참가 신청이 불가능합니다.'}, status=409)
+        return JsonResponse({
+            'success': False,
+            'error': '현재 참가 신청이 불가능합니다.',
+            'error_code': 'inventory_unavailable',
+        })
 
     session_key = _get_live_lecture_session_key(live_lecture_id)
     participant_data = request.session.get(session_key)
@@ -1271,7 +1275,11 @@ def live_lecture_start_payment_workflow(request, store_id, live_lecture_id):
 
                 total_reserved = locked_live_lecture.current_participants + len(active_reservations)
                 if total_reserved >= locked_live_lecture.max_participants:
-                    return JsonResponse({'success': False, 'error': '라이브 강의 정원이 가득 찼습니다.'}, status=409)
+                    return JsonResponse({
+                        'success': False,
+                        'error': '라이브 강의 정원이 가득 찼습니다.',
+                        'error_code': 'inventory_unavailable',
+                    })
 
             pending_order = create_pending_live_lecture_order(
                 locked_live_lecture,
