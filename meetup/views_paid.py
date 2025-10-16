@@ -429,7 +429,7 @@ def meetup_checkout_payment(request, store_id, meetup_id):
         'workflow_verify_url_template': reverse('meetup:meetup_verify_payment', args=[store_id, meetup_id, placeholder_uuid]),
         'workflow_cancel_url_template': reverse('meetup:meetup_cancel_payment', args=[store_id, meetup_id, placeholder_uuid]),
         'workflow_inventory_redirect_url': reverse('meetup:meetup_detail', args=[store_id, meetup_id]),
-        'workflow_cart_url': reverse('meetup:meetup_checkout', args=[store_id, meetup_id]),
+        'workflow_cart_url': reverse('meetup:meetup_detail', args=[store_id, meetup_id]),
         'placeholder_uuid': placeholder_uuid,
         'existing_transaction': transaction_payload,
         'total_price': total_price,

@@ -94,6 +94,9 @@
     <a href="{% url 'meetup:meetup_status' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-bar mr-2"></i>밋업 현황
     </a>
+    <a href="{% url 'meetup:meetup_payment_transactions' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-receipt mr-2"></i>결제 정보 확인
+    </a>
     <div class="border-t border-gray-600 my-1"></div>
     <a href="{% url 'lecture:live_lecture_list' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-video mr-2"></i>라이브 강의 관리
@@ -110,6 +113,9 @@
     </a>
     <a href="{% url 'file:file_orders' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-area mr-2"></i>파일 현황
+    </a>
+    <a href="{% url 'file:file_payment_transactions' store_id=user_active_store.store_id %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+      <i class="fas fa-receipt mr-2"></i>결제 정보 확인
     </a>
     <div class="border-t border-gray-600 my-1"></div>
     {% else %}

@@ -1,510 +1,83 @@
-/* File checkout workflow styles */
+/* File checkout shares the unified payment workflow styling */
 
-.info-card {
-  border-radius: 1.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 1.5rem;
-  backdrop-filter: blur(6px);
-}
-
-.dark .info-card {
-  border-color: rgba(71, 85, 105, 0.4);
-  background: rgba(15, 23, 42, 0.85);
-}
-
-.info-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
-}
-
-.info-card__eyebrow {
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: #f7931a;
-}
-
-.dark .info-card__eyebrow {
-  color: #fbbf24;
-}
-
-.info-card__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.dark .info-card__title {
-  color: #f8fafc;
-}
-
-.info-list {
+.checkout-info-list {
   display: grid;
   gap: 0.75rem;
 }
 
-.info-list__item {
+.checkout-info-row {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
   align-items: flex-start;
+  gap: 1rem;
 }
 
-.info-list__item dt {
+.checkout-info-row dt {
   flex: 0 0 auto;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  font-weight: 600;
   color: #64748b;
 }
 
-.dark .info-list__item dt {
+.dark .checkout-info-row dt {
   color: #94a3b8;
 }
 
-.info-list__item dd {
+.checkout-info-row dd {
   flex: 1 1 auto;
+  text-align: right;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #111827;
+  color: #0f172a;
 }
 
-.dark .info-list__item dd {
+.dark .checkout-info-row dd {
   color: #f1f5f9;
 }
 
-.info-guidelines {
-  display: grid;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-  color: #475569;
-  line-height: 1.6;
+.checkout-info-row dd a {
+  color: inherit;
+  text-decoration: underline dotted transparent;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
 }
 
-.dark .info-guidelines {
+.checkout-info-row dd a:hover {
+  color: #f7931a;
+  text-decoration-color: currentColor;
+}
+
+.file-guidelines {
+  display: grid;
+  gap: 0.65rem;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.dark .file-guidelines {
   color: #cbd5f5;
 }
 
-.info-guidelines li {
+.file-guidelines li {
   display: flex;
+  align-items: flex-start;
   gap: 0.6rem;
-  align-items: flex-start;
 }
 
-.info-guidelines i {
-  color: #6366f1;
-  margin-top: 0.15rem;
+.file-guidelines i {
+  color: #f7931a;
+  margin-top: 0.2rem;
 }
 
-.dark .info-guidelines i {
-  color: #a5b4fc;
-}
-
-.workflow-card {
-  border-radius: 1.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 1.75rem;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
-}
-
-.dark .workflow-card {
-  border-color: rgba(71, 85, 105, 0.45);
-  background: rgba(15, 23, 42, 0.9);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45);
-}
-
-.workflow-header {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .workflow-header {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-}
-
-.workflow-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.dark .workflow-title {
-  color: #f8fafc;
-}
-
-.workflow-subtitle {
-  font-size: 0.8rem;
-  color: #64748b;
-  margin-top: 0.4rem;
-}
-
-.dark .workflow-subtitle {
-  color: #94a3b8;
-}
-
-.workflow-start-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 1.5rem;
-  padding: 0.85rem 1.8rem;
-  background: linear-gradient(135deg, #f7931a, #fbbf24);
-  color: #0f172a;
-  font-weight: 700;
-  box-shadow: 0 10px 25px rgba(247, 147, 26, 0.24);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.workflow-start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 35px rgba(247, 147, 26, 0.32);
-}
-
-.workflow-start-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.status-banner {
-  min-height: 90px;
-  border-radius: 1.25rem;
-  padding: 1.25rem 1.5rem;
-  background: rgba(248, 250, 252, 0.85);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  color: #0f172a;
-  line-height: 1.6;
-}
-
-.dark .status-banner {
-  background: rgba(30, 41, 59, 0.9);
-  border-color: rgba(71, 85, 105, 0.35);
-  color: #f1f5f9;
-}
-
-.status-banner--error {
-  background: rgba(254, 226, 226, 0.85);
-  border-color: rgba(248, 113, 113, 0.45);
-  color: #b91c1c;
-}
-
-.dark .status-banner--error {
-  background: rgba(153, 27, 27, 0.25);
-  border-color: rgba(239, 68, 68, 0.45);
-  color: #fecaca;
-}
-
-.invoice-panel {
-  border-radius: 1.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(248, 250, 252, 0.75);
-  padding: 1.5rem;
-}
-
-.dark .invoice-panel {
-  border-color: rgba(71, 85, 105, 0.4);
-  background: rgba(15, 23, 42, 0.85);
-}
-
-.invoice-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.invoice-panel__title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.dark .invoice-panel__title {
-  color: #f8fafc;
-}
-
-.invoice-panel__subtitle {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 0.25rem;
-}
-
-.dark .invoice-panel__subtitle {
-  color: #94a3b8;
-}
-
-.timer {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #dc2626;
-  padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
-  background: rgba(248, 113, 113, 0.12);
-}
-
-.invoice-qr-container {
-  width: 220px;
-  height: 220px;
-  border-radius: 1.25rem;
-  border: 1px dashed rgba(99, 102, 241, 0.35);
-  background: rgba(255, 255, 255, 0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.85rem;
-}
-
-.dark .invoice-qr-container {
-  background: rgba(30, 41, 59, 0.75);
-  border-color: rgba(99, 102, 241, 0.4);
-}
-
-.invoice-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.dark .invoice-label {
-  color: #94a3b8;
-}
-
-.invoice-textarea {
-  margin-top: 0.75rem;
-  width: 100%;
-  border-radius: 0.9rem;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(255, 255, 255, 0.95);
-  padding: 0.85rem;
-  font-size: 0.8rem;
-  color: #0f172a;
-}
-
-.dark .invoice-textarea {
-  background: rgba(15, 23, 42, 0.85);
-  border-color: rgba(71, 85, 105, 0.45);
-  color: #e2e8f0;
-}
-
-.invoice-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 0.9rem;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-secondary {
-  background: #111827;
-  color: #f8fafc;
-}
-
-.btn-secondary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 25px rgba(17, 24, 39, 0.25);
-}
-
-.btn-outline {
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  color: #0f172a;
-  background: transparent;
-}
-
-.dark .btn-outline {
-  border-color: rgba(148, 163, 184, 0.45);
-  color: #f1f5f9;
-}
-
-.btn-outline:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(148, 163, 184, 0.2);
-}
-
-.btn-outline-danger {
-  border: 1px solid rgba(248, 113, 113, 0.55);
-  color: #b91c1c;
-}
-
-.dark .btn-outline-danger {
-  border-color: rgba(239, 68, 68, 0.65);
-  color: #fecaca;
-}
-
-.btn-outline-danger:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px rgba(248, 113, 113, 0.25);
-}
-
-.log-card {
-  border-radius: 1.25rem;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background: rgba(248, 250, 252, 0.85);
-  padding: 1.25rem;
-}
-
-.dark .log-card {
-  border-color: rgba(71, 85, 105, 0.4);
-  background: rgba(15, 23, 42, 0.85);
-}
-
-.log-card__title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-}
-
-.dark .log-card__title {
-  color: #f8fafc;
-}
-
-.log-card__subtitle {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin-top: 0.35rem;
-}
-
-.dark .log-card__subtitle {
-  color: #94a3b8;
-}
-
-.log-list {
-  margin-top: 1rem;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.log-list li {
-  border-radius: 0.9rem;
-  padding: 0.75rem 0.9rem;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.dark .log-list li {
-  background: rgba(30, 41, 59, 0.85);
-  border-color: rgba(71, 85, 105, 0.35);
-}
-
-.log-time {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  display: block;
-  margin-bottom: 0.3rem;
-}
-
-.log-message {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: #0f172a;
-}
-
-.dark .log-message {
-  color: #e2e8f0;
-}
-
-.workflow-steps {
-  margin-top: 1.25rem;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.workflow-step {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid transparent;
-  transition: border-color 0.2s ease, background 0.2s ease;
-}
-
-.workflow-step-indicator {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
-  border-radius: 9999px;
-  background: rgba(99, 102, 241, 0.1);
-  color: #4f46e5;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-}
-
-.workflow-step-title {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #111827;
-}
-
-.workflow-step-desc {
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-top: 0.15rem;
-}
-
-.dark .workflow-step-title {
-  color: #f8fafc;
-}
-
-.dark .workflow-step-desc {
-  color: #94a3b8;
-}
-
-.workflow-step.is-active {
-  border-color: rgba(99, 102, 241, 0.45);
-  background: rgba(99, 102, 241, 0.08);
-}
-
-.workflow-step.is-active .workflow-step-indicator {
-  background: #4f46e5;
-  color: #f8fafc;
-}
-
-.workflow-step.is-complete {
-  border-color: rgba(34, 197, 94, 0.45);
-  background: rgba(34, 197, 94, 0.08);
-}
-
-.workflow-step.is-complete .workflow-step-indicator {
-  background: #22c55e;
-  color: #0f172a;
-}
-
-@media (max-width: 768px) {
-  .info-card,
-  .workflow-card {
-    border-radius: 1.35rem;
-    padding: 1.25rem;
+@media (max-width: 640px) {
+  .checkout-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
   }
 
-  .invoice-qr-container {
-    width: 200px;
-    height: 200px;
+  .checkout-info-row dd {
+    text-align: left;
   }
 }
