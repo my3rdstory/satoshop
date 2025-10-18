@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.urls import reverse
 from django.conf import settings
 import csv
 import json
@@ -18,7 +19,13 @@ from products.models import Product, ProductOption, ProductOptionChoice
 from myshop.models import SiteSettings
 from .models import Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 from .payment_utils import calculate_store_totals, calculate_totals, group_cart_items
-from .services import CartService, restore_order_from_payment_transaction
+from .services import (
+    CartService,
+    restore_file_transaction,
+    restore_live_lecture_transaction,
+    restore_meetup_transaction,
+    restore_order_from_payment_transaction,
+)
 from stores.decorators import store_owner_required
 from ln_payment.blink_service import get_blink_service_for_store
 from ln_payment.models import PaymentTransaction
@@ -71,13 +78,29 @@ def _mark_manual_restored(iterable):
 
 def _can_restore_transaction(transaction):
     metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    is_meetup_transaction = transaction.meetup_order_id is not None or metadata.get('meetup_order_id') is not None
+    is_live_lecture_transaction = transaction.live_lecture_order_id is not None or metadata.get('live_lecture_order_id') is not None
+    is_file_transaction = transaction.file_order_id is not None or metadata.get('file_order_id') is not None
+    is_product_transaction = not (is_meetup_transaction or is_live_lecture_transaction or is_file_transaction)
     shipping_data = metadata.get('shipping') or {}
     cart_snapshot = metadata.get('cart_snapshot') or []
     if transaction.order_id or transaction.status == PaymentTransaction.STATUS_COMPLETED:
         return False
-    if not shipping_data or not cart_snapshot:
-        return False
-    return True
+    if is_product_transaction:
+        return bool(shipping_data) and bool(cart_snapshot)
+
+    if is_meetup_transaction or metadata.get('meetup_order_id'):
+        participant_data = metadata.get('participant') or {}
+        return bool(participant_data) and bool(transaction.meetup_order_id or metadata.get('meetup_order_id'))
+
+    if is_live_lecture_transaction or metadata.get('live_lecture_order_id'):
+        participant_data = metadata.get('participant') or {}
+        return bool(participant_data) and bool(transaction.live_lecture_order_id or metadata.get('live_lecture_order_id'))
+
+    if is_file_transaction or metadata.get('file_order_id'):
+        return bool(transaction.file_order_id or metadata.get('file_order_id'))
+
+    return False
 
 
 def _format_text_for_csv(value):
@@ -531,7 +554,7 @@ def payment_transactions(request, store_id):
 
 @login_required
 @store_owner_required
-def payment_transaction_detail(request, store_id, transaction_id):
+def payment_transaction_detail(request, store_id, transaction_id, source=None):
     """단일 결제 트랜잭션 상세"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
     transaction = get_object_or_404(
@@ -541,6 +564,10 @@ def payment_transaction_detail(request, store_id, transaction_id):
     )
 
     metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    is_meetup_transaction = transaction.meetup_order_id is not None or metadata.get('meetup_order_id') is not None
+    is_live_lecture_transaction = transaction.live_lecture_order_id is not None or metadata.get('live_lecture_order_id') is not None
+    is_file_transaction = transaction.file_order_id is not None or metadata.get('file_order_id') is not None
+    is_product_transaction = not (is_meetup_transaction or is_live_lecture_transaction or is_file_transaction)
     shipping_data = metadata.get('shipping') or {}
     cart_snapshot = metadata.get('cart_snapshot') or []
 
@@ -577,6 +604,45 @@ def payment_transaction_detail(request, store_id, transaction_id):
     if not cart_summary['total']:
         cart_summary['total'] = cart_summary['subtotal'] + cart_summary['shipping_fee'] if cart_summary['subtotal'] or cart_summary['shipping_fee'] else _safe_int(transaction.amount_sats)
 
+    valid_sources = {'orders', 'meetup', 'lecture', 'file'}
+    detail_source = (source or request.GET.get('source') or metadata.get('detail_source') or '').lower()
+    if detail_source not in valid_sources:
+        detail_source = 'orders'
+
+    admin_access_enabled = request.GET.get('admin_access', '').lower() == 'true'
+
+    if detail_source == 'meetup':
+        back_url = reverse('meetup:meetup_payment_transactions', args=[store.store_id])
+        back_label = '밋업 결제 목록으로 돌아가기'
+    elif detail_source == 'lecture':
+        back_url = reverse('lecture:live_lecture_payment_transactions', args=[store.store_id])
+        back_label = '라이브 강의 결제 목록으로 돌아가기'
+    elif detail_source == 'file':
+        back_url = reverse('file:file_payment_transactions', args=[store.store_id])
+        back_label = '디지털 파일 결제 목록으로 돌아가기'
+    else:
+        back_url = reverse('orders:payment_transactions', args=[store.store_id])
+        back_label = '결제 정보 목록으로 돌아가기'
+        detail_source = 'orders'
+
+    if admin_access_enabled:
+        separator = '&' if '?' in back_url else '?'
+        back_url = f'{back_url}{separator}admin_access=true'
+
+    def _redirect_to_detail():
+        if detail_source == 'meetup':
+            detail_path = reverse('meetup:meetup_payment_transaction_detail', args=[store.store_id, transaction.id])
+        elif detail_source == 'lecture':
+            detail_path = reverse('lecture:live_lecture_payment_transaction_detail', args=[store.store_id, transaction.id])
+        elif detail_source == 'file':
+            detail_path = reverse('file:file_payment_transaction_detail', args=[store.store_id, transaction.id])
+        else:
+            detail_path = reverse('orders:payment_transaction_detail', args=[store.store_id, transaction.id])
+        if admin_access_enabled:
+            separator = '&' if '?' in detail_path else '?'
+            detail_path = f'{detail_path}{separator}admin_access=true'
+        return redirect(detail_path)
+
     stage_logs_queryset = transaction.stage_logs.order_by('-created_at')
     stage_logs = list(stage_logs_queryset)
     for log in stage_logs:
@@ -594,28 +660,102 @@ def payment_transaction_detail(request, store_id, transaction_id):
             invoice_uri = payment_request
         else:
             invoice_uri = f'lightning:{payment_request}'
-    manual_restore_enabled = transaction.status != PaymentTransaction.STATUS_COMPLETED
+    manual_restore_enabled = (
+        transaction.status != PaymentTransaction.STATUS_COMPLETED
+        and _can_restore_transaction(transaction)
+    )
+
+    manual_restore_title = '주문으로 저장'
+    manual_restore_cta = '주문으로 저장하기'
+    manual_restore_message = (
+        '결제는 완료되었지만 주문이 생성되지 않은 경우 수동으로 주문서를 만들 수 있습니다. '
+        '실행 시 재고가 차감되고 구매자 주문 내역이 생성됩니다.'
+    )
+    manual_restore_confirm = (
+        '주문을 수동으로 저장하면 구매자 마이페이지에도 즉시 표시됩니다. 재고가 부족한 상품은 차감 없이 주문만 생성되고 '
+        '재고 수량은 0으로 조정됩니다. 계속 진행할까요?'
+    )
+
+    if is_meetup_transaction:
+        manual_restore_title = '참가 확정'
+        manual_restore_cta = '참가 확정하기'
+        manual_restore_message = (
+            '결제는 완료되었지만 참가 확정 단계가 완료되지 않은 경우 수동으로 확정할 수 있습니다. '
+            '참가자 명단과 알림이 즉시 반영됩니다.'
+        )
+        manual_restore_confirm = (
+            '참가자를 즉시 확정하고 관련 알림을 발송합니다. 계속 진행할까요?'
+        )
+    elif is_live_lecture_transaction:
+        manual_restore_title = '참가 확정'
+        manual_restore_cta = '참가 확정하기'
+        manual_restore_message = (
+            '결제는 되었지만 라이브 강의 참가 확정 단계가 완료되지 않은 경우 수동으로 확정할 수 있습니다. '
+            '참가자 명단과 알림이 즉시 갱신됩니다.'
+        )
+        manual_restore_confirm = (
+            '참가자를 즉시 확정하고 안내 알림을 발송합니다. 계속 진행할까요?'
+        )
+    elif is_file_transaction:
+        manual_restore_title = '구매 확정'
+        manual_restore_cta = '구매 확정 처리'
+        manual_restore_message = (
+            '결제는 확인했지만 파일 주문이 확정되지 않은 경우 수동으로 완료 처리할 수 있습니다. '
+            '확정 시 다운로드 권한이 즉시 부여됩니다.'
+        )
+        manual_restore_confirm = (
+            '다운로드 권한이 즉시 부여됩니다. 계속 진행할까요?'
+        )
 
     if request.method == 'POST' and request.POST.get('action') == 'restore_order':
         if not manual_restore_enabled:
             messages.info(request, '이미 완료된 결제입니다. 주문 저장이 필요하지 않습니다.')
-            return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
+            return _redirect_to_detail()
         try:
-            order = restore_order_from_payment_transaction(transaction, operator=request.user)
-            messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
-            stock_issues = getattr(order, 'manual_stock_issues', [])
-            if stock_issues:
-                messages.warning(
-                    request,
-                    '일부 상품의 재고가 부족해 재고 차감 없이 주문이 생성되었습니다. 재고 수량을 확인해주세요.',
+            if is_product_transaction:
+                order = restore_order_from_payment_transaction(transaction, operator=request.user)
+                messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
+                stock_issues = getattr(order, 'manual_stock_issues', [])
+                if stock_issues:
+                    messages.warning(
+                        request,
+                        '일부 상품의 재고가 부족해 재고 차감 없이 주문이 생성되었습니다. 재고 수량을 확인해주세요.',
+                    )
+                return redirect('orders:checkout_complete', order_number=order.order_number)
+
+            if is_meetup_transaction:
+                meetup_order = restore_meetup_transaction(transaction, operator=request.user)
+                messages.success(request, f'밋업 참가를 수동으로 확정했습니다. 주문번호 {meetup_order.order_number}')
+                return redirect(
+                    'meetup:meetup_checkout_complete',
+                    store_id=store.store_id,
+                    meetup_id=meetup_order.meetup_id,
+                    order_id=meetup_order.id,
                 )
-            return redirect('orders:checkout_complete', order_number=order.order_number)
+
+            if is_live_lecture_transaction:
+                lecture_order = restore_live_lecture_transaction(transaction, operator=request.user)
+                messages.success(request, f'라이브 강의 참가를 수동으로 확정했습니다. 주문번호 {lecture_order.order_number}')
+                return redirect(
+                    'lecture:live_lecture_checkout_complete',
+                    store_id=store.store_id,
+                    live_lecture_id=lecture_order.live_lecture_id,
+                    order_id=lecture_order.id,
+                )
+
+            if is_file_transaction:
+                file_order = restore_file_transaction(transaction, operator=request.user)
+                messages.success(request, f'파일 주문을 수동으로 확정했습니다. 주문번호 {file_order.order_number}')
+                return redirect('file:file_complete', order_id=file_order.id)
+
+            messages.info(request, '수동 복구 가능한 결제 유형이 아닙니다.')
+            return _redirect_to_detail()
         except ValueError as exc:
             messages.warning(request, str(exc))
         except Exception as exc:  # pylint: disable=broad-except
             logger.exception('manual restore failed transaction=%s', transaction_id)
             messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-        return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
+        return _redirect_to_detail()
 
     context = {
         'store': store,
@@ -627,11 +767,20 @@ def payment_transaction_detail(request, store_id, transaction_id):
         'payment_request': payment_request,
         'invoice_uri': invoice_uri,
         'manual_restore_enabled': manual_restore_enabled,
+        'manual_restore_title': manual_restore_title,
+        'manual_restore_cta': manual_restore_cta,
+        'manual_restore_message': manual_restore_message,
+        'manual_restore_confirm': manual_restore_confirm,
         'manual_restore_history': metadata.get('manual_restore_history', []),
         'status_description': TRANSACTION_STATUS_DESCRIPTIONS.get(transaction.status, ''),
         'status_descriptions': TRANSACTION_STATUS_DESCRIPTIONS,
         'stage_descriptions': TRANSACTION_STAGE_DESCRIPTIONS,
         'stage_label': TRANSACTION_STAGE_DESCRIPTIONS.get(transaction.current_stage, f'{transaction.current_stage}단계'),
+        'show_shipping_section': is_product_transaction,
+        'show_cart_section': is_product_transaction,
+        'detail_source': detail_source,
+        'back_url': back_url,
+        'back_label': back_label,
     }
     return render(request, 'orders/payment_transaction_detail.html', context)
 
@@ -647,27 +796,50 @@ def payment_transaction_restore(request, store_id, transaction_id):
         store=store,
     )
 
+    metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    is_meetup_transaction = transaction.meetup_order_id is not None or metadata.get('meetup_order_id') is not None
+    is_live_lecture_transaction = transaction.live_lecture_order_id is not None or metadata.get('live_lecture_order_id') is not None
+    is_file_transaction = transaction.file_order_id is not None or metadata.get('file_order_id') is not None
+    is_product_transaction = not (is_meetup_transaction or is_live_lecture_transaction or is_file_transaction)
+
     if not _can_restore_transaction(transaction):
         logger.warning(
             'manual restore skipped: order already exists or snapshot missing transaction=%s',
             transaction_id,
         )
+        messages.info(request, '수동 복구를 진행할 수 없습니다.')
         return redirect('orders:payment_transactions', store_id=store.store_id)
 
     try:
-        order = restore_order_from_payment_transaction(transaction, operator=request.user)
-        stock_issues = getattr(order, 'manual_stock_issues', [])
-        if stock_issues:
-            logger.info(
-                'manual restore completed with stock issues transaction=%s issues=%s',
-                transaction_id,
-                stock_issues,
-            )
+        if is_product_transaction:
+            order = restore_order_from_payment_transaction(transaction, operator=request.user)
+            stock_issues = getattr(order, 'manual_stock_issues', [])
+            if stock_issues:
+                logger.info(
+                    'manual restore completed with stock issues transaction=%s issues=%s',
+                    transaction_id,
+                    stock_issues,
+                )
+            messages.success(request, f'결제 트랜잭션을 주문 {order.order_number} 으로 저장했습니다.')
+        elif is_meetup_transaction:
+            meetup_order = restore_meetup_transaction(transaction, operator=request.user)
+            messages.success(request, f'밋업 참가를 수동으로 확정했습니다. 주문번호 {meetup_order.order_number}')
+        elif is_live_lecture_transaction:
+            lecture_order = restore_live_lecture_transaction(transaction, operator=request.user)
+            messages.success(request, f'라이브 강의 참가를 수동으로 확정했습니다. 주문번호 {lecture_order.order_number}')
+        elif is_file_transaction:
+            file_order = restore_file_transaction(transaction, operator=request.user)
+            messages.success(request, f'파일 주문을 수동으로 확정했습니다. 주문번호 {file_order.order_number}')
+        else:
+            messages.info(request, '수동 복구 가능한 결제 유형이 아닙니다.')
+            return redirect('orders:payment_transactions', store_id=store.store_id)
     except ValueError as exc:
         logger.warning('manual restore validation failed transaction=%s error=%s', transaction_id, exc)
+        messages.warning(request, str(exc))
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception('manual restore failed on list view transaction=%s', transaction_id)
-    return redirect('orders:payment_transactions', store_id=store.store_id)
+        messages.error(request, '주문 생성 중 알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
+    return redirect('orders:payment_transaction_detail', store_id=store.store_id, transaction_id=transaction.id)
 
 
 @login_required

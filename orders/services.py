@@ -912,3 +912,476 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
 
     order.manual_stock_issues = stock_issues
     return order
+
+
+def restore_meetup_transaction(payment_transaction, *, operator=None):
+    """수동으로 밋업 결제 트랜잭션을 참가 확정 상태로 복구한다."""
+    from django.utils import timezone
+    from meetup.models import MeetupOrder
+    from meetup.services import (
+        send_meetup_notification_email,
+        send_meetup_participant_confirmation_email,
+    )
+    from ln_payment.models import PaymentStageLog, PaymentTransaction
+    from ln_payment.services import PaymentStage
+
+    metadata = payment_transaction.metadata if isinstance(payment_transaction.metadata, dict) else {}
+    participant_data = metadata.get('participant') or {}
+    if not participant_data:
+        raise ValueError('저장된 참가자 정보가 없습니다.')
+
+    meetup_order = payment_transaction.meetup_order
+    if not meetup_order:
+        meetup_order_id = metadata.get('meetup_order_id')
+        if meetup_order_id:
+            meetup_order = MeetupOrder.objects.filter(id=meetup_order_id).first()
+    if not meetup_order:
+        raise ValueError('연결된 밋업 주문을 찾을 수 없습니다.')
+
+    now = timezone.now()
+    operator_label = getattr(operator, 'username', None) or getattr(operator, 'email', None)
+
+    with transaction.atomic():
+        meetup_order.participant_name = participant_data.get('participant_name', meetup_order.participant_name)
+        meetup_order.participant_email = participant_data.get('participant_email', meetup_order.participant_email)
+        meetup_order.participant_phone = participant_data.get('participant_phone', meetup_order.participant_phone or '')
+        meetup_order.base_price = participant_data.get('base_price', meetup_order.base_price)
+        meetup_order.options_price = participant_data.get('options_price', meetup_order.options_price)
+        meetup_order.total_price = participant_data.get('total_price', meetup_order.total_price)
+        meetup_order.is_early_bird = participant_data.get('is_early_bird', meetup_order.is_early_bird)
+        meetup_order.discount_rate = participant_data.get('discount_rate', meetup_order.discount_rate)
+        meetup_order.original_price = participant_data.get('original_price', meetup_order.original_price)
+        meetup_order.payment_hash = (
+            payment_transaction.payment_hash
+            or participant_data.get('payment_hash')
+            or meetup_order.payment_hash
+        )
+        meetup_order.payment_request = (
+            payment_transaction.payment_request
+            or participant_data.get('payment_request')
+            or meetup_order.payment_request
+        )
+        meetup_order.status = 'confirmed'
+        meetup_order.is_temporary_reserved = False
+        meetup_order.auto_cancelled_reason = ''
+        if not meetup_order.paid_at:
+            meetup_order.paid_at = payment_transaction.updated_at or now
+        if not meetup_order.confirmed_at:
+            meetup_order.confirmed_at = now
+        meetup_order.save(update_fields=[
+            'participant_name',
+            'participant_email',
+            'participant_phone',
+            'base_price',
+            'options_price',
+            'total_price',
+            'is_early_bird',
+            'discount_rate',
+            'original_price',
+            'payment_hash',
+            'payment_request',
+            'status',
+            'is_temporary_reserved',
+            'auto_cancelled_reason',
+            'paid_at',
+            'confirmed_at',
+            'updated_at',
+        ])
+
+        payment_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.USER_PAYMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not payment_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 확인을 수동으로 완료 처리했습니다.',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        settlement_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.MERCHANT_SETTLEMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not settlement_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.MERCHANT_SETTLEMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 입금을 확인했습니다 (수동)',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        PaymentStageLog.objects.create(
+            transaction=payment_transaction,
+            stage=PaymentStage.ORDER_FINALIZE,
+            status=PaymentStageLog.STATUS_COMPLETED,
+            message='스토어에서 밋업 참가를 수동으로 확정했습니다.',
+            detail={
+                'operator': operator_label,
+                'restored_at': now.isoformat(),
+                'order_number': meetup_order.order_number,
+            },
+        )
+
+        meta = dict(metadata)
+        restore_history = meta.setdefault('manual_restore_history', [])
+        restore_history.append({
+            'restored_at': now.isoformat(),
+            'operator': operator_label,
+            'type': 'meetup',
+            'order_number': meetup_order.order_number,
+        })
+        meta['manual_restored'] = True
+
+        update_fields = {'metadata', 'meetup_order', 'status', 'current_stage', 'updated_at'}
+        if participant_data.get('payment_hash') and not payment_transaction.payment_hash:
+            payment_transaction.payment_hash = participant_data['payment_hash']
+            update_fields.add('payment_hash')
+        if participant_data.get('payment_request') and not payment_transaction.payment_request:
+            payment_transaction.payment_request = participant_data['payment_request']
+            update_fields.add('payment_request')
+
+        payment_transaction.metadata = meta
+        payment_transaction.meetup_order = meetup_order
+        payment_transaction.status = PaymentTransaction.STATUS_COMPLETED
+        payment_transaction.current_stage = PaymentStage.ORDER_FINALIZE
+        payment_transaction.save(update_fields=list(update_fields))
+
+    try:
+        send_meetup_notification_email(meetup_order)
+        send_meetup_participant_confirmation_email(meetup_order)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning('밋업 수동 복구 이메일 발송 실패 order=%s', meetup_order.order_number, exc_info=True)
+
+    return meetup_order
+
+
+def restore_live_lecture_transaction(payment_transaction, *, operator=None):
+    """수동으로 라이브 강의 결제 트랜잭션을 참가 확정 상태로 복구한다."""
+    from django.utils import timezone
+    from lecture.models import LiveLectureOrder
+    from lecture.services import (
+        send_live_lecture_notification_email,
+        send_live_lecture_participant_confirmation_email,
+    )
+    from ln_payment.models import PaymentStageLog, PaymentTransaction
+    from ln_payment.services import PaymentStage
+
+    metadata = payment_transaction.metadata if isinstance(payment_transaction.metadata, dict) else {}
+    participant_data = metadata.get('participant') or {}
+    if not participant_data:
+        raise ValueError('저장된 참가자 정보가 없습니다.')
+
+    live_lecture_order = payment_transaction.live_lecture_order
+    if not live_lecture_order:
+        live_lecture_order_id = metadata.get('live_lecture_order_id')
+        if live_lecture_order_id:
+            live_lecture_order = LiveLectureOrder.objects.filter(id=live_lecture_order_id).first()
+    if not live_lecture_order:
+        raise ValueError('연결된 라이브 강의 주문을 찾을 수 없습니다.')
+
+    now = timezone.now()
+    operator_label = getattr(operator, 'username', None) or getattr(operator, 'email', None)
+
+    with transaction.atomic():
+        # 최신 상태를 잠금으로 가져와 중복 확정을 방지
+        live_lecture_order = LiveLectureOrder.objects.select_for_update().get(pk=live_lecture_order.pk)
+
+        merged_original_order_id = None
+        existing_active_order = (
+            LiveLectureOrder.objects.select_for_update()
+            .filter(
+                live_lecture=live_lecture_order.live_lecture,
+                user=live_lecture_order.user,
+                status__in=['confirmed', 'completed'],
+            )
+            .exclude(id=live_lecture_order.id)
+            .order_by('-updated_at')
+            .first()
+        )
+
+        merged_existing_order = existing_active_order is not None
+        if existing_active_order:
+            # 이미 확정된 주문이 있으면 해당 주문으로 결제 정보를 병합한다.
+            target_order = existing_active_order
+            original_order_id = live_lecture_order.id
+
+            if live_lecture_order.id != target_order.id and live_lecture_order.status != 'cancelled':
+                live_lecture_order.status = 'cancelled'
+                live_lecture_order.is_temporary_reserved = False
+                live_lecture_order.auto_cancelled_reason = '중복 주문 자동 취소 (수동 복구 병합)'
+                live_lecture_order.save(update_fields=[
+                    'status',
+                    'is_temporary_reserved',
+                    'auto_cancelled_reason',
+                    'updated_at',
+                ])
+            logger.info(
+                '라이브 강의 수동 복구: 기존 확정 주문과 병합 transaction=%s original_order=%s merged_order=%s',
+                payment_transaction.id,
+                original_order_id,
+                target_order.id,
+            )
+            merged_original_order_id = original_order_id
+            live_lecture_order = target_order
+
+        live_lecture_order.price = participant_data.get('total_price', live_lecture_order.price)
+        live_lecture_order.is_early_bird = participant_data.get('is_early_bird', live_lecture_order.is_early_bird)
+        live_lecture_order.discount_rate = participant_data.get('discount_rate', live_lecture_order.discount_rate)
+        original_price = participant_data.get('original_price')
+        if original_price is not None:
+            live_lecture_order.original_price = original_price
+        live_lecture_order.payment_hash = (
+            payment_transaction.payment_hash
+            or participant_data.get('payment_hash')
+            or live_lecture_order.payment_hash
+        )
+        live_lecture_order.payment_request = (
+            payment_transaction.payment_request
+            or participant_data.get('payment_request')
+            or live_lecture_order.payment_request
+        )
+        if live_lecture_order.status != 'completed':
+            live_lecture_order.status = 'confirmed'
+        live_lecture_order.is_temporary_reserved = False
+        live_lecture_order.auto_cancelled_reason = ''
+        if not live_lecture_order.paid_at:
+            live_lecture_order.paid_at = payment_transaction.updated_at or now
+        if not live_lecture_order.confirmed_at:
+            live_lecture_order.confirmed_at = now
+        live_lecture_order.save(update_fields=[
+            'price',
+            'is_early_bird',
+            'discount_rate',
+            'original_price',
+            'payment_hash',
+            'payment_request',
+            'status',
+            'is_temporary_reserved',
+            'auto_cancelled_reason',
+            'paid_at',
+            'confirmed_at',
+            'updated_at',
+        ])
+
+        payment_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.USER_PAYMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not payment_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 확인을 수동으로 완료 처리했습니다.',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        settlement_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.MERCHANT_SETTLEMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not settlement_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.MERCHANT_SETTLEMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 입금을 확인했습니다 (수동)',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        PaymentStageLog.objects.create(
+            transaction=payment_transaction,
+            stage=PaymentStage.ORDER_FINALIZE,
+            status=PaymentStageLog.STATUS_COMPLETED,
+            message='스토어에서 라이브 강의 참가를 수동으로 확정했습니다.',
+            detail={
+                'operator': operator_label,
+                'restored_at': now.isoformat(),
+                'order_number': live_lecture_order.order_number,
+                'merged_existing_order': merged_existing_order,
+                'cancelled_duplicate_order_id': merged_original_order_id,
+            },
+        )
+
+        meta = dict(metadata)
+        restore_history = meta.setdefault('manual_restore_history', [])
+        restore_history.append({
+            'restored_at': now.isoformat(),
+            'operator': operator_label,
+            'type': 'live_lecture',
+            'order_number': live_lecture_order.order_number,
+            'merged_existing_order': merged_existing_order,
+            'cancelled_duplicate_order_id': merged_original_order_id,
+        })
+        meta['live_lecture_order_id'] = live_lecture_order.id
+        if merged_original_order_id is not None:
+            meta['cancelled_duplicate_live_lecture_order_id'] = merged_original_order_id
+        if isinstance(participant_data, dict):
+            participant_data['live_lecture_order_id'] = live_lecture_order.id
+            meta['participant'] = participant_data
+        meta['manual_restored'] = True
+
+        update_fields = {'metadata', 'live_lecture_order', 'status', 'current_stage', 'updated_at'}
+        if participant_data.get('payment_hash') and not payment_transaction.payment_hash:
+            payment_transaction.payment_hash = participant_data['payment_hash']
+            update_fields.add('payment_hash')
+        if participant_data.get('payment_request') and not payment_transaction.payment_request:
+            payment_transaction.payment_request = participant_data['payment_request']
+            update_fields.add('payment_request')
+
+        payment_transaction.metadata = meta
+        payment_transaction.live_lecture_order = live_lecture_order
+        payment_transaction.status = PaymentTransaction.STATUS_COMPLETED
+        payment_transaction.current_stage = PaymentStage.ORDER_FINALIZE
+        payment_transaction.save(update_fields=list(update_fields))
+
+    try:
+        send_live_lecture_notification_email(live_lecture_order)
+        send_live_lecture_participant_confirmation_email(live_lecture_order)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            '라이브 강의 수동 복구 이메일 발송 실패 order=%s',
+            live_lecture_order.order_number,
+            exc_info=True,
+        )
+
+    return live_lecture_order
+
+
+def restore_file_transaction(payment_transaction, *, operator=None):
+    """수동으로 디지털 파일 결제 트랜잭션을 구매 확정 상태로 복구한다."""
+    from django.utils import timezone
+    from file.models import FileOrder
+    from file.services import (
+        send_file_buyer_confirmation_email,
+        send_file_purchase_notification_email,
+    )
+    from ln_payment.models import PaymentStageLog, PaymentTransaction
+    from ln_payment.services import PaymentStage
+
+    metadata = payment_transaction.metadata if isinstance(payment_transaction.metadata, dict) else {}
+    file_order = payment_transaction.file_order
+    if not file_order:
+        file_order_id = metadata.get('file_order_id')
+        if file_order_id:
+            file_order = FileOrder.objects.filter(id=file_order_id).first()
+    if not file_order:
+        raise ValueError('연결된 파일 주문을 찾을 수 없습니다.')
+
+    now = timezone.now()
+    operator_label = getattr(operator, 'username', None) or getattr(operator, 'email', None)
+
+    with transaction.atomic():
+        file_order.status = 'confirmed'
+        file_order.is_temporary_reserved = False
+        file_order.auto_cancelled_reason = ''
+        if not file_order.paid_at:
+            file_order.paid_at = payment_transaction.updated_at or now
+        if not file_order.confirmed_at:
+            file_order.confirmed_at = now
+        if file_order.digital_file.download_expiry_days and not file_order.download_expires_at:
+            file_order.download_expires_at = now + timezone.timedelta(days=file_order.digital_file.download_expiry_days)
+        file_order.payment_hash = payment_transaction.payment_hash or file_order.payment_hash
+        file_order.payment_request = payment_transaction.payment_request or file_order.payment_request
+        file_order.save(update_fields=[
+            'status',
+            'is_temporary_reserved',
+            'auto_cancelled_reason',
+            'paid_at',
+            'confirmed_at',
+            'download_expires_at',
+            'payment_hash',
+            'payment_request',
+            'updated_at',
+        ])
+
+        payment_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.USER_PAYMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not payment_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 확인을 수동으로 완료 처리했습니다.',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        settlement_completed = payment_transaction.stage_logs.filter(
+            stage=PaymentStage.MERCHANT_SETTLEMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists()
+        if not settlement_completed:
+            PaymentStageLog.objects.create(
+                transaction=payment_transaction,
+                stage=PaymentStage.MERCHANT_SETTLEMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='스토어에서 결제 입금을 확인했습니다 (수동)',
+                detail={
+                    'manual': True,
+                    'operator': operator_label,
+                    'recorded_at': now.isoformat(),
+                },
+            )
+
+        PaymentStageLog.objects.create(
+            transaction=payment_transaction,
+            stage=PaymentStage.ORDER_FINALIZE,
+            status=PaymentStageLog.STATUS_COMPLETED,
+            message='스토어에서 파일 주문을 수동으로 확정했습니다.',
+            detail={
+                'operator': operator_label,
+                'restored_at': now.isoformat(),
+                'order_number': file_order.order_number,
+            },
+        )
+
+        meta = dict(metadata)
+        restore_history = meta.setdefault('manual_restore_history', [])
+        restore_history.append({
+            'restored_at': now.isoformat(),
+            'operator': operator_label,
+            'type': 'file',
+            'order_number': file_order.order_number,
+        })
+        meta['manual_restored'] = True
+
+        update_fields = {'metadata', 'file_order', 'status', 'current_stage', 'updated_at'}
+        payment_transaction.metadata = meta
+        payment_transaction.file_order = file_order
+        payment_transaction.status = PaymentTransaction.STATUS_COMPLETED
+        payment_transaction.current_stage = PaymentStage.ORDER_FINALIZE
+        payment_transaction.save(update_fields=list(update_fields))
+
+    try:
+        send_file_purchase_notification_email(file_order)
+        send_file_buyer_confirmation_email(file_order)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning('파일 주문 수동 복구 이메일 발송 실패 order=%s', file_order.order_number, exc_info=True)
+
+    return file_order

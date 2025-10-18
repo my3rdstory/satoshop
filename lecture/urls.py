@@ -19,6 +19,7 @@ urlpatterns = [
     
     path('<str:store_id>/live/status/', views.live_lecture_status, name='live_lecture_status'),
     path('<str:store_id>/live/payment-transactions/', views.live_lecture_payment_transactions, name='live_lecture_payment_transactions'),
+    path('<str:store_id>/live/payment-transactions/<uuid:transaction_id>/', views.live_lecture_payment_transaction_detail, name='live_lecture_payment_transaction_detail'),
     path('<str:store_id>/live/status/<int:live_lecture_id>/', views.live_lecture_status_detail, name='live_lecture_status_detail'),
     path('<str:store_id>/live/status/<int:live_lecture_id>/export/', views.export_live_lecture_participants_csv, name='export_live_lecture_participants_csv'),
     path('<str:store_id>/live/status/<int:live_lecture_id>/update_attendance/', views.update_live_lecture_attendance, name='update_live_lecture_attendance'),

@@ -601,6 +601,8 @@ def meetup_payment_transactions(request, store_id):
         'total_amount': base_qs.aggregate(total=models.Sum('amount_sats'))['total'] or 0,
     }
 
+    admin_access_query = '?admin_access=true' if request.GET.get('admin_access', '').lower() == 'true' else ''
+
     context = {
         'store': store,
         'transactions': transactions_page,
@@ -609,9 +611,18 @@ def meetup_payment_transactions(request, store_id):
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,
+        'admin_access_query': admin_access_query,
     }
 
     return render(request, 'meetup/meetup_payment_transactions.html', context)
+
+
+@login_required
+def meetup_payment_transaction_detail(request, store_id, transaction_id):
+    """밋업 결제 트랜잭션 상세 (orders 상세 화면 재사용)"""
+    from orders.views import payment_transaction_detail  # 순환 참조 방지용 지연 임포트
+
+    return payment_transaction_detail(request, store_id, transaction_id, source='meetup')
 
 
 @login_required

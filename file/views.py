@@ -579,6 +579,8 @@ def file_payment_transactions(request, store_id):
         'total_amount': base_qs.aggregate(total=Sum('amount_sats'))['total'] or 0,
     }
 
+    admin_access_query = '?admin_access=true' if request.GET.get('admin_access', '').lower() == 'true' else ''
+
     context = {
         'store': store,
         'transactions': transactions_page,
@@ -587,8 +589,17 @@ def file_payment_transactions(request, store_id):
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,
+        'admin_access_query': admin_access_query,
     }
     return render(request, 'file/file_payment_transactions.html', context)
+
+
+@login_required
+def file_payment_transaction_detail(request, store_id, transaction_id):
+    """디지털 파일 결제 트랜잭션 상세 (orders 상세 화면 재사용)"""
+    from orders.views import payment_transaction_detail  # 지연 임포트로 순환 방지
+
+    return payment_transaction_detail(request, store_id, transaction_id, source='file')
 
 
 @login_required
