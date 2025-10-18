@@ -587,6 +587,11 @@ def meetup_payment_transactions(request, store_id):
         tx.stage_label = stage_label or f'{tx.current_stage}단계'
         tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
         tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+        if isinstance(metadata, dict):
+            tx.manual_restored = bool(
+                metadata.get('manual_restored')
+                or (metadata.get('manual_restore_history') or [])
+            )
 
     base_qs = PaymentTransaction.objects.filter(
         store=store,

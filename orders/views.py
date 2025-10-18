@@ -726,27 +726,32 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
             if is_meetup_transaction:
                 meetup_order = restore_meetup_transaction(transaction, operator=request.user)
                 messages.success(request, f'밋업 참가를 수동으로 확정했습니다. 주문번호 {meetup_order.order_number}')
-                return redirect(
+                meetup_url = reverse(
                     'meetup:meetup_checkout_complete',
-                    store_id=store.store_id,
-                    meetup_id=meetup_order.meetup_id,
-                    order_id=meetup_order.id,
+                    args=[store.store_id, meetup_order.meetup_id, meetup_order.id],
                 )
+                if admin_access_enabled:
+                    meetup_url = f'{meetup_url}?admin_access=true'
+                return redirect(meetup_url)
 
             if is_live_lecture_transaction:
                 lecture_order = restore_live_lecture_transaction(transaction, operator=request.user)
                 messages.success(request, f'라이브 강의 참가를 수동으로 확정했습니다. 주문번호 {lecture_order.order_number}')
-                return redirect(
+                lecture_url = reverse(
                     'lecture:live_lecture_checkout_complete',
-                    store_id=store.store_id,
-                    live_lecture_id=lecture_order.live_lecture_id,
-                    order_id=lecture_order.id,
+                    args=[store.store_id, lecture_order.live_lecture_id, lecture_order.id],
                 )
+                if admin_access_enabled:
+                    lecture_url = f'{lecture_url}?admin_access=true'
+                return redirect(lecture_url)
 
             if is_file_transaction:
                 file_order = restore_file_transaction(transaction, operator=request.user)
                 messages.success(request, f'파일 주문을 수동으로 확정했습니다. 주문번호 {file_order.order_number}')
-                return redirect('file:file_complete', order_id=file_order.id)
+                file_url = reverse('file:file_complete', args=[file_order.id])
+                if admin_access_enabled:
+                    file_url = f'{file_url}?admin_access=true'
+                return redirect(file_url)
 
             messages.info(request, '수동 복구 가능한 결제 유형이 아닙니다.')
             return _redirect_to_detail()

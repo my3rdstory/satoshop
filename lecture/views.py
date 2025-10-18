@@ -579,6 +579,11 @@ def live_lecture_payment_transactions(request, store_id):
         tx.stage_description = stage_description
         tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
         tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+        if isinstance(metadata, dict):
+            tx.manual_restored = bool(
+                metadata.get('manual_restored')
+                or (metadata.get('manual_restore_history') or [])
+            )
 
     base_qs = PaymentTransaction.objects.filter(
         store=store,
@@ -1061,17 +1066,25 @@ def live_lecture_checkout_complete(request, store_id, live_lecture_id, order_id)
         deleted_at__isnull=True
     )
     order = get_object_or_404(LiveLectureOrder, id=order_id, live_lecture=live_lecture)
-    
+
+    admin_access_enabled = request.GET.get('admin_access', '').lower() == 'true'
+    is_store_owner = request.user.is_authenticated and store.owner_id == request.user.id
+    has_superuser_override = request.user.is_authenticated and request.user.is_superuser and admin_access_enabled
+
     # 로그인한 사용자가 아니거나 주문자가 아닌 경우 접근 제한
-    if not request.user.is_authenticated or order.user != request.user:
+    if not request.user.is_authenticated:
         raise Http404("주문을 찾을 수 없습니다.")
-    
+
+    if order.user != request.user and not (is_store_owner or has_superuser_override):
+        raise Http404("주문을 찾을 수 없습니다.")
+
     context = {
         'store': store,
         'live_lecture': live_lecture,
         'order': order,
+        'viewed_by_store_owner': is_store_owner or has_superuser_override,
     }
-    
+
     return render(request, 'lecture/lecture_live_checkout_complete.html', context)
 
 @login_required 

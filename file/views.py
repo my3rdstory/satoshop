@@ -565,6 +565,11 @@ def file_payment_transactions(request, store_id):
         tx.stage_label = TRANSACTION_STAGE_LABELS.get(tx.current_stage) or f'{tx.current_stage}단계'
         tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
         tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+        if isinstance(metadata, dict):
+            tx.manual_restored = bool(
+                metadata.get('manual_restored')
+                or (metadata.get('manual_restore_history') or [])
+            )
 
     base_qs = PaymentTransaction.objects.filter(
         store=store,
@@ -1350,15 +1355,23 @@ def toggle_file_temporary_closure(request, store_id, file_id):
 def file_complete(request, order_id):
     """파일 구매 완료 페이지"""
     order = get_object_or_404(
-        FileOrder,
+        FileOrder.objects.select_related('digital_file__store'),
         id=order_id,
-        user=request.user,
         status='confirmed'
     )
-    
+
+    store = order.digital_file.store
+    admin_access_enabled = request.GET.get('admin_access', '').lower() == 'true'
+    is_store_owner = store.owner_id == request.user.id
+    has_superuser_override = request.user.is_superuser and admin_access_enabled
+
+    if order.user_id != request.user.id and not (is_store_owner or has_superuser_override):
+        raise Http404("주문을 찾을 수 없습니다.")
+
     context = {
         'order': order,
-        'store': order.digital_file.store,
+        'store': store,
         'file': order.digital_file,
+        'viewed_by_store_owner': is_store_owner or has_superuser_override,
     }
     return render(request, 'file/file_complete.html', context)
