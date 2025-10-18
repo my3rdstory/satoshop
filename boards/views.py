@@ -33,7 +33,7 @@ class NoticeListView(ListView):
     model = Notice
     template_name = 'boards/notice/list.html'
     context_object_name = 'notices'
-    paginate_by = 20
+    paginate_by = 5
     
     def get_queryset(self):
         search = self.request.GET.get('search', '').strip()
@@ -62,12 +62,17 @@ class NoticeListView(ListView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['search'] = self.request.GET.get('search', '')
+        search_query = self.request.GET.get('search', '')
+        context['search'] = search_query
+        context['search_query'] = search_query
         # 로그인한 사용자이고 스태프인 경우에만 작성 권한 부여
         context['can_create'] = (
             self.request.user.is_authenticated and 
             is_staff_or_superuser(self.request.user)
         )
+        paginator = context.get('paginator')
+        if paginator is not None:
+            context['total_notices'] = paginator.count
         return context
 
 
