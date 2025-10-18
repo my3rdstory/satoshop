@@ -565,6 +565,11 @@ def file_payment_transactions(request, store_id):
         tx.stage_label = TRANSACTION_STAGE_LABELS.get(tx.current_stage) or f'{tx.current_stage}단계'
         tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
         tx.reservation_expires_at = getattr(order, 'reservation_expires_at', None)
+        if isinstance(metadata, dict):
+            tx.manual_restored = bool(
+                metadata.get('manual_restored')
+                or (metadata.get('manual_restore_history') or [])
+            )
 
     base_qs = PaymentTransaction.objects.filter(
         store=store,
@@ -579,6 +584,8 @@ def file_payment_transactions(request, store_id):
         'total_amount': base_qs.aggregate(total=Sum('amount_sats'))['total'] or 0,
     }
 
+    admin_access_query = '?admin_access=true' if request.GET.get('admin_access', '').lower() == 'true' else ''
+
     context = {
         'store': store,
         'transactions': transactions_page,
@@ -587,8 +594,17 @@ def file_payment_transactions(request, store_id):
         'status_filter': status_filter or '',
         'stage_filter': stage_filter or '',
         'summary': summary,
+        'admin_access_query': admin_access_query,
     }
     return render(request, 'file/file_payment_transactions.html', context)
+
+
+@login_required
+def file_payment_transaction_detail(request, store_id, transaction_id):
+    """디지털 파일 결제 트랜잭션 상세 (orders 상세 화면 재사용)"""
+    from orders.views import payment_transaction_detail  # 지연 임포트로 순환 방지
+
+    return payment_transaction_detail(request, store_id, transaction_id, source='file')
 
 
 @login_required
@@ -1339,15 +1355,23 @@ def toggle_file_temporary_closure(request, store_id, file_id):
 def file_complete(request, order_id):
     """파일 구매 완료 페이지"""
     order = get_object_or_404(
-        FileOrder,
+        FileOrder.objects.select_related('digital_file__store'),
         id=order_id,
-        user=request.user,
         status='confirmed'
     )
-    
+
+    store = order.digital_file.store
+    admin_access_enabled = request.GET.get('admin_access', '').lower() == 'true'
+    is_store_owner = store.owner_id == request.user.id
+    has_superuser_override = request.user.is_superuser and admin_access_enabled
+
+    if order.user_id != request.user.id and not (is_store_owner or has_superuser_override):
+        raise Http404("주문을 찾을 수 없습니다.")
+
     context = {
         'order': order,
-        'store': order.digital_file.store,
+        'store': store,
         'file': order.digital_file,
+        'viewed_by_store_owner': is_store_owner or has_superuser_override,
     }
     return render(request, 'file/file_complete.html', context)

@@ -15,7 +15,8 @@ urlpatterns = [
     path('<str:store_id>/files/manage/', views.file_manage, name='file_manage'),
     path('<str:store_id>/files/orders/', views.file_orders, name='file_orders'),
     path('<str:store_id>/files/payment-transactions/', views.file_payment_transactions, name='file_payment_transactions'),
-    
+    path('<str:store_id>/files/payment-transactions/<uuid:transaction_id>/', views.file_payment_transaction_detail, name='file_payment_transaction_detail'),
+
     # 구매/다운로드
     path('<str:store_id>/files/<int:file_id>/checkout/', views.file_checkout, name='file_checkout'),
     path(

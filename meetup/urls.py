@@ -15,6 +15,7 @@ urlpatterns = [
     # 밋업 현황 (구체적인 패턴을 먼저 배치)
     path('<str:store_id>/status/', views.meetup_status, name='meetup_status'),
     path('<str:store_id>/payment-transactions/', views.meetup_payment_transactions, name='meetup_payment_transactions'),
+    path('<str:store_id>/payment-transactions/<uuid:transaction_id>/', views.meetup_payment_transaction_detail, name='meetup_payment_transaction_detail'),
     path('<str:store_id>/status/<int:meetup_id>/', views.meetup_status_detail, name='meetup_status_detail'),
     path('<str:store_id>/status/<int:meetup_id>/csv/', views.export_meetup_participants_csv, name='export_meetup_participants_csv'),
     path('<str:store_id>/status/<int:meetup_id>/update_attendance/', views.update_attendance, name='update_attendance'),

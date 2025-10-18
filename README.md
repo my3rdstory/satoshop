@@ -408,6 +408,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 - 모바일 화면에서는 `lightning:` 스킴을 사용하는 “지갑 열기” 버튼을 노출해 지갑 앱으로 즉시 이동할 수 있습니다.
 - 진행 로그는 단계 이름·시간과 함께 사용자 친화 문구로 갱신되어 결제 흐름을 직관적으로 파악할 수 있습니다.
 - Django Admin에는 주문을 수동으로 저장한 결제 트랜잭션만 모아서 확인하는 전용 메뉴가 추가되었습니다.
+- 라이브 강의 결제 트랜잭션을 수동으로 복구할 때는 이미 확정된 주문을 자동 병합하고 중복 주문을 취소해 `unique_active_live_lecture_order_per_user` 제약 오류를 방지하며, 병합 결과는 단계 로그와 메타데이터에 기록됩니다.
 - 밋업 결제 화면(`meetup/templates/meetup/meetup_checkout.html`) 역시 동일한 5단계 UI와 `static/js/meetup_payment_workflow.js`, `static/css/meetup_checkout.css`를 사용해 참가 예약부터 확정까지 흐름을 안내합니다.
 - 디지털 파일 결제 화면(`file/templates/file/file_checkout.html`)도 5단계 UI와 `static/js/file_payment_workflow.js`, `static/css/file_checkout.css`를 사용해 인보이스 발행부터 다운로드 권한 확정까지 안내합니다.
 
@@ -699,6 +700,13 @@ SiteSettings ──→ ExchangeRate
 2. 스토어 관리 메뉴에서 **카테고리 관리** 화면으로 이동해 새 카테고리 생성, 이름 수정, 삭제, 순서 변경(위/아래 버튼)을 각각 확인합니다.
 3. `/products/<store_id>/list/` 페이지에서 카테고리 로그인을 확인하고, 새로 생성한 카테고리로 상품을 등록·수정하여 섹션 배치가 즉시 반영되는지 검증합니다.
 4. 공개 보기와 관리자 보기 모두에서 카테고리 네비게이션(상단 필터)과 섹션별 상품 카드가 정상적으로 노출되는지 확인합니다.
+
+### 수동 테스트 체크리스트 (라이브 강의 수동 복구)
+
+1. 동일 사용자·강의 조합으로 하나의 `LiveLectureOrder`를 `confirmed` 상태로 두고, 다른 주문은 `pending` 상태로 유지합니다. (관리자에서 상태를 조정하거나 테스트 결제 플로우를 통해 생성)
+2. `PaymentTransaction` 상세 화면에서 `pending` 주문과 연결된 라이브 강의 결제 건을 열고 `참가 확정하기`를 클릭합니다.
+3. 화면이 오류 없이 완료되고 `PaymentStageLog`의 `ORDER_FINALIZE` 단계에 `merged_existing_order: true`와 `cancelled_duplicate_order_id` 정보가 기록되는지 확인합니다.
+4. Django Admin의 `LiveLectureOrder` 목록을 확인해 `pending`이던 주문이 `cancelled`로 전환되고, 기존 확정 주문에 최신 결제 정보가 병합됐는지 검증합니다.
 
 2. **브랜치 관리**
    - main 브랜치는 운영 배포용으로만 사용
