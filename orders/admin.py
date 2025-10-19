@@ -4,6 +4,18 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.db.models import Count
 from stores.models import Store
+from ln_payment.models import (
+    PaymentTransaction,
+    ManualPaymentTransaction,
+    PaymentStageLog,
+    OrderItemReservation,
+)
+from ln_payment.admin import (
+    PaymentTransactionAdmin as BasePaymentTransactionAdmin,
+    ManualPaymentTransactionAdmin as BaseManualPaymentTransactionAdmin,
+    PaymentStageLogAdmin as BasePaymentStageLogAdmin,
+    OrderItemReservationAdmin as BaseOrderItemReservationAdmin,
+)
 from .models import (
     Cart, CartItem, Order, OrderItem, PurchaseHistory, Invoice
 )
@@ -434,6 +446,70 @@ class OrderAdmin(admin.ModelAdmin):
 #         return format_html(''.join(html_parts))
 #     
 #     order_items_display.short_description = '주문 아이템들'
+
+
+class ProductPaymentTransaction(PaymentTransaction):
+    class Meta:
+        proxy = True
+        app_label = 'orders'
+        verbose_name = '결제 트랜잭션'
+        verbose_name_plural = '결제 트랜잭션'
+
+
+@admin.register(ProductPaymentTransaction)
+class ProductPaymentTransactionAdmin(BasePaymentTransactionAdmin):
+    """상품 주문과 연결된 결제 트랜잭션."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(order__isnull=False)
+
+
+class ProductManualPaymentTransaction(ManualPaymentTransaction):
+    class Meta:
+        proxy = True
+        app_label = 'orders'
+        verbose_name = '수동 저장 결제'
+        verbose_name_plural = '수동 저장 결제'
+
+
+@admin.register(ProductManualPaymentTransaction)
+class ProductManualPaymentTransactionAdmin(BaseManualPaymentTransactionAdmin):
+    """상품 주문 대상 수동 저장 결제."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(order__isnull=False)
+
+
+class ProductPaymentStageLog(PaymentStageLog):
+    class Meta:
+        proxy = True
+        app_label = 'orders'
+        verbose_name = '결제 단계 로그'
+        verbose_name_plural = '결제 단계 로그'
+
+
+@admin.register(ProductPaymentStageLog)
+class ProductPaymentStageLogAdmin(BasePaymentStageLogAdmin):
+    """상품 주문 결제 단계 로그."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(transaction__order__isnull=False)
+
+
+class ProductOrderItemReservation(OrderItemReservation):
+    class Meta:
+        proxy = True
+        app_label = 'orders'
+        verbose_name = '재고 예약'
+        verbose_name_plural = '재고 예약'
+
+
+@admin.register(ProductOrderItemReservation)
+class ProductOrderItemReservationAdmin(BaseOrderItemReservationAdmin):
+    """상품 주문과 연결된 재고 예약."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(transaction__order__isnull=False)
 
 
 @admin.register(Invoice)

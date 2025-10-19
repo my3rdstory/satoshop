@@ -4,4 +4,5 @@ from .meetup_image_admin import *
 from .meetup_option_admin import *
 from .meetup_order_admin import *
 from .meetup_participant_admin import *
+from .payment_admin import *
 from .filters import * 

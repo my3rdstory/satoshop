@@ -11,7 +11,6 @@ from .models import (
 from .services import PaymentStage
 
 
-@admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
     list_display = (
         "id_with_hash",
@@ -37,12 +36,10 @@ class PaymentTransactionAdmin(admin.ModelAdmin):
         )
 
 
-@admin.register(ManualPaymentTransaction)
 class ManualPaymentTransactionAdmin(PaymentTransactionAdmin):
-    list_display = PaymentTransactionAdmin.list_display + ("order",)
+    list_display = PaymentTransactionAdmin.list_display + ("order", "meetup_order", "live_lecture_order", "file_order")
 
 
-@admin.register(PaymentStageLog)
 class PaymentStageLogAdmin(admin.ModelAdmin):
     list_display = (
         "transaction",
@@ -152,9 +149,16 @@ class PaymentStageLogAdmin(admin.ModelAdmin):
         return last_log.created_at
 
 
-@admin.register(OrderItemReservation)
 class OrderItemReservationAdmin(admin.ModelAdmin):
     list_display = ("transaction", "product", "quantity", "status", "expires_at", "created_at")
     list_filter = ("status", "product")
     search_fields = ("transaction__id", "product__title")
     ordering = ("-created_at",)
+
+
+__all__ = [
+    "ManualPaymentTransactionAdmin",
+    "OrderItemReservationAdmin",
+    "PaymentStageLogAdmin",
+    "PaymentTransactionAdmin",
+]

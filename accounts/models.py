@@ -71,3 +71,11 @@ class UserPurchaseHistory(DjangoUser):
         proxy = True
         verbose_name = '사용자별 구매 내역'
         verbose_name_plural = '사용자별 구매 내역'
+
+
+class UserMyPageHistory(DjangoUser):
+    """마이페이지 이력 조회용 Proxy 모델"""
+    class Meta:
+        proxy = True
+        verbose_name = '사용자 마이페이지 이력'
+        verbose_name_plural = '사용자 마이페이지 이력'
