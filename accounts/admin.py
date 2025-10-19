@@ -4,11 +4,15 @@ from django.contrib.auth.models import User
 from django.utils.html import format_html
 from django.urls import reverse
 from django.db import models
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Max
 from django.utils import timezone
 from django.http import HttpResponse
 import csv
-from .models import LightningUser, UserPurchaseHistory
+from .models import LightningUser, UserPurchaseHistory, UserMyPageHistory
+from meetup.models import MeetupOrder
+from lecture.models import LiveLectureOrder
+from file.models import FileOrder
+from orders.models import PurchaseHistory
 
 
 def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
@@ -21,6 +25,7 @@ def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
 
 @admin.register(LightningUser)
 class LightningUserAdmin(admin.ModelAdmin):
+
     list_display = ['user', 'public_key_short', 'created_at', 'last_login_at']
     list_filter = ['created_at', 'last_login_at']
     search_fields = ['user__username', 'public_key']
@@ -182,9 +187,188 @@ class OrderInline(admin.TabularInline):
     
     def has_add_permission(self, request, obj=None):
         return False
-        
+    
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('store').order_by('-created_at')
+
+
+class PurchaseHistoryInline(admin.TabularInline):
+    model = PurchaseHistory
+    fk_name = 'user'
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = ('order_link', 'store_name_display', 'total_amount_display', 'purchase_date_display')
+    readonly_fields = fields
+    verbose_name = '구매 내역'
+    verbose_name_plural = '구매 내역'
+
+    def order_link(self, obj):
+        order = getattr(obj, 'order', None)
+        if order:
+            url = reverse('admin:orders_order_change', args=[order.pk])
+            return format_html('<a href="{}">{}</a>', url, order.order_number)
+        return '-'
+    order_link.short_description = '주문번호'
+
+    def store_name_display(self, obj):
+        return obj.store_name or '-'
+    store_name_display.short_description = '스토어'
+
+    def total_amount_display(self, obj):
+        return f"{obj.total_amount:,} sats"
+    total_amount_display.short_description = '결제 금액'
+
+    def purchase_date_display(self, obj):
+        return _format_local(obj.purchase_date) if obj.purchase_date else '-'
+    purchase_date_display.short_description = '구매 일시'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('order', 'order__store').order_by('-purchase_date')
+
+
+class MeetupOrderInline(admin.TabularInline):
+    model = MeetupOrder
+    fk_name = 'user'
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = ('order_link', 'meetup_info', 'status_display', 'total_price_display', 'confirmed_at_display')
+    readonly_fields = fields
+    verbose_name = '밋업 주문'
+    verbose_name_plural = '밋업 주문'
+
+    def order_link(self, obj):
+        url = reverse('admin:meetup_meetuporder_change', args=[obj.pk])
+        return format_html('<a href="{}">{}</a>', url, obj.order_number)
+    order_link.short_description = '주문번호'
+
+    def meetup_info(self, obj):
+        meetup = obj.meetup
+        if not meetup:
+            return '-'
+        store_name = meetup.store.store_name if meetup.store else ''
+        return f"{store_name} / {meetup.name}"
+    meetup_info.short_description = '밋업'
+
+    def status_display(self, obj):
+        return obj.get_status_display()
+    status_display.short_description = '상태'
+
+    def total_price_display(self, obj):
+        return f"{obj.total_price:,} sats"
+    total_price_display.short_description = '결제 금액'
+
+    def confirmed_at_display(self, obj):
+        return _format_local(obj.confirmed_at) if obj.confirmed_at else '-'
+    confirmed_at_display.short_description = '확정 일시'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('meetup', 'meetup__store').order_by('-created_at')
+
+
+class LiveLectureOrderInline(admin.TabularInline):
+    model = LiveLectureOrder
+    fk_name = 'user'
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = ('order_link', 'lecture_info', 'status_display', 'price_display', 'confirmed_at_display')
+    readonly_fields = fields
+    verbose_name = '라이브 강의 주문'
+    verbose_name_plural = '라이브 강의 주문'
+
+    def order_link(self, obj):
+        url = reverse('admin:lecture_livelectureorder_change', args=[obj.pk])
+        return format_html('<a href="{}">{}</a>', url, obj.order_number)
+    order_link.short_description = '주문번호'
+
+    def lecture_info(self, obj):
+        lecture = obj.live_lecture
+        if not lecture:
+            return '-'
+        store_name = lecture.store.store_name if lecture.store else ''
+        return f"{store_name} / {lecture.name}"
+    lecture_info.short_description = '라이브 강의'
+
+    def status_display(self, obj):
+        return obj.get_status_display()
+    status_display.short_description = '상태'
+
+    def price_display(self, obj):
+        return f"{obj.price:,} sats"
+    price_display.short_description = '결제 금액'
+
+    def confirmed_at_display(self, obj):
+        return _format_local(obj.confirmed_at) if obj.confirmed_at else '-'
+    confirmed_at_display.short_description = '확정 일시'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('live_lecture', 'live_lecture__store').order_by('-created_at')
+
+
+class FileOrderInline(admin.TabularInline):
+    model = FileOrder
+    fk_name = 'user'
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = ('order_link', 'file_info', 'status_display', 'price_display', 'confirmed_at_display')
+    readonly_fields = fields
+    verbose_name = '파일 주문'
+    verbose_name_plural = '파일 주문'
+
+    def order_link(self, obj):
+        url = reverse('admin:file_fileorder_change', args=[obj.pk])
+        return format_html('<a href="{}">{}</a>', url, obj.order_number)
+    order_link.short_description = '주문번호'
+
+    def file_info(self, obj):
+        digital_file = obj.digital_file
+        if not digital_file:
+            return '-'
+        store_name = digital_file.store.store_name if digital_file.store else ''
+        return f"{store_name} / {digital_file.name}"
+    file_info.short_description = '디지털 파일'
+
+    def status_display(self, obj):
+        return obj.get_status_display()
+    status_display.short_description = '상태'
+
+    def price_display(self, obj):
+        return f"{obj.price:,} sats"
+    price_display.short_description = '결제 금액'
+
+    def confirmed_at_display(self, obj):
+        return _format_local(obj.confirmed_at) if obj.confirmed_at else '-'
+    confirmed_at_display.short_description = '확정 일시'
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('digital_file', 'digital_file__store').order_by('-created_at')
 
 
 class HasOrdersFilter(admin.SimpleListFilter):
@@ -341,7 +525,7 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
         return response
     
     export_as_csv.short_description = 'CSV로 내보내기'
-    
+
     def changelist_view(self, request, extra_context=None):
         """리스트 뷰에 추가 버튼 표시"""
         extra_context = extra_context or {}
@@ -351,3 +535,153 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
         
         return super().changelist_view(request, extra_context)
 
+    def has_module_permission(self, request):
+        return request.user.has_module_perms('accounts')
+
+
+@admin.register(UserMyPageHistory)
+class UserMyPageHistoryAdmin(admin.ModelAdmin):
+    """사용자 마이페이지 이력 조회"""
+
+    class Media:
+        css = {
+            'all': ('admin/css/user_purchase_history.css',)
+        }
+
+    list_display = [
+        'username',
+        'email',
+        'purchase_count_display',
+        'meetup_count_display',
+        'live_lecture_count_display',
+        'file_order_count_display',
+        'last_activity_display',
+    ]
+    search_fields = ['username', 'email', 'first_name', 'last_name']
+    ordering = ['-id']
+    list_per_page = 20
+    inlines = [
+        PurchaseHistoryInline,
+        MeetupOrderInline,
+        LiveLectureOrderInline,
+        FileOrderInline,
+    ]
+    fieldsets = (
+        ('사용자 정보', {
+            'fields': ('username', 'email', 'first_name', 'last_name', 'is_active', 'date_joined', 'last_login'),
+            'classes': ('wide',),
+        }),
+        ('참여 통계', {
+            'fields': (
+                'purchase_count_display',
+                'meetup_count_display',
+                'live_lecture_count_display',
+                'file_order_count_display',
+                'last_activity_display',
+            ),
+        }),
+    )
+    readonly_fields = (
+        'username',
+        'email',
+        'first_name',
+        'last_name',
+        'is_active',
+        'date_joined',
+        'last_login',
+        'purchase_count_display',
+        'meetup_count_display',
+        'live_lecture_count_display',
+        'file_order_count_display',
+        'last_activity_display',
+    )
+
+    def get_model_perms(self, request):
+        return {
+            'add': False,
+            'change': True,
+            'delete': False,
+            'view': True,
+        }
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        qs = User.objects.all()
+        return qs.annotate(
+            mypage_purchase_count=Count('purchase_history', distinct=True),
+            mypage_meetup_count=Count(
+                'meetup_orders',
+                filter=Q(meetup_orders__status__in=['confirmed', 'completed']),
+                distinct=True,
+            ),
+            mypage_live_count=Count(
+                'live_lecture_orders',
+                filter=Q(live_lecture_orders__status__in=['confirmed', 'completed']),
+                distinct=True,
+            ),
+            mypage_file_count=Count(
+                'file_orders',
+                filter=Q(file_orders__status='confirmed'),
+                distinct=True,
+            ),
+            last_purchase_activity=Max('purchase_history__purchase_date'),
+            last_meetup_activity=Max(
+                'meetup_orders__confirmed_at',
+                filter=Q(meetup_orders__status__in=['confirmed', 'completed']),
+            ),
+            last_live_activity=Max(
+                'live_lecture_orders__confirmed_at',
+                filter=Q(live_lecture_orders__status__in=['confirmed', 'completed']),
+            ),
+            last_file_activity=Max(
+                'file_orders__confirmed_at',
+                filter=Q(file_orders__status='confirmed'),
+            ),
+        )
+
+    def purchase_count_display(self, obj):
+        count = getattr(obj, 'mypage_purchase_count', None)
+        if count is None:
+            count = obj.purchase_history.count()
+        return format_html('<span style="font-weight: bold;">{}건</span>', count)
+    purchase_count_display.short_description = '구매 내역'
+
+    def meetup_count_display(self, obj):
+        count = getattr(obj, 'mypage_meetup_count', None)
+        if count is None:
+            count = obj.meetup_orders.filter(status__in=['confirmed', 'completed']).count()
+        return format_html('<span style="font-weight: bold;">{}건</span>', count)
+    meetup_count_display.short_description = '밋업'
+
+    def live_lecture_count_display(self, obj):
+        count = getattr(obj, 'mypage_live_count', None)
+        if count is None:
+            count = obj.live_lecture_orders.filter(status__in=['confirmed', 'completed']).count()
+        return format_html('<span style="font-weight: bold;">{}건</span>', count)
+    live_lecture_count_display.short_description = '라이브 강의'
+
+    def file_order_count_display(self, obj):
+        count = getattr(obj, 'mypage_file_count', None)
+        if count is None:
+            count = obj.file_orders.filter(status='confirmed').count()
+        return format_html('<span style="font-weight: bold;">{}건</span>', count)
+    file_order_count_display.short_description = '파일'
+
+    def last_activity_display(self, obj):
+        candidates = [
+            getattr(obj, 'last_purchase_activity', None),
+            getattr(obj, 'last_meetup_activity', None),
+            getattr(obj, 'last_live_activity', None),
+            getattr(obj, 'last_file_activity', None),
+        ]
+        latest = max((dt for dt in candidates if dt), default=None)
+        return _format_local(latest) if latest else '-'
+    last_activity_display.short_description = '최근 활동'
+
+    def has_module_permission(self, request):
+        return request.user.has_module_perms('accounts')
