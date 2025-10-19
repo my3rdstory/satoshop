@@ -2,6 +2,18 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from django.db.models import Count
+from ln_payment.models import (
+    PaymentTransaction,
+    ManualPaymentTransaction,
+    PaymentStageLog,
+    OrderItemReservation,
+)
+from ln_payment.admin import (
+    PaymentTransactionAdmin as BasePaymentTransactionAdmin,
+    ManualPaymentTransactionAdmin as BaseManualPaymentTransactionAdmin,
+    PaymentStageLogAdmin as BasePaymentStageLogAdmin,
+    OrderItemReservationAdmin as BaseOrderItemReservationAdmin,
+)
 from .models import DigitalFile, FileOrder, FileDownloadLog
 
 
@@ -262,13 +274,78 @@ class FileDownloadLogAdmin(admin.ModelAdmin):
     def file_name(self, obj):
         """파일명 표시"""
         return obj.order.digital_file.name
-    
+
     file_name.short_description = '파일명'
-    file_name.admin_order_field = 'order__digital_file__name'
-    
+
     def user(self, obj):
-        """사용자 표시"""
-        return obj.order.user.username
-    
+        """다운로드한 사용자 표시"""
+        if obj.order and obj.order.user:
+            return obj.order.user.username
+        return '-'
+
     user.short_description = '사용자'
     user.admin_order_field = 'order__user__username'
+
+
+class FilePaymentTransaction(PaymentTransaction):
+    class Meta:
+        proxy = True
+        app_label = 'file'
+        verbose_name = '결제 트랜잭션'
+        verbose_name_plural = '결제 트랜잭션'
+
+
+@admin.register(FilePaymentTransaction)
+class FilePaymentTransactionAdmin(BasePaymentTransactionAdmin):
+    """디지털 파일 주문 결제 트랜잭션."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(file_order__isnull=False)
+
+
+class FileManualPaymentTransaction(ManualPaymentTransaction):
+    class Meta:
+        proxy = True
+        app_label = 'file'
+        verbose_name = '수동 저장 결제'
+        verbose_name_plural = '수동 저장 결제'
+
+
+@admin.register(FileManualPaymentTransaction)
+class FileManualPaymentTransactionAdmin(BaseManualPaymentTransactionAdmin):
+    """디지털 파일 대상 수동 결제."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(file_order__isnull=False)
+
+
+class FilePaymentStageLog(PaymentStageLog):
+    class Meta:
+        proxy = True
+        app_label = 'file'
+        verbose_name = '결제 단계 로그'
+        verbose_name_plural = '결제 단계 로그'
+
+
+@admin.register(FilePaymentStageLog)
+class FilePaymentStageLogAdmin(BasePaymentStageLogAdmin):
+    """디지털 파일 결제 단계 로그."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(transaction__file_order__isnull=False)
+
+
+class FileOrderItemReservation(OrderItemReservation):
+    class Meta:
+        proxy = True
+        app_label = 'file'
+        verbose_name = '재고 예약'
+        verbose_name_plural = '재고 예약'
+
+
+@admin.register(FileOrderItemReservation)
+class FileOrderItemReservationAdmin(BaseOrderItemReservationAdmin):
+    """디지털 파일 주문 재고 예약."""
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(transaction__file_order__isnull=False)
