@@ -35,6 +35,8 @@ urlpatterns = [
     path('file/', include('file.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
     path('minigame/', include('game.urls')),
+    path('wiki/backoffice/', include('wiki.backoffice.urls')),
+    path('api/wiki/', include('wiki.api.urls')),
     
     # PWA 관련 파일들을 루트에서 제공
     path('sw.js', service_worker_view, name='service_worker'),

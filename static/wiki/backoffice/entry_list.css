@@ -1,0 +1,28 @@
+.search-form {
+  margin-bottom: 1rem;
+}
+
+.table-container {
+  background: var(--card-background);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.tag.is-light {
+  background-color: rgba(45, 55, 72, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .table-container {
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.45);
+  }
+
+  .tag.is-light {
+    background-color: rgba(148, 163, 184, 0.12);
+  }
+}

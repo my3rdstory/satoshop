@@ -1,0 +1,81 @@
+{% extends "wiki/backoffice/base.html" %}
+{% load static %}
+{% block title %}{{ page_title|default:"위키 항목 작성" }}{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'wiki/backoffice/entry_form.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="box">
+    <h1 class="title is-4">{{ page_title|default:"위키 항목 작성" }}</h1>
+    <p class="subtitle is-6">디스코드 QnA에서 사용될 콘텐츠를 입력하세요.</p>
+
+    <form method="post" novalidate class="wiki-entry-form">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="notification is-danger">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="field">
+        <label class="label" for="{{ form.title.id_for_label }}">제목</label>
+        <div class="control">
+          {{ form.title }}
+        </div>
+        {% if form.title.errors %}
+          <p class="help is-danger">{{ form.title.errors|first }}</p>
+        {% else %}
+          <p class="help">{{ form.title.help_text }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label class="label" for="{{ form.content.id_for_label }}">내용</label>
+        <div class="control">
+          {{ form.content }}
+        </div>
+        <p class="help is-info">
+          <span id="contentLength">0</span> / 1000자
+        </p>
+        {% if form.content.errors %}
+          <p class="help is-danger">{{ form.content.errors|first }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label class="label" for="{{ form.tags_input.id_for_label }}">태그</label>
+        <div class="control">
+          {{ form.tags_input }}
+        </div>
+        {% if form.tags_input.errors %}
+          <p class="help is-danger">{{ form.tags_input.errors|first }}</p>
+        {% else %}
+          <p class="help">{{ form.tags_input.help_text }}</p>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label class="checkbox">
+          {{ form.is_published }}
+          공개 상태
+        </label>
+      </div>
+
+      <div class="field is-grouped">
+        <div class="control">
+          <button type="submit" class="button is-primary">저장</button>
+        </div>
+        <div class="control">
+          <a href="{% url 'wiki_backoffice:entry_list' %}" class="button is-light">목록으로</a>
+        </div>
+      </div>
+    </form>
+  </section>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'wiki/backoffice/entry_form.js' %}"></script>
+{% endblock %}

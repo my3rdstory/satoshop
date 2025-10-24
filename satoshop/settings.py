@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # 천단위 콤마 등 humanize 기능
+    'django.contrib.postgres',
     'myshop',
     'accounts',
     'stores',
@@ -100,6 +101,7 @@ INSTALLED_APPS = [
     'file',
     'game',
     'game.selker',
+    'wiki',
 ]
 
 MIDDLEWARE = [
@@ -224,6 +226,18 @@ if DEBUG:
 
 # 정적 파일 버전 관리 (브라우저 캐시 무효화) - 백업용
 STATIC_VERSION = str(int(time.time()))
+
+# Wiki RAG/Discord 설정
+WIKI_EMBEDDING_PROVIDER = os.getenv('WIKI_EMBEDDING_PROVIDER', 'openai')
+WIKI_CHAT_PROVIDER = os.getenv('WIKI_CHAT_PROVIDER', 'openai')
+WIKI_OPENAI_API_KEY = os.getenv('WIKI_OPENAI_API_KEY') or os.getenv('OPENAI_API_KEY')
+WIKI_OPENAI_EMBEDDING_MODEL = os.getenv('WIKI_OPENAI_EMBEDDING_MODEL', 'text-embedding-3-large')
+WIKI_OPENAI_COMPLETION_MODEL = os.getenv('WIKI_OPENAI_COMPLETION_MODEL', 'gpt-4o-mini')
+WIKI_MAX_CONTEXT_ITEMS = int(os.getenv('WIKI_MAX_CONTEXT_ITEMS', '3'))
+WIKI_DISCORD_PUBLIC_KEY = os.getenv('WIKI_DISCORD_PUBLIC_KEY', '')
+WIKI_DISCORD_APPLICATION_ID = os.getenv('WIKI_DISCORD_APPLICATION_ID', '')
+WIKI_DISCORD_COMMAND_NAME = os.getenv('WIKI_DISCORD_COMMAND_NAME', 'qna')
+WIKI_SYSTEM_PROMPT = os.getenv('WIKI_SYSTEM_PROMPT', '')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

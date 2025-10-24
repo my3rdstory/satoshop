@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SatoWiki{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" integrity="sha384-Zcjp0+KFX05p5rSNS4HyECDrTAOJsnFjUM33tGYpmnE5KA01Qc4B/i7UwG2c4nT5" crossorigin="anonymous">
+    <link rel="stylesheet" href="{% static 'wiki/backoffice/base.css' %}">
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    <nav class="navbar has-shadow is-white" role="navigation" aria-label="main navigation">
+      <div class="navbar-brand">
+        <a class="navbar-item has-text-weight-semibold" href="{% url 'wiki_backoffice:entry_list' %}">
+          SatoWiki
+        </a>
+        <span class="navbar-burger" data-target="navbarMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+      <div id="navbarMenu" class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="{% url 'wiki_backoffice:entry_list' %}">항목 관리</a>
+        </div>
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <span class="icon-text">
+              <span class="icon">
+                <i class="fas fa-user"></i>
+              </span>
+              <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="section">
+      <div class="container is-max-desktop">
+        {% if messages %}
+          <div class="notification is-success">
+            {% for message in messages %}
+              <p>{{ message }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <script src="https://kit.fontawesome.com/a2e0a6d66c.js" crossorigin="anonymous"></script>
+    <script src="{% static 'wiki/backoffice/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

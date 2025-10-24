@@ -368,6 +368,34 @@ DEFAULT_FROM_EMAIL=satoshopkr@gmail.com
 > - **Gmail**: 2단계 인증 활성화 후 앱 비밀번호 생성하여 환경 변수에 설정
 > - **알림 수신**: 사이트 설정에서 이메일 주소 설정
 
+### 위키/디스코드 연동 설정
+
+```env
+# OpenAI API 키 (임베딩/답변 공용, OPENAI_API_KEY와 병행 가능)
+WIKI_OPENAI_API_KEY=sk-xxxx
+
+# OpenAI 임베딩/챗 모델 (필요 시 다른 모델로 교체)
+WIKI_OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+WIKI_OPENAI_COMPLETION_MODEL=gpt-4o-mini
+
+# RAG 검색 시 참조할 문서 수
+WIKI_MAX_CONTEXT_ITEMS=3
+
+# Discord Slash Command 검증용 공개 키
+WIKI_DISCORD_PUBLIC_KEY=your-discord-public-key
+WIKI_DISCORD_APPLICATION_ID=1234567890
+WIKI_DISCORD_COMMAND_NAME=qna
+
+# (선택) 시스템 프롬프트 재정의
+WIKI_SYSTEM_PROMPT="사토샵 위키 기준으로 친절하게 답하세요."
+
+# (선택) 제공자 변경 시 사용
+WIKI_EMBEDDING_PROVIDER=openai
+WIKI_CHAT_PROVIDER=openai
+```
+
+> **PostgreSQL 준비**: `CREATE EXTENSION IF NOT EXISTS vector;` 명령으로 pgvector 확장을 활성화해야 합니다. Render/RDS 환경에서는 사전 권한 확인이 필요합니다.
+
 ### 관리자 계정 설정 (배포용)
 
 ```env
@@ -516,6 +544,14 @@ SECURE_SSL_REDIRECT=True
 - **앱 비밀번호**: 2단계 인증 후 생성한 앱 전용 비밀번호 사용
 - **수신 이메일**: 사이트 설정에서 알림 받을 이메일 주소 설정
 
+### 위키 백오피스
+
+- **접근 대상**: 장고 어드민에서 사용자에게 `wiki | wikientry | Can create and edit wiki entries` 권한을 부여하면 `/wiki/backoffice/`에 접속할 수 있습니다.
+- **UI 구성**: Bulma CSS 기반의 전용 베이스 템플릿을 사용하며, 다크 모드를 자동 인식합니다.
+- **콘텐츠 관리**: 제목(100자), 내용(1000자), 태그(최대 100개, 콤마 구분) 입력을 지원하고 작성 중 실시간 글자 수를 표시합니다.
+- **리스트 화면**: 저장된 항목을 검색/정렬해 확인하고, 공개 여부를 전환하면 임베딩 동기화에 반영됩니다.
+- **권한 분리**: 본 사이트의 다른 관리자 화면과 완전히 분리된 최소 스타일 백오피스를 제공해 디스코드 RAG용 지식 베이스 작업을 집중할 수 있습니다.
+
 
 ## 📁 프로젝트 구조
 
@@ -559,6 +595,11 @@ satoshop/
 │   ├── blink_service.py     # Blink API 서비스
 │   ├── views.py             # 결제 처리 뷰
 │   └── templates/           # 결제 관련 템플릿
+├── 📁 wiki/                 # 디스코드 연동용 위키 앱
+│   ├── models.py            # WikiEntry, WikiEmbedding 벡터 모델
+│   ├── services.py          # 임베딩 생성 및 RAG 파이프라인
+│   ├── backoffice/          # 전용 백오피스 URL·뷰·템플릿
+│   └── api/                 # Discord Slash Command 엔드포인트
 ├── 📁 storage/              # 범용 파일 첨부 및 S3 관리 앱
 │   ├── backends.py          # S3 스토리지 백엔드
 │   ├── utils.py             # S3 파일 처리 유틸리티

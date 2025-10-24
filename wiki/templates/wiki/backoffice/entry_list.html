@@ -1,0 +1,88 @@
+{% extends "wiki/backoffice/base.html" %}
+{% load static %}
+{% block title %}위키 항목 관리{% endblock %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'wiki/backoffice/entry_list.css' %}">
+{% endblock %}
+
+{% block content %}
+  <section class="box">
+    <div class="level">
+      <div class="level-left">
+        <div>
+          <h1 class="title is-4">위키 항목 관리</h1>
+          <p class="subtitle is-6">디스코드 QnA 응답에 활용될 콘텐츠를 관리합니다.</p>
+        </div>
+      </div>
+      <div class="level-right">
+        <a class="button is-primary" href="{% url 'wiki_backoffice:entry_create' %}">새 항목 추가</a>
+      </div>
+    </div>
+    <form method="get" class="field has-addons search-form">
+      <div class="control is-expanded">
+        <input class="input" type="text" name="q" value="{{ search_query }}" placeholder="제목으로 검색">
+      </div>
+      <div class="control">
+        <button type="submit" class="button is-info">검색</button>
+      </div>
+    </form>
+  </section>
+
+  <section>
+    {% if entries %}
+      <div class="table-container">
+        <table class="table is-fullwidth is-hoverable">
+          <thead>
+            <tr>
+              <th>제목</th>
+              <th>태그</th>
+              <th>수정일</th>
+              <th>상태</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for entry in entries %}
+              <tr>
+                <td>
+                  <strong>{{ entry.title }}</strong>
+                  <p class="has-text-grey is-size-7">작성: {{ entry.created_by|default:"-" }}</p>
+                </td>
+                <td>
+                  {% if entry.tags %}
+                    <span class="tags">
+                      {% for tag in entry.tags %}
+                        <span class="tag is-light">{{ tag }}</span>
+                      {% endfor %}
+                    </span>
+                  {% else %}
+                    <span class="has-text-grey is-size-7">태그 없음</span>
+                  {% endif %}
+                </td>
+                <td>{{ entry.updated_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                  {% if entry.is_published %}
+                    <span class="tag is-success is-light">공개</span>
+                  {% else %}
+                    <span class="tag is-warning is-light">비공개</span>
+                  {% endif %}
+                </td>
+                <td class="has-text-right">
+                  <a class="button is-small" href="{% url 'wiki_backoffice:entry_edit' entry.pk %}">수정</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="notification is-light">
+        아직 등록된 위키 항목이 없습니다. <a href="{% url 'wiki_backoffice:entry_create' %}">첫 번째 항목을 추가해보세요.</a>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'wiki/backoffice/entry_list.js' %}"></script>
+{% endblock %}

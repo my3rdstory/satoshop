@@ -1,0 +1,48 @@
+body {
+  background: var(--page-background);
+  color: var(--page-text);
+  min-height: 100vh;
+}
+
+:root {
+  --page-background: #f5f7fa;
+  --page-text: #1f2933;
+  --card-background: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-background: #0f172a;
+    --page-text: #e2e8f0;
+    --card-background: #1e293b;
+  }
+
+  .navbar.is-white,
+  .box,
+  .notification,
+  .table,
+  .table th,
+  .table td {
+    background-color: var(--card-background);
+    color: var(--page-text);
+  }
+
+  .table.is-hoverable tbody tr:not(.is-selected):hover {
+    background-color: rgba(148, 163, 184, 0.1);
+  }
+
+  .input,
+  .textarea,
+  .select select {
+    background-color: #1f2937;
+    color: var(--page-text);
+    border-color: #334155;
+  }
+
+  .navbar,
+  .navbar-menu,
+  .navbar-item {
+    background-color: var(--card-background);
+    color: var(--page-text);
+  }
+}

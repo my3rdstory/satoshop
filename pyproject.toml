@@ -22,6 +22,9 @@ dependencies = [
     "secp256k1>=0.14.0",
     "bech32>=1.2.0",
     "faker>=37.4.0",
+    "pgvector>=0.2.5",
+    "openai>=1.55.3",
+    "pynacl>=1.5.0",
 ]
 
 [tool.uv.workspace]
