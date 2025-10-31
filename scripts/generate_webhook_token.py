@@ -55,7 +55,7 @@ def print_setup_instructions(token):
     print("   curl -X POST \\")
     print("     -H \"Content-Type: application/json\" \\")
     print(f"     -d '{{\"token\": \"{token}\", \"source\": \"manual_test\"}}' \\")
-    print("     http://localhost:8000/webhook/update-exchange-rate/")
+    print("     http://localhost:8011/webhook/update-exchange-rate/")
     print()
     print("   # 실제 서버 테스트")
     print("   curl -X POST \\")

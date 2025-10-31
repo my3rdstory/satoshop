@@ -151,7 +151,7 @@ function showCameraGuidance() {
                     <h4 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">카메라 접근 안내</h4>
                     <p class="text-yellow-700 dark:text-yellow-300 mb-2">카메라 기능은 보안상 HTTPS 또는 localhost에서만 작동합니다.</p>
                     <ul class="text-yellow-700 dark:text-yellow-300 text-sm mb-3">
-                        <li>• <strong>localhost:8000</strong> 또는 <strong>127.0.0.1:8000</strong>으로 접속하세요</li>
+                        <li>• <strong>localhost:8011</strong> 또는 <strong>127.0.0.1:8011</strong>으로 접속하세요</li>
                         <li>• 브라우저에서 카메라 권한을 허용해주세요</li>
                         <li>• 브라우저 주소창의 카메라 아이콘을 클릭하여 허용하세요</li>
                         <li>• 카메라 사용이 어려운 경우 하단의 수동 입력을 이용하세요</li>

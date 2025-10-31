@@ -32,7 +32,7 @@ class LNURLAuthService:
     """LNURL-auth 서비스 (lnauth-django 호환)"""
     
     def __init__(self, domain=None):
-        self.domain = domain or getattr(settings, 'LNURL_AUTH_ROOT_DOMAIN', 'localhost:8000')
+        self.domain = domain or getattr(settings, 'LNURL_AUTH_ROOT_DOMAIN', 'localhost:8011')
         
         # 프로토콜 결정 로직
         if settings.DEBUG:

@@ -298,7 +298,7 @@ uv run python manage.py update_exchange_rate --force
 uv run python manage.py runserver
 ```
 
-서버가 실행되면 `http://localhost:8000`에서 애플리케이션에 접근할 수 있습니다.
+서버가 실행되면 `http://localhost:8011`에서 애플리케이션에 접근할 수 있습니다. (기본 실행 포트는 8011로 자동 설정됩니다.)
 
 ## 🔐 환경 변수 설정
 

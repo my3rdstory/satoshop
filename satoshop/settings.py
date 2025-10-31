@@ -242,7 +242,7 @@ BLINK_API_URL = 'https://api.blink.sv/graphql'
 # 환경별 도메인 설정
 if DEBUG:
     # 개발 환경: ngrok 또는 localhost 사용
-    default_domain = 'localhost:8000'
+    default_domain = 'localhost:8011'
 else:
     # 운영 환경: 실제 도메인 사용 (환경변수에서 가져오기)
     default_domain = 'your-production-domain.com'

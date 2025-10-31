@@ -56,7 +56,7 @@ def check_referer_allowed(request):
         from urllib.parse import urlparse
         referer_domain = urlparse(referer).netloc
         
-        # 포트 번호 제거 (예: localhost:8000 -> localhost)
+        # 포트 번호 제거 (예: localhost:8011 -> localhost)
         referer_domain_clean = referer_domain.split(':')[0]
         
         # 허용된 도메인과 비교
