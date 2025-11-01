@@ -434,6 +434,26 @@ class SiteSettings(models.Model):
         verbose_name="Gmail 앱 비밀번호 도움말 URL",
         help_text="스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크"
     )
+
+    expert_gmail_address = models.EmailField(
+        blank=True,
+        verbose_name="Expert 계약 이메일 발송 Gmail 주소",
+        help_text="자동 계약 이메일에 사용할 Gmail 주소를 입력하세요. 2단계 인증을 활성화하고 앱 비밀번호를 발급받아야 합니다."
+    )
+
+    expert_gmail_app_password = models.CharField(
+        max_length=128,
+        blank=True,
+        verbose_name="Gmail 앱 비밀번호",
+        help_text="Google 계정 보안 설정에서 생성한 16자리 앱 비밀번호를 입력하세요. (예: abcd efgh ijkl mnop)"
+    )
+
+    expert_email_sender_name = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="Expert 이메일 발신자 이름",
+        help_text="수신자에게 표시될 발신자 명칭 (미입력 시 Gmail 주소가 사용됩니다)."
+    )
     
     # 밋업 관련 설정
     meetup_countdown_seconds = models.PositiveIntegerField(
@@ -565,6 +585,16 @@ class SiteSettings(models.Model):
             'shipping_address': self.superuser_checkout_address or '',
             'shipping_detail_address': self.superuser_checkout_detail_address or '',
             'order_memo': self.superuser_checkout_memo or '',
+        }
+
+    def get_expert_email_settings(self):
+        """Expert 계약 이메일 발송에 사용할 Gmail 설정을 반환."""
+        if not self.expert_gmail_address or not self.expert_gmail_app_password:
+            return None
+        return {
+            "address": self.expert_gmail_address,
+            "app_password": self.expert_gmail_app_password,
+            "sender_name": self.expert_email_sender_name or self.expert_gmail_address,
         }
     
     def get_youtube_embed_url(self):

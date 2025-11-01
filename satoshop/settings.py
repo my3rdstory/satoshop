@@ -78,6 +78,7 @@ if DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -89,6 +90,7 @@ INSTALLED_APPS = [
     'accounts',
     'stores',
     'products',
+    'expert',
     'reviews',
     'orders',
     'ln_payment',
@@ -140,6 +142,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'satoshop.wsgi.application'
+ASGI_APPLICATION = 'satoshop.asgi.application'
+
+CHANNEL_REDIS_URL = os.getenv('CHANNEL_REDIS_URL') or os.getenv('REDIS_URL')
+if CHANNEL_REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNEL_REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 # Database

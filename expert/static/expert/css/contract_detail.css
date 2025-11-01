@@ -1,0 +1,241 @@
+.contract-detail-section {
+    padding-top: 4.2rem;
+}
+
+.contract-card {
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 32px 64px rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(79, 70, 229, 0.28);
+    background: rgba(8, 13, 26, 0.92);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.contract-card .card-header {
+    background: linear-gradient(140deg, rgba(247, 147, 26, 0.22), rgba(127, 90, 240, 0.28));
+    border-bottom: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.contract-card .card-header-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+}
+
+.contract-card .contract-title {
+    font-size: 1.1rem;
+}
+
+.status-tag {
+    border-radius: 999px;
+    padding: 0.2rem 0.9rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-draft {
+    background: rgba(148, 163, 184, 0.18);
+    color: rgba(226, 232, 240, 0.82);
+}
+
+.status-awaiting_signature,
+.status-pending_counterparty {
+    background: rgba(252, 211, 77, 0.22);
+    color: #facc15;
+}
+
+.status-signed,
+.status-payment_pending,
+.status-completed {
+    background: rgba(34, 197, 94, 0.25);
+    color: #bbf7d0;
+}
+
+.status-cancelled {
+    background: rgba(248, 113, 113, 0.25);
+    color: #fecaca;
+}
+
+.contract-meta {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.contract-meta dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(148, 163, 184, 0.78);
+    margin-bottom: 0.35rem;
+}
+
+.contract-meta dd {
+    margin: 0;
+    font-weight: 500;
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.contract-meta ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.participant-role {
+    display: inline-block;
+    min-width: 3rem;
+    margin-right: 0.4rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    color: rgba(96, 165, 250, 0.9);
+}
+
+.notice-box {
+    margin-top: 2rem;
+    background: rgba(79, 70, 229, 0.2);
+    border-radius: 16px;
+    padding: 1.6rem;
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    background: rgba(9, 9, 11, 0.92);
+    border-radius: 20px;
+    color: #f4f4f5;
+    box-shadow: 0 32px 60px rgba(2, 6, 23, 0.65);
+    border: 1px solid rgba(127, 90, 240, 0.45);
+    height: 100%;
+    min-height: 32rem;
+}
+
+.chat-header {
+    padding: 1.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(127, 90, 240, 0.35);
+}
+
+.connection-indicator {
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: rgba(244, 241, 255, 0.72);
+    position: relative;
+    padding-left: 1.2rem;
+}
+
+.connection-indicator::before {
+    content: "";
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 999px;
+    background: rgba(127, 90, 240, 0.65);
+    position: absolute;
+    left: 0;
+}
+
+.connection-indicator[data-status="connected"]::before {
+    background: #22c55e;
+}
+
+.chat-log {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: grid;
+    gap: 1rem;
+}
+
+.chat-message {
+    background: rgba(24, 24, 27, 0.68);
+    border-radius: 16px;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid rgba(127, 90, 240, 0.22);
+}
+
+.chat-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+    color: rgba(226, 232, 240, 0.78);
+}
+
+.chat-role {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(127, 90, 240, 0.24);
+    color: rgba(196, 181, 253, 0.9);
+    border-radius: 999px;
+    padding: 0.12rem 0.65rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+.chat-time {
+    margin-left: auto;
+}
+
+.chat-body {
+    margin: 0;
+    color: rgba(244, 241, 255, 0.94);
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.chat-placeholder {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.7);
+    text-align: center;
+}
+
+.chat-form {
+    border-top: 1px solid rgba(127, 90, 240, 0.35);
+    padding: 1.35rem 1.6rem;
+    background: rgba(9, 9, 11, 0.94);
+}
+
+.chat-form .textarea {
+    background: rgba(24, 24, 27, 0.7);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: rgba(244, 241, 255, 0.94);
+}
+
+.chat-form .textarea:focus {
+    border-color: rgba(127, 90, 240, 0.55);
+    box-shadow: 0 0 0 0.1rem rgba(127, 90, 240, 0.24);
+}
+
+.chat-form-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 0.75rem;
+}
+
+.chat-hint {
+    font-size: 0.75rem;
+    color: rgba(196, 181, 253, 0.78);
+}
+
+@media (max-width: 1024px) {
+    .contract-detail-section {
+        padding-top: 3.5rem;
+    }
+
+    .chat-panel {
+        margin-top: 2rem;
+    }
+}

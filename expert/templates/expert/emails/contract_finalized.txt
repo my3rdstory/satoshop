@@ -1,0 +1,23 @@
+안녕하세요.
+
+SatoShop Expert 계약 **{{ contract.title }}** 이(가) 최종 확정되어 계약서 및 채팅 기록 PDF를 첨부해 드립니다.
+
+계약 정보
+-----------
+- 계약 ID: {{ contract.public_id }}
+- 상태: {{ contract.get_status_display }}
+- 생성자: {{ contract.created_by.get_full_name|default:contract.created_by.username }}
+- 생성일: {{ contract.created_at|date:"Y-m-d H:i" }}
+
+채팅 기록 안내
+---------------
+채팅창에 기록된 모든 대화는 분쟁 발생 시 참고 자료로 활용하기 위해 부속 문서(PDF)로 자동 첨부됩니다.
+첨부 파일을 열어 계약 진행 중의 대화를 확인해 주세요.
+
+이메일 발신 정보
+-----------------
+- 발신자: {{ site_settings.expert_email_sender_name|default:site_settings.expert_gmail_address }}
+- 발송 시각: {{ generated_at|date:"Y-m-d H:i" }}
+
+감사합니다.
+SatoShop Expert 드림

@@ -1,0 +1,59 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko" class="has-navbar-fixed-top">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SatoShop Expert{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="{% static 'expert/css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"></script>
+</head>
+<body>
+    <nav class="navbar is-fixed-top expert-navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{% url 'expert:landing' %}">
+                <span class="has-text-weight-semibold">SatoShop Expert</span>
+            </a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="expert-navbar-menu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+
+        <div id="expert-navbar-menu" class="navbar-menu">
+            <div class="navbar-start">
+                <a class="navbar-item" href="{% url 'expert:landing' %}">개요</a>
+                <a class="navbar-item is-disabled" aria-disabled="true">엑스퍼트 찾기 (준비 중)</a>
+                <a class="navbar-item is-disabled" aria-disabled="true">계약 보관함 (준비 중)</a>
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <a class="button is-primary" href="{% url 'expert:create-direct' %}">
+                            <strong>직접 계약 생성</strong>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="expert-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{% static 'expert/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

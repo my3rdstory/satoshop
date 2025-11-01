@@ -1,0 +1,159 @@
+.contract-draft-section {
+    background: linear-gradient(180deg, rgba(7, 11, 26, 0.92), rgba(11, 18, 32, 0.82));
+    padding-bottom: 4rem;
+}
+
+.status-box {
+    background: rgba(8, 13, 26, 0.92);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 18px;
+    padding: 1.75rem;
+    box-shadow: 0 26px 52px rgba(2, 6, 23, 0.65);
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.status-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.8rem;
+    font-weight: 600;
+}
+
+.status-steps li {
+    position: relative;
+    padding-left: 1.8rem;
+    color: rgba(45, 212, 191, 0.65);
+}
+
+.status-steps li::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: rgba(45, 212, 191, 0.4);
+    position: absolute;
+    left: 0;
+    top: 0.35rem;
+}
+
+.status-steps li.is-active {
+    color: #34d399;
+}
+
+.status-steps li.is-active::before {
+    background: #22d3ee;
+}
+
+.draft-layout .column form {
+    background: rgba(8, 13, 26, 0.95);
+    border-radius: 20px;
+    padding: 2.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 28px 54px rgba(2, 6, 23, 0.6);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.draft-layout .column form .input,
+.draft-layout .column form .textarea,
+.draft-layout .column form .select select {
+    background: rgba(9, 13, 24, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    color: rgba(226, 232, 240, 0.95);
+}
+
+.draft-layout .column form .input:focus,
+.draft-layout .column form .textarea:focus,
+.draft-layout .column form .select select:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 0.1rem rgba(59, 130, 246, 0.25);
+}
+
+.role-select-group ul {
+    display: flex;
+    gap: 1rem;
+}
+
+.role-select-group label {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    padding: 0.75rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.role-select-group input[type="radio"] {
+    accent-color: #38bdf8;
+}
+
+.next-todos {
+    list-style: disc;
+    margin-left: 1.6rem;
+    color: rgba(203, 213, 225, 0.82);
+}
+
+.agreement-field .checkbox {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    color: rgba(203, 213, 225, 0.84);
+}
+
+.preview-card {
+    position: sticky;
+    top: 5.5rem;
+    background: rgba(7, 89, 133, 0.18);
+    border-radius: 20px;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    padding: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    box-shadow: 0 30px 60px rgba(2, 6, 23, 0.65);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.placeholder {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: rgba(203, 213, 225, 0.78);
+}
+
+.spec-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.spec-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.preview-body strong {
+    font-weight: 600;
+    color: #a5f3fc;
+}
+
+@media (max-width: 1024px) {
+    .contract-draft-section {
+        padding-bottom: 3rem;
+    }
+
+    .draft-layout .column form {
+        padding: 2rem;
+    }
+
+    .preview-card {
+        position: static;
+        margin-top: 2rem;
+    }
+}

@@ -1,0 +1,96 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}직접 계약 생성 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/direct_contract_start.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section direct-contract-intro">
+    <div class="container">
+        <div class="columns is-variable is-6">
+            <div class="column is-7">
+                <h1 class="title is-3 has-text-weight-bold">직접 계약 생성</h1>
+                <p class="subtitle is-5">
+                    의뢰자 또는 수행자 중 한 명이 계약을 개설하고, 상대방은 링크를 통해 참여해 서명합니다.
+                    아래 준비 절차를 확인한 후 계약을 시작하세요.
+                </p>
+                <div class="info-message">
+                    <p class="has-text-weight-semibold">라이트닝 인증</p>
+                    <p class="mb-2">계약 진행 전, 라이트닝 인증이 완료된 계정인지 확인합니다.</p>
+                    <p class="is-size-7 has-text-grey">
+                        인증이 완료되지 않았다면 SatoShop 계정 설정에서 먼저 라이트닝 인증을 진행해주세요.
+                    </p>
+                </div>
+            </div>
+            <div class="column is-5">
+                <aside class="checklist-box">
+                    <p class="title is-5 mb-4">계약 준비 체크리스트</p>
+                    <ul>
+                        <li><span class="icon"><i class="fas fa-id-card"></i></span> 계약 당사자의 라이트닝 아이디</li>
+                        <li><span class="icon"><i class="fas fa-file-alt"></i></span> 계약 제목 및 본문 (마크다운 지원)</li>
+                        <li><span class="icon"><i class="fas fa-calendar"></i></span> 수행 기간 (시작/종료일)</li>
+                        <li><span class="icon"><i class="fas fa-coins"></i></span> 총 계약 금액 (사토시)</li>
+                        <li><span class="icon"><i class="fas fa-tasks"></i></span> 분할 지급 시 단계별 설계</li>
+                        <li><span class="icon"><i class="fas fa-file-upload"></i></span> 부속 서류 (PDF, 선택)</li>
+                    </ul>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section next-step-section">
+    <div class="container">
+        <div class="columns is-vcentered is-variable is-5">
+            <div class="column is-7">
+                <h2 class="title is-4">다음 단계 미리보기</h2>
+                <ol class="step-preview">
+                    <li>
+                        <span class="badge">1</span>
+                        <div>
+                            <p class="step-title">계약 기본 정보 입력</p>
+                            <p class="step-desc">계약 제목, 역할(의뢰자/수행자), 계약 기간, 금액 등 필수 정보를 입력합니다.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="badge">2</span>
+                        <div>
+                            <p class="step-title">계약 본문과 첨부 구성</p>
+                            <p class="step-desc">마크다운 에디터로 계약 내용을 정리하고, 필요한 경우 PDF 부속서를 첨부하세요.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span class="badge">3</span>
+                        <div>
+                            <p class="step-title">지불 조건 및 서명</p>
+                            <p class="step-desc">일괄/분할 지급을 선택하고, 개인정보/비밀 유지 체크 후 자필 서명을 완료합니다.</p>
+                        </div>
+                    </li>
+                </ol>
+            </div>
+            <div class="column is-5">
+                <div class="action-box">
+                    <p class="title is-5 mb-3">계약을 시작할 준비가 되셨나요?</p>
+                    <p class="content">
+                        다음 단계로 이동하면 계약 초안을 작성할 수 있는 페이지로 이동합니다.
+                        작성 중인 내용은 HTMX 기반으로 자동 저장 예정입니다.
+                    </p>
+                    <a class="button is-primary is-medium is-fullwidth" href="{% url 'expert:direct-draft' %}">
+                        계약 작성 화면으로 이동
+                    </a>
+                    <p class="is-size-7 has-text-grey mt-2">
+                        ※ 현재는 입력 폼 뼈대만 제공되며, 저장/제출 기능은 다음 단계에서 구현됩니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'expert/js/direct_contract_start.js' %}"></script>
+{% endblock %}

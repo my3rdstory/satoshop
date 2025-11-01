@@ -1,0 +1,150 @@
+.login-guide-section {
+    padding-top: 4.5rem;
+    padding-bottom: 5rem;
+}
+
+.login-hero {
+    position: relative;
+    padding: 3.5rem;
+    border-radius: 24px;
+    background: radial-gradient(circle at top left, rgba(247, 147, 26, 0.6), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(127, 90, 240, 0.5), transparent 50%),
+                linear-gradient(135deg, rgba(9, 14, 28, 0.95), rgba(17, 25, 45, 0.92));
+    color: #f8fafc;
+    box-shadow: 0 32px 60px rgba(2, 6, 23, 0.65);
+    overflow: hidden;
+}
+
+.login-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.3), rgba(30, 41, 59, 0.15));
+    backdrop-filter: blur(8px);
+}
+
+.login-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1.2rem;
+    border-radius: 999px;
+    background: rgba(247, 147, 26, 0.22);
+    color: #facc15;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-size: 0.75rem;
+    margin-bottom: 1.4rem;
+}
+
+.login-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2.4rem;
+}
+
+.login-destination {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.84);
+}
+
+.guide-card {
+    background: rgba(8, 13, 26, 0.92);
+    border-radius: 22px;
+    padding: 2.75rem;
+    box-shadow: 0 28px 52px rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(129, 140, 248, 0.25);
+    backdrop-filter: blur(10px);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.guide-steps {
+    list-style: none;
+    margin: 2rem 0;
+    padding: 0;
+    display: grid;
+    gap: 1.4rem;
+}
+
+.guide-steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f7931a, #7f5af0);
+    color: #fff;
+    font-weight: 600;
+}
+
+.step-title {
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+    color: rgba(248, 250, 252, 0.92);
+}
+
+.step-desc {
+    margin: 0;
+    color: rgba(203, 213, 225, 0.8);
+}
+
+.compatibility-box {
+    background: rgba(79, 70, 229, 0.2);
+    border: 1px solid rgba(129, 140, 248, 0.35);
+    border-radius: 18px;
+    padding: 1.5rem 1.75rem;
+    margin-top: 2rem;
+}
+
+.compatibility-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: grid;
+    gap: 0.6rem;
+    color: rgba(226, 232, 240, 0.88);
+}
+
+.compatibility-box li i {
+    color: #16a34a;
+    margin-right: 0.45rem;
+}
+
+.wallet-note {
+    margin-top: 2.5rem;
+    padding: 1.4rem 1.6rem;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    color: rgba(226, 232, 240, 0.84);
+}
+
+.wallet-note p {
+    margin-bottom: 0.4rem;
+}
+
+@media (max-width: 1024px) {
+    .login-guide-section {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+
+    .login-hero,
+    .guide-card {
+        padding: 2.25rem;
+    }
+}

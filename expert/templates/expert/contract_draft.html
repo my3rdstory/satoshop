@@ -1,0 +1,183 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}계약 초안 작성 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_draft.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-draft-section">
+    <div class="container">
+        <div class="columns is-variable is-5">
+            <div class="column is-7">
+                <h1 class="title is-3 has-text-weight-bold">계약 조건 입력</h1>
+                <p class="subtitle is-6 has-text-grey">
+                    계약 내용은 상대방과 시스템에서만 확인할 수 있도록 해시 기반으로 보관됩니다. 입력을 마친 뒤
+                    상대방에게 링크를 공유해 동의를 요청하세요.
+                </p>
+            </div>
+            <div class="column is-5">
+                <div class="status-box">
+                    <p class="title is-6 mb-2">현재 단계</p>
+                    <ol class="status-steps">
+                        <li class="is-active">1. 계약 조건 입력</li>
+                        <li>2. 서명 &amp; 검증</li>
+                        <li>3. 라이트닝 정산</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="columns is-variable is-5 draft-layout">
+            <div class="column is-7">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="notification is-warning">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="field">
+                        {{ form.title.label_tag }}
+                        <div class="control">{{ form.title }}</div>
+                        {% for error in form.title.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field">
+                        <label class="label">나의 역할</label>
+                        <div class="control role-select-group">
+                            {{ form.role }}
+                        </div>
+                        {% for error in form.role.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control is-expanded">
+                            {{ form.start_date.label_tag }}
+                            {{ form.start_date }}
+                            {% for error in form.start_date.errors %}
+                                <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="control is-expanded">
+                            {{ form.end_date.label_tag }}
+                            {{ form.end_date }}
+                            {% for error in form.end_date.errors %}
+                                <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        {{ form.amount_sats.label_tag }}
+                        <div class="control">{{ form.amount_sats }}</div>
+                        <p class="help">총 계약 금액은 사토시 단위로 입력하세요.</p>
+                        {% for error in form.amount_sats.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control is-expanded">
+                            {{ form.payment_type.label_tag }}
+                            <div class="select is-fullwidth">
+                                {{ form.payment_type }}
+                            </div>
+                            {% for error in form.payment_type.errors %}
+                                <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        <div class="control is-expanded">
+                            {{ form.enable_chat.label_tag }}
+                            <div class="select is-fullwidth">
+                                {{ form.enable_chat }}
+                            </div>
+                            {% for error in form.enable_chat.errors %}
+                                <p class="help is-danger">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        {{ form.email_recipient.label_tag }}
+                        <div class="control">{{ form.email_recipient }}</div>
+                        <p class="help">최종 계약서 PDF를 받을 이메일 주소를 입력하세요 (선택).</p>
+                        {% for error in form.email_recipient.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="notification is-info is-light">
+                        <p class="has-text-weight-semibold mb-2">다음 단계에서 준비될 항목</p>
+                        <ul class="next-todos">
+                            <li>마크다운 계약 본문/미리보기</li>
+                            <li>PDF 첨부 파일 업로드</li>
+                            <li>분할 지급 단계 구성 (HTMX 동적 필드)</li>
+                        </ul>
+                    </div>
+
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_privacy }} {{ form.agree_privacy.label }}
+                        </label>
+                        {% for error in form.agree_privacy.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_confidentiality }} {{ form.agree_confidentiality.label }}
+                        </label>
+                        {% for error in form.agree_confidentiality.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field mt-5">
+                        <button type="submit" class="button is-primary is-medium is-fullwidth">
+                            입력값 검토 (준비 중)
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="column is-5">
+                <div class="preview-card">
+                    <div class="preview-header">
+                        <h2 class="title is-5 mb-1">계약 미리보기</h2>
+                        <p class="is-size-7 has-text-grey">정식 미리보기는 계약 본문 에디터 구현 후 제공됩니다.</p>
+                    </div>
+                    <div class="preview-body" id="contract-preview">
+                        <p class="placeholder">
+                            입력한 내용이 여기에 표시될 예정입니다. 분할 지급 단계, 채팅 로그, 서명 등은
+                            추후 개발 단계에서 통합됩니다.
+                        </p>
+                        <ul class="spec-list">
+                            <li><span>제목</span><strong id="preview-title">-</strong></li>
+                            <li><span>역할</span><strong id="preview-role">-</strong></li>
+                            <li><span>기간</span><strong id="preview-period">-</strong></li>
+                            <li><span>금액</span><strong id="preview-amount">-</strong></li>
+                            <li><span>지불 조건</span><strong id="preview-payment">-</strong></li>
+                            <li><span>채팅</span><strong id="preview-chat">-</strong></li>
+                            <li><span>이메일</span><strong id="preview-email">-</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'expert/js/contract_draft.js' %}"></script>
+{% endblock %}
