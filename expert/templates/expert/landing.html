@@ -21,11 +21,11 @@
                 </p>
                 <div class="buttons mt-5">
                     <a class="button is-primary is-medium" href="{% url 'expert:create-direct' %}">
-                        <span class="icon"><i class="fas fa-file-signature"></i></span>
+                        <span class="icon"><i data-feather="file-text"></i></span>
                         <span>직접 계약 생성</span>
                     </a>
                     <a class="button is-link is-light is-medium" disabled>
-                        <span class="icon"><i class="fas fa-user-tie"></i></span>
+                        <span class="icon"><i data-feather="briefcase"></i></span>
                         <span>엑스퍼트 선택 계약 (준비 중)</span>
                     </a>
                 </div>
@@ -80,7 +80,7 @@
                     Expert 서비스는 의뢰자와 수행자가 서로 알고 있는 상태에서 빠르게 계약을 맺을 수 있도록 설계되었습니다.
                     계약 링크는 UUID 기반으로 생성되며, 계약이 확정되면 계약 당사자와 시스템만 접근할 수 있도록 보안이 강화됩니다.
                 </p>
-                <div class="notification is-warning is-light">
+                <div class="notification expert-warning-box">
                     <p class="has-text-weight-semibold">계약 링크 보안 안내</p>
                     <p>계약 전에는 라이트닝 인증된 사용자라면 계약서를 열람할 수 있습니다. 계약 링크는 반드시 계약 상대에게만 공유해주세요.</p>
                 </div>
@@ -91,7 +91,7 @@
                     <article class="media">
                         <figure class="media-left">
                             <span class="icon has-text-primary">
-                                <i class="fas fa-id-card"></i>
+                                <i data-feather="credit-card"></i>
                             </span>
                         </figure>
                         <div class="media-content">
@@ -102,7 +102,7 @@
                     <article class="media">
                         <figure class="media-left">
                             <span class="icon has-text-link">
-                                <i class="fas fa-bolt"></i>
+                                <i data-feather="zap"></i>
                             </span>
                         </figure>
                         <div class="media-content">
@@ -113,7 +113,7 @@
                     <article class="media">
                         <figure class="media-left">
                             <span class="icon has-text-info">
-                                <i class="fas fa-envelope-open-text"></i>
+                                <i data-feather="mail"></i>
                             </span>
                         </figure>
                         <div class="media-content">
@@ -135,7 +135,7 @@
                 <p class="content mb-0">라이트닝 인증 후, 계약 조건을 입력하면 바로 상대방과 계약을 진행할 수 있습니다.</p>
             </div>
             <a class="button is-primary is-medium" href="{% url 'expert:create-direct' %}">
-                <span class="icon"><i class="fas fa-arrow-right"></i></span>
+                <span class="icon"><i data-feather="arrow-right"></i></span>
                 <span>계약 만들러 가기</span>
             </a>
         </div>

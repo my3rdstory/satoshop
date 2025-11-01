@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
 
+from myshop.models import SiteSettings
+
 User = get_user_model()
 
 
@@ -149,5 +151,15 @@ class ContractEmailLog(models.Model):
 
     def __str__(self):
         return f"{self.contract.title} - {self.subject} ({self.sent_at:%Y-%m-%d %H:%M})"
+
+
+class ExpertEmailSettings(SiteSettings):
+    """SiteSettings를 Expert 카테고리에서 관리하기 위한 프록시 모델."""
+
+    class Meta:
+        proxy = True
+        app_label = "expert"
+        verbose_name = "Expert 계약 이메일 설정"
+        verbose_name_plural = "Expert 계약 이메일 설정"
 
 # Create your models here.

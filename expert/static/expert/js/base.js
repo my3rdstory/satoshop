@@ -8,4 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
             menu.classList.toggle('is-active');
         });
     }
+
+    if (window.feather) {
+        window.feather.replace();
+    }
 });

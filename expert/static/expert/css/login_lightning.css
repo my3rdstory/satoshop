@@ -133,6 +133,10 @@
     color: rgba(226, 232, 240, 0.84);
 }
 
+.wallet-note strong {
+    color: rgba(248, 250, 252, 0.9);
+}
+
 .wallet-note p {
     margin-bottom: 0.4rem;
 }

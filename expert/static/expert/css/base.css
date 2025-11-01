@@ -10,6 +10,7 @@ body {
     font-family: inherit;
     line-height: 1.65;
     letter-spacing: -0.01em;
+    padding-top: 0;
 }
 
 a {
@@ -17,7 +18,7 @@ a {
 }
 
 .expert-navbar {
-    background: rgba(8, 13, 26, 0.95);
+    background: rgba(23, 32, 52, 0.85);
     backdrop-filter: blur(18px);
     border-bottom: 1px solid rgba(94, 234, 212, 0.22);
 }
@@ -27,12 +28,33 @@ a {
     color: rgba(226, 232, 240, 0.92);
 }
 
+.expert-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: rgba(226, 232, 240, 0.95);
+}
+
+.expert-logo {
+    height: 30px;
+    width: auto;
+    border-radius: 8px;
+    box-shadow: 0 8px 18px rgba(8, 47, 73, 0.5);
+}
+
+.expert-brand-text {
+    font-size: 1.05rem;
+    color: #020617;
+}
+
 .navbar-item.is-disabled {
     color: rgba(148, 163, 184, 0.45);
 }
 
 .expert-main {
-    padding-top: 3.5rem;
+    padding-top: 3.25rem; /* align with fixed navbar height */
     padding-bottom: 3.5rem;
 }
 
@@ -47,4 +69,28 @@ a {
 
 .subtitle {
     color: rgba(203, 213, 225, 0.8);
+}
+
+.button.is-primary {
+    background: linear-gradient(135deg, #f7931a, #fb8c00);
+    border-color: rgba(234, 179, 8, 0.65);
+    color: #ffffff;
+    box-shadow: none;
+    transition: transform 0.15s ease;
+}
+
+.button.is-primary:hover,
+.button.is-primary:focus {
+    background: linear-gradient(135deg, #ff9f1c, #f2711c);
+    border-color: rgba(253, 186, 116, 0.8);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
+.button.is-primary:active {
+    background: linear-gradient(135deg, #f2711c, #d97706);
+    border-color: rgba(217, 119, 6, 0.85);
+    transform: translateY(1px);
+    box-shadow: none;
 }

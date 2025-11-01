@@ -3,7 +3,6 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.urls import path, reverse
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
 from .models import SiteSettings, ExchangeRate, DocumentContent, CacheManager
 from .services import UpbitExchangeService
 
@@ -86,16 +85,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('Gmail 도움말 설정', {
             'fields': ('gmail_help_url',),
             'description': '스토어 이메일 설정 시 사용자에게 제공되는 Gmail 앱 비밀번호 설정 도움말 링크'
-        }),
-        ('Expert 계약 이메일 설정', {
-            'fields': ('expert_gmail_address', 'expert_gmail_app_password', 'expert_email_sender_name'),
-            'description': mark_safe(
-                "<strong>자동 계약 메일 발송용 Gmail 계정 설정</strong><br>"
-                "1) Gmail 계정에서 2단계 인증을 활성화합니다.<br>"
-                "2) <em>Google 계정 &gt; 보안 &gt; 앱 비밀번호</em> 메뉴에서 앱 비밀번호를 생성합니다.<br>"
-                "3) 위에서 발급받은 16자리 앱 비밀번호를 공백 없이 입력하세요. (예: <code>abcd efgh ijkl mnop</code>)<br>"
-                "4) 보안 강화를 위해 자동화 전용 Gmail 계정을 사용하는 것을 권장합니다."
-            )
         }),
         ('밋업 설정', {
             'fields': ('meetup_countdown_seconds',),

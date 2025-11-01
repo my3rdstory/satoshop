@@ -11,6 +11,11 @@
     border-radius: 16px;
     padding: 1.6rem;
     margin-top: 1.75rem;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.info-message p {
+    color: rgba(226, 232, 240, 0.88);
 }
 
 .checklist-box {
@@ -92,6 +97,12 @@
     border-radius: 22px;
     padding: 2.75rem;
     color: rgba(226, 232, 240, 0.9);
+}
+
+.next-step-section .title,
+.next-step-section .step-title,
+.next-step-section p {
+    color: rgba(226, 232, 240, 0.88);
 }
 
 .action-box {

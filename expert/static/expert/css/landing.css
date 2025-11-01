@@ -1,7 +1,8 @@
 .hero-section {
     position: relative;
-    padding-top: 1.8rem;
+    padding-top: 3.25rem;
     padding-bottom: 4rem;
+    margin-top: -3.25rem;
     overflow: hidden;
     background-color: #0f172a;
     color: #f8fafc;
@@ -34,6 +35,7 @@
     position: relative;
     z-index: 1;
     color: #f8fafc;
+    padding-top: 0.75rem;
 }
 
 .hero-section .title {
@@ -57,10 +59,19 @@
 }
 
 .expert-overview-card {
-    background: rgba(11, 15, 32, 0.65);
+    background: rgba(11, 15, 32, 0.75);
     box-shadow: 0 22px 50px rgba(2, 6, 23, 0.6);
     border-radius: 18px;
-    border: 1px solid rgba(79, 70, 229, 0.25);
+    border: 1px solid rgba(79, 70, 229, 0.28);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.expert-overview-card .card-content {
+    color: rgba(226, 232, 240, 0.88);
+}
+
+.expert-overview-card .card-content p {
+    color: rgba(226, 232, 240, 0.82);
 }
 
 .expert-steps {
@@ -92,6 +103,7 @@
 .step-title {
     font-weight: 600;
     margin-bottom: 0.15rem;
+    color: rgba(248, 250, 252, 0.9);
 }
 
 .step-desc {
@@ -109,6 +121,18 @@
     border-radius: 14px;
     border: 1px solid rgba(248, 180, 0, 0.28);
     color: rgba(248, 250, 252, 0.88);
+}
+
+.expert-warning-box {
+    background: linear-gradient(135deg, rgba(120, 53, 15, 0.85), rgba(234, 179, 8, 0.6));
+    border: 1px solid rgba(249, 115, 22, 0.5);
+    border-radius: 16px;
+    color: rgba(255, 247, 237, 0.92);
+    box-shadow: 0 16px 32px rgba(8, 47, 73, 0.35);
+}
+
+.expert-warning-box .has-text-weight-semibold {
+    color: rgba(255, 237, 213, 0.95);
 }
 
 .info-section .title,

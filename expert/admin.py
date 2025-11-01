@@ -1,6 +1,12 @@
 from django.contrib import admin, messages
 
-from .models import Contract, ContractParticipant, ContractMessage, ContractEmailLog
+from .models import (
+    Contract,
+    ContractParticipant,
+    ContractMessage,
+    ContractEmailLog,
+    ExpertEmailSettings,
+)
 from .services import generate_chat_archive_pdf
 
 
@@ -50,3 +56,39 @@ class ContractEmailLogAdmin(admin.ModelAdmin):
     list_filter = ("success", "sent_at")
     search_fields = ("contract__title", "subject", "recipients")
     readonly_fields = ("contract", "recipients", "subject", "message", "sent_at", "success", "error_message")
+
+
+@admin.register(ExpertEmailSettings)
+class ExpertEmailSettingsAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (
+            "계약 이메일 SMTP(Gmail) 설정",
+            {
+                "fields": (
+                    "expert_gmail_address",
+                    "expert_gmail_app_password",
+                    "expert_email_sender_name",
+                    "gmail_help_url",
+                ),
+                "description": (
+                    "Gmail 2단계 인증을 활성화한 뒤 <em>앱 비밀번호</em>를 생성해 입력하세요. "
+                    "앱 비밀번호는 공백 없이 16자를 입력해야 하며, 가능하면 전용 Gmail 계정을 사용하는 것이 좋습니다."
+                ),
+            },
+        ),
+    )
+    list_display = ("expert_gmail_address", "expert_email_sender_name")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not qs.exists():
+            from myshop.models import SiteSettings  # local import to avoid circular during startup
+            SiteSettings.get_settings()
+            qs = super().get_queryset(request)
+        return qs
