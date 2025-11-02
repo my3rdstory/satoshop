@@ -48,12 +48,12 @@ class ContractDraftForm(forms.Form):
     payment_type = forms.ChoiceField(
         label="지불 조건",
         choices=PAYMENT_TYPE_CHOICES,
-        widget=forms.Select(attrs={"class": "is-fullwidth"}),
+        widget=forms.RadioSelect(),
     )
     enable_chat = forms.ChoiceField(
         label="채팅 기능",
         choices=CHAT_MODE_CHOICES,
-        widget=forms.Select(attrs={"class": "is-fullwidth"}),
+        widget=forms.HiddenInput(),
         initial="off",
     )
     email_recipient = forms.EmailField(

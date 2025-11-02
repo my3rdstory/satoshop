@@ -87,13 +87,19 @@
     box-shadow: 0 0 0 0.1rem rgba(59, 130, 246, 0.25);
 }
 
-.role-select-group .role-option-list {
+.role-select-group .role-option-list,
+.option-pill-group .option-pill-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.85rem;
 }
 
-.role-option {
+.option-pill-list--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.role-option,
+.option-pill {
     background: rgba(17, 24, 39, 0.7);
     border: 1px solid rgba(148, 163, 184, 0.25);
     border-radius: 12px;
@@ -108,21 +114,25 @@
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.role-option input[type="radio"] {
+.role-option input[type="radio"],
+.option-pill input[type="radio"] {
     accent-color: #38bdf8;
 }
 
-.role-option input[type="radio"]:focus-visible {
+.role-option input[type="radio"]:focus-visible,
+.option-pill input[type="radio"]:focus-visible {
     outline: 2px solid rgba(56, 189, 248, 0.65);
     outline-offset: 4px;
 }
 
-.role-option input[type="radio"]:checked ~ .role-option-title {
+.role-option input[type="radio"]:checked ~ .role-option-title,
+.option-pill input[type="radio"]:checked ~ .option-pill-title {
     color: #38bdf8;
     font-weight: 600;
 }
 
-.role-option:hover {
+.role-option:hover,
+.option-pill:hover {
     border-color: rgba(56, 189, 248, 0.55);
     background: rgba(15, 23, 42, 0.78);
 }
@@ -141,9 +151,113 @@
     font-weight: 600;
 }
 
-.role-option-caption {
+.role-option-caption,
+.option-pill-caption {
     font-size: 0.75rem;
     color: rgba(148, 163, 184, 0.75);
+}
+
+.milestone-section {
+    background: rgba(8, 13, 26, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-top: 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.45);
+}
+
+.milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.milestone-header .label {
+    color: rgba(226, 232, 240, 0.96);
+    font-weight: 600;
+}
+
+.add-milestone-button {
+    background: rgba(14, 165, 233, 0.18);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #7dd3fc;
+    font-weight: 600;
+}
+
+.add-milestone-button:hover,
+.add-milestone-button:focus {
+    background: rgba(14, 165, 233, 0.28);
+    border-color: rgba(125, 211, 252, 0.55);
+    color: #e0f2fe;
+}
+
+.add-milestone-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.milestone-hint {
+    margin-bottom: 1.25rem;
+}
+
+.milestone-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.milestone-item {
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+    background: rgba(10, 17, 34, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+}
+
+.milestone-order {
+    min-width: 4.5rem;
+    font-weight: 600;
+    color: rgba(148, 197, 253, 0.85);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+}
+
+.milestone-input {
+    flex: 1;
+    background: rgba(8, 13, 26, 0.65);
+    color: rgba(226, 232, 240, 0.96);
+}
+
+.milestone-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.milestone-summary {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.milestone-remaining {
+    font-weight: 600;
+    color: rgba(125, 211, 252, 0.92);
+}
+
+.milestone-error {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.milestone-error[hidden] {
+    display: none;
 }
 
 .contract-draft-section .has-text-grey,
@@ -223,5 +337,25 @@
     .preview-card {
         position: static;
         margin-top: 2rem;
+    }
+
+    .role-select-group .role-option-list,
+    .option-pill-group .option-pill-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .milestone-section {
+        padding: 1.5rem;
+    }
+
+    .milestone-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .milestone-order {
+        min-width: auto;
+        margin-bottom: 0.35rem;
+        text-align: left;
     }
 }

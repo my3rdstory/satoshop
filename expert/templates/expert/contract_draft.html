@@ -34,6 +34,7 @@
             <div class="column is-7">
                 <form method="post" novalidate>
                     {% csrf_token %}
+                    {{ form.enable_chat }}
                     {% if form.non_field_errors %}
                         <div class="notification is-warning">
                             {% for error in form.non_field_errors %}
@@ -97,24 +98,35 @@
                         {% endfor %}
                     </div>
 
-                    <div class="field is-grouped">
-                        <div class="control is-expanded">
-                            {{ form.payment_type.label_tag }}
-                            <div class="select is-fullwidth">
-                                {{ form.payment_type }}
+                    <div class="field">
+                        <label class="label">지불 조건</label>
+                        <div class="control option-pill-group">
+                            <div class="option-pill-list option-pill-list--two">
+                                {% for radio in form.payment_type %}
+                                    <label class="option-pill">
+                                        {{ radio.tag }}
+                                        <span class="option-pill-title">{{ radio.choice_label }}</span>
+                                    </label>
+                                {% endfor %}
                             </div>
-                            {% for error in form.payment_type.errors %}
-                                <p class="help is-danger">{{ error }}</p>
-                            {% endfor %}
                         </div>
-                        <div class="control is-expanded">
-                            {{ form.enable_chat.label_tag }}
-                            <div class="select is-fullwidth">
-                                {{ form.enable_chat }}
-                            </div>
-                            {% for error in form.enable_chat.errors %}
-                                <p class="help is-danger">{{ error }}</p>
-                            {% endfor %}
+                        {% for error in form.payment_type.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field milestone-section" id="milestone-section" hidden>
+                        <div class="milestone-header">
+                            <span class="label mb-0">분할 지급 구성</span>
+                            <button type="button" class="button is-small add-milestone-button" id="add-milestone">
+                                + 분할 추가
+                            </button>
+                        </div>
+                        <p class="help milestone-hint">총 계약 금액 안에서 각 분할 금액을 지정해 주세요. 기본으로 두 단계가 제공됩니다.</p>
+                        <div class="milestone-list" id="milestone-list" aria-live="polite"></div>
+                        <div class="milestone-summary">
+                            <p class="milestone-remaining" id="milestone-remaining">남은 금액: -</p>
+                            <p class="milestone-error" id="milestone-error" role="alert" hidden>총 계약 금액을 초과할 수 없습니다.</p>
                         </div>
                     </div>
 
