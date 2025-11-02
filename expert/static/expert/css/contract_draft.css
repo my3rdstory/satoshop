@@ -55,12 +55,29 @@
     color: rgba(226, 232, 240, 0.92);
 }
 
+.draft-layout .column form .label {
+    color: rgba(226, 232, 240, 0.96);
+}
+
+.draft-layout .column form .help {
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.draft-layout .column form .help.is-danger {
+    color: #fca5a5;
+}
+
 .draft-layout .column form .input,
 .draft-layout .column form .textarea,
 .draft-layout .column form .select select {
     background: rgba(9, 13, 24, 0.85);
     border: 1px solid rgba(148, 163, 184, 0.35);
     color: rgba(226, 232, 240, 0.95);
+}
+
+.draft-layout .column form .input::placeholder,
+.draft-layout .column form .textarea::placeholder {
+    color: rgba(148, 163, 184, 0.7);
 }
 
 .draft-layout .column form .input:focus,
@@ -70,12 +87,13 @@
     box-shadow: 0 0 0 0.1rem rgba(59, 130, 246, 0.25);
 }
 
-.role-select-group ul {
-    display: flex;
-    gap: 1rem;
+.role-select-group .role-option-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
 }
 
-.role-select-group label {
+.role-option {
     background: rgba(17, 24, 39, 0.7);
     border: 1px solid rgba(148, 163, 184, 0.25);
     border-radius: 12px;
@@ -84,10 +102,54 @@
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
+    color: rgba(226, 232, 240, 0.92);
+    justify-content: center;
+    text-align: center;
+    transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.role-select-group input[type="radio"] {
+.role-option input[type="radio"] {
     accent-color: #38bdf8;
+}
+
+.role-option input[type="radio"]:focus-visible {
+    outline: 2px solid rgba(56, 189, 248, 0.65);
+    outline-offset: 4px;
+}
+
+.role-option input[type="radio"]:checked ~ .role-option-title {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.role-option:hover {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: rgba(15, 23, 42, 0.78);
+}
+
+.role-option--disabled {
+    cursor: default;
+    pointer-events: none;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.55);
+    color: rgba(148, 163, 184, 0.75);
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.role-option--disabled .role-option-title {
+    font-weight: 600;
+}
+
+.role-option-caption {
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.75);
+}
+
+.contract-draft-section .has-text-grey,
+.contract-draft-section .has-text-grey-dark,
+.contract-draft-section .has-text-grey-light {
+    color: rgba(203, 213, 225, 0.85) !important;
 }
 
 .next-todos {
@@ -101,6 +163,12 @@
     gap: 0.75rem;
     align-items: flex-start;
     color: rgba(203, 213, 225, 0.84);
+}
+
+.contract-draft-section .notification.is-info.is-light {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(125, 211, 252, 0.35);
+    color: rgba(226, 232, 240, 0.92);
 }
 
 .preview-card {
