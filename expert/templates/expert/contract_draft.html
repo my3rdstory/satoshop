@@ -165,6 +165,14 @@
                             <p class="help is-danger">{{ error }}</p>
                         {% endfor %}
                     </div>
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_intermediary }} {{ form.agree_intermediary.label }}
+                        </label>
+                        {% for error in form.agree_intermediary.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
 
                     <div class="field mt-5">
                         <button type="submit" class="button is-primary is-medium is-fullwidth">
@@ -194,13 +202,73 @@
                             <li><span>이메일</span><strong id="preview-email">-</strong></li>
                         </ul>
                     </div>
+                    <div class="preview-footer">
+                        {% if active_contract_template %}
+                            <p class="preview-footnote">
+                                현재 노출 계약서: <strong>{{ active_contract_template.title }}</strong>
+                                <span class="preview-version">({{ active_contract_template.version_label }})</span>
+                            </p>
+                            <button type="button"
+                                    class="button is-link is-light is-fullwidth preview-button"
+                                    id="contract-preview-trigger"
+                                    data-template-source="active-contract-template">
+                                계약서 미리보기
+                            </button>
+                        {% else %}
+                            <p class="preview-warning" role="alert">
+                                시스템 표준 거래 계약서 미등록으로 계약서를 미리보기 할 수 없습니다.
+                            </p>
+                        {% endif %}
+                    </div>
                 </div>
+                {% if contract_template_payload %}
+                    {{ contract_template_payload|json_script:"active-contract-template" }}
+                {% endif %}
             </div>
         </div>
     </div>
+    {% if active_contract_template %}
+    <div class="modal contract-preview-modal" id="contract-preview-modal" aria-hidden="true">
+        <div class="modal-background" data-close-contract-modal></div>
+        <div class="modal-card contract-modal-card" role="dialog" aria-modal="true" aria-labelledby="contract-preview-modal-title">
+            <header class="modal-card-head">
+                <p class="modal-card-title" id="contract-preview-modal-title">계약서 미리보기</p>
+                <button class="delete" type="button" aria-label="닫기" data-close-contract-modal></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="modal-summary">
+                    <h3 class="modal-summary-title">현재 입력한 계약 조건</h3>
+                    <ul class="spec-list modal-spec-list">
+                        <li><span>제목</span><strong id="modal-preview-title">-</strong></li>
+                        <li><span>역할</span><strong id="modal-preview-role">-</strong></li>
+                        <li><span>기간</span><strong id="modal-preview-period">-</strong></li>
+                        <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
+                        <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
+                        <li><span>채팅</span><strong id="modal-preview-chat">-</strong></li>
+                        <li><span>이메일</span><strong id="modal-preview-email">-</strong></li>
+                    </ul>
+                </div>
+                <div class="modal-template">
+                    <div class="modal-template-meta">
+                        <p class="template-title" id="modal-template-title"></p>
+                        <p class="template-version" id="modal-template-version"></p>
+                    </div>
+                    <div class="modal-template-body markdown-content" id="modal-template-markdown"></div>
+                </div>
+            </section>
+            <footer class="modal-card-foot">
+                <button type="button" class="button is-dark is-outlined" data-close-contract-modal>닫기</button>
+            </footer>
+        </div>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}
 
 {% block extra_js %}
+{% if active_contract_template %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+{% endif %}
 <script src="{% static 'expert/js/contract_draft.js' %}"></script>
 {% endblock %}

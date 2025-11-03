@@ -19,6 +19,14 @@ let milestoneRemaining;
 let milestoneError;
 let milestonesInitialized = false;
 let milestoneOverflow = false;
+let agreementCheckboxes = [];
+let previewModalButton;
+let previewModal;
+let previewModalCloseButtons = [];
+let modalTemplateTitle;
+let modalTemplateVersion;
+let modalTemplateMarkdown;
+let templatePayload = null;
 
 function formatSats(value) {
     if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -58,6 +66,21 @@ function getMilestoneInputs() {
         return [];
     }
     return Array.from(milestoneList.querySelectorAll('.milestone-input'));
+}
+
+function allAgreementsAccepted() {
+    if (!agreementCheckboxes.length) {
+        return true;
+    }
+    return agreementCheckboxes.every((checkbox) => checkbox.checked);
+}
+
+function setSubmitButtonState(forceDisable = false) {
+    if (!submitButton) {
+        return;
+    }
+    const agreementsReady = allAgreementsAccepted();
+    submitButton.disabled = forceDisable || !agreementsReady;
 }
 
 function updateMilestoneLabels() {
@@ -111,9 +134,7 @@ function updateMilestoneTotals() {
             milestoneError.hidden = true;
         }
         milestoneOverflow = false;
-        if (submitButton) {
-            submitButton.disabled = false;
-        }
+        setSubmitButtonState();
         updateMilestonePreview(Number.NaN, Number.NaN);
         return;
     }
@@ -152,9 +173,7 @@ function updateMilestoneTotals() {
         }
     }
     milestoneOverflow = false;
-    if (submitButton) {
-        submitButton.disabled = false;
-    }
+    setSubmitButtonState();
 
     if (addMilestoneButton) {
         addMilestoneButton.disabled = remaining === 0;
@@ -256,9 +275,7 @@ function toggleMilestoneSection(show) {
     if (addMilestoneButton) {
         addMilestoneButton.disabled = false;
     }
-    if (submitButton) {
-        submitButton.disabled = false;
-    }
+    setSubmitButtonState();
     updateMilestonePreview(Number.NaN, Number.NaN);
 }
 
@@ -367,6 +384,14 @@ function bindFieldUpdates() {
         submitButton = formElement ? formElement.querySelector('button[type="submit"]') : null;
     }
 
+    agreementCheckboxes = Array.from(document.querySelectorAll('.agreement-field input[type="checkbox"]'));
+    agreementCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', () => {
+            setSubmitButtonState();
+        });
+    });
+    setSubmitButtonState();
+
     if (addMilestoneButton) {
         addMilestoneButton.addEventListener('click', () => {
             addMilestoneRow('');
@@ -376,14 +401,105 @@ function bindFieldUpdates() {
     updateMilestoneTotals();
 }
 
+function hydrateTemplatePayload() {
+    const templateNode = document.getElementById('active-contract-template');
+    if (!templateNode) {
+        templatePayload = null;
+        return;
+    }
+    try {
+        templatePayload = JSON.parse(templateNode.textContent);
+    } catch (error) {
+        templatePayload = null;
+    }
+}
+
+function syncModalPreviewValues() {
+    if (!previewModal) {
+        return;
+    }
+    const modalMapping = {
+        title: document.getElementById('modal-preview-title'),
+        role: document.getElementById('modal-preview-role'),
+        period: document.getElementById('modal-preview-period'),
+        amount: document.getElementById('modal-preview-amount'),
+        payment: document.getElementById('modal-preview-payment'),
+        chat: document.getElementById('modal-preview-chat'),
+        email: document.getElementById('modal-preview-email'),
+    };
+    Object.entries(modalMapping).forEach(([key, target]) => {
+        if (target && previewMap[key]) {
+            target.textContent = previewMap[key].textContent;
+        }
+    });
+}
+
+function renderTemplateMarkdown(content) {
+    if (!modalTemplateMarkdown) {
+        return;
+    }
+    const fallback = content && content.trim() ? content : '계약서 본문이 비어 있습니다.';
+    modalTemplateMarkdown.textContent = fallback;
+    if (window.MarkdownRenderer && typeof window.MarkdownRenderer.render === 'function') {
+        window.MarkdownRenderer.render(modalTemplateMarkdown);
+    }
+}
+
+function openContractPreview() {
+    if (!previewModal || !templatePayload) {
+        return;
+    }
+    syncModalPreviewValues();
+    if (modalTemplateTitle) {
+        modalTemplateTitle.textContent = templatePayload.title || '표준 거래 계약서';
+    }
+    if (modalTemplateVersion) {
+        modalTemplateVersion.textContent = templatePayload.version || '';
+    }
+    renderTemplateMarkdown(templatePayload.content || '');
+    previewModal.classList.add('is-active');
+    previewModal.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('is-clipped');
+}
+
+function closeContractPreview() {
+    if (!previewModal) {
+        return;
+    }
+    previewModal.classList.remove('is-active');
+    previewModal.setAttribute('aria-hidden', 'true');
+    document.documentElement.classList.remove('is-clipped');
+}
+
+function handleDocumentKeydown(event) {
+    if (event.key === 'Escape' && previewModal && previewModal.classList.contains('is-active')) {
+        closeContractPreview();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     milestoneSection = document.getElementById('milestone-section');
     milestoneList = document.getElementById('milestone-list');
     addMilestoneButton = document.getElementById('add-milestone');
-   milestoneRemaining = document.getElementById('milestone-remaining');
-   milestoneError = document.getElementById('milestone-error');
+    milestoneRemaining = document.getElementById('milestone-remaining');
+    milestoneError = document.getElementById('milestone-error');
 
     bindFieldUpdates();
     const initialPayment = getCheckedValue(paymentInputs);
     toggleMilestoneSection(initialPayment === 'milestone');
+    hydrateTemplatePayload();
+    previewModalButton = document.getElementById('contract-preview-trigger');
+    previewModal = document.getElementById('contract-preview-modal');
+    modalTemplateTitle = document.getElementById('modal-template-title');
+    modalTemplateVersion = document.getElementById('modal-template-version');
+    modalTemplateMarkdown = document.getElementById('modal-template-markdown');
+    previewModalCloseButtons = Array.from(document.querySelectorAll('[data-close-contract-modal]'));
+
+    if (previewModalButton && previewModal && templatePayload) {
+        previewModalButton.addEventListener('click', openContractPreview);
+        previewModalCloseButtons.forEach((button) => {
+            button.addEventListener('click', closeContractPreview);
+        });
+        document.addEventListener('keydown', handleDocumentKeydown);
+    }
 });

@@ -5,6 +5,7 @@ from .models import (
     ContractParticipant,
     ContractMessage,
     ContractEmailLog,
+    ContractTemplate,
     ExpertEmailSettings,
 )
 from .services import generate_chat_archive_pdf
@@ -92,3 +93,48 @@ class ExpertEmailSettingsAdmin(admin.ModelAdmin):
             SiteSettings.get_settings()
             qs = super().get_queryset(request)
         return qs
+
+
+@admin.action(description="계약 조건 입력 화면에 노출")
+def activate_template(modeladmin, request, queryset):
+    template = queryset.first()
+    if not template:
+        messages.warning(request, "선택된 계약서가 없습니다.")
+        return
+    template.is_selected = True
+    template.save()
+    if queryset.count() > 1:
+        messages.warning(request, "첫 번째 선택 항목만 노출 대상으로 설정했습니다.")
+    else:
+        messages.success(request, f"'{template}' 계약서를 노출 대상으로 설정했습니다.")
+
+
+@admin.register(ContractTemplate)
+class ContractTemplateAdmin(admin.ModelAdmin):
+    list_display = ("title", "version_label", "is_selected", "updated_at")
+    list_filter = ("is_selected", "created_at")
+    search_fields = ("title", "version_label", "content")
+    actions = [activate_template]
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "기본 정보",
+            {
+                "fields": ("title", "version_label", "is_selected"),
+                "description": "계약서 이름과 버전을 관리하고, 노출 여부를 선택하세요.",
+            },
+        ),
+        (
+            "마크다운 본문",
+            {
+                "fields": ("content",),
+                "description": "MD 포맷으로 작성된 계약서 내용을 입력하세요.",
+            },
+        ),
+        (
+            "메타데이터",
+            {
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
+    )

@@ -69,3 +69,7 @@ class ContractDraftForm(forms.Form):
         label="계약 내용 비밀 유지 및 시스템 책임 범위를 이해했습니다.",
         required=True,
     )
+    agree_intermediary = forms.BooleanField(
+        label="중계자인 본 시스템은 의뢰자와 수행자의 계약 이행에 관여하지 않으며, 계약 불이행에 대한 어떠한 책임도 지지 않음을 이해합니다.",
+        required=True,
+    )

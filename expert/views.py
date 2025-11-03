@@ -5,7 +5,7 @@ from django.urls import reverse, reverse_lazy
 from django.utils.http import urlencode
 from django.views.generic import TemplateView, FormView
 
-from .models import Contract
+from .models import Contract, ContractTemplate
 from .forms import ContractDraftForm
 
 
@@ -29,6 +29,18 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
     form_class = ContractDraftForm
     success_url = reverse_lazy("expert:direct-draft")
     login_url = reverse_lazy("expert:login")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        template = ContractTemplate.objects.filter(is_selected=True).first()
+        context["active_contract_template"] = template
+        if template:
+            context["contract_template_payload"] = {
+                "title": template.title,
+                "version": template.version_label,
+                "content": template.content,
+            }
+        return context
 
     def form_valid(self, form):
         form.add_error(None, "계약 저장 기능은 준비 중입니다. 입력값을 확인했습니다.")

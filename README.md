@@ -523,6 +523,11 @@ SECURE_SSL_REDIRECT=True
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
 - **새 의존성 설치**: `uv sync`를 실행하여 `channels`와 `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
 
+#### Expert 거래 계약서 템플릿
+- **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.
+- **단일 노출 선택**: 계약서를 “노출”로 체크하면 다른 계약서는 자동으로 해제되어, 드래프트 화면에서는 항상 하나의 계약서만 노출됩니다.
+- **드래프트 미리보기**: `/expert/contracts/direct/draft/` 화면에서 계약 조건 입력 내용을 상단에, 선택된 계약서 본문을 하단에 두는 모달 미리보기를 제공합니다. 표준 계약서가 등록되지 않은 경우에는 미리보기 대신 경고 문구가 표시됩니다.
+
 
 ## 📁 프로젝트 구조
 
