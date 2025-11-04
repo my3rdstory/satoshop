@@ -154,7 +154,7 @@
                     <div class="field attachment-field">
                         <label class="label">계약 관련 PDF 첨부</label>
                         {{ form.attachment_manifest }}
-                        <div class="contract-attachment-uploader"
+                        <div class="attachment-dropzone-wrapper"
                              id="contract-attachment-uploader"
                              data-upload-url="{% url 'expert:contract-attachment-upload' %}"
                              data-max-items="3"
@@ -172,12 +172,11 @@
                                         파일 선택
                                     </button>
                                 </div>
-                                <input type="file" id="contract-attachment-input" class="is-hidden"
-                                       accept="application/pdf">
+                                <input type="file" id="contract-attachment-input" class="is-hidden" accept="application/pdf">
                             </div>
                             <div class="attachment-status" id="contract-attachment-status" role="status" aria-live="polite"></div>
-                            <ul class="attachment-list" id="contract-attachment-list"></ul>
                         </div>
+                        <ul class="attachment-list" id="contract-attachment-list"></ul>
                     </div>
 
                     <div class="field agreement-field">
@@ -226,7 +225,6 @@
                             <li><span>기간</span><strong id="preview-period">-</strong></li>
                             <li><span>금액</span><strong id="preview-amount">-</strong></li>
                             <li><span>지불 조건</span><strong id="preview-payment">-</strong></li>
-                            <li><span>채팅</span><strong id="preview-chat">-</strong></li>
                             <li><span>이메일</span><strong id="preview-email">-</strong></li>
                         </ul>
                         <p class="preview-note">
@@ -275,7 +273,6 @@
                         <li><span>기간</span><strong id="modal-preview-period">-</strong></li>
                         <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
                         <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
-                        <li><span>채팅</span><strong id="modal-preview-chat">-</strong></li>
                         <li><span>이메일</span><strong id="modal-preview-email">-</strong></li>
                     </ul>
                 </div>
