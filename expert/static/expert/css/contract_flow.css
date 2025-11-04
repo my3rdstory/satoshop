@@ -46,12 +46,22 @@
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
-    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
+    background: linear-gradient(120deg, rgba(15, 23, 42, 0.85), rgba(2, 6, 23, 0.9));
 }
 
 .contract-flow-list li span {
-    color: rgba(148, 163, 184, 0.9);
+    color: rgba(224, 231, 255, 0.78);
+    font-size: 0.9rem;
+}
+
+.contract-flow-list li strong {
+    color: #f8fafc;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
 }
 
 .signature-pad-wrapper {
@@ -122,6 +132,34 @@
     font-family: \"JetBrains Mono\", \"Fira Code\", monospace;
     font-size: 0.85rem;
     word-break: break-all;
+}
+
+.share-url-display {
+    color: #f8fafc;
+    border-color: rgba(94, 234, 212, 0.55);
+    box-shadow: 0 0 24px rgba(45, 212, 191, 0.25);
+    background: radial-gradient(
+        circle at 10% 20%,
+        rgba(15, 118, 110, 0.35),
+        rgba(15, 23, 42, 0.95)
+    );
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    min-height: 3.25rem;
+}
+
+.share-url-link {
+    color: #ecfeff;
+    text-decoration: none;
+    width: 100%;
+    word-break: break-all;
+}
+
+.share-url-link:hover,
+.share-url-link:focus {
+    color: #5eead4;
+    text-decoration: underline;
 }
 
 .invite-alert {

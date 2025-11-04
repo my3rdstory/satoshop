@@ -14,6 +14,17 @@ document.addEventListener('DOMContentLoaded', () => {
         penColor: '#22d3ee',
     });
 
+    function updateButtonState() {
+        if (!submitButton) {
+            return;
+        }
+        const hasSignature = hiddenInput.value && hiddenInput.value.length > 20;
+        const confirmed = confirmInputs.length
+            ? Array.from(confirmInputs).every((input) => input.checked)
+            : true;
+        submitButton.disabled = !(hasSignature && confirmed);
+    }
+
     const resizeCanvas = () => {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
@@ -26,17 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-
-    const updateButtonState = () => {
-        if (!submitButton) {
-            return;
-        }
-        const hasSignature = hiddenInput.value && hiddenInput.value.length > 20;
-        const confirmed = confirmInputs.length
-            ? Array.from(confirmInputs).every((input) => input.checked)
-            : true;
-        submitButton.disabled = !(hasSignature && confirmed);
-    };
 
     signaturePad.onEnd = () => {
         hiddenInput.value = signaturePad.toDataURL('image/png');

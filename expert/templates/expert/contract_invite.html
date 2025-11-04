@@ -53,7 +53,11 @@
                 </ul>
                 {% if is_owner %}
                     <p class="mt-4 has-text-grey-light">이 주소를 복사해 상대방에게 전달하세요.</p>
-                    <div class="hash-display">{{ share_url }}</div>
+                    <div class="hash-display share-url-display">
+                        <a href="{{ share_url }}" class="share-url-link" target="_blank" rel="noopener">
+                            {{ share_url }}
+                        </a>
+                    </div>
                 {% endif %}
             </article>
 
