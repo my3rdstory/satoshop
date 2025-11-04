@@ -75,7 +75,7 @@
 
 ---
 
-본 계약서는 {{contract_generated_at}} 에 사토샵 Expert 시스템을 통해 생성되었으며, 당사자는 신의성실 원칙에 따라 모든 내용을 준수할 것을 확인한다.
+본 계약서는 {{ contract_generated_at|localtime|date:"Y-m-d H:i:s" }} 에 사토샵 Expert 시스템을 통해 생성되었으며, 당사자는 신의성실 원칙에 따라 모든 내용을 준수할 것을 확인한다.
 
 ---
 

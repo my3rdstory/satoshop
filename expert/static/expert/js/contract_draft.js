@@ -464,11 +464,17 @@ function syncModalPreviewValues() {
     });
 }
 
-function renderTemplateMarkdown(content) {
+function renderTemplateMarkdown(payload) {
     if (!modalTemplateMarkdown) {
         return;
     }
-    const fallback = content && content.trim() ? content : '계약서 본문이 비어 있습니다.';
+    const htmlContent = payload && typeof payload.content_html === 'string' ? payload.content_html.trim() : '';
+    if (htmlContent) {
+        modalTemplateMarkdown.innerHTML = htmlContent;
+        return;
+    }
+    const markdownContent = payload && typeof payload.content === 'string' ? payload.content.trim() : '';
+    const fallback = markdownContent || '계약서 본문이 비어 있습니다.';
     modalTemplateMarkdown.textContent = fallback;
     if (window.MarkdownRenderer && typeof window.MarkdownRenderer.render === 'function') {
         window.MarkdownRenderer.render(modalTemplateMarkdown);
@@ -486,7 +492,7 @@ function openContractPreview() {
     if (modalTemplateVersion) {
         modalTemplateVersion.textContent = templatePayload.version || '';
     }
-    renderTemplateMarkdown(templatePayload.content || '');
+    renderTemplateMarkdown(templatePayload);
     previewModal.classList.add('is-active');
     previewModal.setAttribute('aria-hidden', 'false');
     document.documentElement.classList.add('is-clipped');

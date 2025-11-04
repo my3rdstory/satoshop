@@ -1,3 +1,5 @@
+import markdown
+
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseForbidden, JsonResponse
@@ -12,6 +14,30 @@ from storage.utils import upload_file_to_s3
 
 from .models import Contract, ContractTemplate
 from .forms import ContractDraftForm
+
+
+def render_contract_markdown(text: str) -> str:
+    """계약서 마크다운을 HTML로 안전하게 변환."""
+
+    if not text:
+        return ""
+    md = markdown.Markdown(
+        extensions=[
+            "markdown.extensions.fenced_code",
+            "markdown.extensions.tables",
+            "markdown.extensions.nl2br",
+            "markdown.extensions.codehilite",
+            "markdown.extensions.sane_lists",
+        ],
+        extension_configs={
+            "markdown.extensions.codehilite": {
+                "guess_lang": False,
+                "noclasses": True,
+            }
+        },
+        output_format="html5",
+    )
+    return md.convert(text)
 
 
 class ExpertLandingView(TemplateView):
@@ -40,10 +66,13 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         template = ContractTemplate.objects.filter(is_selected=True).first()
         context["active_contract_template"] = template
         if template:
+            rendered_content = render_contract_markdown(template.content)
+            context["active_contract_template_html"] = rendered_content
             context["contract_template_payload"] = {
                 "title": template.title,
                 "version": template.version_label,
                 "content": template.content,
+                "content_html": rendered_content,
             }
         context["contract_generated_at"] = timezone.now()
         return context
