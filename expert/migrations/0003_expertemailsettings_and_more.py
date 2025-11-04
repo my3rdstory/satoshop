@@ -26,12 +26,26 @@ class Migration(migrations.Migration):
             },
             bases=('myshop.sitesettings',),
         ),
-        migrations.RemoveConstraint(
-            model_name='contractparticipant',
-            name='unique_contract_participant',
+        migrations.RunSQL(
+            sql="ALTER TABLE expert_contractparticipant DROP CONSTRAINT IF EXISTS unique_contract_participant;",
+            reverse_sql="ALTER TABLE expert_contractparticipant ADD CONSTRAINT unique_contract_participant UNIQUE (contract_id, user_id);",
         ),
-        migrations.AlterUniqueTogether(
-            name='contractparticipant',
-            unique_together={('contract', 'user')},
+        migrations.RunSQL(
+            sql="""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'expert_contractparticipant_contract_id_user_id_c2c1569d_uniq'
+                ) THEN
+                    ALTER TABLE expert_contractparticipant
+                    ADD CONSTRAINT expert_contractparticipant_contract_id_user_id_c2c1569d_uniq
+                    UNIQUE (contract_id, user_id);
+                END IF;
+            END$$;
+            """,
+            reverse_sql="""
+            ALTER TABLE expert_contractparticipant
+            DROP CONSTRAINT IF EXISTS expert_contractparticipant_contract_id_user_id_c2c1569d_uniq;
+            """,
         ),
     ]

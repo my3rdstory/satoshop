@@ -161,9 +161,12 @@
                              data-max-size="5242880">
                             <div class="attachment-dropzone" id="contract-attachment-dropzone">
                                 <div class="attachment-dropzone-content">
-                                    <div>
-                                        <p class="dropzone-title">PDF를 드래그하거나 클릭해서 첨부하세요</p>
-                                        <p class="dropzone-caption">최대 3개, 개당 5MB 이하 · 업로드 즉시 오브젝트 스토리지로 전송됩니다.</p>
+                                    <div class="dropzone-visual">
+                                        <span class="dropzone-icon" aria-hidden="true">⇪</span>
+                                    </div>
+                                    <div class="dropzone-copy">
+                                        <p class="dropzone-title">계약서에 첨부할 PDF 파일을 업로드하세요.</p>
+                                        <p class="dropzone-caption">오직 PDF 포맷만 가능, 최대 3개, 개당 5MB 가능</p>
                                     </div>
                                     <button type="button" class="button is-small is-link is-light" id="contract-attachment-trigger">
                                         파일 선택
@@ -175,7 +178,6 @@
                             <div class="attachment-status" id="contract-attachment-status" role="status" aria-live="polite"></div>
                             <ul class="attachment-list" id="contract-attachment-list"></ul>
                         </div>
-                        <p class="help">PDF만 업로드 가능하며, 업로드가 완료되면 하단 목록에 저장 경로가 표시됩니다.</p>
                     </div>
 
                     <div class="field agreement-field">
