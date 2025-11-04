@@ -217,6 +217,9 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # 정적 파일 저장소 설정 - 해시 기반 캐시 무효화
 # Django 5.x에서는 STORAGES 설정 사용 (STATICFILES_STORAGE는 deprecated)
 STORAGES = {

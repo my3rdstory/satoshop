@@ -162,6 +162,66 @@
     text-decoration: underline;
 }
 
+.signature-preview {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(94, 234, 212, 0.35);
+    border-radius: 14px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.signature-preview-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(148, 163, 184, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.signature-preview img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    padding: 0.5rem;
+}
+
+.signature-record {
+    background: rgba(11, 21, 40, 0.8);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 12px;
+    padding: 0.85rem;
+}
+
+.signature-record-img {
+    width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 10px;
+    border: 1px solid rgba(94, 234, 212, 0.25);
+    background: rgba(2, 6, 23, 0.85);
+    padding: 0.4rem;
+}
+
+.modal-template-body ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-bottom: 0.85rem;
+}
+
+.modal-template-body ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.modal-template-body li {
+    margin-bottom: 0.35rem;
+    color: rgba(226, 232, 240, 0.92);
+}
+
 .contract-flow-card label.checkbox {
     color: rgba(248, 250, 252, 0.92);
     font-weight: 500;

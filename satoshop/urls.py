@@ -48,6 +48,7 @@ from django.conf.urls.static import static
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # WhiteNoise가 정적 파일 서빙을 자동으로 처리합니다
 

@@ -81,6 +81,25 @@
                 <p class="mt-4 mb-2">사토샵</p>
                 <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
             </article>
+            <article class="contract-flow-card">
+                <h3>서명 기록</h3>
+                <div class="signature-record">
+                    <p class="signature-preview-label">의뢰자 서명</p>
+                    {% if document.creator_signature %}
+                        <img src="{{ document.creator_signature.url }}" alt="의뢰자 서명 이미지" class="signature-record-img">
+                    {% else %}
+                        <p class="has-text-grey">업로드된 서명이 없습니다.</p>
+                    {% endif %}
+                </div>
+                <div class="signature-record mt-4">
+                    <p class="signature-preview-label">수행자 서명</p>
+                    {% if document.counterparty_signature %}
+                        <img src="{{ document.counterparty_signature.url }}" alt="수행자 서명 이미지" class="signature-record-img">
+                    {% else %}
+                        <p class="has-text-grey">업로드된 서명이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
         </div>
 
         {% if form %}
@@ -101,6 +120,10 @@
                     <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
                     <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
                 </div>
+            </div>
+            <div class="signature-preview" data-signature-preview hidden>
+                <p class="signature-preview-label">서명 미리보기</p>
+                <img src="" alt="서명 미리보기" data-signature-preview-img>
             </div>
             <div class="field mt-4">
                 <label class="checkbox">{{ form.agree_privacy }} 개인정보 수집 및 이용에 동의합니다.</label>
