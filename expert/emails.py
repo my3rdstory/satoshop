@@ -85,3 +85,34 @@ def send_contract_finalized_email(contract, additional_recipients=None, attachme
             success=success,
             error_message=error_message,
         )
+
+
+def send_direct_contract_document_email(document):
+    """직접 계약 플로우에서 계약서를 이메일로 전송하고 결과를 반환."""
+
+    subject = f"[SatoShop Expert] 계약서가 완료되었습니다 - {document.payload.get('title', '-') }"
+    context = {
+        "document": document,
+        "generated_at": timezone.localtime(timezone.now()),
+    }
+    body = render_to_string("expert/emails/direct_contract_finalized.txt", context)
+    pdf_path = document.final_pdf.path if document.final_pdf else None
+    statuses = {}
+    sender = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@satoshop.app"
+
+    for key, email in {"creator": document.creator_email, "counterparty": document.counterparty_email}.items():
+        status = {"email": email or "", "sent": False, "message": ""}
+        if not email:
+            status["message"] = "이메일이 입력되지 않았습니다."
+            statuses[key] = status
+            continue
+        email_message = EmailMessage(subject=subject, body=body, from_email=sender, to=[email])
+        if pdf_path:
+            email_message.attach_file(pdf_path)
+        try:
+            email_message.send(fail_silently=False)
+            status["sent"] = True
+        except Exception as exc:  # pylint: disable=broad-except
+            status["message"] = str(exc)
+        statuses[key] = status
+    return statuses

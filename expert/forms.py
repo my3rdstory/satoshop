@@ -1,3 +1,4 @@
+import base64
 from django import forms
 
 
@@ -90,3 +91,69 @@ class ContractDraftForm(forms.Form):
         label="중계자인 본 시스템은 의뢰자와 수행자의 계약 이행에 관여하지 않으며, 계약 불이행에 대한 어떠한 책임도 지지 않음을 이해합니다.",
         required=True,
     )
+
+
+class ContractReviewForm(forms.Form):
+    """계약 생성자가 최종 검토 단계에서 사용하는 폼."""
+
+    signature_name = forms.CharField(
+        label="서명자 이름",
+        max_length=80,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "신청자 이름"}),
+    )
+    signature_data = forms.CharField(widget=forms.HiddenInput(attrs={"data-signature-input": "true"}))
+    confirm_reviewed = forms.BooleanField(
+        label="계약서 내용을 모두 확인했으며 자필 서명했습니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+
+    def clean_signature_data(self):
+        data = self.cleaned_data["signature_data"]
+        if not data or not data.startswith("data:image/"):
+            raise forms.ValidationError("자필 서명을 캡처해 주세요.")
+        try:
+            base64.b64decode(data.split(",")[1])
+        except Exception as exc:  # pylint: disable=broad-except
+            raise forms.ValidationError("서명 데이터가 올바르지 않습니다.") from exc
+        return data
+
+
+class CounterpartySignatureForm(forms.Form):
+    """공유 주소에서 상대방이 사용하는 서명 폼."""
+
+    email = forms.EmailField(
+        label="이메일",
+        widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
+    )
+    signature_name = forms.CharField(
+        label="서명자 이름",
+        max_length=80,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "상대방 이름"}),
+    )
+    signature_data = forms.CharField(widget=forms.HiddenInput(attrs={"data-signature-input": "true"}))
+    agree_privacy = forms.BooleanField(
+        label="개인정보 수집 및 이용에 동의합니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+    agree_confidentiality = forms.BooleanField(
+        label="계약 내용 비밀 유지 조항을 이해했습니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+    agree_system = forms.BooleanField(
+        label="중계 시스템 안내 사항을 모두 확인했습니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+
+    def clean_signature_data(self):
+        data = self.cleaned_data["signature_data"]
+        if not data or not data.startswith("data:image/"):
+            raise forms.ValidationError("자필 서명을 캡처해 주세요.")
+        try:
+            base64.b64decode(data.split(",")[1])
+        except Exception as exc:  # pylint: disable=broad-except
+            raise forms.ValidationError("서명 데이터가 올바르지 않습니다.") from exc
+        return data

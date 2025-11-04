@@ -1,0 +1,56 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}계약 보관함 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-flow-section">
+    <div class="container">
+        <div class="contract-flow-hero">
+            <h1 class="title is-3">계약 보관함</h1>
+            <p class="has-text-grey-light">내가 생성한 계약서와 PDF를 확인할 수 있습니다.</p>
+        </div>
+
+        {% if documents %}
+            <div class="contract-flow-card">
+                <table class="contract-library-table">
+                    <thead>
+                        <tr>
+                            <th>제목</th>
+                            <th>상태</th>
+                            <th>생성일</th>
+                            <th>공유 주소</th>
+                            <th>계약서 PDF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in documents %}
+                            <tr>
+                                <td>{{ doc.payload.title }}</td>
+                                <td>{{ doc.get_status_display }}</td>
+                                <td>{{ doc.created_at|date:"Y-m-d H:i" }}</td>
+                                <td><a href="{{ doc.get_absolute_url }}" target="_blank" rel="noopener">열기</a></td>
+                                <td>
+                                    {% if doc.final_pdf %}
+                                        <a href="{{ doc.final_pdf.url }}" target="_blank" rel="noopener">다운로드</a>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="contract-flow-card">
+                <p>아직 생성된 계약서가 없습니다. <a href="{% url 'expert:direct-draft' %}">새 계약서 만들기</a></p>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

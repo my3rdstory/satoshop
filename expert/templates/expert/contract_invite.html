@@ -1,0 +1,168 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}전자 계약서 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-flow-section">
+    <div class="container">
+        <div class="contract-flow-hero">
+            <h1 class="title is-3">{{ payload.title }}</h1>
+            <p class="has-text-grey-light">계약 ID: {{ document.slug }}</p>
+            {% if waiting_message %}
+                <div class="invite-alert mt-4">
+                    현재 상대방의 계약 내용 입력을 기다리고 있습니다.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-step {% if document.creator_hash %}is-completed{% endif %}">
+                <strong>의뢰자 서명</strong>
+                <span>{{ document.creator_signed_at|date:"Y-m-d H:i"|default:"대기" }}</span>
+            </div>
+            <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
+                <strong>상대방 확인</strong>
+                <span>
+                    {% if document.counterparty_signed_at %}
+                        {{ document.counterparty_signed_at|date:"Y-m-d H:i" }}
+                    {% else %}
+                        진행 중
+                    {% endif %}
+                </span>
+            </div>
+            <div class="timeline-step {% if document.status == 'completed' %}is-completed{% endif %}">
+                <strong>사토샵 검증</strong>
+                <span>{% if document.status == 'completed' %}완료{% else %}대기{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="contract-flow-grid">
+            <article class="contract-flow-card">
+                <h3>계약 요약</h3>
+                <ul class="contract-flow-list">
+                    <li><span>역할</span><strong>{{ payload.role_display }}</strong></li>
+                    <li><span>기간</span><strong>{{ payload.start_date }} ~ {{ payload.end_date|default:'미정' }}</strong></li>
+                    <li><span>금액</span><strong>{{ payload.amount_sats }} sats</strong></li>
+                    <li><span>지급 방식</span><strong>{{ payload.payment_display }}</strong></li>
+                    <li><span>이메일</span><strong>{{ payload.email_recipient|default:'미입력' }}</strong></li>
+                </ul>
+                {% if is_owner %}
+                    <p class="mt-4 has-text-grey-light">이 주소를 복사해 상대방에게 전달하세요.</p>
+                    <div class="hash-display">{{ share_url }}</div>
+                {% endif %}
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>계약 일반 사항</h3>
+                <div class="modal-template-body">
+                    {% if contract_template.content_html %}
+                        {{ contract_template.content_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">계약서 본문이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>해시 기록</h3>
+                <p class="mb-2">의뢰자</p>
+                <div class="hash-display">{{ document.creator_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">수행자</p>
+                <div class="hash-display">{{ document.counterparty_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">사토샵</p>
+                <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
+            </article>
+        </div>
+
+        {% if form %}
+        <form method="post" class="contract-flow-card">
+            {% csrf_token %}
+            <h3>상대방 서명</h3>
+            <div class="field">
+                {{ form.email.label_tag }}
+                <div class="control">{{ form.email }}</div>
+                {% for error in form.email.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div class="field">
+                {{ form.signature_name.label_tag }}
+                <div class="control">{{ form.signature_name }}</div>
+                {% for error in form.signature_name.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {{ form.signature_data }}
+            <div class="signature-pad-wrapper">
+                <canvas class="signature-canvas" data-signature-canvas></canvas>
+                <div class="signature-actions">
+                    <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
+                    <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                </div>
+            </div>
+            <div class="field mt-4">
+                <label class="checkbox">{{ form.agree_privacy }} 개인정보 수집 및 이용에 동의합니다.</label>
+                <label class="checkbox mt-2">{{ form.agree_confidentiality }} 계약 내용 비밀 유지 조항을 이해했습니다.</label>
+                <label class="checkbox mt-2">{{ form.agree_system }} 중계 시스템 안내 사항을 확인했습니다.</label>
+                {% for field in form %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="field mt-4">
+                <button type="submit" class="button is-primary is-fullwidth is-medium"
+                        data-signature-submit disabled>계약 체결</button>
+            </div>
+        </form>
+        {% else %}
+            <div class="contract-flow-card">
+                <h3>진행 결과</h3>
+                {% if document.status == 'completed' %}
+                    <p>계약이 완료되었습니다. 아래에서 PDF를 다운로드할 수 있습니다.</p>
+                    {% if document.final_pdf %}
+                        <a href="{{ document.final_pdf.url }}" class="button is-link mt-3" target="_blank" rel="noopener">계약서 PDF 다운로드</a>
+                    {% endif %}
+                    <div class="mt-4">
+                        <p class="has-text-grey-light">이메일 발송 결과</p>
+                        <ul class="email-status-list mt-2">
+                            {% for key, status in document.email_delivery.items %}
+                                <li>
+                                    <span>{{ key|capfirst }}: {{ status.email|default:'미입력' }}</span>
+                                    <strong>
+                                        {% if status.sent %}
+                                            발송 완료
+                                        {% else %}
+                                            {% if status.message %}
+                                                실패 - {{ status.message }}
+                                            {% else %}
+                                                미발송
+                                            {% endif %}
+                                        {% endif %}
+                                    </strong>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <p>계약 진행 중입니다. 상대방이 서명하면 자동으로 알림이 제공됩니다.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if form %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script src="{% static 'expert/js/contract_signature.js' %}"></script>
+{% endif %}
+{% endblock %}

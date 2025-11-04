@@ -1,0 +1,183 @@
+.contract-flow-section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+    color: rgba(226, 232, 240, 0.95);
+}
+
+.contract-flow-hero {
+    margin-bottom: 2rem;
+}
+
+.contract-flow-hero .title {
+    color: #f8fafc;
+}
+
+.contract-flow-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    margin-bottom: 2rem;
+}
+
+.contract-flow-card {
+    background: rgba(10, 18, 35, 0.92);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 48px rgba(2, 6, 23, 0.5);
+}
+
+.contract-flow-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.contract-flow-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.contract-flow-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+    padding-bottom: 0.4rem;
+}
+
+.contract-flow-list li span {
+    color: rgba(148, 163, 184, 0.9);
+}
+
+.signature-pad-wrapper {
+    background: rgba(2, 6, 23, 0.9);
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+.signature-canvas {
+    width: 100%;
+    height: 220px;
+    background: rgba(15, 23, 42, 0.85);
+    border-radius: 12px;
+    border: 1px solid rgba(37, 99, 235, 0.4);
+}
+
+.signature-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.signature-actions button {
+    border: 1px solid rgba(248, 113, 113, 0.6);
+    color: rgba(248, 113, 113, 0.9);
+}
+
+.timeline {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-step {
+    flex: 1 1 160px;
+    border-radius: 14px;
+    padding: 1rem;
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    background: rgba(15, 23, 42, 0.65);
+    text-align: center;
+}
+
+.timeline-step.is-active {
+    border-color: rgba(94, 234, 212, 0.8);
+    box-shadow: 0 0 25px rgba(94, 234, 212, 0.35);
+}
+
+.timeline-step.is-completed {
+    border-color: rgba(34, 197, 94, 0.8);
+    background: rgba(22, 163, 74, 0.15);
+}
+
+.timeline-step strong {
+    display: block;
+    font-size: 0.95rem;
+    color: #e0f2fe;
+    margin-bottom: 0.25rem;
+}
+
+.hash-display {
+    background: rgba(12, 20, 38, 0.95);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    font-family: \"JetBrains Mono\", \"Fira Code\", monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.invite-alert {
+    background: rgba(251, 146, 60, 0.12);
+    border: 1px solid rgba(251, 146, 60, 0.45);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    color: #fdba74;
+}
+
+.email-status-list {
+    list-style: none;
+    margin: 0;\n    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+}
+
+.email-status-list li {
+    background: rgba(2, 6, 23, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.contract-library-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.contract-library-table th,
+.contract-library-table td {
+    padding: 0.85rem;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+}
+
+.contract-library-table th {
+    text-align: left;
+    color: rgba(148, 163, 184, 0.95);
+    font-weight: 600;
+}
+
+.contract-library-table td a {
+    color: #38bdf8;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .signature-actions {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .timeline-step {
+        flex: 1 1 100%;
+    }
+}

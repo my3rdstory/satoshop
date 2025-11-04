@@ -1,9 +1,13 @@
 import markdown
 
+import json
+import uuid
+
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseForbidden, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.http import Http404, HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
@@ -12,8 +16,17 @@ from django.views.generic import TemplateView, FormView
 
 from storage.utils import upload_file_to_s3
 
-from .models import Contract, ContractTemplate
-from .forms import ContractDraftForm
+from .contract_flow import (
+    build_counterparty_hash,
+    build_creator_hash,
+    build_mediator_hash,
+    decode_signature_data,
+    generate_share_slug,
+    render_contract_pdf,
+)
+from .emails import send_direct_contract_document_email
+from .models import Contract, ContractTemplate, DirectContractDocument
+from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
 
 
 def render_contract_markdown(text: str) -> str:
@@ -60,13 +73,23 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
     form_class = ContractDraftForm
     success_url = reverse_lazy("expert:direct-draft")
     login_url = reverse_lazy("expert:login")
+    session_prefix = "expert_direct_contract"
+
+    def dispatch(self, request, *args, **kwargs):
+        self.active_contract_template = ContractTemplate.objects.filter(is_selected=True).first()
+        self.active_contract_template_html = (
+            render_contract_markdown(self.active_contract_template.content)
+            if self.active_contract_template
+            else ""
+        )
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        template = ContractTemplate.objects.filter(is_selected=True).first()
+        template = self.active_contract_template
         context["active_contract_template"] = template
         if template:
-            rendered_content = render_contract_markdown(template.content)
+            rendered_content = self.active_contract_template_html
             context["active_contract_template_html"] = rendered_content
             context["contract_template_payload"] = {
                 "title": template.title,
@@ -78,8 +101,203 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         return context
 
     def form_valid(self, form):
-        form.add_error(None, "계약 저장 기능은 준비 중입니다. 입력값을 확인했습니다.")
-        return self.form_invalid(form)
+        draft_payload = self._build_draft_payload(form)
+        token = uuid.uuid4().hex
+        session_key = self._session_key(token)
+        self.request.session[session_key] = draft_payload
+        self.request.session.modified = True
+        return redirect(reverse("expert:direct-review", kwargs={"token": token}))
+
+    def _session_key(self, token: str) -> str:
+        return f"{self.session_prefix}:{token}"
+
+    def _build_draft_payload(self, form):
+        data = form.cleaned_data.copy()
+        for field_name in ("start_date", "end_date"):
+            value = data.get(field_name)
+            if value:
+                data[field_name] = value.isoformat()
+        milestone_values = []
+        for value in self.request.POST.getlist("milestones[]"):
+            if not value:
+                continue
+            try:
+                milestone_values.append(int(value))
+            except ValueError:
+                continue
+        data["milestones"] = milestone_values
+        attachments_raw = data.get("attachment_manifest")
+        if attachments_raw:
+            try:
+                data["attachments"] = json.loads(attachments_raw)
+            except json.JSONDecodeError:
+                data["attachments"] = []
+        else:
+            data["attachments"] = []
+        data.pop("attachment_manifest", None)
+        data["generated_at"] = timezone.now().isoformat()
+        role_display = dict(form.fields["role"].choices).get(data.get("role"), "-")
+        payment_display = dict(form.fields["payment_type"].choices).get(data.get("payment_type"), "-")
+        data["role_display"] = role_display
+        data["payment_display"] = payment_display
+        if self.active_contract_template:
+            data["contract_template"] = {
+                "title": self.active_contract_template.title,
+                "version": self.active_contract_template.version_label,
+                "content": self.active_contract_template.content,
+                "content_html": self.active_contract_template_html,
+            }
+        return data
+
+
+class DirectContractReviewView(LoginRequiredMixin, FormView):
+    """계약 생성자가 최종 검토 및 서명을 수행하는 화면."""
+
+    template_name = "expert/contract_review.html"
+    form_class = ContractReviewForm
+    login_url = reverse_lazy("expert:login")
+    session_prefix = DirectContractDraftView.session_prefix
+
+    def dispatch(self, request, *args, **kwargs):
+        self.token = kwargs.get("token")
+        self.session_key = f"{self.session_prefix}:{self.token}"
+        self.draft_payload = self.request.session.get(self.session_key)
+        if not self.draft_payload:
+            messages.warning(request, "검토할 계약 초안이 없습니다. 처음부터 다시 작성해 주세요.")
+            return redirect("expert:direct-draft")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "draft_payload": self.draft_payload,
+                "contract_generated_at": timezone.now(),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        payload = self.draft_payload.copy()
+        payload["creator_signature_name"] = form.cleaned_data["signature_name"]
+        slug = self._generate_unique_slug()
+        creator_role = payload.get("role", "client")
+        counterparty_role = "performer" if creator_role == "client" else "client"
+        document = DirectContractDocument(
+            slug=slug,
+            creator=self.request.user,
+            payload=payload,
+            creator_role=creator_role,
+            counterparty_role=counterparty_role,
+            creator_email=payload.get("email_recipient") or "",
+        )
+        creator_hash = build_creator_hash(payload, self.request.META.get("HTTP_USER_AGENT", ""))
+        document.creator_hash = creator_hash.value
+        document.creator_hash_meta = creator_hash.meta
+        document.creator_signed_at = timezone.now()
+        document.status = "pending_counterparty"
+        document.save()
+
+        signature_file = decode_signature_data(
+            form.cleaned_data["signature_data"], f"creator-{self.request.user.pk}"
+        )
+        document.creator_signature.save(signature_file.name, signature_file)
+        self.request.session.pop(self.session_key, None)
+        self.request.session.modified = True
+        return redirect(f"{document.get_absolute_url()}?owner=1")
+
+    def _generate_unique_slug(self) -> str:
+        while True:
+            slug = generate_share_slug()
+            if not DirectContractDocument.objects.filter(slug=slug).exists():
+                return slug
+
+
+class DirectContractInviteView(FormView):
+    """생성된 계약을 공유 주소에서 확인/서명하는 화면."""
+
+    template_name = "expert/contract_invite.html"
+    form_class = CounterpartySignatureForm
+
+    def dispatch(self, request, *args, **kwargs):
+        self.document = get_object_or_404(DirectContractDocument, slug=kwargs.get("slug"))
+        self.payload = self.document.payload or {}
+        email_delivery = self.document.email_delivery or {}
+        for key in ("creator", "counterparty"):
+            email_delivery.setdefault(key, {"email": "", "sent": False, "message": ""})
+        if email_delivery != self.document.email_delivery:
+            self.document.email_delivery = email_delivery
+            self.document.save(update_fields=["email_delivery"])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form(self, form_class=None):
+        if self.document.status == "completed":
+            return None
+        return super().get_form(form_class)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        is_owner = self.request.user.is_authenticated and self.request.user == self.document.creator
+        context.update(
+            {
+                "document": self.document,
+                "payload": self.payload,
+                "is_owner": is_owner,
+                "waiting_message": self.document.status != "completed" and not self.document.counterparty_signed_at,
+                "contract_template": (self.payload.get("contract_template") or {}),
+                "share_url": self.request.build_absolute_uri(self.document.get_absolute_url()),
+            }
+        )
+        return context
+
+    def form_valid(self, form):
+        if self.document.status == "completed":
+            return redirect(self.document.get_absolute_url())
+        signature_file = decode_signature_data(
+            form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
+        )
+        self.document.counterparty_email = form.cleaned_data["email"]
+        self.payload["counterparty_signature_name"] = form.cleaned_data["signature_name"]
+        counterparty_hash = build_counterparty_hash(
+            self.document.creator_hash, self.request.META.get("HTTP_USER_AGENT", "")
+        )
+        self.document.counterparty_hash = counterparty_hash.value
+        self.document.counterparty_hash_meta = counterparty_hash.meta
+        self.document.counterparty_signed_at = timezone.now()
+        self.document.status = "counterparty_in_progress"
+        self.document.payload = self.payload
+        self.document.save()
+        self.document.counterparty_signature.save(signature_file.name, signature_file)
+
+        template_markdown = (
+            (self.payload.get("contract_template") or {}).get("content") or ""
+        )
+        pdf_content = render_contract_pdf(self.document, template_markdown)
+        self.document.final_pdf.save(pdf_content.name, pdf_content)
+        mediator_hash = build_mediator_hash(self.document.counterparty_hash)
+        self.document.mediator_hash = mediator_hash.value
+        self.document.mediator_hash_meta = mediator_hash.meta
+        self.document.final_pdf_generated_at = timezone.now()
+        self.document.status = "completed"
+        self.document.save()
+
+        delivery = send_direct_contract_document_email(self.document)
+        self.document.email_delivery = delivery
+        self.document.save(update_fields=["email_delivery", "updated_at"])
+        return redirect(self.document.get_absolute_url())
+
+
+class DirectContractLibraryView(LoginRequiredMixin, TemplateView):
+    """내가 생성한 직접 계약 리스트."""
+
+    template_name = "expert/contract_library.html"
+    login_url = reverse_lazy("expert:login")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        documents = DirectContractDocument.objects.filter(creator=self.request.user)
+        context["documents"] = documents
+        return context
 
 
 class ContractDetailView(LoginRequiredMixin, TemplateView):

@@ -170,6 +170,59 @@ class ContractMessage(models.Model):
         return f"[{self.created_at}] {prefix}: {self.content[:40]}"
 
 
+def default_email_delivery():
+    return {"creator": None, "counterparty": None}
+
+
+class DirectContractDocument(models.Model):
+    """직접 계약 생성 플로우에서 사용되는 계약 문서."""
+
+    STATUS_CHOICES = [
+        ("pending_counterparty", "상대방 입력 대기"),
+        ("counterparty_in_progress", "상대방 진행 중"),
+        ("completed", "계약 완료"),
+    ]
+
+    slug = models.SlugField(max_length=32, unique=True)
+    creator = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="direct_contracts_created",
+    )
+    payload = models.JSONField(help_text="계약 입력값 전체 스냅샷(JSON).")
+    creator_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
+    counterparty_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty")
+    creator_email = models.EmailField(blank=True)
+    counterparty_email = models.EmailField(blank=True)
+    creator_signature = models.ImageField(upload_to="contracts/signatures/", blank=True)
+    counterparty_signature = models.ImageField(upload_to="contracts/signatures/", blank=True)
+    creator_signed_at = models.DateTimeField(blank=True, null=True)
+    counterparty_signed_at = models.DateTimeField(blank=True, null=True)
+    creator_hash = models.CharField(max_length=64, blank=True)
+    counterparty_hash = models.CharField(max_length=64, blank=True)
+    mediator_hash = models.CharField(max_length=64, blank=True)
+    creator_hash_meta = models.JSONField(default=dict, blank=True)
+    counterparty_hash_meta = models.JSONField(default=dict, blank=True)
+    mediator_hash_meta = models.JSONField(default=dict, blank=True)
+    email_delivery = models.JSONField(default=default_email_delivery, blank=True)
+    final_pdf = models.FileField(upload_to="contracts/final_pdfs/", blank=True)
+    final_pdf_generated_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.payload.get('title', '계약')} ({self.slug})"
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse("expert:direct-invite", kwargs={"slug": self.slug})
+
+
 class ContractEmailLog(models.Model):
     """계약과 관련된 이메일 발송 내역을 기록."""
 
