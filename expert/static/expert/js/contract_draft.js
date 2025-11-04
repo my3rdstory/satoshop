@@ -21,8 +21,6 @@ let agreementCheckboxes = [];
 let previewModalButton;
 let previewModal;
 let previewModalCloseButtons = [];
-let modalTemplateTitle;
-let modalTemplateVersion;
 let modalTemplateMarkdown;
 let templatePayload = null;
 let workLogEditor = null;
@@ -486,12 +484,6 @@ function openContractPreview() {
         return;
     }
     syncModalPreviewValues();
-    if (modalTemplateTitle) {
-        modalTemplateTitle.textContent = templatePayload.title || '표준 거래 계약서';
-    }
-    if (modalTemplateVersion) {
-        modalTemplateVersion.textContent = templatePayload.version || '';
-    }
     renderTemplateMarkdown(templatePayload);
     previewModal.classList.add('is-active');
     previewModal.setAttribute('aria-hidden', 'false');
@@ -763,8 +755,6 @@ document.addEventListener('DOMContentLoaded', () => {
     hydrateTemplatePayload();
     previewModalButton = document.getElementById('contract-preview-trigger');
     previewModal = document.getElementById('contract-preview-modal');
-    modalTemplateTitle = document.getElementById('modal-template-title');
-    modalTemplateVersion = document.getElementById('modal-template-version');
     modalTemplateMarkdown = document.getElementById('modal-template-markdown');
     previewModalCloseButtons = Array.from(document.querySelectorAll('[data-close-contract-modal]'));
 

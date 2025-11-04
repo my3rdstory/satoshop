@@ -317,9 +317,16 @@
     margin-bottom: 0.75rem;
 }
 
-.modal-template-body ul,
+.modal-template-body ul {
+    padding-left: 1.35rem;
+    list-style: disc;
+    margin: 0 0 0.85rem;
+}
+
 .modal-template-body ol {
-    padding-left: 1.2rem;
+    padding-left: 1.4rem;
+    list-style: decimal;
+    margin: 0 0 0.85rem;
 }
 
 .preview-note {

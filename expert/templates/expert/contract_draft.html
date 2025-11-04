@@ -288,12 +288,8 @@
                         <p class="modal-hint">입력 중인 수행 내역, 첨부 파일, 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
                     </article>
                     <article class="preview-block preview-block--template">
-                        <h3 class="preview-block-title">3. 계약 일반 사항 (어드민 관리)</h3>
+                        <h3 class="preview-block-title">3. 계약 일반 사항</h3>
                         <div class="modal-template">
-                            <div class="modal-template-meta">
-                                <p class="template-title" id="modal-template-title"></p>
-                                <p class="template-version" id="modal-template-version"></p>
-                            </div>
                             <div class="modal-template-body markdown-content" id="modal-template-markdown">
                                 {% if active_contract_template_html %}
                                     {{ active_contract_template_html|safe }}
