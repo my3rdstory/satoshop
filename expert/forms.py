@@ -61,6 +61,23 @@ class ContractDraftForm(forms.Form):
         required=False,
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
+    work_log_markdown = forms.CharField(
+        label="수행 내역 메모 (Markdown)",
+        required=False,
+        max_length=10000,
+        widget=forms.Textarea(
+            attrs={
+                "class": "textarea worklog-textarea",
+                "rows": 8,
+                "placeholder": "최대 10,000자까지 작성 가능합니다. Markdown 형식을 사용할 수 있어요.",
+            }
+        ),
+        help_text="최대 10,000자까지 입력 가능하며 Markdown을 지원합니다.",
+    )
+    attachment_manifest = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(attrs={"id": "id_attachment_manifest"}),
+    )
     agree_privacy = forms.BooleanField(
         label="개인정보 수집 및 이용에 동의합니다.",
         required=True,

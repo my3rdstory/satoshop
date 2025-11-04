@@ -4,6 +4,7 @@
 {% block title %}계약 초안 작성 - SatoShop Expert{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
 <link rel="stylesheet" href="{% static 'expert/css/contract_draft.css' %}">
 {% endblock %}
 
@@ -139,13 +140,42 @@
                         {% endfor %}
                     </div>
 
-                    <div class="notification is-info is-light">
-                        <p class="has-text-weight-semibold mb-2">다음 단계에서 준비될 항목</p>
-                        <ul class="next-todos">
-                            <li>마크다운 계약 본문/미리보기</li>
-                            <li>PDF 첨부 파일 업로드</li>
-                            <li>분할 지급 단계 구성 (HTMX 동적 필드)</li>
-                        </ul>
+                    <div class="field worklog-field">
+                        {{ form.work_log_markdown.label_tag }}
+                        <div class="control worklog-editor-wrapper">
+                            {{ form.work_log_markdown }}
+                        </div>
+                        <p class="help">최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다.</p>
+                        {% for error in form.work_log_markdown.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field attachment-field">
+                        <label class="label">계약 관련 PDF 첨부</label>
+                        {{ form.attachment_manifest }}
+                        <div class="contract-attachment-uploader"
+                             id="contract-attachment-uploader"
+                             data-upload-url="{% url 'expert:contract-attachment-upload' %}"
+                             data-max-items="3"
+                             data-max-size="5242880">
+                            <div class="attachment-dropzone" id="contract-attachment-dropzone">
+                                <div class="attachment-dropzone-content">
+                                    <div>
+                                        <p class="dropzone-title">PDF를 드래그하거나 클릭해서 첨부하세요</p>
+                                        <p class="dropzone-caption">최대 3개, 개당 5MB 이하 · 업로드 즉시 오브젝트 스토리지로 전송됩니다.</p>
+                                    </div>
+                                    <button type="button" class="button is-small is-link is-light" id="contract-attachment-trigger">
+                                        파일 선택
+                                    </button>
+                                </div>
+                                <input type="file" id="contract-attachment-input" class="is-hidden"
+                                       accept="application/pdf">
+                            </div>
+                            <div class="attachment-status" id="contract-attachment-status" role="status" aria-live="polite"></div>
+                            <ul class="attachment-list" id="contract-attachment-list"></ul>
+                        </div>
+                        <p class="help">PDF만 업로드 가능하며, 업로드가 완료되면 하단 목록에 저장 경로가 표시됩니다.</p>
                     </div>
 
                     <div class="field agreement-field">
@@ -185,13 +215,9 @@
                 <div class="preview-card">
                     <div class="preview-header">
                         <h2 class="title is-5 mb-1">계약 미리보기</h2>
-                        <p class="is-size-7 has-text-grey">정식 미리보기는 계약 본문 에디터 구현 후 제공됩니다.</p>
+                        <p class="is-size-7 has-text-grey">입력 중인 계약 조건을 요약해서 보여줍니다.</p>
                     </div>
                     <div class="preview-body" id="contract-preview">
-                        <p class="placeholder">
-                            입력한 내용이 여기에 표시될 예정입니다. 분할 지급 단계, 채팅 로그, 서명 등은
-                            추후 개발 단계에서 통합됩니다.
-                        </p>
                         <ul class="spec-list">
                             <li><span>제목</span><strong id="preview-title">-</strong></li>
                             <li><span>역할</span><strong id="preview-role">-</strong></li>
@@ -201,6 +227,9 @@
                             <li><span>채팅</span><strong id="preview-chat">-</strong></li>
                             <li><span>이메일</span><strong id="preview-email">-</strong></li>
                         </ul>
+                        <p class="preview-note">
+                            계약 내용 아래에 계약 일반 사항이 붙어 계약서가 완성됩니다.
+                        </p>
                     </div>
                     <div class="preview-footer">
                         {% if active_contract_template %}
@@ -270,5 +299,6 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="{% static 'js/markdown-renderer.js' %}"></script>
 {% endif %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
 <script src="{% static 'expert/js/contract_draft.js' %}"></script>
 {% endblock %}

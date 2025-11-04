@@ -10,5 +10,10 @@ urlpatterns = [
     path("login/", views.ExpertLightningLoginGuideView.as_view(), name="login"),
     path("contracts/direct/", views.DirectContractStartView.as_view(), name="create-direct"),
     path("contracts/direct/draft/", views.DirectContractDraftView.as_view(), name="direct-draft"),
+    path(
+        "contracts/attachments/upload/",
+        views.ContractAttachmentUploadView.as_view(),
+        name="contract-attachment-upload",
+    ),
     path("contracts/<uuid:public_id>/", views.ContractDetailView.as_view(), name="contract-detail"),
 ]

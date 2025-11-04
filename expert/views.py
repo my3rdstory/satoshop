@@ -1,9 +1,13 @@
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
 from django.utils.http import urlencode
+from django.views import View
 from django.views.generic import TemplateView, FormView
+
+from storage.utils import upload_file_to_s3
 
 from .models import Contract, ContractTemplate
 from .forms import ContractDraftForm
@@ -95,3 +99,51 @@ class ExpertLightningLoginGuideView(TemplateView):
             }
         )
         return context
+
+
+class ContractAttachmentUploadView(LoginRequiredMixin, View):
+    """드래프트 단계에서 PDF 첨부를 S3로 업로드."""
+
+    http_method_names = ["post"]
+    upload_prefix = "expert/contracts/attachments"
+    allowed_mime_types = {"application/pdf", "application/x-pdf"}
+
+    def post(self, request, *args, **kwargs):
+        file_obj = request.FILES.get("attachment")
+        if not file_obj:
+            return JsonResponse({"success": False, "error": "업로드할 PDF를 선택해 주세요."}, status=400)
+
+        if not self._is_pdf(file_obj):
+            return JsonResponse({"success": False, "error": "PDF 형식의 파일만 업로드할 수 있습니다."}, status=400)
+
+        max_bytes = getattr(settings, "EXPERT_CONTRACT_ATTACHMENT_MAX_BYTES", 5 * 1024 * 1024)
+        if file_obj.size > max_bytes:
+            human_limit = f"{max_bytes // (1024 * 1024)}MB"
+            return JsonResponse(
+                {"success": False, "error": f"파일 용량이 허용 범위를 초과했습니다. (최대 {human_limit})"},
+                status=400,
+            )
+
+        upload_result = upload_file_to_s3(file_obj, prefix=self.upload_prefix)
+        if not upload_result.get("success"):
+            return JsonResponse(
+                {"success": False, "error": upload_result.get("error", "파일 업로드에 실패했습니다.")},
+                status=500,
+            )
+
+        attachment = {
+            "name": upload_result.get("original_name") or file_obj.name,
+            "size": upload_result.get("file_size") or file_obj.size,
+            "url": upload_result.get("file_url"),
+            "path": upload_result.get("file_path"),
+            "storage": upload_result.get("storage", "s3"),
+        }
+        return JsonResponse({"success": True, "attachment": attachment})
+
+    def _is_pdf(self, file_obj):
+        if not file_obj:
+            return False
+        content_type = getattr(file_obj, "content_type", "")
+        if content_type in self.allowed_mime_types:
+            return True
+        return file_obj.name.lower().endswith(".pdf")
