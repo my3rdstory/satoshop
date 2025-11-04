@@ -94,13 +94,6 @@
                     <p class="help is-danger">{{ error }}</p>
                 {% endfor %}
             </div>
-            <div class="field">
-                {{ form.signature_name.label_tag }}
-                <div class="control">{{ form.signature_name }}</div>
-                {% for error in form.signature_name.errors %}
-                    <p class="help is-danger">{{ error }}</p>
-                {% endfor %}
-            </div>
             {{ form.signature_data }}
             <div class="signature-pad-wrapper">
                 <canvas class="signature-canvas" data-signature-canvas></canvas>

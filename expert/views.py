@@ -179,7 +179,6 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         payload = self.draft_payload.copy()
-        payload["creator_signature_name"] = form.cleaned_data["signature_name"]
         slug = self._generate_unique_slug()
         creator_role = payload.get("role", "client")
         counterparty_role = "performer" if creator_role == "client" else "client"
@@ -257,7 +256,6 @@ class DirectContractInviteView(FormView):
             form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
         )
         self.document.counterparty_email = form.cleaned_data["email"]
-        self.payload["counterparty_signature_name"] = form.cleaned_data["signature_name"]
         counterparty_hash = build_counterparty_hash(
             self.document.creator_hash, self.request.META.get("HTTP_USER_AGENT", "")
         )

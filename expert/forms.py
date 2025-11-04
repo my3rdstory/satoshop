@@ -96,11 +96,6 @@ class ContractDraftForm(forms.Form):
 class ContractReviewForm(forms.Form):
     """계약 생성자가 최종 검토 단계에서 사용하는 폼."""
 
-    signature_name = forms.CharField(
-        label="서명자 이름",
-        max_length=80,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "신청자 이름"}),
-    )
     signature_data = forms.CharField(widget=forms.HiddenInput(attrs={"data-signature-input": "true"}))
     confirm_reviewed = forms.BooleanField(
         label="계약서 내용을 모두 확인했으며 자필 서명했습니다.",
@@ -125,11 +120,6 @@ class CounterpartySignatureForm(forms.Form):
     email = forms.EmailField(
         label="이메일",
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
-    )
-    signature_name = forms.CharField(
-        label="서명자 이름",
-        max_length=80,
-        widget=forms.TextInput(attrs={"class": "input", "placeholder": "상대방 이름"}),
     )
     signature_data = forms.CharField(widget=forms.HiddenInput(attrs={"data-signature-input": "true"}))
     agree_privacy = forms.BooleanField(
