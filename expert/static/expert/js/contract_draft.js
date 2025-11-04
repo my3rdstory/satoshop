@@ -4,13 +4,11 @@ const previewMap = {
     period: document.getElementById('preview-period'),
     amount: document.getElementById('preview-amount'),
     payment: document.getElementById('preview-payment'),
-    chat: document.getElementById('preview-chat'),
     email: document.getElementById('preview-email'),
 };
 
 let amountInput;
 let paymentInputs = [];
-let chatInput = null;
 let submitButton;
 let milestoneSection;
 let milestoneList;
@@ -59,12 +57,6 @@ function formatRole(value) {
 function formatPayment(value) {
     if (value === 'one_time') return '일괄 지급';
     if (value === 'milestone') return '분할 지급';
-    return '-';
-}
-
-function formatChat(value) {
-    if (value === 'on') return '채팅 활성화';
-    if (value === 'off') return '채팅 비활성화';
     return '-';
 }
 
@@ -410,11 +402,6 @@ function bindFieldUpdates() {
         });
     }
 
-    chatInput = document.querySelector('input[name="enable_chat"]');
-    if (chatInput && previewMap.chat) {
-        previewMap.chat.textContent = formatChat(chatInput.value);
-    }
-
     const emailInput = document.getElementById('id_email_recipient');
     if (emailInput && previewMap.email) {
         previewMap.email.textContent = emailInput.value || '-';
@@ -468,7 +455,6 @@ function syncModalPreviewValues() {
         period: document.getElementById('modal-preview-period'),
         amount: document.getElementById('modal-preview-amount'),
         payment: document.getElementById('modal-preview-payment'),
-        chat: document.getElementById('modal-preview-chat'),
         email: document.getElementById('modal-preview-email'),
     };
     Object.entries(modalMapping).forEach(([key, target]) => {

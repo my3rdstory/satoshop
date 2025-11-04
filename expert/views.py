@@ -3,6 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.utils.http import urlencode
 from django.views import View
 from django.views.generic import TemplateView, FormView
@@ -44,6 +45,7 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
                 "version": template.version_label,
                 "content": template.content,
             }
+        context["contract_generated_at"] = timezone.now()
         return context
 
     def form_valid(self, form):

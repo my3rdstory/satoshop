@@ -261,27 +261,59 @@
         <div class="modal-background" data-close-contract-modal></div>
         <div class="modal-card contract-modal-card" role="dialog" aria-modal="true" aria-labelledby="contract-preview-modal-title">
             <header class="modal-card-head">
-                <p class="modal-card-title" id="contract-preview-modal-title">계약서 미리보기</p>
+                <div class="modal-card-heading">
+                    <p class="modal-card-title" id="contract-preview-modal-title">계약서 미리보기</p>
+                    <p class="modal-card-subtitle"># 개인과 개인 사이의 신의성실 기반 거래 계약서</p>
+                </div>
                 <button class="delete" type="button" aria-label="닫기" data-close-contract-modal></button>
             </header>
             <section class="modal-card-body">
-                <div class="modal-summary">
-                    <h3 class="modal-summary-title">현재 입력한 계약 조건</h3>
-                    <ul class="spec-list modal-spec-list">
-                        <li><span>제목</span><strong id="modal-preview-title">-</strong></li>
-                        <li><span>역할</span><strong id="modal-preview-role">-</strong></li>
-                        <li><span>기간</span><strong id="modal-preview-period">-</strong></li>
-                        <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
-                        <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
-                        <li><span>이메일</span><strong id="modal-preview-email">-</strong></li>
-                    </ul>
-                </div>
-                <div class="modal-template">
-                    <div class="modal-template-meta">
-                        <p class="template-title" id="modal-template-title"></p>
-                        <p class="template-version" id="modal-template-version"></p>
-                    </div>
-                    <div class="modal-template-body markdown-content" id="modal-template-markdown"></div>
+                <div class="modal-preview-stack">
+                    <article class="preview-block preview-block--intro">
+                        <h3 class="preview-block-title">1. 계약서 서문</h3>
+                        <blockquote>
+                            <strong>주의</strong>: 이 계약서는 정부나 공공기관의 강제력이 아닌, 당사자 간 신의성실의 원칙에 따라 체결하는 사적 거래 계약서 예시입니다. 실제 적용 시에는 반드시 계약 당사자의 상황에 맞게 조정하고 필요한 경우 전문가의 자문을 받으십시오.
+                        </blockquote>
+                    </article>
+                    <article class="preview-block preview-block--draft">
+                        <h3 class="preview-block-title">2. 계약 내용 (드래프트 입력)</h3>
+                        <ul class="spec-list modal-spec-list">
+                            <li><span>제목</span><strong id="modal-preview-title">-</strong></li>
+                            <li><span>역할</span><strong id="modal-preview-role">-</strong></li>
+                            <li><span>기간</span><strong id="modal-preview-period">-</strong></li>
+                            <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
+                            <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
+                            <li><span>계약서 이메일</span><strong id="modal-preview-email">-</strong></li>
+                        </ul>
+                        <p class="modal-hint">입력 중인 수행 내역, 첨부 파일, 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
+                    </article>
+                    <article class="preview-block preview-block--template">
+                        <h3 class="preview-block-title">3. 계약 일반 사항 (어드민 관리)</h3>
+                        <div class="modal-template">
+                            <div class="modal-template-meta">
+                                <p class="template-title" id="modal-template-title"></p>
+                                <p class="template-version" id="modal-template-version"></p>
+                            </div>
+                            <div class="modal-template-body markdown-content" id="modal-template-markdown"></div>
+                        </div>
+                    </article>
+                    <article class="preview-block preview-block--hash">
+                        <h3 class="preview-block-title">4. 서명 해시 정보</h3>
+                        <ul class="hash-list">
+                            <li><span>의뢰자 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
+                            <li><span>수행자 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
+                            <li><span>사토샵 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
+                        </ul>
+                        <div class="hash-steps">
+                            <p class="hash-steps-title">해시 계산 방법</p>
+                            <ol>
+                                <li><strong>의뢰자</strong>: 작성한 계약 내용 전체 + 계약 진행 버튼 클릭 시 타임스탬프(연/월/일/시/초) + 브라우저 정보 + 난수 Salt를 JSON으로 합쳐 SHA-256 해시.</li>
+                                <li><strong>수행자</strong>: 의뢰자 해시 + 수행자 확인 타임스탬프 + 브라우저 정보 + 난수 Salt를 묶어 SHA-256 해시.</li>
+                                <li><strong>사토샵</strong>: 수행자 해시 + 최종 계약서 PDF 생성 시 타임스탬프 + 난수 Salt를 입력해 SHA-256 해시.</li>
+                            </ol>
+                            <p class="hash-note">각 해시는 계약 확정 단계에서 자동 생성되며, 위 로그 값이 모두 확정되어야 계약이 완료됩니다.</p>
+                        </div>
+                    </article>
                 </div>
             </section>
             <footer class="modal-card-foot">
