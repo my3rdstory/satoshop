@@ -20,13 +20,13 @@ from .contract_flow import (
     build_counterparty_hash,
     build_creator_hash,
     build_mediator_hash,
-    decode_signature_data,
     generate_share_slug,
     render_contract_pdf,
 )
 from .emails import send_direct_contract_document_email
 from .models import Contract, ContractTemplate, DirectContractDocument
 from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
+from .signature_assets import signature_media_fallback_enabled, store_signature_asset_from_data
 
 
 def render_contract_markdown(text: str) -> str:
@@ -197,10 +197,22 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         document.status = "pending_counterparty"
         document.save()
 
-        signature_file = decode_signature_data(
+        asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"creator-{self.request.user.pk}"
         )
-        document.creator_signature.save(signature_file.name, signature_file)
+        if asset:
+            document.set_signature_asset("creator", asset)
+            document.clear_signature_file("creator")
+        else:
+            if not signature_media_fallback_enabled():
+                document.delete()
+                form.add_error(None, error or "서명 이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.")
+                return self.form_invalid(form)
+            document.creator_signature.save(signature_file.name, signature_file)
+            messages.warning(
+                self.request,
+                "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
+            )
         self.request.session.pop(self.session_key, None)
         self.request.session.modified = True
         return redirect(f"{document.get_absolute_url()}?owner=1")
@@ -245,6 +257,14 @@ class DirectContractInviteView(FormView):
                 "waiting_message": self.document.status != "completed" and not self.document.counterparty_signed_at,
                 "contract_template": (self.payload.get("contract_template") or {}),
                 "share_url": self.request.build_absolute_uri(self.document.get_absolute_url()),
+                "signature_assets": {
+                    "creator": self.document.get_signature_asset("creator"),
+                    "counterparty": self.document.get_signature_asset("counterparty"),
+                },
+                "creator_signature_url": self.document.get_signature_url("creator")
+                or (self.document.creator_signature.url if self.document.creator_signature else ""),
+                "counterparty_signature_url": self.document.get_signature_url("counterparty")
+                or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
             }
         )
         return context
@@ -252,9 +272,13 @@ class DirectContractInviteView(FormView):
     def form_valid(self, form):
         if self.document.status == "completed":
             return redirect(self.document.get_absolute_url())
-        signature_file = decode_signature_data(
+        asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
         )
+        if not asset and not signature_media_fallback_enabled():
+            form.add_error(None, error or "서명 이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.")
+            return self.form_invalid(form)
+
         self.document.counterparty_email = form.cleaned_data["email"]
         counterparty_hash = build_counterparty_hash(
             self.document.creator_hash, self.request.META.get("HTTP_USER_AGENT", "")
@@ -265,7 +289,15 @@ class DirectContractInviteView(FormView):
         self.document.status = "counterparty_in_progress"
         self.document.payload = self.payload
         self.document.save()
-        self.document.counterparty_signature.save(signature_file.name, signature_file)
+        if asset:
+            self.document.set_signature_asset("counterparty", asset)
+            self.document.clear_signature_file("counterparty")
+        else:
+            self.document.counterparty_signature.save(signature_file.name, signature_file)
+            messages.warning(
+                self.request,
+                "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
+            )
 
         template_markdown = (
             (self.payload.get("contract_template") or {}).get("content") or ""

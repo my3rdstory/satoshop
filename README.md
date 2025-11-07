@@ -517,6 +517,7 @@ SECURE_SSL_REDIRECT=True
 - **수신 이메일**: 사이트 설정에서 알림 받을 이메일 주소 설정
 
 #### Expert 계약 이메일 & 채팅
+- **서명 자산 S3 저장**: `DirectContractDocument`의 자필 서명 이미지는 S3 호환 오브젝트 스토리지(`expert/contracts/signatures/…`)에 업로드되어야 하며, 프로덕션에서는 `EXPERT_SIGNATURE_MEDIA_FALLBACK=False`로 설정해 로컬 저장을 차단하세요.
 - **실시간 채팅**: `/expert/contracts/<UUID>/` 페이지에서 웹소켓 기반 실시간 채팅을 제공합니다. 프로덕션 환경에서는 `CHANNEL_REDIS_URL` 환경 변수를 Redis 연결 문자열로 설정해 주십시오. (미설정 시 개발 편의용 In-Memory 채널 레이어가 사용됩니다.)
 - **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
@@ -644,6 +645,8 @@ SiteSettings ──→ ExchangeRate
 4. **수정 플로우**: 동일 계정으로 페이지를 다시 열어 기존 값이 폼에 채워져 있는지, 이미지 삭제 체크박스가 동작하는지, 수정 저장 시 성공 배너가 `수정되었습니다`로 갱신되는지 확인합니다.
 5. **BAH 관리자 전용 화면**: Django Admin에서 지정한 BAH 관리자 계정으로 `/stores/bah/promotion-request/admin`에 접속해 신청 목록이 표시되는지, 발송 상태 토글 버튼으로 `발송예정 ↔ 발송` 전환이 가능한지 확인합니다.
 6. **월오사 가이드 페이지**: `/stores/bah/wallet-of-satoshi-guide/`에서 각 섹션을 펼칠 수 있는지, 추가 자료 링크가 정상 동작하는지 확인합니다.
+7. **Expert 서명 S3 업로드(생성자)**: 라이트닝 인증 계정으로 `/expert/contracts/direct/draft/` → `/expert/contracts/direct/review/<token>/` 흐름을 진행해 자필 서명 제출 후 S3 버킷(`expert/contracts/signatures/…`)에 파일이 생성되고, 계약 상세 화면에서 서명이 노출되는지 확인합니다.
+8. **Expert 서명 S3 업로드(상대방)**: 초대 링크(`/expert/contracts/direct/link/<slug>/`)를 열어 상대방 서명을 완료하고, 공유 페이지 및 이메일에서 서명 이미지가 `get_signature_url()` 기반 링크로 노출되는지 검증합니다.
 
 ## ⚠️ 주의사항
 

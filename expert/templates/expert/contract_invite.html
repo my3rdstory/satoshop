@@ -85,16 +85,16 @@
                 <h3>서명 기록</h3>
                 <div class="signature-record">
                     <p class="signature-preview-label">의뢰자 서명</p>
-                    {% if document.creator_signature %}
-                        <img src="{{ document.creator_signature.url }}" alt="의뢰자 서명 이미지" class="signature-record-img">
+                    {% if creator_signature_url %}
+                        <img src="{{ creator_signature_url }}" alt="의뢰자 서명 이미지" class="signature-record-img">
                     {% else %}
                         <p class="has-text-grey">업로드된 서명이 없습니다.</p>
                     {% endif %}
                 </div>
                 <div class="signature-record mt-4">
                     <p class="signature-preview-label">수행자 서명</p>
-                    {% if document.counterparty_signature %}
-                        <img src="{{ document.counterparty_signature.url }}" alt="수행자 서명 이미지" class="signature-record-img">
+                    {% if counterparty_signature_url %}
+                        <img src="{{ counterparty_signature_url }}" alt="수행자 서명 이미지" class="signature-record-img">
                     {% else %}
                         <p class="has-text-grey">업로드된 서명이 없습니다.</p>
                     {% endif %}

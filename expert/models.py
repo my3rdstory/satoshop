@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from myshop.models import SiteSettings
+from .signature_assets import resolve_signature_url
 
 User = get_user_model()
 
@@ -208,6 +209,7 @@ class DirectContractDocument(models.Model):
     email_delivery = models.JSONField(default=default_email_delivery, blank=True)
     final_pdf = models.FileField(upload_to="contracts/final_pdfs/", blank=True)
     final_pdf_generated_at = models.DateTimeField(blank=True, null=True)
+    signature_assets = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -221,6 +223,30 @@ class DirectContractDocument(models.Model):
         from django.urls import reverse
 
         return reverse("expert:direct-invite", kwargs={"slug": self.slug})
+
+    def set_signature_asset(self, role: str, asset: dict, save: bool = True):
+        assets = {**(self.signature_assets or {})}
+        assets[role] = asset
+        self.signature_assets = assets
+        if save:
+            self.save(update_fields=["signature_assets", "updated_at"])
+
+    def get_signature_asset(self, role: str) -> dict:
+        return (self.signature_assets or {}).get(role, {})
+
+    def get_signature_url(self, role: str) -> str:
+        asset = self.get_signature_asset(role)
+        url = resolve_signature_url(asset)
+        return url or ""
+
+    def clear_signature_file(self, role: str, save: bool = True):
+        field_name = "creator_signature" if role == "creator" else "counterparty_signature"
+        file_field = getattr(self, field_name, None)
+        if file_field and file_field.name:
+            file_field.delete(save=False)
+        setattr(self, field_name, "")
+        if save:
+            self.save(update_fields=[field_name, "updated_at"])
 
 
 class ContractEmailLog(models.Model):
