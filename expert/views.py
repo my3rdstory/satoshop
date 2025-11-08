@@ -16,6 +16,7 @@ from django.views import View
 from django.views.generic import TemplateView, FormView
 
 from storage.utils import upload_file_to_s3
+from storage.backends import S3Storage
 
 from .contract_flow import (
     build_counterparty_hash,
@@ -420,7 +421,10 @@ class DirectContractInviteView(FormView):
             (self.payload.get("contract_template") or {}).get("content") or ""
         )
         pdf_content = render_contract_pdf(self.document, template_markdown)
-        self.document.final_pdf.save(pdf_content.name, pdf_content)
+        pdf_content.seek(0)
+        storage = S3Storage()
+        saved_path = storage.save(f"contracts/final_pdfs/{pdf_content.name}", pdf_content)
+        self.document.final_pdf.name = saved_path
         mediator_hash = build_mediator_hash(self.document.counterparty_hash)
         self.document.mediator_hash = mediator_hash.value
         self.document.mediator_hash_meta = mediator_hash.meta

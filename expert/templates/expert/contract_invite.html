@@ -27,7 +27,7 @@
         <div class="timeline">
             <div class="timeline-step {% if document.creator_hash %}is-completed{% endif %}">
                 <strong>의뢰자 서명</strong>
-                <span>{{ document.creator_signed_at|date:"Y-m-d H:i"|default:"대기" }}</span>
+                <span>{{ document.creator_signed_at|date:"Y-m-d H:i:s"|default:"대기" }}</span>
             </div>
             <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
                 <strong>
@@ -39,7 +39,7 @@
                 </strong>
                 <span>
                     {% if document.counterparty_signed_at %}
-                        {{ document.counterparty_signed_at|date:"Y-m-d H:i" }}
+                        {{ document.counterparty_signed_at|date:"Y-m-d H:i:s" }}
                     {% else %}
                         진행 중
                     {% endif %}

@@ -13,6 +13,7 @@ from django.core.files.storage import default_storage
 from django.utils import timezone
 
 from pypdf import PdfReader, PdfWriter
+from pypdf.errors import PdfStreamError
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
@@ -155,7 +156,10 @@ def _fetch_attachment_bytes(attachment: dict) -> Optional[bytes]:
 def _append_pdf_bytes(writer: PdfWriter, data: bytes) -> None:
     if not data:
         return
-    reader = PdfReader(io.BytesIO(data))
+    try:
+        reader = PdfReader(io.BytesIO(data))
+    except PdfStreamError:
+        return
     for page in reader.pages:
         writer.add_page(page)
 
