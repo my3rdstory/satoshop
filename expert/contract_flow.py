@@ -43,6 +43,108 @@ LATIN_FONT_CANDIDATES = [
 ]
 
 
+def _format_sats(value) -> str:
+    try:
+        amount = int(value)
+    except (TypeError, ValueError):
+        return "-"
+    return f"{amount:,} sats"
+
+
+def _normalize_value(value, default: str = "-") -> str:
+    if value in (None, "", []):
+        return default
+    return str(value)
+
+
+def _build_contract_overview(payload: Dict) -> List[str]:
+    lines = ["===== 계약 개요 ====="]
+    lines.append(f"역할: {payload.get('role_display') or '-'}")
+    start = _normalize_value(payload.get("start_date"), "미정")
+    end = _normalize_value(payload.get("end_date"), "미정")
+    lines.append(f"계약 기간: {start} ~ {end}")
+    lines.append(f"총 금액: {_format_sats(payload.get('amount_sats'))}")
+    lines.append(f"지급 방식: {payload.get('payment_display') or '-'}")
+    lines.append(f"의뢰자 라이트닝 주소: {payload.get('client_lightning_address') or '-'}")
+    lines.append(f"수행자 라이트닝 주소: {payload.get('performer_lightning_address') or '-'}")
+    work_log = payload.get("work_log_markdown")
+    if work_log:
+        lines.append("")
+        lines.append("작업 메모")
+        for note_line in _markdown_to_text_lines(work_log):
+            lines.append(f"  {note_line}" if note_line else "")
+    return lines
+
+
+def _build_milestone_lines(payload: Dict) -> List[str]:
+    lines: List[str] = []
+    milestones = payload.get("milestones") or []
+    if milestones:
+        lines.append("")
+        lines.append("===== 분할 지급 내역 =====")
+        for index, milestone in enumerate(milestones, start=1):
+            amount = _format_sats(milestone.get("amount_sats") or milestone.get("amount"))
+            due_date = _normalize_value(milestone.get("due_date"), "미정")
+            condition = _normalize_value(milestone.get("condition"), "지급 조건 미입력")
+            lines.append(f"{index}. {amount} / 지급일: {due_date}")
+            lines.append(f"   조건: {condition}")
+    elif payload.get("payment_type") == "one_time":
+        lines.append("")
+        lines.append("===== 일괄 지급 내역 =====")
+        lines.append(f"지급일: {payload.get('one_time_due_date') or '미정'}")
+        lines.append(f"지급 조건: {payload.get('one_time_condition') or '지급 조건 미입력'}")
+    return lines
+
+
+def _markdown_to_text_lines(markdown_text: str) -> List[str]:
+    if not markdown_text:
+        return []
+    lines: List[str] = []
+    in_code_block = False
+    for raw_line in markdown_text.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if not stripped:
+            lines.append("")
+            continue
+        if in_code_block:
+            lines.append(f"    {line}")
+            continue
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip()
+            if heading:
+                lines.append(heading)
+                lines.append("-" * len(heading))
+            continue
+        if stripped[0].isdigit():
+            parts = stripped.split(".", 1)
+            if len(parts) > 1 and parts[0].isdigit():
+                lines.append(f"{parts[0]}. {parts[1].strip()}")
+                continue
+        if stripped[0] in {"-", "*", "+"}:
+            lines.append(f"• {stripped[1:].strip()}")
+            continue
+        if stripped.startswith(">"):
+            lines.append(f"> {stripped.lstrip('> ').strip()}")
+            continue
+        lines.append(line.strip())
+    return lines
+
+
+def _write_lines(pdf, text_object, lines: List[str], font_name: str, margin, height):
+    for line in lines:
+        text_object.textLine(line)
+        if text_object.getY() <= margin:
+            pdf.drawText(text_object)
+            pdf.showPage()
+            text_object = pdf.beginText(margin, height - margin)
+            text_object.setFont(font_name, 11)
+    return text_object
+
+
 @dataclass
 class HashResult:
     value: str
@@ -180,50 +282,32 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     text_object.setFont(font_name, 11)
     payload = document.payload or {}
 
-    header_lines = [
+    intro_lines = [
         "SatoShop Expert - 전자 계약서",
         f"제목: {payload.get('title', '-')}",
         f"공유 ID: {document.slug}",
         "",
-        "===== 계약 개요 =====",
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        "의뢰자 라이트닝 주소: {}".format(payload.get("client_lightning_address") or "-"),
-        "수행자 라이트닝 주소: {}".format(payload.get("performer_lightning_address") or "-"),
-        "",
-        "===== 계약 일반 사항 =====",
     ]
+    text_object = _write_lines(pdf, text_object, intro_lines, font_name, margin, height)
 
-    for line in header_lines:
-        text_object.textLine(line)
+    overview_lines = _build_contract_overview(payload)
+    text_object = _write_lines(pdf, text_object, overview_lines, font_name, margin, height)
 
-    for line in contract_markdown.splitlines():
-        text_object.textLine(line)
-        if text_object.getY() <= margin:
-            pdf.drawText(text_object)
-            pdf.showPage()
-            text_object = pdf.beginText(margin, height - margin)
-            text_object.setFont(font_name, 11)
+    contract_lines = _markdown_to_text_lines(contract_markdown)
+    if contract_lines:
+        text_object = _write_lines(
+            pdf,
+            text_object,
+            ["", "===== 계약 본문 ====="],
+            font_name,
+            margin,
+            height,
+        )
+        text_object = _write_lines(pdf, text_object, contract_lines, font_name, margin, height)
 
-    milestones = payload.get("milestones") or []
-    if milestones:
-        text_object.textLine("")
-        text_object.textLine("===== 분할 지급 내역 =====")
-        for index, milestone in enumerate(milestones, start=1):
-            amount = milestone.get("amount_sats") or milestone.get("amount") or 0
-            due_date = milestone.get("due_date") or "미정"
-            condition = milestone.get("condition") or "지급 조건 미입력"
-            text_object.textLine(f"{index}. {amount} sats / 지급일: {due_date} / 조건: {condition}")
-            if text_object.getY() <= margin:
-                pdf.drawText(text_object)
-                pdf.showPage()
-                text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont(font_name, 11)
-
-    if payload.get("payment_type") == "one_time":
-        text_object.textLine("")
-        text_object.textLine("===== 일괄 지급 내역 =====")
-        text_object.textLine(f"지급일: {payload.get('one_time_due_date') or '미정'}")
-        text_object.textLine(f"지급 조건: {payload.get('one_time_condition') or '지급 조건 미입력'}")
+    milestone_lines = _build_milestone_lines(payload)
+    if milestone_lines:
+        text_object = _write_lines(pdf, text_object, milestone_lines, font_name, margin, height)
 
     footer_lines = [
         "",
@@ -234,8 +318,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
         "",
         f"PDF 생성 시각: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M:%S')}",
     ]
-    for line in footer_lines:
-        text_object.textLine(line)
+    text_object = _write_lines(pdf, text_object, footer_lines, font_name, margin, height)
 
     pdf.drawText(text_object)
     pdf.showPage()
