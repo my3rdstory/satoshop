@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const checklistItems = document.querySelectorAll('.checklist-box li');
-    checklistItems.forEach((item) => {
-        item.addEventListener('mouseenter', () => item.classList.add('is-highlighted'));
-        item.addEventListener('mouseleave', () => item.classList.remove('is-highlighted'));
+    const featureCards = document.querySelectorAll('.feature-card');
+    featureCards.forEach((card) => {
+        card.addEventListener('mouseenter', () => card.classList.add('is-highlighted'));
+        card.addEventListener('mouseleave', () => card.classList.remove('is-highlighted'));
     });
 });

@@ -1,57 +1,125 @@
-.direct-contract-intro {
-    background: linear-gradient(140deg, rgba(8, 47, 73, 0.6), rgba(30, 27, 75, 0.68));
-    border-radius: 22px;
-    padding: 2.75rem;
-    color: rgba(226, 232, 240, 0.92);
+.direct-contract-hero {
+    background: linear-gradient(130deg, rgba(12, 19, 45, 0.95), rgba(8, 145, 178, 0.8));
+    border-radius: 28px;
+    padding: 3rem;
+    color: rgba(248, 250, 252, 0.92);
 }
 
-.info-message {
-    background: rgba(15, 118, 110, 0.25);
-    border: 1px solid rgba(45, 212, 191, 0.4);
-    border-radius: 16px;
-    padding: 1.6rem;
-    margin-top: 1.75rem;
-    color: rgba(226, 232, 240, 0.9);
+.hero-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
 }
 
-.info-message p {
-    color: rgba(226, 232, 240, 0.88);
+.hero-pill {
+    display: inline-flex;
+    padding: 0.25rem 1rem;
+    border-radius: 999px;
+    background: rgba(45, 212, 191, 0.15);
+    color: rgba(45, 212, 191, 0.95);
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
 }
 
-.checklist-box {
-    background: rgba(8, 13, 26, 0.92);
+.hero-copy h1 {
+    margin: 0.9rem 0;
+    font-size: 2.3rem;
+}
+
+.hero-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.hero-card {
+    background: rgba(7, 11, 28, 0.9);
     border-radius: 20px;
-    padding: 2.25rem;
-    box-shadow: 0 26px 52px rgba(2, 6, 23, 0.65);
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    color: rgba(226, 232, 240, 0.9);
+    padding: 2rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 22px 44px rgba(2, 6, 23, 0.45);
 }
 
-.checklist-box ul {
+.hero-card-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.hero-card ul {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contract-feature-grid {
+    padding: 2.5rem 0 1.5rem;
+}
+
+.feature-grid {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+}
+
+.feature-card {
+    background: rgba(8, 13, 26, 0.92);
+    border-radius: 18px;
+    padding: 1.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    color: rgba(226, 232, 240, 0.9);
+    box-shadow: 0 20px 38px rgba(2, 6, 23, 0.4);
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.feature-card.is-highlighted {
+    transform: translateY(-6px);
+    border-color: rgba(94, 234, 212, 0.45);
+}
+
+.feature-label {
+    font-size: 0.85rem;
+    color: rgba(94, 234, 212, 0.9);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.feature-card h3 {
+    margin: 0.5rem 0;
+    font-size: 1.2rem;
+}
+
+.contract-inputs {
+    padding-top: 2.5rem;
+}
+
+.input-grid {
+    margin-top: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
 }
 
-.checklist-box li {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    font-size: 0.95rem;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+.input-item {
+    background: rgba(12, 18, 32, 0.85);
+    border-radius: 14px;
+    padding: 1.2rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: rgba(226, 232, 240, 0.88);
+    font-weight: 600;
 }
 
-.checklist-box .icon {
-    color: #60a5fa;
-}
-
-.checklist-box li.is-highlighted {
-    background: rgba(59, 130, 246, 0.18);
+.payment-note {
+    margin-top: 1.5rem;
+    background: rgba(251, 191, 36, 0.12);
+    border-left: 4px solid rgba(251, 191, 36, 0.85);
+    padding: 1rem 1.25rem;
     border-radius: 12px;
-    padding: 0.65rem;
-    transform: translateX(6px);
+    color: rgba(248, 250, 252, 0.9);
 }
 
 .step-preview {

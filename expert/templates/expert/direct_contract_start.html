@@ -8,84 +8,106 @@
 {% endblock %}
 
 {% block content %}
-<section class="section direct-contract-intro">
+<section class="direct-contract-hero section">
+    <div class="container hero-grid">
+        <div class="hero-copy">
+            <span class="hero-pill">라이트닝 기반 1:1 계약</span>
+            <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
+            <p>
+                직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 라이트닝 로그인만 완료하면 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
+            </p>
+            <div class="hero-actions">
+                <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                <p class="is-size-7 has-text-grey">라이트닝 인증 계정만 계약 생성이 가능합니다.</p>
+            </div>
+        </div>
+        <div class="hero-side">
+            <div class="hero-card">
+                <p class="hero-card-title">기본 원칙</p>
+                <ul>
+                    <li><strong>역할 지원</strong> · 의뢰자/수행자 중 누구나 계약 개설</li>
+                    <li><strong>라이트닝 로그인</strong> · 인증 계정만 정산 정보 입력/서명 가능</li>
+                    <li><strong>옵션 결제</strong> · 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section contract-feature-grid">
+    <div class="container feature-grid">
+        <article class="feature-card">
+            <p class="feature-label">의뢰자 & 수행자</p>
+            <h3>각자의 정산 정보로 안전하게</h3>
+            <p>역할을 선택하면 필요한 라이트닝 주소 입력 가이드가 즉시 노출되고, 최종 PDF에도 동일하게 반영됩니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">라이트닝 로그인</p>
+            <h3>인증된 계정만 계약 참여</h3>
+            <p>라이트닝 로그인 완료 후 계약을 생성할 수 있으며, 상대방도 링크 접속 시 동일한 인증을 거쳐 서명합니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">선택형 결제</p>
+            <h3>유료 정책과 단계별 결제</h3>
+            <p>필요에 따라 의뢰자·수행자에게 사토시 결제를 요구할 수 있으며, 결제 완료 후 다음 단계로 진행되도록 확장 가능합니다.</p>
+        </article>
+    </div>
+</section>
+
+<section class="section contract-inputs">
     <div class="container">
-        <div class="columns is-variable is-6">
-            <div class="column is-7">
-                <h1 class="title is-3 has-text-weight-bold">직접 계약 생성</h1>
-                <p class="subtitle is-5">
-                    직접 계약은 의뢰자와 수행자 사이의 1:1 거래를 신속하게 체결하도록 돕는 기능입니다.
-                    라이트닝 로그인을 마치면, 역할에 따른 정산 정보와 계약 조건을 입력하고 공유 링크로 서명을 요청할 수 있습니다.
-                </p>
-                <div class="info-message">
-                    <p class="has-text-weight-semibold">라이트닝 로그인 & 결제</p>
-                    <p class="mb-2">계약 생성과 서명은 모두 라이트닝 인증을 마친 계정으로만 진행할 수 있습니다.</p>
-                    <p class="is-size-7 has-text-grey">
-                        유료 정책이 활성화된 경우, 의뢰자·수행자가 각 단계에서 정산용 라이트닝 결제를 완료해야 다음 단계로 진행됩니다.
-                    </p>
-                </div>
-            </div>
-            <div class="column is-5">
-                <aside class="checklist-box">
-                    <p class="title is-5 mb-4">계약 입력 항목</p>
-                    <ul>
-                        <li><span class="icon"><i data-feather="user-check"></i></span> 역할 선택 (의뢰자/수행자) 및 라이트닝 정산 주소</li>
-                        <li><span class="icon"><i data-feather="credit-card"></i></span> 라이트닝 로그인 및(선택 시) 계약 단계별 결제</li>
-                        <li><span class="icon"><i data-feather="file-text"></i></span> 계약 제목, 본문 (Markdown)과 주요 조건</li>
-                        <li><span class="icon"><i data-feather="calendar"></i></span> 수행 기간, 시작/종료일</li>
-                        <li><span class="icon"><i data-feather="dollar-sign"></i></span> 총 계약 금액(사토시) 및 일괄/분할 지급 설정</li>
-                        <li><span class="icon"><i data-feather="upload"></i></span> 부속 서류 PDF (계약서 뒤에 병합)</li>
-                    </ul>
-                </aside>
-            </div>
+        <h2 class="title is-4">계약 입력 항목</h2>
+        <p class="subtitle is-6 has-text-grey-light">모든 항목은 마크다운 미리보기와 PDF 병합을 지원합니다.</p>
+        <div class="input-grid">
+            <div class="input-item"><span>역할 및 라이트닝 정산 주소</span></div>
+            <div class="input-item"><span>계약 제목 · 본문 (Markdown)</span></div>
+            <div class="input-item"><span>수행 기간 (시작/종료일)</span></div>
+            <div class="input-item"><span>총 계약 금액(사토시) & 지불 방식</span></div>
+            <div class="input-item"><span>분할 지급 단계별 조건</span></div>
+            <div class="input-item"><span>부속 서류 PDF (계약서 뒤 자동 병합)</span></div>
+        </div>
+        <div class="payment-note">
+            <strong>안내</strong>
+            <p>유료화가 활성화되면 의뢰자·수행자가 각자 지정된 사토시 금액을 라이트닝 결제로 납부한 뒤 계약 프로세스가 이어집니다.</p>
         </div>
     </div>
 </section>
 
 <section class="section next-step-section">
     <div class="container">
-        <div class="columns is-vcentered is-variable is-5">
-            <div class="column is-7">
-                <h2 class="title is-4">다음 단계 미리보기</h2>
-                <ol class="step-preview">
-                    <li>
-                        <span class="badge">1</span>
-                        <div>
-                            <p class="step-title">역할 및 기본 정보 입력</p>
-                            <p class="step-desc">계약 제목, 역할(의뢰자/수행자), 기간, 금액을 입력하고 역할에 따라 정산 정보를 안내합니다.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="badge">2</span>
-                        <div>
-                            <p class="step-title">계약 본문과 첨부 구성</p>
-                            <p class="step-desc">마크다운으로 계약 내용을 정리하고, 참고 문서를 PDF로 첨부하면 최종 계약서 뒤에 자동 병합됩니다.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="badge">3</span>
-                        <div>
-                            <p class="step-title">지불 조건 및 서명</p>
-                            <p class="step-desc">일괄/분할 지급 조건을 확정하고 개인정보·비밀 유지 동의 후 자필 서명을 남기면 공유 링크가 발급됩니다.</p>
-                        </div>
-                    </li>
-                </ol>
-            </div>
-            <div class="column is-5">
-                <div class="action-box">
-                    <p class="title is-5 mb-3">라이트닝 로그인만 준비되면 바로 시작</p>
-                    <p class="content">
-                        계약 당사자가 각각 라이트닝 로그인을 완료했다면, 정산 정보 입력과 계약 본문 작성, 첨부, 서명까지 한 번에 진행할 수 있습니다.
-                        유료 정책이 켜져 있을 경우에도 설정된 사토시 금액 결제만 완료하면 동일한 플로우로 계약을 마무리할 수 있습니다.
-                    </p>
-                    <a class="button is-primary is-medium is-fullwidth" href="{% url 'expert:direct-draft' %}">
-                        계약 작성 화면으로 이동
-                    </a>
-                    <p class="is-size-7 has-text-grey mt-2">
-                        ※ 공유 링크는 계약 생성 후 즉시 발급되며, 상대방도 라이트닝 결제를 마치면 서명이 진행됩니다.
-                    </p>
+        <h2 class="title is-4">3단계 진행 흐름</h2>
+        <ol class="step-preview">
+            <li>
+                <span class="badge">1</span>
+                <div>
+                    <p class="step-title">기본 정보 & 정산 입력</p>
+                    <p class="step-desc">역할, 정산 주소, 계약 기간·금액을 입력하고 필요 시 계약 단계별 결제를 안내합니다.</p>
                 </div>
-            </div>
+            </li>
+            <li>
+                <span class="badge">2</span>
+                <div>
+                    <p class="step-title">본문 작성 및 첨부</p>
+                    <p class="step-desc">마크다운 본문과 첨부 PDF를 준비하면 최종 계약서에 그대로 병합됩니다.</p>
+                </div>
+            </li>
+            <li>
+                <span class="badge">3</span>
+                <div>
+                    <p class="step-title">서명 & 공유</p>
+                    <p class="step-desc">동의 체크 후 자필 서명을 남기면 공유 링크가 발급되고, 상대방도 라이트닝 인증 후 서명합니다.</p>
+                </div>
+            </li>
+        </ol>
+        <div class="action-box mt-5">
+            <p class="title is-5 mb-3">지금 바로 계약 초안을 작성하세요</p>
+            <p class="content">
+                라이트닝 로그인을 마쳤다면 즉시 초안을 작성하고, 필요 시 결제 정책을 반영해 상대방과 계약을 마무리할 수 있습니다.
+            </p>
+            <a class="button is-primary is-medium is-fullwidth" href="{% url 'expert:direct-draft' %}">
+                계약 작성 화면으로 이동
+            </a>
+            <p class="is-size-7 has-text-grey mt-2">공유 링크는 계약 생성 직후 발급되며, 상대방 결제·서명도 같은 링크에서 처리됩니다.</p>
         </div>
     </div>
 </section>
