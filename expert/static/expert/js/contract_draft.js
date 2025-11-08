@@ -5,7 +5,6 @@ const previewMap = {
     amount: document.getElementById('preview-amount'),
     payment: document.getElementById('preview-payment'),
     email: document.getElementById('preview-email'),
-    clientLightning: document.getElementById('preview-client-lightning'),
     performerLightning: document.getElementById('preview-performer-lightning'),
     oneTimeDate: document.getElementById('preview-one-time-date'),
     oneTimeCondition: document.getElementById('preview-one-time-condition'),
@@ -30,7 +29,6 @@ let previewOneTimePanel;
 let modalOneTimePanel;
 let modalOneTimeDate;
 let modalOneTimeCondition;
-let clientLightningInput;
 let performerLightningInput;
 let previewModalButton;
 let previewModal;
@@ -48,7 +46,6 @@ let previewAttachmentPanel;
 let previewAttachmentList;
 let modalAttachmentPanel;
 let modalAttachmentList;
-let modalClientLightning;
 let modalPerformerLightning;
 let attachmentUploader;
 let attachmentDropzone;
@@ -204,16 +201,9 @@ function updateOneTimePreview() {
 }
 
 function updateLightningPreview() {
-    const clientValue = clientLightningInput && clientLightningInput.value ? clientLightningInput.value.trim() : '';
     const performerValue = performerLightningInput && performerLightningInput.value ? performerLightningInput.value.trim() : '';
-    if (previewMap.clientLightning) {
-        previewMap.clientLightning.textContent = clientValue || '-';
-    }
     if (previewMap.performerLightning) {
         previewMap.performerLightning.textContent = performerValue || '-';
-    }
-    if (modalClientLightning) {
-        modalClientLightning.textContent = clientValue || '-';
     }
     if (modalPerformerLightning) {
         modalPerformerLightning.textContent = performerValue || '-';
@@ -672,7 +662,6 @@ function bindFieldUpdates() {
         });
     }
 
-    clientLightningInput = document.getElementById('id_client_lightning_address');
     performerLightningInput = document.getElementById('id_performer_lightning_address');
     const roleInputs = document.querySelectorAll('input[name="role"]');
     roleContactFieldset = document.getElementById('role-contact-fieldset');
@@ -705,14 +694,9 @@ function bindFieldUpdates() {
         }
     });
     updatePeriod();
-    if (clientLightningInput || performerLightningInput) {
+    if (performerLightningInput) {
         updateLightningPreview();
-        if (clientLightningInput) {
-            clientLightningInput.addEventListener('input', updateLightningPreview);
-        }
-        if (performerLightningInput) {
-            performerLightningInput.addEventListener('input', updateLightningPreview);
-        }
+        performerLightningInput.addEventListener('input', updateLightningPreview);
     }
 
     oneTimeDueInput = document.getElementById('id_one_time_due_date');
@@ -1151,7 +1135,6 @@ document.addEventListener('DOMContentLoaded', () => {
     previewAttachmentList = document.getElementById('preview-attachment-list');
     modalAttachmentPanel = document.getElementById('modal-preview-attachments');
     modalAttachmentList = document.getElementById('modal-preview-attachment-list');
-    modalClientLightning = document.getElementById('modal-preview-client-lightning');
     modalPerformerLightning = document.getElementById('modal-preview-performer-lightning');
 
     bindFieldUpdates();
