@@ -27,6 +27,24 @@
     box-shadow: 0 20px 48px rgba(2, 6, 23, 0.5);
 }
 
+.sign-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.sign-checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sign-checkbox-list .checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45rem;
+}
+
 .contract-flow-card h3 {
     font-size: 1.1rem;
     margin-bottom: 1rem;

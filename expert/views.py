@@ -347,6 +347,11 @@ class DirectContractInviteView(FormView):
             return None
         return super().get_form(form_class)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["require_performer_lightning"] = self.document.counterparty_role == "performer"
+        return kwargs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         is_owner = self.request.user.is_authenticated and self.request.user == self.document.creator
@@ -367,6 +372,7 @@ class DirectContractInviteView(FormView):
                 "counterparty_signature_url": self.document.get_signature_url("counterparty")
                 or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
                 "work_log_html": render_contract_markdown((self.payload or {}).get("work_log_markdown", "")),
+                "require_performer_lightning": self.document.counterparty_role == "performer",
             }
         )
         return context
@@ -382,6 +388,10 @@ class DirectContractInviteView(FormView):
             return self.form_invalid(form)
 
         self.document.counterparty_email = form.cleaned_data["email"]
+        if self.document.counterparty_role == "performer":
+            performer_lightning = form.cleaned_data.get("performer_lightning_address")
+            if performer_lightning:
+                self.payload["performer_lightning_address"] = performer_lightning
         counterparty_hash = build_counterparty_hash(
             self.document.creator_hash, self.request.META.get("HTTP_USER_AGENT", "")
         )

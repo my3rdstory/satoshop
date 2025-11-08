@@ -165,12 +165,25 @@
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
             <h3>상대방 서명</h3>
-            <div class="field">
-                {{ form.email.label_tag }}
-                <div class="control">{{ form.email }}</div>
-                {% for error in form.email.errors %}
-                    <p class="help is-danger">{{ error }}</p>
-                {% endfor %}
+            <div class="field sign-contact-grid">
+                {% if require_performer_lightning and form.performer_lightning_address %}
+                <div>
+                    {{ form.performer_lightning_address.label_tag }}
+                    <div class="control">{{ form.performer_lightning_address }}</div>
+                    <p class="help">정산 받을 라이트닝 주소를 입력해야 계약이 완료됩니다.</p>
+                    {% for error in form.performer_lightning_address.errors %}
+                        <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div>
+                    {{ form.email.label_tag }}
+                    <div class="control">{{ form.email }}</div>
+                    <p class="help">계약서 PDF를 받고 싶다면 이메일을 입력하세요 (선택).</p>
+                    {% for error in form.email.errors %}
+                        <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
             </div>
             {{ form.signature_data }}
             <div class="signature-pad-wrapper">
@@ -184,10 +197,10 @@
                 <p class="signature-preview-label">서명 미리보기</p>
                 <img src="" alt="서명 미리보기" data-signature-preview-img>
             </div>
-            <div class="field mt-4">
+            <div class="field mt-4 sign-checkbox-list">
                 <label class="checkbox">{{ form.agree_privacy }} 개인정보 수집 및 이용에 동의합니다.</label>
-                <label class="checkbox mt-2">{{ form.agree_confidentiality }} 계약 내용 비밀 유지 조항을 이해했습니다.</label>
-                <label class="checkbox mt-2">{{ form.agree_system }} 중계 시스템 안내 사항을 확인했습니다.</label>
+                <label class="checkbox">{{ form.agree_confidentiality }} 계약 내용 비밀 유지 조항을 이해했습니다.</label>
+                <label class="checkbox">{{ form.agree_system }} 중계 시스템 안내 사항을 확인했습니다.</label>
                 {% for field in form %}
                     {% if field.errors %}
                         {% for error in field.errors %}

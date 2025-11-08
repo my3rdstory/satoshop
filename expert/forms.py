@@ -162,8 +162,19 @@ class CounterpartySignatureForm(forms.Form):
     """공유 주소에서 상대방이 사용하는 서명 폼."""
 
     email = forms.EmailField(
-        label="이메일",
+        label="이메일 (선택)",
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
+    )
+    performer_lightning_address = forms.CharField(
+        label="정산 라이트닝 주소 (필수)",
+        required=False,
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "예: performer@ln.example",
+            }
+        ),
     )
     signature_data = forms.CharField(widget=forms.HiddenInput(attrs={"data-signature-input": "true"}))
     agree_privacy = forms.BooleanField(
@@ -181,6 +192,14 @@ class CounterpartySignatureForm(forms.Form):
         required=True,
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
+
+    def __init__(self, *args, require_performer_lightning=False, **kwargs):
+        self.require_performer_lightning = require_performer_lightning
+        super().__init__(*args, **kwargs)
+        if not self.require_performer_lightning:
+            self.fields.pop("performer_lightning_address", None)
+        else:
+            self.fields["performer_lightning_address"].required = True
 
     def clean_signature_data(self):
         data = self.cleaned_data["signature_data"]
