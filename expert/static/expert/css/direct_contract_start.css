@@ -27,6 +27,10 @@
     font-size: 2.3rem;
 }
 
+.hero-copy p {
+    color: rgba(248, 250, 252, 0.82);
+}
+
 .hero-actions {
     margin-top: 1.5rem;
     display: flex;
@@ -56,6 +60,20 @@
     gap: 0.75rem;
 }
 
+.hero-card li {
+    color: rgba(248, 250, 252, 0.95);
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.hero-bullet {
+    color: #22d3ee;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
 .contract-feature-grid {
     padding: 2.5rem 0 1.5rem;
 }
@@ -83,7 +101,7 @@
 
 .feature-label {
     font-size: 0.85rem;
-    color: rgba(94, 234, 212, 0.9);
+    color: rgba(170, 250, 230, 0.98);
     letter-spacing: 0.1em;
     text-transform: uppercase;
 }
@@ -93,6 +111,10 @@
     font-size: 1.2rem;
 }
 
+.feature-card p {
+    color: rgba(226, 232, 240, 0.88);
+}
+
 .contract-inputs {
     padding-top: 2.5rem;
 }
@@ -100,8 +122,14 @@
 .input-grid {
     margin-top: 1.5rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
+}
+
+@media (max-width: 1024px) {
+    .input-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
 }
 
 .input-item {
@@ -109,7 +137,7 @@
     border-radius: 14px;
     padding: 1.2rem;
     border: 1px solid rgba(148, 163, 184, 0.25);
-    color: rgba(226, 232, 240, 0.88);
+    color: rgba(248, 250, 252, 0.92);
     font-weight: 600;
 }
 
@@ -119,7 +147,20 @@
     border-left: 4px solid rgba(251, 191, 36, 0.85);
     padding: 1rem 1.25rem;
     border-radius: 12px;
-    color: rgba(248, 250, 252, 0.9);
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.payment-note strong {
+    color: #fbbf24;
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 700;
+}
+
+.next-step-section p,
+.next-step-section .step-desc,
+.next-step-section .title {
+    color: rgba(250, 252, 255, 0.92);
 }
 
 .step-preview {
