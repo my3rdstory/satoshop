@@ -72,6 +72,41 @@
                         {% endfor %}
                     </div>
 
+                    <div class="field role-contact-fieldset" id="role-contact-fieldset" hidden>
+                        <div class="role-contact-grid">
+                            <div class="role-contact-card" id="performer-lightning-card" hidden>
+                                <span class="label">수행자 정산 정보</span>
+                                <p class="help">수행자로 계약을 진행할 경우 라이트닝 주소를 반드시 입력하세요.</p>
+                                <div class="control mt-3">
+                                    {{ form.performer_lightning_address.label_tag }}
+                                    {{ form.performer_lightning_address }}
+                                </div>
+                                <p class="help">
+                                    라이트닝 주소(필수)를 입력하지 않으면 계약을 진행할 수 없습니다.
+                                </p>
+                                {% for error in form.performer_lightning_address.errors %}
+                                    <p class="help is-danger">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            <div class="role-contact-card role-contact-card--email">
+                                <span class="label">이메일 안내</span>
+                                <div id="role-email-field">
+                                    {{ form.email_recipient.label_tag }}
+                                    <div class="control">{{ form.email_recipient }}</div>
+                                </div>
+                                <p class="help" data-role-email-help="client">
+                                    선택 사항입니다. 입력하면 계약 확정 후 계약서 PDF를 이메일로 받아볼 수 있어요.
+                                </p>
+                                <p class="help" data-role-email-help="performer" hidden>
+                                    일반 이메일 주소를 입력하면 계약 완료 후 계약서 PDF를 발송해 드립니다.
+                                </p>
+                                {% for error in form.email_recipient.errors %}
+                                    <p class="help is-danger">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="field is-grouped">
                         <div class="control is-expanded">
                             {{ form.start_date.label_tag }}
@@ -147,31 +182,6 @@
                             </div>
                         </div>
                         <p class="help">일괄 지급이라도 지급일과 조건을 명시해 주세요.</p>
-                    </div>
-
-                    <div class="field lightning-field">
-                        <label class="label">라이트닝 주소</label>
-                        <div class="columns is-variable is-2">
-                            <div class="column">
-                                {{ form.client_lightning_address.label_tag }}
-                                {{ form.client_lightning_address }}
-                                <p class="help">의뢰자 정산 시 사용할 라이트닝 주소.</p>
-                            </div>
-                            <div class="column">
-                                {{ form.performer_lightning_address.label_tag }}
-                                {{ form.performer_lightning_address }}
-                                <p class="help">수행자 정산 시 사용할 라이트닝 주소.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        {{ form.email_recipient.label_tag }}
-                        <div class="control">{{ form.email_recipient }}</div>
-                        <p class="help">최종 계약서 PDF를 받을 이메일 주소를 입력하세요 (선택).</p>
-                        {% for error in form.email_recipient.errors %}
-                            <p class="help is-danger">{{ error }}</p>
-                        {% endfor %}
                     </div>
 
                     <div class="field worklog-field">

@@ -59,6 +59,9 @@ let attachmentListNode;
 let attachmentManifestInput;
 let attachmentUploadUrl = '';
 let attachmentEntries = [];
+let roleContactFieldset;
+let roleLightningCard;
+let roleEmailHelpTexts = [];
 
 const attachmentConfig = {
     maxItems: 3,
@@ -215,6 +218,28 @@ function updateLightningPreview() {
     if (modalPerformerLightning) {
         modalPerformerLightning.textContent = performerValue || '-';
     }
+}
+
+function toggleRoleContactFields(roleValue) {
+    if (!roleContactFieldset) {
+        return;
+    }
+    const hasRole = Boolean(roleValue);
+    const isPerformer = roleValue === 'performer';
+    roleContactFieldset.hidden = !hasRole;
+    if (roleLightningCard) {
+        roleLightningCard.hidden = !isPerformer;
+        const lightningInputs = Array.from(roleLightningCard.querySelectorAll('input, select, textarea'));
+        lightningInputs.forEach((input) => {
+            input.disabled = !isPerformer;
+        });
+    }
+    if (performerLightningInput) {
+        performerLightningInput.required = isPerformer;
+    }
+    roleEmailHelpTexts.forEach((node) => {
+        node.hidden = node.getAttribute('data-role-email-help') !== roleValue;
+    });
 }
 
 function renderAttachmentPreviewLists(entries = attachmentEntries) {
@@ -640,15 +665,28 @@ function bindFieldUpdates() {
         });
     }
 
+    clientLightningInput = document.getElementById('id_client_lightning_address');
+    performerLightningInput = document.getElementById('id_performer_lightning_address');
     const roleInputs = document.querySelectorAll('input[name="role"]');
-    if (roleInputs.length && previewMap.role) {
+    roleContactFieldset = document.getElementById('role-contact-fieldset');
+    roleLightningCard = document.getElementById('performer-lightning-card');
+    roleEmailHelpTexts = roleContactFieldset
+        ? Array.from(roleContactFieldset.querySelectorAll('[data-role-email-help]'))
+        : [];
+    if (roleInputs.length) {
         const checkedRole = document.querySelector('input[name="role"]:checked');
-        if (checkedRole) {
-            previewMap.role.textContent = formatRole(checkedRole.value);
+        const initialRole = checkedRole ? checkedRole.value : '';
+        if (previewMap.role) {
+            previewMap.role.textContent = formatRole(initialRole);
         }
+        toggleRoleContactFields(initialRole);
         roleInputs.forEach((radio) => {
             radio.addEventListener('change', (event) => {
-                previewMap.role.textContent = formatRole(event.target.value);
+                const { value } = event.target;
+                if (previewMap.role) {
+                    previewMap.role.textContent = formatRole(value);
+                }
+                toggleRoleContactFields(value);
             });
         });
     }
@@ -660,9 +698,6 @@ function bindFieldUpdates() {
         }
     });
     updatePeriod();
-
-    clientLightningInput = document.getElementById('id_client_lightning_address');
-    performerLightningInput = document.getElementById('id_performer_lightning_address');
     if (clientLightningInput || performerLightningInput) {
         updateLightningPreview();
         if (clientLightningInput) {

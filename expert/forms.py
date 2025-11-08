@@ -125,6 +125,17 @@ class ContractDraftForm(forms.Form):
         required=True,
     )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        role = cleaned_data.get("role")
+        performer_lightning = cleaned_data.get("performer_lightning_address")
+        if role == "performer" and not performer_lightning:
+            self.add_error(
+                "performer_lightning_address",
+                "수행자는 라이트닝 주소를 반드시 입력해야 합니다.",
+            )
+        return cleaned_data
+
 
 class ContractReviewForm(forms.Form):
     """계약 생성자가 최종 검토 단계에서 사용하는 폼."""
