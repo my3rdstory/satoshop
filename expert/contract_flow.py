@@ -6,7 +6,7 @@ import secrets
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
@@ -17,16 +17,29 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 BASE_DIR = Path(__file__).resolve().parent
 FONT_BUNDLE_DIR = BASE_DIR / "fonts"
-FONT_CANDIDATES = [
-    FONT_BUNDLE_DIR / "NanumGothic-Regular.ttf",
+
+
+def _bundle_font_candidates() -> List[Path]:
+    if not FONT_BUNDLE_DIR.exists():
+        return []
+    candidates: List[Path] = []
+    for pattern in ("*.ttf", "*.otf"):
+        candidates.extend(sorted(FONT_BUNDLE_DIR.glob(pattern)))
+    return candidates
+
+
+FONT_CANDIDATES = _bundle_font_candidates() + [
     Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
     Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
-    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
 ]
 
 CID_FONT_CANDIDATES = [
     "HYSMyeongJo-Medium",
     "HYGoThic-Medium",
+]
+
+LATIN_FONT_CANDIDATES = [
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
 ]
 
 
@@ -128,6 +141,22 @@ def resolve_contract_pdf_font(default: str = "Helvetica") -> str:
             try:
                 pdfmetrics.registerFont(UnicodeCIDFont(cid_font))
                 return cid_font
+            except Exception:
+                continue
+        except Exception:
+            continue
+
+    for path in LATIN_FONT_CANDIDATES:
+        if not path.exists():
+            continue
+        font_name = f"SatoContract-{path.stem}"
+        try:
+            pdfmetrics.getFont(font_name)
+            return font_name
+        except KeyError:
+            try:
+                pdfmetrics.registerFont(TTFont(font_name, str(path)))
+                return font_name
             except Exception:
                 continue
         except Exception:
