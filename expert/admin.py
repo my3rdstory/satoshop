@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.shortcuts import redirect
+from django.urls import reverse
 
 from .models import (
     Contract,
@@ -94,6 +96,13 @@ class ExpertEmailSettingsAdmin(admin.ModelAdmin):
             SiteSettings.get_settings()
             qs = super().get_queryset(request)
         return qs
+
+    def changelist_view(self, request, extra_context=None):  # pragma: no cover - admin redirect helper
+        qs = self.get_queryset(request)
+        if qs.count() == 1:
+            obj = qs.first()
+            return redirect(reverse("admin:expert_expertemailsettings_change", args=[obj.pk]))
+        return super().changelist_view(request, extra_context)
 
 
 @admin.action(description="계약 조건 입력 화면에 노출")

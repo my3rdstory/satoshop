@@ -1,5 +1,3 @@
-import os
-from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -90,6 +88,8 @@ def send_contract_finalized_email(contract, additional_recipients=None, attachme
 def send_direct_contract_document_email(document):
     """직접 계약 플로우에서 계약서를 이메일로 전송하고 결과를 반환."""
 
+    site_settings = SiteSettings.get_settings()
+    email_config = site_settings.get_expert_email_settings()
     subject = f"[SatoShop Expert] 계약서가 완료되었습니다 - {document.payload.get('title', '-') }"
     context = {
         "document": document,
@@ -98,7 +98,24 @@ def send_direct_contract_document_email(document):
     body = render_to_string("expert/emails/direct_contract_finalized.txt", context)
     pdf_path = document.final_pdf.path if document.final_pdf else None
     statuses = {}
-    sender = getattr(settings, "DEFAULT_FROM_EMAIL", None) or "no-reply@satoshop.app"
+    gmail_warning = "Expert Gmail 설정이 필요합니다. 어드민에서 Gmail 주소와 앱 비밀번호를 입력해 주세요."
+
+    connection = None
+    sender = None
+    if email_config:
+        connection = get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host='smtp.gmail.com',
+            port=587,
+            username=email_config["address"],
+            password=email_config["app_password"],
+            use_tls=True,
+        )
+        sender = (
+            f"{email_config['sender_name']} <{email_config['address']}>"
+            if email_config.get("sender_name")
+            else email_config["address"]
+        )
 
     for key, email in {"creator": document.creator_email, "counterparty": document.counterparty_email}.items():
         status = {"email": email or "", "sent": False, "message": ""}
@@ -106,7 +123,17 @@ def send_direct_contract_document_email(document):
             status["message"] = "이메일이 입력되지 않았습니다."
             statuses[key] = status
             continue
-        email_message = EmailMessage(subject=subject, body=body, from_email=sender, to=[email])
+        if not email_config or not sender:
+            status["message"] = gmail_warning
+            statuses[key] = status
+            continue
+        email_message = EmailMessage(
+            subject=subject,
+            body=body,
+            from_email=sender,
+            to=[email],
+            connection=connection,
+        )
         if pdf_path:
             email_message.attach_file(pdf_path)
         try:
