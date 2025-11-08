@@ -134,15 +134,6 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         template = self.active_contract_template
         context["active_contract_template"] = template
-        if template:
-            rendered_content = self.active_contract_template_html
-            context["active_contract_template_html"] = rendered_content
-            context["contract_template_payload"] = {
-                "title": template.title,
-                "version": template.version_label,
-                "content": template.content,
-                "content_html": rendered_content,
-            }
         context["contract_generated_at"] = timezone.now()
         return context
 
@@ -296,6 +287,7 @@ class DirectContractInviteView(FormView):
     def dispatch(self, request, *args, **kwargs):
         self.document = get_object_or_404(DirectContractDocument, slug=kwargs.get("slug"))
         self.payload = self.document.payload or {}
+        self.is_owner = request.user.is_authenticated and request.user == self.document.creator
         email_delivery = self.document.email_delivery or {}
         for key in ("creator", "counterparty"):
             email_delivery.setdefault(key, {"email": "", "sent": False, "message": ""})
@@ -305,7 +297,7 @@ class DirectContractInviteView(FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_form(self, form_class=None):
-        if self.document.status == "completed":
+        if not self._can_accept_submission():
             return None
         return super().get_form(form_class)
 
@@ -343,6 +335,20 @@ class DirectContractInviteView(FormView):
             }
         )
         return context
+
+    def post(self, request, *args, **kwargs):
+        if not self._can_accept_submission():
+            return redirect(self.document.get_absolute_url())
+        return super().post(request, *args, **kwargs)
+
+    def _can_accept_submission(self) -> bool:
+        if not hasattr(self, "document"):
+            return False
+        if self.document.status == "completed":
+            return False
+        if getattr(self, "is_owner", False):
+            return False
+        return True
 
     def form_valid(self, form):
         if self.document.status == "completed":

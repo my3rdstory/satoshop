@@ -239,6 +239,11 @@
                     <p>
                         계약 진행 중입니다. {{ counterparty_role_label }}가 서명하면 자동으로 알림이 제공됩니다.
                     </p>
+                    {% if is_owner %}
+                        <p class="has-text-grey mt-3">
+                            계약 생성자는 이 화면에서 직접 서명할 수 없습니다. 링크를 상대방에게 전달해 서명을 요청해 주세요.
+                        </p>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endif %}

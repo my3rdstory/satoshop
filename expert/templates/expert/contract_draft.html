@@ -12,26 +12,26 @@
 <section class="section contract-draft-section">
     <div class="container">
         <div class="columns is-variable is-5">
-            <div class="column is-7">
+            <div class="column is-12-tablet is-8-desktop">
                 <h1 class="title is-3 has-text-weight-bold">계약 조건 입력</h1>
                 <p class="subtitle is-6 has-text-grey">
-                    계약 조건을 입력하고, 계약서를 미리보기로 확인하세요. 입력을 마치면 자필 서명 후 상대방에게 링크를 공유해 동의를 요청할 수 있습니다.
+                    계약 조건을 입력하고 자필 서명으로 확정한 뒤 상대방에게 링크를 공유해 동의를 요청할 수 있습니다.
                 </p>
-            </div>
-            <div class="column is-5">
-                <div class="status-box">
-                    <p class="title is-6 mb-2">현재 단계</p>
-                    <ol class="status-steps">
-                        <li class="is-active">1. 계약 조건 입력</li>
-                        <li>2. 서명 &amp; 검증</li>
-                        <li>3. 라이트닝 정산</li>
-                    </ol>
-                </div>
             </div>
         </div>
 
         <div class="columns is-variable is-5 draft-layout">
-            <div class="column is-7">
+            <div class="column is-12-tablet is-8-desktop">
+                {% if active_contract_template %}
+                    <div class="notification is-link is-light mb-5">
+                        현재 노출 계약서: <strong>{{ active_contract_template.title }}</strong>
+                        <span class="ml-1">({{ active_contract_template.version_label }})</span>
+                    </div>
+                {% else %}
+                    <div class="notification is-warning is-light mb-5" role="alert">
+                        시스템 표준 거래 계약서가 아직 등록되지 않아 계약 생성만 가능합니다. 계약 담당자에게 템플릿을 등록해 달라고 요청하세요.
+                    </div>
+                {% endif %}
                 <form method="post" novalidate>
                     {% csrf_token %}
                     {{ form.enable_chat }}
@@ -228,11 +228,11 @@
                     </div>
                 </form>
             </div>
-            <div class="column is-5">
+            <div class="column is-12-tablet is-4-desktop">
                 <div class="preview-card">
                     <div class="preview-header">
-                        <h2 class="title is-5 mb-1">계약 미리보기</h2>
-                        <p class="is-size-7 has-text-grey">입력 중인 계약 조건을 요약해서 보여줍니다.</p>
+                        <h2 class="title is-5 mb-1">계약 요약</h2>
+                        <p class="is-size-7 has-text-grey">좌측 입력값이 실시간으로 반영됩니다.</p>
                     </div>
                     <div class="preview-body" id="contract-preview">
                         <ul class="spec-list">
@@ -261,142 +261,21 @@
                                 <p class="preview-placeholder">작성된 메모가 없습니다.</p>
                             </div>
                         </div>
-                        <p class="preview-note">
-                            계약 내용 아래에 계약 일반 사항이 붙어 계약서가 완성됩니다.
-                        </p>
                     </div>
                     <div class="preview-footer">
-                        {% if active_contract_template %}
-                            <p class="preview-footnote">
-                                현재 노출 계약서: <strong>{{ active_contract_template.title }}</strong>
-                                <span class="preview-version">({{ active_contract_template.version_label }})</span>
-                            </p>
-                            <button type="button"
-                                    class="button is-link is-light is-fullwidth preview-button"
-                                    id="contract-preview-trigger"
-                                    data-template-source="active-contract-template">
-                                계약서 미리보기
-                            </button>
-                        {% else %}
-                            <p class="preview-warning" role="alert">
-                                시스템 표준 거래 계약서 미등록으로 계약서를 미리보기 할 수 없습니다.
-                            </p>
-                        {% endif %}
+                        <p class="preview-note">
+                            입력한 조건과 표준 계약서 본문이 병합되어 최종 계약서와 PDF가 생성됩니다.
+                        </p>
                     </div>
                 </div>
-                {% if contract_template_payload %}
-                    {{ contract_template_payload|json_script:"active-contract-template" }}
-                {% endif %}
             </div>
         </div>
     </div>
-    {% if active_contract_template %}
-    <div class="modal contract-preview-modal" id="contract-preview-modal" aria-hidden="true">
-        <div class="modal-background" data-close-contract-modal></div>
-        <div class="modal-card contract-modal-card" role="dialog" aria-modal="true" aria-labelledby="contract-preview-modal-title">
-            <header class="modal-card-head">
-                <div class="modal-card-heading">
-                    <p class="modal-card-title" id="contract-preview-modal-title">계약서 미리보기</p>
-                    <h1 class="modal-card-subtitle">개인과 개인 사이의 신의성실 기반 거래 계약서</h1>
-                </div>
-                <button class="delete" type="button" aria-label="닫기" data-close-contract-modal></button>
-            </header>
-            <section class="modal-card-body">
-                <div class="modal-preview-stack">
-                    <article class="preview-block preview-block--intro">
-                        <h3 class="preview-block-title">1. 계약서 서문</h3>
-                        <blockquote>
-                            <strong>주의</strong>: 이 계약서는 정부나 공공기관의 강제력이 아닌, 당사자 간 신의성실의 원칙에 따라 체결하는 사적 거래 계약서 예시입니다. 실제 적용 시에는 반드시 계약 당사자의 상황에 맞게 조정하고 필요한 경우 전문가의 자문을 받으십시오.
-                        </blockquote>
-                    </article>
-                    <article class="preview-block preview-block--draft">
-                        <h3 class="preview-block-title">2. 계약 내용 (드래프트 입력)</h3>
-                        <ul class="spec-list modal-spec-list">
-                            <li><span>제목</span><strong id="modal-preview-title">-</strong></li>
-                            <li><span>역할</span><strong id="modal-preview-role">-</strong></li>
-                            <li><span>기간</span><strong id="modal-preview-period">-</strong></li>
-                            <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
-                            <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
-                            <li><span>계약서 이메일</span><strong id="modal-preview-email">-</strong></li>
-                            <li><span>수행자 라이트닝</span><strong id="modal-preview-performer-lightning">-</strong></li>
-                        </ul>
-                        <div class="preview-subsection modal-payment-section" id="modal-preview-milestones" hidden>
-                            <div class="modal-payment-header">
-                                <span class="modal-payment-pill" aria-hidden="true">분할 지급</span>
-                                <p class="modal-payment-caption">단계별 지급 내역을 명확히 확인하세요.</p>
-                            </div>
-                            <ul class="milestone-preview-list modal-payment-list" id="modal-preview-milestone-list"></ul>
-                        </div>
-                        <div class="preview-subsection modal-payment-section" id="modal-preview-one-time" hidden>
-                            <div class="modal-payment-header">
-                                <span class="modal-payment-pill" aria-hidden="true">일괄 지급</span>
-                                <p class="modal-payment-caption">정해진 시점에 한 번에 지급됩니다.</p>
-                            </div>
-                            <ul class="one-time-preview-list modal-payment-list">
-                                <li><span>지급일</span><strong id="modal-preview-one-time-date">-</strong></li>
-                                <li><span>지급 조건</span><strong id="modal-preview-one-time-condition">-</strong></li>
-                            </ul>
-                        </div>
-                        <div class="preview-subsection">
-                            <p class="preview-subsection-title">수행 내역 메모</p>
-                            <div class="preview-worklog markdown-content" id="modal-preview-worklog" data-empty="true">
-                                <p class="preview-placeholder">작성된 메모가 없습니다.</p>
-                            </div>
-                        </div>
-                        <p class="modal-hint">입력 중인 수행 내역과 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
-                    </article>
-                    <article class="preview-block preview-block--template">
-                        <h3 class="preview-block-title">3. 계약 일반 사항</h3>
-                        <div class="modal-template">
-                            <div class="modal-template-body markdown-content" id="modal-template-markdown">
-                                {% if active_contract_template_html %}
-                                    {{ active_contract_template_html|safe }}
-                                {% else %}
-                                    <p class="modal-hint">계약서 본문이 비어 있습니다.</p>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <p class="modal-hint">
-                            본 계약서는
-                            <time datetime="{{ contract_generated_at|localtime|date:'c' }}">
-                                {{ contract_generated_at|localtime|date:"Y-m-d H:i:s" }}
-                            </time>
-                            에 사토샵 Expert 시스템을 통해 생성되었으며, 당사자는 신의성실 원칙에 따라 모든 내용을 준수할 것을 확인한다.
-                        </p>
-                    </article>
-                    <article class="preview-block preview-block--hash">
-                        <h3 class="preview-block-title">4. 서명 해시 정보</h3>
-                        <ul class="hash-list">
-                            <li><span>의뢰자 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
-                            <li><span>수행자 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
-                            <li><span>사토샵 서명 해시</span><strong class="hash-placeholder">생성 예정</strong></li>
-                        </ul>
-                        <div class="hash-steps">
-                            <p class="hash-steps-title">해시 계산 방법</p>
-                            <ol>
-                                <li><strong>의뢰자</strong>: 작성한 계약 내용 전체 + 계약 진행 버튼 클릭 시 타임스탬프(연/월/일/시/초) + 브라우저 정보 + 난수 Salt를 JSON으로 합쳐 SHA-256 해시.</li>
-                                <li><strong>수행자</strong>: 의뢰자 해시 + 수행자 확인 타임스탬프 + 브라우저 정보 + 난수 Salt를 묶어 SHA-256 해시.</li>
-                                <li><strong>사토샵</strong>: 수행자 해시 + 최종 계약서 PDF 생성 시 타임스탬프 + 난수 Salt를 입력해 SHA-256 해시.</li>
-                            </ol>
-                            <p class="hash-note">각 해시는 계약 확정 단계에서 자동 생성되며, 위 로그 값이 모두 확정되어야 계약이 완료됩니다.</p>
-                        </div>
-                    </article>
-                </div>
-            </section>
-            <footer class="modal-card-foot">
-                <button type="button" class="button is-dark is-outlined" data-close-contract-modal>닫기</button>
-            </footer>
-        </div>
-    </div>
-    {% endif %}
+
 </section>
 {% endblock %}
 
 {% block extra_js %}
-{% if active_contract_template %}
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="{% static 'js/markdown-renderer.js' %}"></script>
-{% endif %}
 <script src="{% static 'js/easymde.min.js' %}"></script>
 <script src="{% static 'expert/js/contract_draft.js' %}"></script>
 {% endblock %}
