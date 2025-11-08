@@ -117,6 +117,20 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
             text_object = pdf.beginText(margin, height - margin)
             text_object.setFont("Helvetica", 11)
 
+    attachments = (document.payload or {}).get("attachments") or []
+    if attachments:
+        text_object.textLine("")
+        text_object.textLine("===== 첨부 파일 =====")
+        for index, attachment in enumerate(attachments, start=1):
+            name = attachment.get("name") or f"첨부 {index}"
+            reference = attachment.get("url") or attachment.get("path") or "경로 정보 없음"
+            text_object.textLine(f"{index}. {name} - {reference}")
+            if text_object.getY() <= margin:
+                pdf.drawText(text_object)
+                pdf.showPage()
+                text_object = pdf.beginText(margin, height - margin)
+                text_object.setFont("Helvetica", 11)
+
     footer_lines = [
         "",
         "===== 서명/해시 =====",

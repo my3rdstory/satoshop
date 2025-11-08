@@ -134,6 +134,48 @@
     word-break: break-all;
 }
 
+.milestone-detail-list,
+.attachment-summary-list {
+    list-style: none;
+    margin: 0.35rem 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.milestone-detail-list li,
+.attachment-summary-list li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.milestone-detail-list strong {
+    color: #93c5fd;
+}
+
+.hash-display .markdown-content {
+    font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.6;
+}
+
+.hash-display .markdown-content p:last-child {
+    margin-bottom: 0;
+}
+
+.attachment-summary-list a {
+    color: #93c5fd;
+    text-decoration: underline;
+}
+
+.attachment-summary-list .attachment-meta {
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.8rem;
+}
+
 .share-url-display {
     color: #f8fafc;
     border-color: rgba(94, 234, 212, 0.55);

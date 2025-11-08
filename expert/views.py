@@ -2,6 +2,7 @@ import markdown
 
 import json
 import uuid
+from itertools import zip_longest
 
 from django.conf import settings
 from django.contrib import messages
@@ -117,23 +118,69 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
             value = data.get(field_name)
             if value:
                 data[field_name] = value.isoformat()
-        milestone_values = []
-        for value in self.request.POST.getlist("milestones[]"):
-            if not value:
-                continue
+        milestone_details = []
+        amount_values = self.request.POST.getlist("milestone_amounts[]")
+        due_dates = self.request.POST.getlist("milestone_due_dates[]")
+        conditions = self.request.POST.getlist("milestone_conditions[]")
+        for raw_amount, due_date, condition in zip_longest(amount_values, due_dates, conditions, fillvalue=""):
             try:
-                milestone_values.append(int(value))
-            except ValueError:
+                amount_value = int(raw_amount) if raw_amount not in (None, "") else 0
+            except (TypeError, ValueError):
+                amount_value = 0
+            amount_value = max(amount_value, 0)
+            cleaned_condition = (condition or "").strip()
+            due_date_value = (due_date or "").strip()
+            if amount_value <= 0 and not due_date_value and not cleaned_condition:
                 continue
-        data["milestones"] = milestone_values
+            milestone_details.append(
+                {
+                    "amount_sats": amount_value,
+                    "due_date": due_date_value,
+                    "condition": cleaned_condition,
+                }
+            )
+        data["milestones"] = milestone_details
         attachments_raw = data.get("attachment_manifest")
+        attachments: list[dict] = []
+
+        def is_pdf_resource(*values) -> bool:
+            for value in values:
+                if not value:
+                    continue
+                candidate = str(value).split("?")[0].lower()
+                if candidate.endswith(".pdf"):
+                    return True
+            return False
+
         if attachments_raw:
             try:
-                data["attachments"] = json.loads(attachments_raw)
+                manifest = json.loads(attachments_raw)
             except json.JSONDecodeError:
-                data["attachments"] = []
-        else:
-            data["attachments"] = []
+                manifest = []
+            if isinstance(manifest, list):
+                for entry in manifest:
+                    if not isinstance(entry, dict):
+                        continue
+                    name = (entry.get("name") or entry.get("original_name") or "").strip()
+                    path = (entry.get("path") or "").strip()
+                    url = (entry.get("url") or "").strip()
+                    if not is_pdf_resource(name, path, url):
+                        continue
+                    size_value = entry.get("size") or entry.get("file_size") or 0
+                    try:
+                        size_value = int(size_value)
+                    except (TypeError, ValueError):
+                        size_value = 0
+                    attachments.append(
+                        {
+                            "name": name or "계약 첨부 PDF",
+                            "size": max(size_value, 0),
+                            "url": url,
+                            "path": path,
+                            "storage": entry.get("storage", "s3"),
+                        }
+                    )
+        data["attachments"] = attachments
         data.pop("attachment_manifest", None)
         data["generated_at"] = timezone.now().isoformat()
         role_display = dict(form.fields["role"].choices).get(data.get("role"), "-")
@@ -169,10 +216,12 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        work_log_markdown = (self.draft_payload or {}).get("work_log_markdown", "")
         context.update(
             {
                 "draft_payload": self.draft_payload,
                 "contract_generated_at": timezone.now(),
+                "work_log_html": render_contract_markdown(work_log_markdown),
             }
         )
         return context
@@ -265,6 +314,7 @@ class DirectContractInviteView(FormView):
                 or (self.document.creator_signature.url if self.document.creator_signature else ""),
                 "counterparty_signature_url": self.document.get_signature_url("counterparty")
                 or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
+                "work_log_html": render_contract_markdown((self.payload or {}).get("work_log_markdown", "")),
             }
         )
         return context

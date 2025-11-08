@@ -63,7 +63,7 @@
                                     </label>
                                 {% endfor %}
                                 <div class="role-option role-option--disabled" aria-disabled="true">
-                                    <span class="role-option-title">중계자</span>
+                                    <span class="role-option-title">중개자</span>
                                     <span class="role-option-caption">시스템(고정)</span>
                                 </div>
                             </div>
@@ -123,7 +123,9 @@
                                 + 분할 추가
                             </button>
                         </div>
-                        <p class="help milestone-hint">총 계약 금액 안에서 각 분할 금액을 지정해 주세요. 기본으로 두 단계가 제공됩니다.</p>
+                        <p class="help milestone-hint">
+                            각 단계마다 지급 금액(사토시), 지급 예정일, 지급 조건을 입력하세요. 지급일을 비워두면 "미정"으로 표기됩니다.
+                        </p>
                         <div class="milestone-list" id="milestone-list" aria-live="polite"></div>
                         <div class="milestone-summary">
                             <p class="milestone-remaining" id="milestone-remaining">남은 금액: -</p>
@@ -227,6 +229,20 @@
                             <li><span>지불 조건</span><strong id="preview-payment">-</strong></li>
                             <li><span>이메일</span><strong id="preview-email">-</strong></li>
                         </ul>
+                        <div class="preview-subsection" id="preview-milestone-panel" hidden>
+                            <p class="preview-subsection-title">분할 지급 상세</p>
+                            <ul class="milestone-preview-list" id="preview-milestone-list"></ul>
+                        </div>
+                        <div class="preview-subsection">
+                            <p class="preview-subsection-title">수행 내역 메모</p>
+                            <div class="preview-worklog markdown-content" id="preview-worklog" data-empty="true">
+                                <p class="preview-placeholder">작성된 메모가 없습니다.</p>
+                            </div>
+                        </div>
+                        <div class="preview-subsection" id="preview-attachments" hidden>
+                            <p class="preview-subsection-title">첨부 PDF</p>
+                            <ul class="attachment-preview-list" id="preview-attachment-list"></ul>
+                        </div>
                         <p class="preview-note">
                             계약 내용 아래에 계약 일반 사항이 붙어 계약서가 완성됩니다.
                         </p>
@@ -285,6 +301,20 @@
                             <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
                             <li><span>계약서 이메일</span><strong id="modal-preview-email">-</strong></li>
                         </ul>
+                        <div class="preview-subsection" id="modal-preview-milestones" hidden>
+                            <p class="preview-subsection-title">분할 지급 상세</p>
+                            <ul class="milestone-preview-list" id="modal-preview-milestone-list"></ul>
+                        </div>
+                        <div class="preview-subsection">
+                            <p class="preview-subsection-title">수행 내역 메모</p>
+                            <div class="preview-worklog markdown-content" id="modal-preview-worklog" data-empty="true">
+                                <p class="preview-placeholder">작성된 메모가 없습니다.</p>
+                            </div>
+                        </div>
+                        <div class="preview-subsection" id="modal-preview-attachments" hidden>
+                            <p class="preview-subsection-title">첨부 PDF</p>
+                            <ul class="attachment-preview-list" id="modal-preview-attachment-list"></ul>
+                        </div>
                         <p class="modal-hint">입력 중인 수행 내역, 첨부 파일, 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
                     </article>
                     <article class="preview-block preview-block--template">

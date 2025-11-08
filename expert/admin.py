@@ -80,10 +80,11 @@ class ExpertEmailSettingsAdmin(admin.ModelAdmin):
     )
     list_display = ("expert_gmail_address", "expert_email_sender_name")
 
-    def has_add_permission(self, request):
-        return False
+    def has_add_permission(self, request):  # pragma: no cover - admin guard
+        # Gmail 설정이 아직 없다면 최초 1회 등록을 허용한다.
+        return not ExpertEmailSettings.objects.exists()
 
-    def has_delete_permission(self, request, obj=None):
+    def has_delete_permission(self, request, obj=None):  # pragma: no cover - admin guard
         return False
 
     def get_queryset(self, request):

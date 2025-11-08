@@ -639,6 +639,12 @@
     }
 }
 
+@media screen and (max-width: 640px) {
+    .milestone-field--condition {
+        grid-column: span 1;
+    }
+}
+
 .milestone-hint {
     margin-bottom: 1.25rem;
 }
@@ -650,8 +656,8 @@
 
 .milestone-item {
     display: flex;
-    gap: 0.85rem;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
     background: rgba(10, 17, 34, 0.75);
     border: 1px solid rgba(148, 163, 184, 0.25);
     border-radius: 12px;
@@ -665,17 +671,46 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.75rem;
+    background: rgba(59, 130, 246, 0.15);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    align-self: flex-start;
 }
 
 .milestone-input {
     flex: 1;
     background: rgba(8, 13, 26, 0.65);
     color: rgba(226, 232, 240, 0.96);
+    border-color: rgba(148, 163, 184, 0.35);
 }
 
 .milestone-input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.milestone-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+}
+
+.milestone-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.milestone-field-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.milestone-field--condition {
+    grid-column: span 2;
 }
 
 .milestone-summary {
@@ -699,6 +734,98 @@
 
 .milestone-error[hidden] {
     display: none;
+}
+
+.preview-subsection {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.45);
+}
+
+.preview-subsection-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(148, 197, 253, 0.95);
+    margin-bottom: 0.5rem;
+}
+
+.preview-worklog {
+    background: rgba(8, 13, 26, 0.55);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    min-height: 4rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.preview-placeholder {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(148, 163, 184, 0.8);
+}
+
+.attachment-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.attachment-preview-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.85);
+}
+
+.attachment-preview-size {
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.78rem;
+}
+
+.milestone-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.milestone-preview-item {
+    background: rgba(8, 13, 26, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+}
+
+.milestone-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.milestone-preview-order {
+    font-weight: 600;
+    color: rgba(96, 165, 250, 0.95);
+}
+
+.milestone-preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(203, 213, 225, 0.85);
+}
+
+.milestone-preview-condition {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.85);
 }
 
 .contract-draft-section .has-text-grey,

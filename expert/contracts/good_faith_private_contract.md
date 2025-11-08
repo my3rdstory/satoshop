@@ -29,7 +29,7 @@
 {% if milestones %}
 - **분할 지급 일정**:
   {% for milestone in milestones %}
-  1. {{ milestone.title }} – {{ milestone.amount_sats }} sats (조건: {{ milestone.condition }})
+  1. 분할 {{ forloop.counter }} – {{ milestone.amount_sats }} sats (지급일: {{ milestone.due_date|default:"미정" }}, 조건: {{ milestone.condition|default:"지급 조건 미입력" }})
   {% endfor %}
 {% else %}
 - **일괄 지급**: 최종 검수 완료 후 {{payout_timeline}} 이내 전액 지급

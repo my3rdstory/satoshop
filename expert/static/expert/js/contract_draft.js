@@ -17,6 +17,7 @@ let milestoneRemaining;
 let milestoneError;
 let milestonesInitialized = false;
 let milestoneOverflow = false;
+let milestoneRowCount = 0;
 let agreementCheckboxes = [];
 let previewModalButton;
 let previewModal;
@@ -24,6 +25,16 @@ let previewModalCloseButtons = [];
 let modalTemplateMarkdown;
 let templatePayload = null;
 let workLogEditor = null;
+let previewMilestonePanel;
+let previewMilestoneList;
+let modalMilestonePanel;
+let modalMilestoneList;
+let previewWorklogNode;
+let modalWorklogNode;
+let previewAttachmentPanel;
+let previewAttachmentList;
+let modalAttachmentPanel;
+let modalAttachmentList;
 let attachmentUploader;
 let attachmentDropzone;
 let attachmentInput;
@@ -69,6 +80,143 @@ function formatBytes(bytes) {
     const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
     const value = bytes / 1024 ** index;
     return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+function formatDateLabel(value) {
+    if (!value) {
+        return '미정';
+    }
+    return value;
+}
+
+function collectMilestoneDetails() {
+    if (!milestoneList) {
+        return [];
+    }
+    const items = Array.from(milestoneList.querySelectorAll('.milestone-item'));
+    return items
+        .map((item) => {
+            const amountInput = item.querySelector('.milestone-amount-input');
+            const dateInput = item.querySelector('.milestone-date-input');
+            const conditionInput = item.querySelector('.milestone-condition-input');
+            const amountValue = amountInput ? parseInt(amountInput.value, 10) : Number.NaN;
+            return {
+                amount: Number.isFinite(amountValue) && amountValue > 0 ? amountValue : 0,
+                dueDate: dateInput ? dateInput.value : '',
+                condition: conditionInput ? conditionInput.value.trim() : '',
+            };
+        })
+        .filter((detail) => detail.amount > 0 || detail.dueDate || detail.condition);
+}
+
+function buildMilestonePreviewItem(detail, index) {
+    const li = document.createElement('li');
+    li.className = 'milestone-preview-item';
+    const conditionText = detail.condition || '지급 조건 미입력';
+    li.innerHTML = `
+        <div class="milestone-preview-row">
+            <span class="milestone-preview-order">분할 ${index + 1}</span>
+            <div class="milestone-preview-meta">
+                <span>금액: ${formatSats(detail.amount || 0)} sats</span>
+                <span>지급일: ${formatDateLabel(detail.dueDate)}</span>
+            </div>
+        </div>
+        <p class="milestone-preview-condition">조건: ${conditionText}</p>
+    `;
+    return li;
+}
+
+function renderMilestoneLists(details) {
+    const paymentValue = getCheckedValue(paymentInputs);
+    const resolvedDetails = Array.isArray(details) ? details : [];
+    const hasDetails = paymentValue === 'milestone' && resolvedDetails.length > 0;
+
+    if (previewMilestonePanel) {
+        previewMilestonePanel.hidden = !hasDetails;
+    }
+    if (modalMilestonePanel) {
+        modalMilestonePanel.hidden = !hasDetails;
+    }
+
+    [previewMilestoneList, modalMilestoneList].forEach((listNode) => {
+        if (listNode) {
+            listNode.innerHTML = '';
+        }
+    });
+
+    if (!hasDetails) {
+        return;
+    }
+
+    resolvedDetails.forEach((detail, index) => {
+        if (previewMilestoneList) {
+            previewMilestoneList.appendChild(buildMilestonePreviewItem(detail, index));
+        }
+        if (modalMilestoneList) {
+            modalMilestoneList.appendChild(buildMilestonePreviewItem(detail, index));
+        }
+    });
+}
+
+function renderAttachmentPreviewLists(entries = attachmentEntries) {
+    const listData = Array.isArray(entries) ? entries : [];
+    const hasItems = listData.length > 0;
+    if (previewAttachmentPanel) {
+        previewAttachmentPanel.hidden = !hasItems;
+    }
+    if (modalAttachmentPanel) {
+        modalAttachmentPanel.hidden = !hasItems;
+    }
+    [previewAttachmentList, modalAttachmentList].forEach((listNode) => {
+        if (listNode) {
+            listNode.innerHTML = '';
+        }
+    });
+    if (!hasItems) {
+        return;
+    }
+    listData.forEach((item, index) => {
+        const name = item && item.name ? item.name : `첨부 ${index + 1}`;
+        const sizeLabel = item && Number.isFinite(item.size) ? formatBytes(item.size) : '—';
+        const listItem = document.createElement('li');
+        listItem.className = 'attachment-preview-item';
+        listItem.innerHTML = `
+            <span class="attachment-preview-name">${name}</span>
+            <span class="attachment-preview-size">${sizeLabel}</span>
+        `;
+        if (previewAttachmentList) {
+            previewAttachmentList.appendChild(listItem.cloneNode(true));
+        }
+        if (modalAttachmentList) {
+            modalAttachmentList.appendChild(listItem.cloneNode(true));
+        }
+    });
+}
+
+function updateWorkLogPreview(markdownText) {
+    const content = (markdownText || '').trim();
+    const targets = [
+        { node: previewWorklogNode, placeholder: '작성된 메모가 없습니다.' },
+        { node: modalWorklogNode, placeholder: '작성된 메모가 없습니다.' },
+    ];
+
+    targets.forEach(({ node, placeholder }) => {
+        if (!node) {
+            return;
+        }
+        if (!content) {
+            node.dataset.empty = 'true';
+            node.innerHTML = `<p class="preview-placeholder">${placeholder}</p>`;
+            return;
+        }
+        node.dataset.empty = 'false';
+        node.textContent = content;
+        if (window.MarkdownRenderer && typeof window.MarkdownRenderer.render === 'function') {
+            window.MarkdownRenderer.render(node);
+        } else {
+            node.innerHTML = content.replace(/\n/g, '<br>');
+        }
+    });
 }
 
 function getCsrfToken() {
@@ -127,22 +275,26 @@ function updateMilestoneLabels() {
     });
 }
 
-function updateMilestonePreview(totalAmount, remaining) {
+function updateMilestonePreview(totalAmount, remaining, details = null) {
     if (!previewMap.payment || !paymentInputs.length) {
         return;
     }
     const paymentValue = getCheckedValue(paymentInputs);
     if (paymentValue !== 'milestone') {
         previewMap.payment.textContent = formatPayment(paymentValue);
+        renderMilestoneLists([]);
         return;
     }
-    const milestoneCount = getMilestoneInputs().length;
+    const resolvedDetails = Array.isArray(details) ? details : collectMilestoneDetails();
+    const milestoneCount = resolvedDetails.length || getMilestoneInputs().length;
     if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
         previewMap.payment.textContent = '분할 지급 (총액 입력 대기)';
+        renderMilestoneLists(resolvedDetails);
         return;
     }
     const remainingText = formatSats(Math.max(remaining, 0));
     previewMap.payment.textContent = `분할 지급 (${milestoneCount}회, 남은 ${remainingText} sats)`;
+    renderMilestoneLists(resolvedDetails);
 }
 
 function updateMilestoneTotals() {
@@ -153,9 +305,10 @@ function updateMilestoneTotals() {
     const inputs = getMilestoneInputs();
     const totalAmount = parseInt(amountInput ? amountInput.value : '', 10);
     const hasTotal = Number.isFinite(totalAmount) && totalAmount > 0;
+    const allMilestoneInputs = milestoneList ? Array.from(milestoneList.querySelectorAll('.milestone-input')) : [];
 
     if (!hasTotal) {
-        inputs.forEach((input) => {
+        allMilestoneInputs.forEach((input) => {
             input.disabled = true;
         });
         if (addMilestoneButton) {
@@ -169,11 +322,11 @@ function updateMilestoneTotals() {
         }
         milestoneOverflow = false;
         setSubmitButtonState();
-        updateMilestonePreview(Number.NaN, Number.NaN);
+        updateMilestonePreview(Number.NaN, Number.NaN, []);
         return;
     }
 
-    inputs.forEach((input) => {
+    allMilestoneInputs.forEach((input) => {
         input.disabled = false;
     });
     if (addMilestoneButton) {
@@ -213,7 +366,8 @@ function updateMilestoneTotals() {
         addMilestoneButton.disabled = remaining === 0;
     }
 
-    updateMilestonePreview(totalAmount, remaining);
+    const details = collectMilestoneDetails();
+    updateMilestonePreview(totalAmount, remaining, details);
 }
 
 function onMilestoneInput(event) {
@@ -252,10 +406,17 @@ function onMilestoneInput(event) {
     updateMilestoneTotals();
 }
 
-function addMilestoneRow(defaultValue = '') {
+function onMilestoneDetailChange() {
+    renderMilestoneLists(collectMilestoneDetails());
+}
+
+function addMilestoneRow(defaults = {}) {
     if (!milestoneList) {
         return;
     }
+    milestoneRowCount += 1;
+    const rowId = milestoneRowCount;
+    const normalizedDefaults = defaults || {};
     const item = document.createElement('div');
     item.className = 'milestone-item';
 
@@ -263,19 +424,75 @@ function addMilestoneRow(defaultValue = '') {
     label.className = 'milestone-order';
     item.appendChild(label);
 
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.inputMode = 'numeric';
-    input.min = '0';
-    input.className = 'input milestone-input';
-    input.name = 'milestones[]';
-    input.placeholder = '예: 50000';
-    if (defaultValue !== undefined && defaultValue !== null && defaultValue !== '') {
-        input.value = defaultValue;
-    }
-    input.addEventListener('input', onMilestoneInput);
-    item.appendChild(input);
+    const fields = document.createElement('div');
+    fields.className = 'milestone-fields';
 
+    const amountField = document.createElement('div');
+    amountField.className = 'milestone-field';
+    const amountLabel = document.createElement('label');
+    const amountId = `milestone-amount-${rowId}`;
+    amountLabel.className = 'milestone-field-label';
+    amountLabel.setAttribute('for', amountId);
+    amountLabel.textContent = '금액 (sats)';
+    amountField.appendChild(amountLabel);
+    const amountInput = document.createElement('input');
+    amountInput.type = 'number';
+    amountInput.inputMode = 'numeric';
+    amountInput.min = '0';
+    amountInput.className = 'input milestone-input milestone-amount-input';
+    amountInput.name = 'milestone_amounts[]';
+    amountInput.id = amountId;
+    amountInput.placeholder = '예: 50000';
+    if (normalizedDefaults.amount || normalizedDefaults.amount_sats) {
+        amountInput.value = normalizedDefaults.amount || normalizedDefaults.amount_sats;
+    }
+    amountInput.addEventListener('input', onMilestoneInput);
+    amountField.appendChild(amountInput);
+    fields.appendChild(amountField);
+
+    const dateField = document.createElement('div');
+    dateField.className = 'milestone-field';
+    const dateLabel = document.createElement('label');
+    const dateId = `milestone-date-${rowId}`;
+    dateLabel.className = 'milestone-field-label';
+    dateLabel.setAttribute('for', dateId);
+    dateLabel.textContent = '지급 예정일';
+    dateField.appendChild(dateLabel);
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'input milestone-input milestone-date-input';
+    dateInput.name = 'milestone_due_dates[]';
+    dateInput.id = dateId;
+    if (normalizedDefaults.due_date) {
+        dateInput.value = normalizedDefaults.due_date;
+    }
+    dateInput.addEventListener('change', onMilestoneDetailChange);
+    dateInput.addEventListener('input', onMilestoneDetailChange);
+    dateField.appendChild(dateInput);
+    fields.appendChild(dateField);
+
+    const conditionField = document.createElement('div');
+    conditionField.className = 'milestone-field milestone-field--condition';
+    const conditionLabel = document.createElement('label');
+    const conditionId = `milestone-condition-${rowId}`;
+    conditionLabel.className = 'milestone-field-label';
+    conditionLabel.setAttribute('for', conditionId);
+    conditionLabel.textContent = '지급 조건';
+    conditionField.appendChild(conditionLabel);
+    const conditionInput = document.createElement('input');
+    conditionInput.type = 'text';
+    conditionInput.className = 'input milestone-input milestone-condition-input';
+    conditionInput.name = 'milestone_conditions[]';
+    conditionInput.id = conditionId;
+    conditionInput.placeholder = '예: 디자인 시안 승인 후 3일 이내';
+    if (normalizedDefaults.condition) {
+        conditionInput.value = normalizedDefaults.condition;
+    }
+    conditionInput.addEventListener('input', onMilestoneDetailChange);
+    conditionField.appendChild(conditionInput);
+    fields.appendChild(conditionField);
+
+    item.appendChild(fields);
     milestoneList.appendChild(item);
     updateMilestoneLabels();
     updateMilestoneTotals();
@@ -287,7 +504,7 @@ function ensureInitialMilestones() {
         return;
     }
     for (let index = 0; index < 2; index += 1) {
-        addMilestoneRow('');
+        addMilestoneRow();
     }
     milestonesInitialized = true;
 }
@@ -310,7 +527,8 @@ function toggleMilestoneSection(show) {
         addMilestoneButton.disabled = false;
     }
     setSubmitButtonState();
-    updateMilestonePreview(Number.NaN, Number.NaN);
+    renderMilestoneLists([]);
+    updateMilestonePreview(Number.NaN, Number.NaN, []);
 }
 
 function updatePeriod() {
@@ -507,9 +725,22 @@ function handleDocumentKeydown(event) {
 
 function initWorkLogEditor() {
     const textarea = document.getElementById('id_work_log_markdown');
-    if (!textarea || typeof EasyMDE === 'undefined') {
+    if (!textarea) {
         return;
     }
+    const syncPreview = (value) => {
+        updateWorkLogPreview(value);
+    };
+
+    syncPreview(textarea.value || '');
+
+    if (typeof EasyMDE === 'undefined') {
+        textarea.addEventListener('input', (event) => {
+            syncPreview(event.target.value);
+        });
+        return;
+    }
+
     workLogEditor = new EasyMDE({
         element: textarea,
         autofocus: false,
@@ -520,7 +751,9 @@ function initWorkLogEditor() {
         toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'preview'],
     });
     workLogEditor.codemirror.on('change', () => {
-        textarea.value = workLogEditor.value();
+        const currentValue = workLogEditor.value();
+        textarea.value = currentValue;
+        syncPreview(currentValue);
     });
 }
 
@@ -559,6 +792,7 @@ function initAttachmentUploader() {
 
     renderAttachmentList();
     syncAttachmentManifest();
+    renderAttachmentPreviewLists();
     toggleAttachmentAvailability();
 
     if (attachmentTrigger && attachmentInput) {
@@ -661,6 +895,7 @@ async function uploadAttachment(file) {
         attachmentEntries.push(result.attachment);
         renderAttachmentList();
         syncAttachmentManifest();
+        renderAttachmentPreviewLists();
         setAttachmentStatus(`"${file.name}" 업로드가 완료되었습니다.`, 'success');
     } catch (error) {
         setAttachmentStatus(error.message || '파일 업로드 중 오류가 발생했습니다.', 'error');
@@ -708,6 +943,7 @@ function removeAttachment(index) {
     renderAttachmentList();
     syncAttachmentManifest();
     toggleAttachmentAvailability();
+    renderAttachmentPreviewLists();
     setAttachmentStatus('첨부 파일이 삭제되었습니다.', 'success');
 }
 
@@ -748,6 +984,16 @@ document.addEventListener('DOMContentLoaded', () => {
     addMilestoneButton = document.getElementById('add-milestone');
     milestoneRemaining = document.getElementById('milestone-remaining');
     milestoneError = document.getElementById('milestone-error');
+    previewMilestonePanel = document.getElementById('preview-milestone-panel');
+    previewMilestoneList = document.getElementById('preview-milestone-list');
+    modalMilestonePanel = document.getElementById('modal-preview-milestones');
+    modalMilestoneList = document.getElementById('modal-preview-milestone-list');
+    previewWorklogNode = document.getElementById('preview-worklog');
+    modalWorklogNode = document.getElementById('modal-preview-worklog');
+    previewAttachmentPanel = document.getElementById('preview-attachments');
+    previewAttachmentList = document.getElementById('preview-attachment-list');
+    modalAttachmentPanel = document.getElementById('modal-preview-attachments');
+    modalAttachmentList = document.getElementById('modal-preview-attachment-list');
 
     bindFieldUpdates();
     const initialPayment = getCheckedValue(paymentInputs);

@@ -30,9 +30,14 @@
                 {% if draft_payload.milestones %}
                 <div class="hash-note mt-4">
                     <p class="has-text-weight-semibold">분할 지급</p>
-                    <ul>
+                    <ul class="milestone-detail-list">
                         {% for milestone in draft_payload.milestones %}
-                            <li>분할 {{ forloop.counter }}: {{ milestone }} sats</li>
+                            <li>
+                                <strong>분할 {{ forloop.counter }}</strong>
+                                <span>{{ milestone.amount_sats|default:0 }} sats</span>
+                                <span>지급일: {{ milestone.due_date|default:'미정' }}</span>
+                                <span>조건: {{ milestone.condition|default:'지급 조건 미입력' }}</span>
+                            </li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -53,12 +58,25 @@
             <article class="contract-flow-card">
                 <h3>첨부 &amp; 메모</h3>
                 <p class="mb-2">수행 내역</p>
-                <div class="hash-display">{{ draft_payload.work_log_markdown|default:'작성된 메모가 없습니다.' }}</div>
+                <div class="hash-display markdown-content">
+                    {% if draft_payload.work_log_markdown %}
+                        {{ work_log_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">작성된 메모가 없습니다.</p>
+                    {% endif %}
+                </div>
                 <p class="mt-4 mb-2">첨부 파일</p>
                 {% if draft_payload.attachments %}
-                    <ul>
+                    <ul class="attachment-summary-list">
                         {% for attachment in draft_payload.attachments %}
-                            <li>{{ attachment.name }} ({{ attachment.size|default:"-" }})</li>
+                            <li>
+                                {% if attachment.url %}
+                                    <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.name|default:'첨부 PDF' }}</a>
+                                {% else %}
+                                    {{ attachment.name|default:'첨부 PDF' }}
+                                {% endif %}
+                                <span class="attachment-meta">({{ attachment.size|default:0|filesizeformat }})</span>
+                            </li>
                         {% endfor %}
                     </ul>
                 {% else %}
