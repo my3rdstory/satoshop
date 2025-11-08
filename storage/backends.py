@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 from urllib.parse import urljoin
 import uuid
+import io
 
 import boto3
 from botocore.exceptions import ClientError, NoCredentialsError
@@ -134,17 +135,20 @@ class S3Storage(Storage):
             
             logger.debug(f"업로드 정보: Content-Type={content_type}, ETag={etag}")
             
-            # boto3로 먼저 시도 (Swift API 호환 헤더 포함)
-            self.client.put_object(
+            # boto3로 먼저 시도 (upload_fileobj 사용으로 Content-Length 문제 회피)
+            buffer = io.BytesIO(content_data)
+            extra_args = {
+                'ContentType': content_type,
+                'Metadata': {
+                    'uploaded-by': 'satoshop-django',
+                    'upload-method': 'upload-fileobj',
+                },
+            }
+            self.client.upload_fileobj(
+                Fileobj=buffer,
                 Bucket=self.bucket_name,
                 Key=name,
-                Body=content_data,
-                ContentType=content_type,
-                ContentLength=file_size,
-                Metadata={
-                    'uploaded-by': 'satoshop-django',
-                    'upload-method': 'put-object'
-                }
+                ExtraArgs=extra_args,
             )
             
             logger.info(f"파일 저장 성공 (boto3): {name}")

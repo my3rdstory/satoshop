@@ -298,6 +298,16 @@ S3_ALLOWED_FILE_EXTENSIONS = [
     '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.avif',
 ]
 
+if all([S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_ENDPOINT_URL]):
+    DEFAULT_FILE_STORAGE = 'storage.backends.S3Storage'
+    if S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{S3_CUSTOM_DOMAIN.rstrip('/')}/"
+    else:
+        MEDIA_URL = f"{S3_ENDPOINT_URL.rstrip('/')}/{S3_BUCKET_NAME}/"
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+
 # 보안 설정
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
