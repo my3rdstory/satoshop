@@ -99,6 +99,15 @@ const initSignaturePads = () => {
             updatePreview(hiddenInput.value);
         }
         updateButtonState();
+
+        form.addEventListener('submit', () => {
+            if (!submitButton) {
+                return;
+            }
+            submitButton.disabled = true;
+            submitButton.dataset.originalLabel = submitButton.dataset.originalLabel || submitButton.innerHTML;
+            submitButton.innerHTML = '진행 중... 잠시만 기다려 주세요.';
+        });
     });
 };
 
