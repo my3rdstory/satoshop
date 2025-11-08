@@ -144,6 +144,8 @@ class S3Storage(Storage):
                     'upload-method': 'upload-fileobj',
                 },
             }
+            # upload_fileobj는 seek 가능한 파일 객체를 요구하므로 BytesIO 사용 후 위치 초기화
+            buffer.seek(0)
             self.client.upload_fileobj(
                 Fileobj=buffer,
                 Bucket=self.bucket_name,

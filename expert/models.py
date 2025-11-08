@@ -11,6 +11,11 @@ from myshop.models import SiteSettings
 from .signature_assets import resolve_signature_url
 from storage.backends import S3Storage
 
+try:
+    CONTRACT_FILE_STORAGE = S3Storage()
+except Exception:  # pragma: no cover
+    CONTRACT_FILE_STORAGE = default_storage
+
 User = get_user_model()
 
 
@@ -323,12 +328,6 @@ class DirectContractStageLog(models.Model):
     def __str__(self):
         target = self.document.slug if self.document else self.token or "-"
         return f"{self.get_stage_display()} @ {target}"
-
-
-try:
-    CONTRACT_FILE_STORAGE = S3Storage()
-except Exception:  # pragma: no cover - fallback when storage misconfigured
-    CONTRACT_FILE_STORAGE = default_storage
 
 
 class ContractPricingSetting(models.Model):

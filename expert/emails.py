@@ -1,3 +1,4 @@
+
 from django.core.mail import EmailMessage, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -96,7 +97,16 @@ def send_direct_contract_document_email(document):
         "generated_at": timezone.localtime(timezone.now()),
     }
     body = render_to_string("expert/emails/direct_contract_finalized.txt", context)
-    pdf_path = document.final_pdf.path if document.final_pdf else None
+    pdf_binary = None
+    pdf_name = None
+    if document.final_pdf:
+        try:
+            with document.final_pdf.open("rb") as pdf_file:
+                pdf_binary = pdf_file.read()
+            pdf_name = document.final_pdf.name.split("/")[-1]
+        except Exception:
+            pdf_binary = None
+            pdf_name = None
     statuses = {}
     gmail_warning = "Expert Gmail 설정이 필요합니다. 어드민에서 Gmail 주소와 앱 비밀번호를 입력해 주세요."
 
@@ -134,8 +144,8 @@ def send_direct_contract_document_email(document):
             to=[email],
             connection=connection,
         )
-        if pdf_path:
-            email_message.attach_file(pdf_path)
+        if pdf_binary and pdf_name:
+            email_message.attach(pdf_name, pdf_binary, "application/pdf")
         try:
             email_message.send(fail_silently=False)
             status["sent"] = True
