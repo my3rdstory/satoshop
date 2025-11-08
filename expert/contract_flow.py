@@ -3,11 +3,19 @@ import hashlib
 import io
 import json
 import secrets
+import urllib.request
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.utils import timezone
+
+from pypdf import PdfReader, PdfWriter
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+
+from storage.backends import S3Storage
 
 
 @dataclass
@@ -82,6 +90,63 @@ def build_mediator_hash(counterparty_hash: str) -> HashResult:
     return HashResult(value=digest, meta=meta)
 
 
+def _resolve_font_name(default: str = "Helvetica") -> str:
+    try:
+        pdfmetrics.getFont("HYGoThic-Medium")
+    except KeyError:
+        try:
+            pdfmetrics.registerFont(UnicodeCIDFont("HYGoThic-Medium"))
+        except Exception:
+            return default
+    except Exception:
+        return default
+    return "HYGoThic-Medium"
+
+
+def _read_storage_file(path: str, storage_name: Optional[str] = None) -> Optional[bytes]:
+    storages = [default_storage]
+    if storage_name == "s3":
+        try:
+            storages.append(S3Storage())
+        except Exception:
+            pass
+    for storage in storages:
+        try:
+            if storage.exists(path):
+                with storage.open(path, "rb") as file_obj:
+                    return file_obj.read()
+        except Exception:
+            continue
+    return None
+
+
+def _fetch_attachment_bytes(attachment: dict) -> Optional[bytes]:
+    if not attachment:
+        return None
+    path = attachment.get("path")
+    if path:
+        data = _read_storage_file(path, attachment.get("storage"))
+        if data:
+            return data
+    url = attachment.get("url")
+    if url:
+        try:
+            with urllib.request.urlopen(url) as response:  # nosec B310
+                content = response.read()
+                return content
+        except Exception:
+            return None
+    return None
+
+
+def _append_pdf_bytes(writer: PdfWriter, data: bytes) -> None:
+    if not data:
+        return
+    reader = PdfReader(io.BytesIO(data))
+    for page in reader.pages:
+        writer.add_page(page)
+
+
 def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     """ReportLab을 활용해 간단한 계약서 PDF를 생성."""
     from reportlab.lib.pagesizes import A4
@@ -93,7 +158,8 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     width, height = A4
     margin = 18 * mm
     text_object = pdf.beginText(margin, height - margin)
-    text_object.setFont("Helvetica", 11)
+    font_name = _resolve_font_name()
+    text_object.setFont(font_name, 11)
     payload = document.payload or {}
 
     header_lines = [
@@ -118,7 +184,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
             pdf.drawText(text_object)
             pdf.showPage()
             text_object = pdf.beginText(margin, height - margin)
-            text_object.setFont("Helvetica", 11)
+            text_object.setFont(font_name, 11)
 
     milestones = payload.get("milestones") or []
     if milestones:
@@ -133,7 +199,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
                 pdf.drawText(text_object)
                 pdf.showPage()
                 text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont("Helvetica", 11)
+                text_object.setFont(font_name, 11)
 
     if payload.get("payment_type") == "one_time":
         text_object.textLine("")
@@ -153,7 +219,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
                 pdf.drawText(text_object)
                 pdf.showPage()
                 text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont("Helvetica", 11)
+                text_object.setFont(font_name, 11)
 
     footer_lines = [
         "",
@@ -171,5 +237,25 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     pdf.showPage()
     pdf.save()
     buffer.seek(0)
+    base_pdf_bytes = buffer.getvalue()
+    attachments = payload.get("attachments") or []
+    attachment_bytes = []
+    for attachment in attachments:
+        data = _fetch_attachment_bytes(attachment)
+        if data:
+            attachment_bytes.append(data)
+
+    if not attachment_bytes:
+        filename = f"direct-contract-{document.slug}.pdf"
+        return ContentFile(base_pdf_bytes, name=filename)
+
+    writer = PdfWriter()
+    _append_pdf_bytes(writer, base_pdf_bytes)
+    for data in attachment_bytes:
+        _append_pdf_bytes(writer, data)
+
+    merged_buffer = io.BytesIO()
+    writer.write(merged_buffer)
+    merged_buffer.seek(0)
     filename = f"direct-contract-{document.slug}.pdf"
-    return ContentFile(buffer.getvalue(), name=filename)
+    return ContentFile(merged_buffer.getvalue(), name=filename)
