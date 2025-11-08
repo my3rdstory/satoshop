@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.core.files.storage import default_storage
+from storage.backends import S3Storage
 
 from myshop.models import SiteSettings
 from .signature_assets import resolve_signature_url
@@ -324,6 +325,12 @@ class DirectContractStageLog(models.Model):
         return f"{self.get_stage_display()} @ {target}"
 
 
+try:
+    CONTRACT_FILE_STORAGE = S3Storage()
+except Exception:  # pragma: no cover - fallback when storage misconfigured
+    CONTRACT_FILE_STORAGE = default_storage
+
+
 class ContractPricingSetting(models.Model):
     """직접 계약 유료화 정책(사토시 금액)을 저장."""
 
@@ -357,9 +364,3 @@ class ContractPricingSetting(models.Model):
 
     def __str__(self):
         return f"계약 결제 정책({self.name})"
-
-# Create your models here.
-try:
-    CONTRACT_FILE_STORAGE = S3Storage()
-except Exception:  # pragma: no cover - fallback when storage misconfigured
-    CONTRACT_FILE_STORAGE = default_storage
