@@ -4,18 +4,15 @@ import json
 import uuid
 from itertools import zip_longest
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponseForbidden, JsonResponse
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
-from django.views import View
 from django.views.generic import TemplateView, FormView
 
-from storage.utils import upload_file_to_s3
 from storage.backends import S3Storage
 
 from .contract_flow import (
@@ -191,48 +188,6 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
                 }
             )
         data["milestones"] = milestone_details
-        attachments_raw = data.get("attachment_manifest")
-        attachments: list[dict] = []
-
-        def is_pdf_resource(*values) -> bool:
-            for value in values:
-                if not value:
-                    continue
-                candidate = str(value).split("?")[0].lower()
-                if candidate.endswith(".pdf"):
-                    return True
-            return False
-
-        if attachments_raw:
-            try:
-                manifest = json.loads(attachments_raw)
-            except json.JSONDecodeError:
-                manifest = []
-            if isinstance(manifest, list):
-                for entry in manifest:
-                    if not isinstance(entry, dict):
-                        continue
-                    name = (entry.get("name") or entry.get("original_name") or "").strip()
-                    path = (entry.get("path") or "").strip()
-                    url = (entry.get("url") or "").strip()
-                    if not is_pdf_resource(name, path, url):
-                        continue
-                    size_value = entry.get("size") or entry.get("file_size") or 0
-                    try:
-                        size_value = int(size_value)
-                    except (TypeError, ValueError):
-                        size_value = 0
-                    attachments.append(
-                        {
-                            "name": name or "계약 첨부 PDF",
-                            "size": max(size_value, 0),
-                            "url": url,
-                            "path": path,
-                            "storage": entry.get("storage", "s3"),
-                        }
-                    )
-        data["attachments"] = attachments
-        data.pop("attachment_manifest", None)
         data["generated_at"] = timezone.now().isoformat()
         role_display = dict(form.fields["role"].choices).get(data.get("role"), "-")
         payment_display = dict(form.fields["payment_type"].choices).get(data.get("payment_type"), "-")
@@ -497,51 +452,3 @@ class ExpertLightningLoginGuideView(TemplateView):
             }
         )
         return context
-
-
-class ContractAttachmentUploadView(LoginRequiredMixin, View):
-    """드래프트 단계에서 PDF 첨부를 S3로 업로드."""
-
-    http_method_names = ["post"]
-    upload_prefix = "expert/contracts/attachments"
-    allowed_mime_types = {"application/pdf", "application/x-pdf"}
-
-    def post(self, request, *args, **kwargs):
-        file_obj = request.FILES.get("attachment")
-        if not file_obj:
-            return JsonResponse({"success": False, "error": "업로드할 PDF를 선택해 주세요."}, status=400)
-
-        if not self._is_pdf(file_obj):
-            return JsonResponse({"success": False, "error": "PDF 형식의 파일만 업로드할 수 있습니다."}, status=400)
-
-        max_bytes = getattr(settings, "EXPERT_CONTRACT_ATTACHMENT_MAX_BYTES", 5 * 1024 * 1024)
-        if file_obj.size > max_bytes:
-            human_limit = f"{max_bytes // (1024 * 1024)}MB"
-            return JsonResponse(
-                {"success": False, "error": f"파일 용량이 허용 범위를 초과했습니다. (최대 {human_limit})"},
-                status=400,
-            )
-
-        upload_result = upload_file_to_s3(file_obj, prefix=self.upload_prefix)
-        if not upload_result.get("success"):
-            return JsonResponse(
-                {"success": False, "error": upload_result.get("error", "파일 업로드에 실패했습니다.")},
-                status=500,
-            )
-
-        attachment = {
-            "name": upload_result.get("original_name") or file_obj.name,
-            "size": upload_result.get("file_size") or file_obj.size,
-            "url": upload_result.get("file_url"),
-            "path": upload_result.get("file_path"),
-            "storage": upload_result.get("storage", "s3"),
-        }
-        return JsonResponse({"success": True, "attachment": attachment})
-
-    def _is_pdf(self, file_obj):
-        if not file_obj:
-            return False
-        content_type = getattr(file_obj, "content_type", "")
-        if content_type in self.allowed_mime_types:
-            return True
-        return file_obj.name.lower().endswith(".pdf")

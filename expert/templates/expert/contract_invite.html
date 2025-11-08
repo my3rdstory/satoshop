@@ -123,7 +123,7 @@
             </article>
 
             <article class="contract-flow-card">
-                <h3>수행 내역 &amp; 첨부</h3>
+                <h3>수행 내역</h3>
                 <p class="mb-2">수행 내역</p>
                 <div class="hash-display markdown-content">
                     {% if payload.work_log_markdown %}
@@ -132,23 +132,6 @@
                         <p class="has-text-grey">작성된 메모가 없습니다.</p>
                     {% endif %}
                 </div>
-                <p class="mt-4 mb-2">첨부 파일</p>
-                {% if payload.attachments %}
-                    <ul class="attachment-summary-list">
-                        {% for attachment in payload.attachments %}
-                            <li>
-                                {% if attachment.url %}
-                                    <a href="{{ attachment.url }}" target="_blank" rel="noopener">{{ attachment.name|default:'첨부 PDF' }}</a>
-                                {% else %}
-                                    {{ attachment.name|default:'첨부 PDF' }}
-                                {% endif %}
-                                <span class="attachment-meta">({{ attachment.size|default:0|filesizeformat }})</span>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="has-text-grey">첨부된 파일이 없습니다.</p>
-                {% endif %}
             </article>
 
             <article class="contract-flow-card">

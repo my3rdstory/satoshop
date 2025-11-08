@@ -3,21 +3,15 @@ import hashlib
 import io
 import json
 import secrets
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.utils import timezone
 
-from pypdf import PdfReader, PdfWriter
-from pypdf.errors import PdfStreamError
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-
-from storage.backends import S3Storage
 
 FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
@@ -117,53 +111,6 @@ def _resolve_font_name(default: str = "Helvetica") -> str:
     return default
 
 
-def _read_storage_file(path: str, storage_name: Optional[str] = None) -> Optional[bytes]:
-    storages = [default_storage]
-    if storage_name == "s3":
-        try:
-            storages.append(S3Storage())
-        except Exception:
-            pass
-    for storage in storages:
-        try:
-            if storage.exists(path):
-                with storage.open(path, "rb") as file_obj:
-                    return file_obj.read()
-        except Exception:
-            continue
-    return None
-
-
-def _fetch_attachment_bytes(attachment: dict) -> Optional[bytes]:
-    if not attachment:
-        return None
-    path = attachment.get("path")
-    if path:
-        data = _read_storage_file(path, attachment.get("storage"))
-        if data:
-            return data
-    url = attachment.get("url")
-    if url:
-        try:
-            with urllib.request.urlopen(url) as response:  # nosec B310
-                content = response.read()
-                return content
-        except Exception:
-            return None
-    return None
-
-
-def _append_pdf_bytes(writer: PdfWriter, data: bytes) -> None:
-    if not data:
-        return
-    try:
-        reader = PdfReader(io.BytesIO(data))
-    except PdfStreamError:
-        return
-    for page in reader.pages:
-        writer.add_page(page)
-
-
 def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     """ReportLab을 활용해 간단한 계약서 PDF를 생성."""
     from reportlab.lib.pagesizes import A4
@@ -224,20 +171,6 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
         text_object.textLine(f"지급일: {payload.get('one_time_due_date') or '미정'}")
         text_object.textLine(f"지급 조건: {payload.get('one_time_condition') or '지급 조건 미입력'}")
 
-    attachments = payload.get("attachments") or []
-    if attachments:
-        text_object.textLine("")
-        text_object.textLine("===== 첨부 파일 =====")
-        for index, attachment in enumerate(attachments, start=1):
-            name = attachment.get("name") or f"첨부 {index}"
-            reference = attachment.get("url") or attachment.get("path") or "경로 정보 없음"
-            text_object.textLine(f"{index}. {name} - {reference}")
-            if text_object.getY() <= margin:
-                pdf.drawText(text_object)
-                pdf.showPage()
-                text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont(font_name, 11)
-
     footer_lines = [
         "",
         "===== 서명/해시 =====",
@@ -254,25 +187,5 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     pdf.showPage()
     pdf.save()
     buffer.seek(0)
-    base_pdf_bytes = buffer.getvalue()
-    attachments = payload.get("attachments") or []
-    attachment_bytes = []
-    for attachment in attachments:
-        data = _fetch_attachment_bytes(attachment)
-        if data:
-            attachment_bytes.append(data)
-
-    if not attachment_bytes:
-        filename = f"direct-contract-{document.slug}.pdf"
-        return ContentFile(base_pdf_bytes, name=filename)
-
-    writer = PdfWriter()
-    _append_pdf_bytes(writer, base_pdf_bytes)
-    for data in attachment_bytes:
-        _append_pdf_bytes(writer, data)
-
-    merged_buffer = io.BytesIO()
-    writer.write(merged_buffer)
-    merged_buffer.seek(0)
     filename = f"direct-contract-{document.slug}.pdf"
-    return ContentFile(merged_buffer.getvalue(), name=filename)
+    return ContentFile(buffer.getvalue(), name=filename)

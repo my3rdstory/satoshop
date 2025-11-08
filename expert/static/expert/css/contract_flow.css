@@ -152,8 +152,7 @@
     word-break: break-all;
 }
 
-.milestone-detail-list,
-.attachment-summary-list {
+.milestone-detail-list {
     list-style: none;
     margin: 0.35rem 0 0;
     padding: 0;
@@ -162,8 +161,7 @@
     gap: 0.45rem;
 }
 
-.milestone-detail-list li,
-.attachment-summary-list li {
+.milestone-detail-list li {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1rem;
@@ -182,16 +180,6 @@
 
 .hash-display .markdown-content p:last-child {
     margin-bottom: 0;
-}
-
-.attachment-summary-list a {
-    color: #93c5fd;
-    text-decoration: underline;
-}
-
-.attachment-summary-list .attachment-meta {
-    color: rgba(148, 163, 184, 0.8);
-    font-size: 0.8rem;
 }
 
 .share-url-display {

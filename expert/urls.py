@@ -13,10 +13,5 @@ urlpatterns = [
     path("contracts/direct/review/<str:token>/", views.DirectContractReviewView.as_view(), name="direct-review"),
     path("contracts/direct/library/", views.DirectContractLibraryView.as_view(), name="direct-library"),
     path("contracts/direct/link/<slug:slug>/", views.DirectContractInviteView.as_view(), name="direct-invite"),
-    path(
-        "contracts/attachments/upload/",
-        views.ContractAttachmentUploadView.as_view(),
-        name="contract-attachment-upload",
-    ),
     path("contracts/<uuid:public_id>/", views.ContractDetailView.as_view(), name="contract-detail"),
 ]

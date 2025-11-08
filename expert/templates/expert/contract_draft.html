@@ -195,34 +195,6 @@
                         {% endfor %}
                     </div>
 
-                    <div class="field attachment-field">
-                        <label class="label">계약 관련 PDF 첨부</label>
-                        {{ form.attachment_manifest }}
-                        <div class="attachment-dropzone-wrapper"
-                             id="contract-attachment-uploader"
-                             data-upload-url="{% url 'expert:contract-attachment-upload' %}"
-                             data-max-items="3"
-                             data-max-size="5242880">
-                            <div class="attachment-dropzone" id="contract-attachment-dropzone">
-                                <div class="attachment-dropzone-content">
-                                    <div class="dropzone-visual">
-                                        <span class="dropzone-icon" aria-hidden="true">⇪</span>
-                                    </div>
-                                    <div class="dropzone-copy">
-                                        <p class="dropzone-title">계약서에 첨부할 PDF 파일을 업로드하세요.</p>
-                                        <p class="dropzone-caption">오직 PDF 포맷만 가능, 최대 3개, 개당 5MB 가능</p>
-                                    </div>
-                                    <button type="button" class="button is-small is-link is-light" id="contract-attachment-trigger">
-                                        파일 선택
-                                    </button>
-                                </div>
-                                <input type="file" id="contract-attachment-input" class="is-hidden" accept="application/pdf">
-                            </div>
-                            <div class="attachment-status" id="contract-attachment-status" role="status" aria-live="polite"></div>
-                        </div>
-                        <ul class="attachment-list" id="contract-attachment-list"></ul>
-                    </div>
-
                     <div class="field agreement-field">
                         <label class="checkbox">
                             {{ form.agree_privacy }} {{ form.agree_privacy.label }}
@@ -288,10 +260,6 @@
                             <div class="preview-worklog markdown-content" id="preview-worklog" data-empty="true">
                                 <p class="preview-placeholder">작성된 메모가 없습니다.</p>
                             </div>
-                        </div>
-                        <div class="preview-subsection" id="preview-attachments" hidden>
-                            <p class="preview-subsection-title">첨부 PDF</p>
-                            <ul class="attachment-preview-list" id="preview-attachment-list"></ul>
                         </div>
                         <p class="preview-note">
                             계약 내용 아래에 계약 일반 사항이 붙어 계약서가 완성됩니다.
@@ -375,11 +343,7 @@
                                 <p class="preview-placeholder">작성된 메모가 없습니다.</p>
                             </div>
                         </div>
-                        <div class="preview-subsection" id="modal-preview-attachments" hidden>
-                            <p class="preview-subsection-title">첨부 PDF</p>
-                            <ul class="attachment-preview-list" id="modal-preview-attachment-list"></ul>
-                        </div>
-                        <p class="modal-hint">입력 중인 수행 내역, 첨부 파일, 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
+                        <p class="modal-hint">입력 중인 수행 내역과 단계별 금액은 계약 최종 확정 시 이 영역과 병합됩니다.</p>
                     </article>
                     <article class="preview-block preview-block--template">
                         <h3 class="preview-block-title">3. 계약 일반 사항</h3>

@@ -108,10 +108,6 @@ class ContractDraftForm(forms.Form):
         ),
         help_text="최대 10,000자까지 입력 가능하며 Markdown을 지원합니다.",
     )
-    attachment_manifest = forms.CharField(
-        required=False,
-        widget=forms.HiddenInput(attrs={"id": "id_attachment_manifest"}),
-    )
     agree_privacy = forms.BooleanField(
         label="개인정보 수집 및 이용에 동의합니다.",
         required=True,
