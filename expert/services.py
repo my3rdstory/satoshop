@@ -2,6 +2,7 @@ import io
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from .contract_flow import resolve_contract_pdf_font
 from .emails import send_contract_finalized_email
 
 
@@ -23,7 +24,8 @@ def generate_chat_archive_pdf(contract):
     width, height = A4
     margin = 20 * mm
     text_object = pdf.beginText(margin, height - margin)
-    text_object.setFont("Helvetica", 11)
+    font_name = resolve_contract_pdf_font()
+    text_object.setFont(font_name, 11)
 
     header_lines = [
         "SatoShop Expert - 계약 채팅 로그",
@@ -62,7 +64,7 @@ def generate_chat_archive_pdf(contract):
                 pdf.drawText(text_object)
                 pdf.showPage()
                 text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont("Helvetica", 11)
+                text_object.setFont(font_name, 11)
 
     pdf.drawText(text_object)
     pdf.showPage()

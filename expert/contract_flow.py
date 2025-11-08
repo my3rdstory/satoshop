@@ -4,12 +4,14 @@ import io
 import json
 import secrets
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Tuple
 
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
@@ -17,6 +19,11 @@ FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
     Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+]
+
+CID_FONT_CANDIDATES = [
+    "HYSMyeongJo-Medium",
+    "HYGoThic-Medium",
 ]
 
 
@@ -92,7 +99,8 @@ def build_mediator_hash(counterparty_hash: str) -> HashResult:
     return HashResult(value=digest, meta=meta)
 
 
-def _resolve_font_name(default: str = "Helvetica") -> str:
+@lru_cache(maxsize=None)
+def resolve_contract_pdf_font(default: str = "Helvetica") -> str:
     for path in FONT_CANDIDATES:
         if not path.exists():
             continue
@@ -108,6 +116,20 @@ def _resolve_font_name(default: str = "Helvetica") -> str:
                 continue
         except Exception:
             continue
+
+    for cid_font in CID_FONT_CANDIDATES:
+        try:
+            pdfmetrics.getFont(cid_font)
+            return cid_font
+        except KeyError:
+            try:
+                pdfmetrics.registerFont(UnicodeCIDFont(cid_font))
+                return cid_font
+            except Exception:
+                continue
+        except Exception:
+            continue
+
     return default
 
 
@@ -122,7 +144,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     width, height = A4
     margin = 18 * mm
     text_object = pdf.beginText(margin, height - margin)
-    font_name = _resolve_font_name()
+    font_name = resolve_contract_pdf_font()
     text_object.setFont(font_name, 11)
     payload = document.payload or {}
 
