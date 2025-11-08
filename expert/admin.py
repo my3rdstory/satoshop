@@ -12,6 +12,7 @@ from .models import (
     ContractTemplate,
     ExpertEmailSettings,
     DirectContractStageLog,
+    ContractPricingSetting,
 )
 from .services import generate_chat_archive_pdf
 
@@ -108,6 +109,34 @@ class ExpertEmailSettingsAdmin(admin.ModelAdmin):
         return super().changelist_view(request, extra_context)
 
 
+@admin.register(ContractPricingSetting)
+class ContractPricingSettingAdmin(admin.ModelAdmin):
+    list_display = ("name", "enabled", "client_fee_sats", "performer_fee_sats", "updated_at")
+    readonly_fields = ("updated_at",)
+    fieldsets = (
+        (
+            "기본 정보",
+            {
+                "fields": ("name", "enabled", "description"),
+                "description": "활성화 여부와 정책 설명을 입력하세요.",
+            },
+        ),
+        (
+            "계약 금액",
+            {
+                "fields": ("client_fee_sats", "performer_fee_sats"),
+                "description": "각 역할이 부담해야 하는 사토시 금액을 설정합니다.",
+            },
+        ),
+        ("변경 이력", {"fields": ("updated_at",)}),
+    )
+
+    def has_add_permission(self, request):
+        if ContractPricingSetting.objects.count() >= 1:
+            return False
+        return super().has_add_permission(request)
+
+
 @admin.action(description="계약 조건 입력 화면에 노출")
 def activate_template(modeladmin, request, queryset):
     template = queryset.first()
@@ -179,11 +208,9 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         qs = (
             super()
             .get_queryset(request)
-            .exclude(document__isnull=True)
+            .filter(document__isnull=False, stage="draft")
             .select_related("document")
             .prefetch_related("document__stage_logs")
-            .order_by("document_id", "-started_at")
-            .distinct("document_id")
         )
         return qs
 

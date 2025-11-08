@@ -14,28 +14,28 @@
             <div class="column is-7">
                 <h1 class="title is-3 has-text-weight-bold">직접 계약 생성</h1>
                 <p class="subtitle is-5">
-                    의뢰자 혹은 수행자가 먼저 계약을 개설하고, 상대방은 공유 링크에서 정산 정보와 서명을 마칩니다.
-                    최신 직거래 플로우에 맞춰 준비 항목을 점검한 뒤 바로 초안을 작성해 보세요.
+                    직접 계약은 의뢰자와 수행자 사이의 1:1 거래를 신속하게 체결하도록 돕는 기능입니다.
+                    라이트닝 로그인을 마치면, 역할에 따른 정산 정보와 계약 조건을 입력하고 공유 링크로 서명을 요청할 수 있습니다.
                 </p>
                 <div class="info-message">
-                    <p class="has-text-weight-semibold">라이트닝 인증</p>
-                    <p class="mb-2">정산을 위해 계약 당사자 모두 라이트닝 인증을 완료했는지 확인하세요.</p>
+                    <p class="has-text-weight-semibold">라이트닝 로그인 & 결제</p>
+                    <p class="mb-2">계약 생성과 서명은 모두 라이트닝 인증을 마친 계정으로만 진행할 수 있습니다.</p>
                     <p class="is-size-7 has-text-grey">
-                        인증이 필요하다면 SatoShop 계정 설정 &gt; 보안 탭에서 선행 인증 후 계약을 시작할 수 있습니다.
+                        유료 정책이 활성화된 경우, 의뢰자·수행자가 각 단계에서 정산용 라이트닝 결제를 완료해야 다음 단계로 진행됩니다.
                     </p>
                 </div>
             </div>
             <div class="column is-5">
                 <aside class="checklist-box">
-                    <p class="title is-5 mb-4">계약 준비 체크리스트</p>
+                    <p class="title is-5 mb-4">계약 입력 항목</p>
                     <ul>
-                    <li><span class="icon"><i data-feather="credit-card"></i></span> 계약 당사자의 라이트닝 아이디</li>
-                    <li><span class="icon"><i data-feather="file-text"></i></span> 계약 제목 및 본문 (마크다운 지원)</li>
-                    <li><span class="icon"><i data-feather="calendar"></i></span> 수행 기간 (시작/종료일)</li>
-                    <li><span class="icon"><i data-feather="dollar-sign"></i></span> 총 계약 금액 (사토시)</li>
-                    <li><span class="icon"><i data-feather="check-square"></i></span> 분할 지급 시 단계별 설계</li>
-                    <li><span class="icon"><i data-feather="upload"></i></span> 부속 서류 (PDF, 선택)</li>
-                </ul>
+                        <li><span class="icon"><i data-feather="user-check"></i></span> 역할 선택 (의뢰자/수행자) 및 라이트닝 정산 주소</li>
+                        <li><span class="icon"><i data-feather="credit-card"></i></span> 라이트닝 로그인 및(선택 시) 계약 단계별 결제</li>
+                        <li><span class="icon"><i data-feather="file-text"></i></span> 계약 제목, 본문 (Markdown)과 주요 조건</li>
+                        <li><span class="icon"><i data-feather="calendar"></i></span> 수행 기간, 시작/종료일</li>
+                        <li><span class="icon"><i data-feather="dollar-sign"></i></span> 총 계약 금액(사토시) 및 일괄/분할 지급 설정</li>
+                        <li><span class="icon"><i data-feather="upload"></i></span> 부속 서류 PDF (계약서 뒤에 병합)</li>
+                    </ul>
                 </aside>
             </div>
         </div>
@@ -73,16 +73,16 @@
             </div>
             <div class="column is-5">
                 <div class="action-box">
-                    <p class="title is-5 mb-3">지금 바로 계약 초안을 작성해 보세요</p>
+                    <p class="title is-5 mb-3">라이트닝 로그인만 준비되면 바로 시작</p>
                     <p class="content">
-                        다음 단계에서 역할별 정산 입력, 미리보기, 분할 지급 설계를 모두 지원합니다.
-                        작성된 내용은 서명 완료 시 PDF로 즉시 변환되고 첨부 파일까지 함께 묶여 보관됩니다.
+                        계약 당사자가 각각 라이트닝 로그인을 완료했다면, 정산 정보 입력과 계약 본문 작성, 첨부, 서명까지 한 번에 진행할 수 있습니다.
+                        유료 정책이 켜져 있을 경우에도 설정된 사토시 금액 결제만 완료하면 동일한 플로우로 계약을 마무리할 수 있습니다.
                     </p>
                     <a class="button is-primary is-medium is-fullwidth" href="{% url 'expert:direct-draft' %}">
                         계약 작성 화면으로 이동
                     </a>
                     <p class="is-size-7 has-text-grey mt-2">
-                        ※ 계약 초안은 중간 저장 후 공유 링크를 통해 언제든 상대방에게 전달할 수 있습니다.
+                        ※ 공유 링크는 계약 생성 후 즉시 발급되며, 상대방도 라이트닝 결제를 마치면 서명이 진행됩니다.
                     </p>
                 </div>
             </div>
