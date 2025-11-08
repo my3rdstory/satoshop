@@ -100,11 +100,14 @@
                             의뢰자에게 전달하세요.
                         {% endif %}
                     </p>
-                    <div class="hash-display share-url-display">
+                    <div class="hash-display share-url-display" id="share-url-box">
                         <a href="{{ share_url }}" class="share-url-link" target="_blank" rel="noopener">
                             {{ share_url }}
                         </a>
                     </div>
+                    <button type="button" class="button is-small is-light mt-2 copy-share-url" data-share-url="{{ share_url }}">
+                        링크 복사
+                    </button>
                 {% endif %}
             </article>
 

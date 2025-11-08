@@ -421,10 +421,7 @@ class DirectContractInviteView(FormView):
             (self.payload.get("contract_template") or {}).get("content") or ""
         )
         pdf_content = render_contract_pdf(self.document, template_markdown)
-        pdf_content.seek(0)
-        storage = S3Storage()
-        saved_path = storage.save(f"contracts/final_pdfs/{pdf_content.name}", pdf_content)
-        self.document.final_pdf.name = saved_path
+        self.document.final_pdf.save(pdf_content.name, pdf_content)
         mediator_hash = build_mediator_hash(self.document.counterparty_hash)
         self.document.mediator_hash = mediator_hash.value
         self.document.mediator_hash_meta = mediator_hash.meta

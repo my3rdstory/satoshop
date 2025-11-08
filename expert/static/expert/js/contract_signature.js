@@ -116,3 +116,22 @@ if (document.readyState === 'loading') {
 } else {
     initSignaturePads();
 }
+
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('.copy-share-url');
+    if (!button) {
+        return;
+    }
+    const url = button.getAttribute('data-share-url');
+    if (!url) {
+        return;
+    }
+    navigator.clipboard.writeText(url).then(() => {
+        button.classList.add('is-success');
+        button.textContent = '복사 완료';
+        setTimeout(() => {
+            button.classList.remove('is-success');
+            button.textContent = '링크 복사';
+        }, 1800);
+    });
+});

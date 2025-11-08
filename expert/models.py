@@ -4,9 +4,11 @@ from django.contrib.auth import get_user_model
 from django.db import models, transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.core.files.storage import default_storage
 
 from myshop.models import SiteSettings
 from .signature_assets import resolve_signature_url
+from storage.backends import S3Storage
 
 User = get_user_model()
 
@@ -196,8 +198,16 @@ class DirectContractDocument(models.Model):
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty")
     creator_email = models.EmailField(blank=True)
     counterparty_email = models.EmailField(blank=True)
-    creator_signature = models.ImageField(upload_to="contracts/signatures/", blank=True)
-    counterparty_signature = models.ImageField(upload_to="contracts/signatures/", blank=True)
+    creator_signature = models.ImageField(
+        upload_to="contracts/signatures/",
+        blank=True,
+        storage=CONTRACT_FILE_STORAGE,
+    )
+    counterparty_signature = models.ImageField(
+        upload_to="contracts/signatures/",
+        blank=True,
+        storage=CONTRACT_FILE_STORAGE,
+    )
     creator_signed_at = models.DateTimeField(blank=True, null=True)
     counterparty_signed_at = models.DateTimeField(blank=True, null=True)
     creator_hash = models.CharField(max_length=64, blank=True)
@@ -207,7 +217,11 @@ class DirectContractDocument(models.Model):
     counterparty_hash_meta = models.JSONField(default=dict, blank=True)
     mediator_hash_meta = models.JSONField(default=dict, blank=True)
     email_delivery = models.JSONField(default=default_email_delivery, blank=True)
-    final_pdf = models.FileField(upload_to="contracts/final_pdfs/", blank=True)
+    final_pdf = models.FileField(
+        upload_to="contracts/final_pdfs/",
+        blank=True,
+        storage=CONTRACT_FILE_STORAGE,
+    )
     final_pdf_generated_at = models.DateTimeField(blank=True, null=True)
     signature_assets = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -345,3 +359,7 @@ class ContractPricingSetting(models.Model):
         return f"계약 결제 정책({self.name})"
 
 # Create your models here.
+try:
+    CONTRACT_FILE_STORAGE = S3Storage()
+except Exception:  # pragma: no cover - fallback when storage misconfigured
+    CONTRACT_FILE_STORAGE = default_storage
