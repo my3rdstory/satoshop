@@ -327,11 +327,11 @@ function getCheckedValue(inputs) {
     return found ? found.value : null;
 }
 
-function getMilestoneInputs() {
+function getMilestoneAmountInputs() {
     if (!milestoneList) {
         return [];
     }
-    return Array.from(milestoneList.querySelectorAll('.milestone-input'));
+    return Array.from(milestoneList.querySelectorAll('.milestone-amount-input'));
 }
 
 function getMilestoneRowCount() {
@@ -393,7 +393,7 @@ function updateMilestoneTotals() {
         return;
     }
 
-    const inputs = getMilestoneInputs();
+    const inputs = getMilestoneAmountInputs();
     const totalAmount = parseInt(amountInput ? amountInput.value : '', 10);
     const hasTotal = Number.isFinite(totalAmount) && totalAmount > 0;
     const allMilestoneInputs = milestoneList ? Array.from(milestoneList.querySelectorAll('.milestone-input')) : [];
@@ -472,7 +472,7 @@ function onMilestoneInput(event) {
         updateMilestoneTotals();
         return;
     }
-    const inputs = getMilestoneInputs();
+    const inputs = getMilestoneAmountInputs();
     const otherSum = inputs.reduce((acc, input) => {
         if (input === event.target) {
             return acc;
