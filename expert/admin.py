@@ -1,6 +1,8 @@
 from django.contrib import admin, messages
 from django.shortcuts import redirect
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
+from django.utils.html import format_html
+from django.utils import timezone
 
 from .models import (
     Contract,
@@ -153,8 +155,92 @@ class ContractTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(DirectContractStageLog)
 class DirectContractStageLogAdmin(admin.ModelAdmin):
-    list_display = ("stage", "document", "token", "started_at")
-    list_filter = ("stage", "started_at")
-    search_fields = ("token", "document__slug")
+    list_display = (
+        "document_link",
+        "stage_draft",
+        "stage_role_one",
+        "stage_role_two",
+        "stage_completed",
+        "latest_activity",
+    )
+    search_fields = ("document__slug", "document__payload__title")
     readonly_fields = ("document", "token", "stage", "started_at", "meta")
-    date_hierarchy = "started_at"
+    list_display_links = ("document_link",)
+    list_per_page = 25
+
+    stage_labels = {
+        "draft": "드래프트",
+        "role_one": "역할 1",
+        "role_two": "역할 2",
+        "completed": "완료",
+    }
+
+    def get_queryset(self, request):
+        qs = (
+            super()
+            .get_queryset(request)
+            .exclude(document__isnull=True)
+            .select_related("document")
+            .prefetch_related("document__stage_logs")
+            .order_by("document_id", "-started_at")
+            .distinct("document_id")
+        )
+        return qs
+
+    def document_link(self, obj):
+        if not obj.document:
+            return "-"
+        title = obj.document.payload.get("title") if obj.document.payload else obj.document.slug
+        try:
+            url = reverse("admin:expert_directcontractdocument_change", args=[obj.document.pk])
+            return format_html('<a href="{}">{} ({})</a>', url, title or obj.document.slug, obj.document.slug)
+        except NoReverseMatch:
+            return f"{title or obj.document.slug} ({obj.document.slug})"
+
+    document_link.short_description = "계약"
+
+    def _stage_map(self, obj):
+        if not hasattr(obj, "_stage_cache"):
+            logs = obj.document.stage_logs.all() if obj.document else []
+            obj._stage_cache = {log.stage: log for log in logs}
+        return obj._stage_cache
+
+    def _render_stage(self, obj, stage_key):
+        stage_map = self._stage_map(obj)
+        log = stage_map.get(stage_key)
+        label = self.stage_labels.get(stage_key, stage_key)
+        if not log:
+            return format_html('<span style="color:#f97316;">{} · 대기</span>', label)
+        ts = timezone.localtime(log.started_at).strftime("%Y-%m-%d %H:%M")
+        meta = log.meta or {}
+        detail = meta.get("role") or meta.get("title") or "완료"
+        return format_html('<strong>{}</strong><br><span class="text-muted">{}</span>', ts, detail)
+
+    def stage_draft(self, obj):
+        return self._render_stage(obj, "draft")
+
+    stage_draft.short_description = "1단계"
+
+    def stage_role_one(self, obj):
+        return self._render_stage(obj, "role_one")
+
+    stage_role_one.short_description = "2단계"
+
+    def stage_role_two(self, obj):
+        return self._render_stage(obj, "role_two")
+
+    stage_role_two.short_description = "3단계"
+
+    def stage_completed(self, obj):
+        return self._render_stage(obj, "completed")
+
+    stage_completed.short_description = "4단계"
+
+    def latest_activity(self, obj):
+        stage_map = self._stage_map(obj)
+        if not stage_map:
+            return "-"
+        latest = max(stage_map.values(), key=lambda log: log.started_at)
+        return timezone.localtime(latest.started_at).strftime("%Y-%m-%d %H:%M")
+
+    latest_activity.short_description = "마지막 기록"
