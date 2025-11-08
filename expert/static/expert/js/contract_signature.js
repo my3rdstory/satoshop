@@ -117,6 +117,63 @@ if (document.readyState === 'loading') {
     initSignaturePads();
 }
 
+const fallbackCopyText = (text) => {
+    return new Promise((resolve, reject) => {
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.top = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const succeeded = document.execCommand && document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (succeeded) {
+                resolve();
+            } else {
+                reject(new Error('execCommand failed'));
+            }
+        } catch (error) {
+            reject(error);
+        }
+    });
+};
+
+const promptCopy = (text) => {
+    return new Promise((resolve, reject) => {
+        const result = window.prompt('복사 버튼이 차단되어 직접 복사해주세요.', text);
+        if (result !== null) {
+            resolve();
+        } else {
+            reject(new Error('prompt dismissed'));
+        }
+    });
+};
+
+const copyShareUrl = async (text) => {
+    if (!text) {
+        throw new Error('empty text');
+    }
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch (error) {
+            // continue to fallback
+        }
+    }
+    try {
+        await fallbackCopyText(text);
+        return;
+    } catch (error) {
+        // continue to prompt fallback
+    }
+    await promptCopy(text);
+};
+
 document.addEventListener('click', (event) => {
     const button = event.target.closest('.copy-share-url');
     if (!button) {
@@ -126,12 +183,21 @@ document.addEventListener('click', (event) => {
     if (!url) {
         return;
     }
-    navigator.clipboard.writeText(url).then(() => {
-        button.classList.add('is-success');
-        button.textContent = '복사 완료';
-        setTimeout(() => {
-            button.classList.remove('is-success');
-            button.textContent = '링크 복사';
-        }, 1800);
-    });
+    copyShareUrl(url)
+        .then(() => {
+            button.classList.add('is-success');
+            button.textContent = '복사 완료';
+            setTimeout(() => {
+                button.classList.remove('is-success');
+                button.textContent = '링크 복사';
+            }, 1800);
+        })
+        .catch(() => {
+            button.classList.add('is-danger');
+            button.textContent = '복사 실패';
+            setTimeout(() => {
+                button.classList.remove('is-danger');
+                button.textContent = '링크 복사';
+            }, 2000);
+        });
 });
