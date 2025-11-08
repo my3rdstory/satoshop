@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import json
+import re
 import secrets
 from dataclasses import dataclass
 from functools import lru_cache
@@ -65,7 +66,6 @@ def _build_contract_overview(payload: Dict) -> List[str]:
     lines.append(f"계약 기간: {start} ~ {end}")
     lines.append(f"총 금액: {_format_sats(payload.get('amount_sats'))}")
     lines.append(f"지급 방식: {payload.get('payment_display') or '-'}")
-    lines.append(f"의뢰자 라이트닝 주소: {payload.get('client_lightning_address') or '-'}")
     lines.append(f"수행자 라이트닝 주소: {payload.get('performer_lightning_address') or '-'}")
     work_log = payload.get("work_log_markdown")
     if work_log:
@@ -134,14 +134,115 @@ def _markdown_to_text_lines(markdown_text: str) -> List[str]:
     return lines
 
 
-def _write_lines(pdf, text_object, lines: List[str], font_name: str, margin, height):
+def _split_line_prefix(line: str) -> Tuple[str, str, str]:
+    if not line:
+        return "", "", ""
+    working = line
+    leading_ws_match = re.match(r"^\s+", working)
+    leading_ws = ""
+    if leading_ws_match:
+        leading_ws = leading_ws_match.group(0)
+        working = working[len(leading_ws) :]
+    marker_match = re.match(r"(•\s+|[-*+]\s+|\d+\.\s+|>\s+)", working)
+    marker = ""
+    if marker_match:
+        marker = marker_match.group(0)
+        working = working[len(marker) :]
+    first_prefix = leading_ws + marker
+    if marker.startswith(">"):
+        continuation_prefix = leading_ws + marker
+    elif marker:
+        continuation_prefix = leading_ws + (" " * len(marker))
+    else:
+        continuation_prefix = leading_ws
+    return first_prefix, continuation_prefix, working
+
+
+def _split_long_word(word: str, font_name: str, font_size: int, max_width: float) -> List[str]:
+    if not word:
+        return [""]
+    segments: List[str] = []
+    buffer = ""
+    for char in word:
+        candidate = buffer + char
+        if buffer and pdfmetrics.stringWidth(candidate, font_name, font_size) > max_width:
+            segments.append(buffer)
+            buffer = char
+        else:
+            buffer = candidate
+    if buffer:
+        segments.append(buffer)
+    return segments or [""]
+
+
+def _wrap_plain_text(text: str, font_name: str, font_size: int, max_width: float) -> List[str]:
+    if text is None or text == "":
+        return [""]
+    max_width = max(max_width, 1)
+    words = text.split()
+    if not words:
+        return [""]
+    lines: List[str] = []
+    current = ""
+    for word in words:
+        candidate = word if not current else f"{current} {word}"
+        if pdfmetrics.stringWidth(candidate, font_name, font_size) <= max_width:
+            current = candidate
+            continue
+        if not current:
+            segments = _split_long_word(word, font_name, font_size, max_width)
+            lines.extend(segments[:-1])
+            current = segments[-1]
+            continue
+        lines.append(current)
+        segments = _split_long_word(word, font_name, font_size, max_width)
+        lines.extend(segments[:-1])
+        current = segments[-1]
+    if current:
+        lines.append(current)
+    return lines or [""]
+
+
+def _wrap_line_for_width(line: str, font_name: str, font_size: int, max_width: float) -> List[str]:
+    if line is None:
+        return [""]
+    if not line.strip():
+        return [""]
+    prefix, continuation, body = _split_line_prefix(line)
+    prefix_width = pdfmetrics.stringWidth(prefix, font_name, font_size) if prefix else 0
+    available_width = max(max_width - prefix_width, font_size)
+    body_lines = _wrap_plain_text(body, font_name, font_size, available_width)
+    if not body_lines:
+        body_lines = [""]
+    wrapped: List[str] = []
+    wrapped.append(f"{prefix}{body_lines[0]}")
+    continuation_prefix = continuation if continuation is not None else prefix
+    for segment in body_lines[1:]:
+        wrapped.append(f"{continuation_prefix}{segment}")
+    return wrapped
+
+
+def _write_lines(
+    pdf,
+    text_object,
+    lines: List[str],
+    font_name: str,
+    margin,
+    height,
+    max_width,
+    font_size: int = 11,
+):
     for line in lines:
-        text_object.textLine(line)
-        if text_object.getY() <= margin:
-            pdf.drawText(text_object)
-            pdf.showPage()
-            text_object = pdf.beginText(margin, height - margin)
-            text_object.setFont(font_name, 11)
+        wrapped_lines = _wrap_line_for_width(line, font_name, font_size, max_width)
+        if not wrapped_lines:
+            wrapped_lines = [""]
+        for wrapped in wrapped_lines:
+            text_object.textLine(wrapped)
+            if text_object.getY() <= margin:
+                pdf.drawText(text_object)
+                pdf.showPage()
+                text_object = pdf.beginText(margin, height - margin)
+                text_object.setFont(font_name, font_size)
     return text_object
 
 
@@ -277,9 +378,11 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     margin = 18 * mm
+    text_width = width - (2 * margin)
     text_object = pdf.beginText(margin, height - margin)
     font_name = resolve_contract_pdf_font()
-    text_object.setFont(font_name, 11)
+    font_size = 11
+    text_object.setFont(font_name, font_size)
     payload = document.payload or {}
 
     intro_lines = [
@@ -288,10 +391,10 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
         f"공유 ID: {document.slug}",
         "",
     ]
-    text_object = _write_lines(pdf, text_object, intro_lines, font_name, margin, height)
+    text_object = _write_lines(pdf, text_object, intro_lines, font_name, margin, height, text_width, font_size)
 
     overview_lines = _build_contract_overview(payload)
-    text_object = _write_lines(pdf, text_object, overview_lines, font_name, margin, height)
+    text_object = _write_lines(pdf, text_object, overview_lines, font_name, margin, height, text_width, font_size)
 
     contract_lines = _markdown_to_text_lines(contract_markdown)
     if contract_lines:
@@ -302,23 +405,34 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
             font_name,
             margin,
             height,
+            text_width,
+            font_size,
         )
-        text_object = _write_lines(pdf, text_object, contract_lines, font_name, margin, height)
+        text_object = _write_lines(
+            pdf,
+            text_object,
+            contract_lines,
+            font_name,
+            margin,
+            height,
+            text_width,
+            font_size,
+        )
 
     milestone_lines = _build_milestone_lines(payload)
     if milestone_lines:
-        text_object = _write_lines(pdf, text_object, milestone_lines, font_name, margin, height)
+        text_object = _write_lines(pdf, text_object, milestone_lines, font_name, margin, height, text_width, font_size)
 
     footer_lines = [
         "",
         "===== 서명/해시 =====",
         f"의뢰자 서명 해시: {document.creator_hash or '-'}",
         f"수행자 서명 해시: {document.counterparty_hash or '-'}",
-        f"사토샵 서명 해시: {document.mediator_hash or '-'}",
+        f"중개자(시스템) 서명 해시: {document.mediator_hash or '-'}",
         "",
         f"PDF 생성 시각: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M:%S')}",
     ]
-    text_object = _write_lines(pdf, text_object, footer_lines, font_name, margin, height)
+    text_object = _write_lines(pdf, text_object, footer_lines, font_name, margin, height, text_width, font_size)
 
     pdf.drawText(text_object)
     pdf.showPage()

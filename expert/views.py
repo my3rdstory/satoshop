@@ -389,14 +389,14 @@ class DirectContractInviteView(FormView):
                 "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
             )
 
+        mediator_hash = build_mediator_hash(self.document.counterparty_hash)
+        self.document.mediator_hash = mediator_hash.value
+        self.document.mediator_hash_meta = mediator_hash.meta
         template_markdown = (
             (self.payload.get("contract_template") or {}).get("content") or ""
         )
         pdf_content = render_contract_pdf(self.document, template_markdown)
         self.document.final_pdf.save(pdf_content.name, pdf_content)
-        mediator_hash = build_mediator_hash(self.document.counterparty_hash)
-        self.document.mediator_hash = mediator_hash.value
-        self.document.mediator_hash_meta = mediator_hash.meta
         self.document.final_pdf_generated_at = timezone.now()
         self.document.status = "completed"
         self.document.save()
