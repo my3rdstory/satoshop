@@ -15,7 +15,10 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+BASE_DIR = Path(__file__).resolve().parent
+FONT_BUNDLE_DIR = BASE_DIR / "fonts"
 FONT_CANDIDATES = [
+    FONT_BUNDLE_DIR / "NanumGothic-Regular.ttf",
     Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
     Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),

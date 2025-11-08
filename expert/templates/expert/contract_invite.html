@@ -26,17 +26,11 @@
 
         <div class="timeline">
             <div class="timeline-step {% if document.creator_hash %}is-completed{% endif %}">
-                <strong>의뢰자 서명</strong>
+                <strong>{{ creator_role_label }} 서명</strong>
                 <span>{{ document.creator_signed_at|date:"Y-m-d H:i:s"|default:"대기" }}</span>
             </div>
             <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
-                <strong>
-                    {% if document.counterparty_role == 'performer' %}
-                        수행자 확인
-                    {% else %}
-                        의뢰자 확인
-                    {% endif %}
-                </strong>
+                <strong>{{ counterparty_role_label }} 확인</strong>
                 <span>
                     {% if document.counterparty_signed_at %}
                         {{ document.counterparty_signed_at|date:"Y-m-d H:i:s" }}
@@ -93,12 +87,7 @@
                 {% endif %}
                 {% if is_owner %}
                     <p class="mt-4 has-text-grey-light">
-                        이 주소를 복사해
-                        {% if document.counterparty_role == 'performer' %}
-                            수행자에게 전달하세요.
-                        {% else %}
-                            의뢰자에게 전달하세요.
-                        {% endif %}
+                        이 주소를 복사해 {{ counterparty_role_label }}에게 전달하세요.
                     </p>
                     <div class="hash-display share-url-display" id="share-url-box">
                         <a href="{{ share_url }}" class="share-url-link" target="_blank" rel="noopener">
@@ -136,9 +125,9 @@
 
             <article class="contract-flow-card">
                 <h3>해시 기록</h3>
-                <p class="mb-2">의뢰자</p>
+                <p class="mb-2">{{ creator_role_label }}</p>
                 <div class="hash-display">{{ document.creator_hash|default:'생성 대기' }}</div>
-                <p class="mt-4 mb-2">수행자</p>
+                <p class="mt-4 mb-2">{{ counterparty_role_label }}</p>
                 <div class="hash-display">{{ document.counterparty_hash|default:'생성 대기' }}</div>
                 <p class="mt-4 mb-2">사토샵</p>
                 <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
@@ -146,17 +135,17 @@
             <article class="contract-flow-card">
                 <h3>서명 기록</h3>
                 <div class="signature-record">
-                    <p class="signature-preview-label">의뢰자 서명</p>
+                    <p class="signature-preview-label">{{ creator_role_label }} 서명</p>
                     {% if creator_signature_url %}
-                        <img src="{{ creator_signature_url }}" alt="의뢰자 서명 이미지" class="signature-record-img">
+                        <img src="{{ creator_signature_url }}" alt="{{ creator_role_label }} 서명 이미지" class="signature-record-img">
                     {% else %}
                         <p class="has-text-grey">업로드된 서명이 없습니다.</p>
                     {% endif %}
                 </div>
                 <div class="signature-record mt-4">
-                    <p class="signature-preview-label">수행자 서명</p>
+                    <p class="signature-preview-label">{{ counterparty_role_label }} 서명</p>
                     {% if counterparty_signature_url %}
-                        <img src="{{ counterparty_signature_url }}" alt="수행자 서명 이미지" class="signature-record-img">
+                        <img src="{{ counterparty_signature_url }}" alt="{{ counterparty_role_label }} 서명 이미지" class="signature-record-img">
                     {% else %}
                         <p class="has-text-grey">업로드된 서명이 없습니다.</p>
                     {% endif %}
@@ -167,13 +156,7 @@
         {% if form %}
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
-            <h3>
-                {% if document.counterparty_role == 'performer' %}
-                    수행자 서명
-                {% else %}
-                    의뢰자 서명
-                {% endif %}
-            </h3>
+            <h3>{{ counterparty_role_label }} 서명</h3>
             <div class="field sign-contact-grid">
                 {% if require_performer_lightning and form.performer_lightning_address %}
                 <div>
@@ -254,7 +237,7 @@
                     </div>
                 {% else %}
                     <p>
-                        계약 진행 중입니다. {% if document.counterparty_role == 'performer' %}수행자{% else %}의뢰자{% endif %}가 서명하면 자동으로 알림이 제공됩니다.
+                        계약 진행 중입니다. {{ counterparty_role_label }}가 서명하면 자동으로 알림이 제공됩니다.
                     </p>
                 {% endif %}
             </div>

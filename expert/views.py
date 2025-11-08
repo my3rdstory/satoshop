@@ -23,7 +23,13 @@ from .contract_flow import (
     render_contract_pdf,
 )
 from .emails import send_direct_contract_document_email
-from .models import Contract, ContractTemplate, DirectContractDocument, DirectContractStageLog
+from .models import (
+    Contract,
+    ContractTemplate,
+    ContractParticipant,
+    DirectContractDocument,
+    DirectContractStageLog,
+)
 from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
 from .signature_assets import signature_media_fallback_enabled, store_signature_asset_from_data
 
@@ -311,6 +317,9 @@ class DirectContractInviteView(FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         is_owner = self.request.user.is_authenticated and self.request.user == self.document.creator
+        role_labels = dict(ContractParticipant.ROLE_CHOICES)
+        creator_role_label = role_labels.get(self.document.creator_role, "계약 생성자")
+        counterparty_role_label = role_labels.get(self.document.counterparty_role, "상대방")
         context.update(
             {
                 "document": self.document,
@@ -329,6 +338,8 @@ class DirectContractInviteView(FormView):
                 or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
                 "work_log_html": render_contract_markdown((self.payload or {}).get("work_log_markdown", "")),
                 "require_performer_lightning": self.document.counterparty_role == "performer",
+                "creator_role_label": creator_role_label,
+                "counterparty_role_label": counterparty_role_label,
             }
         )
         return context
