@@ -25,7 +25,7 @@ from .contract_flow import (
     render_contract_pdf,
 )
 from .emails import send_direct_contract_document_email
-from .models import Contract, ContractTemplate, DirectContractDocument
+from .models import Contract, ContractTemplate, DirectContractDocument, DirectContractStageLog
 from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
 from .signature_assets import signature_media_fallback_enabled, store_signature_asset_from_data
 
@@ -52,6 +52,47 @@ def render_contract_markdown(text: str) -> str:
         output_format="html5",
     )
     return md.convert(text)
+
+
+def record_stage_log(stage: str, *, document=None, token: str | None = None, meta: dict | None = None):
+    """단계 로그를 생성하거나 갱신."""
+
+    meta = meta or {}
+    log = None
+    if token:
+        log = (
+            DirectContractStageLog.objects.filter(stage=stage, token=token)
+            .order_by("started_at")
+            .first()
+        )
+    if not log and document:
+        log = (
+            DirectContractStageLog.objects.filter(stage=stage, document=document)
+            .order_by("started_at")
+            .first()
+        )
+    if log:
+        update_fields = []
+        if document and not log.document_id:
+            log.document = document
+            update_fields.append("document")
+        if token is not None and log.token != (token or ""):
+            log.token = token or ""
+            update_fields.append("token")
+        if meta:
+            merged_meta = {**(log.meta or {}), **meta}
+            if merged_meta != log.meta:
+                log.meta = merged_meta
+                update_fields.append("meta")
+        if update_fields:
+            log.save(update_fields=update_fields)
+        return log
+    return DirectContractStageLog.objects.create(
+        document=document,
+        token=token or "",
+        stage=stage,
+        meta=meta,
+    )
 
 
 class ExpertLandingView(TemplateView):
@@ -107,6 +148,11 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         session_key = self._session_key(token)
         self.request.session[session_key] = draft_payload
         self.request.session.modified = True
+        record_stage_log(
+            "draft",
+            token=token,
+            meta={"title": draft_payload.get("title", ""), "payment_type": draft_payload.get("payment_type")},
+        )
         return redirect(reverse("expert:direct-review", kwargs={"token": token}))
 
     def _session_key(self, token: str) -> str:
@@ -114,10 +160,14 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
 
     def _build_draft_payload(self, form):
         data = form.cleaned_data.copy()
-        for field_name in ("start_date", "end_date"):
+        for field_name in ("start_date", "end_date", "one_time_due_date"):
             value = data.get(field_name)
             if value:
                 data[field_name] = value.isoformat()
+        for field_name in ("client_lightning_address", "performer_lightning_address", "one_time_condition"):
+            value = data.get(field_name)
+            if isinstance(value, str):
+                data[field_name] = value.strip()
         milestone_details = []
         amount_values = self.request.POST.getlist("milestone_amounts[]")
         due_dates = self.request.POST.getlist("milestone_due_dates[]")
@@ -245,6 +295,8 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         document.creator_signed_at = timezone.now()
         document.status = "pending_counterparty"
         document.save()
+        record_stage_log("draft", document=document, token=self.token, meta={"title": payload.get("title")})
+        record_stage_log("role_one", document=document, meta={"role": creator_role})
 
         asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"creator-{self.request.user.pk}"
@@ -339,6 +391,11 @@ class DirectContractInviteView(FormView):
         self.document.status = "counterparty_in_progress"
         self.document.payload = self.payload
         self.document.save()
+        record_stage_log(
+            "role_two",
+            document=self.document,
+            meta={"role": self.document.counterparty_role, "email": self.document.counterparty_email},
+        )
         if asset:
             self.document.set_signature_asset("counterparty", asset)
             self.document.clear_signature_file("counterparty")
@@ -360,6 +417,7 @@ class DirectContractInviteView(FormView):
         self.document.final_pdf_generated_at = timezone.now()
         self.document.status = "completed"
         self.document.save()
+        record_stage_log("completed", document=self.document)
 
         delivery = send_direct_contract_document_email(self.document)
         self.document.email_delivery = delivery

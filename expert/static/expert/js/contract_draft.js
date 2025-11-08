@@ -5,6 +5,10 @@ const previewMap = {
     amount: document.getElementById('preview-amount'),
     payment: document.getElementById('preview-payment'),
     email: document.getElementById('preview-email'),
+    clientLightning: document.getElementById('preview-client-lightning'),
+    performerLightning: document.getElementById('preview-performer-lightning'),
+    oneTimeDate: document.getElementById('preview-one-time-date'),
+    oneTimeCondition: document.getElementById('preview-one-time-condition'),
 };
 
 let amountInput;
@@ -19,6 +23,15 @@ let milestonesInitialized = false;
 let milestoneOverflow = false;
 let milestoneRowCount = 0;
 let agreementCheckboxes = [];
+let oneTimeSection;
+let oneTimeDueInput;
+let oneTimeConditionInput;
+let previewOneTimePanel;
+let modalOneTimePanel;
+let modalOneTimeDate;
+let modalOneTimeCondition;
+let clientLightningInput;
+let performerLightningInput;
 let previewModalButton;
 let previewModal;
 let previewModalCloseButtons = [];
@@ -35,6 +48,8 @@ let previewAttachmentPanel;
 let previewAttachmentList;
 let modalAttachmentPanel;
 let modalAttachmentList;
+let modalClientLightning;
+let modalPerformerLightning;
 let attachmentUploader;
 let attachmentDropzone;
 let attachmentInput;
@@ -156,6 +171,50 @@ function renderMilestoneLists(details) {
             modalMilestoneList.appendChild(buildMilestonePreviewItem(detail, index));
         }
     });
+}
+
+function updateOneTimePreview() {
+    const paymentValue = getCheckedValue(paymentInputs);
+    const show = paymentValue === 'one_time';
+    if (previewOneTimePanel) {
+        previewOneTimePanel.hidden = !show;
+    }
+    if (modalOneTimePanel) {
+        modalOneTimePanel.hidden = !show;
+    }
+    const dueValue = oneTimeDueInput && oneTimeDueInput.value ? oneTimeDueInput.value : '';
+    const conditionValue = oneTimeConditionInput && oneTimeConditionInput.value ? oneTimeConditionInput.value.trim() : '';
+    const dueText = dueValue || '미정';
+    const conditionText = conditionValue || '지급 조건 미입력';
+    if (previewMap.oneTimeDate) {
+        previewMap.oneTimeDate.textContent = dueText;
+    }
+    if (previewMap.oneTimeCondition) {
+        previewMap.oneTimeCondition.textContent = conditionText;
+    }
+    if (modalOneTimeDate) {
+        modalOneTimeDate.textContent = dueText;
+    }
+    if (modalOneTimeCondition) {
+        modalOneTimeCondition.textContent = conditionText;
+    }
+}
+
+function updateLightningPreview() {
+    const clientValue = clientLightningInput && clientLightningInput.value ? clientLightningInput.value.trim() : '';
+    const performerValue = performerLightningInput && performerLightningInput.value ? performerLightningInput.value.trim() : '';
+    if (previewMap.clientLightning) {
+        previewMap.clientLightning.textContent = clientValue || '-';
+    }
+    if (previewMap.performerLightning) {
+        previewMap.performerLightning.textContent = performerValue || '-';
+    }
+    if (modalClientLightning) {
+        modalClientLightning.textContent = clientValue || '-';
+    }
+    if (modalPerformerLightning) {
+        modalPerformerLightning.textContent = performerValue || '-';
+    }
 }
 
 function renderAttachmentPreviewLists(entries = attachmentEntries) {
@@ -493,6 +552,24 @@ function addMilestoneRow(defaults = {}) {
     fields.appendChild(conditionField);
 
     item.appendChild(fields);
+    const actionBar = document.createElement('div');
+    actionBar.className = 'milestone-actions';
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'milestone-remove-button';
+    removeButton.setAttribute('aria-label', '분할 단계 삭제');
+    removeButton.innerHTML = '🗑';
+    removeButton.addEventListener('click', () => {
+        if (!milestoneList || !item.parentNode) {
+            return;
+        }
+        milestoneList.removeChild(item);
+        updateMilestoneLabels();
+        updateMilestoneTotals();
+        renderMilestoneLists(collectMilestoneDetails());
+    });
+    actionBar.appendChild(removeButton);
+    item.appendChild(actionBar);
     milestoneList.appendChild(item);
     updateMilestoneLabels();
     updateMilestoneTotals();
@@ -509,26 +586,30 @@ function ensureInitialMilestones() {
     milestonesInitialized = true;
 }
 
-function toggleMilestoneSection(show) {
-    if (!milestoneSection) {
-        return;
+function togglePaymentSections(value) {
+    const showMilestone = value === 'milestone';
+    if (milestoneSection) {
+        if (showMilestone) {
+            milestoneSection.hidden = false;
+            ensureInitialMilestones();
+            updateMilestoneTotals();
+        } else {
+            milestoneSection.hidden = true;
+            if (milestoneError) {
+                milestoneError.hidden = true;
+            }
+            if (addMilestoneButton) {
+                addMilestoneButton.disabled = false;
+            }
+            renderMilestoneLists([]);
+            updateMilestonePreview(Number.NaN, Number.NaN, []);
+        }
     }
-    if (show) {
-        milestoneSection.hidden = false;
-        ensureInitialMilestones();
-        updateMilestoneTotals();
-        return;
+    const showOneTime = value === 'one_time';
+    if (oneTimeSection) {
+        oneTimeSection.hidden = !showOneTime;
     }
-    milestoneSection.hidden = true;
-    if (milestoneError) {
-        milestoneError.hidden = true;
-    }
-    if (addMilestoneButton) {
-        addMilestoneButton.disabled = false;
-    }
-    setSubmitButtonState();
-    renderMilestoneLists([]);
-    updateMilestonePreview(Number.NaN, Number.NaN, []);
+    updateOneTimePreview();
 }
 
 function updatePeriod() {
@@ -580,6 +661,28 @@ function bindFieldUpdates() {
     });
     updatePeriod();
 
+    clientLightningInput = document.getElementById('id_client_lightning_address');
+    performerLightningInput = document.getElementById('id_performer_lightning_address');
+    if (clientLightningInput || performerLightningInput) {
+        updateLightningPreview();
+        if (clientLightningInput) {
+            clientLightningInput.addEventListener('input', updateLightningPreview);
+        }
+        if (performerLightningInput) {
+            performerLightningInput.addEventListener('input', updateLightningPreview);
+        }
+    }
+
+    oneTimeDueInput = document.getElementById('id_one_time_due_date');
+    oneTimeConditionInput = document.getElementById('id_one_time_condition');
+    if (oneTimeDueInput) {
+        oneTimeDueInput.addEventListener('change', updateOneTimePreview);
+    }
+    if (oneTimeConditionInput) {
+        oneTimeConditionInput.addEventListener('input', updateOneTimePreview);
+    }
+    updateOneTimePreview();
+
     amountInput = document.getElementById('id_amount_sats');
     if (amountInput && previewMap.amount) {
         if (amountInput.value) {
@@ -608,12 +711,17 @@ function bindFieldUpdates() {
     if (paymentInputs.length && previewMap.payment) {
         const currentPayment = getCheckedValue(paymentInputs);
         previewMap.payment.textContent = formatPayment(currentPayment);
+        togglePaymentSections(currentPayment || 'one_time');
         paymentInputs.forEach((input) => {
             input.addEventListener('change', (event) => {
                 const { value } = event.target;
                 previewMap.payment.textContent = formatPayment(value);
-                toggleMilestoneSection(value === 'milestone');
-                updateMilestoneTotals();
+                togglePaymentSections(value);
+                if (value === 'milestone') {
+                    updateMilestoneTotals();
+                } else {
+                    setSubmitButtonState();
+                }
             });
         });
     }
@@ -672,6 +780,8 @@ function syncModalPreviewValues() {
         amount: document.getElementById('modal-preview-amount'),
         payment: document.getElementById('modal-preview-payment'),
         email: document.getElementById('modal-preview-email'),
+        clientLightning: document.getElementById('modal-preview-client-lightning'),
+        performerLightning: document.getElementById('modal-preview-performer-lightning'),
     };
     Object.entries(modalMapping).forEach(([key, target]) => {
         if (target && previewMap[key]) {
@@ -984,6 +1094,11 @@ document.addEventListener('DOMContentLoaded', () => {
     addMilestoneButton = document.getElementById('add-milestone');
     milestoneRemaining = document.getElementById('milestone-remaining');
     milestoneError = document.getElementById('milestone-error');
+    oneTimeSection = document.getElementById('one-time-section');
+    previewOneTimePanel = document.getElementById('preview-one-time-panel');
+    modalOneTimePanel = document.getElementById('modal-preview-one-time');
+    modalOneTimeDate = document.getElementById('modal-preview-one-time-date');
+    modalOneTimeCondition = document.getElementById('modal-preview-one-time-condition');
     previewMilestonePanel = document.getElementById('preview-milestone-panel');
     previewMilestoneList = document.getElementById('preview-milestone-list');
     modalMilestonePanel = document.getElementById('modal-preview-milestones');
@@ -994,10 +1109,12 @@ document.addEventListener('DOMContentLoaded', () => {
     previewAttachmentList = document.getElementById('preview-attachment-list');
     modalAttachmentPanel = document.getElementById('modal-preview-attachments');
     modalAttachmentList = document.getElementById('modal-preview-attachment-list');
+    modalClientLightning = document.getElementById('modal-preview-client-lightning');
+    modalPerformerLightning = document.getElementById('modal-preview-performer-lightning');
 
     bindFieldUpdates();
     const initialPayment = getCheckedValue(paymentInputs);
-    toggleMilestoneSection(initialPayment === 'milestone');
+    togglePaymentSections(initialPayment);
     hydrateTemplatePayload();
     previewModalButton = document.getElementById('contract-preview-trigger');
     previewModal = document.getElementById('contract-preview-modal');

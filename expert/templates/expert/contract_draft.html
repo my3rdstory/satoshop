@@ -15,8 +15,7 @@
             <div class="column is-7">
                 <h1 class="title is-3 has-text-weight-bold">계약 조건 입력</h1>
                 <p class="subtitle is-6 has-text-grey">
-                    계약 내용은 상대방과 시스템에서만 확인할 수 있도록 해시 기반으로 보관됩니다. 입력을 마친 뒤
-                    상대방에게 링크를 공유해 동의를 요청하세요.
+                    계약 조건을 입력하고, 계약서를 미리보기로 확인하세요. 입력을 마치면 자필 서명 후 상대방에게 링크를 공유해 동의를 요청할 수 있습니다.
                 </p>
             </div>
             <div class="column is-5">
@@ -133,6 +132,39 @@
                         </div>
                     </div>
 
+                    <div class="field payment-meta" id="one-time-section" hidden>
+                        <div class="milestone-header">
+                            <span class="label mb-0">일괄 지급 세부 정보</span>
+                        </div>
+                        <div class="columns is-variable is-2">
+                            <div class="column">
+                                {{ form.one_time_due_date.label_tag }}
+                                {{ form.one_time_due_date }}
+                            </div>
+                            <div class="column">
+                                {{ form.one_time_condition.label_tag }}
+                                {{ form.one_time_condition }}
+                            </div>
+                        </div>
+                        <p class="help">일괄 지급이라도 지급일과 조건을 명시해 주세요.</p>
+                    </div>
+
+                    <div class="field lightning-field">
+                        <label class="label">라이트닝 주소</label>
+                        <div class="columns is-variable is-2">
+                            <div class="column">
+                                {{ form.client_lightning_address.label_tag }}
+                                {{ form.client_lightning_address }}
+                                <p class="help">의뢰자 정산 시 사용할 라이트닝 주소.</p>
+                            </div>
+                            <div class="column">
+                                {{ form.performer_lightning_address.label_tag }}
+                                {{ form.performer_lightning_address }}
+                                <p class="help">수행자 정산 시 사용할 라이트닝 주소.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="field">
                         {{ form.email_recipient.label_tag }}
                         <div class="control">{{ form.email_recipient }}</div>
@@ -228,10 +260,19 @@
                             <li><span>금액</span><strong id="preview-amount">-</strong></li>
                             <li><span>지불 조건</span><strong id="preview-payment">-</strong></li>
                             <li><span>이메일</span><strong id="preview-email">-</strong></li>
+                            <li><span>의뢰자 라이트닝</span><strong id="preview-client-lightning">-</strong></li>
+                            <li><span>수행자 라이트닝</span><strong id="preview-performer-lightning">-</strong></li>
                         </ul>
                         <div class="preview-subsection" id="preview-milestone-panel" hidden>
                             <p class="preview-subsection-title">분할 지급 상세</p>
                             <ul class="milestone-preview-list" id="preview-milestone-list"></ul>
+                        </div>
+                        <div class="preview-subsection" id="preview-one-time-panel" hidden>
+                            <p class="preview-subsection-title">일괄 지급 상세</p>
+                            <ul class="one-time-preview-list">
+                                <li><span>지급일</span><strong id="preview-one-time-date">-</strong></li>
+                                <li><span>지급 조건</span><strong id="preview-one-time-condition">-</strong></li>
+                            </ul>
                         </div>
                         <div class="preview-subsection">
                             <p class="preview-subsection-title">수행 내역 메모</p>
@@ -300,10 +341,19 @@
                             <li><span>금액</span><strong id="modal-preview-amount">-</strong></li>
                             <li><span>지불 조건</span><strong id="modal-preview-payment">-</strong></li>
                             <li><span>계약서 이메일</span><strong id="modal-preview-email">-</strong></li>
+                            <li><span>의뢰자 라이트닝</span><strong id="modal-preview-client-lightning">-</strong></li>
+                            <li><span>수행자 라이트닝</span><strong id="modal-preview-performer-lightning">-</strong></li>
                         </ul>
                         <div class="preview-subsection" id="modal-preview-milestones" hidden>
                             <p class="preview-subsection-title">분할 지급 상세</p>
                             <ul class="milestone-preview-list" id="modal-preview-milestone-list"></ul>
+                        </div>
+                        <div class="preview-subsection" id="modal-preview-one-time" hidden>
+                            <p class="preview-subsection-title">일괄 지급 상세</p>
+                            <ul class="one-time-preview-list">
+                                <li><span>지급일</span><strong id="modal-preview-one-time-date">-</strong></li>
+                                <li><span>지급 조건</span><strong id="modal-preview-one-time-condition">-</strong></li>
+                            </ul>
                         </div>
                         <div class="preview-subsection">
                             <p class="preview-subsection-title">수행 내역 메모</p>

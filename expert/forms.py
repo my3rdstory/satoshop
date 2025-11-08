@@ -51,11 +51,44 @@ class ContractDraftForm(forms.Form):
         choices=PAYMENT_TYPE_CHOICES,
         widget=forms.RadioSelect(),
     )
+    one_time_due_date = forms.DateField(
+        label="일괄 지급 예정일",
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date", "class": "input"}),
+    )
+    one_time_condition = forms.CharField(
+        label="일괄 지급 조건",
+        required=False,
+        widget=forms.TextInput(attrs={"class": "input", "placeholder": "예: 검수 완료 후 3일 내"}),
+        max_length=200,
+    )
     enable_chat = forms.ChoiceField(
         label="채팅 기능",
         choices=CHAT_MODE_CHOICES,
         widget=forms.HiddenInput(),
         initial="off",
+    )
+    client_lightning_address = forms.CharField(
+        label="의뢰자 라이트닝 주소",
+        required=False,
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "예: client@ln.example",
+            }
+        ),
+    )
+    performer_lightning_address = forms.CharField(
+        label="수행자 라이트닝 주소",
+        required=False,
+        max_length=120,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input",
+                "placeholder": "예: performer@ln.example",
+            }
+        ),
     )
     email_recipient = forms.EmailField(
         label="계약서 수신 이메일 (선택)",

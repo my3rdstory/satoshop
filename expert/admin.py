@@ -9,6 +9,7 @@ from .models import (
     ContractEmailLog,
     ContractTemplate,
     ExpertEmailSettings,
+    DirectContractStageLog,
 )
 from .services import generate_chat_archive_pdf
 
@@ -148,3 +149,12 @@ class ContractTemplateAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(DirectContractStageLog)
+class DirectContractStageLogAdmin(admin.ModelAdmin):
+    list_display = ("stage", "document", "token", "started_at")
+    list_filter = ("stage", "started_at")
+    search_fields = ("token", "document__slug")
+    readonly_fields = ("document", "token", "stage", "started_at", "meta")
+    date_hierarchy = "started_at"

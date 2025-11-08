@@ -1,22 +1,3 @@
-<!-- OPENSPEC:START -->
-# OpenSpec Instructions
-
-These instructions are for AI assistants working in this project.
-
-Always open `@/openspec/AGENTS.md` when the request:
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
-
-Use `@/openspec/AGENTS.md` to learn:
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
-
-Keep this managed block so 'openspec update' can refresh the instructions.
-
-<!-- OPENSPEC:END -->
-
 # Repository Guidelines
 
 ## 에이전트/협업 지침
@@ -75,3 +56,12 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - 비밀정보 커밋 금지. `local.env` 사용(`website/settings.py`에서 로드).
 - 주요 환경: `SECRET_KEY`, `DEBUG`, `DATABASE_URL`(또는 개별 DB 변수), `ADMIN_*`(빌드 시 사용).
 - 운영 배포 시 `ALLOWED_HOSTS`를 정확히 설정.
+
+## 변경 이력 기록
+- 지시한 내역을 아래와 같은 형식으로 변경 이력을 기록한다. 
+- 폴더 : 루트/change-log/
+- 단위: “작업(이슈/PR/스펙항목)” 단위 1파일
+- 파일명: YYYY-MM-DD_<scope>_<short-title>.md
+예) 2025-11-08_checkout-addrs_normalize.md
+- scope는 앱/도메인 레벨(예: auth, checkout, analytics).
+- “짧은 제목”은 나중에 릴리스 노트에 그대로 쓰일 만큼 간결하게.

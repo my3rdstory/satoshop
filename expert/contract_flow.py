@@ -94,14 +94,17 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     margin = 18 * mm
     text_object = pdf.beginText(margin, height - margin)
     text_object.setFont("Helvetica", 11)
+    payload = document.payload or {}
 
     header_lines = [
         "SatoShop Expert - 전자 계약서",
-        f"제목: {document.payload.get('title', '-')}",
+        f"제목: {payload.get('title', '-')}",
         f"공유 ID: {document.slug}",
         "",
         "===== 계약 개요 =====",
-        json.dumps(document.payload, ensure_ascii=False, indent=2),
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        "의뢰자 라이트닝 주소: {}".format(payload.get("client_lightning_address") or "-"),
+        "수행자 라이트닝 주소: {}".format(payload.get("performer_lightning_address") or "-"),
         "",
         "===== 계약 일반 사항 =====",
     ]
@@ -117,7 +120,28 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
             text_object = pdf.beginText(margin, height - margin)
             text_object.setFont("Helvetica", 11)
 
-    attachments = (document.payload or {}).get("attachments") or []
+    milestones = payload.get("milestones") or []
+    if milestones:
+        text_object.textLine("")
+        text_object.textLine("===== 분할 지급 내역 =====")
+        for index, milestone in enumerate(milestones, start=1):
+            amount = milestone.get("amount_sats") or milestone.get("amount") or 0
+            due_date = milestone.get("due_date") or "미정"
+            condition = milestone.get("condition") or "지급 조건 미입력"
+            text_object.textLine(f"{index}. {amount} sats / 지급일: {due_date} / 조건: {condition}")
+            if text_object.getY() <= margin:
+                pdf.drawText(text_object)
+                pdf.showPage()
+                text_object = pdf.beginText(margin, height - margin)
+                text_object.setFont("Helvetica", 11)
+
+    if payload.get("payment_type") == "one_time":
+        text_object.textLine("")
+        text_object.textLine("===== 일괄 지급 내역 =====")
+        text_object.textLine(f"지급일: {payload.get('one_time_due_date') or '미정'}")
+        text_object.textLine(f"지급 조건: {payload.get('one_time_condition') or '지급 조건 미입력'}")
+
+    attachments = payload.get("attachments") or []
     if attachments:
         text_object.textLine("")
         text_object.textLine("===== 첨부 파일 =====")

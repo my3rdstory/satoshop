@@ -649,6 +649,18 @@
     margin-bottom: 1.25rem;
 }
 
+.payment-meta {
+    background: rgba(8, 13, 26, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.lightning-field .columns .column {
+    margin-bottom: 1rem;
+}
+
 .milestone-list {
     display: grid;
     gap: 0.9rem;
@@ -687,6 +699,31 @@
 .milestone-input:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+.milestone-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.milestone-remove-button {
+    align-self: flex-start;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fecaca;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.milestone-remove-button:hover,
+.milestone-remove-button:focus {
+    background: rgba(239, 68, 68, 0.4);
 }
 
 .milestone-fields {
@@ -783,6 +820,23 @@
 .attachment-preview-size {
     color: rgba(148, 163, 184, 0.8);
     font-size: 0.78rem;
+}
+
+.one-time-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.one-time-preview-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.9);
 }
 
 .milestone-preview-list {

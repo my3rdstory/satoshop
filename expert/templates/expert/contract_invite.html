@@ -50,6 +50,8 @@
                     <li><span>금액</span><strong>{{ payload.amount_sats }} sats</strong></li>
                     <li><span>지급 방식</span><strong>{{ payload.payment_display }}</strong></li>
                     <li><span>이메일</span><strong>{{ payload.email_recipient|default:'미입력' }}</strong></li>
+                    <li><span>의뢰자 라이트닝</span><strong>{{ payload.client_lightning_address|default:'-' }}</strong></li>
+                    <li><span>수행자 라이트닝</span><strong>{{ payload.performer_lightning_address|default:'-' }}</strong></li>
                 </ul>
                 {% if payload.milestones %}
                     <div class="hash-note mt-4">
@@ -62,7 +64,21 @@
                                     <span>지급일: {{ milestone.due_date|default:'미정' }}</span>
                                     <span>조건: {{ milestone.condition|default:'지급 조건 미입력' }}</span>
                                 </li>
-                            {% endfor %}
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% elif payload.payment_type == 'one_time' %}
+                    <div class="hash-note mt-4">
+                        <p class="has-text-weight-semibold">일괄 지급 세부 정보</p>
+                        <ul class="milestone-detail-list">
+                            <li>
+                                <strong>지급일</strong>
+                                <span>{{ payload.one_time_due_date|default:'미정' }}</span>
+                            </li>
+                            <li>
+                                <strong>지급 조건</strong>
+                                <span>{{ payload.one_time_condition|default:'지급 조건 미입력' }}</span>
+                            </li>
                         </ul>
                     </div>
                 {% endif %}

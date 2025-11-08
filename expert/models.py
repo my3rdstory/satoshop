@@ -280,4 +280,33 @@ class ExpertEmailSettings(SiteSettings):
         verbose_name = "Expert 계약 이메일 설정"
         verbose_name_plural = "Expert 계약 이메일 설정"
 
+class DirectContractStageLog(models.Model):
+    """직접 계약 진행 단계 로그."""
+
+    STAGE_CHOICES = [
+        ("draft", "드래프트"),
+        ("role_one", "역할 1 서명"),
+        ("role_two", "역할 2 서명"),
+        ("completed", "계약 완료"),
+    ]
+
+    document = models.ForeignKey(
+        DirectContractDocument,
+        on_delete=models.CASCADE,
+        related_name="stage_logs",
+        null=True,
+        blank=True,
+    )
+    token = models.CharField(max_length=64, blank=True, db_index=True)
+    stage = models.CharField(max_length=32, choices=STAGE_CHOICES)
+    started_at = models.DateTimeField(auto_now_add=True)
+    meta = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["started_at"]
+
+    def __str__(self):
+        target = self.document.slug if self.document else self.token or "-"
+        return f"{self.get_stage_display()} @ {target}"
+
 # Create your models here.
