@@ -106,7 +106,7 @@ const initSignaturePads = () => {
             }
             submitButton.disabled = true;
             submitButton.dataset.originalLabel = submitButton.dataset.originalLabel || submitButton.innerHTML;
-            submitButton.innerHTML = '진행 중... 잠시만 기다려 주세요.';
+            submitButton.innerHTML = '진행 중입니다... 잠시만 기다려 주세요.';
         });
     });
 };

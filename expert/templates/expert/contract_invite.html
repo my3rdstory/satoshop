@@ -15,7 +15,11 @@
             <p class="has-text-grey-light">계약 ID: {{ document.slug }}</p>
             {% if waiting_message %}
                 <div class="invite-alert mt-4">
-                    현재 상대방의 계약 내용 입력을 기다리고 있습니다.
+                    {% if document.counterparty_role == 'performer' %}
+                        현재 수행자의 계약 입력을 기다리고 있습니다.
+                    {% else %}
+                        현재 의뢰자의 계약 입력을 기다리고 있습니다.
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
@@ -26,7 +30,13 @@
                 <span>{{ document.creator_signed_at|date:"Y-m-d H:i"|default:"대기" }}</span>
             </div>
             <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
-                <strong>상대방 확인</strong>
+                <strong>
+                    {% if document.counterparty_role == 'performer' %}
+                        수행자 확인
+                    {% else %}
+                        의뢰자 확인
+                    {% endif %}
+                </strong>
                 <span>
                     {% if document.counterparty_signed_at %}
                         {{ document.counterparty_signed_at|date:"Y-m-d H:i" }}
@@ -82,7 +92,14 @@
                     </div>
                 {% endif %}
                 {% if is_owner %}
-                    <p class="mt-4 has-text-grey-light">이 주소를 복사해 상대방에게 전달하세요.</p>
+                    <p class="mt-4 has-text-grey-light">
+                        이 주소를 복사해
+                        {% if document.counterparty_role == 'performer' %}
+                            수행자에게 전달하세요.
+                        {% else %}
+                            의뢰자에게 전달하세요.
+                        {% endif %}
+                    </p>
                     <div class="hash-display share-url-display">
                         <a href="{{ share_url }}" class="share-url-link" target="_blank" rel="noopener">
                             {{ share_url }}
@@ -164,7 +181,13 @@
         {% if form %}
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
-            <h3>상대방 서명</h3>
+            <h3>
+                {% if document.counterparty_role == 'performer' %}
+                    수행자 서명
+                {% else %}
+                    의뢰자 서명
+                {% endif %}
+            </h3>
             <div class="field sign-contact-grid">
                 {% if require_performer_lightning and form.performer_lightning_address %}
                 <div>
@@ -244,7 +267,9 @@
                         </ul>
                     </div>
                 {% else %}
-                    <p>계약 진행 중입니다. 상대방이 서명하면 자동으로 알림이 제공됩니다.</p>
+                    <p>
+                        계약 진행 중입니다. {% if document.counterparty_role == 'performer' %}수행자{% else %}의뢰자{% endif %}가 서명하면 자동으로 알림이 제공됩니다.
+                    </p>
                 {% endif %}
             </div>
         {% endif %}

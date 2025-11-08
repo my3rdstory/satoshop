@@ -5,6 +5,7 @@ import json
 import secrets
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, Tuple, Optional
 
 from django.core.files.base import ContentFile
@@ -13,9 +14,15 @@ from django.utils import timezone
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.ttfonts import TTFont
 
 from storage.backends import S3Storage
+
+FONT_CANDIDATES = [
+    Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
+    Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
+    Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+]
 
 
 @dataclass
@@ -91,16 +98,22 @@ def build_mediator_hash(counterparty_hash: str) -> HashResult:
 
 
 def _resolve_font_name(default: str = "Helvetica") -> str:
-    try:
-        pdfmetrics.getFont("HYGoThic-Medium")
-    except KeyError:
+    for path in FONT_CANDIDATES:
+        if not path.exists():
+            continue
+        font_name = f"SatoContract-{path.stem}"
         try:
-            pdfmetrics.registerFont(UnicodeCIDFont("HYGoThic-Medium"))
+            pdfmetrics.getFont(font_name)
+            return font_name
+        except KeyError:
+            try:
+                pdfmetrics.registerFont(TTFont(font_name, str(path)))
+                return font_name
+            except Exception:
+                continue
         except Exception:
-            return default
-    except Exception:
-        return default
-    return "HYGoThic-Medium"
+            continue
+    return default
 
 
 def _read_storage_file(path: str, storage_name: Optional[str] = None) -> Optional[bytes]:
