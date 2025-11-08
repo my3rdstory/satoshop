@@ -26,7 +26,6 @@
                     <li><span>총 금액</span><strong>{{ draft_payload.amount_sats|default:'-' }} sats</strong></li>
                     <li><span>지급 방식</span><strong>{{ draft_payload.payment_display }}</strong></li>
                     <li><span>이메일</span><strong>{{ draft_payload.email_recipient|default:'미입력' }}</strong></li>
-                    <li><span>의뢰자 라이트닝</span><strong>{{ draft_payload.client_lightning_address|default:'-' }}</strong></li>
                     <li><span>수행자 라이트닝</span><strong>{{ draft_payload.performer_lightning_address|default:'-' }}</strong></li>
                 </ul>
                 {% if draft_payload.milestones %}

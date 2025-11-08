@@ -787,14 +787,16 @@
 .milestone-order {
     min-width: 4.5rem;
     font-weight: 600;
-    color: rgba(148, 197, 253, 0.85);
+    color: #f7931a;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.75rem;
-    background: rgba(59, 130, 246, 0.15);
+    background: rgba(247, 147, 26, 0.15);
+    border: 1px solid rgba(247, 147, 26, 0.45);
     border-radius: 999px;
     padding: 0.2rem 0.75rem;
     align-self: flex-start;
+    box-shadow: 0 6px 18px rgba(247, 147, 26, 0.25);
 }
 
 .milestone-input {
