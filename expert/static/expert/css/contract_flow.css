@@ -19,6 +19,23 @@
     margin-bottom: 2rem;
 }
 
+.contract-flow-grid--triple {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.contract-flow-grid--double {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+@media screen and (min-width: 1024px) {
+    .contract-flow-grid--triple {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .contract-flow-grid--double {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 .contract-flow-card {
     background: rgba(10, 18, 35, 0.92);
     border: 1px solid rgba(99, 102, 241, 0.35);

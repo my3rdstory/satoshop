@@ -45,7 +45,7 @@
             </div>
         </div>
 
-        <div class="contract-flow-grid">
+        <div class="contract-flow-grid contract-flow-grid--triple">
             <article class="contract-flow-card">
                 <h3>계약 요약</h3>
                 <ul class="contract-flow-list">
@@ -101,17 +101,6 @@
             </article>
 
             <article class="contract-flow-card">
-                <h3>계약 일반 사항</h3>
-                <div class="modal-template-body">
-                    {% if contract_template.content_html %}
-                        {{ contract_template.content_html|safe }}
-                    {% else %}
-                        <p class="has-text-grey">계약서 본문이 없습니다.</p>
-                    {% endif %}
-                </div>
-            </article>
-
-            <article class="contract-flow-card">
                 <h3>수행 내역</h3>
                 <p class="mb-2">수행 내역</p>
                 <div class="hash-display markdown-content">
@@ -124,14 +113,18 @@
             </article>
 
             <article class="contract-flow-card">
-                <h3>해시 기록</h3>
-                <p class="mb-2">{{ creator_role_label }}</p>
-                <div class="hash-display">{{ document.creator_hash|default:'생성 대기' }}</div>
-                <p class="mt-4 mb-2">{{ counterparty_role_label }}</p>
-                <div class="hash-display">{{ document.counterparty_hash|default:'생성 대기' }}</div>
-                <p class="mt-4 mb-2">사토샵</p>
-                <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
+                <h3>계약 일반 사항</h3>
+                <div class="modal-template-body">
+                    {% if contract_template.content_html %}
+                        {{ contract_template.content_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">계약서 본문이 없습니다.</p>
+                    {% endif %}
+                </div>
             </article>
+        </div>
+
+        <div class="contract-flow-grid contract-flow-grid--double">
             <article class="contract-flow-card">
                 <h3>서명 기록</h3>
                 <div class="signature-record">
@@ -150,6 +143,16 @@
                         <p class="has-text-grey">업로드된 서명이 없습니다.</p>
                     {% endif %}
                 </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>해시 기록</h3>
+                <p class="mb-2">{{ creator_role_label }}</p>
+                <div class="hash-display">{{ document.creator_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">{{ counterparty_role_label }}</p>
+                <div class="hash-display">{{ document.counterparty_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">사토샵</p>
+                <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
             </article>
         </div>
 
