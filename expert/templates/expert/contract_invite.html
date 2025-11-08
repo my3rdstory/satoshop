@@ -50,7 +50,6 @@
                     <li><span>금액</span><strong>{{ payload.amount_sats }} sats</strong></li>
                     <li><span>지급 방식</span><strong>{{ payload.payment_display }}</strong></li>
                     <li><span>이메일</span><strong>{{ payload.email_recipient|default:'미입력' }}</strong></li>
-                    <li><span>의뢰자 라이트닝</span><strong>{{ payload.client_lightning_address|default:'-' }}</strong></li>
                     <li><span>수행자 라이트닝</span><strong>{{ payload.performer_lightning_address|default:'-' }}</strong></li>
                 </ul>
                 {% if payload.milestones %}
