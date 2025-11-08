@@ -334,6 +334,13 @@ function getMilestoneInputs() {
     return Array.from(milestoneList.querySelectorAll('.milestone-input'));
 }
 
+function getMilestoneRowCount() {
+    if (!milestoneList) {
+        return 0;
+    }
+    return milestoneList.querySelectorAll('.milestone-item').length;
+}
+
 function allAgreementsAccepted() {
     if (!agreementCheckboxes.length) {
         return true;
@@ -370,7 +377,7 @@ function updateMilestonePreview(totalAmount, remaining, details = null) {
         return;
     }
     const resolvedDetails = Array.isArray(details) ? details : collectMilestoneDetails();
-    const milestoneCount = resolvedDetails.length || getMilestoneInputs().length;
+    const milestoneCount = resolvedDetails.length || getMilestoneRowCount();
     if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
         previewMap.payment.textContent = '분할 지급 (총액 입력 대기)';
         renderMilestoneLists(resolvedDetails);

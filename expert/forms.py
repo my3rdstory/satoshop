@@ -80,7 +80,7 @@ class ContractDraftForm(forms.Form):
         ),
     )
     performer_lightning_address = forms.CharField(
-        label="수행자 라이트닝 주소",
+        label="수행자 라이트닝 주소 (필수)",
         required=False,
         max_length=120,
         widget=forms.TextInput(

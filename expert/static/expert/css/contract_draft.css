@@ -199,6 +199,72 @@
     display: none;
 }
 
+.modal-payment-section {
+    background: rgba(6, 78, 59, 0.35);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(6, 95, 70, 0.3), 0 10px 30px rgba(1, 10, 6, 0.55);
+}
+
+.modal-payment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.modal-payment-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.85));
+    color: rgba(15, 23, 42, 0.95);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.modal-payment-caption {
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(236, 253, 245, 0.9);
+}
+
+.modal-payment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.modal-payment-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+
+.modal-payment-list span {
+    color: rgba(226, 232, 240, 0.95);
+    font-size: 0.85rem;
+}
+
+.modal-payment-list strong {
+    color: rgba(248, 250, 252, 0.95);
+    font-weight: 600;
+}
+
 .milestone-section {
     background: rgba(8, 13, 26, 0.85);
     border: 1px solid rgba(59, 130, 246, 0.28);
