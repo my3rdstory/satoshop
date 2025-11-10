@@ -219,6 +219,13 @@
     box-shadow: inset 0 0 28px rgba(14, 165, 233, 0.08);
 }
 
+.lightning-payment-wrapper h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.85rem;
+    color: #38bdf8;
+    font-weight: 600;
+}
+
 .lightning-payment-head {
     display: flex;
     justify-content: space-between;
@@ -227,20 +234,19 @@
 }
 
 .lightning-payment-label {
-    font-size: 0.9rem;
-    color: rgba(191, 219, 254, 0.85);
-    margin-bottom: 0.15rem;
-}
-
-.lightning-payment-role {
     font-size: 1rem;
     font-weight: 600;
-    color: #e0f2fe;
+    color: #fdf7c0;
 }
 
 .lightning-payment-amount {
-    font-size: 1.2rem;
-    color: #f0f9ff;
+    font-size: 1.35rem;
+    color: #fdf7c0;
+    letter-spacing: 0.02em;
+}
+
+.lightning-payment-amount strong {
+    color: inherit;
 }
 
 .lightning-policy-block {
@@ -254,13 +260,17 @@
     display: flex;
     flex-direction: column;
     gap: 0.2rem;
-    font-size: 0.85rem;
-    color: rgba(226, 232, 240, 0.85);
+    font-size: 0.9rem;
+    color: rgba(248, 250, 252, 0.92);
+}
+
+.lightning-policy-list strong {
+    color: #fdfcc9;
 }
 
 .lightning-policy-desc {
-    font-size: 0.8rem;
-    color: rgba(148, 163, 184, 0.9);
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.9);
 }
 
 .lightning-status {

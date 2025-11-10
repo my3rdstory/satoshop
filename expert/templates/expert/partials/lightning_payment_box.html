@@ -18,8 +18,7 @@
      data-payment-countdown-remaining="{{ payment_widget.countdown_seconds }}">
     <div class="lightning-payment-head">
         <div>
-            <p class="lightning-payment-label">라이트닝 결제</p>
-            <p class="lightning-payment-role">{{ payment_widget.role_label }}</p>
+            <p class="lightning-payment-label">{{ payment_widget.role_label }} 결제 금액</p>
         </div>
         <div class="lightning-payment-amount">
             <strong>{{ payment_widget.required_amount|default:0|intcomma }} sats</strong>
@@ -83,7 +82,7 @@
                 </div>
             </div>
         {% else %}
-            {% if payment_widget.state.status in ('error', 'expired', 'cancelled') %}
+            {% if payment_widget.state.status == 'error' or payment_widget.state.status == 'expired' or payment_widget.state.status == 'cancelled' %}
                 <div class="notification is-warning is-light lightning-note">
                     {% if payment_widget.state.status == 'error' %}
                         {{ payment_widget.state.last_error|default:'결제 정보를 준비하는 중 오류가 발생했습니다.' }}

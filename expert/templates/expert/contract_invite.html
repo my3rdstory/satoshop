@@ -196,7 +196,10 @@
                     </div>
                 </div>
                 {% if payment_widget %}
-                    {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                    <div class="lightning-payment-wrapper">
+                        <h3>라이트닝 결제</h3>
+                        {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                    </div>
                 {% endif %}
             </div>
             <div class="field mt-4 sign-checkbox-list">
