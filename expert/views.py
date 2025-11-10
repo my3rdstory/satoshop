@@ -289,7 +289,6 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         document.status = "pending_counterparty"
         document.save()
         record_stage_log("draft", document=document, token=self.token, meta={"title": payload.get("title")})
-        record_stage_log("role_one", document=document, meta={"role": creator_role})
 
         asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"creator-{self.request.user.pk}"
@@ -310,6 +309,14 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         self.request.session.pop(self.session_key, None)
         self.request.session.modified = True
         self._persist_creator_payment(document, payment_receipt)
+        record_stage_log(
+            "role_one",
+            document=document,
+            meta={
+                "role": creator_role,
+                "signed_at": timezone.localtime(document.creator_signed_at).isoformat() if document.creator_signed_at else "",
+            },
+        )
         clear_payment_state(self.request, "draft", self.token, creator_role)
         return redirect(f"{document.get_absolute_url()}?owner=1")
 
@@ -481,11 +488,6 @@ class DirectContractInviteView(FormView):
         }
         if payment_receipt:
             stage_meta["payment"] = payment_receipt
-        record_stage_log(
-            "role_two",
-            document=self.document,
-            meta=stage_meta,
-        )
         if asset:
             self.document.set_signature_asset("counterparty", asset)
             self.document.clear_signature_file("counterparty")
@@ -495,6 +497,18 @@ class DirectContractInviteView(FormView):
                 self.request,
                 "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
             )
+
+        record_stage_log(
+            "role_two",
+            document=self.document,
+            meta={
+                "role": self.document.counterparty_role,
+                "email": self.document.counterparty_email,
+                "signed_at": timezone.localtime(self.document.counterparty_signed_at).isoformat()
+                if self.document.counterparty_signed_at
+                else "",
+            },
+        )
 
         mediator_hash = build_mediator_hash(self.document.counterparty_hash)
         self.document.mediator_hash = mediator_hash.value

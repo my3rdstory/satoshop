@@ -225,7 +225,7 @@ class DirectContractDocument(models.Model):
     mediator_hash_meta = models.JSONField(default=dict, blank=True)
     email_delivery = models.JSONField(default=default_email_delivery, blank=True)
     final_pdf = models.FileField(
-        upload_to="contracts/final_pdfs/",
+        upload_to="expert/contracts/final_pdfs/",
         blank=True,
         storage=CONTRACT_FILE_STORAGE,
     )
