@@ -260,6 +260,9 @@ LOGOUT_REDIRECT_URL = 'myshop:home'
 
 # 블링크 API 설정
 BLINK_API_URL = 'https://api.blink.sv/graphql'
+EXPERT_BLINK_API_KEY = os.getenv("EXPERT_BLINK_API_KEY") or os.getenv("BLINK_API_KEY")
+EXPERT_BLINK_WALLET_ID = os.getenv("EXPERT_BLINK_WALLET_ID") or os.getenv("BLINK_WALLET_ID")
+EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Expert 계약 결제')
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정

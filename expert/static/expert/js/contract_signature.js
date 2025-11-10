@@ -23,6 +23,7 @@ const initSignaturePads = () => {
         const submitButton = form.querySelector('[data-signature-submit]');
         const previewWrapper = form.querySelector('[data-signature-preview]');
         const previewImage = form.querySelector('[data-signature-preview-img]');
+        const paymentStatusInput = form.querySelector('[data-payment-status-input]');
 
         if (!hiddenInput || !submitButton) {
             return;
@@ -55,7 +56,8 @@ const initSignaturePads = () => {
             const confirmed = confirmInputs.length
                 ? Array.from(confirmInputs).every((input) => input.checked)
                 : true;
-            submitButton.disabled = !(hasSignature && confirmed);
+            const paymentSatisfied = !paymentStatusInput || paymentStatusInput.value === 'paid';
+            submitButton.disabled = !(hasSignature && confirmed && paymentSatisfied);
         }
 
         const resizeCanvas = () => {
@@ -93,6 +95,11 @@ const initSignaturePads = () => {
             confirmInputs.forEach((input) => {
                 input.addEventListener('change', updateButtonState);
             });
+        }
+
+        if (paymentStatusInput) {
+            paymentStatusInput.addEventListener('input', updateButtonState);
+            paymentStatusInput.addEventListener('change', updateButtonState);
         }
 
         if (hiddenInput.value) {

@@ -84,22 +84,27 @@
 
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
-            <h3>자필 서명</h3>
-            {{ form.signature_data }}
-            <div class="signature-pad-wrapper">
-                <canvas class="signature-canvas" data-signature-canvas></canvas>
-                <div class="signature-actions">
-                    <p class="has-text-grey-light">터치/마우스로 서명해 주세요.</p>
-                    <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+            <div class="signature-payment-grid">
+                <div>
+                    <h3>자필 서명</h3>
+                    {{ form.signature_data }}
+                    <div class="signature-pad-wrapper">
+                        <canvas class="signature-canvas" data-signature-canvas></canvas>
+                        <div class="signature-actions">
+                            <p class="has-text-grey-light">터치/마우스로 서명해 주세요.</p>
+                            <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                        </div>
+                    </div>
+                    <div class="signature-preview" data-signature-preview hidden>
+                        <p class="signature-preview-label">서명 미리보기</p>
+                        <img src="" alt="서명 미리보기" data-signature-preview-img>
+                    </div>
                 </div>
-            </div>
-            <div class="signature-preview" data-signature-preview hidden>
-                <p class="signature-preview-label">서명 미리보기</p>
-                <img src="" alt="서명 미리보기" data-signature-preview-img>
+                {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
             </div>
             <div class="field mt-4">
                 <label class="checkbox">
-                    {{ form.confirm_reviewed }} 계약 내용을 모두 확인했고, 자필 서명을 완료했습니다.
+                    {{ form.confirm_reviewed }} 계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.
                 </label>
                 {% for error in form.confirm_reviewed.errors %}
                     <p class="help is-danger">{{ error }}</p>
@@ -117,4 +122,5 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
 <script src="{% static 'expert/js/contract_signature.js' %}"></script>
+<script src="{% static 'expert/js/direct_payment.js' %}"></script>
 {% endblock %}

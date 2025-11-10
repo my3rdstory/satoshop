@@ -180,17 +180,24 @@
                     {% endfor %}
                 </div>
             </div>
-            {{ form.signature_data }}
-            <div class="signature-pad-wrapper">
-                <canvas class="signature-canvas" data-signature-canvas></canvas>
-                <div class="signature-actions">
-                    <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
-                    <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+            <div class="signature-payment-grid mt-4">
+                <div>
+                    {{ form.signature_data }}
+                    <div class="signature-pad-wrapper">
+                        <canvas class="signature-canvas" data-signature-canvas></canvas>
+                        <div class="signature-actions">
+                            <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
+                            <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                        </div>
+                    </div>
+                    <div class="signature-preview" data-signature-preview hidden>
+                        <p class="signature-preview-label">서명 미리보기</p>
+                        <img src="" alt="서명 미리보기" data-signature-preview-img>
+                    </div>
                 </div>
-            </div>
-            <div class="signature-preview" data-signature-preview hidden>
-                <p class="signature-preview-label">서명 미리보기</p>
-                <img src="" alt="서명 미리보기" data-signature-preview-img>
+                {% if payment_widget %}
+                    {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                {% endif %}
             </div>
             <div class="field mt-4 sign-checkbox-list">
                 <label class="checkbox">{{ form.agree_privacy }} 개인정보 수집 및 이용에 동의합니다.</label>
@@ -259,4 +266,5 @@
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
 {% endif %}
 <script src="{% static 'expert/js/contract_signature.js' %}"></script>
+<script src="{% static 'expert/js/direct_payment.js' %}"></script>
 {% endblock %}

@@ -2,15 +2,18 @@ import markdown
 
 import json
 import uuid
+from datetime import timedelta
 from itertools import zip_longest
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404, HttpResponseForbidden
-from django.shortcuts import get_object_or_404, redirect
+from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
+from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import TemplateView, FormView, RedirectView
 
 from storage.backends import S3Storage
@@ -30,8 +33,21 @@ from .models import (
     DirectContractDocument,
     DirectContractStageLog,
 )
+from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
 from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
 from .signature_assets import signature_media_fallback_enabled, store_signature_asset_from_data
+from .payment_service import (
+    PAYMENT_EXPIRE_SECONDS,
+    ExpertPaymentConfigurationError,
+    PaymentState,
+    build_widget_context,
+    clear_payment_state,
+    ensure_draft_payload,
+    get_blink_service,
+    get_payment_state,
+    mark_payment_paid,
+    store_payment_state,
+)
 
 
 def render_contract_markdown(text: str) -> str:
@@ -122,7 +138,7 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
     form_class = ContractDraftForm
     success_url = reverse_lazy("expert:direct-draft")
     login_url = reverse_lazy("expert:login")
-    session_prefix = "expert_direct_contract"
+    session_prefix = DIRECT_CONTRACT_SESSION_PREFIX
 
     def dispatch(self, request, *args, **kwargs):
         self.active_contract_template = ContractTemplate.objects.filter(is_selected=True).first()
@@ -218,21 +234,41 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         if not self.draft_payload:
             messages.warning(request, "검토할 계약 초안이 없습니다. 처음부터 다시 작성해 주세요.")
             return redirect("expert:direct-draft")
+        self.creator_role = self.draft_payload.get("role", "client")
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         work_log_markdown = (self.draft_payload or {}).get("work_log_markdown", "")
+        payment_widget = build_widget_context(
+            self.request,
+            context_type="draft",
+            identifier=self.token,
+            role=self.creator_role,
+            role_label=ROLE_LABELS.get(self.creator_role, self.creator_role),
+        )
         context.update(
             {
                 "draft_payload": self.draft_payload,
                 "contract_generated_at": timezone.now(),
                 "work_log_html": render_contract_markdown(work_log_markdown),
+                "payment_widget": payment_widget,
+                "payment_expire_seconds": PAYMENT_EXPIRE_SECONDS,
             }
         )
         return context
 
     def form_valid(self, form):
+        payment_widget = build_widget_context(
+            self.request,
+            context_type="draft",
+            identifier=self.token,
+            role=self.creator_role,
+            role_label=ROLE_LABELS.get(self.creator_role, self.creator_role),
+        )
+        if payment_widget.requires_payment and payment_widget.state.status != "paid":
+            form.add_error(None, "라이트닝 결제를 완료한 뒤 계약서 주소를 생성할 수 있습니다.")
+            return self.form_invalid(form)
         payload = self.draft_payload.copy()
         slug = self._generate_unique_slug()
         creator_role = payload.get("role", "client")
@@ -272,6 +308,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             )
         self.request.session.pop(self.session_key, None)
         self.request.session.modified = True
+        clear_payment_state(self.request, "draft", self.token, creator_role)
         return redirect(f"{document.get_absolute_url()}?owner=1")
 
     def _generate_unique_slug(self) -> str:
@@ -337,6 +374,17 @@ class DirectContractInviteView(FormView):
                 "counterparty_role_label": counterparty_role_label,
             }
         )
+        form_instance = context.get("form")
+        if form_instance:
+            payment_widget = build_widget_context(
+                self.request,
+                context_type="invite",
+                identifier=self.document.slug,
+                role=self.document.counterparty_role,
+                role_label=counterparty_role_label,
+            )
+            context["payment_widget"] = payment_widget
+            context["payment_expire_seconds"] = PAYMENT_EXPIRE_SECONDS
         return context
 
     def post(self, request, *args, **kwargs):
@@ -356,6 +404,19 @@ class DirectContractInviteView(FormView):
     def form_valid(self, form):
         if self.document.status == "completed":
             return redirect(self.document.get_absolute_url())
+        payment_widget = build_widget_context(
+            self.request,
+            context_type="invite",
+            identifier=self.document.slug,
+            role=self.document.counterparty_role,
+            role_label=dict(ContractParticipant.ROLE_CHOICES).get(
+                self.document.counterparty_role,
+                "상대방",
+            ),
+        )
+        if payment_widget.requires_payment and payment_widget.state.status != "paid":
+            form.add_error(None, "라이트닝 결제를 완료한 뒤 서명해주세요.")
+            return self.form_invalid(form)
         asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
         )
@@ -408,6 +469,7 @@ class DirectContractInviteView(FormView):
         delivery = send_direct_contract_document_email(self.document)
         self.document.email_delivery = delivery
         self.document.save(update_fields=["email_delivery", "updated_at"])
+        clear_payment_state(self.request, "invite", self.document.slug, self.document.counterparty_role)
         return redirect(self.document.get_absolute_url())
 
 
@@ -472,3 +534,270 @@ class ExpertLightningLoginGuideView(TemplateView):
             }
         )
         return context
+
+
+class PaymentAccessError(Exception):
+    """지불 위젯 요청 검증 중 발생하는 에러."""
+
+    def __init__(self, message: str, *, status: int = 400):
+        super().__init__(message)
+        self.status = status
+
+
+def _parse_payment_payload(data) -> tuple[str, str, str]:
+    context_type = (data.get("context") or "").strip()
+    identifier = (data.get("ref") or "").strip()
+    role = (data.get("role") or "").strip()
+    if context_type not in {"draft", "invite"}:
+        raise ValueError("context")
+    if not identifier:
+        raise ValueError("ref")
+    if role not in ROLE_LABELS:
+        raise ValueError("role")
+    return context_type, identifier, role
+
+
+def _ensure_payment_role(request, context_type: str, identifier: str, role: str) -> str:
+    if context_type == "draft":
+        if not request.user.is_authenticated:
+            raise PaymentAccessError("로그인이 필요합니다.", status=403)
+        payload = ensure_draft_payload(request, identifier)
+        if not payload:
+            raise Http404("draft payload not found")
+        if payload.get("role") != role:
+            raise PaymentAccessError("역할 정보가 일치하지 않습니다.")
+        return ROLE_LABELS.get(role, role)
+
+    document = get_object_or_404(DirectContractDocument, slug=identifier)
+    if document.counterparty_role != role:
+        raise PaymentAccessError("역할 정보가 일치하지 않습니다.")
+    if document.status == "completed":
+        raise PaymentAccessError("이미 완료된 계약입니다.")
+    return ROLE_LABELS.get(role, role)
+
+
+def _render_payment_widget(request, context_type: str, identifier: str, role: str, role_label: str):
+    widget = build_widget_context(
+        request,
+        context_type=context_type,
+        identifier=identifier,
+        role=role,
+        role_label=role_label,
+    )
+    return render(
+        request,
+        "expert/partials/lightning_payment_box.html",
+        {"payment_widget": widget, "payment_expire_seconds": PAYMENT_EXPIRE_SECONDS},
+    )
+
+
+def _build_invoice_memo(context_type: str, identifier: str, role_label: str) -> str:
+    prefix = getattr(settings, "EXPERT_BLINK_MEMO_PREFIX", "SatoShop Expert 결제")
+    descriptor = "검토" if context_type == "draft" else "공유"
+    short_ref = identifier[:10]
+    return f"{prefix} · {role_label} {descriptor} · {short_ref}"
+
+
+@require_http_methods(["GET"])
+def direct_contract_payment_widget(request):
+    try:
+        context_type, identifier, role = _parse_payment_payload(request.GET)
+    except ValueError:
+        return HttpResponseBadRequest("잘못된 요청입니다.")
+    try:
+        role_label = _ensure_payment_role(request, context_type, identifier, role)
+    except PaymentAccessError as exc:
+        if exc.status == 403:
+            return HttpResponseForbidden(str(exc))
+        return HttpResponseBadRequest(str(exc))
+    return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+
+@require_POST
+def direct_contract_payment_start(request):
+    try:
+        context_type, identifier, role = _parse_payment_payload(request.POST)
+    except ValueError:
+        return HttpResponseBadRequest("잘못된 요청입니다.")
+    try:
+        role_label = _ensure_payment_role(request, context_type, identifier, role)
+    except PaymentAccessError as exc:
+        if exc.status == 403:
+            return HttpResponseForbidden(str(exc))
+        return HttpResponseBadRequest(str(exc))
+
+    widget = build_widget_context(
+        request,
+        context_type=context_type,
+        identifier=identifier,
+        role=role,
+        role_label=role_label,
+    )
+    if not widget.requires_payment:
+        return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+    try:
+        blink_service = get_blink_service()
+        memo = _build_invoice_memo(context_type, identifier, role_label)
+        blink_response = blink_service.create_invoice(
+            amount_sats=widget.required_amount,
+            memo=memo,
+            expires_in_minutes=max(1, PAYMENT_EXPIRE_SECONDS // 60 or 1),
+        )
+    except ExpertPaymentConfigurationError as exc:
+        state = PaymentState(
+            status="error",
+            amount_sats=widget.required_amount,
+            last_error=str(exc),
+            message=str(exc),
+        )
+        store_payment_state(request, context_type, identifier, role, state)
+        return _render_payment_widget(request, context_type, identifier, role, role_label)
+    except Exception as exc:  # noqa: BLE001
+        state = PaymentState(
+            status="error",
+            amount_sats=widget.required_amount,
+            last_error=str(exc),
+            message="인보이스를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.",
+        )
+        store_payment_state(request, context_type, identifier, role, state)
+        return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+    if not blink_response.get("success"):
+        state = PaymentState(
+            status="error",
+            amount_sats=widget.required_amount,
+            last_error=blink_response.get("error", "인보이스 생성에 실패했습니다."),
+            message="인보이스 생성 중 오류가 발생했습니다.",
+        )
+        store_payment_state(request, context_type, identifier, role, state)
+        return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+    expires_at = timezone.now() + timedelta(seconds=PAYMENT_EXPIRE_SECONDS)
+    blink_expires = blink_response.get("expires_at")
+    if blink_expires:
+        if timezone.is_naive(blink_expires):
+            blink_expires = timezone.make_aware(blink_expires, timezone=timezone.utc)
+        expires_at = min(expires_at, blink_expires)
+    state = PaymentState(
+        status="invoice",
+        amount_sats=widget.required_amount,
+        payment_hash=blink_response.get("payment_hash", ""),
+        payment_request=blink_response.get("invoice", ""),
+        expires_at=expires_at,
+        message="인보이스를 생성했습니다. 60초 이내에 결제를 완료해 주세요.",
+    )
+    store_payment_state(request, context_type, identifier, role, state)
+    return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+
+@require_POST
+def direct_contract_payment_cancel(request):
+    try:
+        context_type, identifier, role = _parse_payment_payload(request.POST)
+    except ValueError:
+        return HttpResponseBadRequest("잘못된 요청입니다.")
+    try:
+        role_label = _ensure_payment_role(request, context_type, identifier, role)
+    except PaymentAccessError as exc:
+        if exc.status == 403:
+            return HttpResponseForbidden(str(exc))
+        return HttpResponseBadRequest(str(exc))
+
+    state = get_payment_state(request, context_type, identifier, role)
+    state.status = "cancelled"
+    state.payment_hash = ""
+    state.payment_request = ""
+    state.expires_at = None
+    state.message = "인보이스를 취소했습니다."
+    store_payment_state(request, context_type, identifier, role, state)
+    return _render_payment_widget(request, context_type, identifier, role, role_label)
+
+
+@require_POST
+def direct_contract_payment_status(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "잘못된 요청입니다."}, status=400)
+    try:
+        context_type, identifier, role = _parse_payment_payload(payload)
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "잘못된 요청입니다."}, status=400)
+    try:
+        role_label = _ensure_payment_role(request, context_type, identifier, role)
+    except PaymentAccessError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=exc.status)
+
+    widget = build_widget_context(
+        request,
+        context_type=context_type,
+        identifier=identifier,
+        role=role,
+        role_label=role_label,
+    )
+    state = widget.state
+    if not widget.requires_payment:
+        mark_payment_paid(request, context_type, identifier, role)
+        return JsonResponse({"ok": True, "status": "skipped", "message": widget.status_message})
+
+    if state.status == "paid":
+        return JsonResponse({"ok": True, "status": "paid", "message": widget.status_message})
+
+    if not state.payment_hash:
+        return JsonResponse({"ok": False, "error": "활성화된 인보이스가 없습니다."}, status=400)
+
+    if state.expires_at and timezone.now() >= state.expires_at:
+        state.status = "expired"
+        state.payment_hash = ""
+        state.payment_request = ""
+        state.message = "인보이스가 만료되었습니다. 다시 생성해 주세요."
+        store_payment_state(request, context_type, identifier, role, state)
+        return JsonResponse({"ok": True, "status": "expired", "message": state.message})
+
+    try:
+        blink_service = get_blink_service()
+        result = blink_service.check_invoice_status(state.payment_hash)
+    except ExpertPaymentConfigurationError as exc:
+        state.status = "error"
+        state.last_error = str(exc)
+        state.message = str(exc)
+        store_payment_state(request, context_type, identifier, role, state)
+        return JsonResponse({"ok": False, "status": "error", "error": str(exc)}, status=500)
+    except Exception as exc:  # noqa: BLE001
+        state.status = "error"
+        state.last_error = str(exc)
+        state.message = "결제 상태를 확인하지 못했습니다."
+        store_payment_state(request, context_type, identifier, role, state)
+        return JsonResponse({"ok": False, "status": "error", "error": state.message}, status=500)
+
+    if not result.get("success"):
+        state.status = "error"
+        state.last_error = result.get("error", "결제 상태를 확인하지 못했습니다.")
+        state.message = state.last_error
+        store_payment_state(request, context_type, identifier, role, state)
+        return JsonResponse({"ok": False, "status": "error", "error": state.last_error}, status=500)
+
+    status_value = result.get("status")
+    if status_value == "paid":
+        mark_payment_paid(request, context_type, identifier, role)
+        return JsonResponse({"ok": True, "status": "paid", "message": "결제가 완료되었습니다."})
+    if status_value == "expired":
+        state.status = "expired"
+        state.payment_hash = ""
+        state.payment_request = ""
+        state.message = "인보이스가 만료되었습니다. 다시 생성해 주세요."
+        store_payment_state(request, context_type, identifier, role, state)
+        return JsonResponse({"ok": True, "status": "expired", "message": state.message})
+
+    remaining_seconds = widget.countdown_seconds
+    state.message = "결제 신호를 확인하는 중입니다."
+    store_payment_state(request, context_type, identifier, role, state)
+    return JsonResponse(
+        {
+            "ok": True,
+            "status": "pending",
+            "message": state.message,
+            "remaining_seconds": remaining_seconds,
+        }
+    )
