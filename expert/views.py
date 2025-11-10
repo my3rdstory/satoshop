@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.http import urlencode
-from django.views.generic import TemplateView, FormView
+from django.views.generic import TemplateView, FormView, RedirectView
 
 from storage.backends import S3Storage
 
@@ -99,10 +99,13 @@ def record_stage_log(stage: str, *, document=None, token: str | None = None, met
     )
 
 
-class ExpertLandingView(TemplateView):
-    """Expert 랜딩 페이지."""
+class ExpertLandingView(RedirectView):
+    """Expert 기본 경로를 직접 계약 생성 페이지로 리디렉션."""
 
-    template_name = "expert/landing.html"
+    permanent = False
+
+    def get_redirect_url(self, *args, **kwargs):  # noqa: D401 - RedirectView 구현 디테일
+        return reverse("expert:create-direct")
 
 
 class DirectContractStartView(LoginRequiredMixin, TemplateView):

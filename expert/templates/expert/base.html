@@ -20,7 +20,7 @@
 <body>
     <nav class="navbar is-fixed-top expert-navbar" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
-            <a class="navbar-item" href="{% url 'expert:landing' %}">
+            <a class="navbar-item" href="{% url 'expert:create-direct' %}">
                 <span class="expert-brand">
                     <img src="{% static 'expert/img/satoshop-expert-logo.png' %}" alt="SatoShop" class="expert-logo">
                 </span>
@@ -34,7 +34,7 @@
 
         <div id="expert-navbar-menu" class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url 'expert:landing' %}">개요</a>
+                <a class="navbar-item" href="{% url 'expert:create-direct' %}">개요</a>
                 <a class="navbar-item is-disabled" aria-disabled="true">엑스퍼트 찾기 (준비 중)</a>
                 <a class="navbar-item" href="{% url 'expert:direct-library' %}">계약 보관함</a>
             </div>
