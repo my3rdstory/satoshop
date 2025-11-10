@@ -245,7 +245,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         meta = log.meta or {}
         detail = meta.get("role") or meta.get("title") or "완료"
         payment_html = ""
-        payment_meta = (log.meta or {}).get("payment") if log else None
+        payment_meta = self._get_payment_receipt(obj, stage_key=stage_key)
         if payment_meta:
             payment_html = self._render_payment_badge(payment_meta)
         return format_html(
@@ -303,3 +303,18 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             subtitle,
             hash_display,
         )
+
+    def _get_payment_receipt(self, obj, *, stage_key: str):
+        stage_map = self._stage_map(obj)
+        log = stage_map.get(stage_key)
+        if log:
+            meta_payment = (log.meta or {}).get("payment")
+            if meta_payment:
+                return meta_payment
+        if not obj.document:
+            return None
+        if stage_key in ("draft", "role_one"):
+            return (obj.document.payment_meta or {}).get(obj.document.creator_role)
+        if stage_key == "role_two":
+            return (obj.document.payment_meta or {}).get(obj.document.counterparty_role)
+        return None

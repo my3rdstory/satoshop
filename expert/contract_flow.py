@@ -142,6 +142,15 @@ def _build_pdf_styles(font_name: str) -> Dict[str, ParagraphStyle]:
             spaceBefore=12,
             spaceAfter=6,
         ),
+        "PrimaryHeading": ParagraphStyle(
+            name="ContractPrimaryHeading",
+            parent=base,
+            fontSize=14,
+            leading=22,
+            textColor=colors.HexColor("#1D4ED8"),
+            spaceBefore=16,
+            spaceAfter=10,
+        ),
         "Body": ParagraphStyle(
             name="ContractBody",
             parent=base,
@@ -261,7 +270,7 @@ def _build_overview_table(payload: Dict, styles: Dict[str, ParagraphStyle], widt
         )
     )
     return [
-        Paragraph("계약 개요", styles["SectionHeading"]),
+        Paragraph("<b>1. 계약 개요</b>", styles["PrimaryHeading"]),
         table,
         Spacer(1, 10),
     ]
@@ -396,7 +405,7 @@ def _build_signature_section(document, styles: Dict[str, ParagraphStyle], width:
     timestamp = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M:%S")
     return [
         Spacer(1, 14),
-        Paragraph("서명 및 해시", styles["SectionHeading"]),
+        Paragraph("<b>3. 서명 및 해시</b>", styles["PrimaryHeading"]),
         table,
         Paragraph(f"PDF 생성 시각: {timestamp}", styles["Footer"]),
     ]
@@ -758,7 +767,7 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
 
     contract_flow = _markdown_to_flowables(contract_markdown, styles, doc.width)
     if contract_flow:
-        story.append(Paragraph("계약 본문", styles["SectionHeading"]))
+        story.append(Paragraph("<b>2. 계약 본문</b>", styles["PrimaryHeading"]))
         story.extend(contract_flow)
 
     story.extend(_build_signature_section(document, styles, doc.width))

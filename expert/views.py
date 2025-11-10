@@ -308,6 +308,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             )
         self.request.session.pop(self.session_key, None)
         self.request.session.modified = True
+        self._persist_creator_payment(document)
         clear_payment_state(self.request, "draft", self.token, creator_role)
         return redirect(f"{document.get_absolute_url()}?owner=1")
 
@@ -316,6 +317,24 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             slug = generate_share_slug()
             if not DirectContractDocument.objects.filter(slug=slug).exists():
                 return slug
+
+    def _persist_creator_payment(self, document: DirectContractDocument):
+        stage_log = (
+            DirectContractStageLog.objects.filter(stage="draft", document=document)
+            .order_by("started_at")
+            .first()
+        )
+        if not stage_log:
+            return
+        payment_receipt = (stage_log.meta or {}).get("payment")
+        if not payment_receipt:
+            return
+        payment_meta = document.payment_meta or {}
+        if payment_meta.get(document.creator_role) == payment_receipt:
+            return
+        payment_meta[document.creator_role] = payment_receipt
+        document.payment_meta = payment_meta
+        document.save(update_fields=["payment_meta", "updated_at"])
 
 
 class DirectContractInviteView(FormView):
