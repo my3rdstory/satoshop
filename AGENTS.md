@@ -59,7 +59,7 @@
 
 ## 변경 이력 기록
 - 지시한 내역을 아래와 같은 형식으로 변경 이력을 기록한다. 
-- 폴더 : 루트/change-log/
+- 폴더 : 루트/change-log/ 내 YYYY-MM 하위 폴더를 만들고, 해당 월의 변경 이력 파일을 그 폴더에 저장한다.
 - 단위: “작업(이슈/PR/스펙항목)” 단위 1파일
 - 파일명: YYYY-MM-DD_<scope>_<short-title>.md
 예) 2025-11-08_checkout-addrs_normalize.md
