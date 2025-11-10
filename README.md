@@ -225,6 +225,8 @@ source .venv/bin/activate  # Linux/Mac
 uv pip install -r requirements.txt
 ```
 
+> ⚠️ Render 배포에서는 `requirements.txt`로 의존성을 설치하므로 새 패키지를 추가했다면 `uv export --format requirements-txt > requirements.txt` 명령으로 파일을 다시 생성해 주세요. 누락되면 `channels`처럼 Django가 즉시 로드하는 패키지에서 `ModuleNotFoundError`가 발생할 수 있습니다.
+
 ### 3. 데이터베이스 설정
 
 #### Docker를 사용한 PostgreSQL 설정 (개발용)
