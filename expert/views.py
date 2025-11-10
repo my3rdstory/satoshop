@@ -269,6 +269,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         if payment_widget.requires_payment and payment_widget.state.status != "paid":
             form.add_error(None, "라이트닝 결제를 완료한 뒤 계약서 주소를 생성할 수 있습니다.")
             return self.form_invalid(form)
+        payment_receipt = self._build_payment_receipt(payment_widget)
         payload = self.draft_payload.copy()
         slug = self._generate_unique_slug()
         creator_role = payload.get("role", "client")
@@ -308,7 +309,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             )
         self.request.session.pop(self.session_key, None)
         self.request.session.modified = True
-        self._persist_creator_payment(document)
+        self._persist_creator_payment(document, payment_receipt)
         clear_payment_state(self.request, "draft", self.token, creator_role)
         return redirect(f"{document.get_absolute_url()}?owner=1")
 
@@ -318,15 +319,17 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             if not DirectContractDocument.objects.filter(slug=slug).exists():
                 return slug
 
-    def _persist_creator_payment(self, document: DirectContractDocument):
+    def _persist_creator_payment(self, document: DirectContractDocument, receipt: dict | None = None):
         stage_log = (
             DirectContractStageLog.objects.filter(stage="draft", document=document)
             .order_by("started_at")
             .first()
         )
-        if not stage_log:
-            return
-        payment_receipt = (stage_log.meta or {}).get("payment")
+        payment_receipt = None
+        if stage_log:
+            payment_receipt = (stage_log.meta or {}).get("payment")
+        if not payment_receipt:
+            payment_receipt = receipt
         if not payment_receipt:
             return
         payment_meta = document.payment_meta or {}
@@ -335,6 +338,20 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         payment_meta[document.creator_role] = payment_receipt
         document.payment_meta = payment_meta
         document.save(update_fields=["payment_meta", "updated_at"])
+
+    def _build_payment_receipt(self, payment_widget) -> dict | None:
+        state = payment_widget.state
+        if state.status != "paid":
+            return None
+        paid_at = state.paid_at or timezone.now()
+        if timezone.is_naive(paid_at):
+            paid_at = timezone.make_aware(paid_at, timezone=timezone.utc)
+        return {
+            "amount_sats": state.amount_sats,
+            "paid_at": paid_at.isoformat(),
+            "payment_hash": state.payment_hash,
+            "payment_request": state.payment_request,
+        }
 
 
 class DirectContractInviteView(FormView):
