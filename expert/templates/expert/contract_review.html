@@ -60,23 +60,23 @@
             </article>
 
             <article class="contract-flow-card">
-                <h3>계약 일반 사항</h3>
-                <div class="modal-template-body">
-                    {% if draft_payload.contract_template.content_html %}
-                        {{ draft_payload.contract_template.content_html|safe }}
-                    {% else %}
-                        <p class="has-text-grey">등록된 계약서 본문이 없습니다.</p>
-                    {% endif %}
-                </div>
-            </article>
-
-            <article class="contract-flow-card">
                 <h3>수행 내역</h3>
                 <div class="hash-display markdown-content">
                     {% if draft_payload.work_log_markdown %}
                         {{ work_log_html|safe }}
                     {% else %}
                         <p class="has-text-grey">작성된 메모가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>계약 일반 사항</h3>
+                <div class="modal-template-body">
+                    {% if draft_payload.contract_template.content_html %}
+                        {{ draft_payload.contract_template.content_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">등록된 계약서 본문이 없습니다.</p>
                     {% endif %}
                 </div>
             </article>

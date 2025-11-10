@@ -583,6 +583,11 @@
 .worklog-editor-wrapper .CodeMirror {
     border-radius: 10px;
     min-height: 200px;
+    caret-color: #fde68a;
+}
+
+.worklog-editor-wrapper .CodeMirror-cursor {
+    border-left: 2px solid #fde68a !important;
 }
 
 .worklog-editor-wrapper .editor-toolbar {
