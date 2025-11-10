@@ -1,5 +1,5 @@
 {% extends "expert/base.html" %}
-{% load static %}
+{% load static user_extras %}
 
 {% block title %}전자 계약서 - SatoShop Expert{% endblock %}
 
@@ -28,6 +28,9 @@
             <div class="timeline-step {% if document.creator_hash %}is-completed{% endif %}">
                 <strong>{{ creator_role_label }} 서명</strong>
                 <span>{{ document.creator_signed_at|date:"Y-m-d H:i:s"|default:"대기" }}</span>
+                {% if creator_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ creator_lightning_id|lightning_short }}</p>
+                {% endif %}
             </div>
             <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
                 <strong>{{ counterparty_role_label }} 확인</strong>
@@ -38,6 +41,11 @@
                         진행 중
                     {% endif %}
                 </span>
+                {% if not is_owner and viewer_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ viewer_lightning_id|lightning_short }}</p>
+                {% elif counterparty_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ counterparty_lightning_id|lightning_short }}</p>
+                {% endif %}
             </div>
             <div class="timeline-step {% if document.status == 'completed' %}is-completed{% endif %}">
                 <strong>사토샵 검증</strong>
@@ -163,6 +171,9 @@
                    data-payment-status-input
                    value="{% if payment_widget and payment_widget.state.status == 'paid' %}paid{% elif payment_widget %}{{ payment_widget.state.status }}{% else %}paid{% endif %}">
             <h3>{{ counterparty_role_label }} 서명</h3>
+            {% if viewer_lightning_id %}
+                <p class="lightning-id-note">현재 라이트닝 ID: {{ viewer_lightning_id|lightning_short }}</p>
+            {% endif %}
             <div class="field sign-contact-grid">
                 {% if require_performer_lightning and form.performer_lightning_address %}
                 <div>

@@ -55,6 +55,12 @@
     color: rgba(226, 232, 240, 0.84);
 }
 
+.login-note {
+    font-size: 0.95rem;
+    color: rgba(248, 250, 252, 0.9);
+    margin-top: 1rem;
+}
+
 .guide-card {
     background: rgba(8, 13, 26, 0.92);
     border-radius: 22px;

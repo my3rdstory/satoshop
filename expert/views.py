@@ -124,14 +124,41 @@ class ExpertLandingView(RedirectView):
         return reverse("expert:create-direct")
 
 
-class DirectContractStartView(LoginRequiredMixin, TemplateView):
+class LightningLoginRequiredMixin(LoginRequiredMixin):
+    """Ensure users completed Lightning login."""
+
+    login_url = reverse_lazy("expert:login")
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+        if not _has_lightning_profile(request.user):
+            messages.warning(request, "라이트닝 로그인 후 이용할 수 있습니다.")
+            login_url = reverse("expert:login")
+            query = urlencode({"next": request.get_full_path()})
+            return redirect(f"{login_url}?{query}")
+        return super().dispatch(request, *args, **kwargs)
+
+
+def _has_lightning_profile(user) -> bool:
+    return user.is_authenticated and getattr(user, "lightning_profile", None) is not None
+
+
+def _get_lightning_public_key(user) -> str:
+    if not user.is_authenticated:
+        return ""
+    profile = getattr(user, "lightning_profile", None)
+    return profile.public_key if profile else ""
+
+
+class DirectContractStartView(LightningLoginRequiredMixin, TemplateView):
     """직접 계약 생성 시작 화면 (TODO: 계약 생성 플로우 연결)."""
 
     template_name = "expert/direct_contract_start.html"
     login_url = reverse_lazy("expert:login")
 
 
-class DirectContractDraftView(LoginRequiredMixin, FormView):
+class DirectContractDraftView(LightningLoginRequiredMixin, FormView):
     """직접 계약 생성 폼 뷰(1차 초안)."""
 
     template_name = "expert/contract_draft.html"
@@ -165,7 +192,11 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         record_stage_log(
             "draft",
             token=token,
-            meta={"title": draft_payload.get("title", ""), "payment_type": draft_payload.get("payment_type")},
+            meta={
+                "title": draft_payload.get("title", ""),
+                "payment_type": draft_payload.get("payment_type"),
+                "lightning_id": _get_lightning_public_key(self.request.user),
+            },
         )
         return redirect(reverse("expert:direct-review", kwargs={"token": token}))
 
@@ -219,7 +250,7 @@ class DirectContractDraftView(LoginRequiredMixin, FormView):
         return data
 
 
-class DirectContractReviewView(LoginRequiredMixin, FormView):
+class DirectContractReviewView(LightningLoginRequiredMixin, FormView):
     """계약 생성자가 최종 검토 및 서명을 수행하는 화면."""
 
     template_name = "expert/contract_review.html"
@@ -254,6 +285,8 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
                 "work_log_html": render_contract_markdown(work_log_markdown),
                 "payment_widget": payment_widget,
                 "payment_expire_seconds": PAYMENT_EXPIRE_SECONDS,
+                "creator_lightning_id": _get_lightning_public_key(self.request.user),
+                "counterparty_lightning_id": self.draft_payload.get("counterparty_lightning_id", ""),
             }
         )
         return context
@@ -271,6 +304,9 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             return self.form_invalid(form)
         payment_receipt = self._build_payment_receipt(payment_widget)
         payload = self.draft_payload.copy()
+        creator_lightning_id = _get_lightning_public_key(self.request.user)
+        if creator_lightning_id:
+            payload["creator_lightning_id"] = creator_lightning_id
         slug = self._generate_unique_slug()
         creator_role = payload.get("role", "client")
         counterparty_role = "performer" if creator_role == "client" else "client"
@@ -288,7 +324,16 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         document.creator_signed_at = timezone.now()
         document.status = "pending_counterparty"
         document.save()
-        record_stage_log("draft", document=document, token=self.token, meta={"title": payload.get("title")})
+        record_stage_log(
+            "draft",
+            document=document,
+            token=self.token,
+            meta={
+                "title": payload.get("title"),
+                "payment_type": payload.get("payment_type"),
+                "lightning_id": creator_lightning_id,
+            },
+        )
         self._ensure_draft_log_attached(document)
 
         asset, error, signature_file = store_signature_asset_from_data(
@@ -316,6 +361,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
             meta={
                 "role": creator_role,
                 "signed_at": timezone.localtime(document.creator_signed_at).isoformat() if document.creator_signed_at else "",
+                "lightning_id": creator_lightning_id,
             },
         )
         clear_payment_state(self.request, "draft", self.token, creator_role)
@@ -373,7 +419,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         }
 
 
-class DirectContractInviteView(FormView):
+class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
     """생성된 계약을 공유 주소에서 확인/서명하는 화면."""
 
     template_name = "expert/contract_invite.html"
@@ -407,6 +453,11 @@ class DirectContractInviteView(FormView):
         role_labels = dict(ContractParticipant.ROLE_CHOICES)
         creator_role_label = role_labels.get(self.document.creator_role, "계약 생성자")
         counterparty_role_label = role_labels.get(self.document.counterparty_role, "상대방")
+        creator_lightning_id = (self.payload or {}).get("creator_lightning_id") or _get_lightning_public_key(
+            self.document.creator
+        )
+        counterparty_payload_lightning = (self.payload or {}).get("counterparty_lightning_id", "")
+        viewer_lightning_id = _get_lightning_public_key(self.request.user)
         context.update(
             {
                 "document": self.document,
@@ -427,6 +478,9 @@ class DirectContractInviteView(FormView):
                 "require_performer_lightning": self.document.counterparty_role == "performer",
                 "creator_role_label": creator_role_label,
                 "counterparty_role_label": counterparty_role_label,
+                "creator_lightning_id": creator_lightning_id,
+                "counterparty_lightning_id": counterparty_payload_lightning,
+                "viewer_lightning_id": viewer_lightning_id,
             }
         )
         form_instance = context.get("form")
@@ -480,6 +534,9 @@ class DirectContractInviteView(FormView):
             return self.form_invalid(form)
 
         self.document.counterparty_email = form.cleaned_data["email"]
+        counterparty_lightning_id = _get_lightning_public_key(self.request.user)
+        if counterparty_lightning_id:
+            self.payload["counterparty_lightning_id"] = counterparty_lightning_id
         if self.document.counterparty_role == "performer":
             performer_lightning = form.cleaned_data.get("performer_lightning_address")
             if performer_lightning:
@@ -497,6 +554,7 @@ class DirectContractInviteView(FormView):
         stage_meta = {
             "role": self.document.counterparty_role,
             "email": self.document.counterparty_email,
+            "lightning_id": counterparty_lightning_id,
         }
         if payment_receipt:
             stage_meta["payment"] = payment_receipt
@@ -510,17 +568,9 @@ class DirectContractInviteView(FormView):
                 "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
             )
 
-        record_stage_log(
-            "role_two",
-            document=self.document,
-            meta={
-                "role": self.document.counterparty_role,
-                "email": self.document.counterparty_email,
-                "signed_at": timezone.localtime(self.document.counterparty_signed_at).isoformat()
-                if self.document.counterparty_signed_at
-                else "",
-            },
-        )
+        if self.document.counterparty_signed_at:
+            stage_meta["signed_at"] = timezone.localtime(self.document.counterparty_signed_at).isoformat()
+        record_stage_log("role_two", document=self.document, meta=stage_meta)
 
         mediator_hash = build_mediator_hash(self.document.counterparty_hash)
         self.document.mediator_hash = mediator_hash.value
@@ -542,7 +592,7 @@ class DirectContractInviteView(FormView):
         return redirect(self.document.get_absolute_url())
 
 
-class DirectContractLibraryView(LoginRequiredMixin, TemplateView):
+class DirectContractLibraryView(LightningLoginRequiredMixin, TemplateView):
     """내가 생성한 직접 계약 리스트."""
 
     template_name = "expert/contract_library.html"
@@ -555,7 +605,7 @@ class DirectContractLibraryView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class ContractDetailView(LoginRequiredMixin, TemplateView):
+class ContractDetailView(LightningLoginRequiredMixin, TemplateView):
     """계약서 상세/채팅 화면."""
 
     template_name = "expert/contract_detail.html"

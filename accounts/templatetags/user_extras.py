@@ -41,3 +41,18 @@ def friendly_display_name(user):
 def is_lightning_user(user):
     """라이트닝 사용자인지 확인"""
     return hasattr(user, 'lightning_profile') and user.lightning_profile 
+
+
+@register.filter
+def lightning_short(pubkey, visible=8):
+    """공개키를 앞/뒤만 남겨 짧게 표시"""
+    if not pubkey:
+        return ""
+    try:
+        visible = int(visible)
+    except (TypeError, ValueError):
+        visible = 8
+    pubkey = str(pubkey)
+    if len(pubkey) <= visible * 2:
+        return pubkey
+    return f"{pubkey[:visible]}…{pubkey[-visible:]}"

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static user_extras %}
 <!DOCTYPE html>
 <html lang="ko" class="has-navbar-fixed-top">
 <head>
@@ -34,16 +34,22 @@
 
         <div id="expert-navbar-menu" class="navbar-menu">
             <div class="navbar-start">
-                <a class="navbar-item" href="{% url 'expert:create-direct' %}">개요</a>
+            <a class="navbar-item" href="{% url 'expert:create-direct' %}">개요</a>
                 <a class="navbar-item is-disabled" aria-disabled="true">엑스퍼트 찾기 (준비 중)</a>
                 <a class="navbar-item" href="{% url 'expert:direct-library' %}">계약 보관함</a>
             </div>
             <div class="navbar-end">
                 <div class="navbar-item">
                     <div class="buttons">
-                        <a class="button is-primary" href="{% url 'expert:direct-draft' %}">
-                            <strong>직접 계약 생성</strong>
-                        </a>
+                        {% if request.user|is_lightning_user %}
+                            <a class="button is-primary" href="{% url 'expert:direct-draft' %}">
+                                <strong>직접 계약 생성</strong>
+                            </a>
+                        {% else %}
+                            <a class="button is-primary" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">
+                                <strong>직접 계약 생성</strong>
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

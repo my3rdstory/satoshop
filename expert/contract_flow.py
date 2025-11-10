@@ -374,9 +374,12 @@ def _build_payment_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
 
 
 def _build_signature_section(document, styles: Dict[str, ParagraphStyle], width: float) -> List:
+    payload = document.payload or {}
     rows = [
         ("의뢰자 서명 해시", document.creator_hash or "-"),
+        ("의뢰자 라이트닝 ID", payload.get("creator_lightning_id") or "-"),
         ("수행자 서명 해시", document.counterparty_hash or "-"),
+        ("수행자 라이트닝 ID", payload.get("counterparty_lightning_id") or "-"),
         ("중개자(시스템) 서명 해시", document.mediator_hash or "-"),
     ]
     table = Table(

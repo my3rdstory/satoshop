@@ -1,5 +1,5 @@
 {% extends "expert/base.html" %}
-{% load static %}
+{% load static user_extras %}
 
 {% block title %}계약 최종 검토 - SatoShop Expert{% endblock %}
 
@@ -90,6 +90,9 @@
             <div class="signature-payment-grid">
                 <div>
                     <h3>자필 서명</h3>
+                    {% if creator_lightning_id %}
+                    <p class="lightning-id-note">라이트닝 ID: {{ creator_lightning_id|lightning_short }}</p>
+                    {% endif %}
                     {{ form.signature_data }}
                     <div class="signature-pad-wrapper">
                         <canvas class="signature-canvas" data-signature-canvas></canvas>

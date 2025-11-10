@@ -159,6 +159,13 @@
     margin-bottom: 0.25rem;
 }
 
+.timeline-lightning {
+    font-size: 0.78rem;
+    color: #fef3c7;
+    margin-top: 0.25rem;
+    word-break: break-all;
+}
+
 .hash-display {
     background: rgba(12, 20, 38, 0.95);
     border: 1px solid rgba(148, 163, 184, 0.2);
@@ -332,6 +339,12 @@
     background: rgba(8, 12, 24, 0.9);
     color: rgba(248, 250, 252, 0.9);
     font-size: 0.85rem;
+}
+
+.lightning-id-note {
+    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.85);
+    margin: 0.35rem 0 0.75rem;
 }
 
 .lightning-wallet-btn {
