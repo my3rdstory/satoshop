@@ -438,10 +438,17 @@ class DirectContractInviteView(FormView):
         self.document.status = "counterparty_in_progress"
         self.document.payload = self.payload
         self.document.save()
+        payment_receipt = (self.document.payment_meta or {}).get(self.document.counterparty_role)
+        stage_meta = {
+            "role": self.document.counterparty_role,
+            "email": self.document.counterparty_email,
+        }
+        if payment_receipt:
+            stage_meta["payment"] = payment_receipt
         record_stage_log(
             "role_two",
             document=self.document,
-            meta={"role": self.document.counterparty_role, "email": self.document.counterparty_email},
+            meta=stage_meta,
         )
         if asset:
             self.document.set_signature_asset("counterparty", asset)

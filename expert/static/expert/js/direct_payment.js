@@ -24,7 +24,7 @@
             this.totalSeconds = parseInt(element.dataset.paymentCountdownTotal || '60', 10);
             this.paymentHash = element.dataset.paymentHash || '';
             this.csrfToken = element.dataset.paymentCsrf || getCookie('csrftoken');
-            this.statusInput = element.querySelector('[data-payment-status-input]');
+            this.statusInput = this._locateStatusInput();
             this.statusText = element.querySelector('[data-payment-status-text]');
             this.countdownText = element.querySelector('[data-payment-countdown-text]');
             this.pollTimer = null;
@@ -164,12 +164,25 @@
         }
 
         updateStatusInput(value) {
-            if (this.statusInput) {
-                this.statusInput.value = value;
-                this.statusInput.dispatchEvent(new Event('input', { bubbles: true }));
-                this.statusInput.dispatchEvent(new Event('change', { bubbles: true }));
+            const statusInput = this._locateStatusInput();
+            if (statusInput) {
+                statusInput.value = value;
+                statusInput.dispatchEvent(new Event('input', { bubbles: true }));
+                statusInput.dispatchEvent(new Event('change', { bubbles: true }));
             }
             this.el.dataset.paymentStatus = value;
+        }
+
+        _locateStatusInput() {
+            if (this.statusInput && document.body.contains(this.statusInput)) {
+                return this.statusInput;
+            }
+            const form = this.el.closest('form');
+            if (!form) {
+                return null;
+            }
+            this.statusInput = form.querySelector('[data-payment-status-input]');
+            return this.statusInput;
         }
 
         updateStatusText(text) {

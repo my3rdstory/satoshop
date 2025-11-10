@@ -159,6 +159,9 @@
         {% if form %}
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
+            <input type="hidden"
+                   data-payment-status-input
+                   value="{% if payment_widget and payment_widget.state.status == 'paid' %}paid{% elif payment_widget %}{{ payment_widget.state.status }}{% else %}paid{% endif %}">
             <h3>{{ counterparty_role_label }} 서명</h3>
             <div class="field sign-contact-grid">
                 {% if require_performer_lightning and form.performer_lightning_address %}

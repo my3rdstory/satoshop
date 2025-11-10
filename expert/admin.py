@@ -3,6 +3,7 @@ from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
 from django.utils.html import format_html
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from .models import (
     Contract,
@@ -196,6 +197,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
     readonly_fields = ("document", "token", "stage", "started_at", "meta")
     list_display_links = ("document_link",)
     list_per_page = 25
+    ordering = ("-started_at",)
 
     stage_labels = {
         "draft": "드래프트",
@@ -211,6 +213,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             .filter(document__isnull=False, stage="draft")
             .select_related("document")
             .prefetch_related("document__stage_logs")
+            .order_by("-started_at")
         )
         return qs
 
@@ -241,7 +244,16 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         ts = timezone.localtime(log.started_at).strftime("%Y-%m-%d %H:%M")
         meta = log.meta or {}
         detail = meta.get("role") or meta.get("title") or "완료"
-        return format_html('<strong>{}</strong><br><span class="text-muted">{}</span>', ts, detail)
+        payment_html = ""
+        payment_meta = (log.meta or {}).get("payment") if log else None
+        if payment_meta:
+            payment_html = self._render_payment_badge(payment_meta)
+        return format_html(
+            '<strong>{}</strong><br><span class="text-muted">{}</span>{}',
+            ts,
+            detail,
+            format_html("<br>{}", payment_html) if payment_html else "",
+        )
 
     def stage_draft(self, obj):
         return self._render_stage(obj, "draft")
@@ -271,3 +283,23 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         return timezone.localtime(latest.started_at).strftime("%Y-%m-%d %H:%M")
 
     latest_activity.short_description = "마지막 기록"
+
+    def _render_payment_badge(self, payment_meta: dict) -> str:
+        amount = payment_meta.get("amount_sats") or 0
+        paid_at_raw = payment_meta.get("paid_at")
+        paid_display = ""
+        if paid_at_raw:
+            paid_dt = parse_datetime(paid_at_raw)
+            if paid_dt:
+                if timezone.is_naive(paid_dt):
+                    paid_dt = timezone.make_aware(paid_dt, timezone=timezone.utc)
+                paid_display = timezone.localtime(paid_dt).strftime("%Y-%m-%d %H:%M")
+        payment_hash = payment_meta.get("payment_hash")
+        hash_display = f" · #{payment_hash[:10]}" if payment_hash else ""
+        subtitle = f" ({paid_display})" if paid_display else ""
+        return format_html(
+            '<span style="color:#facc15;font-weight:600;">⚡ {} sats 결제{}{}</span>',
+            amount,
+            subtitle,
+            hash_display,
+        )

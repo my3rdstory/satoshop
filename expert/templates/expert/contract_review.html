@@ -84,6 +84,9 @@
 
         <form method="post" class="contract-flow-card">
             {% csrf_token %}
+            <input type="hidden"
+                   data-payment-status-input
+                   value="{% if payment_widget and payment_widget.state.status == 'paid' %}paid{% elif payment_widget %}{{ payment_widget.state.status }}{% else %}paid{% endif %}">
             <div class="signature-payment-grid">
                 <div>
                     <h3>자필 서명</h3>

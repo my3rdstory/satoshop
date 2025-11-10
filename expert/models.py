@@ -199,6 +199,7 @@ class DirectContractDocument(models.Model):
         related_name="direct_contracts_created",
     )
     payload = models.JSONField(help_text="계약 입력값 전체 스냅샷(JSON).")
+    payment_meta = models.JSONField(default=dict, blank=True, help_text="단계별 라이트닝 결제 정보")
     creator_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
     counterparty_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty")

@@ -336,6 +336,7 @@
 
 .lightning-wallet-btn {
     margin-top: 0.35rem;
+    display: none;
 }
 
 .lightning-mini-actions {
@@ -374,6 +375,12 @@
 .share-url-link:focus {
     color: #5eead4;
     text-decoration: underline;
+}
+
+@media screen and (max-width: 768px) {
+    .lightning-wallet-btn {
+        display: inline-flex;
+    }
 }
 
 .signature-preview {

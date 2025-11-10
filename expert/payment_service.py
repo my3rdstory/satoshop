@@ -13,7 +13,7 @@ from django.utils.text import slugify
 from ln_payment.blink_service import BlinkAPIService
 
 from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
-from .models import ContractPricingSetting
+from .models import ContractPricingSetting, DirectContractDocument, DirectContractStageLog
 
 SESSION_KEY = "expert_payment_states"
 PAYMENT_EXPIRE_SECONDS = 60
@@ -174,6 +174,12 @@ def mark_payment_paid(request, context_type: str, identifier: str, role: str) ->
     state.message = "결제를 확인했습니다."
     state.paid_at = timezone.now()
     store_payment_state(request, context_type, identifier, role, state)
+    _persist_payment_receipt(
+        context_type=context_type,
+        identifier=identifier,
+        role=role,
+        receipt_state=state,
+    )
     return state
 
 
@@ -191,6 +197,13 @@ def build_widget_context(
     needs_payment = bool(pricing and pricing.enabled and amount > 0)
     if not needs_payment:
         state.status = "paid"
+    else:
+        receipt = _load_persisted_payment_receipt(context_type, identifier, role)
+        if receipt and state.status != "paid":
+            state.status = "paid"
+            state.message = "결제를 확인했습니다."
+            state.payment_hash = receipt.get("payment_hash", "")
+            state.paid_at = _parse_dt(receipt.get("paid_at")) or timezone.now()
     dom_id = build_dom_id(context_type, identifier, role)
     return PaymentWidgetContext(
         dom_id=dom_id,
@@ -235,3 +248,54 @@ def _format_dt(value: Optional[timezone.datetime]) -> Optional[str]:
 def ensure_draft_payload(request, token: str) -> Optional[dict]:
     session_key = f"{DIRECT_CONTRACT_SESSION_PREFIX}:{token}"
     return request.session.get(session_key)
+
+
+def _persist_payment_receipt(*, context_type: str, identifier: str, role: str, receipt_state: PaymentState) -> None:
+    if receipt_state.status != "paid":
+        return
+    receipt = {
+        "amount_sats": receipt_state.amount_sats,
+        "paid_at": _format_dt(receipt_state.paid_at) or _format_dt(timezone.now()),
+        "payment_hash": receipt_state.payment_hash,
+        "payment_request": receipt_state.payment_request,
+    }
+    if context_type == "draft":
+        log = (
+            DirectContractStageLog.objects.filter(stage="draft", token=identifier)
+            .order_by("started_at")
+            .first()
+        )
+        if log:
+            meta = log.meta or {}
+            existing = meta.get("payment", {})
+            if existing != receipt:
+                meta["payment"] = receipt
+                log.meta = meta
+                log.save(update_fields=["meta"])
+        return
+    if context_type == "invite":
+        document = DirectContractDocument.objects.filter(slug=identifier).first()
+        if not document:
+            return
+        payment_meta = document.payment_meta or {}
+        if payment_meta.get(role) == receipt:
+            return
+        payment_meta[role] = receipt
+        document.payment_meta = payment_meta
+        document.save(update_fields=["payment_meta", "updated_at"])
+
+
+def _load_persisted_payment_receipt(context_type: str, identifier: str, role: str) -> Optional[dict]:
+    if context_type == "draft":
+        log = (
+            DirectContractStageLog.objects.filter(stage="draft", token=identifier)
+            .order_by("started_at")
+            .first()
+        )
+        if log:
+            return (log.meta or {}).get("payment")
+        return None
+    document = DirectContractDocument.objects.filter(slug=identifier).first()
+    if not document:
+        return None
+    return (document.payment_meta or {}).get(role)
