@@ -334,7 +334,13 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         )
         payment_receipt = None
         if stage_log:
-            payment_receipt = (stage_log.meta or {}).get("payment")
+            meta = stage_log.meta or {}
+            payment_receipt = meta.get("payment")
+            if receipt and not payment_receipt:
+                meta["payment"] = receipt
+                stage_log.meta = meta
+                stage_log.save(update_fields=["meta"])
+                payment_receipt = receipt
         if not payment_receipt:
             payment_receipt = receipt
         if not payment_receipt:

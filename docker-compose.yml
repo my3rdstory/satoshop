@@ -17,5 +17,17 @@ services:
     security_opt:
       - no-new-privileges:true
     user: postgres
+  adminer:
+    image: adminer:4
+    container_name: satoshop-adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "127.0.0.1:9080:8080"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    security_opt:
+      - no-new-privileges:true
 volumes:
   satoshop-main-postgres_data:
