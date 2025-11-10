@@ -142,6 +142,21 @@ class ContractReviewForm(forms.Form):
         required=True,
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
+    confirm_privacy = forms.BooleanField(
+        label="개인정보 수집 및 이용에 동의합니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+    confirm_confidentiality = forms.BooleanField(
+        label="계약 내용 비밀 유지 및 시스템 책임 범위를 이해했습니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
+    confirm_system = forms.BooleanField(
+        label="중계자인 본 시스템은 계약 이행에 관여하지 않으며, 불이행에 대한 책임이 없음을 이해합니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
 
     def clean_signature_data(self):
         data = self.cleaned_data["signature_data"]
@@ -157,6 +172,11 @@ class ContractReviewForm(forms.Form):
 class CounterpartySignatureForm(forms.Form):
     """공유 주소에서 상대방이 사용하는 서명 폼."""
 
+    agree_reviewed = forms.BooleanField(
+        label="계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.",
+        required=True,
+        widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
+    )
     email = forms.EmailField(
         label="이메일 (선택)",
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
@@ -184,7 +204,7 @@ class CounterpartySignatureForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
     agree_system = forms.BooleanField(
-        label="중계 시스템 안내 사항을 모두 확인했습니다.",
+        label="중계자인 본 시스템은 계약 이행에 관여하지 않으며, 불이행에 대한 책임이 없음을 이해합니다.",
         required=True,
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )

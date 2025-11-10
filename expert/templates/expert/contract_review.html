@@ -108,11 +108,29 @@
                     {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
                 </div>
             </div>
-            <div class="field mt-4">
+            <div class="field mt-4 sign-checkbox-list">
                 <label class="checkbox">
                     {{ form.confirm_reviewed }} 계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.
                 </label>
                 {% for error in form.confirm_reviewed.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_privacy }} 개인정보 수집 및 이용에 동의합니다.
+                </label>
+                {% for error in form.confirm_privacy.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_confidentiality }} 계약 내용 비밀 유지 및 시스템 책임 범위를 이해했습니다.
+                </label>
+                {% for error in form.confirm_confidentiality.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_system }} 중계자인 본 시스템은 계약 이행에 관여하지 않으며, 불이행에 대한 책임이 없음을 이해합니다.
+                </label>
+                {% for error in form.confirm_system.errors %}
                     <p class="help is-danger">{{ error }}</p>
                 {% endfor %}
             </div>
