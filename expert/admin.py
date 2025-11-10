@@ -210,7 +210,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         qs = (
             super()
             .get_queryset(request)
-            .filter(document__isnull=False, stage="draft")
+            .filter(stage="draft")
             .select_related("document")
             .prefetch_related("document__stage_logs")
             .order_by("-started_at")
@@ -218,21 +218,28 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         return qs
 
     def document_link(self, obj):
-        if not obj.document:
-            return "-"
-        title = obj.document.payload.get("title") if obj.document.payload else obj.document.slug
-        try:
-            url = reverse("admin:expert_directcontractdocument_change", args=[obj.document.pk])
-            return format_html('<a href="{}">{} ({})</a>', url, title or obj.document.slug, obj.document.slug)
-        except NoReverseMatch:
-            return f"{title or obj.document.slug} ({obj.document.slug})"
+        if obj.document:
+            title = obj.document.payload.get("title") if obj.document.payload else obj.document.slug
+            try:
+                url = reverse("admin:expert_directcontractdocument_change", args=[obj.document.pk])
+                return format_html('<a href="{}">{} ({})</a>', url, title or obj.document.slug, obj.document.slug)
+            except NoReverseMatch:
+                return f"{title or obj.document.slug} ({obj.document.slug})"
+        review_url = reverse("expert:direct-review", kwargs={"token": obj.token})
+        title = (obj.meta or {}).get("title") or obj.token
+        return format_html('<a href="{}" target="_blank">{} (초안)</a>', review_url, title)
 
     document_link.short_description = "계약"
 
     def _stage_map(self, obj):
         if not hasattr(obj, "_stage_cache"):
-            logs = obj.document.stage_logs.all() if obj.document else []
-            obj._stage_cache = {log.stage: log for log in logs}
+            if obj.document:
+                logs = obj.document.stage_logs.all()
+            else:
+                logs = DirectContractStageLog.objects.filter(token=obj.token).order_by("started_at")
+            cache = {log.stage: log for log in logs}
+            cache.setdefault("draft", obj)
+            obj._stage_cache = cache
         return obj._stage_cache
 
     def _render_stage(self, obj, stage_key):
@@ -246,6 +253,8 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         detail = meta.get("role") or meta.get("title") or "완료"
         payment_html = ""
         payment_meta = self._get_payment_receipt(obj, stage_key=stage_key)
+        if stage_key == "draft":
+            payment_meta = None
         if payment_meta:
             payment_html = self._render_payment_badge(payment_meta)
         return format_html(

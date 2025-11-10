@@ -289,6 +289,7 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         document.status = "pending_counterparty"
         document.save()
         record_stage_log("draft", document=document, token=self.token, meta={"title": payload.get("title")})
+        self._ensure_draft_log_attached(document)
 
         asset, error, signature_file = store_signature_asset_from_data(
             form.cleaned_data["signature_data"], f"creator-{self.request.user.pk}"
@@ -351,6 +352,11 @@ class DirectContractReviewView(LoginRequiredMixin, FormView):
         payment_meta[document.creator_role] = payment_receipt
         document.payment_meta = payment_meta
         document.save(update_fields=["payment_meta", "updated_at"])
+
+    def _ensure_draft_log_attached(self, document: DirectContractDocument):
+        DirectContractStageLog.objects.filter(stage="draft", token=self.token or "", document__isnull=True).update(
+            document=document
+        )
 
     def _build_payment_receipt(self, payment_widget) -> dict | None:
         state = payment_widget.state
