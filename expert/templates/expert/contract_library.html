@@ -25,6 +25,7 @@
                             <th>생성일</th>
                             <th>공유 주소</th>
                             <th>계약서 PDF</th>
+                            <th>위변조 검증</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,6 +41,11 @@
                                     {% else %}
                                         -
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <a class="button is-light is-small" href="{% url 'expert:direct-verify' %}?document={{ doc.slug }}">
+                                        확인
+                                    </a>
                                 </td>
                             </tr>
                         {% endfor %}
