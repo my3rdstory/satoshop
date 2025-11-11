@@ -156,13 +156,6 @@ def _get_accessible_documents(user):
     return DirectContractDocument.objects.filter(query).order_by("-created_at")
 
 
-class DirectContractStartView(LightningLoginRequiredMixin, TemplateView):
-    """직접 계약 생성 시작 화면 (TODO: 계약 생성 플로우 연결)."""
-
-    template_name = "expert/direct_contract_start.html"
-    login_url = reverse_lazy("expert:login")
-
-
 class DirectContractDraftView(LightningLoginRequiredMixin, FormView):
     """직접 계약 생성 폼 뷰(1차 초안)."""
 
@@ -763,7 +756,7 @@ class ExpertLightningLoginGuideView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        default_target = reverse("expert:create-direct")
+        default_target = reverse("expert:direct-draft")
         redirect_target = self.request.GET.get("next") or default_target
         query_string = urlencode({"next": redirect_target})
         context.update(

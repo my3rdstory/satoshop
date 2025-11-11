@@ -1,4 +1,5 @@
 from django.urls import path
+from django.views.generic import RedirectView
 
 from . import views
 
@@ -8,8 +9,12 @@ app_name = "expert"
 urlpatterns = [
     path("", views.ExpertLandingView.as_view(), name="landing"),
     path("login/", views.ExpertLightningLoginGuideView.as_view(), name="login"),
-    path("contracts/direct/", views.DirectContractStartView.as_view(), name="create-direct"),
-    path("contracts/direct/draft/", views.DirectContractDraftView.as_view(), name="direct-draft"),
+    path("contracts/direct/", views.DirectContractDraftView.as_view(), name="direct-draft"),
+    path(
+        "contracts/direct/draft/",
+        RedirectView.as_view(pattern_name="expert:direct-draft", permanent=False),
+        name="legacy-direct-draft",
+    ),
     path("contracts/direct/review/<str:token>/", views.DirectContractReviewView.as_view(), name="direct-review"),
     path("contracts/direct/library/", views.DirectContractLibraryView.as_view(), name="direct-library"),
     path("contracts/direct/verify/", views.DirectContractIntegrityCheckView.as_view(), name="direct-verify"),
