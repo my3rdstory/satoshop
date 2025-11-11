@@ -43,6 +43,9 @@
                 <div class="navbar-item">
                     <div class="buttons">
                         {% if request.user.is_authenticated %}
+                            <span class="navbar-user-tag">{{ request.user.username }}</span>
+                        {% endif %}
+                        {% if request.user.is_authenticated %}
                             <a class="button is-light" href="{% url 'accounts:logout' %}?next={% url 'expert:create-direct' %}">
                                 로그아웃
                             </a>

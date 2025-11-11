@@ -28,6 +28,12 @@ a {
     color: rgba(226, 232, 240, 0.92);
 }
 
+.navbar-user-tag {
+    color: rgba(226, 232, 240, 0.85);
+    margin-right: 0.75rem;
+    font-size: 0.9rem;
+}
+
 .expert-brand {
     display: inline-flex;
     align-items: center;
