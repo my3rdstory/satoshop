@@ -1,0 +1,102 @@
+{% extends "admin/change_list.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="usage-stats">
+  <h2 style="margin-bottom:1.5rem;">Expert 사용 통계</h2>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <p class="stat-label">누적 계약</p>
+      <p class="stat-value">{{ stats.contracts_total|intcomma }}건</p>
+      <p class="stat-subtitle">완료 {{ stats.contracts_completed|intcomma }}건</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">계약 금액 합계</p>
+      <p class="stat-value">{{ stats.contract_amount_sats|intcomma }} sats</p>
+      <p class="stat-subtitle">계약 본문에 입력된 총액</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">참여 사용자</p>
+      <p class="stat-value">{{ stats.unique_creators|intcomma }}명</p>
+      <p class="stat-subtitle">생성자 기준 · 상대방 {{ stats.unique_counterparties|intcomma }}명</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">라이트닝 사용자</p>
+      <p class="stat-value">{{ stats.lightning_users_total|intcomma }}명</p>
+      <p class="stat-subtitle">최근 {{ stats.payments.window_days }}일 활동 {{ stats.lightning_users_active|intcomma }}명</p>
+    </div>
+  </div>
+
+  <div class="stat-card" style="margin-top:1.5rem;">
+    <p class="stat-label">수수료 결제 현황</p>
+    <ul class="stat-list">
+      <li>
+        <span>누적 수수료</span>
+        <strong>{{ stats.payments.total_amount_sats|intcomma }} sats</strong>
+      </li>
+      <li>
+        <span>최근 {{ stats.payments.window_days }}일</span>
+        <strong>{{ stats.payments.recent_amount_sats|intcomma }} sats</strong>
+      </li>
+      <li>
+        <span>결제 건수</span>
+        <strong>{{ stats.payments.total_count|intcomma }}건 (최근 {{ stats.payments.recent_count|intcomma }}건)</strong>
+      </li>
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.usage-stats .stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.usage-stats .stat-card {
+  border: 1px solid #d4d4d8;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #fff;
+}
+.usage-stats .stat-label {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.35rem;
+  color: #6b7280;
+}
+.usage-stats .stat-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0;
+}
+.usage-stats .stat-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+.usage-stats .stat-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.usage-stats .stat-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.usage-stats .stat-list li:last-child {
+  border-bottom: 0;
+}
+.usage-stats .stat-list span {
+  color: #6b7280;
+}
+</style>
+{% endblock %}

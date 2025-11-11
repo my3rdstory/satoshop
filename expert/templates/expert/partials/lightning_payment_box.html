@@ -67,10 +67,20 @@
                     {% if payment_widget.state.payment_request %}
                         <label class="label is-small">인보이스 문자열</label>
                         <textarea class="lightning-invoice-textarea" rows="4" readonly data-payment-invoice-text>{{ payment_widget.state.payment_request }}</textarea>
-                        <a class="button is-info is-light is-fullwidth lightning-wallet-btn"
-                           href="lightning:{{ payment_widget.state.payment_request }}">라이트닝 지갑 열기</a>
+                        <div class="lightning-mini-actions">
+                            <button type="button"
+                                    class="button is-info is-light"
+                                    data-payment-copy>
+                                인보이스 복사
+                            </button>
+                            <button type="button"
+                                    class="button is-link is-light"
+                                    data-payment-open-wallet>
+                                라이트닝 지갑 열기
+                            </button>
+                        </div>
                     {% endif %}
-                    <div class="lightning-mini-actions">
+                    <div class="lightning-mini-actions lightning-mini-actions--secondary">
                         <button type="button"
                                 class="button is-light"
                                 hx-post="{{ payment_widget.widget_urls.cancel }}"

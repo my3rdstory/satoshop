@@ -265,4 +265,83 @@
             widgetControllers.delete(target.id);
         }
     });
+
+    document.addEventListener('click', (event) => {
+        const copyTrigger = event.target.closest('[data-payment-copy]');
+        if (copyTrigger) {
+            event.preventDefault();
+            handleInvoiceCopy(copyTrigger);
+            return;
+        }
+        const walletTrigger = event.target.closest('[data-payment-open-wallet]');
+        if (walletTrigger) {
+            event.preventDefault();
+            handleInvoiceWallet(walletTrigger);
+        }
+    });
+
+    function handleInvoiceCopy(button) {
+        const invoiceField = locateInvoiceField(button);
+        if (!invoiceField || !invoiceField.value) {
+            button.classList.add('is-danger');
+            button.textContent = '인보이스 없음';
+            window.setTimeout(() => {
+                button.classList.remove('is-danger');
+                button.textContent = '인보이스 복사';
+            }, 1500);
+            return;
+        }
+        const value = invoiceField.value.trim();
+        const revert = () => {
+            button.classList.remove('is-success');
+            button.textContent = '인보이스 복사';
+        };
+        const markSuccess = () => {
+            button.classList.add('is-success');
+            button.textContent = '복사 완료';
+            window.setTimeout(revert, 1400);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(markSuccess).catch(() => {
+                fallbackCopy(invoiceField, value, markSuccess);
+            });
+        } else {
+            fallbackCopy(invoiceField, value, markSuccess);
+        }
+    }
+
+    function handleInvoiceWallet(button) {
+        const invoiceField = locateInvoiceField(button);
+        if (!invoiceField || !invoiceField.value) {
+            button.classList.add('is-danger');
+            window.setTimeout(() => button.classList.remove('is-danger'), 1200);
+            return;
+        }
+        const rawValue = invoiceField.value.trim();
+        const lightningUri = rawValue.startsWith('lightning:') ? rawValue : `lightning:${rawValue}`;
+        try {
+            window.location.assign(lightningUri);
+        } catch (error) {
+            console.error('라이트닝 지갑 열기 실패', error);
+            button.classList.add('is-danger');
+            window.setTimeout(() => button.classList.remove('is-danger'), 1400);
+        }
+    }
+
+    function locateInvoiceField(element) {
+        const widget = element.closest('[data-payment-widget-root]');
+        if (!widget) {
+            return null;
+        }
+        return widget.querySelector('[data-payment-invoice-text]');
+    }
+
+    function fallbackCopy(field, value, onSuccess) {
+        field.focus();
+        field.select();
+        const copied = document.execCommand('copy');
+        if (copied) {
+            onSuccess();
+        }
+    }
 })();

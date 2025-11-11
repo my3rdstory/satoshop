@@ -16,7 +16,7 @@
         </div>
 
         {% if documents %}
-            <div class="contract-flow-card">
+            <div class="contract-flow-card contract-library-table-wrapper" role="region" aria-live="polite">
                 <table class="contract-library-table">
                     <thead>
                         <tr>
@@ -31,18 +31,18 @@
                     <tbody>
                         {% for doc in documents %}
                             <tr>
-                                <td>{{ doc.payload.title }}</td>
-                                <td>{{ doc.get_status_display }}</td>
-                                <td>{{ doc.created_at|date:"Y-m-d H:i" }}</td>
-                                <td><a href="{{ doc.get_absolute_url }}" target="_blank" rel="noopener">열기</a></td>
-                                <td>
+                                <td data-label="제목">{{ doc.payload.title }}</td>
+                                <td data-label="상태">{{ doc.get_status_display }}</td>
+                                <td data-label="생성일">{{ doc.created_at|date:"Y-m-d H:i" }}</td>
+                                <td data-label="공유 주소"><a href="{{ doc.get_absolute_url }}" target="_blank" rel="noopener">열기</a></td>
+                                <td data-label="계약서 PDF">
                                     {% if doc.final_pdf %}
                                         <a href="{{ doc.final_pdf.url }}" target="_blank" rel="noopener">다운로드</a>
                                     {% else %}
                                         -
                                     {% endif %}
                                 </td>
-                                <td>
+                                <td data-label="위변조 검증">
                                     <a class="button is-light is-small" href="{% url 'expert:direct-verify' %}?document={{ doc.slug }}">
                                         확인
                                     </a>

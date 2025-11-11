@@ -13,7 +13,10 @@ from .models import (
     ExpertEmailSettings,
     DirectContractStageLog,
     ContractPricingSetting,
+    ExpertBlinkRevenueStats,
+    ExpertUsageStats,
 )
+from .stats import aggregate_payment_stats, aggregate_usage_stats
 
 
 @admin.register(ExpertEmailSettings)
@@ -131,6 +134,48 @@ class ContractTemplateAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(ExpertBlinkRevenueStats)
+class BlinkRevenueStatsAdmin(admin.ModelAdmin):
+    change_list_template = "admin/expert/blink_revenue_stats.html"
+    list_display = ()
+
+    def get_queryset(self, request):
+        return self.model.objects.none()
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        context = extra_context or {}
+        context["stats"] = aggregate_payment_stats()
+        context["title"] = "Blink 수수료 통계"
+        return super().changelist_view(request, extra_context=context)
+
+
+@admin.register(ExpertUsageStats)
+class ExpertUsageStatsAdmin(admin.ModelAdmin):
+    change_list_template = "admin/expert/usage_stats.html"
+    list_display = ()
+
+    def get_queryset(self, request):
+        return self.model.objects.none()
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        context = extra_context or {}
+        context["stats"] = aggregate_usage_stats()
+        context["title"] = "Expert 사용 통계"
+        return super().changelist_view(request, extra_context=context)
 
 
 @admin.register(DirectContractStageLog)

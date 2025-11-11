@@ -33,6 +33,19 @@
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
       <!-- 카드 내용 -->
       <div class="p-8">
+        <div class="incognito-banner">
+          <p class="incognito-banner__title">
+            <i class="fas fa-exclamation-triangle mr-2 text-yellow-500"></i>
+            시크릿/프라이빗 창에서는 인증이 중단됩니다.
+          </p>
+          <p class="incognito-banner__body">
+            브라우저가 저장공간 접근을 막으면 LNURL-auth가 실패하니, 일반 창 또는 앱 브라우저에서 다시 접속해주세요.
+          </p>
+        </div>
+        <div class="incognito-alert hidden" data-incognito-warning>
+          <strong>현재 시크릿 모드가 감지되었습니다.</strong>
+          <p>LNURL-auth 보안을 위해 로그인 버튼을 비활성화했습니다. 일반 모드에서 열어주세요.</p>
+        </div>
         <!-- 초기 상태 -->
         <div id="initialState" class="text-center">
           <p class="text-gray-600 dark:text-gray-400 mb-6">

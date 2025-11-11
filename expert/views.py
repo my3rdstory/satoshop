@@ -62,6 +62,7 @@ from .utils import (
     pdf_signing_enabled,
     sign_contract_pdf,
 )
+from .stats import aggregate_usage_stats
 
 
 def render_contract_markdown(text: str) -> str:
@@ -131,6 +132,11 @@ def record_stage_log(stage: str, *, document=None, token: str | None = None, met
 
 class ExpertLandingView(TemplateView):
     template_name = "expert/direct_contract_start.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["usage_stats"] = aggregate_usage_stats()
+        return context
 
 
 class LightningLoginRequiredMixin(LoginRequiredMixin):

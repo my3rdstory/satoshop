@@ -200,6 +200,46 @@
     color: rgba(203, 213, 225, 0.78);
 }
 
+.expert-stats {
+    background: rgba(4, 7, 15, 0.85);
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: rgba(10, 16, 32, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    color: rgba(248, 250, 252, 0.95);
+}
+
+.stat-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.9);
+    margin-bottom: 0.35rem;
+}
+
+.stat-value {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.stat-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: rgba(203, 213, 225, 0.85);
+}
+
 .next-step-section {
     margin-top: 2.5rem;
     background: linear-gradient(135deg, rgba(8, 13, 26, 0.75), rgba(12, 18, 32, 0.82));

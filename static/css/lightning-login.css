@@ -5,6 +5,38 @@
     background: linear-gradient(135deg, #f59e0b, #d97706);
 }
 
+/* 시크릿 모드 안내 */
+.incognito-banner {
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    background: #fff7ed;
+    font-size: 0.9rem;
+    color: #9a3412;
+}
+
+.incognito-banner__title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.incognito-banner__body {
+    margin: 0;
+}
+
+.incognito-alert {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 0.85rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 0.85rem;
+}
+
 /* QR 코드 컨테이너 */
 .qr-container {
     display: flex;
@@ -65,6 +97,18 @@
 
 /* 다크 모드 스타일 */
 @media (prefers-color-scheme: dark) {
+    .incognito-banner {
+        border-color: rgba(251, 191, 36, 0.5);
+        background: rgba(120, 53, 15, 0.45);
+        color: #fef3c7;
+    }
+
+    .incognito-alert {
+        border-color: rgba(248, 113, 113, 0.5);
+        background: rgba(127, 29, 29, 0.55);
+        color: #fecaca;
+    }
+
     .qr-container {
         background: #ffffff;
         border-color: #4b5563;

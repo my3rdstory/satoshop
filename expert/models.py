@@ -370,6 +370,20 @@ class ContractPricingSetting(models.Model):
         default=0,
         help_text="수행자가 부담해야 하는 사토시 금액. 0이면 무료.",
     )
+
+
+class ExpertBlinkRevenueStats(DirectContractDocument):
+    class Meta:
+        proxy = True
+        verbose_name = "Blink 수수료 통계"
+        verbose_name_plural = "Blink 수수료 통계"
+
+
+class ExpertUsageStats(DirectContractDocument):
+    class Meta:
+        proxy = True
+        verbose_name = "Expert 사용 통계"
+        verbose_name_plural = "Expert 사용 통계"
     description = models.TextField(
         blank=True,
         help_text="결제 정책에 대한 참고 메모.",

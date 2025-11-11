@@ -70,6 +70,39 @@
     justify-content: center;
 }
 
+.incognito-banner {
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: rgba(67, 20, 7, 0.35);
+    color: #fecdd3;
+    font-size: 0.9rem;
+}
+
+.incognito-banner__title {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.incognito-banner__body {
+    margin: 0;
+    color: rgba(254, 226, 226, 0.92);
+}
+
+.incognito-alert {
+    border: 1px solid rgba(248, 113, 113, 0.65);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    background: rgba(248, 113, 113, 0.12);
+    color: #fee2e2;
+    font-size: 0.85rem;
+}
+
 .lnurl-actions {
     display: flex;
     flex-direction: column;

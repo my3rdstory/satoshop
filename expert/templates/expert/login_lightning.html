@@ -4,6 +4,7 @@
 {% block title %}라이트닝 로그인 안내 - SatoShop Expert{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
 <link rel="stylesheet" href="{% static 'expert/css/login_lightning.css' %}">
 {% endblock %}
 
@@ -30,8 +31,21 @@
                 </div>
             </div>
             <div class="column is-6">
-                <div class="guide-card login-widget">
+                <div class="guide-card login-widget lightning-payment-card">
                     <form method="post" class="is-hidden">{% csrf_token %}</form>
+                    <div class="incognito-banner">
+                        <p class="incognito-banner__title">
+                            <span class="icon is-small"><i data-feather="shield"></i></span>
+                            시크릿/프라이빗 창에서는 인증이 차단됩니다.
+                        </p>
+                        <p class="incognito-banner__body">
+                            지갑 저장소를 사용할 수 없는 브라우저 모드에서는 LNURL-auth가 동작하지 않으니 일반 창에서 다시 시도해주세요.
+                        </p>
+                    </div>
+                    <div class="incognito-alert hidden" data-incognito-warning>
+                        <strong>현재 브라우저가 시크릿 모드로 감지되었습니다.</strong>
+                        <p>안전을 위해 라이트닝 로그인을 중단했어요. 일반 창으로 다시 접속하면 즉시 인증할 수 있습니다.</p>
+                    </div>
                     <div id="initialState" class="text-center">
                         <p class="login-note mb-4">
                             지갑의 서명을 사용하는 LNURL-auth 방식이며 결제는 발생하지 않습니다.

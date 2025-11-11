@@ -30,6 +30,7 @@ from reportlab.platypus import (
     Spacer,
     Table,
     TableStyle,
+    KeepTogether,
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -284,7 +285,24 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     flowables = _markdown_to_flowables(work_log, styles, width)
     if not flowables:
         return []
-    flow.extend(flowables)
+    boxed_content = Table(
+        [[KeepTogether(flowables)]],
+        colWidths=[width],
+        hAlign="LEFT",
+    )
+    boxed_content.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0b1120")),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#334155")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    flow.append(boxed_content)
     flow.append(Spacer(1, 6))
     return flow
 

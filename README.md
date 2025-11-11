@@ -528,6 +528,7 @@ SECURE_SSL_REDIRECT=True
 - **새 의존성 설치**: `uv sync`를 실행하여 `channels`와 `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
 - **단계 로그 메타 뷰**: Django Admin → Expert → *직접 계약 단계 로그*에서 meta 필드가 폼 형태로 펼쳐져 결제/서명 정보를 즉시 확인할 수 있습니다.
 - **빠른 내비게이션**: Expert 상단 우측 버튼에서 `로그아웃`(항상 개요 화면으로 리다이렉션)과 `Go! 사토샵`(도메인 루트 이동)으로 바로 이동할 수 있습니다.
+- **시크릿 모드 차단**: LNURL-auth는 브라우저 저장소를 사용하므로 시크릿/프라이빗 창에서는 인증이 차단됩니다. 로그인 화면과 Expert용 라이트닝 로그인 위젯은 자동으로 프라이빗 모드를 감지해 경고를 띄우고 버튼을 비활성화하며, 라이트닝 지갑 열기 버튼은 `lightning:` 스킴으로 강제 열려 모바일 지갑에서도 바로 동작합니다.
 
 #### Expert 계약 보관함
 - **생성자·서명자 모두 열람**: `/expert/contracts/library/`에서는 내가 생성했거나 상대방으로 서명한 직접 계약이 한 화면에 모여 PDF와 공유 링크를 다시 내려받을 수 있습니다.
@@ -548,6 +549,11 @@ SECURE_SSL_REDIRECT=True
   2. 루트/중간 인증서로 서명하거나 테스트용 자가서명(`openssl req -x509 -new -nodes ...`)으로 `expert-signer.crt` 발급
   3. PKCS#12 번들 생성: `openssl pkcs12 -export -inkey expert-signer.key -in expert-signer.crt -out expert-signer.p12` (이때 입력한 비밀번호가 `EXPERT_SIGNER_CERT_PASSWORD`)
   4. Base64 인코딩: `base64 -w0 expert-signer.p12 > expert-signer.p12.b64`; 파일 내용을 그대로 `EXPERT_SIGNER_CERT_BASE64`에 붙여 넣어 Render 등 비밀 변수로 등록
+
+#### Expert 통계 & Blink 수수료
+- **Blink 수수료 통계**: Django Admin → Expert → *Blink 수수료 통계*에서 Expert 결제 위젯으로 유입된 사토시 결제 내역을 기간·역할별로 확인할 수 있습니다. 위젯은 `DirectContractDocument.payment_meta`에 기록된 금액을 집계합니다.
+- **사용 통계 대시보드**: Django Admin → Expert → *Expert 사용 통계*는 누적/완료 계약 수, 계약 금액 합계, 라이트닝 인증 사용자(active/전체)를 한눈에 보여 줍니다.
+- **프런트 노출**: `/expert/contracts/direct/` 랜딩 페이지 상단에 계약·사용자 집계 카드가 노출되며, 금액/건수만 표시해 수수료 금액은 외부에 공유되지 않습니다.
 
 #### Expert 거래 계약서 템플릿
 - **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.

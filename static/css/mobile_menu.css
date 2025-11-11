@@ -100,6 +100,26 @@
   touch-action: manipulation;
 }
 
+:root[data-theme="light"] #mobile-menu,
+:root[data-theme="light"] #store-mobile-menu {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+:root[data-theme="light"] #mobile-menu a,
+:root[data-theme="light"] #mobile-menu button,
+:root[data-theme="light"] #store-mobile-menu a,
+:root[data-theme="light"] #store-mobile-menu button {
+  color: #1f2937;
+}
+
+:root[data-theme="light"] #mobile-menu a:hover,
+:root[data-theme="light"] #mobile-menu button:hover,
+:root[data-theme="light"] #store-mobile-menu a:hover,
+:root[data-theme="light"] #store-mobile-menu button:hover {
+  background-color: #f3f4f6;
+}
+
 /* 모바일에서만 적용되는 스타일 */
 @media (max-width: 768px) {
   /* 모바일 메뉴 버튼 크기 조정 */

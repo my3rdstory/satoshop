@@ -356,10 +356,15 @@
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin-top: 0.5rem;
 }
 
 .lightning-mini-actions .button {
     flex: 1 1 140px;
+}
+
+.lightning-mini-actions--secondary {
+    margin-top: 0.75rem;
 }
 
 .share-url-display {
@@ -493,9 +498,14 @@
     gap: 1rem;
 }
 
+.contract-library-table-wrapper {
+    overflow-x: auto;
+}
+
 .contract-library-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 720px;
 }
 
 .contract-library-table th,
@@ -522,5 +532,40 @@
     }
     .timeline-step {
         flex: 1 1 100%;
+    }
+    .contract-library-table-wrapper {
+        overflow-x: visible;
+    }
+    .contract-library-table {
+        min-width: 0;
+        border-collapse: separate;
+    }
+    .contract-library-table thead {
+        display: none;
+    }
+    .contract-library-table tbody,
+    .contract-library-table tr,
+    .contract-library-table td {
+        display: block;
+        width: 100%;
+    }
+    .contract-library-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        background: rgba(15, 23, 42, 0.6);
+    }
+    .contract-library-table td {
+        border: 0;
+        padding: 0.35rem 0;
+        text-align: right;
+    }
+    .contract-library-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        float: left;
+        text-transform: none;
+        color: rgba(148, 163, 184, 0.95);
     }
 }
