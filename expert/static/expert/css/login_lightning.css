@@ -70,6 +70,20 @@
     justify-content: center;
 }
 
+.lnurl-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+    .lnurl-actions {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+
 .qr-wrapper {
     width: 240px;
     height: 240px;

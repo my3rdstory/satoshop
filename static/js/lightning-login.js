@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const startLoginBtn = document.getElementById('startLoginBtn');
     const copyLnurlBtn = document.getElementById('copyLnurlBtn');
     const retryBtn = document.getElementById('retryBtn');
+    const openWalletBtn = document.getElementById('openWalletBtn');
+    const expiredRefreshBtn = document.getElementById('expiredRefreshBtn');
     
     // CSRF 토큰 가져오기
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
@@ -41,6 +43,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     copyLnurlBtn.innerHTML = originalIcon;
                 }, 1000);
             }
+        });
+    }
+
+    if (openWalletBtn) {
+        openWalletBtn.addEventListener('click', () => {
+            const lnurlText = document.getElementById('lnurlText');
+            if (!lnurlText || !lnurlText.value) return;
+            window.location.href = lnurlText.value.trim();
+        });
+    }
+
+    if (expiredRefreshBtn) {
+        expiredRefreshBtn.addEventListener('click', () => {
+            expiredRefreshBtn.classList.add('hidden');
+            showLoadingState();
+            startLightningLogin();
         });
     }
     
@@ -174,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lnurlText) {
                 lnurlText.value = data.lnurl;
             }
+            if (expiredRefreshBtn) expiredRefreshBtn.classList.add('hidden');
             
             showQRState();
             updateStatusMessage('지갑에서 인증을 완료하면 자동으로 로그인됩니다.', 'pending');
@@ -309,6 +328,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             statusMessage.innerHTML = `<i class="fas fa-${iconClass} mr-2"></i>${message}`;
             statusMessage.className = `p-3 rounded-lg border text-sm font-medium status-${status}`;
+        }
+
+        if (status === 'expired' && expiredRefreshBtn) {
+            expiredRefreshBtn.classList.remove('hidden');
         }
     }
 
