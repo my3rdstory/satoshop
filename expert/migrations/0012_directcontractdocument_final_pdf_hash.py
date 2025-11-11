@@ -11,9 +11,15 @@ def populate_pdf_hash(apps, schema_editor):  # pragma: no cover - data migration
         file_field = document.final_pdf
         if not file_field:
             continue
+        storage = file_field.storage
+        try:
+            if not storage.exists(file_field.name):
+                continue
+        except Exception:
+            continue
         try:
             file_field.open('rb')
-        except FileNotFoundError:
+        except Exception:  # pragma: no cover - missing files in storage should be skipped
             continue
         try:
             digest = hashlib.sha256()

@@ -3,6 +3,11 @@
 
 set -o errexit
 
+if [ -f "scripts/render_setup_signer.sh" ]; then
+    # shellcheck source=/dev/null
+    . scripts/render_setup_signer.sh
+fi
+
 echo "📦 의존성 설치 중..."
 pip install --upgrade pip
 pip install -r requirements.txt

@@ -3,6 +3,12 @@
 
 set -o errexit  # 오류 발생 시 스크립트 중단
 
+# 서명용 인증서 복원 (Render/로컬 공통)
+if [ -f "scripts/render_setup_signer.sh" ]; then
+    # shellcheck source=/dev/null
+    . scripts/render_setup_signer.sh
+fi
+
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 

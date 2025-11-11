@@ -535,9 +535,18 @@ SECURE_SSL_REDIRECT=True
 
 #### Expert 계약 위변조 방지
 - **최종본 해시 저장**: 계약이 완료되면 `DirectContractDocument.final_pdf_hash`에 SHA-256 해시를 기록합니다. 데이터 정합성 검사를 위해 `document.refresh_final_pdf_hash()`를 호출하거나 `/expert/contracts/direct/verify/`에서 검증할 수 있습니다.
-- **위변조 검증 도구**: 계약 보관함 오른쪽 메뉴 `위변조 검증`에서 계약을 선택하고 외부에서 받은 PDF를 업로드하면 저장된 해시와 비교해 일치 여부를 바로 확인할 수 있습니다.
+- **위변조 검증 도구**: 계약 보관함 오른쪽 메뉴 `위변조 검증`에서 계약을 선택하고 외부에서 받은 PDF를 업로드하면 저장된 해시와 비교해 일치 여부를 바로 확인할 수 있습니다. 검증 프로세스는 아래와 같습니다.
+  1. 계약 생성자/서명자로 로그인 → `/expert/contracts/direct/verify/` 접속
+  2. 드롭다운에서 계약 선택 → 상대가 전달한 최종 PDF 업로드
+  3. 저장된 `final_pdf_hash`와 업로드한 파일의 SHA-256을 비교해 결과를 즉시 출력 (일치/불일치/해시 없음)
+- **운영 절차**: 위변조 의심 시 계약 보관함에서 원본 PDF를 재다운로드한 뒤 동일 화면에서 비교하거나, `document.refresh_final_pdf_hash()`로 다시 계산해 데이터베이스 값을 갱신하세요.
 - **디지털 서명**: `pyHanko` 기반으로 PKCS#12 인증서를 설정하면 최종 PDF에 전자 서명이 포함됩니다. Render 등 배포 환경에서는 인증서를 base64 인코딩해 `EXPERT_SIGNER_CERT_BASE64`에 저장하고, 필요 시 `EXPERT_SIGNER_CERT_PATH` 대신 부트스트랩 스크립트로 복원하세요.
 - **환경 변수**: `EXPERT_SIGNER_CERT_PATH`(또는 `EXPERT_SIGNER_CERT_BASE64`), `EXPERT_SIGNER_CERT_PASSWORD`를 설정하면 자동 서명이 활성화됩니다. 비활성화된 상태에서는 서명을 건너뛰고 해시 비교만 수행합니다.
+- **로컬 인증서 생성 절차**:
+  1. 개인키·CSR 생성: `openssl genrsa -out expert-signer.key 4096` → `openssl req -new -key expert-signer.key -out expert-signer.csr -subj "/C=KR/.../CN=expert.local"`
+  2. 루트/중간 인증서로 서명하거나 테스트용 자가서명(`openssl req -x509 -new -nodes ...`)으로 `expert-signer.crt` 발급
+  3. PKCS#12 번들 생성: `openssl pkcs12 -export -inkey expert-signer.key -in expert-signer.crt -out expert-signer.p12` (이때 입력한 비밀번호가 `EXPERT_SIGNER_CERT_PASSWORD`)
+  4. Base64 인코딩: `base64 -w0 expert-signer.p12 > expert-signer.p12.b64`; 파일 내용을 그대로 `EXPERT_SIGNER_CERT_BASE64`에 붙여 넣어 Render 등 비밀 변수로 등록
 
 #### Expert 거래 계약서 템플릿
 - **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.
