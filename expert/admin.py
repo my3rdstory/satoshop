@@ -1,69 +1,18 @@
+import json
+
 from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.urls import NoReverseMatch, reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from .models import (
-    Contract,
-    ContractParticipant,
-    ContractMessage,
-    ContractEmailLog,
     ContractTemplate,
     ExpertEmailSettings,
     DirectContractStageLog,
     ContractPricingSetting,
 )
-from .services import generate_chat_archive_pdf
-
-
-@admin.action(description="채팅 로그 PDF 생성")
-def generate_chat_pdf(modeladmin, request, queryset):
-    success_count = 0
-    for contract in queryset:
-        try:
-            generate_chat_archive_pdf(contract)
-            success_count += 1
-        except RuntimeError as exc:
-            messages.error(request, f"{contract.title}: {exc}")
-        except Exception as exc:  # pylint: disable=broad-except
-            messages.error(request, f"{contract.title}: 예기치 못한 오류 - {exc}")
-    if success_count:
-        messages.success(request, f"{success_count}건의 채팅 PDF를 생성했습니다.")
-
-
-class ContractParticipantInline(admin.TabularInline):
-    model = ContractParticipant
-    extra = 0
-    fields = ("user", "role", "lightning_identifier", "is_confirmed", "signed_at")
-    readonly_fields = ("signed_at",)
-
-
-class ContractMessageInline(admin.TabularInline):
-    model = ContractMessage
-    extra = 0
-    fields = ("created_at", "sender", "sender_role", "message_type", "content")
-    readonly_fields = ("created_at", "sender", "sender_role", "message_type", "content")
-    can_delete = False
-
-
-@admin.register(Contract)
-class ContractAdmin(admin.ModelAdmin):
-    list_display = ("title", "created_by", "status", "created_at", "updated_at")
-    list_filter = ("status", "created_at")
-    search_fields = ("title", "created_by__username")
-    readonly_fields = ("public_id", "created_at", "updated_at", "archive_generated_at")
-    inlines = [ContractParticipantInline, ContractMessageInline]
-    actions = [generate_chat_pdf]
-
-
-@admin.register(ContractEmailLog)
-class ContractEmailLogAdmin(admin.ModelAdmin):
-    list_display = ("contract", "subject", "sent_at", "success")
-    list_filter = ("success", "sent_at")
-    search_fields = ("contract__title", "subject", "recipients")
-    readonly_fields = ("contract", "recipients", "subject", "message", "sent_at", "success", "error_message")
 
 
 @admin.register(ExpertEmailSettings)
@@ -194,10 +143,25 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "latest_activity",
     )
     search_fields = ("document__slug", "document__payload__title")
-    readonly_fields = ("document", "token", "stage", "started_at", "meta")
+    readonly_fields = ("document", "token", "stage", "started_at", "meta_details")
     list_display_links = ("document_link",)
     list_per_page = 25
     ordering = ("-started_at",)
+    exclude = ("meta",)
+    fieldsets = (
+        (
+            "기본 정보",
+            {
+                "fields": ("document", "token", "stage", "started_at"),
+            },
+        ),
+        (
+            "메타 정보",
+            {
+                "fields": ("meta_details",),
+            },
+        ),
+    )
 
     stage_labels = {
         "draft": "드래프트",
@@ -205,6 +169,106 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "role_two": "역할 2",
         "completed": "완료",
     }
+
+    meta_field_order = (
+        "title",
+        "payment_type",
+        "role",
+        "role_label",
+        "email",
+        "lightning_id",
+        "signed_at",
+    )
+    meta_field_labels = {
+        "title": "계약 제목",
+        "payment_type": "결제 방식",
+        "role": "역할",
+        "role_label": "역할 라벨",
+        "email": "이메일",
+        "lightning_id": "라이트닝 ID",
+        "signed_at": "서명 시각",
+    }
+    payment_field_order = (
+        "amount_sats",
+        "paid_at",
+        "payment_hash",
+        "payment_request",
+    )
+    payment_field_labels = {
+        "amount_sats": "결제 금액 (sats)",
+        "paid_at": "결제 완료 시각",
+        "payment_hash": "결제 해시",
+        "payment_request": "결제 요청",
+    }
+
+    def meta_details(self, obj):
+        if not obj:
+            return "-"
+        rows = self._build_meta_rows(obj)
+        if not rows:
+            return "기록된 메타 정보가 없습니다."
+        rows_html = format_html_join("", "{}", ((row,) for row in rows))
+        return format_html(
+            '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#f8fafc;">{}</div>',
+            rows_html,
+        )
+
+    meta_details.short_description = "메타 정보"
+
+    def _build_meta_rows(self, obj):
+        meta = obj.meta or {}
+        if not meta:
+            return []
+        rows = []
+        for key in self.meta_field_order:
+            if key not in meta:
+                continue
+            rows.append(self._render_meta_row(self.meta_field_labels.get(key, key), meta.get(key)))
+        for key in sorted(meta.keys()):
+            if key in self.meta_field_order or key == "payment":
+                continue
+            rows.append(self._render_meta_row(self.meta_field_labels.get(key, key), meta.get(key)))
+        payment_meta = meta.get("payment")
+        if isinstance(payment_meta, dict):
+            for key in self.payment_field_order:
+                if key not in payment_meta:
+                    continue
+                rows.append(
+                    self._render_meta_row(
+                        self.payment_field_labels.get(key, f"결제 {key}"),
+                        payment_meta.get(key),
+                    )
+                )
+            for key in sorted(payment_meta.keys()):
+                if key in self.payment_field_order:
+                    continue
+                rows.append(
+                    self._render_meta_row(
+                        self.payment_field_labels.get(key, f"결제 {key}"),
+                        payment_meta.get(key),
+                    )
+                )
+        return rows
+
+    def _render_meta_row(self, label, value):
+        return format_html(
+            '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:8px;">'
+            '<span style="width:140px;font-weight:600;color:#475569;">{}</span>'
+            '<span style="flex:1;word-break:break-word;">{}</span>'
+            "</div>",
+            label,
+            self._render_meta_value(value),
+        )
+
+    def _render_meta_value(self, value):
+        if value in (None, ""):
+            return "-"
+        if isinstance(value, bool):
+            return "예" if value else "아니오"
+        if isinstance(value, (dict, list)):
+            pretty = json.dumps(value, ensure_ascii=False, indent=2)
+            return format_html('<pre style="margin:0;white-space:pre-wrap;">{}</pre>', pretty)
+        return format_html("{}", value)
 
     def get_queryset(self, request):
         qs = (
