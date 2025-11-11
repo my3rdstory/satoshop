@@ -17,8 +17,12 @@
                 직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
             </p>
             <div class="hero-actions">
-                <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
-                <p class="is-size-7 has-text-grey">로그인 계정만 계약 생성이 가능합니다.</p>
+                {% if request.user.is_authenticated %}
+                    <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% else %}
+                    <a class="button is-primary is-medium" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% endif %}
+                <p class="is-size-7 has-text-grey">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
             </div>
         </div>
         <div class="hero-side">
@@ -26,7 +30,7 @@
                 <p class="hero-card-title">기본 원칙</p>
                 <ul>
                     <li><span class="hero-bullet">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
-                    <li><span class="hero-bullet">계정 인증</span> 인증된 계정만 정산 정보 입력/서명 가능</li>
+                    <li><span class="hero-bullet">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
                     <li><span class="hero-bullet">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
                 </ul>
             </div>
