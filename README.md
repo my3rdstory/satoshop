@@ -533,6 +533,12 @@ SECURE_SSL_REDIRECT=True
 - **생성자·서명자 모두 열람**: `/expert/contracts/library/`에서는 내가 생성했거나 상대방으로 서명한 직접 계약이 한 화면에 모여 PDF와 공유 링크를 다시 내려받을 수 있습니다.
 - **라이트닝 로그인 필요**: 상대방으로 서명한 계약을 노출하려면 라이트닝 로그인으로 동일한 public key를 사용해야 합니다. 서명 완료 시 자동 연동됩니다.
 
+#### Expert 계약 위변조 방지
+- **최종본 해시 저장**: 계약이 완료되면 `DirectContractDocument.final_pdf_hash`에 SHA-256 해시를 기록합니다. 데이터 정합성 검사를 위해 `document.refresh_final_pdf_hash()`를 호출하거나 `/expert/contracts/direct/verify/`에서 검증할 수 있습니다.
+- **위변조 검증 도구**: 계약 보관함 오른쪽 메뉴 `위변조 검증`에서 계약을 선택하고 외부에서 받은 PDF를 업로드하면 저장된 해시와 비교해 일치 여부를 바로 확인할 수 있습니다.
+- **디지털 서명**: `pyHanko` 기반으로 PKCS#12 인증서를 설정하면 최종 PDF에 전자 서명이 포함됩니다. Render 등 배포 환경에서는 인증서를 base64 인코딩해 `EXPERT_SIGNER_CERT_BASE64`에 저장하고, 필요 시 `EXPERT_SIGNER_CERT_PATH` 대신 부트스트랩 스크립트로 복원하세요.
+- **환경 변수**: `EXPERT_SIGNER_CERT_PATH`(또는 `EXPERT_SIGNER_CERT_BASE64`), `EXPERT_SIGNER_CERT_PASSWORD`를 설정하면 자동 서명이 활성화됩니다. 비활성화된 상태에서는 서명을 건너뛰고 해시 비교만 수행합니다.
+
 #### Expert 거래 계약서 템플릿
 - **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.
 

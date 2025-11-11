@@ -1,0 +1,82 @@
+.contract-integrity-section {
+    background: var(--expert-page-bg, #0f172a);
+    min-height: calc(100vh - 4rem);
+    padding-top: 6rem;
+}
+
+.integrity-hero {
+    margin-bottom: 1.5rem;
+    color: #f8fafc;
+}
+
+.integrity-card {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    color: #e2e8f0;
+}
+
+.integrity-card--tips {
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.integrity-form .field + .field {
+    margin-top: 1rem;
+}
+
+.integrity-result {
+    margin-top: 1.5rem;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.integrity-result--match {
+    border-color: rgba(34, 197, 94, 0.6);
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.integrity-result--mismatch {
+    border-color: rgba(248, 113, 113, 0.6);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.integrity-result--pending {
+    border-color: rgba(250, 204, 21, 0.6);
+    background: rgba(250, 204, 21, 0.08);
+}
+
+.integrity-result__title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.integrity-hash-list {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.integrity-hash-list dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.integrity-hash-list dd code {
+    word-break: break-all;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .contract-integrity-section {
+        padding-top: 5rem;
+    }
+    .integrity-card {
+        padding: 1.25rem;
+    }
+}

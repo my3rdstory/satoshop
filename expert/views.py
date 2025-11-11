@@ -35,7 +35,12 @@ from .models import (
     DirectContractStageLog,
 )
 from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
-from .forms import ContractDraftForm, ContractReviewForm, CounterpartySignatureForm
+from .forms import (
+    ContractDraftForm,
+    ContractIntegrityCheckForm,
+    ContractReviewForm,
+    CounterpartySignatureForm,
+)
 from .signature_assets import signature_media_fallback_enabled, store_signature_asset_from_data
 from .payment_service import (
     PAYMENT_EXPIRE_SECONDS,
@@ -49,6 +54,7 @@ from .payment_service import (
     mark_payment_paid,
     store_payment_state,
 )
+from .utils import calculate_sha256_from_fileobj, pdf_signing_enabled, sign_contract_pdf
 
 
 def render_contract_markdown(text: str) -> str:
@@ -150,6 +156,14 @@ def _get_lightning_public_key(user) -> str:
         return ""
     profile = getattr(user, "lightning_profile", None)
     return profile.public_key if profile else ""
+
+
+def _get_accessible_documents(user):
+    lightning_id = _get_lightning_public_key(user)
+    query = Q(creator=user) | Q(counterparty_user=user)
+    if lightning_id:
+        query |= Q(counterparty_signed_at__isnull=False, payload__counterparty_lightning_id=lightning_id)
+    return DirectContractDocument.objects.filter(query).order_by("-created_at")
 
 
 class DirectContractStartView(LightningLoginRequiredMixin, TemplateView):
@@ -581,7 +595,10 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
             (self.payload.get("contract_template") or {}).get("content") or ""
         )
         pdf_content = render_contract_pdf(self.document, template_markdown)
+        pdf_content = sign_contract_pdf(pdf_content)
+        pdf_hash = calculate_sha256_from_fileobj(pdf_content)
         self.document.final_pdf.save(pdf_content.name, pdf_content)
+        self.document.final_pdf_hash = pdf_hash
         self.document.final_pdf_generated_at = timezone.now()
         self.document.status = "completed"
         self.document.save()
@@ -602,14 +619,63 @@ class DirectContractLibraryView(LightningLoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        user = self.request.user
-        lightning_id = _get_lightning_public_key(user)
-        query = Q(creator=user) | Q(counterparty_user=user)
-        if lightning_id:
-            query |= Q(counterparty_signed_at__isnull=False, payload__counterparty_lightning_id=lightning_id)
-        documents = DirectContractDocument.objects.filter(query).order_by("-created_at")
+        documents = _get_accessible_documents(self.request.user)
         context["documents"] = documents
         return context
+
+
+class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
+    """업로드한 PDF와 원본 해시를 비교하는 검증 도구."""
+
+    template_name = "expert/contract_integrity_check.html"
+    form_class = ContractIntegrityCheckForm
+    login_url = reverse_lazy("expert:login")
+
+    def dispatch(self, request, *args, **kwargs):
+        self.documents = list(_get_accessible_documents(request.user))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["documents"] = self.documents
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                "documents": self.documents,
+                "documents_count": len(self.documents),
+                "pdf_signing_enabled": pdf_signing_enabled(),
+            }
+        )
+        if not self.documents:
+            context["empty_message"] = "계약을 먼저 생성하거나 서명 완료해야 검증 도구를 이용할 수 있습니다."
+        return context
+
+    def form_valid(self, form):
+        document = form.get_document()
+        uploaded_file = form.cleaned_data["pdf_file"]
+        uploaded_hash = calculate_sha256_from_fileobj(uploaded_file)
+        stored_hash = document.final_pdf_hash or ""
+        if not stored_hash:
+            status = "pending"
+            message = "이 계약서는 아직 해시가 저장되지 않았습니다. 계약을 다시 완료하거나 관리자에게 문의하세요."
+        elif stored_hash == uploaded_hash:
+            status = "match"
+            message = "업로드한 PDF가 원본과 일치합니다."
+        else:
+            status = "mismatch"
+            message = "해시가 일치하지 않습니다. 위변조 가능성이 있으니 원본 계약서를 다시 내려받아 공유하세요."
+        context = self.get_context_data(form=form)
+        context["result"] = {
+            "status": status,
+            "message": message,
+            "uploaded_hash": uploaded_hash,
+            "stored_hash": stored_hash,
+            "document": document,
+        }
+        return self.render_to_response(context)
 
 
 class ContractDetailView(LightningLoginRequiredMixin, TemplateView):

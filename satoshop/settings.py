@@ -263,6 +263,9 @@ BLINK_API_URL = 'https://api.blink.sv/graphql'
 EXPERT_BLINK_API_KEY = os.getenv("EXPERT_BLINK_API_KEY") or os.getenv("BLINK_API_KEY")
 EXPERT_BLINK_WALLET_ID = os.getenv("EXPERT_BLINK_WALLET_ID") or os.getenv("BLINK_WALLET_ID")
 EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Expert 계약 결제')
+EXPERT_SIGNER_CERT_PATH = os.getenv("EXPERT_SIGNER_CERT_PATH", "")
+EXPERT_SIGNER_CERT_BASE64 = os.getenv("EXPERT_SIGNER_CERT_BASE64", "")
+EXPERT_SIGNER_CERT_PASSWORD = os.getenv("EXPERT_SIGNER_CERT_PASSWORD", "")
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정

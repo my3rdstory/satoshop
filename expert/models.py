@@ -9,7 +9,7 @@ from storage.backends import S3Storage
 
 from myshop.models import SiteSettings
 from .signature_assets import resolve_signature_url
-from storage.backends import S3Storage
+from .utils import calculate_sha256_from_field_file
 
 try:
     CONTRACT_FILE_STORAGE = S3Storage()
@@ -237,6 +237,7 @@ class DirectContractDocument(models.Model):
         storage=CONTRACT_FILE_STORAGE,
     )
     final_pdf_generated_at = models.DateTimeField(blank=True, null=True)
+    final_pdf_hash = models.CharField(max_length=64, blank=True)
     signature_assets = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -275,6 +276,14 @@ class DirectContractDocument(models.Model):
         setattr(self, field_name, "")
         if save:
             self.save(update_fields=[field_name, "updated_at"])
+
+    def refresh_final_pdf_hash(self, save: bool = True) -> str:
+        """Recompute the stored final PDF hash from the file storage."""
+
+        self.final_pdf_hash = calculate_sha256_from_field_file(self.final_pdf)
+        if save:
+            self.save(update_fields=["final_pdf_hash", "updated_at"])
+        return self.final_pdf_hash
 
 
 class ContractEmailLog(models.Model):

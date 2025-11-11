@@ -177,6 +177,52 @@ class CounterpartySignatureForm(forms.Form):
         required=True,
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
+
+
+class ContractIntegrityCheckForm(forms.Form):
+    """계약 위변조 검증 입력 폼."""
+
+    document_slug = forms.ChoiceField(
+        label="검증할 계약",
+        choices=(),
+        widget=forms.Select(attrs={"class": "select is-fullwidth"}),
+    )
+    pdf_file = forms.FileField(
+        label="검증 대상 PDF",
+        widget=forms.FileInput(attrs={"class": "file-input", "accept": ".pdf"}),
+        help_text="서버에서 받은 최종 계약서 PDF를 업로드해 위변조 여부를 확인합니다.",
+    )
+
+    def __init__(self, *args, documents=None, **kwargs):
+        self.documents = documents or []
+        super().__init__(*args, **kwargs)
+        self._document_map = {doc.slug: doc for doc in self.documents}
+        choices = [
+            ("", "계약을 선택하세요"),
+            *[(doc.slug, doc.payload.get("title", doc.slug)) for doc in self.documents],
+        ]
+        self.fields["document_slug"].choices = choices
+
+    def clean_document_slug(self):
+        slug = self.cleaned_data.get("document_slug")
+        if not slug:
+            raise forms.ValidationError("계약을 선택해 주세요.")
+        if slug not in self._document_map:
+            raise forms.ValidationError("선택한 계약을 조회할 수 없습니다.")
+        return slug
+
+    def clean_pdf_file(self):
+        uploaded = self.cleaned_data.get("pdf_file")
+        if not uploaded:
+            raise forms.ValidationError("검증할 PDF를 업로드해 주세요.")
+        content_type = (uploaded.content_type or "").lower()
+        if content_type and "pdf" not in content_type:
+            raise forms.ValidationError("PDF 파일만 업로드할 수 있습니다.")
+        return uploaded
+
+    def get_document(self):
+        slug = self.cleaned_data.get("document_slug")
+        return self._document_map.get(slug)
     email = forms.EmailField(
         label="이메일 (선택)",
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
