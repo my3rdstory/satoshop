@@ -128,7 +128,7 @@ def record_stage_log(stage: str, *, document=None, token: str | None = None, met
 
 
 class ExpertLandingView(TemplateView):
-    template_name = "expert/landing.html"
+    template_name = "expert/direct_contract_start.html"
 
 
 class LightningLoginRequiredMixin(LoginRequiredMixin):
