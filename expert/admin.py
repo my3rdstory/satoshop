@@ -143,7 +143,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "latest_activity",
     )
     search_fields = ("document__slug", "document__payload__title")
-    readonly_fields = ("document", "token", "stage", "started_at", "meta_details")
+    readonly_fields = ("document", "token", "stage", "stage_display", "started_at", "hash_comparison", "meta_details")
     list_display_links = ("document_link",)
     list_per_page = 25
     ordering = ("-started_at",)
@@ -152,7 +152,13 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         (
             "기본 정보",
             {
-                "fields": ("document", "token", "stage", "started_at"),
+                "fields": ("document", "token", "stage_display", "started_at"),
+            },
+        ),
+        (
+            "해시 비교",
+            {
+                "fields": ("hash_comparison",),
             },
         ),
         (
@@ -163,12 +169,26 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_queryset(self, request):
+        qs = (
+            super()
+            .get_queryset(request)
+            .select_related("document")
+            .order_by("-started_at")
+        )
+        return qs
+
     stage_labels = {
         "draft": "드래프트",
         "role_one": "역할 1",
         "role_two": "역할 2",
         "completed": "완료",
     }
+
+    def stage_display(self, obj):
+        return self.stage_labels.get(obj.stage, obj.stage)
+
+    stage_display.short_description = "단계"
 
     meta_field_order = (
         "title",
@@ -391,3 +411,23 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         if stage_key == "role_two":
             return (obj.document.payment_meta or {}).get(obj.document.counterparty_role)
         return None
+    def hash_comparison(self, obj):
+        document = obj.document
+        if not document:
+            return "-"
+        rows = []
+        rows.append(("PDF 저장된 해시", document.final_pdf_hash or "(없음)"))
+        rows.append(("생성자 해시", document.creator_hash or "(없음)"))
+        rows.append(("수행자 해시", document.counterparty_hash or "(없음)"))
+        rows.append(("중개자 해시", document.mediator_hash or "(없음)"))
+        table = format_html(
+            '<table class="hash-table">{}</table>',
+            format_html_join(
+                "",
+                "<tr><th>{}</th><td><code>{}</code></td></tr>",
+                rows,
+            ),
+        )
+        return table
+
+    hash_comparison.short_description = "해시 비교"
