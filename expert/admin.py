@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 from django.contrib import admin, messages
 from django.shortcuts import redirect
@@ -143,7 +144,16 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "latest_activity",
     )
     search_fields = ("document__slug", "document__payload__title")
-    readonly_fields = ("document", "token", "stage", "stage_display", "started_at", "hash_comparison", "meta_details")
+    readonly_fields = (
+        "document",
+        "token",
+        "stage",
+        "stage_display",
+        "started_at",
+        "participant_overview",
+        "hash_comparison",
+        "meta_details",
+    )
     list_display_links = ("document_link",)
     list_per_page = 25
     ordering = ("-started_at",)
@@ -153,6 +163,12 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             "기본 정보",
             {
                 "fields": ("document", "token", "stage_display", "started_at"),
+            },
+        ),
+        (
+            "참여자 요약",
+            {
+                "fields": ("participant_overview",),
             },
         ),
         (
@@ -240,6 +256,43 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         )
 
     meta_details.short_description = "메타 정보"
+
+    def participant_overview(self, obj):
+        if not obj:
+            return "-"
+        document = obj.document
+        if document:
+            participants = [
+                {
+                    "label": "생성자",
+                    "stage_key": "role_one",
+                    "user": document.creator,
+                    "role_display": document.get_creator_role_display(),
+                    "email": document.creator_email or getattr(document.creator, "email", None),
+                },
+                {
+                    "label": "상대방",
+                    "stage_key": "role_two",
+                    "user": document.counterparty_user,
+                    "role_display": document.get_counterparty_role_display(),
+                    "email": document.counterparty_email or getattr(document.counterparty_user, "email", None),
+                },
+            ]
+        else:
+            participants = [
+                {"label": "생성자", "stage_key": "role_one"},
+                {"label": "상대방", "stage_key": "role_two"},
+            ]
+        panels = [self._render_participant_panel(obj, **config) for config in participants]
+        panels = [panel for panel in panels if panel]
+        if not panels:
+            return "참여자 정보가 없습니다."
+        return format_html(
+            '<div style="display:flex;flex-direction:column;gap:16px;">{}</div>',
+            format_html_join("", "{}", ((panel,) for panel in panels)),
+        )
+
+    participant_overview.short_description = "계약 참여자"
 
     def _build_meta_rows(self, obj):
         meta = obj.meta or {}
@@ -335,6 +388,94 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             if stage_map.get(stage_key):
                 return stage_key
         return "draft"
+
+    def _render_participant_panel(
+        self,
+        obj,
+        *,
+        label: str,
+        stage_key: str,
+        role_display: str | None = None,
+        user=None,
+        email: str | None = None,
+    ):
+        stage_map = self._stage_map(obj)
+        log = stage_map.get(stage_key)
+        stage_meta = (log.meta or {}) if log else {}
+        display_role = role_display or stage_meta.get("role_label") or stage_meta.get("role") or "-"
+        resolved_email = email or stage_meta.get("email")
+        lightning_id = stage_meta.get("lightning_id")
+        signed_at = stage_meta.get("signed_at")
+
+        login_rows = []
+        if user:
+            login_rows.append(self._render_meta_row("계정", f"{user} (ID {user.pk})"))
+        if resolved_email:
+            login_rows.append(self._render_meta_row("이메일", resolved_email))
+        if lightning_id:
+            login_rows.append(self._render_meta_row("라이트닝 ID", lightning_id))
+        if signed_at:
+            login_rows.append(self._render_meta_row("서명 시각", self._format_meta_datetime(signed_at)))
+        if not login_rows:
+            login_rows.append(self._render_meta_row("상태", "로그인 정보가 없습니다."))
+
+        payment_meta = self._get_payment_receipt(obj, stage_key=stage_key)
+        payment_rows = []
+        if payment_meta:
+            for key in self.payment_field_order:
+                value = payment_meta.get(key)
+                if not value:
+                    continue
+                if key == "paid_at":
+                    value = self._format_meta_datetime(value)
+                payment_rows.append(
+                    self._render_meta_row(
+                        self.payment_field_labels.get(key, f"결제 {key}"),
+                        value,
+                    )
+                )
+        if not payment_rows:
+            payment_rows.append(self._render_meta_row("상태", "결제 정보가 없습니다."))
+
+        sections = [
+            self._render_info_group("로그인 정보", login_rows),
+            self._render_info_group("결제 정보", payment_rows),
+        ]
+        panel_body = format_html_join("", "{}", ((section,) for section in sections if section))
+        return format_html(
+            '<div style="border:1px solid #cbd5f5;border-radius:12px;padding:16px;background:#f8fafc;">'
+            '<div style="font-size:14px;font-weight:600;color:#0f172a;margin-bottom:8px;">{} '
+            '<span style="color:#64748b;font-weight:500;">{}</span></div>{}'
+            "</div>",
+            label,
+            display_role,
+            panel_body,
+        )
+
+    def _render_info_group(self, title, rows):
+        if not rows:
+            return ""
+        return format_html(
+            '<div style="margin-bottom:12px;">'
+            '<div style="font-weight:600;color:#1e293b;margin-bottom:6px;">{}</div>'
+            '<div style="display:flex;flex-direction:column;gap:4px;">{}</div>'
+            "</div>",
+            title,
+            format_html_join("", "{}", ((row,) for row in rows)),
+        )
+
+    def _format_meta_datetime(self, value):
+        if not value:
+            return "-"
+        if isinstance(value, datetime):
+            dt = value
+        else:
+            dt = parse_datetime(value)
+        if not dt:
+            return value
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, timezone=timezone.utc)
+        return timezone.localtime(dt).strftime("%Y-%m-%d %H:%M")
 
     def _render_stage(self, obj, stage_key):
         stage_map = self._stage_map(obj)
