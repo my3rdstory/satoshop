@@ -670,8 +670,6 @@ class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         selected_slug = self.request.POST.get("document_slug") or self.request.GET.get("document") or ""
         selected_document = next((doc for doc in self.documents if doc.slug == selected_slug), None)
-        if not selected_document and self.documents:
-            selected_document = self.documents[0]
         documents_meta = []
         for doc in self.documents:
             documents_meta.append(
@@ -685,14 +683,31 @@ class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
                 }
             )
 
+        selected_summary = {
+            "title": "",
+            "status": "",
+            "created_at": "",
+            "final_pdf_hash": "",
+            "final_pdf_url": "",
+        }
+        if selected_document:
+            selected_summary = {
+                "title": (selected_document.payload or {}).get("title") or selected_document.slug,
+                "status": selected_document.get_status_display(),
+                "created_at": timezone.localtime(selected_document.created_at).strftime("%Y-%m-%d %H:%M"),
+                "final_pdf_hash": selected_document.final_pdf_hash or "",
+                "final_pdf_url": selected_document.final_pdf.url if selected_document.final_pdf else "",
+            }
+
         context.update(
             {
                 "documents": self.documents,
                 "documents_count": len(self.documents),
                 "pdf_signing_enabled": pdf_signing_enabled(),
                 "selected_document": selected_document,
-                "selected_document_slug": selected_document.slug if selected_document else "",
+                "selected_document_slug": selected_slug,
                 "documents_meta_json": json.dumps(documents_meta, ensure_ascii=False),
+                "selected_summary": selected_summary,
             }
         )
         if not self.documents:

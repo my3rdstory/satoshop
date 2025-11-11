@@ -13,6 +13,7 @@
 
   const select = form.querySelector('select[name="document_slug"]');
   const summary = document.querySelector('[data-integrity-summary]');
+  const summaryPlaceholder = document.querySelector('[data-integrity-summary-placeholder]');
   const summaryFields = summary
     ? {
         title: summary.querySelector('[data-summary-title]'),
@@ -30,9 +31,11 @@
     const doc = documentsMap.get(slug);
     if (!doc) {
       summary.hidden = true;
+      if (summaryPlaceholder) summaryPlaceholder.hidden = false;
       return;
     }
     summary.hidden = false;
+    if (summaryPlaceholder) summaryPlaceholder.hidden = true;
     if (summaryFields.title) summaryFields.title.textContent = doc.title || '-';
     if (summaryFields.status) summaryFields.status.textContent = doc.status || '-';
     if (summaryFields.created) summaryFields.created.textContent = doc.created_at || '-';
@@ -61,7 +64,8 @@
       select.value = initialSlug;
       renderSummary(initialSlug);
     } else {
-      summary && (summary.hidden = true);
+      if (summary) summary.hidden = true;
+      if (summaryPlaceholder) summaryPlaceholder.hidden = false;
     }
     select.addEventListener('change', (event) => {
       renderSummary(event.target.value);

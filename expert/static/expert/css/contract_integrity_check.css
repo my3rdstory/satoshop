@@ -29,12 +29,37 @@
     margin-top: 1rem;
 }
 
+.integrity-form .label {
+    color: #cbd5f5;
+}
+
+.integrity-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
 .integrity-summary {
     margin-top: 1.25rem;
     padding: 1rem 1.25rem;
     border-radius: 12px;
     background: rgba(30, 41, 59, 0.75);
     border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.integrity-summary--placeholder {
+    text-align: center;
+    color: #94a3b8;
+}
+
+.integrity-summary a {
+    color: #4ade80;
+    transition: color 0.2s ease;
+}
+
+.integrity-summary a:hover {
+    color: #22c55e;
 }
 
 .integrity-summary h4 {
@@ -66,6 +91,10 @@
     border-radius: 12px;
     padding: 1.25rem;
     border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.integrity-result--placeholder {
+    border-style: dashed;
+    color: #94a3b8;
 }
 
 .integrity-result--match {
