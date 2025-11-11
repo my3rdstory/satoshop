@@ -668,11 +668,31 @@ class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        selected_slug = self.request.POST.get("document_slug") or self.request.GET.get("document") or ""
+        selected_document = next((doc for doc in self.documents if doc.slug == selected_slug), None)
+        if not selected_document and self.documents:
+            selected_document = self.documents[0]
+        documents_meta = []
+        for doc in self.documents:
+            documents_meta.append(
+                {
+                    "slug": doc.slug,
+                    "title": (doc.payload or {}).get("title") or doc.slug,
+                    "status": doc.get_status_display(),
+                    "created_at": timezone.localtime(doc.created_at).strftime("%Y-%m-%d %H:%M"),
+                    "final_pdf_hash": doc.final_pdf_hash or "",
+                    "final_pdf_url": doc.final_pdf.url if doc.final_pdf else "",
+                }
+            )
+
         context.update(
             {
                 "documents": self.documents,
                 "documents_count": len(self.documents),
                 "pdf_signing_enabled": pdf_signing_enabled(),
+                "selected_document": selected_document,
+                "selected_document_slug": selected_document.slug if selected_document else "",
+                "documents_meta_json": json.dumps(documents_meta, ensure_ascii=False),
             }
         )
         if not self.documents:
@@ -701,6 +721,8 @@ class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
             "stored_hash": stored_hash,
             "document": document,
         }
+        context["selected_document"] = document
+        context["selected_document_slug"] = document.slug
         return self.render_to_response(context)
 
 

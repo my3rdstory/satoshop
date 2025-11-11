@@ -1,12 +1,15 @@
+
+
 .contract-integrity-section {
     background: var(--expert-page-bg, #0f172a);
     min-height: calc(100vh - 4rem);
     padding-top: 6rem;
+    color: #e2e8f0;
 }
 
 .integrity-hero {
     margin-bottom: 1.5rem;
-    color: #f8fafc;
+    color: #e2e8f0;
 }
 
 .integrity-card {
@@ -24,6 +27,38 @@
 
 .integrity-form .field + .field {
     margin-top: 1rem;
+}
+
+.integrity-summary {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.integrity-summary h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #f8fafc;
+}
+
+.integrity-summary dl {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.integrity-summary dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+
+.integrity-summary dd {
+    margin: 0;
+    color: #f1f5f9;
 }
 
 .integrity-result {

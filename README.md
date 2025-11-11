@@ -539,6 +539,7 @@ SECURE_SSL_REDIRECT=True
   1. 계약 생성자/서명자로 로그인 → `/expert/contracts/direct/verify/` 접속
   2. 드롭다운에서 계약 선택 → 상대가 전달한 최종 PDF 업로드
   3. 저장된 `final_pdf_hash`와 업로드한 파일의 SHA-256을 비교해 결과를 즉시 출력 (일치/불일치/해시 없음)
+- **계약 요약 패널**: 계약을 선택하면 제목/상태/생성일/저장된 해시/최종 PDF 링크가 바로 표시되어 검증 전에 계약 맥락을 빠르게 확인할 수 있습니다.
 - **운영 절차**: 위변조 의심 시 계약 보관함에서 원본 PDF를 재다운로드한 뒤 동일 화면에서 비교하거나, `document.refresh_final_pdf_hash()`로 다시 계산해 데이터베이스 값을 갱신하세요.
 - **디지털 서명**: `pyHanko` 기반으로 PKCS#12 인증서를 설정하면 최종 PDF에 전자 서명이 포함됩니다. Render 등 배포 환경에서는 인증서를 base64 인코딩해 `EXPERT_SIGNER_CERT_BASE64`에 저장하고, 필요 시 `EXPERT_SIGNER_CERT_PATH` 대신 부트스트랩 스크립트로 복원하세요.
 - **환경 변수**: `EXPERT_SIGNER_CERT_PATH`(또는 `EXPERT_SIGNER_CERT_BASE64`), `EXPERT_SIGNER_CERT_PASSWORD`를 설정하면 자동 서명이 활성화됩니다. 비활성화된 상태에서는 서명을 건너뛰고 해시 비교만 수행합니다.

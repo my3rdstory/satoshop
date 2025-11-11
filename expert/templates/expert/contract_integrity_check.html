@@ -8,6 +8,10 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    window.integrityDocuments = {{ documents_meta_json|safe }};
+    window.integritySelectedSlug = "{{ selected_document_slug|default:'' }}";
+</script>
 <script src="{% static 'expert/js/contract_integrity_check.js' %}" defer></script>
 {% endblock %}
 
@@ -30,7 +34,7 @@
                 <p class="has-text-grey is-size-7">계약을 생성하거나 서명 완료하면 이 도구를 사용할 수 있습니다.</p>
             </div>
         {% else %}
-            <div class="integrity-card">
+            <div class="integrity-card" data-integrity-card>
                 <form method="post" enctype="multipart/form-data" class="integrity-form" data-integrity-form>
                     {% csrf_token %}
                     <div class="field">
@@ -66,6 +70,45 @@
                         </div>
                     </div>
                 </form>
+
+                {% if selected_document %}
+                    <div class="integrity-summary" data-integrity-summary>
+                        <h4>선택한 계약 정보</h4>
+                        <dl>
+                            <div>
+                                <dt>제목</dt>
+                                <dd data-summary-title>{{ selected_document.payload.title|default:selected_document.slug }}</dd>
+                            </div>
+                            <div>
+                                <dt>상태</dt>
+                                <dd data-summary-status>{{ selected_document.get_status_display }}</dd>
+                            </div>
+                            <div>
+                                <dt>생성일</dt>
+                                <dd data-summary-created>{{ selected_document.created_at|date:"Y-m-d H:i" }}</dd>
+                            </div>
+                            <div>
+                                <dt>저장된 해시</dt>
+                                <dd><code data-summary-hash>{{ selected_document.final_pdf_hash|default:"(없음)" }}</code></dd>
+                            </div>
+                            <div>
+                                <dt>최종 PDF</dt>
+                                <dd data-summary-link>
+                                    {% if selected_document.final_pdf %}
+                                        <a href="{{ selected_document.final_pdf.url }}" target="_blank" rel="noopener">다운로드</a>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                {% else %}
+                    <div class="integrity-summary" data-integrity-summary hidden>
+                        <h4>선택한 계약 정보</h4>
+                        <p class="has-text-grey is-size-7">계약을 선택하면 세부 정보가 표시됩니다.</p>
+                    </div>
+                {% endif %}
 
                 {% if result %}
                     <div class="integrity-result integrity-result--{{ result.status }}">
