@@ -3,7 +3,7 @@
 .contract-integrity-section {
     background: var(--expert-page-bg, #0f172a);
     min-height: calc(100vh - 4rem);
-    padding-top: 6rem;
+    padding-top: 4.5rem;
     color: #e2e8f0;
 }
 
