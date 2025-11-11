@@ -30,6 +30,9 @@ data = os.environ.get('EXPERT_SIGNER_CERT_BASE64', '')
 path = os.environ.get('EXPERT_SIGNER_CERT_PATH', '/tmp/expert-signer.p12')
 if not data:
     sys.exit(0)
+padding = len(data) % 4
+if padding:
+    data += "=" * (4 - padding)
 try:
     decoded = base64.b64decode(data)
 except Exception as exc:
