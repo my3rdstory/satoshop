@@ -5,6 +5,7 @@
 
 ## 변경 사항
 - `DirectContractLibraryView`에서 현재 로그인한 사용자의 라이트닝 public key를 기준으로 서명 완료된 계약도 함께 조회하도록 쿼리를 확장함.
+- counterparty 서명 시 `DirectContractDocument.counterparty_user`를 저장해 동일 계정으로 로그인하면 별도 조건 없이 계약이 노출되도록 모델/마이그레이션을 추가함.
 - 계약 보관함 안내 문구를 "생성했거나 서명한" 계약으로 수정해 반영 범위를 명확히 안내함.
 - README에 계약 보관함 섹션을 추가해 생성자/서명자 모두가 접근 가능하다는 점과 라이트닝 로그인 요구 사항을 문서화함.
 

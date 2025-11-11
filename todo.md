@@ -1,3 +1,4 @@
 expert 프로세스 중 개선할 점
-- 계약서를 생성한 사람만 계약 보관함에 목록이 나오는데,
-- 상대방으로 서명을 한 사람도 계약 보관함에 목록이 나와야 할 것 같다.
+- 계약 상세 내용의 meta 영역을 깔끔하게 볼 수 있도록 폼으로 구성
+/admin/expert/directcontractstagelog/1/change/
+- 장고 어드민의 2개 메뉴 삭제: /admin/expert/contractemaillog/ /admin/expert/contract/

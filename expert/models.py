@@ -205,6 +205,13 @@ class DirectContractDocument(models.Model):
     status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty")
     creator_email = models.EmailField(blank=True)
     counterparty_email = models.EmailField(blank=True)
+    counterparty_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="direct_contracts_signed",
+    )
     creator_signature = models.ImageField(
         upload_to="contracts/signatures/",
         blank=True,

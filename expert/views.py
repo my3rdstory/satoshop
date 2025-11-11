@@ -535,6 +535,7 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
             return self.form_invalid(form)
 
         self.document.counterparty_email = form.cleaned_data["email"]
+        self.document.counterparty_user = self.request.user
         counterparty_lightning_id = _get_lightning_public_key(self.request.user)
         if counterparty_lightning_id:
             self.payload["counterparty_lightning_id"] = counterparty_lightning_id
@@ -603,7 +604,7 @@ class DirectContractLibraryView(LightningLoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         lightning_id = _get_lightning_public_key(user)
-        query = Q(creator=user)
+        query = Q(creator=user) | Q(counterparty_user=user)
         if lightning_id:
             query |= Q(counterparty_signed_at__isnull=False, payload__counterparty_lightning_id=lightning_id)
         documents = DirectContractDocument.objects.filter(query).order_by("-created_at")
