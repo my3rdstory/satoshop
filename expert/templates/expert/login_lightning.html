@@ -91,6 +91,14 @@
                     <p class="has-text-weight-semibold mt-3">미지원</p>
                     <p>Strike, Blink 등 일부 지갑은 LNURL-auth를 제공하지 않습니다.</p>
                 </div>
+                {% if debug_mode %}
+                <div class="wallet-note mt-3">
+                    <h4 class="title is-6">로컬 개발 모드</h4>
+                    <a class="button is-small is-warning" href="{% url 'expert:login-mock' %}?next={{ redirect_target }}">
+                        테스트 계정으로 로그인
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

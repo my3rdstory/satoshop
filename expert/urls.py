@@ -9,6 +9,7 @@ app_name = "expert"
 urlpatterns = [
     path("", views.ExpertLandingView.as_view(), name="landing"),
     path("login/", views.ExpertLightningLoginGuideView.as_view(), name="login"),
+    path("login/mock/", views.ExpertMockLightningLoginView.as_view(), name="login-mock"),
     path("contracts/direct/", views.DirectContractDraftView.as_view(), name="direct-draft"),
     path(
         "contracts/direct/draft/",

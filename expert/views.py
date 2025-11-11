@@ -7,6 +7,7 @@ from itertools import zip_longest
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
@@ -768,13 +769,36 @@ class ExpertLightningLoginGuideView(TemplateView):
         context = super().get_context_data(**kwargs)
         default_target = reverse("expert:direct-draft")
         redirect_target = self.request.GET.get("next") or default_target
-        query_string = urlencode({"next": redirect_target})
         context.update(
             {
                 "redirect_target": redirect_target,
+                "debug_mode": settings.DEBUG,
             }
         )
         return context
+
+
+class ExpertMockLightningLoginView(RedirectView):
+    """DEBUG 환경에서 라이트닝 인증 없이 로그인 테스트용."""
+
+    def get_redirect_url(self, *args, **kwargs):
+        return self.request.GET.get("next") or reverse("expert:landing")
+
+    def dispatch(self, request, *args, **kwargs):
+        if not settings.DEBUG:
+            return HttpResponseForbidden("Mock login is only available in DEBUG mode.")
+        User = get_user_model()
+        username = request.GET.get("username") or ""
+        user = None
+        if username:
+            user = User.objects.filter(username=username).first()
+        if not user:
+            user = User.objects.filter(is_superuser=True).first() or User.objects.first()
+        if not user:
+            messages.error(request, "로그인에 사용할 테스트 계정이 없습니다.")
+            return redirect("accounts:login")
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        return super().dispatch(request, *args, **kwargs)
 
 
 class PaymentAccessError(Exception):
