@@ -19,6 +19,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import TemplateView, FormView, RedirectView
 
 from storage.backends import S3Storage
+from accounts.models import LightningUser
 
 from .contract_flow import (
     build_counterparty_hash,
@@ -797,6 +798,10 @@ class ExpertMockLightningLoginView(RedirectView):
         if not user:
             messages.error(request, "로그인에 사용할 테스트 계정이 없습니다.")
             return redirect("accounts:login")
+        lightning_profile = getattr(user, "lightning_profile", None)
+        if not lightning_profile:
+            pubkey = f"mock_{uuid.uuid4().hex[:58]}"
+            LightningUser.objects.create(user=user, public_key=pubkey)
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return super().dispatch(request, *args, **kwargs)
 
