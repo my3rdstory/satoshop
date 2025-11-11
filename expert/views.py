@@ -127,29 +127,14 @@ def record_stage_log(stage: str, *, document=None, token: str | None = None, met
     )
 
 
-class ExpertLandingView(RedirectView):
-    """Expert 기본 경로를 직접 계약 생성 페이지로 리디렉션."""
-
-    permanent = False
-
-    def get_redirect_url(self, *args, **kwargs):  # noqa: D401 - RedirectView 구현 디테일
-        return reverse("expert:create-direct")
+class ExpertLandingView(TemplateView):
+    template_name = "expert/landing.html"
 
 
 class LightningLoginRequiredMixin(LoginRequiredMixin):
     """Ensure users completed Lightning login."""
 
-    login_url = reverse_lazy("expert:login")
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return super().dispatch(request, *args, **kwargs)
-        if not _has_lightning_profile(request.user):
-            messages.warning(request, "라이트닝 로그인 후 이용할 수 있습니다.")
-            login_url = reverse("expert:login")
-            query = urlencode({"next": request.get_full_path()})
-            return redirect(f"{login_url}?{query}")
-        return super().dispatch(request, *args, **kwargs)
+    login_url = reverse_lazy("accounts:login")
 
 
 def _has_lightning_profile(user) -> bool:

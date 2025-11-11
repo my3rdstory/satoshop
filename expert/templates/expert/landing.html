@@ -1,5 +1,40 @@
 {% extends "expert/base.html" %}
+{% load static %}
 
 {% block title %}SatoShop Expert{% endblock %}
 
-{% block content %}{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/direct_contract_start.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="direct-contract-hero section">
+    <div class="container hero-grid">
+        <div class="hero-copy">
+            <span class="hero-pill">1:1 직접 계약</span>
+            <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
+            <p>
+                직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
+            </p>
+            <div class="hero-actions">
+                {% if request.user.is_authenticated %}
+                    <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% else %}
+                    <a class="button is-primary is-medium" href="{% url 'accounts:login' %}?next={% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% endif %}
+                <p class="is-size-7 has-text-grey">로그인한 계정만 계약 생성이 가능합니다.</p>
+            </div>
+        </div>
+        <div class="hero-side">
+            <div class="hero-card">
+                <p class="hero-card-title">기본 원칙</p>
+                <ul>
+                    <li><span class="hero-bullet">계정 인증</span> 인증된 계정만 정산 정보 입력/서명 가능</li>
+                    <li><span class="hero-bullet">즉시 공유</span> 초안을 작성하면 즉시 공유 링크 생성</li>
+                    <li><span class="hero-bullet">옵션 결제</span> 유료 정책이 켜지면 단계별 결제 진행</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
