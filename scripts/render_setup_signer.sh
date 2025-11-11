@@ -16,12 +16,29 @@ if [ -z "$CERT_PATH" ]; then
   CERT_PATH="/tmp/expert-signer.p12"
 fi
 
+export EXPERT_SIGNER_CERT_PATH="$CERT_PATH"
+
 TARGET_DIR=$(dirname "$CERT_PATH")
 mkdir -p "$TARGET_DIR"
 
-echo "$CERT_BASE64" | base64 -d > "$CERT_PATH"
-chmod 600 "$CERT_PATH"
+python - <<'PY'
+import base64
+import os
+import sys
 
-export EXPERT_SIGNER_CERT_PATH="$CERT_PATH"
+data = os.environ.get('EXPERT_SIGNER_CERT_BASE64', '')
+path = os.environ.get('EXPERT_SIGNER_CERT_PATH', '/tmp/expert-signer.p12')
+if not data:
+    sys.exit(0)
+try:
+    decoded = base64.b64decode(data)
+except Exception as exc:
+    sys.stderr.write(f"[signer] base64 decode failed: {exc}\n")
+    sys.exit(1)
+with open(path, 'wb') as fp:
+    fp.write(decoded)
+PY
+
+chmod 600 "$CERT_PATH"
 
 echo "📄 EXPERT 서명용 인증서를 $CERT_PATH 에 복원했습니다."
