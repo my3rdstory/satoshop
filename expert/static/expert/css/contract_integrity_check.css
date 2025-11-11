@@ -3,7 +3,7 @@
 .contract-integrity-section {
     background: var(--expert-page-bg, #0f172a);
     min-height: calc(100vh - 4rem);
-    padding-top: 4.5rem;
+    padding-top: 3rem;
     color: #e2e8f0;
 }
 
@@ -33,15 +33,15 @@
     color: #cbd5f5;
 }
 
-.integrity-layout {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.25rem;
-    align-items: flex-start;
+.integrity-secondary {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-top: 1.25rem;
 }
 
 .integrity-summary {
-    margin-top: 1.25rem;
     padding: 1rem 1.25rem;
     border-radius: 12px;
     background: rgba(30, 41, 59, 0.75);

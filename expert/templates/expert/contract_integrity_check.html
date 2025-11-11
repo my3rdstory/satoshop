@@ -34,7 +34,7 @@
                 <p class="has-text-grey is-size-7">계약을 생성하거나 서명 완료하면 이 도구를 사용할 수 있습니다.</p>
             </div>
         {% else %}
-            <div class="integrity-card integrity-layout" data-integrity-card>
+            <div class="integrity-card" data-integrity-card>
                 <form method="post" enctype="multipart/form-data" class="integrity-form" data-integrity-form>
                     {% csrf_token %}
                     <div class="field">
@@ -71,7 +71,7 @@
                     </div>
                 </form>
 
-                <div class="integrity-summary" data-integrity-summary {% if not selected_document %}hidden{% endif %}>
+                <div class="integrity-secondary integrity-summary" data-integrity-summary {% if not selected_document %}hidden{% endif %}>
                     <h4>선택한 계약 정보</h4>
                     <dl>
                         <div>
@@ -102,31 +102,33 @@
                         </div>
                     </dl>
                 </div>
-                <div class="integrity-summary integrity-summary--placeholder" data-integrity-summary-placeholder {% if selected_document %}hidden{% endif %}>
+                <div class="integrity-secondary integrity-summary integrity-summary--placeholder" data-integrity-summary-placeholder {% if selected_document %}hidden{% endif %}>
                     <h4>선택한 계약 정보</h4>
                     <p>검증할 계약을 선택하면 제목, 상태, 저장된 해시와 최종 PDF 링크가 표시됩니다.</p>
                 </div>
 
-                {% if result %}
-                    <div class="integrity-result integrity-result--{{ result.status }}">
-                        <p class="integrity-result__title">{{ result.document.payload.title|default:result.document.slug }}</p>
-                        <p class="integrity-result__message">{{ result.message }}</p>
-                        <dl class="integrity-hash-list">
-                            <div>
-                                <dt>저장된 해시</dt>
-                                <dd><code>{{ result.stored_hash|default:"(없음)" }}</code></dd>
-                            </div>
-                            <div>
-                                <dt>업로드한 해시</dt>
-                                <dd><code>{{ result.uploaded_hash }}</code></dd>
-                            </div>
-                        </dl>
-                    </div>
-                {% else %}
-                    <div class="integrity-result integrity-result--placeholder" data-integrity-result-placeholder>
-                        <p class="integrity-result__message">PDF를 업로드해 위변조 여부를 확인하세요.</p>
-                    </div>
-                {% endif %}
+                <div class="integrity-secondary">
+                    {% if result %}
+                        <div class="integrity-result integrity-result--{{ result.status }}">
+                            <p class="integrity-result__title">{{ result.document.payload.title|default:result.document.slug }}</p>
+                            <p class="integrity-result__message">{{ result.message }}</p>
+                            <dl class="integrity-hash-list">
+                                <div>
+                                    <dt>저장된 해시</dt>
+                                    <dd><code>{{ result.stored_hash|default:"(없음)" }}</code></dd>
+                                </div>
+                                <div>
+                                    <dt>업로드한 해시</dt>
+                                    <dd><code>{{ result.uploaded_hash }}</code></dd>
+                                </div>
+                            </dl>
+                        </div>
+                    {% else %}
+                        <div class="integrity-result integrity-result--placeholder" data-integrity-result-placeholder>
+                            <p class="integrity-result__message">PDF를 업로드해 위변조 여부를 확인하세요.</p>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 
             <div class="integrity-card integrity-card--tips">
