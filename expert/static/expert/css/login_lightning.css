@@ -61,6 +61,48 @@
     margin-top: 1rem;
 }
 
+.login-widget {
+    min-height: 420px;
+}
+
+.login-widget .button.is-primary {
+    width: 100%;
+    justify-content: center;
+}
+
+.qr-wrapper {
+    width: 240px;
+    height: 240px;
+    margin: 0 auto 1rem;
+    background: #fff;
+    border-radius: 18px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.qr-wrapper img {
+    max-width: 100%;
+}
+
+.login-status {
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    background: rgba(59, 130, 246, 0.15);
+    color: #bae6fd;
+    font-size: 0.9rem;
+}
+
+.login-state {
+    text-align: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
 .guide-card {
     background: rgba(8, 13, 26, 0.92);
     border-radius: 22px;

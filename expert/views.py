@@ -134,7 +134,17 @@ class ExpertLandingView(TemplateView):
 class LightningLoginRequiredMixin(LoginRequiredMixin):
     """Ensure users completed Lightning login."""
 
-    login_url = reverse_lazy("accounts:login")
+    login_url = reverse_lazy("expert:login")
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return super().dispatch(request, *args, **kwargs)
+        if not _has_lightning_profile(request.user):
+            messages.warning(request, "라이트닝 인증 계정으로 로그인해야 이용할 수 있습니다.")
+            login_url = reverse("expert:login")
+            query = urlencode({"next": request.get_full_path()})
+            return redirect(f"{login_url}?{query}")
+        return super().dispatch(request, *args, **kwargs)
 
 
 def _has_lightning_profile(user) -> bool:
@@ -762,8 +772,6 @@ class ExpertLightningLoginGuideView(TemplateView):
         context.update(
             {
                 "redirect_target": redirect_target,
-                "lightning_login_url": f"{reverse('accounts:lightning_login')}?{query_string}",
-                "standard_login_url": f"{reverse('accounts:login')}?{query_string}",
             }
         )
         return context
