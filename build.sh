@@ -89,7 +89,7 @@ if [ -d "static" ]; then
     FILE_COUNT=$(find static -type f | wc -l)
     if [ "$FILE_COUNT" -gt 0 ]; then
         echo "📦 정적 파일 목록 (최대 10개):"
-        find static -type f \( -iname "*.css" -o -iname "*.js" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) | head -10
+        find static -type f \( -iname "*.css" -o -iname "*.js" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.webp" \) | head -10 || true
         echo "✅ 정적 파일 처리 완료"
     else
         echo "⚠️ static 디렉토리에 파일이 없습니다."
