@@ -8,6 +8,7 @@ from itertools import zip_longest
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -593,14 +594,19 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
 
 
 class DirectContractLibraryView(LightningLoginRequiredMixin, TemplateView):
-    """내가 생성한 직접 계약 리스트."""
+    """생성했거나 서명한 직접 계약 리스트."""
 
     template_name = "expert/contract_library.html"
     login_url = reverse_lazy("expert:login")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        documents = DirectContractDocument.objects.filter(creator=self.request.user)
+        user = self.request.user
+        lightning_id = _get_lightning_public_key(user)
+        query = Q(creator=user)
+        if lightning_id:
+            query |= Q(counterparty_signed_at__isnull=False, payload__counterparty_lightning_id=lightning_id)
+        documents = DirectContractDocument.objects.filter(query).order_by("-created_at")
         context["documents"] = documents
         return context
 
