@@ -10,6 +10,7 @@
 - pyHanko 기반 디지털 서명 파이프라인을 도입해 `EXPERT_SIGNER_CERT_*` 환경 변수로 PKCS#12 인증서를 설정하면 최종 PDF에 전자서명을 자동 삽입함.
 - 해시 비교/서명 관련 안내를 README에 정리하고 Render 배포 시 비밀 정보로 인증서를 관리하는 절차를 문서화함.
 - `.env.local`에 서명용 환경 변수를 기본 포함시키고, Render 빌드 스크립트가 `scripts/render_setup_signer.sh`를 통해 base64 값을 `/tmp/expert-signer.p12`로 복원하도록 자동화함.
+- 상대방 초대 링크에서 과거 계약의 템플릿이 비어 있는 경우 선택된 표준 템플릿으로 자동 대체해 "계약서 본문 없음" 오류가 발생하지 않도록 함.
 
 ## 검증
 - `uv run python manage.py migrate` 후 기존 계약 상세에서 `final_pdf_hash`가 비어 있지 않은지 확인.

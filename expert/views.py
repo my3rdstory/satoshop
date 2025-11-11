@@ -473,13 +473,27 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         )
         counterparty_payload_lightning = (self.payload or {}).get("counterparty_lightning_id", "")
         viewer_lightning_id = _get_lightning_public_key(self.request.user)
+        template_data = (self.payload.get("contract_template") or {}).copy()
+        template_content = template_data.get("content", "")
+        if template_content and not template_data.get("content_html"):
+            template_data["content_html"] = render_contract_markdown(template_content)
+        if not template_data.get("content_html"):
+            fallback_template = ContractTemplate.objects.filter(is_selected=True).first()
+            if fallback_template:
+                template_data = {
+                    "title": template_data.get("title") or fallback_template.title,
+                    "version": template_data.get("version") or fallback_template.version_label,
+                    "content": template_content or fallback_template.content,
+                    "content_html": render_contract_markdown(fallback_template.content),
+                }
+
         context.update(
             {
                 "document": self.document,
                 "payload": self.payload,
                 "is_owner": is_owner,
                 "waiting_message": self.document.status != "completed" and not self.document.counterparty_signed_at,
-                "contract_template": (self.payload.get("contract_template") or {}),
+                "contract_template": template_data,
                 "share_url": self.request.build_absolute_uri(self.document.get_absolute_url()),
                 "signature_assets": {
                     "creator": self.document.get_signature_asset("creator"),
