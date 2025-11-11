@@ -52,7 +52,7 @@ a {
 }
 
 .expert-main {
-    padding-top: 3.25rem; /* align with fixed navbar height */
+    padding-top: 0;
     padding-bottom: 3.5rem;
 }
 

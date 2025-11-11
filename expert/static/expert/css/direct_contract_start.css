@@ -1,6 +1,6 @@
 .direct-contract-hero {
     background: linear-gradient(130deg, rgba(12, 19, 45, 0.95), rgba(8, 145, 178, 0.8));
-    border-radius: 28px;
+    border-radius: 0;
     padding: 3rem;
     color: rgba(248, 250, 252, 0.92);
 }

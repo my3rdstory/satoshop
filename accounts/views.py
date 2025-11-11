@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, TemplateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.views import View
 from django.http import HttpResponse, JsonResponse
@@ -90,7 +90,10 @@ class CustomLogoutView(LogoutView):
         if next_url:
             from urllib.parse import unquote
             return unquote(next_url)
-        return super().get_success_url()
+        try:
+            return reverse('expert:create-direct')
+        except Exception:  # pragma: no cover - fallback in case URL name changes
+            return super().get_success_url()
 
 
 class SignUpView(CreateView):
