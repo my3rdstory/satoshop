@@ -54,7 +54,12 @@ from .payment_service import (
     mark_payment_paid,
     store_payment_state,
 )
-from .utils import calculate_sha256_from_fileobj, pdf_signing_enabled, sign_contract_pdf
+from .utils import (
+    PDFSigningError,
+    calculate_sha256_from_fileobj,
+    pdf_signing_enabled,
+    sign_contract_pdf,
+)
 
 
 def render_contract_markdown(text: str) -> str:
@@ -609,7 +614,14 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
             (self.payload.get("contract_template") or {}).get("content") or ""
         )
         pdf_content = render_contract_pdf(self.document, template_markdown)
-        pdf_content = sign_contract_pdf(pdf_content)
+        try:
+            pdf_content = sign_contract_pdf(pdf_content)
+        except PDFSigningError as exc:
+            pdf_content.seek(0)
+            messages.warning(
+                self.request,
+                f"전자 서명에 실패해 서명 없이 계약서를 저장했습니다. (사유: {exc})",
+            )
         pdf_hash = calculate_sha256_from_fileobj(pdf_content)
         self.document.final_pdf.save(pdf_content.name, pdf_content)
         self.document.final_pdf_hash = pdf_hash

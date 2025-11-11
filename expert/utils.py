@@ -1,6 +1,9 @@
 import base64
 import hashlib
 import io
+import logging
+import os
+import tempfile
 from functools import lru_cache
 from typing import BinaryIO
 
@@ -13,6 +16,13 @@ try:  # Optional dependency guard (pyHanko is installed but keep fallback for sa
 except ImportError:  # pragma: no cover - optional dependency may be missing in some envs
     signers = None
     IncrementalPdfFileWriter = None
+
+
+logger = logging.getLogger(__name__)
+
+
+class PDFSigningError(Exception):
+    """Raised when PDF signing fails."""
 
 
 def calculate_sha256_from_fileobj(file_obj: BinaryIO, *, chunk_size: int = 1024 * 1024) -> str:
@@ -64,7 +74,17 @@ def _load_signer():  # pragma: no cover - heavy IO, tested via integration
         return signers.SimpleSigner.load_pkcs12(cert_path, passphrase=passphrase)
     if cert_base64:
         pkcs12_bytes = base64.b64decode(cert_base64)
-        return signers.SimpleSigner.load_pkcs12(io.BytesIO(pkcs12_bytes), passphrase=passphrase)
+        tmp_file = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            tmp_file.write(pkcs12_bytes)
+            tmp_file.flush()
+            tmp_file.close()
+            return signers.SimpleSigner.load_pkcs12(tmp_file.name, passphrase=passphrase)
+        finally:
+            try:
+                os.unlink(tmp_file.name)
+            except OSError:  # pragma: no cover - best effort cleanup
+                pass
     raise RuntimeError("서명용 인증서를 찾을 수 없습니다.")
 
 
@@ -75,26 +95,29 @@ def sign_contract_pdf(content_file: ContentFile) -> ContentFile:
         content_file.seek(0)
         return content_file
 
-    content_file.seek(0)
-    buffer = io.BytesIO(content_file.read())
-    buffer.seek(0)
-    writer = IncrementalPdfFileWriter(buffer)
-    signer = _load_signer()
-    metadata = signers.PdfSignatureMetadata(
-        field_name="ExpertSignature",
-        reason="SatoShop Expert 계약 위변조 방지",
-    )
-    validation_context = None
-    signed_output = signers.sign_pdf(
-        writer,
-        signer=signer,
-        signature_meta=metadata,
-        validation_context=validation_context,
-    )
-    if hasattr(signed_output, "getvalue"):
-        signed_bytes = signed_output.getvalue()
-    elif hasattr(signed_output, "getbuffer"):
-        signed_bytes = signed_output.getbuffer().tobytes()
-    else:  # pragma: no cover - fallback for unexpected return types
-        signed_bytes = bytes(signed_output)
-    return ContentFile(signed_bytes, name=content_file.name)
+    try:
+        content_file.seek(0)
+        buffer = io.BytesIO(content_file.read())
+        buffer.seek(0)
+        writer = IncrementalPdfFileWriter(buffer)
+        signer = _load_signer()
+        metadata = signers.PdfSignatureMetadata(
+            field_name="ExpertSignature",
+            reason="SatoShop Expert 계약 위변조 방지",
+        )
+        signed_output = signers.sign_pdf(
+            writer,
+            signer=signer,
+            signature_meta=metadata,
+            validation_context=None,
+        )
+        if hasattr(signed_output, "getvalue"):
+            signed_bytes = signed_output.getvalue()
+        elif hasattr(signed_output, "getbuffer"):
+            signed_bytes = signed_output.getbuffer().tobytes()
+        else:  # pragma: no cover - fallback for unexpected return types
+            signed_bytes = bytes(signed_output)
+        return ContentFile(signed_bytes, name=content_file.name)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("PDF 전자서명에 실패했습니다: %s", exc, exc_info=True)
+        raise PDFSigningError(str(exc)) from exc
