@@ -83,7 +83,7 @@ class CustomLoginView(LoginView):
 
 class CustomLogoutView(LogoutView):
     http_method_names = ['get', 'post']  # GET 요청도 허용
-    
+
     def get_success_url(self):
         # next 파라미터가 있으면 해당 URL로, 없으면 기본 설정으로
         next_url = self.request.POST.get('next') or self.request.GET.get('next')
@@ -91,7 +91,7 @@ class CustomLogoutView(LogoutView):
             from urllib.parse import unquote
             return unquote(next_url)
         try:
-            return reverse('expert:create-direct')
+            return reverse('expert:landing')
         except Exception:  # pragma: no cover - fallback in case URL name changes
             return super().get_success_url()
 

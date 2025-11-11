@@ -60,6 +60,12 @@ a {
 .expert-main {
     padding-top: 0;
     padding-bottom: 3.5rem;
+    background: #080d1a;
+    min-height: calc(100vh - 64px);
+}
+
+.section {
+    background: transparent;
 }
 
 .navbar-burger {
