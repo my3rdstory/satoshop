@@ -150,9 +150,8 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "stage",
         "stage_display",
         "started_at",
-        "participant_overview",
         "hash_comparison",
-        "meta_details",
+        "participant_overview",
     )
     list_display_links = ("document_link",)
     list_per_page = 25
@@ -166,21 +165,15 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             },
         ),
         (
-            "참여자 요약",
-            {
-                "fields": ("participant_overview",),
-            },
-        ),
-        (
             "해시 비교",
             {
                 "fields": ("hash_comparison",),
             },
         ),
         (
-            "메타 정보",
+            "참여자 요약",
             {
-                "fields": ("meta_details",),
+                "fields": ("participant_overview",),
             },
         ),
     )
@@ -208,28 +201,6 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
 
     stage_display.short_description = "단계"
 
-    stage_meta_fields = {
-        "draft": (
-            ("title", "계약 제목"),
-            ("payment_type", "결제 방식"),
-            ("lightning_id", "라이트닝 ID"),
-        ),
-        "role_one": (
-            ("role", "역할"),
-            ("role_label", "역할 라벨"),
-            ("email", "이메일"),
-            ("lightning_id", "라이트닝 ID"),
-            ("signed_at", "서명 시각"),
-        ),
-        "role_two": (
-            ("role", "역할"),
-            ("role_label", "역할 라벨"),
-            ("email", "이메일"),
-            ("lightning_id", "라이트닝 ID"),
-            ("signed_at", "서명 시각"),
-        ),
-        "completed": (),
-    }
     payment_field_order = (
         "amount_sats",
         "paid_at",
@@ -242,20 +213,6 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         "payment_hash": "결제 해시",
         "payment_request": "결제 요청",
     }
-
-    def meta_details(self, obj):
-        if not obj:
-            return "-"
-        rows = self._build_meta_rows(obj)
-        if not rows:
-            return "기록된 메타 정보가 없습니다."
-        rows_html = format_html_join("", "{}", ((row,) for row in rows))
-        return format_html(
-            '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:16px;background:#f8fafc;">{}</div>',
-            rows_html,
-        )
-
-    meta_details.short_description = "메타 정보"
 
     def participant_overview(self, obj):
         if not obj:
@@ -293,38 +250,6 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         )
 
     participant_overview.short_description = "계약 참여자"
-
-    def _build_meta_rows(self, obj):
-        meta = obj.meta or {}
-        rows = []
-        # stage별로 구분된 필드 렌더링
-        for stage_key, fields in self.stage_meta_fields.items():
-            stage_meta = meta if obj.stage == stage_key else meta.get(stage_key, {})
-            if not stage_meta:
-                continue
-            rows.append(
-                format_html(
-                    '<div style="margin:12px 0;font-weight:600;color:#1e293b;">[{} 단계]</div>',
-                    self.stage_labels.get(stage_key, stage_key),
-                )
-            )
-            for key, label in fields:
-                value = stage_meta.get(key)
-                if not value:
-                    continue
-                rows.append(self._render_meta_row(label, value))
-            payment_meta = stage_meta.get("payment")
-            if isinstance(payment_meta, dict):
-                for key in self.payment_field_order:
-                    if key not in payment_meta:
-                        continue
-                    rows.append(
-                        self._render_meta_row(
-                            self.payment_field_labels.get(key, f"결제 {key}"),
-                            payment_meta.get(key),
-                        )
-                    )
-        return rows
 
     def _render_meta_row(self, label, value):
         return format_html(
