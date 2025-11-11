@@ -136,21 +136,19 @@ class S3Storage(Storage):
             logger.debug(f"업로드 정보: Content-Type={content_type}, ETag={etag}")
             
             # boto3로 먼저 시도 (upload_fileobj 사용으로 Content-Length 문제 회피)
-            buffer = io.BytesIO(content_data)
             extra_args = {
                 'ContentType': content_type,
+                'ContentLength': len(content_data),
                 'Metadata': {
                     'uploaded-by': 'satoshop-django',
-                    'upload-method': 'upload-fileobj',
+                    'upload-method': 'put-object',
                 },
             }
-            # upload_fileobj는 seek 가능한 파일 객체를 요구하므로 BytesIO 사용 후 위치 초기화
-            buffer.seek(0)
-            self.client.upload_fileobj(
-                Fileobj=buffer,
+            self.client.put_object(
                 Bucket=self.bucket_name,
                 Key=name,
-                ExtraArgs=extra_args,
+                Body=content_data,
+                **extra_args,
             )
             
             logger.info(f"파일 저장 성공 (boto3): {name}")
