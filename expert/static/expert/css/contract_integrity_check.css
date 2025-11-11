@@ -41,6 +41,19 @@
     margin-top: 1.25rem;
 }
 
+.integrity-secondary-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.integrity-secondary {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
 .integrity-summary {
     padding: 1rem 1.25rem;
     border-radius: 12px;

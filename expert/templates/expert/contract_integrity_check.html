@@ -71,63 +71,67 @@
                     </div>
                 </form>
 
-                <div class="integrity-secondary integrity-summary" data-integrity-summary {% if not selected_document %}hidden{% endif %}>
-                    <h4>선택한 계약 정보</h4>
-                    <dl>
-                        <div>
-                            <dt>제목</dt>
-                            <dd data-summary-title>{{ selected_summary.title }}</dd>
-                        </div>
-                        <div>
-                            <dt>상태</dt>
-                            <dd data-summary-status>{{ selected_summary.status }}</dd>
-                        </div>
-                        <div>
-                            <dt>생성일</dt>
-                            <dd data-summary-created>{{ selected_summary.created_at }}</dd>
-                        </div>
-                        <div>
-                            <dt>저장된 해시</dt>
-                            <dd><code data-summary-hash>{{ selected_summary.final_pdf_hash|default:"(없음)" }}</code></dd>
-                        </div>
-                        <div>
-                            <dt>최종 PDF</dt>
-                            <dd data-summary-link>
-                                {% if selected_summary.final_pdf_url %}
-                                    <a href="{{ selected_summary.final_pdf_url }}" target="_blank" rel="noopener">다운로드</a>
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
-                <div class="integrity-secondary integrity-summary integrity-summary--placeholder" data-integrity-summary-placeholder {% if selected_document %}hidden{% endif %}>
-                    <h4>선택한 계약 정보</h4>
-                    <p>검증할 계약을 선택하면 제목, 상태, 저장된 해시와 최종 PDF 링크가 표시됩니다.</p>
-                </div>
-
-                <div class="integrity-secondary">
-                    {% if result %}
-                        <div class="integrity-result integrity-result--{{ result.status }}">
-                            <p class="integrity-result__title">{{ result.document.payload.title|default:result.document.slug }}</p>
-                            <p class="integrity-result__message">{{ result.message }}</p>
-                            <dl class="integrity-hash-list">
+                <div class="integrity-secondary-grid">
+                    <div class="integrity-secondary integrity-summary-container">
+                        <div class="integrity-summary" data-integrity-summary {% if not selected_document %}hidden{% endif %}>
+                            <h4>선택한 계약 정보</h4>
+                            <dl>
                                 <div>
-                                    <dt>저장된 해시</dt>
-                                    <dd><code>{{ result.stored_hash|default:"(없음)" }}</code></dd>
+                                    <dt>제목</dt>
+                                    <dd data-summary-title>{{ selected_summary.title }}</dd>
                                 </div>
                                 <div>
-                                    <dt>업로드한 해시</dt>
-                                    <dd><code>{{ result.uploaded_hash }}</code></dd>
+                                    <dt>상태</dt>
+                                    <dd data-summary-status>{{ selected_summary.status }}</dd>
+                                </div>
+                                <div>
+                                    <dt>생성일</dt>
+                                    <dd data-summary-created>{{ selected_summary.created_at }}</dd>
+                                </div>
+                                <div>
+                                    <dt>저장된 해시</dt>
+                                    <dd><code data-summary-hash>{{ selected_summary.final_pdf_hash|default:"(없음)" }}</code></dd>
+                                </div>
+                                <div>
+                                    <dt>최종 PDF</dt>
+                                    <dd data-summary-link>
+                                        {% if selected_summary.final_pdf_url %}
+                                            <a href="{{ selected_summary.final_pdf_url }}" target="_blank" rel="noopener">다운로드</a>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </dd>
                                 </div>
                             </dl>
                         </div>
-                    {% else %}
-                        <div class="integrity-result integrity-result--placeholder" data-integrity-result-placeholder>
-                            <p class="integrity-result__message">PDF를 업로드해 위변조 여부를 확인하세요.</p>
+                        <div class="integrity-summary integrity-summary--placeholder" data-integrity-summary-placeholder {% if selected_document %}hidden{% endif %}>
+                            <h4>선택한 계약 정보</h4>
+                            <p>검증할 계약을 선택하면 제목, 상태, 저장된 해시와 최종 PDF 링크가 표시됩니다.</p>
                         </div>
-                    {% endif %}
+                    </div>
+
+                    <div class="integrity-secondary integrity-result-container">
+                        {% if result %}
+                            <div class="integrity-result integrity-result--{{ result.status }}">
+                                <p class="integrity-result__title">{{ result.document.payload.title|default:result.document.slug }}</p>
+                                <p class="integrity-result__message">{{ result.message }}</p>
+                                <dl class="integrity-hash-list">
+                                    <div>
+                                        <dt>저장된 해시</dt>
+                                        <dd><code>{{ result.stored_hash|default:"(없음)" }}</code></dd>
+                                    </div>
+                                    <div>
+                                        <dt>업로드한 해시</dt>
+                                        <dd><code>{{ result.uploaded_hash }}</code></dd>
+                                    </div>
+                                </dl>
+                            </div>
+                        {% else %}
+                            <div class="integrity-result integrity-result--placeholder" data-integrity-result-placeholder>
+                                <p class="integrity-result__message">PDF를 업로드해 위변조 여부를 확인하세요.</p>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
