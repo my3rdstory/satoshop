@@ -341,6 +341,8 @@ class DirectContractStageLog(models.Model):
 
     class Meta:
         ordering = ["started_at"]
+        verbose_name = "직접 계약 단계 로그"
+        verbose_name_plural = "직접 계약 단계 로그"
 
     def __str__(self):
         target = self.document.slug if self.document else self.token or "-"

@@ -178,6 +178,7 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         )
         return qs
 
+    stage_order = ("draft", "role_one", "role_two", "completed")
     stage_labels = {
         "draft": "드래프트",
         "role_one": "역할 1",
@@ -186,7 +187,8 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
     }
 
     def stage_display(self, obj):
-        return self.stage_labels.get(obj.stage, obj.stage)
+        current_stage = self._resolve_current_stage(obj)
+        return self.stage_labels.get(current_stage, current_stage)
 
     stage_display.short_description = "단계"
 
@@ -326,6 +328,13 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
             cache.setdefault("draft", obj)
             obj._stage_cache = cache
         return obj._stage_cache
+
+    def _resolve_current_stage(self, obj):
+        stage_map = self._stage_map(obj)
+        for stage_key in reversed(self.stage_order):
+            if stage_map.get(stage_key):
+                return stage_key
+        return "draft"
 
     def _render_stage(self, obj, stage_key):
         stage_map = self._stage_map(obj)
