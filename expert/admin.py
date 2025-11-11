@@ -190,23 +190,27 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
 
     stage_display.short_description = "단계"
 
-    meta_field_order = (
-        "title",
-        "payment_type",
-        "role",
-        "role_label",
-        "email",
-        "lightning_id",
-        "signed_at",
-    )
-    meta_field_labels = {
-        "title": "계약 제목",
-        "payment_type": "결제 방식",
-        "role": "역할",
-        "role_label": "역할 라벨",
-        "email": "이메일",
-        "lightning_id": "라이트닝 ID",
-        "signed_at": "서명 시각",
+    stage_meta_fields = {
+        "draft": (
+            ("title", "계약 제목"),
+            ("payment_type", "결제 방식"),
+            ("lightning_id", "라이트닝 ID"),
+        ),
+        "role_one": (
+            ("role", "역할"),
+            ("role_label", "역할 라벨"),
+            ("email", "이메일"),
+            ("lightning_id", "라이트닝 ID"),
+            ("signed_at", "서명 시각"),
+        ),
+        "role_two": (
+            ("role", "역할"),
+            ("role_label", "역할 라벨"),
+            ("email", "이메일"),
+            ("lightning_id", "라이트닝 ID"),
+            ("signed_at", "서명 시각"),
+        ),
+        "completed": (),
     }
     payment_field_order = (
         "amount_sats",
@@ -237,37 +241,34 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
 
     def _build_meta_rows(self, obj):
         meta = obj.meta or {}
-        if not meta:
-            return []
         rows = []
-        for key in self.meta_field_order:
-            if key not in meta:
+        # stage별로 구분된 필드 렌더링
+        for stage_key, fields in self.stage_meta_fields.items():
+            stage_meta = meta if obj.stage == stage_key else meta.get(stage_key, {})
+            if not stage_meta:
                 continue
-            rows.append(self._render_meta_row(self.meta_field_labels.get(key, key), meta.get(key)))
-        for key in sorted(meta.keys()):
-            if key in self.meta_field_order or key == "payment":
-                continue
-            rows.append(self._render_meta_row(self.meta_field_labels.get(key, key), meta.get(key)))
-        payment_meta = meta.get("payment")
-        if isinstance(payment_meta, dict):
-            for key in self.payment_field_order:
-                if key not in payment_meta:
-                    continue
-                rows.append(
-                    self._render_meta_row(
-                        self.payment_field_labels.get(key, f"결제 {key}"),
-                        payment_meta.get(key),
-                    )
+            rows.append(
+                format_html(
+                    '<div style="margin:12px 0;font-weight:600;color:#1e293b;">[{} 단계]</div>',
+                    self.stage_labels.get(stage_key, stage_key),
                 )
-            for key in sorted(payment_meta.keys()):
-                if key in self.payment_field_order:
+            )
+            for key, label in fields:
+                value = stage_meta.get(key)
+                if not value:
                     continue
-                rows.append(
-                    self._render_meta_row(
-                        self.payment_field_labels.get(key, f"결제 {key}"),
-                        payment_meta.get(key),
+                rows.append(self._render_meta_row(label, value))
+            payment_meta = stage_meta.get("payment")
+            if isinstance(payment_meta, dict):
+                for key in self.payment_field_order:
+                    if key not in payment_meta:
+                        continue
+                    rows.append(
+                        self._render_meta_row(
+                            self.payment_field_labels.get(key, f"결제 {key}"),
+                            payment_meta.get(key),
+                        )
                     )
-                )
         return rows
 
     def _render_meta_row(self, label, value):
