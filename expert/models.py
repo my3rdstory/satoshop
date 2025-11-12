@@ -384,15 +384,3 @@ class ExpertUsageStats(DirectContractDocument):
         proxy = True
         verbose_name = "Expert 사용 통계"
         verbose_name_plural = "Expert 사용 통계"
-    description = models.TextField(
-        blank=True,
-        help_text="결제 정책에 대한 참고 메모.",
-    )
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "직접 계약 결제 정책"
-        verbose_name_plural = "직접 계약 결제 정책"
-
-    def __str__(self):
-        return f"계약 결제 정책({self.name})"
