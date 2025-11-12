@@ -206,9 +206,24 @@
     margin-bottom: 0;
 }
 
-.hash-display .markdown-content strong,
-.preview-worklog.markdown-content strong {
-    color: #fef3c7;
+.worklog-preview {
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    color: #0f172a;
+    font-size: 0.95rem;
+    box-shadow: 0 15px 32px rgba(15, 23, 42, 0.1);
+}
+
+.worklog-preview .markdown-content,
+.worklog-preview {
+    background: transparent;
+    color: #0f172a;
+}
+
+.worklog-preview strong {
+    color: #111827;
 }
 
 .signature-payment-grid {

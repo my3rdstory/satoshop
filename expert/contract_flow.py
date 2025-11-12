@@ -281,7 +281,7 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     work_log = (payload or {}).get("work_log_markdown")
     if not work_log:
         return []
-    flow = [Paragraph("작업 메모", styles["SectionHeading"])]
+    flow = [Paragraph("수행 내역", styles["SectionHeading"])]
     flowables = _markdown_to_flowables(work_log, styles, width)
     if not flowables:
         return []
@@ -294,12 +294,13 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     boxed_content.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#0b1120")),
-                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#334155")),
+                ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
+                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#CBD5F5")),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
                 ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )

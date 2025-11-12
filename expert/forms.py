@@ -96,7 +96,7 @@ class ContractDraftForm(forms.Form):
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
     work_log_markdown = forms.CharField(
-        label="수행 내역 메모 (Markdown)",
+        label="수행 내역 (Markdown)",
         required=False,
         max_length=10000,
         widget=forms.Textarea(
