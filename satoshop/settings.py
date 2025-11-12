@@ -78,6 +78,7 @@ if DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -89,6 +90,7 @@ INSTALLED_APPS = [
     'accounts',
     'stores',
     'products',
+    'expert',
     'reviews',
     'orders',
     'ln_payment',
@@ -140,6 +142,24 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'satoshop.wsgi.application'
+ASGI_APPLICATION = 'satoshop.asgi.application'
+
+CHANNEL_REDIS_URL = os.getenv('CHANNEL_REDIS_URL') or os.getenv('REDIS_URL')
+if CHANNEL_REDIS_URL:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNEL_REDIS_URL],
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 
 # Database
@@ -197,6 +217,9 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # 정적 파일 저장소 설정 - 해시 기반 캐시 무효화
 # Django 5.x에서는 STORAGES 설정 사용 (STATICFILES_STORAGE는 deprecated)
 STORAGES = {
@@ -237,12 +260,18 @@ LOGOUT_REDIRECT_URL = 'myshop:home'
 
 # 블링크 API 설정
 BLINK_API_URL = 'https://api.blink.sv/graphql'
+EXPERT_BLINK_API_KEY = os.getenv("EXPERT_BLINK_API_KEY") or os.getenv("BLINK_API_KEY")
+EXPERT_BLINK_WALLET_ID = os.getenv("EXPERT_BLINK_WALLET_ID") or os.getenv("BLINK_WALLET_ID")
+EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Expert 계약 결제')
+EXPERT_SIGNER_CERT_PATH = os.getenv("EXPERT_SIGNER_CERT_PATH", "")
+EXPERT_SIGNER_CERT_BASE64 = os.getenv("EXPERT_SIGNER_CERT_BASE64", "")
+EXPERT_SIGNER_CERT_PASSWORD = os.getenv("EXPERT_SIGNER_CERT_PASSWORD", "")
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정
 if DEBUG:
     # 개발 환경: ngrok 또는 localhost 사용
-    default_domain = 'localhost:8000'
+    default_domain = 'localhost:8011'
 else:
     # 운영 환경: 실제 도메인 사용 (환경변수에서 가져오기)
     default_domain = 'your-production-domain.com'
@@ -274,6 +303,16 @@ S3_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 S3_ALLOWED_FILE_EXTENSIONS = [
     '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.avif',
 ]
+
+if all([S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_BUCKET_NAME, S3_ENDPOINT_URL]):
+    DEFAULT_FILE_STORAGE = 'storage.backends.S3Storage'
+    if S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{S3_CUSTOM_DOMAIN.rstrip('/')}/"
+    else:
+        MEDIA_URL = f"{S3_ENDPOINT_URL.rstrip('/')}/{S3_BUCKET_NAME}/"
+else:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 # 보안 설정
 SECURE_BROWSER_XSS_FILTER = True

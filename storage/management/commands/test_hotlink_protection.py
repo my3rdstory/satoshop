@@ -21,7 +21,7 @@ class Command(BaseCommand):
             '--base-url',
             type=str,
             help='서버 기본 URL',
-            default='http://localhost:8000'
+            default='http://localhost:8011'
         )
 
     def handle(self, *args, **options):
@@ -42,12 +42,12 @@ class Command(BaseCommand):
             },
             {
                 'name': '2. 허용된 도메인 (localhost)',
-                'headers': {'Referer': 'http://localhost:8000/'},
+                'headers': {'Referer': 'http://localhost:8011/'},
                 'expected': '허용됨'
             },
             {
                 'name': '3. 허용된 도메인 (127.0.0.1)',
-                'headers': {'Referer': 'http://127.0.0.1:8000/'},
+                'headers': {'Referer': 'http://127.0.0.1:8011/'},
                 'expected': '허용됨'
             },
             {

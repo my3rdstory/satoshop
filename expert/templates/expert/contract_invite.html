@@ -1,0 +1,292 @@
+{% extends "expert/base.html" %}
+{% load static user_extras %}
+
+{% block title %}전자 계약서 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-flow-section">
+    <div class="container">
+        <div class="contract-flow-hero">
+            <h1 class="title is-3">{{ payload.title }}</h1>
+            <p class="has-text-grey-light">계약 ID: {{ document.slug }}</p>
+            {% if waiting_message %}
+                <div class="invite-alert mt-4">
+                    {% if document.counterparty_role == 'performer' %}
+                        현재 수행자의 계약 입력을 기다리고 있습니다.
+                    {% else %}
+                        현재 의뢰자의 계약 입력을 기다리고 있습니다.
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-step {% if document.creator_hash %}is-completed{% endif %}">
+                <strong>{{ creator_role_label }} 서명</strong>
+                <span>{{ document.creator_signed_at|date:"Y-m-d H:i:s"|default:"대기" }}</span>
+                {% if creator_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ creator_lightning_id|lightning_short }}</p>
+                {% endif %}
+            </div>
+            <div class="timeline-step {% if document.counterparty_signed_at %}is-completed{% elif document.status != 'completed' %}is-active{% endif %}">
+                <strong>{{ counterparty_role_label }} 확인</strong>
+                <span>
+                    {% if document.counterparty_signed_at %}
+                        {{ document.counterparty_signed_at|date:"Y-m-d H:i:s" }}
+                    {% else %}
+                        진행 중
+                    {% endif %}
+                </span>
+                {% if not is_owner and viewer_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ viewer_lightning_id|lightning_short }}</p>
+                {% elif counterparty_lightning_id %}
+                    <p class="timeline-lightning">라이트닝 ID: {{ counterparty_lightning_id|lightning_short }}</p>
+                {% endif %}
+            </div>
+            <div class="timeline-step {% if document.status == 'completed' %}is-completed{% endif %}">
+                <strong>사토샵 검증</strong>
+                <span>{% if document.status == 'completed' %}완료{% else %}대기{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="contract-flow-grid contract-flow-grid--triple">
+            <article class="contract-flow-card">
+                <h3>계약 요약</h3>
+                <ul class="contract-flow-list">
+                    <li><span>역할</span><strong>{{ payload.role_display }}</strong></li>
+                    <li><span>기간</span><strong>{{ payload.start_date }} ~ {{ payload.end_date|default:'미정' }}</strong></li>
+                    <li><span>금액</span><strong>{{ payload.amount_sats }} sats</strong></li>
+                    <li><span>지급 방식</span><strong>{{ payload.payment_display }}</strong></li>
+                    <li><span>이메일</span><strong>{{ payload.email_recipient|default:'미입력' }}</strong></li>
+                    <li><span>수행자 라이트닝</span><strong>{{ payload.performer_lightning_address|default:'-' }}</strong></li>
+                </ul>
+                {% if payload.milestones %}
+                    <div class="hash-note mt-4">
+                        <p class="has-text-weight-semibold">분할 지급</p>
+                        <ul class="milestone-detail-list">
+                            {% for milestone in payload.milestones %}
+                                <li>
+                                    <strong>분할 {{ forloop.counter }}</strong>
+                                    <span>{{ milestone.amount_sats|default:0 }} sats</span>
+                                    <span>지급일: {{ milestone.due_date|default:'미정' }}</span>
+                                    <span>조건: {{ milestone.condition|default:'지급 조건 미입력' }}</span>
+                                </li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                {% elif payload.payment_type == 'one_time' %}
+                    <div class="hash-note mt-4">
+                        <p class="has-text-weight-semibold">일괄 지급 세부 정보</p>
+                        <ul class="milestone-detail-list">
+                            <li>
+                                <strong>지급일</strong>
+                                <span>{{ payload.one_time_due_date|default:'미정' }}</span>
+                            </li>
+                            <li>
+                                <strong>지급 조건</strong>
+                                <span>{{ payload.one_time_condition|default:'지급 조건 미입력' }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
+                {% if is_owner %}
+                    <p class="mt-4 has-text-grey-light">
+                        이 주소를 복사해 {{ counterparty_role_label }}에게 전달하세요.
+                    </p>
+                    <div class="hash-display share-url-display" id="share-url-box">
+                        <a href="{{ share_url }}" class="share-url-link" target="_blank" rel="noopener">
+                            {{ share_url }}
+                        </a>
+                    </div>
+                    <button type="button" class="button is-small is-light mt-2 copy-share-url" data-share-url="{{ share_url }}">
+                        링크 복사
+                    </button>
+                {% endif %}
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>수행 내역</h3>
+                <div class="worklog-preview markdown-content">
+                    {% if payload.work_log_markdown %}
+                        {{ work_log_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">작성된 메모가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>계약 일반 사항</h3>
+                <div class="modal-template-body">
+                    {% if contract_template.content_html %}
+                        {{ contract_template.content_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">계약서 본문이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+
+        <div class="contract-flow-grid contract-flow-grid--double">
+            <article class="contract-flow-card">
+                <h3>서명 기록</h3>
+                <div class="signature-record">
+                    <p class="signature-preview-label">{{ creator_role_label }} 서명</p>
+                    {% if creator_signature_url %}
+                        <img src="{{ creator_signature_url }}" alt="{{ creator_role_label }} 서명 이미지" class="signature-record-img">
+                    {% else %}
+                        <p class="has-text-grey">업로드된 서명이 없습니다.</p>
+                    {% endif %}
+                </div>
+                <div class="signature-record mt-4">
+                    <p class="signature-preview-label">{{ counterparty_role_label }} 서명</p>
+                    {% if counterparty_signature_url %}
+                        <img src="{{ counterparty_signature_url }}" alt="{{ counterparty_role_label }} 서명 이미지" class="signature-record-img">
+                    {% else %}
+                        <p class="has-text-grey">업로드된 서명이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>해시 기록</h3>
+                <p class="mb-2">{{ creator_role_label }}</p>
+                <div class="hash-display">{{ document.creator_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">{{ counterparty_role_label }}</p>
+                <div class="hash-display">{{ document.counterparty_hash|default:'생성 대기' }}</div>
+                <p class="mt-4 mb-2">사토샵</p>
+                <div class="hash-display">{{ document.mediator_hash|default:'생성 대기' }}</div>
+            </article>
+        </div>
+
+        {% if form %}
+        <form method="post" class="contract-flow-card">
+            {% csrf_token %}
+            <input type="hidden"
+                   data-payment-status-input
+                   value="{% if payment_widget and payment_widget.state.status == 'paid' %}paid{% elif payment_widget %}{{ payment_widget.state.status }}{% else %}paid{% endif %}">
+            <h3>{{ counterparty_role_label }} 서명</h3>
+            {% if viewer_lightning_id %}
+                <p class="lightning-id-note">현재 라이트닝 ID: {{ viewer_lightning_id|lightning_short }}</p>
+            {% endif %}
+            <div class="field sign-contact-grid">
+                {% if require_performer_lightning and form.performer_lightning_address %}
+                <div>
+                    {{ form.performer_lightning_address.label_tag }}
+                    <div class="control">{{ form.performer_lightning_address }}</div>
+                    <p class="help">정산 받을 라이트닝 주소를 입력해야 계약이 완료됩니다.</p>
+                    {% for error in form.performer_lightning_address.errors %}
+                        <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div>
+                    {{ form.email.label_tag }}
+                    <div class="control">{{ form.email }}</div>
+                    <p class="help">계약서 PDF를 받고 싶다면 이메일을 입력하세요 (선택).</p>
+                    {% for error in form.email.errors %}
+                        <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="signature-payment-grid mt-4">
+                <div>
+                    {{ form.signature_data }}
+                    <div class="signature-pad-wrapper">
+                        <canvas class="signature-canvas" data-signature-canvas></canvas>
+                        <div class="signature-actions">
+                            <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
+                            <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                        </div>
+                    </div>
+                    <div class="signature-preview" data-signature-preview hidden>
+                        <p class="signature-preview-label">서명 미리보기</p>
+                        <img src="" alt="서명 미리보기" data-signature-preview-img>
+                    </div>
+                </div>
+                {% if payment_widget %}
+                    <div class="lightning-payment-wrapper">
+                        <h3>라이트닝 결제</h3>
+                        {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="field mt-4 sign-checkbox-list">
+                {% if form.agree_reviewed %}
+                    <label class="checkbox">{{ form.agree_reviewed }} 계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.</label>
+                    {% for error in form.agree_reviewed.errors %}
+                        <p class="help is-danger">{{ error }}</p>
+                    {% endfor %}
+                {% endif %}
+                <label class="checkbox">{{ form.agree_privacy }} 개인정보 수집 및 이용에 동의합니다.</label>
+                <label class="checkbox">{{ form.agree_confidentiality }} 계약 내용 비밀 유지 조항을 이해했습니다.</label>
+                <label class="checkbox">{{ form.agree_system }} 중계자인 본 시스템은 계약 이행에 관여하지 않으며, 불이행에 대한 책임이 없음을 이해합니다.</label>
+                {% for field in form %}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="field mt-4">
+                <button type="submit" class="button is-primary is-fullwidth is-medium"
+                        data-signature-submit disabled>계약 체결</button>
+            </div>
+        </form>
+        {% else %}
+            <div class="contract-flow-card">
+                <h3>진행 결과</h3>
+                {% if document.status == 'completed' %}
+                    <p>계약이 완료되었습니다. 아래에서 PDF를 다운로드할 수 있습니다.</p>
+                    {% if document.final_pdf %}
+                        <a href="{{ document.final_pdf.url }}" class="button is-link mt-3" target="_blank" rel="noopener">계약서 PDF 다운로드</a>
+                    {% endif %}
+                    <div class="mt-4">
+                        <p class="has-text-grey-light">이메일 발송 결과</p>
+                        <ul class="email-status-list mt-2">
+                            {% for key, status in document.email_delivery.items %}
+                                <li>
+                                    <span>{{ key|capfirst }}: {{ status.email|default:'미입력' }}</span>
+                                    <strong>
+                                        {% if status.sent %}
+                                            발송 완료
+                                        {% else %}
+                                            {% if status.message %}
+                                                실패 - {{ status.message }}
+                                            {% else %}
+                                                미발송
+                                            {% endif %}
+                                        {% endif %}
+                                    </strong>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <p>
+                        계약 진행 중입니다. {{ counterparty_role_label }}가 서명하면 자동으로 알림이 제공됩니다.
+                    </p>
+                    {% if is_owner %}
+                        <p class="has-text-grey mt-3">
+                            계약 생성자는 이 화면에서 직접 서명할 수 없습니다. 링크를 상대방에게 전달해 서명을 요청해 주세요.
+                        </p>
+                    {% endif %}
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if form %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+{% endif %}
+<script src="{% static 'expert/js/contract_signature.js' %}"></script>
+<script src="{% static 'expert/js/direct_payment.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% load static user_extras %}
+<!DOCTYPE html>
+<html lang="ko" class="has-navbar-fixed-top">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SatoShop Expert{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="icon" type="image/png" sizes="100x89" href="{% static 'expert/img/satoshop-expert-favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'expert/css/base.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@1.9.12"
+            integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons@4.29.0/dist/feather.min.js" defer></script>
+</head>
+<body>
+    <nav class="navbar is-fixed-top expert-navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="{% url 'expert:landing' %}">
+                <span class="expert-brand">
+                    <img src="{% static 'expert/img/satoshop-expert-logo.png' %}" alt="SatoShop" class="expert-logo">
+                </span>
+            </a>
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="expert-navbar-menu">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+
+        <div id="expert-navbar-menu" class="navbar-menu">
+            <div class="navbar-start">
+            <a class="navbar-item" href="{% url 'expert:landing' %}">개요</a>
+                <a class="navbar-item is-disabled" aria-disabled="true">엑스퍼트 찾기 (준비 중)</a>
+                {% if request.user.is_authenticated %}
+                    <a class="navbar-item" href="{% url 'expert:direct-library' %}">계약 보관함</a>
+                    <a class="navbar-item" href="{% url 'expert:direct-verify' %}">위변조 검증</a>
+                {% else %}
+                    <a class="navbar-item" href="{% url 'expert:login' %}?next={% url 'expert:direct-library' %}">계약 보관함</a>
+                    <a class="navbar-item" href="{% url 'expert:login' %}?next={% url 'expert:direct-verify' %}">위변조 검증</a>
+                {% endif %}
+            </div>
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        {% if request.user.is_authenticated %}
+                            <span class="navbar-user-tag">{{ request.user.username }}</span>
+                        {% endif %}
+                        {% if request.user.is_authenticated %}
+                            <a class="button is-light" href="{% url 'accounts:logout' %}?next={% url 'expert:landing' %}">
+                                로그아웃
+                            </a>
+                        {% endif %}
+                        <a class="button is-light is-outlined" href="/?force_home=1">
+                            BTCMap
+                        </a>
+                        {% if request.user.is_authenticated %}
+                            <a class="button is-primary" href="{% url 'expert:direct-draft' %}">
+                                <strong>직접 계약 생성</strong>
+                            </a>
+                        {% else %}
+                            <a class="button is-primary" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">
+                                <strong>직접 계약 생성</strong>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="expert-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{% static 'expert/js/base.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

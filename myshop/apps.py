@@ -8,8 +8,20 @@ class MyshopConfig(AppConfig):
     verbose_name = '사이트 설정'
     
     def ready(self):
+        # 개발 서버 기본 포트 고정
+        self._override_runserver_default_port()
+
         # 어드민 사이트 설정을 동적으로 로드하되, 실제 데이터베이스 접근은 지연시킴
         self._setup_admin_site_lazy()
+
+    def _override_runserver_default_port(self):
+        """runserver 기본 포트를 8011로 강제."""
+        try:
+            from django.contrib.staticfiles.management.commands.runserver import Command as StaticRunserverCommand
+            StaticRunserverCommand.default_port = '8011'
+        except ImportError:
+            from django.core.management.commands.runserver import Command as CoreRunserverCommand
+            CoreRunserverCommand.default_port = '8011'
     
     def _setup_admin_site_lazy(self):
         """어드민 사이트 설정을 지연 로드로 처리"""

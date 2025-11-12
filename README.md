@@ -225,6 +225,8 @@ source .venv/bin/activate  # Linux/Mac
 uv pip install -r requirements.txt
 ```
 
+> ⚠️ Render 배포에서는 `requirements.txt`로 의존성을 설치하므로 새 패키지를 추가했다면 `uv export --format requirements-txt > requirements.txt` 명령으로 파일을 다시 생성해 주세요. 누락되면 `channels`처럼 Django가 즉시 로드하는 패키지에서 `ModuleNotFoundError`가 발생할 수 있습니다.
+
 ### 3. 데이터베이스 설정
 
 #### Docker를 사용한 PostgreSQL 설정 (개발용)
@@ -298,7 +300,7 @@ uv run python manage.py update_exchange_rate --force
 uv run python manage.py runserver
 ```
 
-서버가 실행되면 `http://localhost:8000`에서 애플리케이션에 접근할 수 있습니다.
+서버가 실행되면 `http://localhost:8011`에서 애플리케이션에 접근할 수 있습니다. (기본 실행 포트는 8011로 자동 설정됩니다.)
 
 ## 🔐 환경 변수 설정
 
@@ -516,6 +518,58 @@ SECURE_SSL_REDIRECT=True
 - **앱 비밀번호**: 2단계 인증 후 생성한 앱 전용 비밀번호 사용
 - **수신 이메일**: 사이트 설정에서 알림 받을 이메일 주소 설정
 
+#### Expert 계약 이메일 & 채팅
+- **서명 자산 S3 저장**: `DirectContractDocument`의 자필 서명 이미지는 S3 호환 오브젝트 스토리지(`expert/contracts/signatures/…`)에 업로드되어야 하며, 프로덕션에서는 `EXPERT_SIGNATURE_MEDIA_FALLBACK=False`로 설정해 로컬 저장을 차단하세요.
+- **실시간 채팅**: `/expert/contracts/<UUID>/` 페이지에서 웹소켓 기반 실시간 채팅을 제공합니다. 프로덕션 환경에서는 `CHANNEL_REDIS_URL` 환경 변수를 Redis 연결 문자열로 설정해 주십시오. (미설정 시 개발 편의용 In-Memory 채널 레이어가 사용됩니다.)
+- **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
+- **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. 레포의 `expert/fonts/` 폴더(비어 있음)에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
+- **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
+  - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
+- **새 의존성 설치**: `uv sync`를 실행하여 `channels`와 `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
+- **단계 로그 메타 뷰**: Django Admin → Expert → *직접 계약 단계 로그*에서 meta 필드가 폼 형태로 펼쳐져 결제/서명 정보를 즉시 확인할 수 있습니다.
+- **빠른 내비게이션**: Expert 상단 우측 버튼에서 `로그아웃`(항상 개요 화면으로 리다이렉션)과 `Go! 사토샵`(도메인 루트 이동)으로 바로 이동할 수 있습니다.
+- **시크릿 모드 차단**: LNURL-auth는 브라우저 저장소를 사용하므로 시크릿/프라이빗 창에서는 인증이 차단됩니다. 로그인 화면과 Expert용 라이트닝 로그인 위젯은 자동으로 프라이빗 모드를 감지해 경고를 띄우고 버튼을 비활성화하며, 라이트닝 지갑 열기 버튼은 `lightning:` 스킴으로 강제 열려 모바일 지갑에서도 바로 동작합니다.
+
+#### Expert 계약 보관함
+- **생성자·서명자 모두 열람**: `/expert/contracts/library/`에서는 내가 생성했거나 상대방으로 서명한 직접 계약이 한 화면에 모여 PDF와 공유 링크를 다시 내려받을 수 있습니다.
+- **라이트닝 로그인 필요**: 상대방으로 서명한 계약을 노출하려면 라이트닝 로그인으로 동일한 public key를 사용해야 합니다. 서명 완료 시 자동 연동됩니다.
+
+#### Expert 계약 위변조 방지
+- **최종본 해시 저장**: 계약이 완료되면 `DirectContractDocument.final_pdf_hash`에 SHA-256 해시를 기록합니다. 데이터 정합성 검사를 위해 `document.refresh_final_pdf_hash()`를 호출하거나 `/expert/contracts/direct/verify/`에서 검증할 수 있습니다.
+- **위변조 검증 도구**: 계약 보관함 오른쪽 메뉴 `위변조 검증`에서 계약을 선택하고 외부에서 받은 PDF를 업로드하면 저장된 해시와 비교해 일치 여부를 바로 확인할 수 있습니다. 검증 프로세스는 아래와 같습니다.
+  1. 계약 생성자/서명자로 로그인 → `/expert/contracts/direct/verify/` 접속
+  2. 드롭다운에서 계약 선택 → 상대가 전달한 최종 PDF 업로드
+  3. 저장된 `final_pdf_hash`와 업로드한 파일의 SHA-256을 비교해 결과를 즉시 출력 (일치/불일치/해시 없음)
+- **계약 요약 패널**: 계약을 선택하면 제목/상태/생성일/저장된 해시/최종 PDF 링크가 바로 표시되어 검증 전에 계약 맥락을 빠르게 확인할 수 있습니다.
+- **운영 절차**: 위변조 의심 시 계약 보관함에서 원본 PDF를 재다운로드한 뒤 동일 화면에서 비교하거나, `document.refresh_final_pdf_hash()`로 다시 계산해 데이터베이스 값을 갱신하세요.
+- **디지털 서명**: `pyHanko` 기반으로 PKCS#12 인증서를 설정하면 최종 PDF에 전자 서명이 포함됩니다. Render 등 배포 환경에서는 인증서를 base64 인코딩해 `EXPERT_SIGNER_CERT_BASE64`에 저장하고, 필요 시 `EXPERT_SIGNER_CERT_PATH` 대신 부트스트랩 스크립트로 복원하세요.
+- **환경 변수**: `EXPERT_SIGNER_CERT_PATH`(또는 `EXPERT_SIGNER_CERT_BASE64`), `EXPERT_SIGNER_CERT_PASSWORD`를 설정하면 자동 서명이 활성화됩니다. 비활성화된 상태에서는 서명을 건너뛰고 해시 비교만 수행합니다.
+- **로컬 인증서 생성 절차**:
+  1. 개인키·CSR 생성: `openssl genrsa -out expert-signer.key 4096` → `openssl req -new -key expert-signer.key -out expert-signer.csr -subj "/C=KR/.../CN=expert.local"`
+  2. 루트/중간 인증서로 서명하거나 테스트용 자가서명(`openssl req -x509 -new -nodes ...`)으로 `expert-signer.crt` 발급
+  3. PKCS#12 번들 생성: `openssl pkcs12 -export -inkey expert-signer.key -in expert-signer.crt -out expert-signer.p12` (이때 입력한 비밀번호가 `EXPERT_SIGNER_CERT_PASSWORD`)
+  4. Base64 인코딩: `base64 -w0 expert-signer.p12 > expert-signer.p12.b64`; 파일 내용을 그대로 `EXPERT_SIGNER_CERT_BASE64`에 붙여 넣어 Render 등 비밀 변수로 등록
+
+#### Expert 통계 & Blink 수수료
+- **Blink 수수료 통계**: Django Admin → Expert → *Blink 수수료 통계*에서 Expert 결제 위젯으로 유입된 사토시 결제 내역을 기간·역할별로 확인할 수 있습니다. 위젯은 `DirectContractDocument.payment_meta`에 기록된 금액을 집계합니다.
+- **사용 통계 대시보드**: Django Admin → Expert → *Expert 사용 통계*는 누적/완료 계약 수, 계약 금액 합계, 라이트닝 인증 사용자(active/전체)를 한눈에 보여 줍니다.
+- **프런트 노출**: `/expert/contracts/direct/` 랜딩 페이지 상단에 계약·사용자 집계 카드가 노출되며, 금액/건수만 표시해 수수료 금액은 외부에 공유되지 않습니다.
+
+#### Expert 거래 계약서 템플릿
+- **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.
+
+#### Expert 계약 결제 정책
+- **결제 정책 설정**: Django 어드민 → Expert → *직접 계약 결제 정책*에서 의뢰자/수행자 각각이 부담해야 할 사토시 금액을 입력하고 활성화하세요. 비활성화 시 결제 위젯은 자동으로 패스됩니다.
+- **Blink 자격 정보**: `.env` 파일에 `EXPERT_BLINK_API_KEY`, `EXPERT_BLINK_WALLET_ID`(미설정 시 `BLINK_*` 값을 자동 사용), `EXPERT_BLINK_MEMO_PREFIX`를 지정하면 리뷰/초대 화면에서 동일한 월렛으로 인보이스가 발행됩니다.
+- **결제 위젯 흐름**: `/expert/contracts/direct/review/<token>/`과 `/expert/contracts/direct/link/<slug>/`의 서명 박스 옆에 라이트닝 결제 카드가 노출되며, 정책에 등록된 금액만큼 결제 완료되어야 `계약서 주소 생성`/`계약 체결` 버튼이 활성화됩니다.
+- **만료 & 취소 처리**: 결제 시작 시 60초짜리 인보이스 QR/문자열과 카운트다운이 표시되며, 만료되거나 취소되면 HTMX로 해당 영역만 갱신하고 다시 시작할 수 있습니다. 모바일 접속자는 `lightning:` 링크로 즉시 지갑을 열 수 있습니다.
+- **상태 안내**: Blink API polling(1초 간격) 결과에 따라 "결제 확인 중", "완료", "만료" 등 상태 문구가 즉시 업데이트되며, 오류 발생 시 사유를 카드 내부에서 안내합니다.
+- **최종본 템플릿 반영**: `good_faith_private_contract.md`에는 실제 체결 시 바로 사용 가능한 최종 조항이 Markdown 문법으로 정리되어 있어 별도 서식 조정 없이도 PDF에 동일한 구조가 반영됩니다.
+- **PDF 출력 품질**: ReportLab Platypus 기반 템플릿으로 계약 제목/헤더/강조/인용이 그대로 스타일링되며, 인용문은 표 형태의 박스로 표현됩니다. 긴 문장은 자동 줄바꿈되고, 의뢰자 라이트닝 주소는 숨긴 채 수행자 주소만 노출합니다. 또한 `중개자(시스템)` 서명 해시를 포함해 세 당사자 해시가 모두 동일한 페이지에 출력됩니다.
+- **단일 노출 선택**: 계약서를 “노출”로 체크하면 다른 계약서는 자동으로 해제되어, 드래프트 화면에서는 항상 하나의 계약서만 노출됩니다.
+- **드래프트 입력 화면**: `/expert/contracts/direct/draft/` 화면에서 계약 조건을 모두 입력하고 즉시 공유 가능한 링크를 생성합니다. 표준 계약서가 등록되지 않은 경우에는 경고 문구가 표시됩니다.
+- **수행 내역 & 첨부 관리**: 계약 초안 화면에서 EasyMDE 기반 Markdown 메모 필드로 수행 내역을 최대 1만 자까지 기록하고, PDF를 오브젝트 스토리지(S3)로 직접 업로드하는 첨부 섹션을 제공합니다. 업로드 목록은 즉시 확인하고 제거할 수 있습니다.
+
 
 ## 📁 프로젝트 구조
 
@@ -631,6 +685,8 @@ SiteSettings ──→ ExchangeRate
 4. **수정 플로우**: 동일 계정으로 페이지를 다시 열어 기존 값이 폼에 채워져 있는지, 이미지 삭제 체크박스가 동작하는지, 수정 저장 시 성공 배너가 `수정되었습니다`로 갱신되는지 확인합니다.
 5. **BAH 관리자 전용 화면**: Django Admin에서 지정한 BAH 관리자 계정으로 `/stores/bah/promotion-request/admin`에 접속해 신청 목록이 표시되는지, 발송 상태 토글 버튼으로 `발송예정 ↔ 발송` 전환이 가능한지 확인합니다.
 6. **월오사 가이드 페이지**: `/stores/bah/wallet-of-satoshi-guide/`에서 각 섹션을 펼칠 수 있는지, 추가 자료 링크가 정상 동작하는지 확인합니다.
+7. **Expert 서명 S3 업로드(생성자)**: 라이트닝 인증 계정으로 `/expert/contracts/direct/draft/` → `/expert/contracts/direct/review/<token>/` 흐름을 진행해 자필 서명 제출 후 S3 버킷(`expert/contracts/signatures/…`)에 파일이 생성되고, 계약 상세 화면에서 서명이 노출되는지 확인합니다.
+8. **Expert 서명 S3 업로드(상대방)**: 초대 링크(`/expert/contracts/direct/link/<slug>/`)를 열어 상대방 서명을 완료하고, 공유 페이지 및 이메일에서 서명 이미지가 `get_signature_url()` 기반 링크로 노출되는지 검증합니다.
 
 ## ⚠️ 주의사항
 

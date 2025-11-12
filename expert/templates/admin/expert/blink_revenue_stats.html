@@ -1,0 +1,209 @@
+{% extends "admin/change_list.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="blink-stats">
+  <h2 style="margin-bottom:1.5rem;">Blink 수수료 수익금 요약</h2>
+  {% if stats.month_nav %}
+  <div class="month-nav">
+    <a class="month-nav-btn{% if not stats.month_nav.prev_slug %} is-disabled{% endif %}"
+       {% if stats.month_nav.prev_slug %}href="?month={{ stats.month_nav.prev_slug }}"{% endif %}>
+      ‹ 이전 달
+    </a>
+    <span class="month-nav-label">{{ stats.month_nav.current_label }}</span>
+    <a class="month-nav-btn{% if not stats.month_nav.next_slug %} is-disabled{% endif %}"
+       {% if stats.month_nav.next_slug %}href="?month={{ stats.month_nav.next_slug }}"{% endif %}>
+      다음 달 ›
+    </a>
+  </div>
+  {% endif %}
+
+  {% if stats.pricing %}
+  <div class="stat-card fee-card">
+    <p class="stat-label">현재 설정된 수수료</p>
+    <div class="fee-grid">
+      <div>
+        <p class="fee-label">의뢰자 부담</p>
+        <p class="fee-value">{{ stats.pricing.client_fee_sats|intcomma }} sats</p>
+      </div>
+      <div>
+        <p class="fee-label">수행자 부담</p>
+        <p class="fee-value">{{ stats.pricing.performer_fee_sats|intcomma }} sats</p>
+      </div>
+    </div>
+    {% if stats.pricing.updated_at %}
+      <p class="stat-subtitle">마지막 업데이트: {{ stats.pricing.updated_at|date:"Y-m-d H:i" }}</p>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="stat-card fee-card">
+    <p class="stat-label">현재 설정된 수수료</p>
+    <p class="stat-subtitle">활성화된 수수료 설정이 없습니다.</p>
+  </div>
+  {% endif %}
+
+  {% if stats.filtered_stats %}
+  <div class="stat-card highlight">
+    <p class="stat-label">{{ stats.filtered_stats.label }} 수수료</p>
+    <p class="stat-value">{{ stats.filtered_stats.total_amount_sats|intcomma }} sats</p>
+    <p class="stat-subtitle">결제 {{ stats.filtered_stats.total_count|intcomma }}건</p>
+  </div>
+  {% endif %}
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <p class="stat-label">{% if stats.filtered_stats %}전체 누적 수수료{% else %}누적 수수료{% endif %}</p>
+      <p class="stat-value">{{ stats.total_amount_sats|intcomma }} sats</p>
+      <p class="stat-subtitle">총 {{ stats.total_count|intcomma }}건</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">최근 {{ stats.window_days }}일</p>
+      <p class="stat-value">{{ stats.recent_amount_sats|intcomma }} sats</p>
+      <p class="stat-subtitle">결제 {{ stats.recent_count|intcomma }}건</p>
+    </div>
+  </div>
+
+  {% if stats.filtered_stats %}
+  <div class="stat-card" style="margin-top:1.5rem;">
+    <p class="stat-label">{{ stats.filtered_stats.label }} 역할별 납부 현황</p>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>역할</th>
+          <th>수수료 합계(sats)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for role, amount in stats.filtered_stats.role_breakdown.items %}
+        <tr>
+          <td>{{ role }}</td>
+          <td>{{ amount|default:0|intcomma }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2">해당 월에 결제 기록이 없습니다.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <div class="stat-card" style="margin-top:1.5rem;">
+    <p class="stat-label">{% if stats.filtered_stats %}전체 역할별 납부 현황{% else %}역할별 납부 현황{% endif %}</p>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>역할</th>
+          <th>수수료 합계(sats)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for role, amount in stats.role_breakdown.items %}
+        <tr>
+          <td>{{ role }}</td>
+          <td>{{ amount|intcomma }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2">아직 결제 기록이 없습니다.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+.blink-stats .stats-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.blink-stats .stat-card {
+  border: 1px solid #d4d4d8;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: #fff;
+}
+.blink-stats .stat-card.highlight {
+  border-color: #f97316;
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
+}
+.blink-stats .stat-label {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.3rem;
+  color: #6b7280;
+}
+.blink-stats .stat-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin: 0;
+}
+.blink-stats .stat-subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+.blink-stats .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+}
+.blink-stats .admin-table th,
+.blink-stats .admin-table td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.55rem 0.25rem;
+  text-align: left;
+}
+.blink-stats .month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.blink-stats .month-nav-btn {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.85rem;
+  color: #374151;
+  text-decoration: none;
+}
+.blink-stats .month-nav-btn.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.blink-stats .month-nav-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.blink-stats .fee-card {
+  margin-bottom: 1.25rem;
+}
+.blink-stats .fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.blink-stats .fee-label {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 0.1rem;
+}
+.blink-stats .fee-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+</style>
+{% endblock %}

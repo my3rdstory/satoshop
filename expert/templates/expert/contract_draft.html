@@ -1,0 +1,286 @@
+{% extends "expert/base.html" %}
+{% load static tz %}
+
+{% block title %}계약 초안 작성 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<link rel="stylesheet" href="{% static 'expert/css/contract_draft.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-draft-section">
+    <div class="container">
+        <div class="columns is-variable is-5">
+            <div class="column is-12-tablet is-8-desktop">
+                <h1 class="title is-3 has-text-weight-bold">계약 조건 입력</h1>
+                <p class="subtitle is-6 has-text-grey">
+                    계약 조건을 입력하고 자필 서명으로 확정한 뒤 상대방에게 링크를 공유해 동의를 요청할 수 있습니다.
+                </p>
+            </div>
+        </div>
+
+        <div class="columns is-variable is-5 draft-layout">
+            <div class="column is-12-tablet is-8-desktop">
+                {% if active_contract_template %}
+                    <div class="notification is-link is-light mb-5">
+                        현재 노출 계약서: <strong>{{ active_contract_template.title }}</strong>
+                        <span class="ml-1">({{ active_contract_template.version_label }})</span>
+                    </div>
+                {% else %}
+                    <div class="notification is-warning is-light mb-5" role="alert">
+                        시스템 표준 거래 계약서가 아직 등록되지 않아 계약 생성만 가능합니다. 계약 담당자에게 템플릿을 등록해 달라고 요청하세요.
+                    </div>
+                {% endif %}
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ form.enable_chat }}
+                    {% if form.non_field_errors %}
+                        <div class="notification is-warning">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="field">
+                        {{ form.title.label_tag }}
+                        <div class="control">{{ form.title }}</div>
+                        {% for error in form.title.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field">
+                        <label class="label">나의 역할</label>
+                        <div class="control role-select-group">
+                            <div class="role-option-list">
+                                {% for radio in form.role %}
+                                    <label class="role-option">
+                                        {{ radio.tag }}
+                                        <span class="role-option-title">{{ radio.choice_label }}</span>
+                                    </label>
+                                {% endfor %}
+                                <div class="role-option role-option--disabled" aria-disabled="true">
+                                    <span class="role-option-title">중개자</span>
+                                    <span class="role-option-caption">시스템(고정)</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% for error in form.role.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field role-contact-fieldset" id="role-contact-fieldset" hidden>
+                        <div class="role-contact-grid">
+                            <div class="role-contact-card" id="performer-lightning-card" hidden>
+                                <span class="label">수행자 정산 정보</span>
+                                <p class="help">수행자로 계약을 진행할 경우 라이트닝 주소를 반드시 입력하세요.</p>
+                                <div class="control mt-3">
+                                    {{ form.performer_lightning_address.label_tag }}
+                                    {{ form.performer_lightning_address }}
+                                </div>
+                                <p class="help">
+                                    라이트닝 주소(필수)를 입력하지 않으면 계약을 진행할 수 없습니다.
+                                </p>
+                                {% for error in form.performer_lightning_address.errors %}
+                                    <p class="help is-danger">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                            <div class="role-contact-card role-contact-card--email">
+                                <span class="label">이메일 안내</span>
+                                <div id="role-email-field">
+                                    {{ form.email_recipient.label_tag }}
+                                    <div class="control">{{ form.email_recipient }}</div>
+                                </div>
+                                <p class="help" data-role-email-help="client">
+                                    선택 사항입니다. 입력하면 계약 확정 후 계약서 PDF를 이메일로 받아볼 수 있어요.
+                                </p>
+                                <p class="help" data-role-email-help="performer" hidden>
+                                    일반 이메일 주소를 입력하면 계약 완료 후 계약서 PDF를 발송해 드립니다.
+                                </p>
+                                {% for error in form.email_recipient.errors %}
+                                    <p class="help is-danger">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        {{ form.start_date.label_tag }}
+                        <div class="control">{{ form.start_date }}</div>
+                        {% for error in form.start_date.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field">
+                        {{ form.end_date.label_tag }}
+                        <div class="control">{{ form.end_date }}</div>
+                        {% for error in form.end_date.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field">
+                        {{ form.amount_sats.label_tag }}
+                        <div class="control">{{ form.amount_sats }}</div>
+                        <p class="help">총 계약 금액은 사토시 단위로 입력하세요.</p>
+                        {% for error in form.amount_sats.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field">
+                        <label class="label">지불 조건</label>
+                        <div class="control option-pill-group">
+                            <div class="option-pill-list option-pill-list--two">
+                                {% for radio in form.payment_type %}
+                                    <label class="option-pill">
+                                        {{ radio.tag }}
+                                        <span class="option-pill-title">{{ radio.choice_label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% for error in form.payment_type.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field milestone-section" id="milestone-section" hidden>
+                        <div class="milestone-header">
+                            <span class="label mb-0">분할 지급 구성</span>
+                            <button type="button" class="button is-small add-milestone-button" id="add-milestone">
+                                + 분할 추가
+                            </button>
+                        </div>
+                        <p class="help milestone-hint">
+                            각 단계마다 지급 금액(사토시), 지급 예정일, 지급 조건을 입력하세요. 지급일을 비워두면 "미정"으로 표기됩니다.
+                        </p>
+                        <div class="milestone-list" id="milestone-list" aria-live="polite"></div>
+                        <div class="milestone-summary">
+                            <p class="milestone-remaining" id="milestone-remaining">남은 금액: -</p>
+                            <p class="milestone-error" id="milestone-error" role="alert" hidden>총 계약 금액을 초과할 수 없습니다.</p>
+                        </div>
+                    </div>
+
+                    <div class="field payment-meta" id="one-time-section" hidden>
+                        <div class="milestone-header">
+                            <span class="label mb-0">일괄 지급 세부 정보</span>
+                        </div>
+                        <div class="columns is-variable is-2">
+                            <div class="column">
+                                {{ form.one_time_due_date.label_tag }}
+                                {{ form.one_time_due_date }}
+                            </div>
+                            <div class="column">
+                                {{ form.one_time_condition.label_tag }}
+                                {{ form.one_time_condition }}
+                            </div>
+                        </div>
+                        <p class="help">일괄 지급이라도 지급일과 조건을 명시해 주세요.</p>
+                    </div>
+
+                    <div class="field worklog-field">
+                        {{ form.work_log_markdown.label_tag }}
+                        <div class="control worklog-editor-wrapper">
+                            {{ form.work_log_markdown }}
+                        </div>
+                        <p class="help worklog-counter" data-worklog-counter-wrapper>
+                            남은 글자 <span data-worklog-remaining>10,000</span>자
+                            <span class="worklog-counter-note" data-worklog-note hidden>
+                                (최대 10,000자까지만 저장되며 초과분은 자동으로 잘립니다)
+                            </span>
+                        </p>
+                        <p class="help">최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다.</p>
+                        {% for error in form.work_log_markdown.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_privacy }} {{ form.agree_privacy.label }}
+                        </label>
+                        {% for error in form.agree_privacy.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_confidentiality }} {{ form.agree_confidentiality.label }}
+                        </label>
+                        {% for error in form.agree_confidentiality.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="field agreement-field">
+                        <label class="checkbox">
+                            {{ form.agree_intermediary }} {{ form.agree_intermediary.label }}
+                        </label>
+                        {% for error in form.agree_intermediary.errors %}
+                            <p class="help is-danger">{{ error }}</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="field mt-5">
+                        <button type="submit" class="button is-primary is-medium is-fullwidth">
+                            다음 단계로 진행
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="column is-12-tablet is-4-desktop">
+                <div class="preview-card">
+                    <div class="preview-header">
+                        <h2 class="title is-5 mb-1">계약 요약</h2>
+                        <p class="is-size-7 has-text-grey">좌측 입력값이 실시간으로 반영됩니다.</p>
+                    </div>
+                    <div class="preview-body" id="contract-preview">
+                        <ul class="spec-list">
+                            <li><span>제목</span><strong id="preview-title">-</strong></li>
+                            <li><span>역할</span><strong id="preview-role">-</strong></li>
+                            <li><span>기간</span><strong id="preview-period">-</strong></li>
+                            <li><span>금액</span><strong id="preview-amount">-</strong></li>
+                            <li><span>지불 조건</span><strong id="preview-payment">-</strong></li>
+                            <li><span>이메일</span><strong id="preview-email">-</strong></li>
+                            <li><span>수행자 라이트닝</span><strong id="preview-performer-lightning">-</strong></li>
+                        </ul>
+                        <div class="preview-subsection" id="preview-milestone-panel" hidden>
+                            <p class="preview-subsection-title">분할 지급 상세</p>
+                            <ul class="milestone-preview-list" id="preview-milestone-list"></ul>
+                        </div>
+                        <div class="preview-subsection" id="preview-one-time-panel" hidden>
+                            <p class="preview-subsection-title">일괄 지급 상세</p>
+                            <ul class="one-time-preview-list">
+                                <li><span>지급일</span><strong id="preview-one-time-date">-</strong></li>
+                                <li><span>지급 조건</span><strong id="preview-one-time-condition">-</strong></li>
+                            </ul>
+                        </div>
+                        <div class="preview-subsection">
+                            <p class="preview-subsection-title">수행 내역 메모</p>
+                            <div class="preview-worklog markdown-content" id="preview-worklog" data-empty="true">
+                                <p class="preview-placeholder">작성된 메모가 없습니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="preview-footer">
+                        <p class="preview-note">
+                            입력한 조건과 표준 계약서 본문이 병합되어 최종 계약서와 PDF가 생성됩니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'expert/js/contract_draft.js' %}"></script>
+{% endblock %}

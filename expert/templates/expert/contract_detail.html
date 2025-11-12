@@ -1,0 +1,103 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}{{ contract.title }} - 계약 상세{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-detail-section">
+    <div class="container">
+        <div class="columns is-variable is-5">
+            <div class="column is-7">
+                <div class="contract-card">
+                    <header class="card-header">
+                        <p class="card-header-title">
+                            <span class="tag status-tag status-{{ contract.status }}">{{ contract.get_status_display }}</span>
+                            <span class="contract-title">{{ contract.title }}</span>
+                        </p>
+                    </header>
+                    <div class="card-content">
+                        <dl class="contract-meta">
+                            <div>
+                                <dt>계약 ID</dt>
+                                <dd>{{ contract.public_id }}</dd>
+                            </div>
+                            <div>
+                                <dt>생성자</dt>
+                                <dd>{{ contract.created_by.get_full_name|default:contract.created_by.username }}</dd>
+                            </div>
+                            <div>
+                                <dt>생성일</dt>
+                                <dd>{{ contract.created_at|date:"Y-m-d H:i" }}</dd>
+                            </div>
+                            <div>
+                                <dt>참여자</dt>
+                                <dd>
+                                    <ul>
+                                        {% for participant in contract.participants.all %}
+                                            <li>
+                                                <span class="participant-role">{{ participant.get_role_display }}</span>
+                                                {{ participant.user.get_full_name|default:participant.user.username }}
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </dd>
+                            </div>
+                        </dl>
+                        <div class="notice-box">
+                            <p class="title is-6">채팅 사용 안내</p>
+                            <p class="content">
+                                이 채팅창에 입력되는 모든 메시지는 계약 부속 문서(PDF)에 자동으로 기록됩니다.
+                                책임 있는 언어로 대화해 주세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="column is-5">
+                <div class="chat-panel" data-websocket="{{ websocket_path }}">
+                    <div class="chat-header">
+                        <h2 class="title is-5 mb-0">실시간 계약 채팅</h2>
+                        <span class="connection-indicator" data-status="disconnected">접속 중...</span>
+                    </div>
+                    <div class="chat-log" id="contract-chat-log">
+                        {% for message in messages %}
+                            <div class="chat-message">
+                                <div class="chat-meta">
+                                    <span class="chat-sender">{{ message.sender.get_full_name|default:message.sender.username if message.sender else "시스템" }}</span>
+                                    {% if message.sender_role %}
+                                        <span class="chat-role">{{ message.get_sender_role_display }}</span>
+                                    {% endif %}
+                                    <span class="chat-time">{{ message.created_at|date:"H:i" }}</span>
+                                </div>
+                                <p class="chat-body">{{ message.content }}</p>
+                            </div>
+                        {% empty %}
+                            <p class="chat-placeholder">첫 메시지를 입력해 계약 기록을 시작해보세요.</p>
+                        {% endfor %}
+                    </div>
+                    <form class="chat-form" id="contract-chat-form">
+                        <div class="field">
+                            <div class="control">
+                                <textarea class="textarea" id="contract-chat-input" rows="2"
+                                          placeholder="메시지를 입력하고 Enter를 눌러 전송하세요 (Shift+Enter 줄바꿈)" maxlength="2000"></textarea>
+                            </div>
+                        </div>
+                        <div class="chat-form-footer">
+                            <span class="chat-hint">※ 모든 메시지는 계약 부속 문서에 기록됩니다.</span>
+                            <button type="submit" class="button is-primary">전송</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'expert/js/contract_detail.js' %}"></script>
+{% endblock %}

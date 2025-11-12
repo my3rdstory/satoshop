@@ -1,0 +1,120 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}라이트닝 로그인 안내 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
+<link rel="stylesheet" href="{% static 'expert/css/login_lightning.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'js/lightning-login.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<section class="section login-guide-section">
+    <div class="container">
+        <div class="columns is-variable is-5">
+            <div class="column is-6">
+                <div class="login-hero">
+                    <span class="login-badge">Lightning Auth</span>
+                    <h1 class="title is-2">Expert는 라이트닝 로그인만 지원합니다.</h1>
+                    <p class="subtitle is-5">
+                        모든 계약 내역은 라이트닝 지갑 공개키를 기반으로 검증되므로,
+                        지갑 서명만으로 빠르고 안전하게 인증합니다.
+                    </p>
+                    <p class="login-note">
+                        라이트닝 지갑 서명만으로 안전하게 인증하며, 결제는 발생하지 않습니다.
+                    </p>
+                </div>
+            </div>
+            <div class="column is-6">
+                <div class="guide-card login-widget lightning-payment-card">
+                    <form method="post" class="is-hidden">{% csrf_token %}</form>
+                    <div class="incognito-banner">
+                        <p class="incognito-banner__title">
+                            <span class="icon is-small"><i data-feather="shield"></i></span>
+                            시크릿/프라이빗 창에서는 인증이 차단됩니다.
+                        </p>
+                        <p class="incognito-banner__body">
+                            지갑 저장소를 사용할 수 없는 브라우저 모드에서는 LNURL-auth가 원활하게 동작하지 않을 수 있으니 일반 창에서 이용해주세요.
+                        </p>
+                    </div>
+                    <div class="incognito-alert hidden" data-incognito-warning>
+                        <strong>현재 브라우저가 시크릿 모드로 감지되었습니다.</strong>
+                        <p>안전을 위해 라이트닝 로그인을 중단했어요. 일반 창으로 다시 접속하면 즉시 인증할 수 있습니다.</p>
+                    </div>
+                    <div id="initialState" class="text-center">
+                        <p class="login-note mb-4">
+                            지갑의 서명을 사용하는 LNURL-auth 방식이며 결제는 발생하지 않습니다.
+                            지원 지갑(Zeus, Breez, Wallet of Satoshi 등)으로 인증을 시작하세요.
+                        </p>
+                        <button id="startLoginBtn" class="button is-primary is-medium">
+                            <span class="icon"><i data-feather="zap"></i></span>
+                            <span>라이트닝 로그인 시작</span>
+                        </button>
+                    </div>
+
+                    <div id="loadingState" class="hidden login-state">
+                        <p class="title is-5">로그인 세션을 준비 중입니다…</p>
+                    </div>
+
+                    <div id="qrState" class="hidden">
+                        <div class="qr-wrapper">
+                            <img id="qrCodeImage" alt="Lightning Login QR">
+                        </div>
+                        <p class="help is-size-7">지원 지갑으로 스캔하거나 아래 LNURL을 복사해 인증하세요.</p>
+                        <div class="field has-addons">
+                            <div class="control is-expanded">
+                                <input id="lnurlText" class="input" readonly>
+                            </div>
+                            <div class="control">
+                                <button type="button" id="copyLnurlBtn" class="button">복사</button>
+                            </div>
+                        </div>
+                        <div class="lnurl-actions">
+                            <button type="button" id="openWalletBtn" class="button is-light">
+                                <span class="icon"><i data-feather="external-link"></i></span>
+                                <span>라이트닝 지갑 열기</span>
+                            </button>
+                            <button type="button" id="expiredRefreshBtn" class="button is-primary is-small hidden">
+                                <span class="icon"><i data-feather="refresh-ccw"></i></span>
+                                <span>인증 다시 시작</span>
+                            </button>
+                        </div>
+                        <div id="statusMessage" class="login-status">인증을 기다리는 중…</div>
+                    </div>
+
+                    <div id="successState" class="hidden login-state">
+                        <p class="title is-5">로그인 완료!</p>
+                        <p>잠시 후 자동으로 이동합니다.</p>
+                    </div>
+
+                    <div id="errorState" class="hidden login-state">
+                        <p class="title is-5">로그인을 다시 시도해 주세요</p>
+                        <p id="errorMessage"></p>
+                        <button id="retryBtn" class="button is-primary is-small">다시 시도</button>
+                    </div>
+                </div>
+                <div class="wallet-note mt-4">
+                    <h4 class="title is-6">지원 지갑 안내</h4>
+                    <p class="has-text-weight-semibold">지원</p>
+                    <p>Wallet of Satoshi · Speed · Phoenix · Zeus · Breez · Muun</p>
+                    <p class="has-text-weight-semibold mt-3">미지원</p>
+                    <p>Strike, Blink 등 일부 지갑은 LNURL-auth를 제공하지 않습니다.</p>
+                </div>
+                {% if debug_mode %}
+                <div class="wallet-note mt-3">
+                    <h4 class="title is-6">로컬 개발 모드</h4>
+                    <a class="button is-small is-warning" href="{% url 'expert:login-mock' %}?next={{ redirect_target }}">
+                        테스트 계정으로 로그인
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

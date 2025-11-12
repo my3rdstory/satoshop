@@ -1,0 +1,242 @@
+:root {
+    color-scheme: dark;
+    font-family: 'Noto Sans KR', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+    background: #080d1a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    font-family: inherit;
+    line-height: 1.65;
+    letter-spacing: -0.01em;
+    padding-top: 0;
+}
+
+a {
+    color: #7dd3fc;
+}
+
+.expert-navbar {
+    background: rgba(23, 32, 52, 0.85);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(94, 234, 212, 0.22);
+}
+
+.navbar-item,
+.navbar-link {
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.expert-navbar .navbar-menu {
+    background: transparent;
+}
+
+.expert-navbar .navbar-menu .navbar-item {
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.expert-navbar .navbar-menu .navbar-item:hover,
+.expert-navbar .navbar-menu .navbar-item:focus {
+    background: rgba(59, 130, 246, 0.15);
+    color: #f8fafc;
+}
+
+.expert-navbar .navbar-menu .button.is-light {
+    background: rgba(15, 23, 42, 0.6);
+    color: rgba(248, 250, 252, 0.95);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.expert-navbar .navbar-menu .button.is-light.is-outlined {
+    background: transparent;
+}
+
+@media (max-width: 1023px) {
+    .expert-navbar .navbar-menu {
+        background: rgba(3, 7, 18, 0.95);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        padding: 1rem 1.25rem 1.5rem;
+        border-bottom-left-radius: 18px;
+        border-bottom-right-radius: 18px;
+    }
+    .expert-navbar .navbar-menu .navbar-item {
+        color: rgba(248, 250, 252, 0.95);
+        border-radius: 10px;
+        margin-bottom: 0.35rem;
+    }
+    .expert-navbar .navbar-menu .navbar-item:hover {
+        background: rgba(59, 130, 246, 0.15);
+        color: #f8fafc;
+    }
+    .expert-navbar .navbar-menu .button.is-light {
+        background: rgba(15, 23, 42, 0.85);
+    }
+}
+
+.navbar-user-tag {
+    color: rgba(226, 232, 240, 0.85);
+    margin-right: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.expert-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: rgba(226, 232, 240, 0.95);
+}
+
+.expert-logo {
+    height: 45px;
+    width: auto;
+}
+
+.expert-brand-text {
+    font-size: 1.05rem;
+    color: #020617;
+}
+
+.navbar-item.is-disabled {
+    color: rgba(148, 163, 184, 0.45);
+}
+
+.expert-main {
+    padding-top: 0;
+    padding-bottom: 3.5rem;
+    background: #080d1a;
+    min-height: calc(100vh - 64px);
+}
+
+.section {
+    background: transparent;
+}
+
+.navbar-burger {
+    cursor: pointer;
+    color: rgba(226, 232, 240, 0.92);
+    border-radius: 10px;
+    padding: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.navbar-burger span {
+    background-color: rgba(248, 250, 252, 0.92);
+}
+
+.navbar-burger:hover,
+.navbar-burger:focus {
+    background: rgba(59, 130, 246, 0.15);
+    color: #f8fafc;
+}
+
+.navbar-burger.is-active {
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+}
+
+.navbar-burger.is-active span {
+    background-color: #f8fafc;
+}
+
+.title {
+    color: rgba(248, 250, 252, 0.92);
+}
+
+.subtitle {
+    color: rgba(203, 213, 225, 0.8);
+}
+
+.button.is-primary {
+    background: linear-gradient(135deg, #f7931a, #fb8c00);
+    border-color: rgba(234, 179, 8, 0.65);
+    color: #ffffff;
+    box-shadow: none;
+    transition: transform 0.15s ease;
+}
+
+.button.is-primary:hover,
+.button.is-primary:focus {
+    background: linear-gradient(135deg, #ff9f1c, #f2711c);
+    border-color: rgba(253, 186, 116, 0.8);
+    color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: none;
+}
+
+.button.is-primary:active {
+    background: linear-gradient(135deg, #f2711c, #d97706);
+    border-color: rgba(217, 119, 6, 0.85);
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+.expert-error-section {
+    min-height: calc(100vh - 120px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 55%);
+    padding: 3rem 1.5rem;
+}
+
+.expert-error-card {
+    max-width: 640px;
+    background: rgba(6, 11, 25, 0.92);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 24px;
+    padding: 3rem 2.5rem;
+    text-align: center;
+    box-shadow: 0 35px 80px rgba(2, 6, 23, 0.65);
+}
+
+.expert-error-card h1 {
+    font-size: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 0.75rem;
+    color: rgba(248, 250, 252, 0.95);
+}
+
+.expert-error-card p {
+    color: rgba(203, 213, 225, 0.85);
+    margin: 0 auto 1.25rem;
+    max-width: 520px;
+}
+
+.expert-error-icon {
+    width: 110px;
+    height: 110px;
+    margin: 0 auto;
+    border-radius: 24px;
+    background: linear-gradient(135deg, rgba(123, 54, 255, 0.85), rgba(247, 147, 26, 0.85));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
+}
+
+.expert-error-icon--warning {
+    background: linear-gradient(135deg, rgba(255, 110, 64, 0.85), rgba(253, 186, 116, 0.85));
+}
+
+.expert-error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.expert-error-hint {
+    font-size: 0.9rem;
+}
+
+.expert-error-hint a {
+    color: #7dd3fc;
+    text-decoration: underline;
+}

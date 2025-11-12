@@ -1,0 +1,149 @@
+{% extends "expert/base.html" %}
+{% load static user_extras %}
+
+{% block title %}계약 최종 검토 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/contract_flow.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="section contract-flow-section">
+    <div class="container">
+        <div class="contract-flow-hero">
+            <p class="subtitle is-6 has-text-grey-light">Step 2 · 계약 검토 &amp; 서명</p>
+            <h1 class="title is-3">계약 내용을 모두 확인하고 자필 서명을 남겨주세요.</h1>
+            <p class="has-text-grey-light">서명 후에는 계약서 전용 주소가 발급되어 상대방에게 공유할 수 있습니다.</p>
+        </div>
+
+        <div class="contract-flow-grid">
+            <article class="contract-flow-card">
+                <h3>계약 조건 요약</h3>
+                <ul class="contract-flow-list">
+                    <li><span>제목</span><strong>{{ draft_payload.title }}</strong></li>
+                    <li><span>역할</span><strong>{{ draft_payload.role_display }}</strong></li>
+                    <li><span>기간</span><strong>{{ draft_payload.start_date }} ~ {{ draft_payload.end_date|default:'미정' }}</strong></li>
+                    <li><span>총 금액</span><strong>{{ draft_payload.amount_sats|default:'-' }} sats</strong></li>
+                    <li><span>지급 방식</span><strong>{{ draft_payload.payment_display }}</strong></li>
+                    <li><span>이메일</span><strong>{{ draft_payload.email_recipient|default:'미입력' }}</strong></li>
+                    <li><span>수행자 라이트닝</span><strong>{{ draft_payload.performer_lightning_address|default:'-' }}</strong></li>
+                </ul>
+                {% if draft_payload.milestones %}
+                <div class="hash-note mt-4">
+                    <p class="has-text-weight-semibold">분할 지급</p>
+                    <ul class="milestone-detail-list">
+                        {% for milestone in draft_payload.milestones %}
+                            <li>
+                                <strong>분할 {{ forloop.counter }}</strong>
+                                <span>{{ milestone.amount_sats|default:0 }} sats</span>
+                                <span>지급일: {{ milestone.due_date|default:'미정' }}</span>
+                                <span>조건: {{ milestone.condition|default:'지급 조건 미입력' }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% elif draft_payload.payment_type == 'one_time' %}
+                <div class="hash-note mt-4">
+                    <p class="has-text-weight-semibold">일괄 지급 세부 정보</p>
+                    <ul class="milestone-detail-list">
+                        <li>
+                            <strong>지급일</strong>
+                            <span>{{ draft_payload.one_time_due_date|default:'미정' }}</span>
+                        </li>
+                        <li>
+                            <strong>지급 조건</strong>
+                            <span>{{ draft_payload.one_time_condition|default:'지급 조건 미입력' }}</span>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>수행 내역</h3>
+                <div class="worklog-preview markdown-content">
+                    {% if draft_payload.work_log_markdown %}
+                        {{ work_log_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">작성된 메모가 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+
+            <article class="contract-flow-card">
+                <h3>계약 일반 사항</h3>
+                <div class="modal-template-body">
+                    {% if draft_payload.contract_template.content_html %}
+                        {{ draft_payload.contract_template.content_html|safe }}
+                    {% else %}
+                        <p class="has-text-grey">등록된 계약서 본문이 없습니다.</p>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+
+        <form method="post" class="contract-flow-card">
+            {% csrf_token %}
+            <input type="hidden"
+                   data-payment-status-input
+                   value="{% if payment_widget and payment_widget.state.status == 'paid' %}paid{% elif payment_widget %}{{ payment_widget.state.status }}{% else %}paid{% endif %}">
+            <div class="signature-payment-grid">
+                <div>
+                    <h3>자필 서명</h3>
+                    {% if creator_lightning_id %}
+                    <p class="lightning-id-note">라이트닝 ID: {{ creator_lightning_id|lightning_short }}</p>
+                    {% endif %}
+                    {{ form.signature_data }}
+                    <div class="signature-pad-wrapper">
+                        <canvas class="signature-canvas" data-signature-canvas></canvas>
+                        <div class="signature-actions">
+                            <p class="has-text-grey-light">터치/마우스로 서명해 주세요.</p>
+                            <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="lightning-payment-wrapper">
+                    <h3>라이트닝 결제</h3>
+                    {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                </div>
+            </div>
+            <div class="field mt-4 sign-checkbox-list">
+                <label class="checkbox">
+                    {{ form.confirm_reviewed }} 계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.
+                </label>
+                {% for error in form.confirm_reviewed.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_privacy }} 개인정보 수집 및 이용에 동의합니다.
+                </label>
+                {% for error in form.confirm_privacy.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_confidentiality }} 계약 내용 비밀 유지 및 시스템 책임 범위를 이해했습니다.
+                </label>
+                {% for error in form.confirm_confidentiality.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+                <label class="checkbox">
+                    {{ form.confirm_system }} 중계자인 본 시스템은 계약 이행에 관여하지 않으며, 불이행에 대한 책임이 없음을 이해합니다.
+                </label>
+                {% for error in form.confirm_system.errors %}
+                    <p class="help is-danger">{{ error }}</p>
+                {% endfor %}
+            </div>
+            <div class="field mt-4">
+                <button type="submit" class="button is-primary is-fullwidth is-medium"
+                        data-signature-submit disabled>계약서 주소 생성</button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script src="{% static 'expert/js/contract_signature.js' %}"></script>
+<script src="{% static 'expert/js/direct_payment.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "expert/base.html" %}
+{% load static humanize %}
+
+{% block title %}직접 계약 생성 - SatoShop Expert{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'expert/css/direct_contract_start.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="direct-contract-hero section">
+    <div class="container hero-grid">
+        <div class="hero-copy">
+            <span class="hero-pill">1:1 직접 계약</span>
+            <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
+            <p>
+                직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
+            </p>
+            <div class="hero-actions">
+                {% if request.user.is_authenticated %}
+                    <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% else %}
+                    <a class="button is-primary is-medium" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">계약 작성 시작</a>
+                {% endif %}
+                <p class="is-size-7 has-text-grey">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
+            </div>
+        </div>
+        <div class="hero-side">
+            <div class="hero-card">
+                <p class="hero-card-title">기본 원칙</p>
+                <ul>
+                    <li><span class="hero-bullet">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
+                    <li><span class="hero-bullet">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
+                    <li><span class="hero-bullet">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section contract-feature-grid">
+    <div class="container feature-grid">
+        <article class="feature-card">
+            <p class="feature-label">의뢰자 & 수행자</p>
+            <h3>각자의 정산 정보로 안전하게</h3>
+            <p>역할을 선택하면 필요한 정산 정보 입력 가이드가 즉시 노출되고, 최종 PDF에도 동일하게 반영됩니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">계정 인증</p>
+            <h3>인증된 계정만 계약 참여</h3>
+            <p>로그인한 인증 계정만 계약을 생성하고, 상대방도 링크 접속 시 동일한 인증을 거쳐 서명합니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">선택형 결제</p>
+            <h3>유료 정책과 단계별 결제</h3>
+            <p>필요에 따라 의뢰자·수행자에게 사토시 결제를 요구할 수 있으며, 결제 완료 후 다음 단계로 진행되도록 확장 가능합니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">계약 보관함</p>
+            <h3>모든 계약 PDF를 한눈에</h3>
+            <p>생성하거나 서명한 계약은 위변조 검증 해시와 함께 계약 보관함에서 다시 내려받을 수 있습니다.</p>
+        </article>
+        <article class="feature-card">
+            <p class="feature-label">위변조 검증</p>
+            <h3>업로드 PDF와 해시 비교</h3>
+            <p>저장된 해시와 외부 PDF의 SHA-256 값을 비교해 변조 여부를 즉시 검증할 수 있습니다.</p>
+        </article>
+    </div>
+</section>
+
+{% if usage_stats %}
+<section class="section expert-stats">
+    <div class="container">
+        <div class="stats-header">
+            <h2>Expert 현황</h2>
+            <p>계약 진행과 참여 현황을 한눈에 확인하세요.</p>
+        </div>
+        <div class="stats-grid">
+        <article class="stat-card">
+            <p class="stat-label">누적 계약</p>
+            <p class="stat-value">{{ usage_stats.contracts_total|intcomma }}건</p>
+            <p class="stat-note">완료 {{ usage_stats.contracts_completed|intcomma }}건</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">계약 금액 합계</p>
+            <p class="stat-value">{{ usage_stats.contract_amount_sats|intcomma }} sats</p>
+            <p class="stat-note">계약 본문에 입력된 총액</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">참여자 수</p>
+            <p class="stat-value">{{ usage_stats.unique_creators|add:usage_stats.unique_counterparties|intcomma }}명</p>
+            <p class="stat-note">생성자 {{ usage_stats.unique_creators|intcomma }} · 상대방 {{ usage_stats.unique_counterparties|intcomma }}</p>
+        </article>
+        <article class="stat-card">
+            <p class="stat-label">라이트닝 인증 계정</p>
+            <p class="stat-value">{{ usage_stats.lightning_users_total|intcomma }}명</p>
+            <p class="stat-note">최근 {{ usage_stats.payments.window_days }}일 활동 {{ usage_stats.lightning_users_active|intcomma }}명</p>
+        </article>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="section contract-inputs">
+    <div class="container">
+        <h2 class="title is-4">계약 입력 항목</h2>
+        <p class="subtitle is-6 has-text-grey-light">모든 항목은 한 화면에서 작성되고 곧바로 서명 단계로 이어집니다.</p>
+        <div class="input-grid">
+            <div class="input-item"><span>역할 및 정산 정보</span></div>
+            <div class="input-item"><span>계약 제목 · 본문 (Markdown)</span></div>
+            <div class="input-item"><span>수행 기간 (시작/종료일)</span></div>
+            <div class="input-item"><span>총 계약 금액(사토시) & 지불 방식</span></div>
+            <div class="input-item"><span>분할 지급 단계별 조건</span></div>
+        </div>
+        <div class="payment-note">
+            <strong>안내</strong>
+            <p>유료화가 활성화되면 의뢰자·수행자가 각자 지정된 사토시 금액을 결제한 뒤 계약 프로세스가 이어집니다.</p>
+        </div>
+    </div>
+</section>
+
+<section class="section next-step-section">
+    <div class="container">
+        <h2 class="title is-4">3단계 진행 흐름</h2>
+        <ol class="step-preview">
+            <li>
+                <span class="badge">1</span>
+                <div>
+                    <p class="step-title">기본 정보 & 정산 입력</p>
+                    <p class="step-desc">역할, 정산 주소, 계약 기간·금액을 입력하고 필요 시 계약 단계별 결제를 안내합니다.</p>
+                </div>
+            </li>
+            <li>
+                <span class="badge">2</span>
+                <div>
+                    <p class="step-title">본문 작성</p>
+                    <p class="step-desc">마크다운 본문으로 주요 조건을 정리하면 입력 내용이 바로 저장되고 서명 흐름으로 전환됩니다.</p>
+                </div>
+            </li>
+            <li>
+                <span class="badge">3</span>
+                <div>
+                    <p class="step-title">서명 & 공유</p>
+                    <p class="step-desc">동의 체크 후 자필 서명을 남기면 공유 링크가 발급되고, 상대방도 인증 절차를 거쳐 서명합니다.</p>
+                </div>
+            </li>
+        </ol>
+        <div class="action-box mt-5">
+            <p class="title is-5 mb-3">지금 바로 계약 초안을 작성하세요</p>
+            <p class="content">
+                계정 로그인을 마쳤다면 즉시 초안을 작성하고, 필요 시 결제 정책을 반영해 상대방과 계약을 마무리할 수 있습니다.
+            </p>
+            <a class="button is-primary is-medium is-fullwidth" href="{% url 'expert:direct-draft' %}">
+                계약 작성 화면으로 이동
+            </a>
+            <p class="is-size-7 has-text-grey mt-2">공유 링크는 계약 생성 직후 발급되며, 상대방 결제·서명도 같은 링크에서 처리됩니다.</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'expert/js/direct_contract_start.js' %}"></script>
+{% endblock %}

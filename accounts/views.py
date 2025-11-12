@@ -5,7 +5,7 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, TemplateView
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib import messages
 from django.views import View
 from django.http import HttpResponse, JsonResponse
@@ -83,14 +83,22 @@ class CustomLoginView(LoginView):
 
 class CustomLogoutView(LogoutView):
     http_method_names = ['get', 'post']  # GET 요청도 허용
-    
+    next_page = reverse_lazy('expert:landing')
+
+    def get(self, request, *args, **kwargs):
+        """Allow GET requests to log the user out immediately."""
+        return self.post(request, *args, **kwargs)
+
     def get_success_url(self):
         # next 파라미터가 있으면 해당 URL로, 없으면 기본 설정으로
         next_url = self.request.POST.get('next') or self.request.GET.get('next')
         if next_url:
             from urllib.parse import unquote
             return unquote(next_url)
-        return super().get_success_url()
+        try:
+            return reverse('expert:landing')
+        except Exception:  # pragma: no cover - fallback in case URL name changes
+            return super().get_success_url()
 
 
 class SignUpView(CreateView):

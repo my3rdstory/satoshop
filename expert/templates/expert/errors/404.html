@@ -1,0 +1,25 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}페이지를 찾을 수 없습니다 - SatoShop Expert{% endblock %}
+
+{% block content %}
+<section class="section expert-error-section">
+    <div class="container expert-error-card">
+        <div class="expert-error-icon">
+            <span>404</span>
+        </div>
+        <h1>페이지를 찾을 수 없습니다</h1>
+        <p>요청하신 Expert 페이지가 존재하지 않거나 이동되었습니다. 주소를 다시 확인해 주세요.</p>
+        <div class="expert-error-actions">
+            <a class="button is-primary" href="{% url 'expert:landing' %}">
+                Expert 홈으로 이동
+            </a>
+            <button class="button is-light" type="button" onclick="window.history.back()">
+                이전 페이지로
+            </button>
+        </div>
+        <p class="expert-error-hint">계속 문제가 발생하면 <a href="mailto:support@satoshop.kr">support@satoshop.kr</a>로 알려주세요.</p>
+    </div>
+</section>
+{% endblock %}

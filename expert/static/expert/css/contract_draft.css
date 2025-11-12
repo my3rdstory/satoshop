@@ -1,0 +1,967 @@
+.contract-draft-section {
+    background: linear-gradient(180deg, rgba(7, 11, 26, 0.92), rgba(11, 18, 32, 0.82));
+    padding-bottom: 4rem;
+}
+
+.status-box {
+    background: rgba(8, 13, 26, 0.92);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    border-radius: 18px;
+    padding: 1.75rem;
+    box-shadow: 0 26px 52px rgba(2, 6, 23, 0.65);
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.status-steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.8rem;
+    font-weight: 600;
+}
+
+.status-steps li {
+    position: relative;
+    padding-left: 1.8rem;
+    color: rgba(45, 212, 191, 0.65);
+}
+
+.status-steps li::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    background: rgba(45, 212, 191, 0.4);
+    position: absolute;
+    left: 0;
+    top: 0.35rem;
+}
+
+.status-steps li.is-active {
+    color: #34d399;
+}
+
+.status-steps li.is-active::before {
+    background: #22d3ee;
+}
+
+.draft-layout .column form {
+    background: rgba(8, 13, 26, 0.95);
+    border-radius: 20px;
+    padding: 2.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    box-shadow: 0 28px 54px rgba(2, 6, 23, 0.6);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.draft-layout .column form .label {
+    color: rgba(226, 232, 240, 0.96);
+}
+
+.draft-layout .column form .help {
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.draft-layout .column form .help.is-danger {
+    color: #fca5a5;
+}
+
+.draft-layout .column form .input,
+.draft-layout .column form .textarea,
+.draft-layout .column form .select select {
+    background: rgba(9, 13, 24, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    color: rgba(226, 232, 240, 0.95);
+}
+
+.draft-layout .column form .input::placeholder,
+.draft-layout .column form .textarea::placeholder {
+    color: rgba(148, 163, 184, 0.7);
+}
+
+.draft-layout .column form .input:focus,
+.draft-layout .column form .textarea:focus,
+.draft-layout .column form .select select:focus {
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 0.1rem rgba(59, 130, 246, 0.25);
+}
+
+.role-select-group .role-option-list,
+.option-pill-group .option-pill-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.option-pill-list--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.role-option,
+.option-pill {
+    background: rgba(17, 24, 39, 0.7);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    padding: 0.75rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: rgba(226, 232, 240, 0.92);
+    justify-content: center;
+    text-align: center;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.role-option input[type="radio"],
+.option-pill input[type="radio"] {
+    accent-color: #38bdf8;
+}
+
+.role-option input[type="radio"]:focus-visible,
+.option-pill input[type="radio"]:focus-visible {
+    outline: 2px solid rgba(56, 189, 248, 0.65);
+    outline-offset: 4px;
+}
+
+.role-option input[type="radio"]:checked ~ .role-option-title,
+.option-pill input[type="radio"]:checked ~ .option-pill-title {
+    color: #38bdf8;
+    font-weight: 600;
+}
+
+.role-option:hover,
+.option-pill:hover {
+    border-color: rgba(56, 189, 248, 0.55);
+    background: rgba(15, 23, 42, 0.78);
+}
+
+.role-option--disabled {
+    cursor: default;
+    pointer-events: none;
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+    background: rgba(15, 23, 42, 0.55);
+    color: rgba(148, 163, 184, 0.75);
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.role-option--disabled .role-option-title {
+    font-weight: 600;
+}
+
+.role-option-caption,
+.option-pill-caption {
+    font-size: 0.75rem;
+    color: rgba(148, 163, 184, 0.75);
+}
+
+.role-contact-fieldset {
+    margin-top: 1.25rem;
+}
+
+.role-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+
+.role-contact-card {
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(8, 13, 26, 0.6);
+    min-height: 100%;
+}
+
+.role-contact-card .label {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.role-contact-card .help {
+    margin-top: 0.35rem;
+}
+
+.role-contact-card--email {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: rgba(6, 78, 59, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25);
+}
+
+.role-contact-card--email .label {
+    color: rgba(16, 185, 129, 0.95);
+}
+
+.role-contact-pane[hidden] {
+    display: none;
+}
+
+.modal-payment-section {
+    background: rgba(6, 78, 59, 0.35);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(6, 95, 70, 0.3), 0 10px 30px rgba(1, 10, 6, 0.55);
+}
+
+.modal-payment-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+}
+
+.modal-payment-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.85));
+    color: rgba(15, 23, 42, 0.95);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.modal-payment-caption {
+    margin: 0;
+    font-size: 0.9rem;
+    color: rgba(236, 253, 245, 0.9);
+}
+
+.modal-payment-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.modal-payment-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(2, 6, 23, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+
+.modal-payment-list span {
+    color: rgba(226, 232, 240, 0.95);
+    font-size: 0.85rem;
+}
+
+.modal-payment-list strong {
+    color: rgba(248, 250, 252, 0.95);
+    font-weight: 600;
+}
+
+.milestone-section {
+    background: rgba(8, 13, 26, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-top: 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.45);
+}
+
+.milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.milestone-header .label {
+    color: rgba(226, 232, 240, 0.96);
+    font-weight: 600;
+}
+
+.add-milestone-button {
+    background: rgba(14, 165, 233, 0.18);
+    border-color: rgba(56, 189, 248, 0.45);
+    color: #7dd3fc;
+    font-weight: 600;
+}
+
+.add-milestone-button:hover,
+.add-milestone-button:focus {
+    background: rgba(14, 165, 233, 0.28);
+    border-color: rgba(125, 211, 252, 0.55);
+    color: #e0f2fe;
+}
+
+.add-milestone-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.preview-footer {
+    margin-top: 1.5rem;
+    display: grid;
+    gap: 0.75rem;
+}
+
+.preview-footnote {
+    font-size: 0.9rem;
+    color: rgba(148, 163, 184, 0.85);
+    text-align: center;
+}
+
+.preview-footnote strong {
+    color: #f1f5f9;
+}
+
+.preview-warning {
+    background: rgba(94, 234, 212, 0.08);
+    border: 1px dashed rgba(248, 113, 113, 0.45);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+    color: #fca5a5;
+    text-align: center;
+}
+
+.preview-button {
+    border: 1px solid rgba(59, 130, 246, 0.55);
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.35);
+}
+
+.contract-preview-modal .modal-card {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 15, 34, 0.98));
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    width: min(960px, 95vw);
+    max-height: 90vh;
+    color: rgba(226, 232, 240, 0.96);
+    box-shadow: 0 35px 95px rgba(2, 6, 23, 0.65);
+}
+
+.contract-preview-modal .modal-card-head,
+.contract-preview-modal .modal-card-foot {
+    background: rgba(9, 9, 20, 0.8);
+    border: none;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.modal-spec-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.modal-spec-list li {
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 12px;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid rgba(100, 116, 139, 0.45);
+}
+
+.modal-spec-list li span {
+    color: rgba(203, 213, 225, 0.9);
+    font-size: 0.85rem;
+}
+
+.modal-spec-list li strong {
+    color: rgba(248, 250, 252, 0.95);
+    display: block;
+    font-size: 0.95rem;
+    margin-top: 0.15rem;
+}
+
+.modal-template {
+    background: rgba(2, 6, 23, 0.94);
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    border-radius: 14px;
+    padding: 1.5rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
+}
+
+.modal-template-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-bottom: 1rem;
+}
+
+.modal-template-meta .template-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: rgba(248, 250, 252, 0.96);
+}
+
+.modal-template-meta .template-version {
+    font-size: 0.9rem;
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.modal-template-body {
+    color: rgba(248, 250, 252, 0.94);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    overflow: visible;
+}
+
+.modal-template-body h1,
+.modal-template-body h2,
+.modal-template-body h3,
+.modal-template-body h4 {
+    color: #f8fafc;
+    margin-top: 1.2rem;
+    text-shadow: 0 8px 24px rgba(2, 6, 23, 0.55);
+}
+
+.modal-template-body h1:first-child {
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.modal-template-body ul {
+    padding-left: 1.35rem;
+    list-style: disc;
+    margin: 0 0 0.85rem;
+}
+
+.modal-template-body ol {
+    padding-left: 1.4rem;
+    list-style: decimal;
+    margin: 0 0 0.85rem;
+}
+
+.preview-note {
+    margin-top: 1.2rem;
+    font-size: 0.9rem;
+    color: rgba(148, 163, 184, 0.85);
+    text-align: center;
+}
+
+.modal-card-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.modal-card-subtitle {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: rgba(248, 250, 252, 0.96);
+    margin: 0;
+}
+
+.contract-preview-modal .modal-card-body {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+    padding: 1.75rem;
+}
+
+.modal-preview-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.preview-block {
+    background: rgba(10, 18, 35, 0.92);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    border-radius: 16px;
+    padding: 1.5rem;
+    color: rgba(229, 234, 246, 0.95);
+    box-shadow: 0 18px 48px rgba(2, 6, 23, 0.55);
+}
+
+.preview-block-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.96);
+    margin-bottom: 1rem;
+}
+
+.preview-intro-heading {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.96);
+    margin-bottom: 0.75rem;
+}
+
+.preview-block--intro blockquote {
+    border-left: 3px solid rgba(248, 113, 113, 0.65);
+    padding-left: 1rem;
+    color: rgba(248, 250, 252, 0.9);
+    background: rgba(15, 23, 42, 0.65);
+    border-radius: 8px;
+    margin: 0;
+}
+
+.modal-hint {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.85);
+    letter-spacing: 0.01em;
+}
+
+.hash-list {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.hash-list li {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(14, 20, 35, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+}
+
+.hash-list span {
+    color: rgba(226, 232, 240, 0.9);
+    font-size: 0.9rem;
+}
+
+.hash-placeholder {
+    color: rgba(248, 250, 252, 0.95);
+    font-weight: 600;
+}
+
+.hash-steps {
+    background: rgba(9, 13, 24, 0.94);
+    border: 1px dashed rgba(96, 165, 250, 0.65);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.45);
+}
+
+.hash-steps-title {
+    font-weight: 600;
+    color: rgba(226, 232, 240, 0.95);
+    margin-bottom: 0.6rem;
+}
+
+.hash-steps ol {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: rgba(236, 239, 249, 0.95);
+}
+
+.hash-steps li {
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+}
+
+.hash-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.85);
+}
+
+.worklog-editor-wrapper {
+    background: rgba(8, 13, 26, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 14px;
+    padding: 0.75rem;
+}
+
+.EasyMDEContainer,
+.worklog-editor-wrapper .CodeMirror {
+    background: rgba(2, 6, 23, 0.9);
+    color: rgba(226, 232, 240, 0.96);
+}
+
+.worklog-editor-wrapper .CodeMirror {
+    border-radius: 10px;
+    min-height: 200px;
+    caret-color: #fde68a;
+}
+
+.worklog-editor-wrapper .CodeMirror-cursor {
+    border-left: 2px solid #fde68a !important;
+}
+
+.worklog-editor-wrapper .editor-toolbar {
+    background: rgba(15, 23, 42, 0.65);
+    border-color: rgba(59, 130, 246, 0.35);
+}
+
+.worklog-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: rgba(148, 163, 184, 0.9);
+    margin-top: 0.35rem;
+}
+
+.worklog-counter span {
+    font-weight: 600;
+    color: inherit;
+}
+
+.worklog-counter[data-remaining="0"] {
+    color: #f87171;
+}
+
+.worklog-counter-note {
+    display: inline-block;
+    margin-left: 0.35rem;
+    color: inherit;
+}
+
+.worklog-counter-note[hidden] {
+    display: none;
+}
+
+
+@media screen and (max-width: 1024px) {
+    .modal-spec-list {
+        grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .contract-preview-modal .modal-card {
+        width: 95vw;
+    }
+}
+
+@media screen and (max-width: 640px) {
+    .milestone-field--condition {
+        grid-column: span 1;
+    }
+}
+
+.milestone-hint {
+    margin-bottom: 1.25rem;
+}
+
+.payment-meta {
+    background: rgba(8, 13, 26, 0.85);
+    border: 1px solid rgba(59, 130, 246, 0.28);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.lightning-field .columns .column {
+    margin-bottom: 1rem;
+}
+
+.milestone-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.milestone-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: rgba(10, 17, 34, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 12px;
+    padding: 0.9rem 1.1rem;
+}
+
+.milestone-order {
+    min-width: 4.5rem;
+    font-weight: 600;
+    color: #f7931a;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    background: rgba(247, 147, 26, 0.15);
+    border: 1px solid rgba(247, 147, 26, 0.45);
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    align-self: flex-start;
+    box-shadow: 0 6px 18px rgba(247, 147, 26, 0.25);
+}
+
+.milestone-input {
+    flex: 1;
+    background: rgba(8, 13, 26, 0.65);
+    color: rgba(226, 232, 240, 0.96);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.milestone-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.milestone-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.milestone-remove-button {
+    align-self: flex-start;
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fecaca;
+    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.milestone-remove-button:hover,
+.milestone-remove-button:focus {
+    background: rgba(239, 68, 68, 0.4);
+}
+
+.milestone-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+    width: 100%;
+}
+
+.milestone-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.milestone-field-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(148, 163, 184, 0.85);
+}
+
+.milestone-field--condition {
+    grid-column: span 2;
+}
+
+@media (max-width: 768px) {
+    .milestone-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .milestone-field--condition {
+        grid-column: span 1;
+    }
+}
+
+.milestone-summary {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.milestone-remaining {
+    font-weight: 600;
+    color: rgba(125, 211, 252, 0.92);
+}
+
+.milestone-error {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.milestone-error[hidden] {
+    display: none;
+}
+
+.preview-subsection {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(51, 65, 85, 0.45);
+}
+
+.preview-subsection-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(148, 197, 253, 0.95);
+    margin-bottom: 0.5rem;
+}
+
+.preview-worklog {
+    background: rgba(8, 13, 26, 0.55);
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    min-height: 4rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.preview-placeholder {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(148, 163, 184, 0.8);
+}
+
+
+.one-time-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.one-time-preview-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.9rem;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.milestone-preview-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.milestone-preview-item {
+    background: rgba(8, 13, 26, 0.55);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+}
+
+.milestone-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.milestone-preview-order {
+    font-weight: 600;
+    color: rgba(96, 165, 250, 0.95);
+}
+
+.milestone-preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: rgba(203, 213, 225, 0.85);
+}
+
+.milestone-preview-condition {
+    margin-top: 0.4rem;
+    font-size: 0.85rem;
+    color: rgba(226, 232, 240, 0.85);
+}
+
+.contract-draft-section .has-text-grey,
+.contract-draft-section .has-text-grey-dark,
+.contract-draft-section .has-text-grey-light {
+    color: rgba(203, 213, 225, 0.85) !important;
+}
+
+.next-todos {
+    list-style: disc;
+    margin-left: 1.6rem;
+    color: rgba(203, 213, 225, 0.82);
+}
+
+.agreement-field .checkbox {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    color: rgba(203, 213, 225, 0.84);
+}
+
+.contract-draft-section .notification.is-info.is-light {
+    background: rgba(56, 189, 248, 0.12);
+    border: 1px solid rgba(125, 211, 252, 0.35);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.preview-card {
+    position: sticky;
+    top: 5.5rem;
+    background: rgba(7, 89, 133, 0.18);
+    border-radius: 20px;
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    padding: 2.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    box-shadow: 0 30px 60px rgba(2, 6, 23, 0.65);
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.placeholder {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    color: rgba(203, 213, 225, 0.78);
+}
+
+.spec-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 1rem;
+}
+
+.spec-list li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: rgba(226, 232, 240, 0.9);
+}
+
+.preview-body strong {
+    font-weight: 600;
+    color: #a5f3fc;
+}
+
+@media (max-width: 1024px) {
+    .contract-draft-section {
+        padding-bottom: 3rem;
+    }
+
+    .draft-layout .column form {
+        padding: 2rem;
+    }
+
+    .preview-card {
+        position: static;
+        margin-top: 2rem;
+    }
+
+    .role-select-group .role-option-list,
+    .option-pill-group .option-pill-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .milestone-section {
+        padding: 1.5rem;
+    }
+
+    .milestone-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .milestone-order {
+        min-width: auto;
+        margin-bottom: 0.35rem;
+        text-align: left;
+    }
+}

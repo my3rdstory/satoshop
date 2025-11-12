@@ -1,0 +1,116 @@
+{% load humanize %}
+<div id="{{ payment_widget.dom_id }}"
+     class="lightning-payment-card"
+     data-payment-widget-root
+     data-payment-context="{{ payment_widget.context_type }}"
+     data-payment-ref="{{ payment_widget.identifier }}"
+     data-payment-role="{{ payment_widget.role }}"
+     data-payment-required="{{ payment_widget.requires_payment|yesno:'true,false' }}"
+     data-payment-status="{{ payment_widget.state.status }}"
+     data-payment-hash="{{ payment_widget.state.payment_hash }}"
+     data-payment-expiry="{% if payment_widget.state.expires_at %}{{ payment_widget.state.expires_at|date:'c' }}{% endif %}"
+     data-payment-start-url="{{ payment_widget.widget_urls.start }}"
+     data-payment-cancel-url="{{ payment_widget.widget_urls.cancel }}"
+     data-payment-status-url="{{ payment_widget.widget_urls.status }}"
+     data-payment-refresh-url="{{ payment_widget.widget_urls.refresh }}?context={{ payment_widget.context_type }}&ref={{ payment_widget.identifier }}&role={{ payment_widget.role }}"
+     data-payment-csrf="{{ csrf_token }}"
+     data-payment-countdown-total="{{ payment_expire_seconds }}"
+     data-payment-countdown-remaining="{{ payment_widget.countdown_seconds }}">
+    <div class="lightning-payment-head">
+        <div>
+            <p class="lightning-payment-label">{{ payment_widget.role_label }} 결제 금액</p>
+        </div>
+        <div class="lightning-payment-amount">
+            <strong>{{ payment_widget.required_amount|default:0|intcomma }} sats</strong>
+        </div>
+    </div>
+
+    <div class="lightning-policy-block">
+        {% if payment_widget.pricing %}
+            <ul class="lightning-policy-list">
+                <li>의뢰자: <strong>{{ payment_widget.pricing.client_fee_sats|intcomma }} sats</strong></li>
+                <li>수행자: <strong>{{ payment_widget.pricing.performer_fee_sats|intcomma }} sats</strong></li>
+            </ul>
+            {% if payment_widget.pricing.description %}
+                <p class="lightning-policy-desc">{{ payment_widget.pricing.description }}</p>
+            {% endif %}
+        {% else %}
+            <p class="lightning-policy-desc">결제 정책이 아직 설정되지 않아 기본 안내만 표시합니다.</p>
+        {% endif %}
+    </div>
+
+    <div class="lightning-status" data-payment-status-text>{{ payment_widget.status_message }}</div>
+
+    {% if not payment_widget.requires_payment %}
+        <div class="notification is-info is-light lightning-note">현재 정책에서는 결제가 필요하지 않습니다.</div>
+    {% else %}
+        {% if payment_widget.state.status == 'paid' %}
+            <div class="notification is-success is-light lightning-note">결제가 완료되었습니다. 계속해서 서명을 제출해 주세요.</div>
+        {% elif payment_widget.state.status == 'invoice' %}
+            <div class="lightning-invoice">
+                <div class="lightning-invoice-qr">
+                    {% if payment_widget.state.payment_request %}
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={{ payment_widget.state.payment_request|urlencode }}&ts={{ payment_widget.state.payment_hash }}"
+                             alt="Lightning QR" data-payment-qr>
+                    {% else %}
+                        <p class="has-text-grey">인보이스 정보를 불러오지 못했습니다.</p>
+                    {% endif %}
+                    <p class="lightning-countdown" data-payment-countdown-text>
+                        {% if payment_widget.countdown_seconds %}
+                            만료까지 {{ payment_widget.countdown_seconds }}초 남았습니다.
+                        {% else %}
+                            만료 예정 시간을 계산 중입니다.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="lightning-invoice-panel">
+                    {% if payment_widget.state.payment_request %}
+                        <label class="label is-small">인보이스 문자열</label>
+                        <textarea class="lightning-invoice-textarea" rows="4" readonly data-payment-invoice-text>{{ payment_widget.state.payment_request }}</textarea>
+                        <div class="lightning-mini-actions">
+                            <button type="button"
+                                    class="button is-info is-light"
+                                    data-payment-copy>
+                                인보이스 복사
+                            </button>
+                            <button type="button"
+                                    class="button is-link is-light"
+                                    data-payment-open-wallet>
+                                라이트닝 지갑 열기
+                            </button>
+                        </div>
+                    {% endif %}
+                    <div class="lightning-mini-actions lightning-mini-actions--secondary">
+                        <button type="button"
+                                class="button is-light"
+                                hx-post="{{ payment_widget.widget_urls.cancel }}"
+                                hx-target="#{{ payment_widget.dom_id }}"
+                                hx-swap="outerHTML"
+                                hx-vals='{"context":"{{ payment_widget.context_type }}","ref":"{{ payment_widget.identifier|escapejs }}","role":"{{ payment_widget.role }}"}'
+                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>인보이스 취소</button>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            {% if payment_widget.state.status == 'error' or payment_widget.state.status == 'expired' or payment_widget.state.status == 'cancelled' %}
+                <div class="notification is-warning is-light lightning-note">
+                    {% if payment_widget.state.status == 'error' %}
+                        {{ payment_widget.state.last_error|default:'결제 정보를 준비하는 중 오류가 발생했습니다.' }}
+                    {% elif payment_widget.state.status == 'expired' %}
+                        인보이스가 만료되었습니다. 다시 생성해 주세요.
+                    {% else %}
+                        인보이스가 취소되었습니다. 필요하다면 다시 시작할 수 있습니다.
+                    {% endif %}
+                </div>
+            {% endif %}
+            <button type="button"
+                    class="button is-primary is-fullwidth"
+                    hx-post="{{ payment_widget.widget_urls.start }}"
+                    hx-target="#{{ payment_widget.dom_id }}"
+                    hx-swap="outerHTML"
+                    hx-vals='{"context":"{{ payment_widget.context_type }}","ref":"{{ payment_widget.identifier|escapejs }}","role":"{{ payment_widget.role }}"}'
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>결제 시작</button>
+        {% endif %}
+    {% endif %}
+
+</div>

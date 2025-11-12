@@ -1,0 +1,166 @@
+
+
+.contract-integrity-section {
+    background: var(--expert-page-bg, #0f172a);
+    min-height: calc(100vh - 4rem);
+    padding-top: 3rem;
+    color: #e2e8f0;
+}
+
+.integrity-hero {
+    margin-bottom: 1.5rem;
+    color: #e2e8f0;
+}
+
+.integrity-card {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+    color: #e2e8f0;
+}
+
+.integrity-card--tips {
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.integrity-form .field + .field {
+    margin-top: 1rem;
+}
+
+.integrity-form .label {
+    color: #cbd5f5;
+}
+
+.integrity-secondary {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
+    margin-top: 1.25rem;
+}
+
+.integrity-secondary-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.integrity-secondary {
+    background: #0b1120;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+.integrity-summary {
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.integrity-summary--placeholder {
+    text-align: center;
+    color: #94a3b8;
+}
+
+.integrity-summary a {
+    color: #4ade80;
+    transition: color 0.2s ease;
+}
+
+.integrity-summary a:hover {
+    color: #22c55e;
+}
+
+.integrity-summary h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #f8fafc;
+}
+
+.integrity-summary dl {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.integrity-summary dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+
+.integrity-summary dd {
+    margin: 0;
+    color: #f1f5f9;
+}
+
+.integrity-summary code,
+.integrity-summary dd {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
+
+.integrity-result {
+    margin-top: 0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+}
+.integrity-result--placeholder {
+    border-style: dashed;
+    color: #94a3b8;
+}
+
+.integrity-result--match {
+    border-color: rgba(34, 197, 94, 0.6);
+    background: rgba(34, 197, 94, 0.08);
+}
+
+.integrity-result--mismatch {
+    border-color: rgba(248, 113, 113, 0.6);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.integrity-result--pending {
+    border-color: rgba(250, 204, 21, 0.6);
+    background: rgba(250, 204, 21, 0.08);
+}
+
+.integrity-result__title {
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.integrity-hash-list {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.integrity-hash-list dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.integrity-hash-list dd code {
+    word-break: break-all;
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+    .contract-integrity-section {
+        padding-top: 5rem;
+    }
+    .integrity-card {
+        padding: 1.25rem;
+    }
+}

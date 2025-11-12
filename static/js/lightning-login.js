@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const startLoginBtn = document.getElementById('startLoginBtn');
     const copyLnurlBtn = document.getElementById('copyLnurlBtn');
     const retryBtn = document.getElementById('retryBtn');
+    const openWalletBtn = document.getElementById('openWalletBtn');
+    const expiredRefreshBtn = document.getElementById('expiredRefreshBtn');
     
     // CSRF 토큰 가져오기
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
@@ -14,6 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 로그인 시작
     if (startLoginBtn) {
         startLoginBtn.addEventListener('click', function() {
+            if (startLoginBtn.disabled) {
+                return;
+            }
             showLoadingState();
             startLightningLogin();
         });
@@ -22,6 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 다시 시도
     if (retryBtn) {
         retryBtn.addEventListener('click', function() {
+            if (retryBtn.disabled) {
+                return;
+            }
             showLoadingState();
             startLightningLogin();
         });
@@ -43,6 +51,41 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    if (openWalletBtn) {
+        openWalletBtn.addEventListener('click', () => {
+            const lnurlText = document.getElementById('lnurlText');
+            if (!lnurlText || !lnurlText.value) {
+                updateStatusMessage('먼저 LNURL을 생성해 주세요.', 'error');
+                return;
+            }
+            const rawValue = lnurlText.value.trim();
+            const lightningUri = rawValue.startsWith('lightning:') ? rawValue : `lightning:${rawValue}`;
+            try {
+                window.location.assign(lightningUri);
+            } catch (error) {
+                console.error('라이트닝 지갑 열기 실패', error);
+                updateStatusMessage('라이트닝 지갑을 열 수 없습니다. QR을 스캔하거나 LNURL을 복사해 주세요.', 'error');
+            }
+        });
+    }
+
+    if (expiredRefreshBtn) {
+        expiredRefreshBtn.addEventListener('click', () => {
+            expiredRefreshBtn.classList.add('hidden');
+            showLoadingState();
+            startLightningLogin();
+        });
+    }
+    
+    detectIncognitoMode()
+        .then((isPrivate) => {
+            document.documentElement.dataset.incognitoMode = isPrivate ? 'true' : 'false';
+            applyIncognitoGuard(isPrivate);
+        })
+        .catch(() => {
+            applyIncognitoGuard(false);
+        });
     
     /**
      * CSRF 토큰 가져오기
@@ -174,6 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lnurlText) {
                 lnurlText.value = data.lnurl;
             }
+            if (expiredRefreshBtn) expiredRefreshBtn.classList.add('hidden');
             
             showQRState();
             updateStatusMessage('지갑에서 인증을 완료하면 자동으로 로그인됩니다.', 'pending');
@@ -310,6 +354,70 @@ document.addEventListener('DOMContentLoaded', function() {
             statusMessage.innerHTML = `<i class="fas fa-${iconClass} mr-2"></i>${message}`;
             statusMessage.className = `p-3 rounded-lg border text-sm font-medium status-${status}`;
         }
+
+        if (status === 'expired' && expiredRefreshBtn) {
+            expiredRefreshBtn.classList.remove('hidden');
+        }
+    }
+
+    function applyIncognitoGuard(isPrivate) {
+        const warningBlocks = document.querySelectorAll('[data-incognito-warning]');
+        warningBlocks.forEach((block) => {
+            if (isPrivate) {
+                block.classList.remove('hidden');
+            } else {
+                block.classList.add('hidden');
+            }
+        });
+        const guardedButtons = [startLoginBtn, retryBtn];
+        guardedButtons.forEach((button) => {
+            if (!button) {
+                return;
+            }
+            if (isPrivate) {
+                button.disabled = true;
+                button.setAttribute('aria-disabled', 'true');
+            } else {
+                button.disabled = false;
+                button.removeAttribute('aria-disabled');
+            }
+        });
+        if (isPrivate) {
+            updateStatusMessage('시크릿/프라이빗 모드에서는 LNURL-auth를 사용할 수 없습니다.', 'error');
+        }
+    }
+
+    async function detectIncognitoMode() {
+        if (navigator.storage && navigator.storage.estimate) {
+            try {
+                const { quota } = await navigator.storage.estimate();
+                if (quota && quota < 120 * 1024 * 1024) {
+                    return true;
+                }
+            } catch (error) {
+                console.debug('storage estimate failed', error);
+            }
+        }
+        if ('webkitTemporaryStorage' in navigator && navigator.webkitTemporaryStorage.queryUsageAndQuota) {
+            const limitedQuota = await new Promise((resolve) => {
+                navigator.webkitTemporaryStorage.queryUsageAndQuota(
+                    () => resolve(false),
+                    () => resolve(true),
+                );
+            });
+            if (limitedQuota) {
+                return true;
+            }
+        }
+        if ('webkitRequestFileSystem' in window) {
+            const fsBlocked = await new Promise((resolve) => {
+                window.webkitRequestFileSystem(window.TEMPORARY, 100, () => resolve(false), () => resolve(true));
+            });
+            if (fsBlocked) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // 전역 함수로 노출 (필요한 경우)
