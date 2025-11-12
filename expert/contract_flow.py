@@ -615,6 +615,15 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle], width: flo
         for child in list(element):
             flowables.extend(_element_to_flowables(child, styles, width))
         return flowables
+    if tag in {"section", "article", "aside", "header", "footer", "main", "nav"}:
+        flowables: List = []
+        if element.text and element.text.strip():
+            flowables.append(Paragraph(html.escape(element.text.strip()), styles["Body"]))
+        for child in list(element):
+            flowables.extend(_element_to_flowables(child, styles, width))
+            if child.tail and child.tail.strip():
+                flowables.append(Paragraph(html.escape(child.tail.strip()), styles["Body"]))
+        return flowables
     text = _collect_inline_markup(element)
     if text.strip():
         return [Paragraph(text, styles["Body"])]
