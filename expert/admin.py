@@ -65,13 +65,13 @@ class ExpertEmailSettingsAdmin(admin.ModelAdmin):
 
 @admin.register(ContractPricingSetting)
 class ContractPricingSettingAdmin(admin.ModelAdmin):
-    list_display = ("name", "enabled", "client_fee_sats", "performer_fee_sats", "updated_at")
-    readonly_fields = ("updated_at",)
+    list_display = ("name", "enabled", "client_fee_sats", "performer_fee_sats")
+    readonly_fields: tuple = ()
     fieldsets = (
         (
             "기본 정보",
             {
-                "fields": ("name", "enabled", "description"),
+                "fields": ("name", "enabled"),
                 "description": "활성화 여부와 정책 설명을 입력하세요.",
             },
         ),
@@ -82,7 +82,6 @@ class ContractPricingSettingAdmin(admin.ModelAdmin):
                 "description": "각 역할이 부담해야 하는 사토시 금액을 설정합니다.",
             },
         ),
-        ("변경 이력", {"fields": ("updated_at",)}),
     )
 
     def has_add_permission(self, request):
