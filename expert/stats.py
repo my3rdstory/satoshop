@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import timedelta, datetime
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 from django.db.models import Count
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from accounts.models import LightningUser
-from .models import DirectContractDocument
+from .models import DirectContractDocument, ContractPricingSetting
 
 
 def _iter_payment_records(documents: Iterable[DirectContractDocument]) -> Iterable[Dict]:
@@ -90,11 +90,11 @@ def _filter_records_by_month(records: List[Dict], month_slug: str) -> List[Dict]
     except ValueError:
         return []
     tz = timezone.get_current_timezone()
-    start = datetime(year, month, 1, tzinfo=tz)
+    start = timezone.make_aware(datetime(year, month, 1), timezone=tz)
     if month == 12:
-        end = datetime(year + 1, 1, 1, tzinfo=tz)
+        end = timezone.make_aware(datetime(year + 1, 1, 1), timezone=tz)
     else:
-        end = datetime(year, month + 1, 1, tzinfo=tz)
+        end = timezone.make_aware(datetime(year, month + 1, 1), timezone=tz)
     filtered: List[Dict] = []
     for record in records:
         paid_at = record.get("paid_at")
@@ -104,6 +104,51 @@ def _filter_records_by_month(records: List[Dict], month_slug: str) -> List[Dict]
         if start <= local_dt < end:
             filtered.append(record)
     return filtered
+
+
+def _build_month_nav(options: List[Dict], selected_slug: str) -> Dict:
+    if not options:
+        return {}
+    slugs = [opt["value"] for opt in options]
+    if selected_slug not in slugs:
+        selected_slug = slugs[0]
+    idx = slugs.index(selected_slug)
+    prev_slug = slugs[idx + 1] if idx + 1 < len(slugs) else ""
+    next_slug = slugs[idx - 1] if idx - 1 >= 0 else ""
+
+    def _label(slug: str) -> str:
+        if not slug:
+            return ""
+        for opt in options:
+            if opt["value"] == slug:
+                return opt["label"]
+        return ""
+
+    current_label = _label(selected_slug)
+    now_slug = timezone.localtime(timezone.now()).strftime("%Y-%m")
+    if selected_slug == now_slug:
+        current_label = f"{current_label} (이번 달)"
+
+    return {
+        "current_slug": selected_slug,
+        "current_label": current_label,
+        "prev_slug": prev_slug,
+        "prev_label": _label(prev_slug),
+        "next_slug": next_slug,
+        "next_label": _label(next_slug),
+    }
+
+
+def _serialize_pricing(pricing: Optional[ContractPricingSetting]) -> Optional[Dict]:
+    if not pricing:
+        return None
+    return {
+        "name": pricing.name,
+        "client_fee_sats": pricing.client_fee_sats,
+        "performer_fee_sats": pricing.performer_fee_sats,
+        "updated_at": pricing.updated_at,
+        "enabled": pricing.enabled,
+    }
 
 
 def aggregate_payment_stats(*, window_days: int = 30, month_slug: str | None = None) -> Dict:
@@ -116,27 +161,34 @@ def aggregate_payment_stats(*, window_days: int = 30, month_slug: str | None = N
     summary["window_days"] = window_days
 
     month_options = _build_month_options(records)
-    month_summary = None
-    if month_slug:
-        month_slug = month_slug.strip()
-    if month_slug:
-        selected_option = next((opt for opt in month_options if opt["value"] == month_slug), None)
-        if selected_option:
-            filtered_records = _filter_records_by_month(records, month_slug)
-            month_summary = _summarize_records(filtered_records, window_start=None)
-            month_summary.update(
-                {
-                    "label": selected_option["label"],
-                    "slug": month_slug,
-                }
-            )
+    cleaned_month_slug = month_slug.strip() if month_slug else ""
+    month_nav = _build_month_nav(month_options, cleaned_month_slug) if month_options else {}
+
+    filtered_stats = None
+    if month_nav:
+        nav_slug = month_nav["current_slug"]
+        filtered_records = _filter_records_by_month(records, nav_slug)
+        filtered_summary = _summarize_records(filtered_records, window_start=None)
+        filtered_summary.update(
+            {
+                "label": month_nav["current_label"],
+                "slug": nav_slug,
+            }
+        )
+        filtered_stats = filtered_summary
+
+    pricing = _serialize_pricing(
+        ContractPricingSetting.objects.filter(enabled=True).order_by("-pk").first()
+    )
 
     summary.update(
         {
             "month_options": month_options,
-            "selected_month": month_summary["slug"] if month_summary else "",
-            "selected_month_label": month_summary["label"] if month_summary else "",
-            "filtered_stats": month_summary,
+            "selected_month": month_nav.get("current_slug", "") if month_nav else "",
+            "selected_month_label": month_nav.get("current_label", "") if month_nav else "",
+            "filtered_stats": filtered_stats,
+            "month_nav": month_nav,
+            "pricing": pricing,
         }
     )
     return summary

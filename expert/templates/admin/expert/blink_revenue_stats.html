@@ -4,20 +4,43 @@
 {% block content %}
 <div class="blink-stats">
   <h2 style="margin-bottom:1.5rem;">Blink 수수료 수익금 요약</h2>
-  <form method="get" class="month-filter">
-    <label for="month-select">월별 조회</label>
-    <select name="month" id="month-select" onchange="this.form.submit()">
-      <option value="">전체 기간 (누적)</option>
-      {% for option in stats.month_options %}
-        <option value="{{ option.value }}" {% if option.value == stats.selected_month %}selected{% endif %}>
-          {{ option.label }}
-        </option>
-      {% endfor %}
-    </select>
-    {% if stats.selected_month %}
-      <a href="?" class="reset-link">초기화</a>
+  {% if stats.month_nav %}
+  <div class="month-nav">
+    <a class="month-nav-btn{% if not stats.month_nav.prev_slug %} is-disabled{% endif %}"
+       {% if stats.month_nav.prev_slug %}href="?month={{ stats.month_nav.prev_slug }}"{% endif %}>
+      ‹ 이전 달
+    </a>
+    <span class="month-nav-label">{{ stats.month_nav.current_label }}</span>
+    <a class="month-nav-btn{% if not stats.month_nav.next_slug %} is-disabled{% endif %}"
+       {% if stats.month_nav.next_slug %}href="?month={{ stats.month_nav.next_slug }}"{% endif %}>
+      다음 달 ›
+    </a>
+  </div>
+  {% endif %}
+
+  {% if stats.pricing %}
+  <div class="stat-card fee-card">
+    <p class="stat-label">현재 설정된 수수료</p>
+    <div class="fee-grid">
+      <div>
+        <p class="fee-label">의뢰자 부담</p>
+        <p class="fee-value">{{ stats.pricing.client_fee_sats|intcomma }} sats</p>
+      </div>
+      <div>
+        <p class="fee-label">수행자 부담</p>
+        <p class="fee-value">{{ stats.pricing.performer_fee_sats|intcomma }} sats</p>
+      </div>
+    </div>
+    {% if stats.pricing.updated_at %}
+      <p class="stat-subtitle">마지막 업데이트: {{ stats.pricing.updated_at|date:"Y-m-d H:i" }}</p>
     {% endif %}
-  </form>
+  </div>
+  {% else %}
+  <div class="stat-card fee-card">
+    <p class="stat-label">현재 설정된 수수료</p>
+    <p class="stat-subtitle">활성화된 수수료 설정이 없습니다.</p>
+  </div>
+  {% endif %}
 
   {% if stats.filtered_stats %}
   <div class="stat-card highlight">
@@ -138,20 +161,49 @@
   padding: 0.55rem 0.25rem;
   text-align: left;
 }
-.blink-stats .month-filter {
+.blink-stats .month-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
-.blink-stats .month-filter label {
-  font-weight: 600;
-}
-.blink-stats .month-filter select {
-  min-width: 180px;
-}
-.blink-stats .month-filter .reset-link {
+.blink-stats .month-nav-btn {
+  border: 1px solid #d1d5db;
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
+  color: #374151;
+  text-decoration: none;
+}
+.blink-stats .month-nav-btn.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.blink-stats .month-nav-label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.blink-stats .fee-card {
+  margin-bottom: 1.25rem;
+}
+.blink-stats .fee-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.blink-stats .fee-label {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  margin-bottom: 0.1rem;
+}
+.blink-stats .fee-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
 }
 </style>
 {% endblock %}
