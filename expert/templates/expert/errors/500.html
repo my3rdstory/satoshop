@@ -1,0 +1,25 @@
+{% extends "expert/base.html" %}
+{% load static %}
+
+{% block title %}일시적인 오류가 발생했습니다 - SatoShop Expert{% endblock %}
+
+{% block content %}
+<section class="section expert-error-section">
+    <div class="container expert-error-card">
+        <div class="expert-error-icon expert-error-icon--warning">
+            <span>500</span>
+        </div>
+        <h1>일시적인 오류가 발생했습니다</h1>
+        <p>요청을 처리하던 중 문제가 생겼습니다. 잠시 후 다시 시도하거나, 문제가 지속되면 운영팀에 문의해주세요.</p>
+        <div class="expert-error-actions">
+            <a class="button is-primary" href="{% url 'expert:landing' %}">
+                Expert 홈으로 이동
+            </a>
+            <button class="button is-light" type="button" onclick="window.location.reload()">
+                다시 시도
+            </button>
+        </div>
+        <p class="expert-error-hint">긴급 문의: <a href="mailto:support@satoshop.kr">support@satoshop.kr</a></p>
+    </div>
+</section>
+{% endblock %}
