@@ -719,6 +719,16 @@
     grid-column: span 2;
 }
 
+@media (max-width: 768px) {
+    .milestone-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .milestone-field--condition {
+        grid-column: span 1;
+    }
+}
+
 .milestone-summary {
     margin-top: 1.25rem;
     display: flex;
