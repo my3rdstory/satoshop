@@ -59,6 +59,10 @@ let attachmentEntries = [];
 let roleContactFieldset;
 let roleLightningCard;
 let roleEmailHelpTexts = [];
+const WORKLOG_MAX_LENGTH = 10000;
+const worklogLengthFormatter = new Intl.NumberFormat('ko-KR');
+let worklogCounterNode = null;
+let suppressWorklogEditorChange = false;
 
 const attachmentConfig = {
     maxItems: 3,
@@ -76,6 +80,31 @@ function formatRole(value) {
     if (value === 'client') return '의뢰자';
     if (value === 'performer') return '수행자';
     return '-';
+}
+
+function clampWorklogValue(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    if (value.length <= WORKLOG_MAX_LENGTH) {
+        return value;
+    }
+    return value.slice(0, WORKLOG_MAX_LENGTH);
+}
+
+function updateWorklogCounterDisplay(length) {
+    if (!worklogCounterNode) {
+        worklogCounterNode = document.querySelector('[data-worklog-remaining]');
+    }
+    if (!worklogCounterNode) {
+        return;
+    }
+    const remaining = Math.max(WORKLOG_MAX_LENGTH - length, 0);
+    worklogCounterNode.textContent = worklogLengthFormatter.format(remaining);
+    const wrapper = worklogCounterNode.closest('[data-worklog-counter-wrapper]');
+    if (wrapper) {
+        wrapper.dataset.remaining = String(remaining);
+    }
 }
 
 function formatPayment(value) {
@@ -868,11 +897,35 @@ function initWorkLogEditor() {
         updateWorkLogPreview(value);
     };
 
-    syncPreview(textarea.value || '');
+    const applyValue = (rawValue) => {
+        const normalized = clampWorklogValue(rawValue || '');
+        if (textarea.value !== normalized) {
+            textarea.value = normalized;
+        }
+        syncPreview(normalized);
+        updateWorklogCounterDisplay(normalized.length);
+        return normalized;
+    };
+
+    const initialValue = applyValue(textarea.value || '');
 
     if (typeof EasyMDE === 'undefined') {
         textarea.addEventListener('input', (event) => {
-            syncPreview(event.target.value);
+            const currentValue = event.target.value || '';
+            const normalized = clampWorklogValue(currentValue);
+            if (normalized !== currentValue) {
+                const caretPosition = Math.min(normalized.length, event.target.selectionStart || normalized.length);
+                event.target.value = normalized;
+                requestAnimationFrame(() => {
+                    try {
+                        event.target.setSelectionRange(caretPosition, caretPosition);
+                    } catch (error) {
+                        // selection range might fail in some browsers; ignore silently
+                    }
+                });
+            }
+            syncPreview(normalized);
+            updateWorklogCounterDisplay(normalized.length);
         });
         return;
     }
@@ -886,10 +939,24 @@ function initWorkLogEditor() {
         placeholder: textarea.getAttribute('placeholder') || '최대 10,000자까지 작성할 수 있습니다.',
         toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'preview'],
     });
+    if (workLogEditor.value() !== initialValue) {
+        workLogEditor.value(initialValue);
+    }
     workLogEditor.codemirror.on('change', () => {
-        const currentValue = workLogEditor.value();
+        if (suppressWorklogEditorChange) {
+            return;
+        }
+        let currentValue = workLogEditor.value() || '';
+        const normalized = clampWorklogValue(currentValue);
+        if (normalized !== currentValue) {
+            suppressWorklogEditorChange = true;
+            workLogEditor.value(normalized);
+            suppressWorklogEditorChange = false;
+            currentValue = normalized;
+        }
         textarea.value = currentValue;
         syncPreview(currentValue);
+        updateWorklogCounterDisplay(currentValue.length);
     });
 }
 

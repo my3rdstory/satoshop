@@ -188,6 +188,9 @@
                         <div class="control worklog-editor-wrapper">
                             {{ form.work_log_markdown }}
                         </div>
+                        <p class="help worklog-counter" data-worklog-counter-wrapper>
+                            남은 글자 <span data-worklog-remaining>10,000</span>자
+                        </p>
                         <p class="help">최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다.</p>
                         {% for error in form.work_log_markdown.errors %}
                             <p class="help is-danger">{{ error }}</p>

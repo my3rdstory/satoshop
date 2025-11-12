@@ -595,6 +595,22 @@
     border-color: rgba(59, 130, 246, 0.35);
 }
 
+.worklog-counter {
+    text-align: right;
+    font-size: 0.8rem;
+    color: rgba(148, 163, 184, 0.9);
+    margin-top: 0.35rem;
+}
+
+.worklog-counter span {
+    font-weight: 600;
+    color: inherit;
+}
+
+.worklog-counter[data-remaining="0"] {
+    color: #f87171;
+}
+
 
 @media screen and (max-width: 1024px) {
     .modal-spec-list {
