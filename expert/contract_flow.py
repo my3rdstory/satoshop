@@ -285,8 +285,9 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     flowables = _markdown_to_flowables(work_log, styles, width)
     if not flowables:
         return []
+    table_rows = [[flowable] for flowable in flowables]
     boxed_content = Table(
-        [[KeepTogether(flowables)]],
+        table_rows,
         colWidths=[width],
         hAlign="LEFT",
     )
