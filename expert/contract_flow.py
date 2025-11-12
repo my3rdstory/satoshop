@@ -153,7 +153,7 @@ def _build_pdf_styles(font_name: str) -> Dict[str, ParagraphStyle]:
             parent=base,
             fontSize=14,
             leading=22,
-            textColor=colors.HexColor("#1D4ED8"),
+            textColor=colors.HexColor("#F7931A"),
             spaceBefore=16,
             spaceAfter=10,
         ),
