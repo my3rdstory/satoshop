@@ -40,6 +40,8 @@
 /* 모바일 메뉴 애니메이션 */
 #mobile-menu,
 #store-mobile-menu {
+  position: relative;
+  z-index: 50;
   transition: all 0.3s ease-in-out;
   transform-origin: top;
   /* 화면 높이에서 나브바 높이를 뺀 만큼을 최대 높이로 설정 */
@@ -98,6 +100,33 @@
   align-items: center;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   touch-action: manipulation;
+}
+
+.mobile-menu-overlay,
+.store-mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 45;
+}
+
+#mobile-menu-overlay.hidden,
+#store-mobile-menu-overlay.hidden {
+  display: none;
+}
+
+:root[data-theme="light"] .mobile-menu-overlay,
+:root[data-theme="light"] .store-mobile-menu-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+#mobile-menu-overlay {
+  z-index: 45;
+}
+
+#store-mobile-menu-overlay {
+  z-index: 45;
 }
 
 :root[data-theme="light"] #mobile-menu,
