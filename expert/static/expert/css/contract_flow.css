@@ -206,6 +206,11 @@
     margin-bottom: 0;
 }
 
+.hash-display .markdown-content strong,
+.preview-worklog.markdown-content strong {
+    color: #fef3c7;
+}
+
 .signature-payment-grid {
     display: grid;
     gap: 1.25rem;
