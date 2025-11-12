@@ -202,7 +202,7 @@ class DirectContractDocument(models.Model):
     payment_meta = models.JSONField(default=dict, blank=True, help_text="단계별 라이트닝 결제 정보")
     creator_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
     counterparty_role = models.CharField(max_length=16, choices=ContractParticipant.ROLE_CHOICES)
-    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty")
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default="pending_counterparty", db_index=True)
     creator_email = models.EmailField(blank=True)
     counterparty_email = models.EmailField(blank=True)
     counterparty_user = models.ForeignKey(
@@ -230,6 +230,8 @@ class DirectContractDocument(models.Model):
     creator_hash_meta = models.JSONField(default=dict, blank=True)
     counterparty_hash_meta = models.JSONField(default=dict, blank=True)
     mediator_hash_meta = models.JSONField(default=dict, blank=True)
+    creator_lightning_id = models.CharField(max_length=160, blank=True, db_index=True)
+    counterparty_lightning_id = models.CharField(max_length=160, blank=True, db_index=True)
     email_delivery = models.JSONField(default=default_email_delivery, blank=True)
     final_pdf = models.FileField(
         upload_to="expert/contracts/final_pdfs/",
@@ -239,11 +241,15 @@ class DirectContractDocument(models.Model):
     final_pdf_generated_at = models.DateTimeField(blank=True, null=True)
     final_pdf_hash = models.CharField(max_length=64, blank=True)
     signature_assets = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["creator", "-created_at"], name="doc_creator_created_idx"),
+            models.Index(fields=["counterparty_user", "-created_at"], name="doc_counterparty_created_idx"),
+        ]
 
     def __str__(self):
         return f"{self.payload.get('title', '계약')} ({self.slug})"

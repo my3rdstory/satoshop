@@ -171,7 +171,7 @@ def _get_accessible_documents(user):
     lightning_id = _get_lightning_public_key(user)
     query = Q(creator=user) | Q(counterparty_user=user)
     if lightning_id:
-        query |= Q(counterparty_signed_at__isnull=False, payload__counterparty_lightning_id=lightning_id)
+        query |= Q(counterparty_signed_at__isnull=False, counterparty_lightning_id=lightning_id)
     return DirectContractDocument.objects.filter(query).order_by("-created_at")
 
 
@@ -324,6 +324,7 @@ class DirectContractReviewView(LightningLoginRequiredMixin, FormView):
         creator_lightning_id = _get_lightning_public_key(self.request.user)
         if creator_lightning_id:
             payload["creator_lightning_id"] = creator_lightning_id
+        counterparty_payload_lightning = payload.get("counterparty_lightning_id", "") or ""
         slug = self._generate_unique_slug()
         creator_role = payload.get("role", "client")
         counterparty_role = "performer" if creator_role == "client" else "client"
@@ -334,6 +335,8 @@ class DirectContractReviewView(LightningLoginRequiredMixin, FormView):
             creator_role=creator_role,
             counterparty_role=counterparty_role,
             creator_email=payload.get("email_recipient") or "",
+            creator_lightning_id=creator_lightning_id or "",
+            counterparty_lightning_id=counterparty_payload_lightning,
         )
         creator_hash = build_creator_hash(payload, self.request.META.get("HTTP_USER_AGENT", ""))
         document.creator_hash = creator_hash.value
@@ -470,10 +473,15 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         role_labels = dict(ContractParticipant.ROLE_CHOICES)
         creator_role_label = role_labels.get(self.document.creator_role, "계약 생성자")
         counterparty_role_label = role_labels.get(self.document.counterparty_role, "상대방")
-        creator_lightning_id = (self.payload or {}).get("creator_lightning_id") or _get_lightning_public_key(
-            self.document.creator
+        creator_lightning_id = (
+            self.document.creator_lightning_id
+            or (self.payload or {}).get("creator_lightning_id")
+            or _get_lightning_public_key(self.document.creator)
         )
-        counterparty_payload_lightning = (self.payload or {}).get("counterparty_lightning_id", "")
+        counterparty_payload_lightning = (
+            self.document.counterparty_lightning_id
+            or (self.payload or {}).get("counterparty_lightning_id", "")
+        )
         viewer_lightning_id = _get_lightning_public_key(self.request.user)
         template_data = (self.payload.get("contract_template") or {}).copy()
         template_content = template_data.get("content", "")
@@ -569,6 +577,7 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         counterparty_lightning_id = _get_lightning_public_key(self.request.user)
         if counterparty_lightning_id:
             self.payload["counterparty_lightning_id"] = counterparty_lightning_id
+            self.document.counterparty_lightning_id = counterparty_lightning_id
         if self.document.counterparty_role == "performer":
             performer_lightning = form.cleaned_data.get("performer_lightning_address")
             if performer_lightning:
