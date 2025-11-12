@@ -285,26 +285,7 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     flowables = _markdown_to_flowables(work_log, styles, width)
     if not flowables:
         return []
-    table_rows = [[flowable] for flowable in flowables]
-    boxed_content = Table(
-        table_rows,
-        colWidths=[width],
-        hAlign="LEFT",
-    )
-    boxed_content.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, -1), colors.whitesmoke),
-                ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#F8FAFC")]),
-                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#CBD5F5")),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-            ]
-        )
-    )
-    flow.append(boxed_content)
+    flow.extend(flowables)
     flow.append(Spacer(1, 6))
     return flow
 
