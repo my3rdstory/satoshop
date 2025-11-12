@@ -233,10 +233,9 @@
     box-shadow: 0 15px 32px rgba(15, 23, 42, 0.1);
 }
 
-.worklog-preview .markdown-content,
-.worklog-preview {
+.worklog-preview .markdown-content {
     background: transparent;
-    color: #0f172a;
+    color: inherit;
 }
 
 .worklog-preview strong {
