@@ -28,6 +28,46 @@ a {
     color: rgba(226, 232, 240, 0.92);
 }
 
+.expert-navbar .navbar-menu {
+    background: transparent;
+}
+
+.expert-navbar .navbar-menu .navbar-item {
+    color: rgba(226, 232, 240, 0.92);
+}
+
+.expert-navbar .navbar-menu .button.is-light {
+    background: rgba(15, 23, 42, 0.6);
+    color: rgba(248, 250, 252, 0.95);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.expert-navbar .navbar-menu .button.is-light.is-outlined {
+    background: transparent;
+}
+
+@media (max-width: 1023px) {
+    .expert-navbar .navbar-menu {
+        background: rgba(3, 7, 18, 0.95);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        padding: 1rem 1.25rem 1.5rem;
+        border-bottom-left-radius: 18px;
+        border-bottom-right-radius: 18px;
+    }
+    .expert-navbar .navbar-menu .navbar-item {
+        color: rgba(248, 250, 252, 0.95);
+        border-radius: 10px;
+        margin-bottom: 0.35rem;
+    }
+    .expert-navbar .navbar-menu .navbar-item:hover {
+        background: rgba(59, 130, 246, 0.15);
+        color: #f8fafc;
+    }
+    .expert-navbar .navbar-menu .button.is-light {
+        background: rgba(15, 23, 42, 0.85);
+    }
+}
+
 .navbar-user-tag {
     color: rgba(226, 232, 240, 0.85);
     margin-right: 0.75rem;
@@ -71,6 +111,28 @@ a {
 .navbar-burger {
     cursor: pointer;
     color: rgba(226, 232, 240, 0.92);
+    border-radius: 10px;
+    padding: 0.5rem;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.navbar-burger span {
+    background-color: rgba(248, 250, 252, 0.92);
+}
+
+.navbar-burger:hover,
+.navbar-burger:focus {
+    background: rgba(59, 130, 246, 0.15);
+    color: #f8fafc;
+}
+
+.navbar-burger.is-active {
+    background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc;
+}
+
+.navbar-burger.is-active span {
+    background-color: #f8fafc;
 }
 
 .title {
