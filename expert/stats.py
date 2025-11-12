@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import timedelta
-from typing import Dict, Iterable
+from datetime import timedelta, datetime
+from typing import Dict, Iterable, List
 
 from django.db.models import Count
 from django.utils import timezone
@@ -39,21 +39,22 @@ def _safe_parse_datetime(raw_value):
     return dt
 
 
-def aggregate_payment_stats(*, window_days: int = 30) -> Dict:
-    documents = DirectContractDocument.objects.exclude(payment_meta__isnull=True)
-    records = list(_iter_payment_records(documents))
-    now = timezone.now()
-    window_start = now - timedelta(days=window_days)
-
-    total_amount = sum(record["amount"] for record in records)
-    total_count = len(records)
-
-    recent_amount = sum(record["amount"] for record in records if record["paid_at"] and record["paid_at"] >= window_start)
-    recent_count = sum(1 for record in records if record["paid_at"] and record["paid_at"] >= window_start)
-
+def _summarize_records(records: List[Dict], *, window_start=None) -> Dict:
     role_breakdown: Dict[str, int] = defaultdict(int)
+    total_amount = 0
+    total_count = 0
+    recent_amount = 0
+    recent_count = 0
+
     for record in records:
-        role_breakdown[record["role"]] += record["amount"]
+        amount = record["amount"]
+        total_amount += amount
+        total_count += 1
+        role_breakdown[record["role"]] += amount
+        paid_at = record.get("paid_at")
+        if window_start and paid_at and paid_at >= window_start:
+            recent_amount += amount
+            recent_count += 1
 
     return {
         "total_amount_sats": total_amount,
@@ -61,8 +62,84 @@ def aggregate_payment_stats(*, window_days: int = 30) -> Dict:
         "recent_amount_sats": recent_amount,
         "recent_count": recent_count,
         "role_breakdown": dict(role_breakdown),
-        "window_days": window_days,
     }
+
+
+def _build_month_options(records: List[Dict]) -> List[Dict]:
+    month_map: Dict[str, str] = {}
+    tz = timezone.get_current_timezone()
+    for record in records:
+        paid_at = record.get("paid_at")
+        if not paid_at:
+            continue
+        local_dt = timezone.localtime(paid_at, tz)
+        slug = local_dt.strftime("%Y-%m")
+        month_map[slug] = local_dt.strftime("%Y년 %m월")
+    options = [
+        {"value": slug, "label": label}
+        for slug, label in sorted(month_map.items(), key=lambda item: item[0], reverse=True)
+    ]
+    return options
+
+
+def _filter_records_by_month(records: List[Dict], month_slug: str) -> List[Dict]:
+    try:
+        year, month = map(int, month_slug.split("-"))
+        if month < 1 or month > 12:
+            raise ValueError
+    except ValueError:
+        return []
+    tz = timezone.get_current_timezone()
+    start = datetime(year, month, 1, tzinfo=tz)
+    if month == 12:
+        end = datetime(year + 1, 1, 1, tzinfo=tz)
+    else:
+        end = datetime(year, month + 1, 1, tzinfo=tz)
+    filtered: List[Dict] = []
+    for record in records:
+        paid_at = record.get("paid_at")
+        if not paid_at:
+            continue
+        local_dt = timezone.localtime(paid_at, tz)
+        if start <= local_dt < end:
+            filtered.append(record)
+    return filtered
+
+
+def aggregate_payment_stats(*, window_days: int = 30, month_slug: str | None = None) -> Dict:
+    documents = DirectContractDocument.objects.exclude(payment_meta__isnull=True)
+    records = list(_iter_payment_records(documents))
+    now = timezone.now()
+    window_start = now - timedelta(days=window_days)
+
+    summary = _summarize_records(records, window_start=window_start)
+    summary["window_days"] = window_days
+
+    month_options = _build_month_options(records)
+    month_summary = None
+    if month_slug:
+        month_slug = month_slug.strip()
+    if month_slug:
+        selected_option = next((opt for opt in month_options if opt["value"] == month_slug), None)
+        if selected_option:
+            filtered_records = _filter_records_by_month(records, month_slug)
+            month_summary = _summarize_records(filtered_records, window_start=None)
+            month_summary.update(
+                {
+                    "label": selected_option["label"],
+                    "slug": month_slug,
+                }
+            )
+
+    summary.update(
+        {
+            "month_options": month_options,
+            "selected_month": month_summary["slug"] if month_summary else "",
+            "selected_month_label": month_summary["label"] if month_summary else "",
+            "filtered_stats": month_summary,
+        }
+    )
+    return summary
 
 
 def aggregate_usage_stats(*, window_days: int = 30) -> Dict:

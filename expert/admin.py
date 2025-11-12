@@ -151,7 +151,9 @@ class BlinkRevenueStatsAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         context = extra_context or {}
-        context["stats"] = aggregate_payment_stats()
+        month_slug = request.GET.get("month") or None
+        context["stats"] = aggregate_payment_stats(month_slug=month_slug)
+        context["selected_month"] = month_slug or ""
         context["title"] = "Blink 수수료 통계"
         return super().changelist_view(request, extra_context=context)
 
