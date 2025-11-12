@@ -611,6 +611,16 @@
     color: #f87171;
 }
 
+.worklog-counter-note {
+    display: inline-block;
+    margin-left: 0.35rem;
+    color: inherit;
+}
+
+.worklog-counter-note[hidden] {
+    display: none;
+}
+
 
 @media screen and (max-width: 1024px) {
     .modal-spec-list {

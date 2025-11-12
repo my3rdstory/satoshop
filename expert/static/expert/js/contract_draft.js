@@ -62,6 +62,7 @@ let roleEmailHelpTexts = [];
 const WORKLOG_MAX_LENGTH = 10000;
 const worklogLengthFormatter = new Intl.NumberFormat('ko-KR');
 let worklogCounterNode = null;
+let worklogNoteNode = null;
 let suppressWorklogEditorChange = false;
 
 const attachmentConfig = {
@@ -92,18 +93,29 @@ function clampWorklogValue(value) {
     return value.slice(0, WORKLOG_MAX_LENGTH);
 }
 
-function updateWorklogCounterDisplay(length) {
+function updateWorklogCounterDisplay(length, truncated = false) {
     if (!worklogCounterNode) {
         worklogCounterNode = document.querySelector('[data-worklog-remaining]');
     }
     if (!worklogCounterNode) {
         return;
     }
+    if (!worklogNoteNode) {
+        worklogNoteNode = document.querySelector('[data-worklog-note]');
+    }
     const remaining = Math.max(WORKLOG_MAX_LENGTH - length, 0);
     worklogCounterNode.textContent = worklogLengthFormatter.format(remaining);
     const wrapper = worklogCounterNode.closest('[data-worklog-counter-wrapper]');
     if (wrapper) {
         wrapper.dataset.remaining = String(remaining);
+        wrapper.dataset.truncated = truncated ? 'true' : 'false';
+    }
+    if (worklogNoteNode) {
+        if (truncated) {
+            worklogNoteNode.hidden = false;
+        } else {
+            worklogNoteNode.hidden = true;
+        }
     }
 }
 
@@ -898,21 +910,24 @@ function initWorkLogEditor() {
     };
 
     const applyValue = (rawValue) => {
-        const normalized = clampWorklogValue(rawValue || '');
+        const source = rawValue || '';
+        const normalized = clampWorklogValue(source);
+        const truncated = normalized.length < source.length;
         if (textarea.value !== normalized) {
             textarea.value = normalized;
         }
         syncPreview(normalized);
-        updateWorklogCounterDisplay(normalized.length);
-        return normalized;
+        updateWorklogCounterDisplay(normalized.length, truncated);
+        return { value: normalized, truncated };
     };
 
-    const initialValue = applyValue(textarea.value || '');
+    const { value: initialValue } = applyValue(textarea.value || '');
 
     if (typeof EasyMDE === 'undefined') {
         textarea.addEventListener('input', (event) => {
             const currentValue = event.target.value || '';
             const normalized = clampWorklogValue(currentValue);
+            const truncated = normalized.length < currentValue.length;
             if (normalized !== currentValue) {
                 const caretPosition = Math.min(normalized.length, event.target.selectionStart || normalized.length);
                 event.target.value = normalized;
@@ -925,7 +940,7 @@ function initWorkLogEditor() {
                 });
             }
             syncPreview(normalized);
-            updateWorklogCounterDisplay(normalized.length);
+            updateWorklogCounterDisplay(normalized.length, truncated);
         });
         return;
     }
@@ -948,6 +963,7 @@ function initWorkLogEditor() {
         }
         let currentValue = workLogEditor.value() || '';
         const normalized = clampWorklogValue(currentValue);
+        const truncated = normalized.length < currentValue.length;
         if (normalized !== currentValue) {
             suppressWorklogEditorChange = true;
             workLogEditor.value(normalized);
@@ -956,7 +972,7 @@ function initWorkLogEditor() {
         }
         textarea.value = currentValue;
         syncPreview(currentValue);
-        updateWorklogCounterDisplay(currentValue.length);
+        updateWorklogCounterDisplay(currentValue.length, truncated);
     });
 }
 
