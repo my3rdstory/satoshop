@@ -77,6 +77,7 @@ def render_contract_markdown(text: str) -> str:
             "markdown.extensions.nl2br",
             "markdown.extensions.codehilite",
             "markdown.extensions.sane_lists",
+            "markdown.extensions.extra",
         ],
         extension_configs={
             "markdown.extensions.codehilite": {
