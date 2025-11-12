@@ -146,7 +146,6 @@ def _serialize_pricing(pricing: Optional[ContractPricingSetting]) -> Optional[Di
         "name": pricing.name,
         "client_fee_sats": pricing.client_fee_sats,
         "performer_fee_sats": pricing.performer_fee_sats,
-        "updated_at": pricing.updated_at,
         "enabled": pricing.enabled,
     }
 
