@@ -21,8 +21,6 @@ const initSignaturePads = () => {
         const clearButton = form.querySelector('[data-signature-clear]');
         const confirmInputs = form.querySelectorAll('[data-signature-confirm]');
         const submitButton = form.querySelector('[data-signature-submit]');
-        const previewWrapper = form.querySelector('[data-signature-preview]');
-        const previewImage = form.querySelector('[data-signature-preview-img]');
         const resolvePaymentStatusInput = () => form.querySelector('[data-payment-status-input]');
 
         if (!hiddenInput || !submitButton) {
@@ -33,19 +31,6 @@ const initSignaturePads = () => {
             backgroundColor: 'rgba(15, 23, 42, 0.9)',
             penColor: '#22d3ee',
         });
-
-        function updatePreview(dataUrl) {
-            if (!previewWrapper || !previewImage) {
-                return;
-            }
-            if (dataUrl && dataUrl.startsWith('data:image/')) {
-                previewWrapper.hidden = false;
-                previewImage.src = dataUrl;
-            } else {
-                previewWrapper.hidden = true;
-                previewImage.src = '';
-            }
-        }
 
         function updateButtonState() {
             const hasDataUrl = hiddenInput.value && hiddenInput.value.startsWith('data:image/');
@@ -71,12 +56,9 @@ const initSignaturePads = () => {
             signaturePad.clear();
             if (data && data.length) {
                 signaturePad.fromData(data);
-                const dataUrl = signaturePad.toDataURL('image/png');
-                hiddenInput.value = dataUrl;
-                updatePreview(dataUrl);
+                hiddenInput.value = signaturePad.toDataURL('image/png');
             } else {
                 hiddenInput.value = '';
-                updatePreview('');
             }
             updateButtonState();
         };
@@ -87,7 +69,6 @@ const initSignaturePads = () => {
         signaturePad.onEnd = () => {
             const dataUrl = signaturePad.toDataURL('image/png');
             hiddenInput.value = dataUrl;
-            updatePreview(dataUrl);
             updateButtonState();
         };
 
@@ -96,7 +77,6 @@ const initSignaturePads = () => {
                 event.preventDefault();
                 signaturePad.clear();
                 hiddenInput.value = '';
-                updatePreview('');
                 updateButtonState();
             });
         }
@@ -113,9 +93,6 @@ const initSignaturePads = () => {
             paymentStatusInput.addEventListener('change', updateButtonState);
         }
 
-        if (hiddenInput.value) {
-            updatePreview(hiddenInput.value);
-        }
         updateButtonState();
 
         form.addEventListener('submit', () => {

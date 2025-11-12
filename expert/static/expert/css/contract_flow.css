@@ -406,32 +406,6 @@
     }
 }
 
-.signature-preview {
-    background: rgba(15, 23, 42, 0.7);
-    border: 1px solid rgba(94, 234, 212, 0.35);
-    border-radius: 14px;
-    padding: 1rem;
-    margin-top: 1rem;
-}
-
-.signature-preview-label {
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(148, 163, 184, 0.8);
-    margin-bottom: 0.5rem;
-}
-
-.signature-preview img {
-    width: 100%;
-    max-height: 220px;
-    object-fit: contain;
-    border-radius: 10px;
-    background: rgba(2, 6, 23, 0.85);
-    border: 1px solid rgba(59, 130, 246, 0.25);
-    padding: 0.5rem;
-}
-
 .signature-record {
     background: rgba(11, 21, 40, 0.8);
     border: 1px solid rgba(59, 130, 246, 0.25);
