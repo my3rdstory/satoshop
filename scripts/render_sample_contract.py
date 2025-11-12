@@ -18,6 +18,11 @@ django.setup()
 
 from expert.contract_flow import render_contract_pdf  # noqa: E402
 
+DOCS_DIR = (BASE_DIR / "expert" / "docs")
+DOCS_DIR.mkdir(parents=True, exist_ok=True)
+WORKLOG_MD_PATH = DOCS_DIR / "sample_worklog.md"
+
+
 class DummyDocument(SimpleNamespace):
     """간단한 계약 객체 Mock."""
 
@@ -46,7 +51,7 @@ def build_sample_document() -> DummyDocument:
                 "condition": "테스트용 인보이스 발행 및 설명서 전달",
             },
         ],
-        "work_log_markdown": (BASE_DIR / "sample_worklog.md").read_text(encoding="utf-8"),
+        "work_log_markdown": WORKLOG_MD_PATH.read_text(encoding="utf-8"),
     }
     return DummyDocument(
         payload=payload,
@@ -82,7 +87,7 @@ def main():
     output = render_contract_pdf(document, contract_markdown)
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     suffix = secrets.token_hex(3)
-    output_path = BASE_DIR / f"expert-worklog-sample-{timestamp}-{suffix}.pdf"
+    output_path = DOCS_DIR / f"expert-worklog-sample-{timestamp}-{suffix}.pdf"
     with output_path.open("wb") as fp:
         fp.write(output.read())
     print(f"[✓] 샘플 계약 PDF 생성: {output_path}")
