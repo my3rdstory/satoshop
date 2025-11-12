@@ -561,11 +561,15 @@
         padding: 0.35rem 0;
         text-align: right;
     }
+    .contract-library-table td {
+        padding: 0.65rem 0;
+    }
     .contract-library-table td::before {
         content: attr(data-label);
         font-weight: 600;
         float: left;
         text-transform: none;
         color: rgba(148, 163, 184, 0.95);
+        margin-right: 0.75rem;
     }
 }
