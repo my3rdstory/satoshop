@@ -114,11 +114,7 @@ class PaymentWidgetContext:
 
 
 def get_active_pricing() -> Optional[ContractPricingSetting]:
-    return (
-        ContractPricingSetting.objects.filter(enabled=True)
-        .order_by("-updated_at")
-        .first()
-    )
+    return ContractPricingSetting.objects.filter(enabled=True).order_by("-pk").first()
 
 
 def get_required_amount(pricing: Optional[ContractPricingSetting], role: str) -> int:
