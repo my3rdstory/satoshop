@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os
+import secrets
 import sys
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -71,14 +73,16 @@ def main():
 ## 3. 일정 및 커뮤니케이션
 
 - 주 2회 진행 상황 공유 (화/목)
-- 급한 이슈는 Mattermost `#expert-support` 채널 이용
+- 급한 이슈는 Mattermost expert-support 채널 이용
 
 ## 4. 비밀 유지
 
 테스트에 사용된 Blink 자격 증명, 계약 초안은 외부 공유를 금지한다.
 """
     output = render_contract_pdf(document, contract_markdown)
-    output_path = BASE_DIR / "sample-contract.pdf"
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    suffix = secrets.token_hex(3)
+    output_path = BASE_DIR / f"expert-worklog-sample-{timestamp}-{suffix}.pdf"
     with output_path.open("wb") as fp:
         fp.write(output.read())
     print(f"[✓] 샘플 계약 PDF 생성: {output_path}")

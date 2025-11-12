@@ -15,6 +15,11 @@ import markdown
 from django.core.files.base import ContentFile
 from django.utils import timezone
 
+try:  # noqa: SIM105
+    from bleach._vendor import html5lib
+except ImportError:  # pragma: no cover
+    html5lib = None
+
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT
 from reportlab.lib.styles import ListStyle, ParagraphStyle
@@ -290,6 +295,22 @@ def _build_worklog_section(payload: Dict, styles: Dict[str, ParagraphStyle], wid
     return flow
 
 
+def _build_section_divider(width: float) -> Table:
+    divider = Table(
+        [[""]],
+        colWidths=[width],
+        style=TableStyle(
+            [
+                ("LINEBELOW", (0, 0), (-1, -1), 0.8, colors.HexColor("#CBD5F5")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+            ]
+        ),
+        hAlign="LEFT",
+    )
+    return divider
+
+
 def _build_payment_section(payload: Dict, styles: Dict[str, ParagraphStyle], width: float) -> List:
     flow: List = []
     milestones = payload.get("milestones") or []
@@ -546,17 +567,29 @@ def _markdown_to_flowables(markdown_text: str, styles: Dict[str, ParagraphStyle]
             "markdown.extensions.nl2br",
             "markdown.extensions.sane_lists",
         ],
-        output_format="html5",
+        output_format="xhtml",
     )
-    wrapped_html = f"<root>{html_text}</root>"
     try:
-        root = ET.fromstring(wrapped_html)
+        if html5lib is not None:
+            parser = html5lib.HTMLParser(
+                tree=html5lib.getTreeBuilder("etree"),
+                namespaceHTMLElements=False,
+            )
+            root = parser.parseFragment(html_text)
+        else:
+            wrapped_html = f"<root>{html_text}</root>"
+            root = ET.fromstring(wrapped_html)
     except ET.ParseError:
-        return [Paragraph(markdown_text, styles["Body"])]
+        safe_text = html.escape(markdown_text).replace("\n", "<br/>")
+        return [Paragraph(safe_text, styles["Body"])]
     flowables: List = []
+    if root.text and root.text.strip():
+        flowables.append(Paragraph(html.escape(root.text.strip()), styles["Body"]))
     for child in list(root):
         flowables.extend(_element_to_flowables(child, styles, width))
         flowables.append(Spacer(1, 6))
+        if child.tail and child.tail.strip():
+            flowables.append(Paragraph(html.escape(child.tail.strip()), styles["Body"]))
     if flowables and isinstance(flowables[-1], Spacer):
         flowables.pop()
     return flowables
@@ -778,17 +811,21 @@ def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
 
     payment_flow = _build_payment_section(payload, styles, doc.width)
     if payment_flow:
+        story.append(_build_section_divider(doc.width))
         story.extend(payment_flow)
 
     worklog_flow = _build_worklog_section(payload, styles, doc.width)
     if worklog_flow:
+        story.append(_build_section_divider(doc.width))
         story.extend(worklog_flow)
 
     contract_flow = _markdown_to_flowables(contract_markdown, styles, doc.width)
     if contract_flow:
+        story.append(_build_section_divider(doc.width))
         story.append(Paragraph("<b>Ⅱ. 계약 본문</b>", styles["PrimaryHeading"]))
         story.extend(contract_flow)
 
+    story.append(_build_section_divider(doc.width))
     story.extend(_build_signature_section(document, styles, doc.width))
 
     doc.build(story)

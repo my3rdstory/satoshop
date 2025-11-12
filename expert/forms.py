@@ -106,7 +106,7 @@ class ContractDraftForm(forms.Form):
                 "placeholder": "최대 10,000자까지 작성 가능합니다. Markdown 형식을 사용할 수 있어요.",
             }
         ),
-        help_text="최대 10,000자까지 입력 가능하며 Markdown을 지원합니다.",
+        help_text="최대 10,000자까지 입력 가능하며 Markdown(.md)만 지원합니다. HTML 태그는 사용하지 말고 Markdown 문법으로 작성해주세요.",
     )
     agree_privacy = forms.BooleanField(
         label="개인정보 수집 및 이용에 동의합니다.",
