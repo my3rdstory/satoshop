@@ -62,13 +62,22 @@ const initSignaturePads = () => {
         }
 
         const resizeCanvas = () => {
+            const data = signaturePad.toData();
             const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
+            const { offsetWidth, offsetHeight } = canvas;
+            canvas.width = offsetWidth * ratio;
+            canvas.height = offsetHeight * ratio;
             canvas.getContext('2d').scale(ratio, ratio);
             signaturePad.clear();
-            hiddenInput.value = '';
-            updatePreview('');
+            if (data && data.length) {
+                signaturePad.fromData(data);
+                const dataUrl = signaturePad.toDataURL('image/png');
+                hiddenInput.value = dataUrl;
+                updatePreview(dataUrl);
+            } else {
+                hiddenInput.value = '';
+                updatePreview('');
+            }
             updateButtonState();
         };
 
