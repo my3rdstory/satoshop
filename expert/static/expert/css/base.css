@@ -36,6 +36,12 @@ a {
     color: rgba(226, 232, 240, 0.92);
 }
 
+.expert-navbar .navbar-menu .navbar-item:hover,
+.expert-navbar .navbar-menu .navbar-item:focus {
+    background: rgba(59, 130, 246, 0.15);
+    color: #f8fafc;
+}
+
 .expert-navbar .navbar-menu .button.is-light {
     background: rgba(15, 23, 42, 0.6);
     color: rgba(248, 250, 252, 0.95);
