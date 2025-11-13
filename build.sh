@@ -17,8 +17,17 @@ echo "🔧 시스템 의존성 확인 중..."
 if command -v apt-get >/dev/null 2>&1; then
     echo "📦 시스템 패키지 설치 중..."
     set -o pipefail
-    apt-get update -qq
-    apt-get install -y --no-install-recommends \
+    APT_STATE_DIR=$(mktemp -d /tmp/apt-state-XXXXXX)
+    mkdir -p "$APT_STATE_DIR/lists/partial" "$APT_STATE_DIR/archives/partial"
+    APT_OPTS=(
+        "-o" "Dir::State=$APT_STATE_DIR"
+        "-o" "Dir::State::Lists=$APT_STATE_DIR/lists"
+        "-o" "Dir::State::Status=$APT_STATE_DIR/status"
+        "-o" "Dir::Cache=$APT_STATE_DIR/cache"
+        "-o" "Dir::Cache::Archives=$APT_STATE_DIR/archives"
+    )
+    apt-get "${APT_OPTS[@]}" update -qq
+    apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
         libsecp256k1-dev \
         pandoc \
         fonts-noto-cjk \
@@ -27,6 +36,7 @@ if command -v apt-get >/dev/null 2>&1; then
         build-essential \
         libffi-dev \
         python3-dev
+    rm -rf "$APT_STATE_DIR"
 else
     echo "⚠️ apt-get을 찾을 수 없어 시스템 패키지를 설치하지 못했습니다."
     echo "❌ pandoc/xelatex을 설치할 수 없어 빌드를 중단합니다."
