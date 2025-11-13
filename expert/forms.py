@@ -181,6 +181,8 @@ class CounterpartySignatureForm(forms.Form):
             self.fields["signature_data"].required = False
         if self.require_performer_lightning:
             self.fields["performer_lightning_address"].required = True
+        else:
+            self.fields.pop("performer_lightning_address", None)
 
     agree_reviewed = forms.BooleanField(
         label="계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.",
@@ -219,14 +221,6 @@ class CounterpartySignatureForm(forms.Form):
         required=True,
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
-
-    def __init__(self, *args, **kwargs):
-        self.require_performer_lightning = kwargs.pop("require_performer_lightning", False)
-        super().__init__(*args, **kwargs)
-        if not self.require_performer_lightning:
-            self.fields.pop("performer_lightning_address", None)
-        else:
-            self.fields["performer_lightning_address"].required = True
 
     def clean_signature_data(self):
         data = self.cleaned_data.get("signature_data")

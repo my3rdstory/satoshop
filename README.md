@@ -774,6 +774,13 @@ SiteSettings ──→ ExchangeRate
 3. 화면이 오류 없이 완료되고 `PaymentStageLog`의 `ORDER_FINALIZE` 단계에 `merged_existing_order: true`와 `cancelled_duplicate_order_id` 정보가 기록되는지 확인합니다.
 4. Django Admin의 `LiveLectureOrder` 목록을 확인해 `pending`이던 주문이 `cancelled`로 전환되고, 기존 확정 주문에 최신 결제 정보가 병합됐는지 검증합니다.
 
+### 수동 테스트 체크리스트 (Expert 직접 계약 초대 링크)
+
+1. Expert > 계약 라이브러리에서 수행자 역할을 `performer`로 지정한 직접 계약을 생성하고 공유 링크를 복사합니다.
+2. 생성자가 최종 서명을 완료한 뒤 동일 링크를 브라우저에서 열어 초대 페이지가 500 오류 없이 렌더링되는지 확인합니다.
+3. 상대방 역할이 `performer`일 때만 라이트닝 주소 입력 필드가 노출되고, 다른 역할에서는 필드가 숨겨지는지 점검합니다.
+4. 기존 서명이 저장된 상태(`counterparty_signature_optional = True`)에서 서명 패드를 비워둔 채 동의 체크박스와 라이트닝 주소만 제출하여 오류 없이 계약서 생성 단계가 마무리되는지 확인합니다.
+
 2. **브랜치 관리**
    - main 브랜치는 운영 배포용으로만 사용
    - dev 브랜치에서 모든 개발 및 테스트 진행
