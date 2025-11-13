@@ -83,7 +83,6 @@ ipython_config.py
 
 # Build helper artifacts
 expert/fonts/*.otf
-expert/fonts/*.ttf
 expert/deps/pandoc-*/
 expert/deps/TinyTeX/
 
