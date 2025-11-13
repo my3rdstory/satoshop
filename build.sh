@@ -12,59 +12,13 @@ fi
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
-DEPS_DIR="$PWD/expert/deps"
-PANDOC_VERSION="3.1.12.2"
-PANDOC_DIR="$DEPS_DIR/pandoc-${PANDOC_VERSION}"
-PANDOC_ARCHIVE="$DEPS_DIR/sources/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"
-TINY_TEX_DIR="$DEPS_DIR/TinyTeX"
-TINY_TEX_ARCHIVE="$DEPS_DIR/sources/TinyTeX.tar.gz"
 FONT_DIR="$PWD/expert/fonts"
-
-echo "🔧 Pandoc/TinyTeX 의존성 확인 중..."
-if [ ! -x "$PANDOC_DIR/bin/pandoc" ]; then
-    if [ -f "$PANDOC_ARCHIVE" ]; then
-        echo "📦 Pandoc 압축을 해제합니다..."
-        tar -xzf "$PANDOC_ARCHIVE" -C "$DEPS_DIR"
-    else
-        echo "❌ $PANDOC_ARCHIVE 파일이 필요합니다. README 지침으로 준비해주세요."
-        exit 1
-    fi
-fi
-export PATH="$PANDOC_DIR/bin:$PATH"
-
-if [ ! -x "$TINY_TEX_DIR/bin/x86_64-linux/xelatex" ] && [ ! -x "$TINY_TEX_DIR/bin/x86_64-linuxmusl/xelatex" ]; then
-    if [ -f "$TINY_TEX_ARCHIVE" ]; then
-        echo "📦 TinyTeX 압축을 해제합니다..."
-        tar -xzf "$TINY_TEX_ARCHIVE" -C "$DEPS_DIR"
-        if [ -d "$DEPS_DIR/.TinyTeX" ]; then
-            mv "$DEPS_DIR/.TinyTeX" "$TINY_TEX_DIR"
-        fi
-    else
-        echo "❌ $TINY_TEX_ARCHIVE 파일이 필요합니다. README 지침으로 준비해주세요."
-        exit 1
-    fi
-fi
-
-tlmgr_bin=""
-for candidate in "$TINY_TEX_DIR/bin/x86_64-linux" "$TINY_TEX_DIR/bin/x86_64-linuxmusl"; do
-    if [ -x "$candidate/xelatex" ]; then
-        tlmgr_bin="$candidate"
-        break
-    fi
-done
-if [ -z "$tlmgr_bin" ]; then
-    echo "❌ TinyTeX 실행 파일을 찾을 수 없습니다. README 지침대로 파일을 준비해주세요."
-    exit 1
-fi
-export PATH="$tlmgr_bin:$PATH"
 
 if [ ! -f "$FONT_DIR/NotoSansKR-Regular.ttf" ] || [ ! -f "$FONT_DIR/NotoSansKR-Bold.ttf" ]; then
     echo "❌ expert/fonts 폴더에 NotoSansKR-Regular/Bold.ttf가 필요합니다. README 명령으로 준비해주세요."
     exit 1
 fi
 export OSFONTDIR="$FONT_DIR:${OSFONTDIR:-}"
-echo "✅ Pandoc 경로: $(which pandoc)"
-echo "✅ XeLaTeX 경로: $(which xelatex)"
 
 echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치

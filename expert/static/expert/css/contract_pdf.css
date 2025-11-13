@@ -1,0 +1,71 @@
+@page {
+    size: A4;
+    margin: 20mm;
+}
+
+body {
+    font-family: 'ContractSans', 'Noto Sans KR', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #0f172a;
+    font-size: 12pt;
+    line-height: 1.6;
+}
+
+.contract-header {
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 12mm;
+    padding-bottom: 6mm;
+}
+
+.contract-title {
+    font-size: 18pt;
+    font-weight: 700;
+    margin: 0 0 4pt;
+}
+
+.contract-meta {
+    font-size: 11pt;
+    color: #475569;
+    margin: 0;
+}
+
+.contract-body h1,
+.contract-body h2,
+.contract-body h3,
+.contract-body h4 {
+    color: #0f172a;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+}
+
+.contract-body p {
+    margin: 6pt 0;
+}
+
+.contract-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8pt 0 12pt;
+    font-size: 11pt;
+}
+
+.contract-body table th,
+.contract-body table td {
+    border: 1px solid #94a3b8;
+    padding: 6pt 8pt;
+    vertical-align: top;
+}
+
+.contract-body table th {
+    background: #e2e8f0;
+    font-weight: 600;
+    text-align: left;
+}
+
+.contract-footer {
+    border-top: 1px solid #cbd5f5;
+    margin-top: 12mm;
+    padding-top: 4mm;
+    font-size: 10pt;
+    color: #64748b;
+    text-align: center;
+}

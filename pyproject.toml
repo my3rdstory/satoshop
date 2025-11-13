@@ -26,6 +26,7 @@ dependencies = [
     "reportlab>=4.1.0",
     "pypdf>=5.1.0",
     "pyhanko>=0.31.0",
+    "weasyprint>=66.0",
 ]
 
 [tool.uv.workspace]

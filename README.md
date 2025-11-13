@@ -518,24 +518,17 @@ SECURE_SSL_REDIRECT=True
 - **앱 비밀번호**: 2단계 인증 후 생성한 앱 전용 비밀번호 사용
 - **수신 이메일**: 사이트 설정에서 알림 받을 이메일 주소 설정
 
-#### Expert 계약 이메일 & 채팅
 - **서명 자산 S3 저장**: `DirectContractDocument`의 자필 서명 이미지는 S3 호환 오브젝트 스토리지(`expert/contracts/signatures/…`)에 업로드되어야 하며, 프로덕션에서는 `EXPERT_SIGNATURE_MEDIA_FALLBACK=False`로 설정해 로컬 저장을 차단하세요.
 - **실시간 채팅**: `/expert/contracts/<UUID>/` 페이지에서 웹소켓 기반 실시간 채팅을 제공합니다. 프로덕션 환경에서는 `CHANNEL_REDIS_URL` 환경 변수를 Redis 연결 문자열로 설정해 주십시오. (미설정 시 개발 편의용 In-Memory 채널 레이어가 사용됩니다.)
 - **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
-- **최종 계약서 Pandoc 렌더링**: 계약 본문은 Pandoc이 Markdown → PDF로 변환합니다. `build.sh`가 자동으로 최신 Pandoc 바이너리·TinyTeX·Noto CJK 폰트를 `expert/deps/`/`expert/fonts/` 아래에 내려받아 PATH/OSFONTDIR을 구성하므로 추가 시스템 패키지는 필요하지 않습니다. 렌더링 시에는 `expert/fonts/` 경로를 `Path=...`/`BoldFont=...` 옵션으로 직접 주입하고, 번들 폰트 파일명(예: `NotoSansKR-Regular.ttf`)을 mainfont 변수에 자동 지정하므로 `EXPERT_PANDOC_FONT_FAMILY`를 어떤 값으로 두더라도 시스템 전역 설치 없이 PDF가 생성됩니다. 오프라인/차단 환경에서는 아래 명령으로 수동 준비 후 커밋하면 됩니다.
-  ```
-  aria2c -x4 -s4 -d expert/deps/sources -o pandoc-3.1.12.2-linux-amd64.tar.gz https://github.com/jgm/pandoc/releases/download/3.1.12.2/pandoc-3.1.12.2-linux-amd64.tar.gz && tar -xzf expert/deps/sources/pandoc-3.1.12.2-linux-amd64.tar.gz -C expert/deps
-  aria2c -x4 -s4 -d expert/deps/sources -o TinyTeX.tar.gz https://yihui.org/tinytex/TinyTeX-1.tar.gz && tar -xzf expert/deps/sources/TinyTeX.tar.gz -C expert/deps && mv expert/deps/.TinyTeX expert/deps/TinyTeX
-  aria2c -x4 -s4 -d expert/fonts -o NotoSansKR-Regular.ttf http://192.168.1.2:8000/NotoSansKR-Regular.ttf
-  aria2c -x4 -s4 -d expert/fonts -o NotoSansKR-Bold.ttf http://192.168.1.2:8000/NotoSansKR-Bold.ttf
-  ```
-  - 기본값으로는 CJK 전용 LaTeX 매크로를 비활성화하여 TinyTeX 번들에 `xeCJK`/`ctex` 패키지가 없어도 PDF가 생성됩니다. 만약 해당 패키지를 설치한 환경이라면 `EXPERT_PANDOC_ENABLE_CJK=1`을 설정해 `\setCJKmainfont`/`\setCJKsansfont` 지정 기능을 다시 사용할 수 있습니다.
-  - 라이트닝/스토어 지표 설명 등에서 사용하는 이모지는 번들 폰트에 없으면 XeLaTeX이 실패하므로, 계약 Markdown 렌더링 전에 자동으로 제거됩니다.
-  바이너리 경로나 엔진을 바꾸려면 `EXPERT_PANDOC_PATH`, `EXPERT_PANDOC_PDF_ENGINE` 환경 변수를, 추가 옵션은 공백으로 구분해 `EXPERT_PANDOC_EXTRA_ARGS`에 지정하세요. 여백을 조절하려면 `EXPERT_PANDOC_GEOMETRY`(예: `top=18mm,bottom=18mm,left=16mm,right=16mm`), 표 기본 정렬/LaTeX 헤더를 커스터마이징하려면 `EXPERT_PANDOC_HEADER_INCLUDES`를 `||`로 구분된 LaTeX 스니펫 목록으로 설정하면 됩니다.
+- **최종 계약서 PDF 렌더링**: 계약 본문은 Markdown → HTML 변환 후 WeasyPrint로 PDF를 생성합니다. HTML 템플릿(`expert/contract_pdf.html`)과 전용 스타일(`expert/static/expert/css/contract_pdf.css`)만 유지하면 되며, Pandoc/TinyTeX는 더 이상 필요하지 않습니다.
+  - 서버에 Cairo, Pango, libffi, libjpeg 등 WeasyPrint가 요구하는 라이브러리가 설치되어 있어야 합니다. (예: `sudo apt-get install libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libffi-dev libjpeg-dev zlib1g-dev`).
+  - `expert/fonts/` 디렉터리에 `NotoSansKR-Regular.ttf`, `NotoSansKR-Bold.ttf`를 배치하면 본문/굵은 글꼴이 자동으로 적용됩니다.
+  - 이모지를 그대로 유지하고 싶다면 Noto Color Emoji 등 컬러 이모지 폰트를 서버에 추가 설치하면 바로 반영됩니다.
 - **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. 레포의 `expert/fonts/` 폴더(비어 있음)에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
-- **새 의존성 설치**: `uv sync`를 실행하여 `channels`와 `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요. (Pandoc은 시스템 패키지로 별도 설치해야 합니다.)
+- **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab`, `weasyprint` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
 - **단계 로그 메타 뷰**: Django Admin → Expert → *직접 계약 단계 로그*에서 meta 필드가 폼 형태로 펼쳐져 결제/서명 정보를 즉시 확인할 수 있습니다.
 - **빠른 내비게이션**: Expert 상단 우측 버튼에서 `로그아웃`(항상 개요 화면으로 리다이렉션)과 `Go! 사토샵`(도메인 루트 이동)으로 바로 이동할 수 있습니다.
 - **시크릿 모드 차단**: LNURL-auth는 브라우저 저장소를 사용하므로 시크릿/프라이빗 창에서는 인증이 차단됩니다. 로그인 화면과 Expert용 라이트닝 로그인 위젯은 자동으로 프라이빗 모드를 감지해 경고를 띄우고 버튼을 비활성화하며, 라이트닝 지갑 열기 버튼은 `lightning:` 스킴으로 강제 열려 모바일 지갑에서도 바로 동작합니다.

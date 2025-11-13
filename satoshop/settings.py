@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 import time
-import shlex
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -46,19 +45,6 @@ else:
         # 아무 .env 파일도 없으면 기본 load_dotenv() 호출
         load_dotenv()
         print("🔧 기본 환경 파일 로드 시도")
-
-
-def _parse_header_includes(value: str | None) -> list[str]:
-    """환경변수에서 전달된 Pandoc header-includes를 리스트로 파싱."""
-    default_includes = [
-        r"\usepackage{etoolbox}",
-        r"\AtBeginEnvironment{longtable}{\raggedright}",
-        r"\setlength{\LTleft}{0pt}",
-        r"\setlength{\LTright}{0pt}",
-    ]
-    if not value:
-        return default_includes
-    return [item.strip() for item in value.split("||") if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
@@ -280,39 +266,7 @@ EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Exper
 EXPERT_SIGNER_CERT_PATH = os.getenv("EXPERT_SIGNER_CERT_PATH", "")
 EXPERT_SIGNER_CERT_BASE64 = os.getenv("EXPERT_SIGNER_CERT_BASE64", "")
 EXPERT_SIGNER_CERT_PASSWORD = os.getenv("EXPERT_SIGNER_CERT_PASSWORD", "")
-EXPERT_ASSET_ROOT = BASE_DIR / "expert" / "deps"
-_default_pandoc_bin = EXPERT_ASSET_ROOT / "pandoc-3.1.12.2" / "bin" / "pandoc"
-EXPERT_PANDOC_PATH = os.getenv("EXPERT_PANDOC_PATH", str(_default_pandoc_bin))
-EXPERT_PANDOC_PDF_ENGINE = os.getenv("EXPERT_PANDOC_PDF_ENGINE", "xelatex")
-EXPERT_PANDOC_EXTRA_ARGS = shlex.split(os.getenv("EXPERT_PANDOC_EXTRA_ARGS", ""))
-EXPERT_PANDOC_GEOMETRY = os.getenv(
-    "EXPERT_PANDOC_GEOMETRY",
-    "top=20mm,bottom=20mm,left=18mm,right=18mm",
-)
-EXPERT_PANDOC_HEADER_INCLUDES = _parse_header_includes(os.getenv("EXPERT_PANDOC_HEADER_INCLUDES"))
-
-_tinytex_bin_override = os.getenv("EXPERT_TINYTEX_BIN_DIR")
-if _tinytex_bin_override:
-    EXPERT_TINYTEX_BIN_DIR = _tinytex_bin_override
-else:
-    _tinytex_candidates = [
-        BASE_DIR / "expert" / "deps" / "TinyTeX" / "bin" / "x86_64-linux",
-        BASE_DIR / "expert" / "deps" / "TinyTeX" / "bin" / "x86_64-linuxmusl",
-    ]
-    EXPERT_TINYTEX_BIN_DIR = ""
-    for candidate in _tinytex_candidates:
-        if candidate.exists():
-            EXPERT_TINYTEX_BIN_DIR = str(candidate)
-            break
-
 EXPERT_FONT_DIR = os.getenv("EXPERT_FONT_DIR", str(BASE_DIR / "expert" / "fonts"))
-EXPERT_PANDOC_FONT_FAMILY = os.getenv("EXPERT_PANDOC_FONT_FAMILY", "Noto Sans KR")
-EXPERT_PANDOC_ENABLE_CJK = os.getenv("EXPERT_PANDOC_ENABLE_CJK", "").lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정
