@@ -19,7 +19,7 @@
     size: A4;
     margin: 18mm 18mm 20mm;
     @bottom-center {
-        content: "SatoShop Worklog · " counter(page) " / " counter(pages);
+        content: "SatoShop Expert Contract · " counter(page) " / " counter(pages);
         font-size: 10pt;
         color: var(--slate-400);
         letter-spacing: 0.02em;
