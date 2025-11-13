@@ -2,9 +2,11 @@ import base64
 import hashlib
 import json
 import secrets
+import os
 import shutil
 import subprocess
 import tempfile
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
@@ -21,6 +23,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 BASE_DIR = Path(__file__).resolve().parent
 FONT_BUNDLE_DIR = BASE_DIR / "fonts"
+logger = logging.getLogger(__name__)
 
 
 def _bundle_font_candidates() -> List[Path]:
@@ -296,13 +299,23 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
                 command.extend(["-V", f"header-includes:{snippet}"])
         if extra_args:
             command.extend(extra_args)
+        env = os.environ.copy()
+        tinytex_bin = getattr(settings, "EXPERT_TINYTEX_BIN_DIR", "")
+        if tinytex_bin:
+            env_path = env.get("PATH", "")
+            env["PATH"] = f"{tinytex_bin}:{env_path}" if env_path else tinytex_bin
+        font_dir = getattr(settings, "EXPERT_FONT_DIR", "")
+        if font_dir:
+            existing_font_dir = env.get("OSFONTDIR")
+            env["OSFONTDIR"] = f"{font_dir}:{existing_font_dir}" if existing_font_dir else font_dir
         try:
-            subprocess.run(command, check=True, capture_output=True)
+            subprocess.run(command, check=True, capture_output=True, env=env)
         except subprocess.CalledProcessError as exc:  # pragma: no cover - external binary
             stderr = (exc.stderr or b"").decode("utf-8", errors="ignore").strip()
             message = "Pandoc을 사용해 계약 PDF를 생성하지 못했습니다."
             if stderr:
                 message += f" (stderr: {stderr})"
+            logger.exception("Pandoc 변환 실패: %s", stderr or exc)
             raise RuntimeError(message) from exc
         if not pdf_path.exists():
             raise RuntimeError("Pandoc 실행 후 PDF 파일을 찾을 수 없습니다.")
