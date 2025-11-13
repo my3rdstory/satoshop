@@ -1,103 +1,320 @@
+:root {
+    --ink-950: #020617;
+    --ink-900: #0f172a;
+    --ink-800: #1e293b;
+    --ink-600: #475569;
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5f5;
+    --slate-400: #94a3b8;
+    --accent-500: #0ea5e9;
+    --accent-600: #0284c7;
+    --accent-700: #0369a1;
+    --warning-500: #fb923c;
+    --success-500: #10b981;
+}
+
 @page {
     size: A4;
-    margin: 20mm;
+    margin: 18mm 18mm 20mm;
     @bottom-center {
-        content: "- " counter(page) " -";
+        content: "SatoShop Worklog · " counter(page) " / " counter(pages);
         font-size: 10pt;
-        color: #94a3b8;
+        color: var(--slate-400);
+        letter-spacing: 0.02em;
     }
 }
 
 body {
     font-family: 'ContractSans', 'Noto Sans KR', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: #0f172a;
+    color: var(--ink-900);
     font-size: 10.5pt;
-    line-height: 1.5;
+    line-height: 1.55;
     text-rendering: optimizeLegibility;
     font-kerning: normal;
+    background: var(--slate-50);
+    margin: 0;
 }
 
 .contract-header {
-    border-bottom: 2px solid #0f172a;
+    border-bottom: 2px solid var(--ink-900);
     margin-bottom: 12mm;
     padding-bottom: 6mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12pt;
 }
 
 .contract-title {
     font-size: 18pt;
     font-weight: 700;
     margin: 0 0 4pt;
+    color: var(--ink-950);
 }
 
 .contract-meta {
     font-size: 11pt;
-    color: #475569;
+    color: var(--ink-600);
     margin: 0;
+}
+
+.contract-body {
+    background: #ffffff;
+    border: 1px solid var(--slate-200);
+    border-radius: 10pt;
+    padding: 16pt 18pt;
+    box-shadow: 0 8pt 28pt rgba(15, 23, 42, 0.08);
+    overflow-wrap: anywhere;
 }
 
 .contract-body h1,
 .contract-body h2,
 .contract-body h3,
-.contract-body h4 {
-    color: #0f172a;
-    margin-top: 12pt;
-    margin-bottom: 6pt;
+.contract-body h4,
+.contract-body h5,
+.contract-body h6 {
+    color: var(--ink-900);
+    margin-top: 16pt;
+    margin-bottom: 8pt;
+    line-height: 1.3;
+    font-weight: 700;
+}
+
+.contract-body h1 {
+    font-size: 20pt;
+    border-bottom: 2pt solid var(--slate-200);
+    padding-bottom: 6pt;
+}
+
+.contract-body h2 {
+    font-size: 16pt;
+    position: relative;
+    padding-bottom: 4pt;
+}
+
+.contract-body h2::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 36pt;
+    height: 2pt;
+    background: linear-gradient(90deg, var(--accent-600), transparent);
+}
+
+.contract-body h3 {
+    font-size: 13.5pt;
+    color: var(--ink-800);
 }
 
 .contract-body p {
-    margin: 6pt 0;
+    margin: 6pt 0 8pt;
+}
+
+.contract-body hr {
+    border: none;
+    height: 1pt;
+    background: linear-gradient(90deg, var(--slate-200), transparent);
+    margin: 12pt 0;
+}
+
+.contract-body blockquote {
+    margin: 8pt 0 10pt;
+    padding: 8pt 12pt;
+    border-left: 3pt solid var(--accent-500);
+    background: var(--slate-100);
+    color: var(--ink-800);
+    font-style: italic;
+}
+
+.contract-body code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'SFMono-Regular', ui-monospace, monospace;
+    background: rgba(15, 23, 42, 0.06);
+    padding: 1pt 3pt;
+    border-radius: 3pt;
+    font-size: 9.5pt;
+}
+
+.contract-body pre {
+    background: #0b1120;
+    color: #e2e8f0;
+    padding: 10pt 12pt;
+    border-radius: 8pt;
+    overflow: hidden;
+    margin: 10pt 0 14pt;
+    border: 1px solid #1d3a8a;
+}
+
+.contract-body pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
 }
 
 .contract-body table {
     width: 100%;
     border-collapse: collapse;
-    margin: 8pt 0 12pt;
-    font-size: 11pt;
+    margin: 10pt 0 14pt;
+    font-size: 10.5pt;
+    border: 1px solid var(--slate-200);
+    box-shadow: inset 0 0 0 1pt rgba(15, 23, 42, 0.02);
+}
+
+.contract-body table thead th {
+    background: var(--ink-950);
+    color: #f8fafc;
 }
 
 .contract-body table th,
 .contract-body table td {
-    border: 1px solid #94a3b8;
-    padding: 6pt 8pt;
+    border: 1px solid var(--slate-200);
+    padding: 7pt 8pt;
     vertical-align: top;
 }
 
 .contract-body table th {
-    background: #e2e8f0;
+    background: var(--slate-100);
     font-weight: 600;
     text-align: left;
 }
 
-.contract-body ul {
-    margin-left: 1em;
-    padding-left: 1.2em;
-    list-style: disc;
+.contract-body table tr:nth-child(even) td {
+    background: rgba(148, 163, 184, 0.08);
 }
 
-.contract-body ul ul {
+.contract-body ul,
+.contract-body ol {
+    margin: 8pt 0 10pt 1.4em;
+    padding: 0;
+}
+
+.contract-body li {
     list-style: none;
-    margin: 6pt 0 6pt 1.8em;
-    padding-left: 0;
+    position: relative;
+    margin: 4pt 0;
+    padding-left: 1.3em;
 }
 
-.contract-body ul ul > li {
-    position: relative;
-    padding-left: 1.2em;
+.contract-body ul > li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    top: 0.15em;
+    font-size: 12pt;
+    color: var(--ink-900);
+    font-weight: 700;
 }
 
 .contract-body ul ul > li::before {
-    content: "–";
+    content: "◦";
+    color: var(--accent-600);
+    font-size: 11pt;
+    top: 0.2em;
+}
+
+.contract-body ul ul ul > li::before {
+    content: "▪";
+    color: var(--warning-500);
+    font-size: 10pt;
+}
+
+.contract-body ul ul,
+.contract-body ol ul,
+.contract-body ul ol,
+.contract-body ol ol {
+    margin-left: 1.2em;
+}
+
+.contract-body ol {
+    counter-reset: ordered-level;
+}
+
+.contract-body ol li {
+    counter-increment: ordered-level;
+}
+
+.contract-body ol li::before {
+    content: counters(ordered-level, ".") ".";
     position: absolute;
     left: 0;
-    color: #475569;
+    top: 0.05em;
     font-weight: 600;
+    color: var(--accent-600);
+    letter-spacing: 0.02em;
+}
+
+.contract-body ol ol {
+    counter-reset: ordered-level;
+}
+
+.contract-body ol ol li::before {
+    color: var(--ink-800);
+}
+
+.contract-body ol ol ol li::before {
+    color: var(--warning-500);
+}
+
+.contract-body img,
+.contract-body svg {
+    max-width: 100%;
+    display: block;
+    margin: 6pt 0 10pt;
 }
 
 .contract-footer {
-    border-top: 1px solid #cbd5f5;
+    border-top: 1px solid var(--slate-300);
     margin-top: 12mm;
     padding-top: 4mm;
     font-size: 10pt;
-    color: #64748b;
+    color: var(--ink-600);
     text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #030712;
+        color: #e2e8f0;
+    }
+
+    .contract-body {
+        background: #0f172a;
+        border-color: #1e293b;
+        box-shadow: 0 10pt 32pt rgba(2, 6, 23, 0.8);
+    }
+
+    .contract-body h1,
+    .contract-body h2,
+    .contract-body h3,
+    .contract-body h4,
+    .contract-body h5,
+    .contract-body h6 {
+        color: #e2e8f0;
+    }
+
+    .contract-body table th,
+    .contract-body table td {
+        border-color: #1e293b;
+    }
+
+    .contract-body table th {
+        background: #0b1120;
+        color: #e2e8f0;
+    }
+
+    .contract-body table tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .contract-body blockquote {
+        background: rgba(14, 165, 233, 0.08);
+        color: #e2e8f0;
+    }
+
+    .contract-footer {
+        border-top-color: #1e293b;
+        color: #94a3b8;
+    }
 }

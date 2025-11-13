@@ -31,10 +31,12 @@ E --> F[Cashu eCash Mint]
 
   * MagicLink 기반 비밀번호 없는 로그인
   * Google OAuth 연동 및 세션 유지
+    * OTP 대체용 PIN 백업 링크 발급
 
 * **거래 모듈**
 
   * ⚡ Lightning Network 결제 지원
+    * 라우팅 최적화 시뮬레이션 및 fee budget 모니터링
   * 💰 Cashu e-cash 발행 및 환전 로직
   * 🔐 Escrow & Timelock 결제 처리
 
@@ -172,4 +174,3 @@ def process_payment(order_id: str):
 * **작성일:** 2025-11-13
 * **문서형식:** Markdown (`.md`)
 * **라이선스:** CC BY-NC-SA 4.0
-

@@ -1,3 +1,3 @@
 - [x] sample_worklog.md 최신 내용 반영
 - [x] 계약 PDF CSS에 페이지 번호 표시 추가
-- [x] 샘플 WeasyPrint 계약 PDF 재생성
+- [x] 샘플 워크로그 PDF 스타일 전면 개선
