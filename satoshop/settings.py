@@ -10,9 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-from pathlib import Path
 import os
 import time
+import shlex
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -43,8 +44,21 @@ else:
             break
     else:
         # 아무 .env 파일도 없으면 기본 load_dotenv() 호출
-        load_dotenv()
-        print("🔧 기본 환경 파일 로드 시도")
+load_dotenv()
+print("🔧 기본 환경 파일 로드 시도")
+
+
+def _parse_header_includes(value: str | None) -> list[str]:
+    """환경변수에서 전달된 Pandoc header-includes를 리스트로 파싱."""
+    default_includes = [
+        r"\usepackage{etoolbox}",
+        r"\AtBeginEnvironment{longtable}{\raggedright}",
+        r"\setlength{\LTleft}{0pt}",
+        r"\setlength{\LTright}{0pt}",
+    ]
+    if not value:
+        return default_includes
+    return [item.strip() for item in value.split("||") if item.strip()]
 
 
 # Quick-start development settings - unsuitable for production
@@ -266,12 +280,20 @@ EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Exper
 EXPERT_SIGNER_CERT_PATH = os.getenv("EXPERT_SIGNER_CERT_PATH", "")
 EXPERT_SIGNER_CERT_BASE64 = os.getenv("EXPERT_SIGNER_CERT_BASE64", "")
 EXPERT_SIGNER_CERT_PASSWORD = os.getenv("EXPERT_SIGNER_CERT_PASSWORD", "")
+EXPERT_PANDOC_PATH = os.getenv("EXPERT_PANDOC_PATH", "pandoc")
+EXPERT_PANDOC_PDF_ENGINE = os.getenv("EXPERT_PANDOC_PDF_ENGINE", "xelatex")
+EXPERT_PANDOC_EXTRA_ARGS = shlex.split(os.getenv("EXPERT_PANDOC_EXTRA_ARGS", ""))
+EXPERT_PANDOC_GEOMETRY = os.getenv(
+    "EXPERT_PANDOC_GEOMETRY",
+    "top=20mm,bottom=20mm,left=18mm,right=18mm",
+)
+EXPERT_PANDOC_HEADER_INCLUDES = _parse_header_includes(os.getenv("EXPERT_PANDOC_HEADER_INCLUDES"))
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정
 if DEBUG:
     # 개발 환경: ngrok 또는 localhost 사용
-    default_domain = 'localhost:8011'
+default_domain = 'localhost:8011'
 else:
     # 운영 환경: 실제 도메인 사용 (환경변수에서 가져오기)
     default_domain = 'your-production-domain.com'

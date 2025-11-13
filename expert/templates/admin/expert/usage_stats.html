@@ -21,9 +21,9 @@
       <p class="stat-subtitle">생성자 기준 · 상대방 {{ stats.unique_counterparties|intcomma }}명</p>
     </div>
     <div class="stat-card">
-      <p class="stat-label">Expert 라이트닝 계정</p>
+      <p class="stat-label">라이트닝 인증 합계</p>
       <p class="stat-value">{{ stats.expert_lightning_users_total|intcomma }}명</p>
-      <p class="stat-subtitle">최근 {{ stats.payments.window_days }}일 Expert 활동 {{ stats.expert_lightning_users_active|intcomma }}명</p>
+      <p class="stat-subtitle">최근 {{ stats.payments.window_days }}일 인증 {{ stats.expert_lightning_users_active|default:0|intcomma }}명</p>
       <p class="stat-subnote">사이트 전체 라이트닝 프로필 {{ stats.lightning_users_total|intcomma }}명</p>
     </div>
   </div>

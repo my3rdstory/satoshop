@@ -19,6 +19,9 @@ if command -v apt-get >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
     apt-get update -qq || echo "⚠️ apt-get update 실패, 계속 진행"
     apt-get install -y --no-install-recommends \
         libsecp256k1-dev \
+        pandoc \
+        fonts-noto-cjk \
+        texlive-xetex \
         pkg-config \
         build-essential \
         libffi-dev \
