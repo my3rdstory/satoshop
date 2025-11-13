@@ -17,6 +17,7 @@ echo "🔧 시스템 의존성 확인 중..."
 if command -v apt-get >/dev/null 2>&1; then
     echo "📦 시스템 패키지 설치 중..."
     set -o pipefail
+    export DEBIAN_FRONTEND=noninteractive
     APT_STATE_DIR=$(mktemp -d /tmp/apt-state-XXXXXX)
     mkdir -p "$APT_STATE_DIR/lists/partial" "$APT_STATE_DIR/archives/partial"
     APT_OPTS=(
@@ -25,6 +26,9 @@ if command -v apt-get >/dev/null 2>&1; then
         "-o" "Dir::State::Status=$APT_STATE_DIR/status"
         "-o" "Dir::Cache=$APT_STATE_DIR/cache"
         "-o" "Dir::Cache::Archives=$APT_STATE_DIR/archives"
+        "-o" "Dir::Etc=$APT_STATE_DIR/etc"
+        "-o" "Dir::Log=$APT_STATE_DIR/log"
+        "-o" "DPkg::Log=$APT_STATE_DIR/dpkg.log"
     )
     apt-get "${APT_OPTS[@]}" update -qq
     apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
