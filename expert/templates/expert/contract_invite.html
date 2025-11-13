@@ -197,6 +197,9 @@
                 <div>
                     {{ form.signature_data }}
                     <div class="signature-pad-wrapper">
+                        {% if counterparty_signature_optional %}
+                            <p class="help is-success">기존 서명이 저장되어 있으므로 다시 서명하지 않아도 됩니다. 필요 시 아래 패드에 새 서명을 남길 수 있습니다.</p>
+                        {% endif %}
                         <canvas class="signature-canvas" data-signature-canvas></canvas>
                         <div class="signature-actions">
                             <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>

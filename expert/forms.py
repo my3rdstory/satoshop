@@ -172,6 +172,16 @@ class ContractReviewForm(forms.Form):
 class CounterpartySignatureForm(forms.Form):
     """공유 주소에서 상대방이 사용하는 서명 폼."""
 
+    def __init__(self, *args, signature_optional=False, require_performer_lightning=False, **kwargs):
+        self.signature_optional = signature_optional
+        self.require_performer_lightning = require_performer_lightning
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = False
+        if self.signature_optional:
+            self.fields["signature_data"].required = False
+        if self.require_performer_lightning:
+            self.fields["performer_lightning_address"].required = True
+
     agree_reviewed = forms.BooleanField(
         label="계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.",
         required=True,
@@ -179,6 +189,7 @@ class CounterpartySignatureForm(forms.Form):
     )
     email = forms.EmailField(
         label="이메일 (선택)",
+        required=False,
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
     performer_lightning_address = forms.CharField(
@@ -218,7 +229,9 @@ class CounterpartySignatureForm(forms.Form):
             self.fields["performer_lightning_address"].required = True
 
     def clean_signature_data(self):
-        data = self.cleaned_data["signature_data"]
+        data = self.cleaned_data.get("signature_data")
+        if self.signature_optional and not data:
+            return ""
         if not data or not data.startswith("data:image/"):
             raise forms.ValidationError("자필 서명을 캡처해 주세요.")
         try:
@@ -226,6 +239,16 @@ class CounterpartySignatureForm(forms.Form):
         except Exception as exc:  # pylint: disable=broad-except
             raise forms.ValidationError("서명 데이터가 올바르지 않습니다.") from exc
         return data
+
+    def clean(self):
+        cleaned = super().clean()
+        performer_address = cleaned.get("performer_lightning_address")
+        if self.require_performer_lightning and not performer_address:
+            self.add_error(
+                "performer_lightning_address",
+                "수행자는 정산 받을 라이트닝 주소를 반드시 입력해야 합니다.",
+            )
+        return cleaned
 
 
 class ContractIntegrityCheckForm(forms.Form):

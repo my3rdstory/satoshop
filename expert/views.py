@@ -465,7 +465,16 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["require_performer_lightning"] = self.document.counterparty_role == "performer"
+        kwargs["signature_optional"] = self._has_existing_counterparty_signature()
         return kwargs
+
+    def _has_existing_counterparty_signature(self) -> bool:
+        if self.document.counterparty_signature and getattr(self.document.counterparty_signature, "name", ""):
+            return True
+        asset = self.document.get_signature_asset("counterparty")
+        if asset:
+            return True
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -520,6 +529,7 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
                 "creator_lightning_id": creator_lightning_id,
                 "counterparty_lightning_id": counterparty_payload_lightning,
                 "viewer_lightning_id": viewer_lightning_id,
+                "counterparty_signature_optional": self._has_existing_counterparty_signature(),
             }
         )
         form_instance = context.get("form")
@@ -565,11 +575,27 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         if payment_widget.requires_payment and payment_widget.state.status != "paid":
             form.add_error(None, "라이트닝 결제를 완료한 뒤 서명해주세요.")
             return self.form_invalid(form)
-        asset, error, signature_file = store_signature_asset_from_data(
-            form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
-        )
-        if not asset and not signature_media_fallback_enabled():
+        existing_asset = self.document.get_signature_asset("counterparty")
+        existing_signature_file = self.document.counterparty_signature if self.document.counterparty_signature else None
+        signature_payload = form.cleaned_data.get("signature_data")
+
+        asset = None
+        signature_file = None
+        error = None
+        if signature_payload:
+            asset, error, signature_file = store_signature_asset_from_data(
+                signature_payload, f"counterparty-{self.document.slug}"
+            )
+        else:
+            asset = existing_asset
+            signature_file = existing_signature_file
+
+        if signature_payload and not asset and not signature_media_fallback_enabled():
             form.add_error(None, error or "서명 이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.")
+            return self.form_invalid(form)
+
+        if not (asset or signature_file):
+            form.add_error(None, error or "서명 이미지를 찾을 수 없습니다. 다시 서명해 주세요.")
             return self.form_invalid(form)
 
         self.document.counterparty_email = form.cleaned_data["email"]
@@ -599,11 +625,19 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         }
         if payment_receipt:
             stage_meta["payment"] = payment_receipt
+        stored_local_signature = False
         if asset:
-            self.document.set_signature_asset("counterparty", asset)
-            self.document.clear_signature_file("counterparty")
+            if asset != existing_asset:
+                self.document.set_signature_asset("counterparty", asset)
+                self.document.clear_signature_file("counterparty")
         else:
-            self.document.counterparty_signature.save(signature_file.name, signature_file)
+            if signature_file != existing_signature_file and signature_file and hasattr(signature_file, "name"):
+                self.document.counterparty_signature.save(signature_file.name, signature_file)
+                stored_local_signature = True
+            elif not signature_file and signature_media_fallback_enabled():
+                stored_local_signature = True
+
+        if stored_local_signature:
             messages.warning(
                 self.request,
                 "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",
