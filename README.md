@@ -472,6 +472,40 @@ SECURE_SSL_REDIRECT=True
 - 명령어: `uv run python manage.py test_telegram_bot`
 - 환율 업데이트 시 자동으로 텔레그램 알림 전송
 
+### Docker 기반 Render 배포 파이프라인
+
+`Dockerfile`, `.dockerignore`, `scripts/docker-entrypoint.sh`, `render.yaml`을 추가해 Render가 Docker 이미지를 그대로 받아 배포하도록 정리했습니다. Render 빌드 환경에서 반복되던 WeasyPrint/폰트 의존성 문제는 컨테이너 안에서 모두 해결되므로 어떤 서버에서도 동일한 결과를 얻을 수 있습니다.
+
+#### 1) 로컬에서 이미지 빌드·검증
+
+```bash
+docker build -t satoshop:latest .
+docker run \
+  --env-file ./env.production.example \
+  -e SECRET_KEY=로컬-시크릿 \
+  -e DB_HOST=host.docker.internal \
+  -e DB_NAME=satoshop \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=postgres \
+  -e DB_PORT=5432 \
+  -e ALLOWED_HOSTS=localhost \
+  -p 8000:8000 \
+  satoshop:latest
+```
+
+- 컨테이너에 Cairo/Pango, `fonts-noto-cjk`, `expert/static/expert/fonts`를 한꺼번에 등록해 Expert PDF 한글이 깨지지 않습니다. (`OSFONTDIR=/app/expert/static/expert/fonts:/usr/share/fonts/truetype/noto`)
+- `scripts/docker-entrypoint.sh`는 `scripts/render_setup_signer.sh`로 PKCS#12 인증서를 복원한 뒤 `uv run python manage.py migrate → collectstatic → check` 순으로 부트스트랩합니다. `RUN_MIGRATIONS`, `RUN_COLLECTSTATIC`, `RUN_SYSTEM_CHECK` 환경 변수로 각 단계를 선택적으로 건너뛸 수 있습니다.
+
+#### 2) Render Blueprint로 자동 배포 구성
+
+1. GitHub에 이 리포지토리를 연결한 뒤 Render 대시보드 → **Blueprints** → **New Blueprint**에서 `main` 브랜치를 선택합니다.
+2. `render.yaml`을 지정하면 `satoshop-django`(웹 서비스)와 `satoshop-postgres`(관리형 Postgres)가 한 번에 생성되고, Dockerfile 기반으로 이미지를 빌드합니다.
+3. Blueprint에서 `sync: false`로 표시되는 환경 변수(SECRET_KEY, Blink/S3/LNURL/ADMIN/EXPERT_* 등)는 Render 환경 변수 화면에서 직접 값을 채웁니다. 데이터베이스 연결 정보(`DB_HOST/NAME/USER/PASSWORD/PORT`)는 blueprint가 Postgres 인스턴스에서 자동으로 주입합니다.
+4. `autoDeploy: true`와 `branch: main` 덕분에 **main 브랜치에 푸시 → Render가 Docker 이미지를 재빌드 → 신규 컨테이너 배포**가 자동으로 이어집니다. 필요한 경우 같은 Dockerfile을 재사용해 Preview/Stage 서비스를 추가하세요.
+5. 헬스체크 경로는 기본으로 `/`에 맞춰 두었습니다. 별도 헬스 엔드포인트를 사용한다면 `render.yaml`의 `healthCheckPath` 값을 수정하면 됩니다.
+
+> 📌 Render가 서비스를 재시작해도 컨테이너 진입 시점마다 마이그레이션과 정적 파일 수집이 수행되어(수 초 내 완료) 한글 PDF/의존성 문제가 재발하지 않습니다. 대규모 마이그레이션이 예상되면 `RUN_MIGRATIONS=false`로 잠시 비활성화하고 Render의 Pre-deploy Command에서 수동으로 실행할 수 있습니다.
+
 
 ## 🔧 관리자 기능
 
