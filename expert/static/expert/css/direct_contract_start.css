@@ -260,9 +260,16 @@
     content: "";
     position: absolute;
     inset: -50%;
-    background: radial-gradient(circle, rgba(123, 54, 255, 0.35), rgba(247, 147, 26, 0.35));
-    animation: lightningPulse 12s ease-in-out infinite;
     z-index: 0;
+    background: radial-gradient(
+        circle,
+        hsla(var(--pulse-hue-a, 255), 85%, 65%, 0.35),
+        hsla(var(--pulse-hue-b, 30), 80%, 55%, 0.35)
+    );
+    animation: lightningPulse var(--pulse-duration, 12s) ease-in-out infinite;
+    animation-delay: var(--pulse-delay, 0s);
+    animation-direction: var(--pulse-direction, alternate);
+    opacity: var(--pulse-opacity-start, 0.35);
 }
 
 .stat-card > * {
@@ -276,16 +283,19 @@
 
 @keyframes lightningPulse {
     0% {
-        transform: translate(-10%, -10%) rotate(0deg);
-        opacity: 0.35;
+        transform: translate(var(--pulse-start-x, -12%), var(--pulse-start-y, -12%))
+            scale(var(--pulse-scale, 1));
+        opacity: var(--pulse-opacity-start, 0.3);
     }
     50% {
-        transform: translate(5%, 5%) rotate(90deg);
-        opacity: 0.55;
+        transform: translate(var(--pulse-mid-x, 6%), var(--pulse-mid-y, 6%))
+            scale(var(--pulse-scale-peak, 1.08));
+        opacity: var(--pulse-opacity-peak, 0.55);
     }
     100% {
-        transform: translate(-10%, -10%) rotate(180deg);
-        opacity: 0.35;
+        transform: translate(var(--pulse-end-x, -12%), var(--pulse-end-y, -12%))
+            scale(var(--pulse-scale, 1));
+        opacity: var(--pulse-opacity-end, 0.3);
     }
 }
 .stat-label {

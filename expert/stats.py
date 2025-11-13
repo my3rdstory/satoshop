@@ -207,11 +207,27 @@ def aggregate_usage_stats(*, window_days: int = 30) -> Dict:
         except (TypeError, ValueError):
             continue
 
-    unique_creators = contracts.exclude(creator__isnull=True).values("creator_id").distinct().count()
-    unique_counterparties = contracts.exclude(counterparty_user__isnull=True).values("counterparty_user_id").distinct().count()
+    creators_qs = contracts.exclude(creator__isnull=True).values_list("creator_id", flat=True)
+    counterparties_qs = contracts.exclude(counterparty_user__isnull=True).values_list("counterparty_user_id", flat=True)
+    creator_ids = list(creators_qs)
+    counterparty_ids = list(counterparties_qs)
+    unique_creators = len(set(creator_ids))
+    unique_counterparties = len(set(counterparty_ids))
+
+    expert_user_ids = set(creator_ids) | set(counterparty_ids)
+
+    now = timezone.now()
+    active_cutoff = now - timedelta(days=window_days)
 
     lightning_users_total = LightningUser.objects.count()
-    lightning_active = LightningUser.objects.filter(last_login_at__gte=timezone.now() - timedelta(days=window_days)).count()
+    lightning_active = LightningUser.objects.filter(last_login_at__gte=active_cutoff).count()
+
+    expert_lightning_total = 0
+    expert_lightning_active = 0
+    if expert_user_ids:
+        expert_lightning_qs = LightningUser.objects.filter(user_id__in=expert_user_ids)
+        expert_lightning_total = expert_lightning_qs.count()
+        expert_lightning_active = expert_lightning_qs.filter(last_login_at__gte=active_cutoff).count()
 
     payment_stats = aggregate_payment_stats(window_days=window_days)
 
@@ -223,5 +239,7 @@ def aggregate_usage_stats(*, window_days: int = 30) -> Dict:
         "unique_counterparties": unique_counterparties,
         "lightning_users_total": lightning_users_total,
         "lightning_users_active": lightning_active,
+        "expert_lightning_users_total": expert_lightning_total,
+        "expert_lightning_users_active": expert_lightning_active,
         "payments": payment_stats,
     }

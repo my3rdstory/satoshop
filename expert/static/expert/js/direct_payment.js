@@ -18,6 +18,8 @@
             this.context = element.dataset.paymentContext;
             this.ref = element.dataset.paymentRef;
             this.role = element.dataset.paymentRole;
+            this.startUrl = element.dataset.paymentStartUrl || '';
+            this.cancelUrl = element.dataset.paymentCancelUrl || '';
             this.required = element.dataset.paymentRequired === 'true';
             this.status = element.dataset.paymentStatus || 'idle';
             this.remainingSeconds = parseInt(element.dataset.paymentCountdownRemaining || '0', 10);
@@ -45,6 +47,94 @@
                 this.startPolling();
             } else if (this.status === 'paid') {
                 this.updateStatusInput('paid');
+            }
+        }
+
+        handleAction(action, trigger) {
+            if (!action) {
+                return;
+            }
+            if (action === 'start') {
+                this.performAction(this.startUrl, trigger);
+            } else if (action === 'cancel') {
+                this.performAction(this.cancelUrl, trigger);
+            }
+        }
+
+        async performAction(url, trigger) {
+            if (!url) {
+                return;
+            }
+            this.setButtonLoading(trigger, true);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                        'X-CSRFToken': this.csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: this.buildActionPayload(),
+                });
+                const html = await response.text();
+                if (!response.ok || !html) {
+                    throw new Error('결제 정보를 불러오지 못했습니다.');
+                }
+                if (!html.includes('data-payment-widget-root')) {
+                    throw new Error('결제 정보를 불러오지 못했습니다.');
+                }
+                this.replaceWithHtml(html);
+            } catch (error) {
+                const message = (error && error.message) || '결제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
+                this.updateStatusText(message);
+            } finally {
+                this.setButtonLoading(trigger, false);
+            }
+        }
+
+        buildActionPayload() {
+            const params = new URLSearchParams();
+            if (this.context) {
+                params.append('context', this.context);
+            }
+            if (this.ref) {
+                params.append('ref', this.ref);
+            }
+            if (this.role) {
+                params.append('role', this.role);
+            }
+            return params.toString();
+        }
+
+        setButtonLoading(trigger, isLoading) {
+            if (!trigger) {
+                return;
+            }
+            if (isLoading) {
+                trigger.classList.add('is-loading');
+                trigger.setAttribute('disabled', 'disabled');
+            } else {
+                trigger.classList.remove('is-loading');
+                trigger.removeAttribute('disabled');
+            }
+        }
+
+        replaceWithHtml(html) {
+            if (!html || typeof html !== 'string') {
+                return;
+            }
+            if (!html.includes('data-payment-widget-root')) {
+                this.updateStatusText('결제 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+                return;
+            }
+            const placeholderId = this.el.id;
+            this.destroy();
+            widgetControllers.delete(placeholderId);
+            this.el.outerHTML = html;
+            const nextElement = document.getElementById(placeholderId);
+            if (nextElement) {
+                initWidget(nextElement);
             }
         }
 
@@ -192,25 +282,25 @@
         }
 
         refresh() {
-            if (this.refreshUrl) {
-                if (window.htmx && typeof window.htmx.ajax === 'function') {
-                    window.htmx.ajax('GET', this.refreshUrl, {
-                        target: `#${this.el.id}`,
-                        swap: 'outerHTML',
-                    });
-                } else {
-                    fetch(this.refreshUrl, {
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                    })
-                        .then((response) => response.text())
-                        .then((html) => {
-                            this.el.outerHTML = html;
-                        })
-                        .catch(() => {
-                            this.updateStatusText('새 데이터를 불러오지 못했습니다. 다시 시도해주세요.');
-                        });
-                }
+            if (!this.refreshUrl) {
+                return;
             }
+            fetch(this.refreshUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error('새 데이터를 불러오지 못했습니다.');
+                    }
+                    return response.text();
+                })
+                .then((html) => {
+                    this.replaceWithHtml(html);
+                })
+                .catch(() => {
+                    this.updateStatusText('새 데이터를 불러오지 못했습니다. 다시 시도해주세요.');
+                });
         }
 
         destroy() {
@@ -267,6 +357,19 @@
     });
 
     document.addEventListener('click', (event) => {
+        const actionButton = event.target.closest('[data-payment-action]');
+        if (actionButton) {
+            event.preventDefault();
+            const widget = actionButton.closest('[data-payment-widget-root]');
+            if (!widget) {
+                return;
+            }
+            const controller = widgetControllers.get(widget.id);
+            if (controller) {
+                controller.handleAction(actionButton.dataset.paymentAction, actionButton);
+            }
+            return;
+        }
         const copyTrigger = event.target.closest('[data-payment-copy]');
         if (copyTrigger) {
             event.preventDefault();
