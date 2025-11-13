@@ -1,3 +1,3 @@
-- [x] WeasyPrint 전환 요구사항 파악
-- [x] WeasyPrint 기반 PDF 렌더링 구현 및 문서화
-- [x] 변경 이력/검증 지침 정리
+- [x] sample_worklog.md 최신 내용 반영
+- [x] 계약 PDF CSS에 페이지 번호 표시 추가
+- [x] 샘플 WeasyPrint 계약 PDF 재생성

@@ -1,6 +1,11 @@
 @page {
     size: A4;
     margin: 20mm;
+    @bottom-center {
+        content: "- " counter(page) " -";
+        font-size: 10pt;
+        color: #94a3b8;
+    }
 }
 
 body {
