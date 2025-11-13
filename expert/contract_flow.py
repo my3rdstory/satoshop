@@ -52,6 +52,19 @@ CJK_FONT_OPTION_VARIABLES = (
     "CJKsansfontoptions",
 )
 
+EMOJI_RANGES: Tuple[Tuple[int, int], ...] = (
+    (0x1F300, 0x1F5FF),
+    (0x1F600, 0x1F64F),
+    (0x1F680, 0x1F6FF),
+    (0x1F900, 0x1F9FF),
+    (0x1FA70, 0x1FAFF),
+    (0x2600, 0x26FF),
+    (0x2700, 0x27BF),
+)
+
+_emoji_range_pattern = "".join(f"\\U{start:08X}-\\U{end:08X}" for start, end in EMOJI_RANGES)
+EMOJI_PATTERN = re.compile(f"[{_emoji_range_pattern}]", flags=re.UNICODE)
+VARIATION_PATTERN = re.compile("[\\uFE0E\\uFE0F\\u200D]")
 CID_FONT_CANDIDATES = [
     "HYSMyeongJo-Medium",
     "HYGoThic-Medium",
@@ -571,9 +584,18 @@ def resolve_contract_pdf_font(default: str = "Helvetica") -> str:
 def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
     """Pandoc을 활용해 계약서 Markdown을 PDF로 변환."""
     payload = document.payload or {}
-    markdown_text = _compose_contract_markdown(document, contract_markdown or "")
+    raw_markdown = _compose_contract_markdown(document, contract_markdown or "")
+    markdown_text = _sanitize_markdown(raw_markdown)
     title = payload.get("title") or "SatoShop Expert 계약"
     pdf_bytes = _render_markdown_via_pandoc(markdown_text, title)
     timestamp = timezone.localtime(timezone.now()).strftime("%Y%m%d%H%M%S")
     filename = f"direct-contract-{document.slug}-{timestamp}.pdf"
     return ContentFile(pdf_bytes, name=filename)
+
+
+def _sanitize_markdown(text: str) -> str:
+    if not text:
+        return ""
+    sanitized = VARIATION_PATTERN.sub("", text)
+    sanitized = EMOJI_PATTERN.sub("", sanitized)
+    return sanitized
