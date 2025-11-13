@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import tempfile
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
@@ -104,27 +105,55 @@ def _find_font_variant(font_dir: Path, keywords: List[str]) -> Optional[str]:
     return None
 
 
-def _build_font_option_string(font_dir: str) -> Optional[str]:
+def _tokenize_font_name(value: str) -> List[str]:
+    if not value:
+        return []
+    tokens = re.split(r"[\s\-_]+", value.strip())
+    return [token for token in tokens if token]
+
+
+def _build_font_option_payload(font_dir: str, configured_family: str) -> Tuple[Optional[str], Optional[str]]:
     if not font_dir:
-        return None
+        return None, None
     base_path = Path(font_dir).expanduser()
     if not base_path.exists():
-        return None
+        return None, None
     resolved = base_path.resolve()
+    available_files = []
+    for pattern in ("*.ttf", "*.otf"):
+        available_files.extend(sorted(resolved.glob(pattern)))
+    if not available_files:
+        return None, None
+    option_parts = []
     path_value = resolved.as_posix()
     if not path_value.endswith("/"):
         path_value += "/"
-    option_parts = [f"Path={path_value}"]
+    option_parts.append(f"Path={path_value}")
     bold_font = _find_font_variant(resolved, ["bold"]) or _find_font_variant(resolved, ["medium"])
     italic_font = _find_font_variant(resolved, ["italic"])
     regular_font = _find_font_variant(resolved, ["regular"]) or _find_font_variant(resolved, ["book"])
+    primary_font = None
+    preferred_tokens = _tokenize_font_name(configured_family)
+    if preferred_tokens:
+        primary_font = _find_font_variant(resolved, preferred_tokens + ["regular"]) or _find_font_variant(
+            resolved, preferred_tokens
+        )
+    if not primary_font:
+        primary_font = regular_font
+    if not primary_font and available_files:
+        primary_font = available_files[0].name
     if bold_font:
         option_parts.append(f"BoldFont={bold_font}")
     if italic_font:
         option_parts.append(f"ItalicFont={italic_font}")
     elif regular_font:
         option_parts.append(f"ItalicFont={regular_font}")
-    return ",".join(part for part in option_parts if part)
+    if primary_font:
+        suffix = Path(primary_font).suffix
+        if suffix:
+            option_parts.append(f"Extension={suffix}")
+    option_string = ",".join(part for part in option_parts if part)
+    return option_string, primary_font
 
 
 def _build_font_option_args(option_string: Optional[str]) -> List[str]:
@@ -320,19 +349,20 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
         ]
     font_family = getattr(settings, "EXPERT_PANDOC_FONT_FAMILY", "").strip()
     font_dir_setting = (getattr(settings, "EXPERT_FONT_DIR", "") or "").strip()
-    font_option_string = _build_font_option_string(font_dir_setting)
-    if font_family:
+    font_option_string, primary_font_override = _build_font_option_payload(font_dir_setting, font_family)
+    effective_font = primary_font_override or font_family
+    if effective_font:
         font_args = [
             "-V",
-            f"mainfont:{font_family}",
+            f"mainfont:{effective_font}",
             "-V",
-            f"sansfont:{font_family}",
+            f"sansfont:{effective_font}",
             "-V",
-            f"monofont:{font_family}",
+            f"monofont:{effective_font}",
             "-V",
-            f"CJKmainfont:{font_family}",
+            f"CJKmainfont:{effective_font}",
             "-V",
-            f"CJKsansfont:{font_family}",
+            f"CJKsansfont:{effective_font}",
         ]
         command.extend(font_args)
         command.extend(_build_font_option_args(font_option_string))
