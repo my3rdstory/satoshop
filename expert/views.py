@@ -558,6 +558,21 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
             return None
         return super().get_form(form_class)
 
+    def get_initial(self):
+        initial = super().get_initial()
+        if not hasattr(self, "document"):
+            return initial
+        if self.document.counterparty_email:
+            initial.setdefault("email", self.document.counterparty_email)
+        if self.document.counterparty_role == "performer":
+            performer_address = (
+                (self.payload or {}).get("performer_lightning_address")
+                or self.document.counterparty_lightning_id
+            )
+            if performer_address:
+                initial.setdefault("performer_lightning_address", performer_address)
+        return initial
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["require_performer_lightning"] = self.document.counterparty_role == "performer"
