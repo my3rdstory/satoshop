@@ -264,13 +264,28 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
         markdown_path = tmpdir_path / "contract.md"
         pdf_path = tmpdir_path / "contract.pdf"
         markdown_path.write_text(markdown_text, encoding="utf-8")
-        command: List[str] = [
-            pandoc_binary,
-            str(markdown_path),
-            "--from=gfm",
-            "-o",
-            str(pdf_path),
+    command: List[str] = [
+        pandoc_binary,
+        str(markdown_path),
+        "--from=gfm",
+        "-o",
+        str(pdf_path),
+    ]
+    font_family = getattr(settings, "EXPERT_PANDOC_FONT_FAMILY", "").strip()
+    if font_family:
+        font_args = [
+            "-V",
+            f"mainfont:{font_family}",
+            "-V",
+            f"sansfont:{font_family}",
+            "-V",
+            f"monofont:{font_family}",
+            "-V",
+            f"CJKmainfont:{font_family}",
+            "-V",
+            f"CJKsansfont:{font_family}",
         ]
+        command.extend(font_args)
         title = document_title or "SatoShop Expert 계약"
         command.extend(["--metadata", f"title={title}"])
         if pdf_engine:
