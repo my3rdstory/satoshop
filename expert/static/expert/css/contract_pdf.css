@@ -1,3 +1,19 @@
+@font-face {
+    font-family: 'ContractSans';
+    src: url('../../../fonts/NotoSansKR-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'ContractSans';
+    src: url('../../../fonts/NotoSansKR-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --ink-950: #020617;
     --ink-900: #0f172a;

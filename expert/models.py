@@ -291,6 +291,21 @@ class DirectContractDocument(models.Model):
             self.save(update_fields=["final_pdf_hash", "updated_at"])
         return self.final_pdf_hash
 
+    def get_finalized_at(self):
+        """가장 최근 서명/최종 PDF 생성 시각을 리턴."""
+
+        timestamps = []
+        for value in (
+            self.final_pdf_generated_at,
+            self.counterparty_signed_at,
+            self.creator_signed_at,
+        ):
+            if not value:
+                continue
+            localized = timezone.localtime(value) if timezone.is_aware(value) else value
+            timestamps.append(localized)
+        return max(timestamps) if timestamps else None
+
 
 class ContractEmailLog(models.Model):
     """계약과 관련된 이메일 발송 내역을 기록."""

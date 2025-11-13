@@ -37,143 +37,35 @@
 {% endblock %}
 
 {% block content %}
-<section class="relative overflow-hidden hero-gradient text-white">
-  <div class="absolute inset-0 opacity-70 mix-blend-screen pattern-layer" aria-hidden="true"></div>
-  <div class="absolute -left-20 -bottom-32 w-96 h-96 bg-bitcoin/40 blur-3xl rounded-full" aria-hidden="true"></div>
-  <div class="absolute -right-32 -top-20 w-[28rem] h-[28rem] bg-emerald-400/40 blur-3xl rounded-full" aria-hidden="true"></div>
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-    <div class="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] items-center">
-      <div>
-        <span class="inline-flex items-center px-4 py-2 rounded-full bg-white/15 text-sm font-medium uppercase tracking-wide backdrop-blur">
-          ⚡ Lightning-Powered Commerce
-        </span>
-        <h1 class="mt-6 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight">
-          {% if site_settings and site_settings.hero_title %}
-            {{ site_settings.hero_title }}
-          {% else %}
-            비트코인 라이트닝으로<br class="hidden sm:block"/> 만드는 차세대 스토어
-          {% endif %}
-        </h1>
-        <p class="mt-6 text-lg sm:text-xl text-white/80 max-w-2xl">
-          {% if site_settings and site_settings.hero_description %}
-            {{ site_settings.hero_description }}
-          {% else %}
-            누구나 5분 만에 온라인 스토어를 열고, 전세계 고객에게 즉시 결제받을 수 있습니다. 자동 환율 계산과 안전한 인보이스 처리까지 한 번에.
-          {% endif %}
-        </p>
-        <div class="mt-10 flex flex-col sm:flex-row gap-4">
-          {% if user.is_authenticated %}
-            {% if not user_has_active_store %}
-              <a class="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-white text-gray-900 font-semibold shadow-lg shadow-white/10 hover:shadow-white/20 transition" href="{% url 'stores:create_store' %}">
-                <i class="fas fa-plus text-bitcoin"></i>
-                내 스토어 개설하기
-              </a>
-            {% else %}
-              <a class="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-white text-gray-900 font-semibold shadow-lg shadow-white/10 hover:shadow-white/20 transition" href="{% url 'stores:store_detail' store_id=user_active_store.store_id %}">
-                <i class="fas fa-store"></i>
-                내 스토어 관리하기
-              </a>
-            {% endif %}
-          {% else %}
-            <a class="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl bg-white text-gray-900 font-semibold shadow-lg shadow-white/10 hover:shadow-white/20 transition" href="{% url 'accounts:signup' %}">
-              <i class="fas fa-rocket text-bitcoin"></i>
-              {% if site_settings and site_settings.hero_primary_button_text %}
-                {{ site_settings.hero_primary_button_text }}
-              {% else %}
-                지금 무료로 시작하기
-              {% endif %}
-            </a>
-          {% endif %}
-          <a class="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-xl border border-white/60 text-white font-semibold hover:bg-white/10 transition" href="{% url 'stores:browse_stores' %}">
-            <i class="fas fa-compass"></i>
-            {% if site_settings and site_settings.hero_secondary_button_text %}
-              {{ site_settings.hero_secondary_button_text }}
-            {% else %}
-              라이브 스토어 둘러보기
-            {% endif %}
-          </a>
-        </div>
-        <dl class="mt-12 grid grid-cols-2 gap-6 max-w-lg text-left">
-          <div class="stat-card">
-            <dt class="text-sm font-medium text-white/70">구축 소요 시간</dt>
-            <dd class="mt-1 text-3xl font-bold">5분</dd>
-            <p class="mt-2 text-sm text-white/70">템플릿 선택 후 즉시 결제 연동</p>
-          </div>
-          <div class="stat-card">
-            <dt class="text-sm font-medium text-white/70">라이트닝 결제 성공률</dt>
-            <dd class="mt-1 text-3xl font-bold">99.9%</dd>
-            <p class="mt-2 text-sm text-white/70">Blink 기반 실시간 검증</p>
-          </div>
-        </dl>
+{% if hero_slides %}
+<section class="hero-carousel text-white" data-hero-carousel>
+  {% for slide in hero_slides %}
+    <article id="hero-slide-{{ forloop.counter0 }}" class="hero-slide{% if forloop.first %} is-active{% endif %}" data-hero-slide data-duration="{{ slide.rotation_seconds }}">
+      <div class="hero-slide-bg" style="{{ slide.background_style }}">
+        <span class="hero-slide-overlay" style="background: {{ slide.overlay_color }};"></span>
       </div>
-      <div class="relative">
-        <div class="relative rounded-3xl bg-white/10 backdrop-blur-sm border border-white/10 shadow-2xl p-6 sm:p-8">
-          <div class="flex items-center gap-3 text-sm font-semibold text-white/80">
-            <span class="px-3 py-1 rounded-full bg-white/10">Live Dashboard</span>
-            <span class="px-3 py-1 rounded-full bg-white/10">Lightning Ready</span>
-          </div>
-          <div class="mt-6 space-y-4 text-sm text-white/80">
-            <div class="demo-card">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-white/60">스토어 현황</p>
-                  <p class="mt-1 text-2xl font-semibold">
-                    {{ home_metrics.total_stores|default_if_none:0|intcomma }}개
-                  </p>
-                </div>
-                <span class="badge-success">
-                  활성 {{ home_metrics.active_stores|default_if_none:0|intcomma }}개
-                </span>
-              </div>
-              <p class="mt-3 text-xs text-white/70">
-                시스템 어드민 기준 운영 중인 스토어 수치를 실시간 반영합니다.
-              </p>
-            </div>
-            <div class="demo-card">
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-white/60">등록된 아이템</p>
-                  <p class="mt-1 text-2xl font-semibold">
-                    {{ home_metrics.items.total|default_if_none:0|intcomma }}개
-                  </p>
-                </div>
-                <span class="badge-neutral">총합</span>
-              </div>
-              <div class="mt-3 text-xs text-white/70 flex flex-wrap gap-x-4 gap-y-1">
-                <span>상품 {{ home_metrics.items.products|default_if_none:0|intcomma }}개</span>
-                <span>밋업 {{ home_metrics.items.meetups|default_if_none:0|intcomma }}개</span>
-                <span>파일 {{ home_metrics.items.digital_files|default_if_none:0|intcomma }}개</span>
-                <span>라이브강의 {{ home_metrics.items.live_lectures|default_if_none:0|intcomma }}개</span>
-                <span>메뉴 {{ home_metrics.items.menus|default_if_none:0|intcomma }}개</span>
-              </div>
-            </div>
-            <div class="demo-card">
-              {% if home_metrics.exchange_rate %}
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-white/60">BTC/KRW 환율</p>
-                  <p class="mt-1 text-2xl font-semibold">
-                    1 BTC = {{ home_metrics.exchange_rate.btc_krw_rate|floatformat:0|intcomma }}원
-                  </p>
-                </div>
-                <span class="badge-neutral">업비트</span>
-              </div>
-              <p class="mt-3 text-xs text-white/70">
-                {{ home_metrics.exchange_rate.updated_at|date:"m월 d일 H:i" }} 기준 업비트 동기화 값입니다.
-              </p>
-              {% else %}
-              <div>
-                <p class="text-xs uppercase tracking-wide text-white/60">BTC/KRW 환율</p>
-                <p class="mt-1 text-base font-semibold">현재 환율 데이터를 불러오는 중입니다.</p>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
+      <div class="hero-slide-body">
+        {{ slide.html|safe }}
       </div>
+    </article>
+  {% endfor %}
+
+  {% if hero_slides|length > 1 %}
+    <button class="hero-nav hero-nav-prev" type="button" data-carousel-prev aria-label="이전 배너">
+      <span aria-hidden="true">&#10094;</span>
+    </button>
+    <button class="hero-nav hero-nav-next" type="button" data-carousel-next aria-label="다음 배너">
+      <span aria-hidden="true">&#10095;</span>
+    </button>
+    <div class="hero-carousel-indicators" role="tablist">
+      {% for slide in hero_slides %}
+        <button class="hero-indicator{% if forloop.first %} is-active{% endif %}" type="button" data-carousel-indicator="{{ forloop.counter0 }}" aria-label="{{ slide.name }}" aria-controls="hero-slide-{{ forloop.counter0 }}"></button>
+      {% endfor %}
     </div>
-  </div>
+  {% endif %}
 </section>
+{% endif %}
+
 
 <section class="py-16 bg-gray-50 dark:bg-gray-950 border-b border-gray-200/60 dark:border-gray-800">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">

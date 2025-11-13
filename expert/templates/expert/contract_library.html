@@ -23,6 +23,7 @@
                             <th>제목</th>
                             <th>상태</th>
                             <th>생성일</th>
+                            <th>최종 계약일</th>
                             <th>공유 주소</th>
                             <th>계약서 PDF</th>
                             <th>위변조 검증</th>
@@ -34,6 +35,15 @@
                                 <td data-label="제목">{{ doc.payload.title }}</td>
                                 <td data-label="상태">{{ doc.get_status_display }}</td>
                                 <td data-label="생성일">{{ doc.created_at|date:"Y-m-d H:i" }}</td>
+                                <td data-label="최종 계약일">
+                                    {% with finalized_at=doc.get_finalized_at %}
+                                        {% if finalized_at %}
+                                            {{ finalized_at|date:"Y-m-d H:i:s" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
                                 <td data-label="공유 주소"><a href="{{ doc.get_absolute_url }}" target="_blank" rel="noopener">열기</a></td>
                                 <td data-label="계약서 PDF">
                                     {% if doc.final_pdf %}
