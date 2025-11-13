@@ -44,8 +44,8 @@ else:
             break
     else:
         # 아무 .env 파일도 없으면 기본 load_dotenv() 호출
-load_dotenv()
-print("🔧 기본 환경 파일 로드 시도")
+        load_dotenv()
+        print("🔧 기본 환경 파일 로드 시도")
 
 
 def _parse_header_includes(value: str | None) -> list[str]:
@@ -293,7 +293,7 @@ EXPERT_PANDOC_HEADER_INCLUDES = _parse_header_includes(os.getenv("EXPERT_PANDOC_
 # 환경별 도메인 설정
 if DEBUG:
     # 개발 환경: ngrok 또는 localhost 사용
-default_domain = 'localhost:8011'
+    default_domain = 'localhost:8011'
 else:
     # 운영 환경: 실제 도메인 사용 (환경변수에서 가져오기)
     default_domain = 'your-production-domain.com'
