@@ -163,8 +163,11 @@
             </article>
         </div>
 
-        {% if form %}
-        <form method="post" class="contract-flow-card">
+{% if form %}
+        <form method="post"
+              class="contract-flow-card"
+              data-signature-form
+              data-signature-optional="{{ counterparty_signature_optional|yesno:'true,false' }}">
             {% csrf_token %}
             <input type="hidden"
                    data-payment-status-input
@@ -196,20 +199,23 @@
             <div class="signature-payment-grid mt-4">
                 <div>
                     {{ form.signature_data }}
-                    <div class="signature-pad-wrapper">
-                        {% if counterparty_signature_optional %}
-                            <p class="help is-success">기존 서명이 저장되어 있으므로 다시 서명하지 않아도 됩니다. 필요 시 아래 패드에 새 서명을 남길 수 있습니다.</p>
-                        {% endif %}
-                        <canvas class="signature-canvas" data-signature-canvas></canvas>
-                        <div class="signature-actions">
-                            <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
-                            <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                    {% if counterparty_signature_optional %}
+                        <div class="notification is-success is-light signature-optional-notice">
+                            <p>기존 서명이 저장되어 있으므로 동의 체크만 완료하면 계약을 확정할 수 있습니다.</p>
                         </div>
-                    </div>
-                    <div class="signature-preview" data-signature-preview hidden>
-                        <p class="signature-preview-label">서명 미리보기</p>
-                        <img src="" alt="서명 미리보기" data-signature-preview-img>
-                    </div>
+                    {% else %}
+                        <div class="signature-pad-wrapper">
+                            <canvas class="signature-canvas" data-signature-canvas></canvas>
+                            <div class="signature-actions">
+                                <p class="has-text-grey-light">자필 서명을 남겨주세요.</p>
+                                <button type="button" class="button is-small is-outlined" data-signature-clear>서명 지우기</button>
+                            </div>
+                        </div>
+                        <div class="signature-preview" data-signature-preview hidden>
+                            <p class="signature-preview-label">서명 미리보기</p>
+                            <img src="" alt="서명 미리보기" data-signature-preview-img>
+                        </div>
+                    {% endif %}
                 </div>
                 {% if payment_widget and payment_widget.requires_payment %}
                     <div class="lightning-payment-wrapper">

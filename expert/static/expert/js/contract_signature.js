@@ -1,82 +1,103 @@
 const initSignaturePads = () => {
-    if (typeof SignaturePad === 'undefined') {
+    const forms = document.querySelectorAll('[data-signature-form]');
+    if (!forms.length) {
         return;
     }
 
-    const canvases = document.querySelectorAll('[data-signature-canvas]');
-    if (!canvases.length) {
-        return;
-    }
-
-    canvases.forEach((canvas) => {
-        const form = canvas.closest('form');
-        if (!form) {
-            return;
-        }
-
+    forms.forEach((form) => {
+        const signatureOptional = form.dataset.signatureOptional === 'true';
+        const canvas = form.querySelector('[data-signature-canvas]');
+        const confirmInputs = form.querySelectorAll('[data-signature-confirm]');
+        const submitButton = form.querySelector('[data-signature-submit]');
+        const resolvePaymentStatusInput = () => form.querySelector('[data-payment-status-input]');
         let hiddenInput = form.querySelector('[data-signature-input]');
         if (!hiddenInput) {
             hiddenInput = form.querySelector('input[name="signature_data"]');
         }
         const clearButton = form.querySelector('[data-signature-clear]');
-        const confirmInputs = form.querySelectorAll('[data-signature-confirm]');
-        const submitButton = form.querySelector('[data-signature-submit]');
-        const resolvePaymentStatusInput = () => form.querySelector('[data-payment-status-input]');
+        let signaturePad = null;
 
-        if (!hiddenInput || !submitButton) {
+        if (!submitButton) {
             return;
         }
 
-        const signaturePad = new SignaturePad(canvas, {
-            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-            penColor: '#22d3ee',
-        });
-
-        function updateButtonState() {
-            const hasDataUrl = hiddenInput.value && hiddenInput.value.startsWith('data:image/');
-            const hasSignature = hasDataUrl || !signaturePad.isEmpty();
-            if (!hasDataUrl && hasSignature) {
-                hiddenInput.value = signaturePad.toDataURL('image/png');
+        const ensureHiddenInput = () => {
+            if (!signaturePad || signaturePad.isEmpty() || !hiddenInput) {
+                return;
             }
+            hiddenInput.value = signaturePad.toDataURL('image/png');
+        };
+
+        const hasSignature = () => {
+            if (signatureOptional) {
+                return true;
+            }
+            if (hiddenInput && hiddenInput.value && hiddenInput.value.startsWith('data:image/')) {
+                return true;
+            }
+            if (signaturePad && !signaturePad.isEmpty()) {
+                ensureHiddenInput();
+                return true;
+            }
+            return false;
+        };
+
+        const updateButtonState = () => {
             const confirmed = confirmInputs.length
                 ? Array.from(confirmInputs).every((input) => input.checked)
                 : true;
             const paymentInput = resolvePaymentStatusInput();
             const paymentSatisfied = !paymentInput || paymentInput.value === 'paid';
-            submitButton.disabled = !(hasSignature && confirmed && paymentSatisfied);
-        }
+            submitButton.disabled = !(hasSignature() && confirmed && paymentSatisfied);
+        };
 
-        const resizeCanvas = () => {
-            const data = signaturePad.toData();
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            const { offsetWidth, offsetHeight } = canvas;
-            canvas.width = offsetWidth * ratio;
-            canvas.height = offsetHeight * ratio;
-            canvas.getContext('2d').scale(ratio, ratio);
-            signaturePad.clear();
-            if (data && data.length) {
-                signaturePad.fromData(data);
-                hiddenInput.value = signaturePad.toDataURL('image/png');
-            } else {
-                hiddenInput.value = '';
+        if (canvas && typeof SignaturePad !== 'undefined') {
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                penColor: '#22d3ee',
+            });
+
+            const resizeCanvas = () => {
+                const data = signaturePad.toData();
+                const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                const { offsetWidth, offsetHeight } = canvas;
+                canvas.width = offsetWidth * ratio;
+                canvas.height = offsetHeight * ratio;
+                canvas.getContext('2d').scale(ratio, ratio);
+                signaturePad.clear();
+                if (data && data.length) {
+                    signaturePad.fromData(data);
+                    ensureHiddenInput();
+                } else if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
+                updateButtonState();
+            };
+
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            signaturePad.onEnd = () => {
+                ensureHiddenInput();
+                updateButtonState();
+            };
+
+            if (clearButton) {
+                clearButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    signaturePad.clear();
+                    if (hiddenInput) {
+                        hiddenInput.value = '';
+                    }
+                    updateButtonState();
+                });
             }
-            updateButtonState();
-        };
-
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        signaturePad.onEnd = () => {
-            const dataUrl = signaturePad.toDataURL('image/png');
-            hiddenInput.value = dataUrl;
-            updateButtonState();
-        };
-
-        if (clearButton) {
+        } else if (clearButton) {
             clearButton.addEventListener('click', (event) => {
                 event.preventDefault();
-                signaturePad.clear();
-                hiddenInput.value = '';
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
                 updateButtonState();
             });
         }
@@ -96,9 +117,6 @@ const initSignaturePads = () => {
         updateButtonState();
 
         form.addEventListener('submit', () => {
-            if (!submitButton) {
-                return;
-            }
             submitButton.disabled = true;
             submitButton.dataset.originalLabel = submitButton.dataset.originalLabel || submitButton.innerHTML;
             submitButton.innerHTML = '진행 중입니다... 잠시만 기다려 주세요.';

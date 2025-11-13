@@ -82,7 +82,10 @@
             </article>
         </div>
 
-        <form method="post" class="contract-flow-card">
+        <form method="post"
+              class="contract-flow-card"
+              data-signature-form
+              data-signature-optional="false">
             {% csrf_token %}
             <input type="hidden"
                    data-payment-status-input
