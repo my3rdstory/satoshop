@@ -1,2 +1,3 @@
-- [x] Pandoc mainfont를 번들 파일명으로 지정해 렌더링 완전 복구
+- [x] Pandoc xeCJK 미설치로 인한 PDF 실패 원인 파악
+- [x] TinyTeX 번들에 xeCJK 포함시키고 환경 구성 보완
 - [x] 변경 이력/문서 업데이트 및 검증 방법 안내

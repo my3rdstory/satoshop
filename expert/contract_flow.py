@@ -41,10 +41,13 @@ FONT_CANDIDATES = _bundle_font_candidates() + [
     Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
 ]
 
-FONT_OPTION_VARIABLES = (
+BASE_FONT_OPTION_VARIABLES = (
     "mainfontoptions",
     "sansfontoptions",
     "monofontoptions",
+)
+
+CJK_FONT_OPTION_VARIABLES = (
     "CJKmainfontoptions",
     "CJKsansfontoptions",
 )
@@ -156,11 +159,14 @@ def _build_font_option_payload(font_dir: str, configured_family: str) -> Tuple[O
     return option_string, primary_font
 
 
-def _build_font_option_args(option_string: Optional[str]) -> List[str]:
+def _build_font_option_args(option_string: Optional[str], include_cjk: bool) -> List[str]:
     if not option_string:
         return []
     args: List[str] = []
-    for variable in FONT_OPTION_VARIABLES:
+    variables = list(BASE_FONT_OPTION_VARIABLES)
+    if include_cjk:
+        variables.extend(CJK_FONT_OPTION_VARIABLES)
+    for variable in variables:
         args.extend(["-V", f"{variable}:{option_string}"])
     return args
 
@@ -349,6 +355,7 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
         ]
     font_family = getattr(settings, "EXPERT_PANDOC_FONT_FAMILY", "").strip()
     font_dir_setting = (getattr(settings, "EXPERT_FONT_DIR", "") or "").strip()
+    enable_cjk_fonts = bool(getattr(settings, "EXPERT_PANDOC_ENABLE_CJK", False))
     font_option_string, primary_font_override = _build_font_option_payload(font_dir_setting, font_family)
     effective_font = primary_font_override or font_family
     if effective_font:
@@ -359,13 +366,18 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
             f"sansfont:{effective_font}",
             "-V",
             f"monofont:{effective_font}",
-            "-V",
-            f"CJKmainfont:{effective_font}",
-            "-V",
-            f"CJKsansfont:{effective_font}",
         ]
+        if enable_cjk_fonts:
+            font_args.extend(
+                [
+                    "-V",
+                    f"CJKmainfont:{effective_font}",
+                    "-V",
+                    f"CJKsansfont:{effective_font}",
+                ]
+            )
         command.extend(font_args)
-        command.extend(_build_font_option_args(font_option_string))
+        command.extend(_build_font_option_args(font_option_string, enable_cjk_fonts))
         title = document_title or "SatoShop Expert 계약"
         command.extend(["--metadata", f"title={title}"])
         if pdf_engine:

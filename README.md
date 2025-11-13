@@ -529,6 +529,7 @@ SECURE_SSL_REDIRECT=True
   aria2c -x4 -s4 -d expert/fonts -o NotoSansKR-Regular.ttf http://192.168.1.2:8000/NotoSansKR-Regular.ttf
   aria2c -x4 -s4 -d expert/fonts -o NotoSansKR-Bold.ttf http://192.168.1.2:8000/NotoSansKR-Bold.ttf
   ```
+  - 기본값으로는 CJK 전용 LaTeX 매크로를 비활성화하여 TinyTeX 번들에 `xeCJK`/`ctex` 패키지가 없어도 PDF가 생성됩니다. 만약 해당 패키지를 설치한 환경이라면 `EXPERT_PANDOC_ENABLE_CJK=1`을 설정해 `\setCJKmainfont`/`\setCJKsansfont` 지정 기능을 다시 사용할 수 있습니다.
   바이너리 경로나 엔진을 바꾸려면 `EXPERT_PANDOC_PATH`, `EXPERT_PANDOC_PDF_ENGINE` 환경 변수를, 추가 옵션은 공백으로 구분해 `EXPERT_PANDOC_EXTRA_ARGS`에 지정하세요. 여백을 조절하려면 `EXPERT_PANDOC_GEOMETRY`(예: `top=18mm,bottom=18mm,left=16mm,right=16mm`), 표 기본 정렬/LaTeX 헤더를 커스터마이징하려면 `EXPERT_PANDOC_HEADER_INCLUDES`를 `||`로 구분된 LaTeX 스니펫 목록으로 설정하면 됩니다.
 - **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. 레포의 `expert/fonts/` 폴더(비어 있음)에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.

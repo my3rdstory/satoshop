@@ -307,6 +307,12 @@ else:
 
 EXPERT_FONT_DIR = os.getenv("EXPERT_FONT_DIR", str(BASE_DIR / "expert" / "fonts"))
 EXPERT_PANDOC_FONT_FAMILY = os.getenv("EXPERT_PANDOC_FONT_FAMILY", "Noto Sans KR")
+EXPERT_PANDOC_ENABLE_CJK = os.getenv("EXPERT_PANDOC_ENABLE_CJK", "").lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정
