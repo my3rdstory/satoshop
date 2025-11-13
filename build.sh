@@ -16,19 +16,9 @@ echo "🔧 시스템 의존성 확인 중..."
 # 렌더 환경에서 시스템 패키지 설치 시도
 if command -v apt-get >/dev/null 2>&1; then
     echo "📦 시스템 패키지 설치 중..."
-    if [ "$EUID" -ne 0 ]; then
-        if command -v sudo >/dev/null 2>&1; then
-            APT_PREFIX="sudo"
-        else
-            echo "❌ apt-get 실행 권한이 없어 필수 패키지를 설치할 수 없습니다."
-            exit 1
-        fi
-    else
-        APT_PREFIX=""
-    fi
     set -o pipefail
-    $APT_PREFIX apt-get update -qq
-    $APT_PREFIX apt-get install -y --no-install-recommends \
+    apt-get update -qq
+    apt-get install -y --no-install-recommends \
         libsecp256k1-dev \
         pandoc \
         fonts-noto-cjk \
