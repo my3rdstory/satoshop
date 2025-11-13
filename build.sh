@@ -13,6 +13,7 @@ echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
 DEPS_DIR="$PWD/.deps"
+mkdir -p "$DEPS_DIR/sources"
 mkdir -p "$DEPS_DIR"
 
 ensure_pandoc() {
@@ -22,8 +23,8 @@ ensure_pandoc() {
     local target_dir="$DEPS_DIR/pandoc-${version}"
     if [ ! -x "$target_dir/bin/pandoc" ]; then
         echo "📦 Pandoc ${version} 패키지 다운로드 중..."
-        curl -fsSL "$url" -o "/tmp/${archive}"
-        tar -xzf "/tmp/${archive}" -C "$DEPS_DIR"
+        curl -fsSL "$url" -o "$DEPS_DIR/sources/${archive}"
+        tar -xzf "$DEPS_DIR/sources/${archive}" -C "$DEPS_DIR"
     fi
     export PATH="$target_dir/bin:$PATH"
 }
@@ -33,8 +34,8 @@ ensure_tinytex() {
     local target_dir="$DEPS_DIR/TinyTeX"
     if [ ! -x "$target_dir/bin/x86_64-linux/tlmgr" ] && [ ! -x "$target_dir/bin/x86_64-linuxmusl/tlmgr" ]; then
         echo "📦 TinyTeX 설치 중..."
-        curl -fsSL "$url" -o /tmp/TinyTeX.tar.gz
-        tar -xzf /tmp/TinyTeX.tar.gz -C "$DEPS_DIR"
+        curl -fsSL "$url" -o "$DEPS_DIR/sources/TinyTeX.tar.gz"
+        tar -xzf "$DEPS_DIR/sources/TinyTeX.tar.gz" -C "$DEPS_DIR"
     fi
     local tl_bin
     tl_bin=$(find "$target_dir/bin" -maxdepth 1 -type d -name "x86_64-linux*" | head -n 1)
@@ -66,6 +67,7 @@ echo "🔧 Pandoc/TinyTeX 의존성 구성 중..."
 ensure_pandoc
 ensure_tinytex
 ensure_cjk_fonts
+echo "✅ Pandoc/TinyTeX PATH: $(which pandoc) / $(which xelatex)"
 
 echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치
