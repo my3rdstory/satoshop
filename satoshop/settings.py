@@ -266,7 +266,10 @@ EXPERT_BLINK_MEMO_PREFIX = os.getenv('EXPERT_BLINK_MEMO_PREFIX', 'SatoShop Exper
 EXPERT_SIGNER_CERT_PATH = os.getenv("EXPERT_SIGNER_CERT_PATH", "")
 EXPERT_SIGNER_CERT_BASE64 = os.getenv("EXPERT_SIGNER_CERT_BASE64", "")
 EXPERT_SIGNER_CERT_PASSWORD = os.getenv("EXPERT_SIGNER_CERT_PASSWORD", "")
-EXPERT_FONT_DIR = os.getenv("EXPERT_FONT_DIR", str(BASE_DIR / "expert" / "fonts"))
+EXPERT_FONT_DIR = os.getenv(
+    "EXPERT_FONT_DIR",
+    str(BASE_DIR / "expert" / "static" / "expert" / "fonts"),
+)
 
 # LNURL-auth 설정 (lnauth-django 호환)
 # 환경별 도메인 설정

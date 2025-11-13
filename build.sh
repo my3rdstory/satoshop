@@ -12,10 +12,10 @@ fi
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
-FONT_DIR="$PWD/expert/fonts"
+FONT_DIR="$PWD/expert/static/expert/fonts"
 
 if [ ! -f "$FONT_DIR/NotoSansKR-Regular.ttf" ] || [ ! -f "$FONT_DIR/NotoSansKR-Bold.ttf" ]; then
-    echo "❌ expert/fonts 폴더에 NotoSansKR-Regular/Bold.ttf가 필요합니다. README 명령으로 준비해주세요."
+    echo "❌ expert/static/expert/fonts 폴더에 NotoSansKR-Regular/Bold.ttf가 필요합니다. README 안내대로 준비해주세요."
     exit 1
 fi
 export OSFONTDIR="$FONT_DIR:${OSFONTDIR:-}"

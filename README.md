@@ -529,10 +529,10 @@ SECURE_SSL_REDIRECT=True
 - **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
 - **최종 계약서 PDF 렌더링**: 계약 본문은 Markdown → HTML 변환 후 WeasyPrint로 PDF를 생성합니다. HTML 템플릿(`expert/contract_pdf.html`)과 전용 스타일(`expert/static/expert/css/contract_pdf.css`)만 유지하면 되며, Pandoc/TinyTeX는 더 이상 필요하지 않습니다.
   - 서버에 Cairo, Pango, libffi, libjpeg 등 WeasyPrint가 요구하는 라이브러리가 설치되어 있어야 합니다. (예: `sudo apt-get install libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libffi-dev libjpeg-dev zlib1g-dev`).
-  - `expert/fonts/` 디렉터리에 `NotoSansKR-Regular.ttf`, `NotoSansKR-Bold.ttf`를 배치하면 본문/굵은 글꼴이 자동으로 적용됩니다.
+  - `expert/static/expert/fonts/` 디렉터리에 `NotoSansKR-Regular.ttf`, `NotoSansKR-Bold.ttf`를 배치하면 본문/굵은 글꼴이 자동으로 적용됩니다.
   - 이모지를 그대로 유지하고 싶다면 Noto Color Emoji 등 컬러 이모지 폰트를 서버에 추가 설치하면 바로 반영됩니다.
   - `expert/static/expert/css/contract_pdf.css`에는 카드형 본문, 3단계 불릿 마커, 다크 모드 팔레트가 포함되어 있으며 `scripts/render_sample_contract.py`로 샘플 워크로그 PDF를 생성해 스타일을 바로 검증할 수 있습니다.
-- **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. 레포의 `expert/fonts/` 폴더(비어 있음)에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
+- **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. `expert/static/expert/fonts/` 폴더에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
 - **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab`, `weasyprint` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
