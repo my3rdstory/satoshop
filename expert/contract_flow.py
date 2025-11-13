@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -39,6 +39,14 @@ FONT_CANDIDATES = _bundle_font_candidates() + [
     Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
     Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
 ]
+
+FONT_OPTION_VARIABLES = (
+    "mainfontoptions",
+    "sansfontoptions",
+    "monofontoptions",
+    "CJKmainfontoptions",
+    "CJKsansfontoptions",
+)
 
 CID_FONT_CANDIDATES = [
     "HYSMyeongJo-Medium",
@@ -84,6 +92,48 @@ def _register_bold_variant(font_name: str, font_path: Path):
             continue
         else:
             break
+
+
+def _find_font_variant(font_dir: Path, keywords: List[str]) -> Optional[str]:
+    lowered_keywords = [keyword.lower() for keyword in keywords]
+    for pattern in ("*.ttf", "*.otf"):
+        for candidate in sorted(font_dir.glob(pattern)):
+            name_lower = candidate.name.lower()
+            if all(keyword in name_lower for keyword in lowered_keywords):
+                return candidate.name
+    return None
+
+
+def _build_font_option_string(font_dir: str) -> Optional[str]:
+    if not font_dir:
+        return None
+    base_path = Path(font_dir).expanduser()
+    if not base_path.exists():
+        return None
+    resolved = base_path.resolve()
+    path_value = resolved.as_posix()
+    if not path_value.endswith("/"):
+        path_value += "/"
+    option_parts = [f"Path={path_value}"]
+    bold_font = _find_font_variant(resolved, ["bold"]) or _find_font_variant(resolved, ["medium"])
+    italic_font = _find_font_variant(resolved, ["italic"])
+    regular_font = _find_font_variant(resolved, ["regular"]) or _find_font_variant(resolved, ["book"])
+    if bold_font:
+        option_parts.append(f"BoldFont={bold_font}")
+    if italic_font:
+        option_parts.append(f"ItalicFont={italic_font}")
+    elif regular_font:
+        option_parts.append(f"ItalicFont={regular_font}")
+    return ",".join(part for part in option_parts if part)
+
+
+def _build_font_option_args(option_string: Optional[str]) -> List[str]:
+    if not option_string:
+        return []
+    args: List[str] = []
+    for variable in FONT_OPTION_VARIABLES:
+        args.extend(["-V", f"{variable}:{option_string}"])
+    return args
 
 
 def _format_generated_at(payload: Dict) -> str:
@@ -269,6 +319,8 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
             str(pdf_path),
         ]
     font_family = getattr(settings, "EXPERT_PANDOC_FONT_FAMILY", "").strip()
+    font_dir_setting = (getattr(settings, "EXPERT_FONT_DIR", "") or "").strip()
+    font_option_string = _build_font_option_string(font_dir_setting)
     if font_family:
         font_args = [
             "-V",
@@ -283,6 +335,7 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
             f"CJKsansfont:{font_family}",
         ]
         command.extend(font_args)
+        command.extend(_build_font_option_args(font_option_string))
         title = document_title or "SatoShop Expert 계약"
         command.extend(["--metadata", f"title={title}"])
         if pdf_engine:
@@ -316,10 +369,11 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
         if tinytex_bin:
             env_path = env.get("PATH", "")
             env["PATH"] = f"{tinytex_bin}:{env_path}" if env_path else tinytex_bin
-        font_dir = getattr(settings, "EXPERT_FONT_DIR", "")
-        if font_dir:
+        if font_dir_setting:
             existing_font_dir = env.get("OSFONTDIR")
-            env["OSFONTDIR"] = f"{font_dir}:{existing_font_dir}" if existing_font_dir else font_dir
+            env["OSFONTDIR"] = (
+                f"{font_dir_setting}:{existing_font_dir}" if existing_font_dir else font_dir_setting
+            )
         try:
             subprocess.run(
                 command,
