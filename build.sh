@@ -12,68 +12,59 @@ fi
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
-DEPS_DIR="$PWD/.deps"
-mkdir -p "$DEPS_DIR/sources"
-mkdir -p "$DEPS_DIR"
+DEPS_DIR="$PWD/expert/deps"
+PANDOC_VERSION="3.1.12.2"
+PANDOC_DIR="$DEPS_DIR/pandoc-${PANDOC_VERSION}"
+PANDOC_ARCHIVE="$DEPS_DIR/sources/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz"
+TINY_TEX_DIR="$DEPS_DIR/TinyTeX"
+TINY_TEX_ARCHIVE="$DEPS_DIR/sources/TinyTeX.tar.gz"
+FONT_DIR="$PWD/expert/fonts"
 
-ensure_pandoc() {
-    local version="3.3"
-    local archive="pandoc-${version}-linux-amd64.tar.gz"
-    local url="https://github.com/jgm/pandoc/releases/download/${version}/${archive}"
-    local target_dir="$DEPS_DIR/pandoc-${version}"
-    if [ ! -x "$target_dir/bin/pandoc" ]; then
-        echo "📦 Pandoc ${version} 패키지 다운로드 중..."
-        curl -fsSL "$url" -o "$DEPS_DIR/sources/${archive}"
-        tar -xzf "$DEPS_DIR/sources/${archive}" -C "$DEPS_DIR"
-    fi
-    export PATH="$target_dir/bin:$PATH"
-}
-
-ensure_tinytex() {
-    local url="https://yihui.org/tinytex/TinyTeX-1.tar.gz"
-    local target_dir="$DEPS_DIR/TinyTeX"
-    if [ ! -x "$target_dir/bin/x86_64-linux/tlmgr" ] && [ ! -x "$target_dir/bin/x86_64-linuxmusl/tlmgr" ]; then
-        echo "📦 TinyTeX 설치 중..."
-        curl -fsSL "$url" -o "$DEPS_DIR/sources/TinyTeX.tar.gz"
-        tar -xzf "$DEPS_DIR/sources/TinyTeX.tar.gz" -C "$DEPS_DIR"
-    fi
-    local tl_bin=""
-    for candidate in "$target_dir/bin/x86_64-linux" "$target_dir/bin/x86_64-linuxmusl"; do
-        if [ -x "$candidate/tlmgr" ]; then
-            tl_bin="$candidate"
-            break
-        fi
-    done
-    if [ -z "$tl_bin" ]; then
-        echo "❌ TinyTeX 바이너리를 찾을 수 없습니다."
-        ls -R "$target_dir" || true
+echo "🔧 Pandoc/TinyTeX 의존성 확인 중..."
+if [ ! -x "$PANDOC_DIR/bin/pandoc" ]; then
+    if [ -f "$PANDOC_ARCHIVE" ]; then
+        echo "📦 Pandoc 압축을 해제합니다..."
+        tar -xzf "$PANDOC_ARCHIVE" -C "$DEPS_DIR"
+    else
+        echo "❌ $PANDOC_ARCHIVE 파일이 필요합니다. README 지침으로 준비해주세요."
         exit 1
     fi
-    export PATH="$tl_bin:$PATH"
-    "$tl_bin/tlmgr" option repository http://mirror.ctan.org/systems/texlive/tlnet
-    "$tl_bin/tlmgr" update --self
-    "$tl_bin/tlmgr" install xetex fontspec xcolor setspace geometry fancyhdr hyperref longtable booktabs babel babel-korean luatex85 ulem wrapfig tabularx enumitem threeparttable colortbl multirow titlesec tcolorbox latexmk cjkpunct
-}
+fi
+export PATH="$PANDOC_DIR/bin:$PATH"
 
-ensure_cjk_fonts() {
-    local font_dir="expert/fonts"
-    mkdir -p "$font_dir"
-    if [ ! -f "$font_dir/NotoSansCJKkr-Regular.otf" ]; then
-        echo "📦 NotoSansCJKkr-Regular.otf 다운로드 중..."
-        curl -fsSL "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Regular/NotoSansCJKkr-Regular.otf" -o "$font_dir/NotoSansCJKkr-Regular.otf"
+if [ ! -x "$TINY_TEX_DIR/bin/x86_64-linux/xelatex" ] && [ ! -x "$TINY_TEX_DIR/bin/x86_64-linuxmusl/xelatex" ]; then
+    if [ -f "$TINY_TEX_ARCHIVE" ]; then
+        echo "📦 TinyTeX 압축을 해제합니다..."
+        tar -xzf "$TINY_TEX_ARCHIVE" -C "$DEPS_DIR"
+        if [ -d "$DEPS_DIR/.TinyTeX" ]; then
+            mv "$DEPS_DIR/.TinyTeX" "$TINY_TEX_DIR"
+        fi
+    else
+        echo "❌ $TINY_TEX_ARCHIVE 파일이 필요합니다. README 지침으로 준비해주세요."
+        exit 1
     fi
-    if [ ! -f "$font_dir/NotoSansCJKkr-Bold.otf" ]; then
-        echo "📦 NotoSansCJKkr-Bold.otf 다운로드 중..."
-        curl -fsSL "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Bold/NotoSansCJKkr-Bold.otf" -o "$font_dir/NotoSansCJKkr-Bold.otf"
-    fi
-    export OSFONTDIR="$PWD/$font_dir:${OSFONTDIR:-}"
-}
+fi
 
-echo "🔧 Pandoc/TinyTeX 의존성 구성 중..."
-ensure_pandoc
-ensure_tinytex
-ensure_cjk_fonts
-echo "✅ Pandoc/TinyTeX PATH: $(which pandoc) / $(which xelatex)"
+tlmgr_bin=""
+for candidate in "$TINY_TEX_DIR/bin/x86_64-linux" "$TINY_TEX_DIR/bin/x86_64-linuxmusl"; do
+    if [ -x "$candidate/xelatex" ]; then
+        tlmgr_bin="$candidate"
+        break
+    fi
+done
+if [ -z "$tlmgr_bin" ]; then
+    echo "❌ TinyTeX 실행 파일을 찾을 수 없습니다. README 지침대로 파일을 준비해주세요."
+    exit 1
+fi
+export PATH="$tlmgr_bin:$PATH"
+
+if [ ! -f "$FONT_DIR/NotoSansKR-Regular.ttf" ] || [ ! -f "$FONT_DIR/NotoSansKR-Bold.ttf" ]; then
+    echo "❌ expert/fonts 폴더에 NotoSansKR-Regular/Bold.ttf가 필요합니다. README 명령으로 준비해주세요."
+    exit 1
+fi
+export OSFONTDIR="$FONT_DIR:${OSFONTDIR:-}"
+echo "✅ Pandoc 경로: $(which pandoc)"
+echo "✅ XeLaTeX 경로: $(which xelatex)"
 
 echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치

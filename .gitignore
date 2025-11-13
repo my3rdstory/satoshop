@@ -82,8 +82,10 @@ profile_default/
 ipython_config.py
 
 # Build helper artifacts
-.deps/
 expert/fonts/*.otf
+expert/fonts/*.ttf
+expert/deps/pandoc-*/
+expert/deps/TinyTeX/
 
 # pyenv
 .python-version
