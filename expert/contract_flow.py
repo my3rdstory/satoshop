@@ -261,16 +261,13 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
     header_includes = list(getattr(settings, "EXPERT_PANDOC_HEADER_INCLUDES", None) or [])
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
-        markdown_path = tmpdir_path / "contract.md"
         pdf_path = tmpdir_path / "contract.pdf"
-        markdown_path.write_text(markdown_text, encoding="utf-8")
-    command: List[str] = [
-        pandoc_binary,
-        str(markdown_path),
-        "--from=gfm",
-        "-o",
-        str(pdf_path),
-    ]
+        command: List[str] = [
+            pandoc_binary,
+            "--from=gfm",
+            "-o",
+            str(pdf_path),
+        ]
     font_family = getattr(settings, "EXPERT_PANDOC_FONT_FAMILY", "").strip()
     if font_family:
         font_args = [
@@ -324,7 +321,13 @@ def _render_markdown_via_pandoc(markdown_text: str, document_title: str) -> byte
             existing_font_dir = env.get("OSFONTDIR")
             env["OSFONTDIR"] = f"{font_dir}:{existing_font_dir}" if existing_font_dir else font_dir
         try:
-            subprocess.run(command, check=True, capture_output=True, env=env)
+            subprocess.run(
+                command,
+                check=True,
+                capture_output=True,
+                env=env,
+                input=markdown_text.encode("utf-8"),
+            )
         except subprocess.CalledProcessError as exc:  # pragma: no cover - external binary
             stderr = (exc.stderr or b"").decode("utf-8", errors="ignore").strip()
             message = "Pandoc을 사용해 계약 PDF를 생성하지 못했습니다."
