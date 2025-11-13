@@ -11,6 +11,77 @@ from myshop.models import SiteSettings
 from .signature_assets import resolve_signature_url
 from .utils import calculate_sha256_from_field_file
 
+
+class ExpertHeroSlide(models.Model):
+    """Expert 랜딩 페이지 캐러셀 슬라이드."""
+
+    name = models.CharField(max_length=120, verbose_name="슬라이드 이름")
+    content_html = models.TextField(
+        verbose_name="콘텐츠 HTML",
+        help_text="Django 템플릿 문법과 HTML을 함께 사용할 수 있습니다.",
+    )
+    background_css = models.TextField(
+        blank=True,
+        verbose_name="배경 CSS",
+        help_text="background, gradient 등 CSS 선언 전체를 입력하세요.",
+    )
+    background_image = models.ImageField(
+        upload_to="expert/hero/backgrounds/",
+        blank=True,
+        null=True,
+        verbose_name="배경 이미지",
+    )
+    overlay_color = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="오버레이 색상",
+        help_text="rgba(2, 6, 23, 0.65) 와 같은 형식을 권장합니다.",
+    )
+    rotation_seconds = models.PositiveIntegerField(default=6, verbose_name="자동 전환 간격(초)")
+    order = models.PositiveIntegerField(default=0, db_index=True, verbose_name="표시 순서")
+    is_active = models.BooleanField(default=True, verbose_name="활성화")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="생성일")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="수정일")
+
+    class Meta:
+        ordering = ["order", "-updated_at"]
+        verbose_name = "Expert 히어로 슬라이드"
+        verbose_name_plural = "Expert 히어로 슬라이드"
+        indexes = [
+            models.Index(fields=["is_active", "order"], name="expert_hero_active_order"),
+        ]
+
+    def __str__(self):  # pragma: no cover - admin display helper
+        return self.name
+
+    @property
+    def overlay_style(self) -> str:
+        return self.overlay_color or "rgba(2, 6, 23, 0.65)"
+
+    @property
+    def background_style(self) -> str:
+        declarations: list[str] = []
+        if self.background_css:
+            css = " ".join(part.strip() for part in self.background_css.splitlines() if part.strip())
+            declarations.append(css if css.endswith(";") else f"{css};")
+        if self.background_image:
+            try:
+                declarations.append(
+                    "background-image: url('{url}'); background-size: cover; "
+                    "background-position: center; background-repeat: no-repeat;".format(
+                        url=self.background_image.url
+                    )
+                )
+            except ValueError:
+                pass
+        if not declarations:
+            declarations.append(
+                "background: radial-gradient(circle at top left, rgba(255, 184, 0, 0.35), transparent 45%), "
+                "radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 50%), "
+                "linear-gradient(135deg, #0f172a, #111827 55%, #020617 100%);"
+            )
+        return " ".join(declarations)
+
 try:
     CONTRACT_FILE_STORAGE = S3Storage()
 except Exception:  # pragma: no cover

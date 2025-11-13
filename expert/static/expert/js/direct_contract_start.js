@@ -1,12 +1,88 @@
 document.addEventListener('DOMContentLoaded', () => {
+    initFeatureCardHover();
+    applyStatCardMotion();
+    initExpertHeroCarousel();
+});
+
+function initFeatureCardHover() {
     const featureCards = document.querySelectorAll('.feature-card');
     featureCards.forEach((card) => {
         card.addEventListener('mouseenter', () => card.classList.add('is-highlighted'));
         card.addEventListener('mouseleave', () => card.classList.remove('is-highlighted'));
     });
+}
 
-    applyStatCardMotion();
-});
+function initExpertHeroCarousel() {
+    const carousel = document.querySelector('[data-expert-hero-carousel]');
+    if (!carousel) {
+        return;
+    }
+
+    const slides = Array.from(carousel.querySelectorAll('[data-expert-hero-slide]'));
+    if (!slides.length) {
+        return;
+    }
+
+    const prevButton = carousel.querySelector('[data-expert-carousel-prev]');
+    const nextButton = carousel.querySelector('[data-expert-carousel-next]');
+    const indicators = Array.from(carousel.querySelectorAll('[data-expert-carousel-indicator]'));
+    let activeIndex = Math.max(0, slides.findIndex((slide) => slide.classList.contains('is-active')));
+    if (activeIndex < 0) {
+        activeIndex = 0;
+        slides[0].classList.add('is-active');
+    }
+    let timerId = null;
+
+    const getDuration = (index) => {
+        const raw = Number(slides[index].dataset.duration || '6');
+        return Math.max(raw, 3) * 1000;
+    };
+
+    const activate = (index) => {
+        slides.forEach((slide, idx) => {
+            slide.classList.toggle('is-active', idx === index);
+        });
+        indicators.forEach((indicator) => {
+            const target = Number(indicator.dataset.expertCarouselIndicator || 0);
+            indicator.classList.toggle('is-active', target === index);
+        });
+        activeIndex = index;
+    };
+
+    const scheduleNext = () => {
+        clearTimeout(timerId);
+        if (slides.length <= 1) {
+            return;
+        }
+        timerId = setTimeout(() => goTo(activeIndex + 1), getDuration(activeIndex));
+    };
+
+    const goTo = (index) => {
+        const normalized = (index + slides.length) % slides.length;
+        activate(normalized);
+        scheduleNext();
+    };
+
+    if (prevButton) {
+        prevButton.addEventListener('click', () => goTo(activeIndex - 1));
+    }
+
+    if (nextButton) {
+        nextButton.addEventListener('click', () => goTo(activeIndex + 1));
+    }
+
+    indicators.forEach((indicator) => {
+        indicator.addEventListener('click', () => {
+            const target = Number(indicator.dataset.expertCarouselIndicator || 0);
+            goTo(target);
+        });
+    });
+
+    carousel.addEventListener('mouseenter', () => clearTimeout(timerId));
+    carousel.addEventListener('mouseleave', () => scheduleNext());
+
+    scheduleNext();
+}
 
 function applyStatCardMotion() {
     const statCards = document.querySelectorAll('.stat-card');

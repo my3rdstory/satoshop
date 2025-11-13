@@ -9,3 +9,5 @@
 3. `myshop/views.py`에서 슬라이드를 템플릿으로 렌더링하는 `_build_hero_slides()`를 추가하고, 홈 컨텍스트에 `hero_slides`를 주입해 `myshop/templates/myshop/home.html`에서 새로운 캐러셀 마크업을 출력.
 4. `static/myshop/css/home.css`와 `static/myshop/js/home.js`에 전용 스타일·스크립트를 추가해 페이드 전환, 자동 슬라이드, 인디케이터 및 키보드 포커스 안전성을 확보.
 5. `README.md`에 히어로 캐러셀 관리 방법을 문서화해 운영자가 HTML/템플릿 조각과 배경 옵션을 쉽게 이해하도록 안내.
+
+> ⚠️ 같은 날 Expert 랜딩 전용 캐러셀을 도입하면서 Myshop 홈 화면은 다시 정적 히어로 섹션으로 복원되었습니다.

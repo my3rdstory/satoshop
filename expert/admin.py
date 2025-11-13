@@ -15,6 +15,7 @@ from .models import (
     ContractPricingSetting,
     ExpertBlinkRevenueStats,
     ExpertUsageStats,
+    ExpertHeroSlide,
 )
 from .stats import aggregate_payment_stats, aggregate_usage_stats
 
@@ -553,3 +554,45 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         return table
 
     hash_comparison.short_description = "해시 비교"
+
+
+@admin.register(ExpertHeroSlide)
+class ExpertHeroSlideAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active", "order", "rotation_seconds", "updated_at")
+    list_editable = ("is_active", "order")
+    list_filter = ("is_active",)
+    search_fields = ("name", "content_html")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("order", "-updated_at")
+
+    fieldsets = (
+        ("기본 정보", {"fields": ("name", "is_active", "order", "rotation_seconds")}),
+        (
+            "배경 설정",
+            {
+                "fields": ("background_css", "background_image", "overlay_color"),
+                "description": "CSS/이미지를 조합해 슬라이드 배경을 구성합니다.",
+            },
+        ),
+        (
+            "콘텐츠",
+            {
+                "fields": ("content_html",),
+                "description": "HTML 또는 Django 템플릿 문법으로 슬라이드 본문을 작성하세요.",
+            },
+        ),
+        ("메타", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name == "content_html" and formfield.widget:
+            formfield.widget.attrs.setdefault("rows", 28)
+            formfield.widget.attrs.setdefault(
+                "style",
+                'font-family: "JetBrains Mono", monospace; line-height:1.4;',
+            )
+        if db_field.name == "background_css" and formfield.widget:
+            formfield.widget.attrs.setdefault("rows", 6)
+            formfield.widget.attrs.setdefault("placeholder", "background: linear-gradient(...);")
+        return formfield

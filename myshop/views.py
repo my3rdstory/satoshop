@@ -9,15 +9,6 @@ from django.utils import timezone
 from django.http import Http404
 from django.conf import settings
 import hashlib
-import logging
-from django.template import RequestContext, Template, TemplateSyntaxError
-from django.utils.safestring import mark_safe
-
-from .models import HeroCarouselSlide, SiteSettings
-from .context_processors import user_store
-
-
-logger = logging.getLogger(__name__)
 
 
 def _build_home_context():
@@ -88,78 +79,13 @@ def _build_home_context():
         }
     }
 
-
-def _build_hero_slides(request, base_context):
-    """활성화된 히어로 슬라이드를 렌더링해 템플릿에서 사용할 수 있도록 가공."""
-
-    site_settings = SiteSettings.get_settings()
-    slides_qs = HeroCarouselSlide.objects.filter(is_active=True).order_by('order', '-updated_at')
-    store_context = user_store(request)
-    slides = []
-
-    for slide in slides_qs:
-        snippet_context = {
-            'home_metrics': base_context.get('home_metrics', {}),
-            'site_settings': site_settings,
-            'user': request.user,
-            **store_context,
-        }
-        rendered_html = slide.content_html
-        try:
-            template = Template(slide.content_html)
-            rendered_html = template.render(RequestContext(request, snippet_context))
-        except TemplateSyntaxError as exc:
-            logger.warning("히어로 슬라이드(%s) 렌더링 오류: %s", slide.name, exc)
-        except Exception as exc:  # noqa: BLE001 - 템플릿 렌더링 오류 기록
-            logger.warning("히어로 슬라이드(%s) 렌더링 실패: %s", slide.name, exc)
-
-        slides.append(
-            {
-                'id': slide.id,
-                'name': slide.name,
-                'rotation_seconds': slide.rotation_seconds or 6,
-                'background_style': slide.background_style,
-                'overlay_color': slide.overlay_style,
-                'html': mark_safe(rendered_html),
-            }
-        )
-
-    if not slides:
-        fallback_slide = HeroCarouselSlide()
-        fallback_slide.background_css = (
-            "background: radial-gradient(circle at top left, rgba(255, 184, 0, 0.35), transparent 45%),"
-            " radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 50%),"
-            " linear-gradient(135deg, #0f172a, #111827 55%, #020617 100%);"
-        )
-        slides.append(
-            {
-                'id': 'fallback',
-                'name': '기본 소개',
-                'rotation_seconds': 8,
-                'background_style': fallback_slide.background_style,
-                'overlay_color': fallback_slide.overlay_style,
-                'html': mark_safe(
-                    "<div class=\"relative max-w-5xl mx-auto py-24 text-center text-white\">"
-                    "<h1 class=\"text-4xl font-extrabold\">SatoShop</h1>"
-                    "<p class=\"mt-4 text-lg text-white/80\">비트코인 라이트닝으로 빠르게 스토어를 시작하세요.</p>"
-                    "</div>"
-                ),
-            }
-        )
-
-    return slides
-
 # Create your views here.
 
 def home(request):
     """홈페이지 뷰"""
-    context = None
-
     # force_home 파라미터가 있으면 리다이렉트하지 않고 홈페이지 표시
     if request.GET.get('force_home'):
-        context = _build_home_context()
-        context['hero_slides'] = _build_hero_slides(request, context)
-        return render(request, 'myshop/home.html', context)
+        return render(request, 'myshop/home.html', _build_home_context())
     
     # 로그인한 사용자가 스토어를 가지고 있으면 스토어 홈으로 이동
     if request.user.is_authenticated:
@@ -176,10 +102,7 @@ def home(request):
         except Exception:
             pass  # 에러 발생 시 홈페이지 계속 표시
     
-    if context is None:
-        context = _build_home_context()
-        context['hero_slides'] = _build_hero_slides(request, context)
-    return render(request, 'myshop/home.html', context)
+    return render(request, 'myshop/home.html', _build_home_context())
 
 @require_http_methods(["GET"])
 def get_exchange_rate(request):

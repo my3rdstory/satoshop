@@ -8,35 +8,34 @@
 {% endblock %}
 
 {% block content %}
-<section class="direct-contract-hero section">
-    <div class="container hero-grid">
-        <div class="hero-copy">
-            <span class="hero-pill">1:1 직접 계약</span>
-            <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
-            <p>
-                직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
-            </p>
-            <div class="hero-actions">
-                {% if request.user.is_authenticated %}
-                    <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
-                {% else %}
-                    <a class="button is-primary is-medium" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">계약 작성 시작</a>
-                {% endif %}
-                <p class="is-size-7 has-text-grey">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
+{% if hero_slides %}
+<section class="expert-hero-carousel section" data-expert-hero-carousel>
+    {% for slide in hero_slides %}
+        <article id="expert-hero-slide-{{ forloop.counter0 }}" class="expert-hero-slide{% if forloop.first %} is-active{% endif %}" data-expert-hero-slide data-duration="{{ slide.rotation_seconds }}">
+            <div class="expert-hero-bg" style="{{ slide.background_style }}">
+                <span class="expert-hero-overlay" style="background: {{ slide.overlay_color }};"></span>
             </div>
-        </div>
-        <div class="hero-side">
-            <div class="hero-card">
-                <p class="hero-card-title">기본 원칙</p>
-                <ul>
-                    <li><span class="hero-bullet">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
-                    <li><span class="hero-bullet">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
-                    <li><span class="hero-bullet">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
-                </ul>
+            <div class="expert-hero-body">
+                {{ slide.html|safe }}
             </div>
+        </article>
+    {% endfor %}
+
+    {% if hero_slides|length > 1 %}
+        <button class="expert-hero-nav expert-hero-nav-prev" type="button" data-expert-carousel-prev aria-label="이전 배너">
+            <span aria-hidden="true">&#10094;</span>
+        </button>
+        <button class="expert-hero-nav expert-hero-nav-next" type="button" data-expert-carousel-next aria-label="다음 배너">
+            <span aria-hidden="true">&#10095;</span>
+        </button>
+        <div class="expert-hero-indicators" role="tablist">
+            {% for slide in hero_slides %}
+                <button class="expert-hero-indicator{% if forloop.first %} is-active{% endif %}" type="button" data-expert-carousel-indicator="{{ forloop.counter0 }}" aria-label="{{ slide.name }}" aria-controls="expert-hero-slide-{{ forloop.counter0 }}"></button>
+            {% endfor %}
         </div>
-    </div>
+    {% endif %}
 </section>
+{% endif %}
 
 <section class="section contract-feature-grid">
     <div class="container feature-grid">

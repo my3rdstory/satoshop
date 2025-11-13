@@ -3,13 +3,7 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 from django.urls import path, reverse
 from django.utils.html import format_html
-from .models import (
-    SiteSettings,
-    ExchangeRate,
-    DocumentContent,
-    CacheManager,
-    HeroCarouselSlide,
-)
+from .models import SiteSettings, ExchangeRate, DocumentContent, CacheManager
 from .services import UpbitExchangeService
 
 # Register your models here.
@@ -416,51 +410,3 @@ class DocumentContentAdmin(admin.ModelAdmin):
             except:
                 pass
         return super().change_view(request, object_id, form_url, extra_context)
-
-
-@admin.register(HeroCarouselSlide)
-class HeroCarouselSlideAdmin(admin.ModelAdmin):
-    list_display = [
-        'name',
-        'is_active',
-        'order',
-        'rotation_seconds',
-        'updated_at',
-    ]
-    list_editable = ['is_active', 'order']
-    list_filter = ['is_active']
-    search_fields = ['name', 'content_html']
-    ordering = ['order', '-updated_at']
-    readonly_fields = ['created_at', 'updated_at']
-
-    fieldsets = (
-        ('기본 정보', {
-            'fields': ('name', 'is_active', 'order', 'rotation_seconds'),
-        }),
-        ('배경 설정', {
-            'fields': ('background_css', 'background_image', 'overlay_color'),
-            'description': 'CSS 선언 또는 이미지를 통해 배경을 설정하세요. 둘 다 입력하면 함께 적용됩니다.'
-        }),
-        ('콘텐츠', {
-            'fields': ('content_html',),
-            'description': 'Hero 영역에 렌더링될 HTML/템플릿 조각을 입력합니다. {{ user }}나 {{ home_metrics }} 같은 컨텍스트를 그대로 사용할 수 있습니다.'
-        }),
-        ('메타', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        formfield = super().formfield_for_dbfield(db_field, **kwargs)
-        if db_field.name == 'content_html':
-            formfield.widget.attrs.update({
-                'rows': 30,
-                'style': 'font-family: "JetBrains Mono", monospace;'
-            })
-        elif db_field.name == 'background_css':
-            formfield.widget.attrs.update({
-                'rows': 6,
-                'placeholder': 'background: linear-gradient(...);\nfilter: blur(20px);'
-            })
-        return formfield

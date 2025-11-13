@@ -1,3 +1,105 @@
+.expert-hero-carousel {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0;
+    min-height: 520px;
+}
+
+.expert-hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    transform: translateY(16px);
+}
+
+.expert-hero-slide.is-active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.expert-hero-bg {
+    position: absolute;
+    inset: 0;
+}
+
+.expert-hero-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+.expert-hero-body {
+    position: relative;
+    z-index: 1;
+}
+
+.expert-hero-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: rgba(2, 6, 23, 0.5);
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: opacity 0.2s ease;
+}
+
+.expert-hero-nav:hover {
+    background: rgba(14, 165, 233, 0.35);
+    border-color: rgba(14, 165, 233, 0.7);
+}
+
+.expert-hero-nav-prev {
+    left: 1.5rem;
+}
+
+.expert-hero-nav-next {
+    right: 1.5rem;
+}
+
+.expert-hero-indicators {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.5rem;
+}
+
+.expert-hero-indicator {
+    width: 2.5rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: rgba(248, 250, 252, 0.35);
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s ease, width 0.2s ease;
+}
+
+.expert-hero-indicator.is-active {
+    background: #fbbf24;
+    width: 3rem;
+}
+
+@media (max-width: 640px) {
+    .expert-hero-carousel {
+        min-height: 460px;
+    }
+
+    .expert-hero-nav {
+        display: none;
+    }
+}
+
 .direct-contract-hero {
     background: linear-gradient(130deg, rgba(12, 19, 45, 0.95), rgba(8, 145, 178, 0.8));
     border-radius: 0;

@@ -1,3 +1,4 @@
+import logging
 import markdown
 
 import json
@@ -12,8 +13,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template import RequestContext, Template, TemplateSyntaxError
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import TemplateView, FormView, RedirectView
@@ -35,6 +38,7 @@ from .models import (
     ContractParticipant,
     DirectContractDocument,
     DirectContractStageLog,
+    ExpertHeroSlide,
 )
 from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
 from .forms import (
@@ -65,6 +69,9 @@ from .utils import (
 from .stats import aggregate_usage_stats
 
 
+logger = logging.getLogger(__name__)
+
+
 def render_contract_markdown(text: str) -> str:
     """계약서 마크다운을 HTML로 안전하게 변환."""
 
@@ -88,6 +95,94 @@ def render_contract_markdown(text: str) -> str:
         output_format="html5",
     )
     return md.convert(text)
+
+
+def _build_expert_hero_slides(request, base_context: dict) -> list[dict]:
+    """활성화된 히어로 슬라이드를 템플릿으로 렌더링한다."""
+
+    slides: list[dict] = []
+    payload = {k: v for k, v in base_context.items() if k != "hero_slides"}
+    payload.update({"request": request, "user": request.user})
+
+    queryset = ExpertHeroSlide.objects.filter(is_active=True).order_by("order", "-updated_at")
+    for slide in queryset:
+        rendered = slide.content_html
+        try:
+            template = Template(slide.content_html)
+            rendered = template.render(RequestContext(request, payload))
+        except TemplateSyntaxError as exc:
+            logger.warning("히어로 슬라이드(%s) 템플릿 오류: %s", slide.name, exc)
+            continue
+        except Exception as exc:  # pragma: no cover - 안전 장치
+            logger.warning("히어로 슬라이드(%s) 렌더링 실패: %s", slide.name, exc)
+            continue
+
+        slides.append(
+            {
+                "id": slide.id,
+                "name": slide.name,
+                "rotation_seconds": slide.rotation_seconds or 6,
+                "background_style": slide.background_style,
+                "overlay_color": slide.overlay_style,
+                "html": mark_safe(rendered),
+            }
+        )
+
+    if slides:
+        return slides
+
+    fallback_html = """
+<div class=\"direct-contract-hero section\">
+  <div class=\"container hero-grid\">
+    <div class=\"hero-copy\">
+      <span class=\"hero-pill\">1:1 직접 계약</span>
+      <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
+      <p>직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.</p>
+      <div class=\"hero-actions\">
+        {% if request.user.is_authenticated %}
+          <a class=\"button is-primary is-medium\" href=\"{% url 'expert:direct-draft' %}\">계약 작성 시작</a>
+        {% else %}
+          <a class=\"button is-primary is-medium\" href=\"{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}\">계약 작성 시작</a>
+        {% endif %}
+        <p class=\"is-size-7 has-text-grey\">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
+      </div>
+    </div>
+    <div class=\"hero-side\">
+      <div class=\"hero-card\">
+        <p class=\"hero-card-title\">기본 원칙</p>
+        <ul>
+          <li><span class=\"hero-bullet\">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
+          <li><span class=\"hero-bullet\">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
+          <li><span class=\"hero-bullet\">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+""".strip()
+
+    fallback_slide = ExpertHeroSlide(
+        name="기본 Hero",
+        background_css=(
+            "background: radial-gradient(circle at top left, rgba(255, 184, 0, 0.35), transparent 45%), "
+            "radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 50%), "
+            "linear-gradient(135deg, #0f172a, #111827 55%, #020617 100%);"
+        ),
+    )
+
+    template = Template(fallback_html)
+    rendered_fallback = template.render(RequestContext(request, payload))
+
+    return [
+        {
+            "id": "fallback",
+            "name": "기본 Hero",
+            "rotation_seconds": 8,
+            "background_style": fallback_slide.background_style,
+            "overlay_color": fallback_slide.overlay_style,
+            "html": mark_safe(rendered_fallback),
+        }
+    ]
 
 
 def record_stage_log(stage: str, *, document=None, token: str | None = None, meta: dict | None = None):
@@ -137,6 +232,7 @@ class ExpertLandingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["usage_stats"] = aggregate_usage_stats()
+        context["hero_slides"] = _build_expert_hero_slides(self.request, context)
         return context
 
 
