@@ -57,7 +57,9 @@ def build_sample_document() -> DummyDocument:
         payload=payload,
         slug="sample-contract",
         creator_hash="CREATOR-HASH-PLACEHOLDER",
+        creator_lightning_id=payload["creator_lightning_id"],
         counterparty_hash="COUNTERPARTY-HASH-PLACEHOLDER",
+        counterparty_lightning_id=payload["counterparty_lightning_id"],
         mediator_hash="MEDIATOR-HASH-PLACEHOLDER",
     )
 
