@@ -13,11 +13,22 @@ echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
 echo "🔧 시스템 의존성 확인 중..."
-# 렌더 환경에서 시스템 패키지 설치 시도 (가능한 경우에만)
-if command -v apt-get >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
+# 렌더 환경에서 시스템 패키지 설치 시도
+if command -v apt-get >/dev/null 2>&1; then
     echo "📦 시스템 패키지 설치 중..."
-    apt-get update -qq || echo "⚠️ apt-get update 실패, 계속 진행"
-    apt-get install -y --no-install-recommends \
+    if [ "$EUID" -ne 0 ]; then
+        if command -v sudo >/dev/null 2>&1; then
+            APT_PREFIX="sudo"
+        else
+            echo "❌ apt-get 실행 권한이 없어 필수 패키지를 설치할 수 없습니다."
+            exit 1
+        fi
+    else
+        APT_PREFIX=""
+    fi
+    set -o pipefail
+    $APT_PREFIX apt-get update -qq
+    $APT_PREFIX apt-get install -y --no-install-recommends \
         libsecp256k1-dev \
         pandoc \
         fonts-noto-cjk \
@@ -25,10 +36,11 @@ if command -v apt-get >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
         pkg-config \
         build-essential \
         libffi-dev \
-        python3-dev || echo "⚠️ 시스템 패키지 설치 실패, pip 컴파일로 대체"
+        python3-dev
 else
-    echo "⚠️ 시스템 패키지 설치 권한 없음 - pip를 통한 소스 컴파일 사용"
-    echo "🔧 렌더 환경에서는 필요한 빌드 도구들이 일반적으로 사용 가능"
+    echo "⚠️ apt-get을 찾을 수 없어 시스템 패키지를 설치하지 못했습니다."
+    echo "❌ pandoc/xelatex을 설치할 수 없어 빌드를 중단합니다."
+    exit 1
 fi
 
 echo "📦 의존성 설치 중..."

@@ -5,4 +5,5 @@
 - 새 환경 변수 `EXPERT_PANDOC_GEOMETRY`로 여백(geometry) 값을 조정하고, `EXPERT_PANDOC_HEADER_INCLUDES` 기본값에 `\AtBeginEnvironment{longtable}{\raggedright}`를 적용해 표가 좌측 정렬되도록 했으며 필요 시 사용자 정의 LaTeX 스니펫을 주입할 수 있습니다.
 - README의 Expert 섹션에 Pandoc 설치 및 설정 지침을 추가해 배포 환경에서 필요한 OS 패키지를 명확히 했습니다.
 - Render 배포 스크립트(`build.sh`)가 `pandoc`, `texlive-xetex`, `fonts-noto-cjk`를 자동 설치해 서버 빌드 단계에서 바로 PDF를 생성할 수 있게 했습니다.
+- Render 빌드 환경에서 apt 권한이 없으면 즉시 실패하도록 `build.sh`를 강화해 `pandoc/xelatex` 누락으로 인한 런타임 오류를 예방했습니다.
 - 최종 계약서 파일명에 타임스탬프(`direct-contract-<slug>-YYYYMMDDHHMMSS.pdf`)를 붙여 CDN/브라우저 캐시가 남아있는 경우에도 항상 최신 파일을 내려받도록 했습니다.
