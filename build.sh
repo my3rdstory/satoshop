@@ -37,10 +37,16 @@ ensure_tinytex() {
         curl -fsSL "$url" -o "$DEPS_DIR/sources/TinyTeX.tar.gz"
         tar -xzf "$DEPS_DIR/sources/TinyTeX.tar.gz" -C "$DEPS_DIR"
     fi
-    local tl_bin
-    tl_bin=$(find "$target_dir/bin" -maxdepth 1 -type d -name "x86_64-linux*" | head -n 1)
+    local tl_bin=""
+    for candidate in "$target_dir/bin/x86_64-linux" "$target_dir/bin/x86_64-linuxmusl"; do
+        if [ -x "$candidate/tlmgr" ]; then
+            tl_bin="$candidate"
+            break
+        fi
+    done
     if [ -z "$tl_bin" ]; then
         echo "❌ TinyTeX 바이너리를 찾을 수 없습니다."
+        ls -R "$target_dir" || true
         exit 1
     fi
     export PATH="$tl_bin:$PATH"
