@@ -26,8 +26,6 @@ if command -v apt-get >/dev/null 2>&1; then
         "-o" "Dir::State::Status=$APT_STATE_DIR/status"
         "-o" "Dir::Cache=$APT_STATE_DIR/cache"
         "-o" "Dir::Cache::Archives=$APT_STATE_DIR/archives"
-        "-o" "Dir::Etc=$APT_STATE_DIR/etc"
-        "-o" "Dir::Log=$APT_STATE_DIR/log"
         "-o" "DPkg::Log=$APT_STATE_DIR/dpkg.log"
     )
     apt-get "${APT_OPTS[@]}" update -qq
