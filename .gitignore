@@ -81,6 +81,10 @@ target/
 profile_default/
 ipython_config.py
 
+# Build helper artifacts
+.deps/
+expert/fonts/*.otf
+
 # pyenv
 .python-version
 

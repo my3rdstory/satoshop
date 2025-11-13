@@ -12,38 +12,60 @@ fi
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
-echo "🔧 시스템 의존성 확인 중..."
-# 렌더 환경에서 시스템 패키지 설치 시도
-if command -v apt-get >/dev/null 2>&1; then
-    echo "📦 시스템 패키지 설치 중..."
-    set -o pipefail
-    export DEBIAN_FRONTEND=noninteractive
-    APT_STATE_DIR=$(mktemp -d /tmp/apt-state-XXXXXX)
-    mkdir -p "$APT_STATE_DIR/lists/partial" "$APT_STATE_DIR/archives/partial"
-    APT_OPTS=(
-        "-o" "Dir::State=$APT_STATE_DIR"
-        "-o" "Dir::State::Lists=$APT_STATE_DIR/lists"
-        "-o" "Dir::State::Status=$APT_STATE_DIR/status"
-        "-o" "Dir::Cache=$APT_STATE_DIR/cache"
-        "-o" "Dir::Cache::Archives=$APT_STATE_DIR/archives"
-        "-o" "DPkg::Log=$APT_STATE_DIR/dpkg.log"
-    )
-    apt-get "${APT_OPTS[@]}" update -qq
-    apt-get "${APT_OPTS[@]}" install -y --no-install-recommends \
-        libsecp256k1-dev \
-        pandoc \
-        fonts-noto-cjk \
-        texlive-xetex \
-        pkg-config \
-        build-essential \
-        libffi-dev \
-        python3-dev
-    rm -rf "$APT_STATE_DIR"
-else
-    echo "⚠️ apt-get을 찾을 수 없어 시스템 패키지를 설치하지 못했습니다."
-    echo "❌ pandoc/xelatex을 설치할 수 없어 빌드를 중단합니다."
-    exit 1
-fi
+DEPS_DIR="$PWD/.deps"
+mkdir -p "$DEPS_DIR"
+
+ensure_pandoc() {
+    local version="3.3"
+    local archive="pandoc-${version}-linux-amd64.tar.gz"
+    local url="https://github.com/jgm/pandoc/releases/download/${version}/${archive}"
+    local target_dir="$DEPS_DIR/pandoc-${version}"
+    if [ ! -x "$target_dir/bin/pandoc" ]; then
+        echo "📦 Pandoc ${version} 패키지 다운로드 중..."
+        curl -fsSL "$url" -o "/tmp/${archive}"
+        tar -xzf "/tmp/${archive}" -C "$DEPS_DIR"
+    fi
+    export PATH="$target_dir/bin:$PATH"
+}
+
+ensure_tinytex() {
+    local url="https://yihui.org/tinytex/TinyTeX-1.tar.gz"
+    local target_dir="$DEPS_DIR/TinyTeX"
+    if [ ! -x "$target_dir/bin/x86_64-linux/tlmgr" ] && [ ! -x "$target_dir/bin/x86_64-linuxmusl/tlmgr" ]; then
+        echo "📦 TinyTeX 설치 중..."
+        curl -fsSL "$url" -o /tmp/TinyTeX.tar.gz
+        tar -xzf /tmp/TinyTeX.tar.gz -C "$DEPS_DIR"
+    fi
+    local tl_bin
+    tl_bin=$(find "$target_dir/bin" -maxdepth 1 -type d -name "x86_64-linux*" | head -n 1)
+    if [ -z "$tl_bin" ]; then
+        echo "❌ TinyTeX 바이너리를 찾을 수 없습니다."
+        exit 1
+    fi
+    export PATH="$tl_bin:$PATH"
+    "$tl_bin/tlmgr" option repository http://mirror.ctan.org/systems/texlive/tlnet
+    "$tl_bin/tlmgr" update --self
+    "$tl_bin/tlmgr" install xetex fontspec xcolor setspace geometry fancyhdr hyperref longtable booktabs babel babel-korean luatex85 ulem wrapfig tabularx enumitem threeparttable colortbl multirow titlesec tcolorbox latexmk cjkpunct
+}
+
+ensure_cjk_fonts() {
+    local font_dir="expert/fonts"
+    mkdir -p "$font_dir"
+    if [ ! -f "$font_dir/NotoSansCJKkr-Regular.otf" ]; then
+        echo "📦 NotoSansCJKkr-Regular.otf 다운로드 중..."
+        curl -fsSL "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Regular/NotoSansCJKkr-Regular.otf" -o "$font_dir/NotoSansCJKkr-Regular.otf"
+    fi
+    if [ ! -f "$font_dir/NotoSansCJKkr-Bold.otf" ]; then
+        echo "📦 NotoSansCJKkr-Bold.otf 다운로드 중..."
+        curl -fsSL "https://github.com/googlefonts/noto-cjk/raw/main/Sans/OTF/Bold/NotoSansCJKkr-Bold.otf" -o "$font_dir/NotoSansCJKkr-Bold.otf"
+    fi
+    export OSFONTDIR="$PWD/$font_dir:${OSFONTDIR:-}"
+}
+
+echo "🔧 Pandoc/TinyTeX 의존성 구성 중..."
+ensure_pandoc
+ensure_tinytex
+ensure_cjk_fonts
 
 echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치
