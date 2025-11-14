@@ -51,23 +51,37 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
+.usage-stats {
+  --usage-card-bg: #fff;
+  --usage-card-border: #d4d4d8;
+  --usage-card-muted: #6b7280;
+  --usage-card-subtle: #9ca3af;
+  --usage-divider: #f3f4f6;
+}
+:root[data-theme="dark"] .usage-stats {
+  --usage-card-bg: #111827;
+  --usage-card-border: #1f2937;
+  --usage-card-muted: #94a3af;
+  --usage-card-subtle: #94a3af;
+  --usage-divider: #374151;
+}
 .usage-stats .stats-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
 }
 .usage-stats .stat-card {
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--usage-card-border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
-  background: #fff;
+  background: var(--usage-card-bg);
 }
 .usage-stats .stat-label {
   text-transform: uppercase;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   margin-bottom: 0.35rem;
-  color: #6b7280;
+  color: var(--usage-card-muted);
 }
 .usage-stats .stat-value {
   font-size: 1.6rem;
@@ -77,12 +91,12 @@
 .usage-stats .stat-subtitle {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--usage-card-muted);
 }
 .usage-stats .stat-subnote {
   margin: 0.2rem 0 0;
   font-size: 0.78rem;
-  color: #9ca3af;
+  color: var(--usage-card-subtle);
 }
 .usage-stats .stat-list {
   list-style: none;
@@ -96,13 +110,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.35rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--usage-divider);
 }
 .usage-stats .stat-list li:last-child {
   border-bottom: 0;
 }
 .usage-stats .stat-list span {
-  color: #6b7280;
+  color: var(--usage-card-muted);
 }
 </style>
 {% endblock %}

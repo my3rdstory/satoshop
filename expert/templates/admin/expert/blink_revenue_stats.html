@@ -118,27 +118,45 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
+.blink-stats {
+  --blink-card-bg: #fff;
+  --blink-card-border: #d4d4d8;
+  --blink-card-muted: #6b7280;
+  --blink-card-highlight: #f97316;
+  --blink-table-border: #e5e7eb;
+  --blink-nav-bg: #f9fafb;
+  --blink-nav-fg: #374151;
+}
+:root[data-theme="dark"] .blink-stats {
+  --blink-card-bg: #111827;
+  --blink-card-border: #1f2937;
+  --blink-card-muted: #94a3af;
+  --blink-card-highlight: #fb923c;
+  --blink-table-border: #374151;
+  --blink-nav-bg: #1f2937;
+  --blink-nav-fg: #e2e8f0;
+}
 .blink-stats .stats-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 .blink-stats .stat-card {
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--blink-card-border);
   border-radius: 12px;
   padding: 1rem 1.25rem;
-  background: #fff;
+  background: var(--blink-card-bg);
 }
 .blink-stats .stat-card.highlight {
-  border-color: #f97316;
-  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.15);
+  border-color: var(--blink-card-highlight);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.18);
 }
 .blink-stats .stat-label {
   text-transform: uppercase;
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   margin-bottom: 0.3rem;
-  color: #6b7280;
+  color: var(--blink-card-muted);
 }
 .blink-stats .stat-value {
   font-size: 1.6rem;
@@ -148,7 +166,7 @@
 .blink-stats .stat-subtitle {
   margin: 0.2rem 0 0;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--blink-card-muted);
 }
 .blink-stats .admin-table {
   width: 100%;
@@ -157,7 +175,7 @@
 }
 .blink-stats .admin-table th,
 .blink-stats .admin-table td {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--blink-table-border);
   padding: 0.55rem 0.25rem;
   text-align: left;
 }
@@ -169,11 +187,12 @@
   margin-bottom: 1.25rem;
 }
 .blink-stats .month-nav-btn {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--blink-card-border);
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--blink-nav-fg);
+  background: var(--blink-nav-bg);
   text-decoration: none;
 }
 .blink-stats .month-nav-btn.is-disabled {
