@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import markdown
 
@@ -20,6 +21,7 @@ from django.utils.safestring import mark_safe
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import TemplateView, FormView, RedirectView
+from django.core.files.base import ContentFile
 
 from storage.backends import S3Storage
 from accounts.models import LightningUser
@@ -781,17 +783,39 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
                 self.request,
                 f"전자 서명에 실패해 서명 없이 계약서를 저장했습니다. (사유: {exc})",
             )
-        pdf_hash = calculate_sha256_from_fileobj(pdf_content)
-        self.document.final_pdf.save(pdf_content.name, pdf_content)
-        self.document.final_pdf_hash = pdf_hash
-        self.document.final_pdf_generated_at = timezone.now()
+        pdf_content.seek(0)
+        pdf_bytes = pdf_content.read()
+        pdf_file_name = pdf_content.name or f"direct-contract-{self.document.slug}-{timezone.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
         self.document.status = "completed"
-        self.document.save()
-        record_stage_log("completed", document=self.document)
 
-        delivery = send_direct_contract_document_email(self.document)
+        delivery = send_direct_contract_document_email(self.document, attachment=(pdf_file_name, pdf_bytes))
+
+        storage_saved = False
+        try:
+            self.document.final_pdf.save(pdf_file_name, ContentFile(pdf_bytes), save=False)
+            self.document.final_pdf_hash = pdf_hash
+            self.document.final_pdf_generated_at = timezone.now()
+            storage_saved = True
+            logger.info(
+                "최종 계약서 PDF 업로드 완료: slug=%s size=%d",
+                self.document.slug,
+                len(pdf_bytes),
+            )
+        except Exception as exc:
+            logger.error("최종 계약서 PDF를 스토리지에 저장하지 못했습니다: %s", exc)
+            messages.warning(
+                self.request,
+                "최종 계약서 PDF를 오브젝트 스토리지에 저장하지 못했습니다. 이메일 첨부본을 확인해 주세요.",
+            )
+            self.document.final_pdf.delete(save=False)
+
         self.document.email_delivery = delivery
-        self.document.save(update_fields=["email_delivery", "updated_at"])
+        update_fields = ["status", "email_delivery", "updated_at"]
+        if storage_saved:
+            update_fields.extend(["final_pdf", "final_pdf_hash", "final_pdf_generated_at"])
+        self.document.save(update_fields=update_fields)
+        record_stage_log("completed", document=self.document)
         clear_payment_state(self.request, "invite", self.document.slug, self.document.counterparty_role)
         return redirect(self.document.get_absolute_url())
 

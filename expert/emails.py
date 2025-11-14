@@ -1,4 +1,5 @@
 
+import logging
 from django.core.mail import EmailMessage, get_connection
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -6,6 +7,9 @@ from django.utils import timezone
 from myshop.models import SiteSettings
 
 from .models import ContractEmailLog
+from .contract_flow import render_contract_pdf
+
+logger = logging.getLogger(__name__)
 
 
 def send_contract_finalized_email(contract, additional_recipients=None, attachments=None):
@@ -86,7 +90,7 @@ def send_contract_finalized_email(contract, additional_recipients=None, attachme
         )
 
 
-def send_direct_contract_document_email(document):
+def send_direct_contract_document_email(document, attachment=None):
     """직접 계약 플로우에서 계약서를 이메일로 전송하고 결과를 반환."""
 
     site_settings = SiteSettings.get_settings()
@@ -99,14 +103,35 @@ def send_direct_contract_document_email(document):
     body = render_to_string("expert/emails/direct_contract_finalized.txt", context)
     pdf_binary = None
     pdf_name = None
-    if document.final_pdf:
+    if attachment and len(attachment) == 2:
+        pdf_name, pdf_binary = attachment
+    elif document.final_pdf:
         try:
-            with document.final_pdf.open("rb") as pdf_file:
-                pdf_binary = pdf_file.read()
-            pdf_name = document.final_pdf.name.split("/")[-1]
-        except Exception:
+            document.final_pdf.open("rb")
+            try:
+                pdf_binary = document.final_pdf.read()
+            finally:
+                document.final_pdf.close()
+            if document.final_pdf.name:
+                pdf_name = document.final_pdf.name.split("/")[-1] or None
+        except Exception as exc:
+            logger.warning("최종 계약서 PDF를 스토리지에서 읽다가 실패했습니다: %s", exc)
             pdf_binary = None
             pdf_name = None
+
+    if pdf_binary is None:
+        try:
+            contract_body = ((document.payload or {}).get("contract_template") or {}).get("content") or ""
+            regenerated = render_contract_pdf(document, contract_body)
+            pdf_binary = regenerated.read()
+            pdf_name = regenerated.name or None
+        except Exception as exc:  # pragma: no cover - best effort fallback
+            logger.error("최종 계약서 PDF 재생성 실패: %s", exc)
+            pdf_binary = None
+            pdf_name = None
+
+    if pdf_binary is not None and not pdf_name:
+        pdf_name = f"{document.slug}.pdf"
     statuses = {}
     gmail_warning = "Expert Gmail 설정이 필요합니다. 어드민에서 Gmail 주소와 앱 비밀번호를 입력해 주세요."
 
