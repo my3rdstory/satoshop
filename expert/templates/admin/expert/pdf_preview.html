@@ -4,14 +4,31 @@
 {% block content %}
 <div class="module">
   <h1>Expert 계약서 PDF 검증</h1>
-  {% if not tool_enabled %}
-    <div class="messagelist">
-      <div class="warning">이 도구는 현재 비활성화되었습니다. <a href="{{ toggle_url }}">사이트 설정</a>에서 "Expert PDF 검증 도구"를 활성화한 뒤 다시 시도해 주세요.</div>
-    </div>
-  {% else %}
-    <p>아래 폼에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정한 뒤 “PDF 다운로드” 버튼을 누르면 즉시 최종 PDF를 받아볼 수 있습니다.</p>
+  <div class="submit-row" style="display:flex; gap:0.75rem; flex-wrap:wrap; align-items:center;">
+    {% if tool_enabled %}
+      <div class="help">Expert 계약서 PDF 검증 도구가 활성화되었습니다.</div>
+      <form method="post" style="margin:0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle">
+        <input type="hidden" name="toggle_state" value="disable">
+        <button type="submit" class="button" style="background:#334155; color:#f8fafc;">도구 비활성화</button>
+      </form>
+    {% else %}
+      <div class="help">도구가 비활성화되어 있습니다. 아래 버튼을 눌러 활성화한 뒤 PDF를 검증할 수 있습니다.</div>
+      <form method="post" style="margin:0;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="toggle">
+        <input type="hidden" name="toggle_state" value="enable">
+        <button type="submit" class="default">도구 활성화</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if tool_enabled %}
+    <p>Payload(JSON)과 계약 본문(Markdown)을 수정한 뒤 “PDF 다운로드” 버튼을 누르면 즉시 최종 PDF를 받아볼 수 있습니다.</p>
     <form method="post" novalidate>
       {% csrf_token %}
+      <input type="hidden" name="action" value="generate">
       <fieldset class="module aligned">
         {% for field in form %}
           <div class="form-row">

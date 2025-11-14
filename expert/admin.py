@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 
 from django.contrib import admin, messages
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, reverse
@@ -168,6 +168,20 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
         template_queryset = ContractTemplate.objects.all()
         context["template_shortcuts"] = template_queryset
 
+        action = request.POST.get("action") if request.method == "POST" else None
+        if action == "toggle" and request.method == "POST":
+            desired_state = request.POST.get("toggle_state") == "enable"
+            if request.user.has_perm("myshop.change_sitesettings"):
+                site_settings.enable_expert_pdf_preview_tool = desired_state
+                site_settings.save(update_fields=["enable_expert_pdf_preview_tool"])
+                if desired_state:
+                    messages.success(request, "Expert 계약서 PDF 검증 도구가 활성화되었습니다.")
+                else:
+                    messages.info(request, "Expert 계약서 PDF 검증 도구가 비활성화되었습니다.")
+            else:
+                messages.error(request, "사이트 설정을 변경할 권한이 없습니다.")
+            return HttpResponseRedirect(request.path)
+
         selected_template = None
         template_param = request.GET.get("template")
         if template_param:
@@ -179,13 +193,7 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
         default_payload = build_preview_payload()
         default_payload_json = json.dumps(default_payload, ensure_ascii=False, indent=2)
 
-        if not site_settings.enable_expert_pdf_preview_tool:
-            context["form"] = None
-            context["default_payload_json"] = default_payload_json
-            context["selected_template"] = selected_template
-            return TemplateResponse(request, self.change_list_template, context)
-
-        if request.method == "POST":
+        if site_settings.enable_expert_pdf_preview_tool and action == "generate" and request.method == "POST":
             form = ExpertPdfPreviewForm(request.POST, template_queryset=template_queryset)
             if form.is_valid():
                 payload = form.cleaned_data.get("payload_data") or build_preview_payload()
@@ -202,7 +210,7 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
                 response = HttpResponse(pdf_content.read(), content_type="application/pdf")
                 response["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return response
-        else:
+        elif site_settings.enable_expert_pdf_preview_tool:
             initial = {
                 "template": selected_template.pk if selected_template else None,
                 "contract_body": initial_contract_body,
@@ -210,6 +218,8 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
                 "filename": "expert-contract-preview.pdf",
             }
             form = ExpertPdfPreviewForm(initial=initial, template_queryset=template_queryset)
+        else:
+            form = None
 
         context.update(
             {

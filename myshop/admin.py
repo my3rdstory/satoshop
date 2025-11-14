@@ -61,8 +61,7 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         ('기능 설정', {
             'fields': (
                 'enable_user_registration',
-                'enable_store_creation',
-                'enable_expert_pdf_preview_tool'
+                'enable_store_creation'
             ),
             'description': '사이트의 주요 기능들을 활성화/비활성화합니다.'
         }),

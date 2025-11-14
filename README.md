@@ -568,7 +568,7 @@ docker run \
   - `expert/static/expert/css/contract_pdf.css`에는 카드형 본문, 3단계 불릿 마커, 다크 모드 팔레트가 포함되어 있으며 `scripts/render_sample_contract.py`로 샘플 워크로그 PDF를 생성해 스타일을 바로 검증할 수 있습니다.
 - **한글 PDF 폰트**: ReportLab 기반 PDF는 `HYSMyeongJo-Medium` CID 폰트를 기본 등록하고, WeasyPrint 기반 계약서는 `expert/static/expert/fonts/` 내 TTF/OTF를 **base64 인라인 @font-face**로 삽입하여 운영 서버(OS 폰트 여부와 상관없이) 동일한 결과를 얻습니다. 다른 글꼴을 쓰고 싶다면 폴더에 추가한 뒤 `EXPERT_FONT_DIR` 환경 변수로 위치를 재정의할 수 있습니다.
 - **네이티브 PDF 테스트**: Docker 없이 Render 네이티브 환경을 쓴다면 `uv run python scripts/render_sample_contract.py`로 샘플 계약 PDF를 만들고 `expert/docs/`에서 한글 표시를 바로 확인하세요. 폰트를 교체했다면 제한된 리소스 환경에서도 동일하게 적용되는지 이 스크립트로 검증할 수 있습니다.
-- **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 기능 토글은 `관리자 → 사이트 설정 → 기능 설정 → Expert PDF 검증 도구`에서 On/Off 가능합니다.
+- **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 같은 화면 상단의 “도구 활성화/비활성화” 버튼으로 바로 토글할 수 있습니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
 - **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab`, `weasyprint` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
