@@ -44,10 +44,32 @@ def _bundle_font_candidates() -> List[Path]:
     return candidates
 
 
-FONT_CANDIDATES = _bundle_font_candidates() + [
-    Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
-    Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
-]
+def _font_weight_priority(path: Path) -> Tuple[int, str]:
+    name = path.stem.lower()
+    if any(keyword in name for keyword in ("regular", "book", "text", "normal")):
+        priority = 0
+    elif any(keyword in name for keyword in ("medium", "demi")):
+        priority = 1
+    elif any(keyword in name for keyword in ("light", "thin", "extra", "ultra")):
+        priority = 2
+    elif any(keyword in name for keyword in ("bold", "black", "heavy")):
+        priority = 3
+    else:
+        priority = 4
+    return (priority, str(path))
+
+
+def _sort_fonts_by_weight(paths: List[Path]) -> List[Path]:
+    return sorted(paths, key=_font_weight_priority)
+
+
+FONT_CANDIDATES = _sort_fonts_by_weight(
+    _bundle_font_candidates()
+    + [
+        Path("/usr/share/fonts/truetype/noto/NotoSansCJKkr-Regular.otf"),
+        Path("/usr/share/fonts/truetype/noto/NotoSansKR-Regular.ttf"),
+    ]
+)
 
 CID_FONT_CANDIDATES = [
     "HYSMyeongJo-Medium",
@@ -184,7 +206,7 @@ def _build_overview_markdown(payload: Dict) -> str:
         ["수행자 라이트닝 주소", performer_ln],
     ]
     table = _markdown_table(["항목", "내용"], rows)
-    return "\n\n".join(["---", "## Ⅰ. 계약 개요", table]).strip()
+    return "\n\n".join(["## Ⅰ. 계약 개요", table]).strip()
 
 
 def _format_milestones_markdown(payload: Dict) -> str:
@@ -238,7 +260,7 @@ def _build_contract_body_markdown(contract_markdown: str) -> str:
     body = contract_markdown.strip()
     if not body:
         return ""
-    return "\n\n".join(["---", "## Ⅱ. 계약 본문", body]).strip()
+    return "\n\n".join(["## Ⅱ. 계약 본문", body]).strip()
 
 
 def _build_signature_markdown(document) -> str:
@@ -254,7 +276,6 @@ def _build_signature_markdown(document) -> str:
     timestamp = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M:%S")
     return "\n\n".join(
         [
-            "---",
             "## Ⅲ. 서명 및 해시",
             table,
             f"PDF 생성 시각: {timestamp}",
@@ -328,6 +349,26 @@ def _escape_paragraph_prefix(prefix: str) -> str:
         .replace("<", "&lt;")
         .replace(">", "&gt;")
     )
+
+
+SECTION_BREAK_TITLES = {
+    "Ⅰ. 계약 개요",
+    "Ⅱ. 계약 본문",
+    "Ⅲ. 서명 및 해시",
+}
+
+
+def _inject_section_breaks(root):
+    children = list(root)
+    for index, element in enumerate(children):
+        tag = element.tag.lower()
+        if tag not in {"h1", "h2", "h3", "h4", "h5", "h6"}:
+            continue
+        text = _collect_text_content(element).strip()
+        if text not in SECTION_BREAK_TITLES:
+            continue
+        hr = ET.Element("hr")
+        root.insert(index, hr)
 
 
 def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
@@ -530,6 +571,7 @@ def _markdown_to_story(markdown_text: str, styles: Dict[str, ParagraphStyle]) ->
         ]
     )
     root = md.parser.parseDocument(markdown_text.splitlines()).getroot()
+    _inject_section_breaks(root)
     story: List = []
     for element in root:
         flowables = _element_to_flowables(element, styles)
