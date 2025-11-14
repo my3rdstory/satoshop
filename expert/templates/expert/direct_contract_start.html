@@ -13,7 +13,7 @@
     {% for slide in hero_slides %}
         <article id="expert-hero-slide-{{ forloop.counter0 }}" class="expert-hero-slide{% if forloop.first %} is-active{% endif %}" data-expert-hero-slide data-duration="{{ slide.rotation_seconds }}">
             <div class="expert-hero-bg" style="{{ slide.background_style }}">
-                <span class="expert-hero-overlay" style="background: {{ slide.overlay_color }};"></span>
+                <span class="expert-hero-overlay" style="background: {{ slide.overlay_color|default:"rgba(2, 6, 23, 0.65)" }};"></span>
             </div>
             <div class="expert-hero-body">
                 {{ slide.html|safe }}

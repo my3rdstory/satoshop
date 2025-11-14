@@ -474,7 +474,7 @@ SECURE_SSL_REDIRECT=True
 
 ### Docker 기반 Render 배포 파이프라인
 
-`Dockerfile`, `.dockerignore`, `scripts/docker-entrypoint.sh`, `render.yaml`을 추가해 Render가 Docker 이미지를 그대로 받아 배포하도록 정리했습니다. Render 빌드 환경에서 반복되던 WeasyPrint/폰트 의존성 문제는 컨테이너 안에서 모두 해결되므로 어떤 서버에서도 동일한 결과를 얻을 수 있습니다.
+`Dockerfile`, `.dockerignore`, `scripts/docker-entrypoint.sh`, `render.yaml`을 추가해 Render가 Docker 이미지를 그대로 받아 배포하도록 정리했습니다. 네이티브 배포에서는 ReportLab 기반 순수 파이썬 PDF 파이프라인을 사용하므로 별도의 OS 패키지 설치 없이도 동일한 결과를 얻을 수 있습니다.
 
 #### 1) 로컬에서 이미지 빌드·검증
 
@@ -561,17 +561,16 @@ docker run \
 - **서명 자산 S3 저장**: `DirectContractDocument`의 자필 서명 이미지는 S3 호환 오브젝트 스토리지(`expert/contracts/signatures/…`)에 업로드되어야 하며, 프로덕션에서는 `EXPERT_SIGNATURE_MEDIA_FALLBACK=False`로 설정해 로컬 저장을 차단하세요.
 - **실시간 채팅**: `/expert/contracts/<UUID>/` 페이지에서 웹소켓 기반 실시간 채팅을 제공합니다. 프로덕션 환경에서는 `CHANNEL_REDIS_URL` 환경 변수를 Redis 연결 문자열로 설정해 주십시오. (미설정 시 개발 편의용 In-Memory 채널 레이어가 사용됩니다.)
 - **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
-- **최종 계약서 PDF 렌더링**: 계약 본문은 Markdown → HTML 변환 후 WeasyPrint로 PDF를 생성합니다. HTML 템플릿(`expert/contract_pdf.html`)과 전용 스타일(`expert/static/expert/css/contract_pdf.css`)만 유지하면 되며, Pandoc/TinyTeX는 더 이상 필요하지 않습니다.
-  - 서버에 Cairo, Pango, libffi, libjpeg 등 WeasyPrint가 요구하는 라이브러리가 설치되어 있어야 합니다. (예: `sudo apt-get install libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libffi-dev libjpeg-dev zlib1g-dev`).
+- **최종 계약서 PDF 렌더링**: 계약 본문은 Markdown을 ElementTree로 파싱한 뒤 ReportLab(Platypus)로 직접 PDF를 생성합니다. 별도 템플릿/브라우저 엔진 없이도 Render 네이티브 환경에서 동작합니다.
   - `expert/static/expert/fonts/` 디렉터리에 `NotoSansKR-Regular.ttf`, `NotoSansKR-Bold.ttf`를 배치하면 본문/굵은 글꼴이 자동으로 적용됩니다.
   - 이모지를 그대로 유지하고 싶다면 Noto Color Emoji 등 컬러 이모지 폰트를 서버에 추가 설치하면 바로 반영됩니다.
-  - `expert/static/expert/css/contract_pdf.css`에는 카드형 본문, 3단계 불릿 마커, 다크 모드 팔레트가 포함되어 있으며 `scripts/render_sample_contract.py`로 샘플 워크로그 PDF를 생성해 스타일을 바로 검증할 수 있습니다.
-- **한글 PDF 폰트**: ReportLab 기반 PDF는 `HYSMyeongJo-Medium` CID 폰트를 기본 등록하고, WeasyPrint 기반 계약서는 `expert/static/expert/fonts/` 내 TTF/OTF를 **base64 인라인 @font-face**로 삽입하여 운영 서버(OS 폰트 여부와 상관없이) 동일한 결과를 얻습니다. 다른 글꼴을 쓰고 싶다면 폴더에 추가한 뒤 `EXPERT_FONT_DIR` 환경 변수로 위치를 재정의할 수 있습니다.
+  - ReportLab 스타일은 `expert/contract_flow.py` 내부에 정의되어 있으며, `scripts/render_sample_contract.py`를 실행하면 동일한 레이아웃을 즉시 검증할 수 있습니다.
+- **한글 PDF 폰트**: ReportLab에서 `resolve_contract_pdf_font()` 함수가 `expert/static/expert/fonts/`를 우선 탐색해 원하는 TTF/OTF를 등록합니다. `EXPERT_FONT_DIR` 환경 변수로 경로를 재정의할 수 있습니다.
 - **네이티브 PDF 테스트**: Docker 없이 Render 네이티브 환경을 쓴다면 `uv run python scripts/render_sample_contract.py`로 샘플 계약 PDF를 만들고 `expert/docs/`에서 한글 표시를 바로 확인하세요. 폰트를 교체했다면 제한된 리소스 환경에서도 동일하게 적용되는지 이 스크립트로 검증할 수 있습니다.
 - **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 같은 화면 상단의 “도구 활성화/비활성화” 버튼으로 바로 토글할 수 있습니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
-- **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab`, `weasyprint` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
+- **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
 - **단계 로그 메타 뷰**: Django Admin → Expert → *직접 계약 단계 로그*에서 meta 필드가 폼 형태로 펼쳐져 결제/서명 정보를 즉시 확인할 수 있습니다.
 - **빠른 내비게이션**: Expert 상단 우측 버튼에서 `로그아웃`(항상 개요 화면으로 리다이렉션)과 `Go! 사토샵`(도메인 루트 이동)으로 바로 이동할 수 있습니다.
 - **시크릿 모드 차단**: LNURL-auth는 브라우저 저장소를 사용하므로 시크릿/프라이빗 창에서는 인증이 차단됩니다. 로그인 화면과 Expert용 라이트닝 로그인 위젯은 자동으로 프라이빗 모드를 감지해 경고를 띄우고 버튼을 비활성화하며, 라이트닝 지갑 열기 버튼은 `lightning:` 스킴으로 강제 열려 모바일 지갑에서도 바로 동작합니다.

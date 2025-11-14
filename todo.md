@@ -15,3 +15,4 @@
 - [x] Expert 히어로 캐러셀 모바일 여백 개선
 - [x] 캐러셀 인디케이터/버튼 겹침 수정 및 CSS 문서화
 - [x] Expert 계약서 PDF 검증 토글을 Expert 메뉴로 이동
+- [x] ReportLab 기반 순수 파이썬 계약서 PDF 파이프라인 구축
