@@ -128,6 +128,15 @@ class ContractTemplate(models.Model):
             super().save(*args, **kwargs)
 
 
+class ExpertPdfPreviewProxy(ContractTemplate):
+    """계약서 PDF 검증 전용 어드민 뷰에 사용하는 프록시 모델."""
+
+    class Meta:
+        proxy = True
+        verbose_name = "계약서 PDF 검증"
+        verbose_name_plural = "계약서 PDF 검증"
+
+
 class Contract(models.Model):
     """전자 계약 기본 정보."""
 

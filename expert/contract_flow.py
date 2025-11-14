@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import mimetypes
 import secrets
 from dataclasses import dataclass
 from datetime import datetime
@@ -265,22 +266,34 @@ def _markdown_to_html(text: str) -> str:
     return md.convert(text)
 
 
+@lru_cache(maxsize=1)
 def _build_font_face_css() -> str:
     font_dir = Path(getattr(settings, "EXPERT_FONT_DIR", "") or "")
     if not font_dir.exists():
         return ""
+
     css_chunks: List[str] = []
 
     def register_face(weight: int, filename: str):
         target = font_dir / filename
-        if target.exists():
-            css_chunks.append(
-                "@font-face {{ font-family: '{family}'; src: url('{uri}'); font-weight: {weight}; font-style: normal; }}".format(
-                    family=FONT_FAMILY_NAME,
-                    uri=target.resolve().as_uri(),
-                    weight=weight,
-                )
+        if not target.exists():
+            return
+
+        font_bytes = target.read_bytes()
+        b64_payload = base64.b64encode(font_bytes).decode("ascii")
+        mime = mimetypes.guess_type(target.name)[0] or "font/ttf"
+        suffix = target.suffix.lower()
+        format_hint = "opentype" if suffix == ".otf" else "truetype"
+
+        css_chunks.append(
+            "@font-face {{ font-family: '{family}'; src: url('data:{mime};base64,{payload}') format('{fmt}'); font-weight: {weight}; font-style: normal; font-display: swap; }}".format(
+                family=FONT_FAMILY_NAME,
+                mime=mime,
+                payload=b64_payload,
+                fmt=format_hint,
+                weight=weight,
             )
+        )
 
     register_face(400, "NotoSansKR-Regular.ttf")
     register_face(700, "NotoSansKR-Bold.ttf")

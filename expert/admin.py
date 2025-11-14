@@ -2,7 +2,9 @@ import json
 from datetime import datetime
 
 from django.contrib import admin, messages
+from django.http import HttpResponse
 from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, reverse
 from django.utils.html import format_html, format_html_join
 from django.utils import timezone
@@ -16,8 +18,12 @@ from .models import (
     ExpertBlinkRevenueStats,
     ExpertUsageStats,
     ExpertHeroSlide,
+    ExpertPdfPreviewProxy,
 )
 from .stats import aggregate_payment_stats, aggregate_usage_stats
+from .forms import ExpertPdfPreviewForm
+from .pdf_preview import DEFAULT_CONTRACT_BODY, build_preview_document, build_preview_payload
+from .contract_flow import render_contract_pdf
 
 
 @admin.register(ExpertEmailSettings)
@@ -134,6 +140,85 @@ class ContractTemplateAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(ExpertPdfPreviewProxy)
+class ExpertPdfPreviewAdmin(admin.ModelAdmin):
+    change_list_template = "admin/expert/pdf_preview.html"
+
+    def has_add_permission(self, request):  # pragma: no cover - admin guard
+        return False
+
+    def has_delete_permission(self, request, obj=None):  # pragma: no cover - admin guard
+        return False
+
+    def get_queryset(self, request):  # pragma: no cover - unused listing
+        return self.model.objects.none()
+
+    def changelist_view(self, request, extra_context=None):  # pylint: disable=arguments-differ
+        from myshop.models import SiteSettings  # local import to avoid circular deps
+
+        site_settings = SiteSettings.get_settings()
+        context = self.admin_site.each_context(request)
+        context.update(extra_context or {})
+        context["title"] = "계약서 PDF 검증"
+        context["tool_enabled"] = site_settings.enable_expert_pdf_preview_tool
+        context["toggle_url"] = reverse("admin:myshop_sitesettings_change", args=[site_settings.pk])
+
+        template_queryset = ContractTemplate.objects.all()
+        context["template_shortcuts"] = template_queryset
+
+        selected_template = None
+        template_param = request.GET.get("template")
+        if template_param:
+            selected_template = template_queryset.filter(pk=template_param).first()
+        if selected_template is None:
+            selected_template = template_queryset.filter(is_selected=True).first() or template_queryset.first()
+
+        initial_contract_body = (selected_template.content if selected_template else DEFAULT_CONTRACT_BODY)
+        default_payload = build_preview_payload()
+        default_payload_json = json.dumps(default_payload, ensure_ascii=False, indent=2)
+
+        if not site_settings.enable_expert_pdf_preview_tool:
+            context["form"] = None
+            context["default_payload_json"] = default_payload_json
+            context["selected_template"] = selected_template
+            return TemplateResponse(request, self.change_list_template, context)
+
+        if request.method == "POST":
+            form = ExpertPdfPreviewForm(request.POST, template_queryset=template_queryset)
+            if form.is_valid():
+                payload = form.cleaned_data.get("payload_data") or build_preview_payload()
+                contract_body = form.cleaned_data.get("contract_body") or ""
+                chosen_template = form.cleaned_data.get("template")
+                if not contract_body and chosen_template:
+                    contract_body = chosen_template.content
+                if not contract_body:
+                    contract_body = DEFAULT_CONTRACT_BODY
+                document = build_preview_document(payload)
+                pdf_content = render_contract_pdf(document, contract_body)
+                filename = form.cleaned_data.get("filename") or f"expert-contract-preview-{timezone.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                filename = filename.strip() or "expert-contract-preview.pdf"
+                response = HttpResponse(pdf_content.read(), content_type="application/pdf")
+                response["Content-Disposition"] = f'attachment; filename="{filename}"'
+                return response
+        else:
+            initial = {
+                "template": selected_template.pk if selected_template else None,
+                "contract_body": initial_contract_body,
+                "payload_json": default_payload_json,
+                "filename": "expert-contract-preview.pdf",
+            }
+            form = ExpertPdfPreviewForm(initial=initial, template_queryset=template_queryset)
+
+        context.update(
+            {
+                "form": form,
+                "selected_template": selected_template,
+                "default_payload_json": default_payload_json,
+            }
+        )
+        return TemplateResponse(request, self.change_list_template, context)
 
 
 @admin.register(ExpertBlinkRevenueStats)

@@ -1,5 +1,8 @@
 import base64
+import json
 from django import forms
+
+from .models import ContractTemplate
 
 
 ROLE_CHOICES = (
@@ -290,3 +293,45 @@ class ContractIntegrityCheckForm(forms.Form):
     def get_document(self):
         slug = self.cleaned_data.get("document_slug")
         return self._document_map.get(slug)
+
+
+class ExpertPdfPreviewForm(forms.Form):
+    """어드민에서 사용되는 계약 PDF 미리보기 폼."""
+
+    template = forms.ModelChoiceField(
+        label="계약 템플릿",
+        queryset=ContractTemplate.objects.none(),
+        required=False,
+        help_text="선택하면 해당 템플릿 본문을 참고할 수 있습니다.",
+    )
+    contract_body = forms.CharField(
+        label="계약 본문 (Markdown)",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 12, "class": "vLargeTextField"}),
+        help_text="Markdown 형식으로 계약 본문을 입력하세요.",
+    )
+    payload_json = forms.CharField(
+        label="계약 Payload (JSON)",
+        widget=forms.Textarea(attrs={"rows": 18, "class": "vLargeTextField monospace"}),
+        help_text="계약 개요/지급/워크로그 데이터를 JSON으로 입력합니다.",
+    )
+    filename = forms.CharField(
+        label="다운로드 파일명",
+        max_length=120,
+        required=False,
+        initial="expert-contract-preview.pdf",
+    )
+
+    def __init__(self, *args, template_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = template_queryset if template_queryset is not None else ContractTemplate.objects.none()
+        self.fields["template"].queryset = qs
+
+    def clean_payload_json(self):
+        raw = self.cleaned_data["payload_json"]
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:  # pragma: no cover - admin validation helper
+            raise forms.ValidationError(f"JSON 형식이 올바르지 않습니다: {exc}") from exc
+        self.cleaned_data["payload_data"] = payload
+        return raw

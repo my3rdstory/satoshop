@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div class="module">
+  <h1>Expert 계약서 PDF 검증</h1>
+  {% if not tool_enabled %}
+    <div class="messagelist">
+      <div class="warning">이 도구는 현재 비활성화되었습니다. <a href="{{ toggle_url }}">사이트 설정</a>에서 "Expert PDF 검증 도구"를 활성화한 뒤 다시 시도해 주세요.</div>
+    </div>
+  {% else %}
+    <p>아래 폼에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정한 뒤 “PDF 다운로드” 버튼을 누르면 즉시 최종 PDF를 받아볼 수 있습니다.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <fieldset class="module aligned">
+        {% for field in form %}
+          <div class="form-row">
+            {{ field.errors }}
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </fieldset>
+      <div class="submit-row">
+        <button type="submit" class="default" name="action" value="generate">PDF 다운로드</button>
+      </div>
+    </form>
+
+    <div class="module">
+      <h2>템플릿 바로가기</h2>
+      {% if template_shortcuts %}
+        <ul>
+          {% for template in template_shortcuts %}
+            <li>
+              <a href="?template={{ template.pk }}">{{ template }}</a>
+              {% if template.is_selected %}<strong> (노출 중)</strong>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>등록된 계약 템플릿이 없습니다. 먼저 템플릿을 추가해 주세요.</p>
+      {% endif %}
+    </div>
+
+    <div class="module">
+      <h2>사용 팁</h2>
+      <ul>
+        <li>Payload JSON은 계약 개요/지급/워크로그에 사용되는 데이터입니다. 필요한 값만 수정해도 됩니다.</li>
+        <li>템플릿 링크를 클릭해 페이지를 새로고침하면 해당 템플릿 본문이 기본값으로 채워집니다.</li>
+        <li>인라인 폰트가 포함되므로 Render 네이티브 환경에서도 한글이 깨지지 않습니다.</li>
+        <li>CLI에서 `uv run python scripts/render_sample_contract.py`를 실행하면 동일한 샘플 PDF를 생성할 수 있습니다.</li>
+      </ul>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
