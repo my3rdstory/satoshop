@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import html
 import json
 import secrets
 from dataclasses import dataclass
@@ -178,15 +179,36 @@ def _markdown_table(headers: List[str], rows: List[List[str]]) -> str:
     return "\n".join([header_line, separator, *body])
 
 
+CONTRACT_DIVIDER_MARKER = "[[CONTRACT_DIVIDER]]"
+
+
+def _format_plaintext_paragraphs(value: str) -> str:
+    normalized = (value or "").replace("\r\n", "\n").strip()
+    if not normalized:
+        return ""
+    paragraphs: List[str] = []
+    for block in normalized.split("\n\n"):
+        chunk = block.strip()
+        if not chunk:
+            continue
+        safe = html.escape(chunk).replace("\n", "<br/>")
+        paragraphs.append(f"<p>{safe}</p>")
+    if not paragraphs:
+        paragraphs.append("<p>-</p>")
+    return "\n".join(paragraphs)
+
+
 def _build_intro_markdown(document, payload: Dict) -> str:
     contract_title = payload.get("title") or "SatoShop Expert 계약"
     created_label = _format_generated_at(payload)
     lines = [
         f"# {contract_title}",
-        "- SatoShop Expert Digital Contact -",
+        "_SatoShop Expert Digital Contact_",
         "",
         f"- **공유 ID**: `{document.slug}`",
         f"- **생성 시각**: {created_label}",
+        "",
+        CONTRACT_DIVIDER_MARKER,
     ]
     return "\n".join(lines).strip()
 
@@ -251,7 +273,8 @@ def _build_worklog_markdown(payload: Dict) -> str:
     work_log = (payload or {}).get("work_log_markdown")
     if not work_log:
         return ""
-    return "## 수행 내역\n\n" + work_log.strip()
+    content = _format_plaintext_paragraphs(work_log)
+    return "\n\n".join([CONTRACT_DIVIDER_MARKER, "## 수행 내역", content]).strip()
 
 
 def _build_contract_body_markdown(contract_markdown: str) -> str:
@@ -260,7 +283,7 @@ def _build_contract_body_markdown(contract_markdown: str) -> str:
     body = contract_markdown.strip()
     if not body:
         return ""
-    return "\n\n".join(["## Ⅱ. 계약 본문", body]).strip()
+    return "\n\n".join([CONTRACT_DIVIDER_MARKER, "## Ⅱ. 계약 본문", body]).strip()
 
 
 def _build_signature_markdown(document) -> str:
@@ -275,7 +298,8 @@ def _build_signature_markdown(document) -> str:
     table = _markdown_table(["항목", "값"], rows)
     timestamp = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M:%S")
     return "\n\n".join(
-        [
+        [   
+            CONTRACT_DIVIDER_MARKER, 
             "## Ⅲ. 서명 및 해시",
             table,
             f"PDF 생성 시각: {timestamp}",
@@ -341,34 +365,6 @@ def _sanitize_inline_markup(value: str) -> str:
     for source, target in replacements.items():
         sanitized = sanitized.replace(source, target)
     return sanitized
-
-
-def _escape_paragraph_prefix(prefix: str) -> str:
-    return (
-        prefix.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-    )
-
-
-SECTION_BREAK_TITLES = {
-    "Ⅰ. 계약 개요",
-    "Ⅱ. 계약 본문",
-    "Ⅲ. 서명 및 해시",
-}
-
-
-def _inject_section_breaks(root):
-    children = list(root)
-    for index, element in enumerate(children):
-        tag = element.tag.lower()
-        if tag not in {"h1", "h2", "h3", "h4", "h5", "h6"}:
-            continue
-        text = _collect_text_content(element).strip()
-        if text not in SECTION_BREAK_TITLES:
-            continue
-        hr = ET.Element("hr")
-        root.insert(index, hr)
 
 
 def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
@@ -473,21 +469,20 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             blocks.append(Paragraph(html, styles[style_key]))
         return blocks
 
-    if tag == "hr":
-        blocks.append(
-            HRFlowable(
-                width="100%",
-                thickness=1,
-                lineCap="round",
-                color=colors.HexColor("#cbd5f5"),
-                spaceBefore=12,
-                spaceAfter=8,
-            )
-        )
-        return blocks
-
     if tag == "p":
         html = _sanitize_inline_markup(_element_inner_html(element)).strip()
+        if html == CONTRACT_DIVIDER_MARKER:
+            blocks.append(
+                HRFlowable(
+                    width="100%",
+                    thickness=1,
+                    lineCap="round",
+                    color=colors.HexColor("#cbd5f5"),
+                    spaceBefore=12,
+                    spaceAfter=8,
+                )
+            )
+            return blocks
         if html:
             blocks.append(Paragraph(html, styles["Body"]))
         return blocks
@@ -499,8 +494,10 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             item_html = _sanitize_inline_markup(_element_inner_html(li)).strip()
             if not item_html:
                 continue
-            prefix = f"{index}. " if ordered else "• "
-            blocks.append(Paragraph(_escape_paragraph_prefix(prefix) + item_html, styles["List"]))
+            while item_html.startswith("<p>") and item_html.endswith("</p>"):
+                item_html = item_html[3:-4].strip()
+            bullet_text = f"{index}. " if ordered else "• "
+            blocks.append(Paragraph(item_html, styles["List"], bulletText=bullet_text))
             index += 1
         return blocks
 
@@ -571,7 +568,6 @@ def _markdown_to_story(markdown_text: str, styles: Dict[str, ParagraphStyle]) ->
         ]
     )
     root = md.parser.parseDocument(markdown_text.splitlines()).getroot()
-    _inject_section_breaks(root)
     story: List = []
     for element in root:
         flowables = _element_to_flowables(element, styles)

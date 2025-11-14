@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template import RequestContext, Template, TemplateSyntaxError
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.html import linebreaks
 from django.utils.safestring import mark_safe
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
@@ -95,6 +96,12 @@ def render_contract_markdown(text: str) -> str:
         output_format="html5",
     )
     return md.convert(text)
+
+
+def render_plaintext_block(text: str) -> str:
+    if not text:
+        return ""
+    return linebreaks(text.strip())
 
 
 def _build_expert_hero_slides(request, base_context: dict) -> list[dict]:
@@ -395,7 +402,7 @@ class DirectContractReviewView(LightningLoginRequiredMixin, FormView):
             {
                 "draft_payload": self.draft_payload,
                 "contract_generated_at": timezone.now(),
-                "work_log_html": render_contract_markdown(work_log_markdown),
+                "work_log_html": render_plaintext_block(work_log_markdown),
                 "payment_widget": payment_widget,
                 "payment_expire_seconds": PAYMENT_EXPIRE_SECONDS,
                 "creator_lightning_id": _get_lightning_public_key(self.request.user),
@@ -633,7 +640,7 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
                 or (self.document.creator_signature.url if self.document.creator_signature else ""),
                 "counterparty_signature_url": self.document.get_signature_url("counterparty")
                 or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
-                "work_log_html": render_contract_markdown((self.payload or {}).get("work_log_markdown", "")),
+                "work_log_html": render_plaintext_block((self.payload or {}).get("work_log_markdown", "")),
                 "require_performer_lightning": self.document.counterparty_role == "performer",
                 "creator_role_label": creator_role_label,
                 "counterparty_role_label": counterparty_role_label,

@@ -99,17 +99,17 @@ class ContractDraftForm(forms.Form):
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
     work_log_markdown = forms.CharField(
-        label="수행 내역 (Markdown)",
+        label="수행 내역 (일반 텍스트)",
         required=False,
         max_length=10000,
         widget=forms.Textarea(
             attrs={
                 "class": "textarea worklog-textarea",
                 "rows": 8,
-                "placeholder": "최대 10,000자까지 작성 가능합니다. Markdown 형식을 사용할 수 있어요.",
+                "placeholder": "최대 10,000자까지 일반 텍스트만 입력할 수 있어요. 줄바꿈으로 단락을 구분해 주세요.",
             }
         ),
-        help_text="최대 10,000자까지 입력 가능하며 Markdown(.md)만 지원합니다. HTML 태그는 사용하지 말고 Markdown 문법으로 작성해주세요.",
+        help_text="최대 10,000자까지 입력 가능하며 일반 텍스트만 지원합니다. 서식은 줄바꿈으로만 구분됩니다.",
     )
     agree_privacy = forms.BooleanField(
         label="개인정보 수집 및 이용에 동의합니다.",

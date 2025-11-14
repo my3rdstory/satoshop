@@ -35,7 +35,6 @@ let previewModal;
 let previewModalCloseButtons = [];
 let modalTemplateMarkdown;
 let templatePayload = null;
-let workLogEditor = null;
 let previewMilestonePanel;
 let previewMilestoneList;
 let modalMilestonePanel;
@@ -60,11 +59,10 @@ let roleContactFieldset;
 let roleLightningCard;
 let roleEmailHelpTexts = [];
 const WORKLOG_MAX_LENGTH = 10000;
-const WORKLOG_PLACEHOLDER = '최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다. 에디터에서 제공하는 기본 Markdown 문법만 사용해 주세요. 복잡한 스타일의 마크다운 문법은 계약서에 제대로 반영되지 않습니다.';
+const WORKLOG_PLACEHOLDER = '최대 10,000자까지 일반 텍스트만 입력할 수 있습니다. 줄바꿈으로 단락을 구분해 주세요.';
 const worklogLengthFormatter = new Intl.NumberFormat('ko-KR');
 let worklogCounterNode = null;
 let worklogNoteNode = null;
-let suppressWorklogEditorChange = false;
 
 const attachmentConfig = {
     maxItems: 3,
@@ -92,6 +90,36 @@ function clampWorklogValue(value) {
         return value;
     }
     return value.slice(0, WORKLOG_MAX_LENGTH);
+}
+
+function escapeHtml(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    };
+    return value.replace(/[&<>"']/g, (char) => map[char] || char);
+}
+
+function convertPlainTextToHtml(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+    const normalized = value.replace(/\r\n/g, '\n').trim();
+    if (!normalized) {
+        return '';
+    }
+    return normalized
+        .split(/\n{2,}/)
+        .map((block) => block.trim())
+        .filter((block) => block)
+        .map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`)
+        .join('');
 }
 
 function updateWorklogCounterDisplay(length, truncated = false) {
@@ -309,8 +337,8 @@ function renderAttachmentPreviewLists(entries = attachmentEntries) {
     });
 }
 
-function updateWorkLogPreview(markdownText) {
-    const content = (markdownText || '').trim();
+function updateWorkLogPreview(plainText) {
+    const content = (plainText || '').trim();
     const targets = [
         { node: previewWorklogNode, placeholder: '작성된 메모가 없습니다.' },
         { node: modalWorklogNode, placeholder: '작성된 메모가 없습니다.' },
@@ -326,12 +354,8 @@ function updateWorkLogPreview(markdownText) {
             return;
         }
         node.dataset.empty = 'false';
-        node.textContent = content;
-        if (window.MarkdownRenderer && typeof window.MarkdownRenderer.render === 'function') {
-            window.MarkdownRenderer.render(node);
-        } else {
-            node.innerHTML = content.replace(/\n/g, '<br>');
-        }
+        const html = convertPlainTextToHtml(content) || `<p>${escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
+        node.innerHTML = html;
     });
 }
 
@@ -906,10 +930,6 @@ function initWorkLogEditor() {
     if (!textarea) {
         return;
     }
-    const syncPreview = (value) => {
-        updateWorkLogPreview(value);
-    };
-
     textarea.setAttribute('placeholder', WORKLOG_PLACEHOLDER);
 
     const applyValue = (rawValue) => {
@@ -919,63 +939,29 @@ function initWorkLogEditor() {
         if (textarea.value !== normalized) {
             textarea.value = normalized;
         }
-        syncPreview(normalized);
+        updateWorkLogPreview(normalized);
         updateWorklogCounterDisplay(normalized.length, truncated);
-        return { value: normalized, truncated };
     };
 
-    const { value: initialValue } = applyValue(textarea.value || '');
+    applyValue(textarea.value || '');
 
-    if (typeof EasyMDE === 'undefined') {
-        textarea.addEventListener('input', (event) => {
-            const currentValue = event.target.value || '';
-            const normalized = clampWorklogValue(currentValue);
-            const truncated = normalized.length < currentValue.length;
-            if (normalized !== currentValue) {
-                const caretPosition = Math.min(normalized.length, event.target.selectionStart || normalized.length);
-                event.target.value = normalized;
-                requestAnimationFrame(() => {
-                    try {
-                        event.target.setSelectionRange(caretPosition, caretPosition);
-                    } catch (error) {
-                        // selection range might fail in some browsers; ignore silently
-                    }
-                });
-            }
-            syncPreview(normalized);
-            updateWorklogCounterDisplay(normalized.length, truncated);
-        });
-        return;
-    }
-
-    workLogEditor = new EasyMDE({
-        element: textarea,
-        autofocus: false,
-        maxLength: 10000,
-        spellChecker: false,
-        status: false,
-        placeholder: WORKLOG_PLACEHOLDER,
-        toolbar: ['bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', '|', 'link'],
-    });
-    if (workLogEditor.value() !== initialValue) {
-        workLogEditor.value(initialValue);
-    }
-    workLogEditor.codemirror.on('change', () => {
-        if (suppressWorklogEditorChange) {
-            return;
-        }
-        let currentValue = workLogEditor.value() || '';
+    textarea.addEventListener('input', (event) => {
+        const currentValue = event.target.value || '';
         const normalized = clampWorklogValue(currentValue);
         const truncated = normalized.length < currentValue.length;
         if (normalized !== currentValue) {
-            suppressWorklogEditorChange = true;
-            workLogEditor.value(normalized);
-            suppressWorklogEditorChange = false;
-            currentValue = normalized;
+            const caretPosition = Math.min(normalized.length, event.target.selectionStart || normalized.length);
+            event.target.value = normalized;
+            requestAnimationFrame(() => {
+                try {
+                    event.target.setSelectionRange(caretPosition, caretPosition);
+                } catch (error) {
+                    // selection range might fail; ignore silently
+                }
+            });
         }
-        textarea.value = currentValue;
-        syncPreview(currentValue);
-        updateWorklogCounterDisplay(currentValue.length, truncated);
+        updateWorkLogPreview(normalized);
+        updateWorklogCounterDisplay(normalized.length, truncated);
     });
 }
 
