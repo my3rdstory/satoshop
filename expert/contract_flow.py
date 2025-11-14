@@ -183,18 +183,35 @@ CONTRACT_DIVIDER_MARKER = "[[CONTRACT_DIVIDER]]"
 
 
 def _format_plaintext_paragraphs(value: str) -> str:
-    normalized = (value or "").replace("\r\n", "\n").strip()
-    if not normalized:
+    normalized = (value or "").replace("\r\n", "\n")
+    stripped = normalized.strip()
+    if not stripped:
         return ""
+
     paragraphs: List[str] = []
-    for block in normalized.split("\n\n"):
-        chunk = block.strip()
-        if not chunk:
-            continue
-        safe = html.escape(chunk).replace("\n", "<br/>")
-        paragraphs.append(f"<p>{safe}</p>")
+    buffer: List[str] = []
+
+    def flush_buffer():
+        if buffer:
+            safe = html.escape("\n".join(buffer)).replace("\n", "<br/>")
+            paragraphs.append(f"<p>{safe}</p>")
+            buffer.clear()
+
+    for line in normalized.split("\n"):
+        if line.strip():
+            buffer.append(line.rstrip())
+        else:
+            flush_buffer()
+            paragraphs.append("<p>&nbsp;</p>")
+
+    flush_buffer()
+
+    # 제거된 끝 공백에서 생긴 빈 줄 제거
+    while paragraphs and paragraphs[-1] == "<p>&nbsp;</p>":
+        paragraphs.pop()
     if not paragraphs:
         paragraphs.append("<p>-</p>")
+
     return "\n".join(paragraphs)
 
 
