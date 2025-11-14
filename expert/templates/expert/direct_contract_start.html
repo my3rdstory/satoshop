@@ -8,35 +8,34 @@
 {% endblock %}
 
 {% block content %}
-<section class="direct-contract-hero section">
-    <div class="container hero-grid">
-        <div class="hero-copy">
-            <span class="hero-pill">1:1 직접 계약</span>
-            <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
-            <p>
-                직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.
-            </p>
-            <div class="hero-actions">
-                {% if request.user.is_authenticated %}
-                    <a class="button is-primary is-medium" href="{% url 'expert:direct-draft' %}">계약 작성 시작</a>
-                {% else %}
-                    <a class="button is-primary is-medium" href="{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}">계약 작성 시작</a>
-                {% endif %}
-                <p class="is-size-7 has-text-grey">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
+{% if hero_slides %}
+<section class="expert-hero-carousel section" data-expert-hero-carousel>
+    {% for slide in hero_slides %}
+        <article id="expert-hero-slide-{{ forloop.counter0 }}" class="expert-hero-slide{% if forloop.first %} is-active{% endif %}" data-expert-hero-slide data-duration="{{ slide.rotation_seconds }}">
+            <div class="expert-hero-bg" style="{{ slide.background_style }}">
+                <span class="expert-hero-overlay" style="background: {{ slide.overlay_color|default:"rgba(2, 6, 23, 0.65)" }};"></span>
             </div>
-        </div>
-        <div class="hero-side">
-            <div class="hero-card">
-                <p class="hero-card-title">기본 원칙</p>
-                <ul>
-                    <li><span class="hero-bullet">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
-                    <li><span class="hero-bullet">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
-                    <li><span class="hero-bullet">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
-                </ul>
+            <div class="expert-hero-body">
+                {{ slide.html|safe }}
             </div>
+        </article>
+    {% endfor %}
+
+    {% if hero_slides|length > 1 %}
+        <button class="expert-hero-nav expert-hero-nav-prev" type="button" data-expert-carousel-prev aria-label="이전 배너">
+            <span aria-hidden="true">&#10094;</span>
+        </button>
+        <button class="expert-hero-nav expert-hero-nav-next" type="button" data-expert-carousel-next aria-label="다음 배너">
+            <span aria-hidden="true">&#10095;</span>
+        </button>
+        <div class="expert-hero-indicators" role="tablist">
+            {% for slide in hero_slides %}
+                <button class="expert-hero-indicator{% if forloop.first %} is-active{% endif %}" type="button" data-expert-carousel-indicator="{{ forloop.counter0 }}" aria-label="{{ slide.name }}" aria-controls="expert-hero-slide-{{ forloop.counter0 }}"></button>
+            {% endfor %}
         </div>
-    </div>
+    {% endif %}
 </section>
+{% endif %}
 
 <section class="section contract-feature-grid">
     <div class="container feature-grid">
@@ -51,9 +50,9 @@
             <p>로그인한 인증 계정만 계약을 생성하고, 상대방도 링크 접속 시 동일한 인증을 거쳐 서명합니다.</p>
         </article>
         <article class="feature-card">
-            <p class="feature-label">선택형 결제</p>
-            <h3>유료 정책과 단계별 결제</h3>
-            <p>필요에 따라 의뢰자·수행자에게 사토시 결제를 요구할 수 있으며, 결제 완료 후 다음 단계로 진행되도록 확장 가능합니다.</p>
+            <p class="feature-label">건당 수수료</p>
+            <h3>고정 금액으로 투명하게</h3>
+            <p>시스템은 분쟁에 개입하지 않으며 계약 금액과 무관하게 건당 고정 수수료만 받습니다. 의뢰자·수행자는 라이트닝 위젯에서 동일 금액을 확인하고 결제합니다.</p>
         </article>
         <article class="feature-card">
             <p class="feature-label">계약 보관함</p>
@@ -87,14 +86,16 @@
             <p class="stat-note">계약 본문에 입력된 총액</p>
         </article>
         <article class="stat-card">
-            <p class="stat-label">참여자 수</p>
+            <p class="stat-label">참여자 합계</p>
             <p class="stat-value">{{ usage_stats.unique_creators|add:usage_stats.unique_counterparties|intcomma }}명</p>
             <p class="stat-note">생성자 {{ usage_stats.unique_creators|intcomma }} · 상대방 {{ usage_stats.unique_counterparties|intcomma }}</p>
         </article>
         <article class="stat-card">
-            <p class="stat-label">라이트닝 인증 계정</p>
-            <p class="stat-value">{{ usage_stats.lightning_users_total|intcomma }}명</p>
-            <p class="stat-note">최근 {{ usage_stats.payments.window_days }}일 활동 {{ usage_stats.lightning_users_active|intcomma }}명</p>
+            <p class="stat-label">라이트닝 인증 합계</p>
+            <p class="stat-value">{{ usage_stats.expert_lightning_users_total|intcomma }}명</p>
+            <p class="stat-note">
+                최근 {{ usage_stats.payments.window_days }}일 인증 {{ usage_stats.expert_lightning_users_active|default:0|intcomma }}명
+            </p>
         </article>
         </div>
     </div>
@@ -107,14 +108,15 @@
         <p class="subtitle is-6 has-text-grey-light">모든 항목은 한 화면에서 작성되고 곧바로 서명 단계로 이어집니다.</p>
         <div class="input-grid">
             <div class="input-item"><span>역할 및 정산 정보</span></div>
-            <div class="input-item"><span>계약 제목 · 본문 (Markdown)</span></div>
+            <div class="input-item"><span>계약 제목 · 본문 (일반 텍스트)</span></div>
             <div class="input-item"><span>수행 기간 (시작/종료일)</span></div>
             <div class="input-item"><span>총 계약 금액(사토시) & 지불 방식</span></div>
             <div class="input-item"><span>분할 지급 단계별 조건</span></div>
+            <div class="input-item"><span>자필 서명 캡처 & 필수 동의</span></div>
         </div>
         <div class="payment-note">
             <strong>안내</strong>
-            <p>유료화가 활성화되면 의뢰자·수행자가 각자 지정된 사토시 금액을 결제한 뒤 계약 프로세스가 이어집니다.</p>
+            <p>의뢰자·수행자가 각자 지정된 사토시 금액을 결제한 뒤 계약 프로세스가 이어집니다.</p>
         </div>
     </div>
 </section>

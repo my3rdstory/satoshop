@@ -109,7 +109,6 @@ def sign_contract_pdf(content_file: ContentFile) -> ContentFile:
             writer,
             signer=signer,
             signature_meta=metadata,
-            validation_context=None,
         )
         if hasattr(signed_output, "getvalue"):
             signed_bytes = signed_output.getvalue()

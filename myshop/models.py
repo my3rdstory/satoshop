@@ -368,6 +368,12 @@ class SiteSettings(models.Model):
         verbose_name="스토어 생성 허용",
         help_text="사용자의 새 스토어 생성 허용"
     )
+
+    enable_expert_pdf_preview_tool = models.BooleanField(
+        default=False,
+        verbose_name="Expert PDF 검증 도구",
+        help_text="장고 어드민에서 계약서 PDF 미리보기 도구를 사용할 수 있도록 허용합니다."
+    )
     
     # Google Analytics 설정
     google_analytics_id = models.CharField(

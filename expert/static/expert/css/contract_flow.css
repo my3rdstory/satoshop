@@ -233,9 +233,21 @@
     box-shadow: 0 15px 32px rgba(15, 23, 42, 0.1);
 }
 
-.worklog-preview .markdown-content {
+.worklog-preview .markdown-content,
+.worklog-preview.markdown-content {
     background: transparent;
     color: inherit;
+    line-height: 1.6;
+}
+
+.worklog-preview .markdown-content p,
+.worklog-preview.markdown-content p {
+    margin: 0 0 0.75rem;
+}
+
+.worklog-preview .markdown-content p:last-child,
+.worklog-preview.markdown-content p:last-child {
+    margin-bottom: 0;
 }
 
 .worklog-preview strong {

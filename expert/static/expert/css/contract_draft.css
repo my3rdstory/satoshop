@@ -595,6 +595,21 @@
     border-color: rgba(59, 130, 246, 0.35);
 }
 
+.worklog-editor-wrapper .editor-toolbar button {
+    color: rgba(226, 232, 240, 0.85);
+    background: transparent;
+    border: none;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.worklog-editor-wrapper .editor-toolbar button:hover,
+.worklog-editor-wrapper .editor-toolbar button:focus,
+.worklog-editor-wrapper .editor-toolbar button.active {
+    color: #7dd3fc;
+    background: rgba(56, 189, 248, 0.18);
+    border: none;
+}
+
 .worklog-counter {
     text-align: right;
     font-size: 0.8rem;

@@ -12,21 +12,13 @@ fi
 echo "🔧 Python 패키지 업그레이드..."
 pip install --upgrade pip
 
-echo "🔧 시스템 의존성 확인 중..."
-# 렌더 환경에서 시스템 패키지 설치 시도 (가능한 경우에만)
-if command -v apt-get >/dev/null 2>&1 && [ "$EUID" -eq 0 ]; then
-    echo "📦 시스템 패키지 설치 중..."
-    apt-get update -qq || echo "⚠️ apt-get update 실패, 계속 진행"
-    apt-get install -y --no-install-recommends \
-        libsecp256k1-dev \
-        pkg-config \
-        build-essential \
-        libffi-dev \
-        python3-dev || echo "⚠️ 시스템 패키지 설치 실패, pip 컴파일로 대체"
-else
-    echo "⚠️ 시스템 패키지 설치 권한 없음 - pip를 통한 소스 컴파일 사용"
-    echo "🔧 렌더 환경에서는 필요한 빌드 도구들이 일반적으로 사용 가능"
+FONT_DIR="$PWD/expert/static/expert/fonts"
+
+if [ ! -f "$FONT_DIR/NotoSansKR-Regular.ttf" ] || [ ! -f "$FONT_DIR/NotoSansKR-Bold.ttf" ]; then
+    echo "❌ expert/static/expert/fonts 폴더에 NotoSansKR-Regular/Bold.ttf가 필요합니다. README 안내대로 준비해주세요."
+    exit 1
 fi
+export OSFONTDIR="$FONT_DIR:${OSFONTDIR:-}"
 
 echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치

@@ -1,3 +1,4 @@
+import logging
 import markdown
 
 import json
@@ -12,8 +13,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
 from django.http import Http404, HttpResponseBadRequest, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template import RequestContext, Template, TemplateSyntaxError
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.generic import TemplateView, FormView, RedirectView
@@ -27,6 +30,7 @@ from .contract_flow import (
     build_mediator_hash,
     generate_share_slug,
     render_contract_pdf,
+    _format_plaintext_paragraphs,
 )
 from .emails import send_direct_contract_document_email
 from .models import (
@@ -35,6 +39,7 @@ from .models import (
     ContractParticipant,
     DirectContractDocument,
     DirectContractStageLog,
+    ExpertHeroSlide,
 )
 from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
 from .forms import (
@@ -65,6 +70,9 @@ from .utils import (
 from .stats import aggregate_usage_stats
 
 
+logger = logging.getLogger(__name__)
+
+
 def render_contract_markdown(text: str) -> str:
     """계약서 마크다운을 HTML로 안전하게 변환."""
 
@@ -88,6 +96,100 @@ def render_contract_markdown(text: str) -> str:
         output_format="html5",
     )
     return md.convert(text)
+
+
+def render_plaintext_block(text: str) -> str:
+    if not text:
+        return ""
+    return mark_safe(_format_plaintext_paragraphs(text))
+
+
+def _build_expert_hero_slides(request, base_context: dict) -> list[dict]:
+    """활성화된 히어로 슬라이드를 템플릿으로 렌더링한다."""
+
+    slides: list[dict] = []
+    payload = {k: v for k, v in base_context.items() if k != "hero_slides"}
+    payload.update({"request": request, "user": request.user})
+
+    queryset = ExpertHeroSlide.objects.filter(is_active=True).order_by("order", "-updated_at")
+    for slide in queryset:
+        rendered = slide.content_html
+        try:
+            template = Template(slide.content_html)
+            rendered = template.render(RequestContext(request, payload))
+        except TemplateSyntaxError as exc:
+            logger.warning("히어로 슬라이드(%s) 템플릿 오류: %s", slide.name, exc)
+            continue
+        except Exception as exc:  # pragma: no cover - 안전 장치
+            logger.warning("히어로 슬라이드(%s) 렌더링 실패: %s", slide.name, exc)
+            continue
+
+        slides.append(
+            {
+                "id": slide.id,
+                "name": slide.name,
+                "rotation_seconds": slide.rotation_seconds or 6,
+                "background_style": slide.background_style,
+                "overlay_color": slide.overlay_style,
+                "html": mark_safe(rendered),
+            }
+        )
+
+    if slides:
+        return slides
+
+    fallback_html = """
+<div class=\"direct-contract-hero section\">
+  <div class=\"container hero-grid\">
+    <div class=\"hero-copy\">
+      <span class=\"hero-pill\">1:1 직접 계약</span>
+      <h1>의뢰자와 수행자가 바로 합의하고 서명하는 직거래 계약</h1>
+      <p>직접 계약은 의뢰자·수행자 사이의 거래를 지원하며, 정산 정보 입력부터 서명 공유까지 한 화면에서 진행됩니다.</p>
+      <div class=\"hero-actions\">
+        {% if request.user.is_authenticated %}
+          <a class=\"button is-primary is-medium\" href=\"{% url 'expert:direct-draft' %}\">계약 작성 시작</a>
+        {% else %}
+          <a class=\"button is-primary is-medium\" href=\"{% url 'expert:login' %}?next={% url 'expert:direct-draft' %}\">계약 작성 시작</a>
+        {% endif %}
+        <p class=\"is-size-7 has-text-grey\">Expert는 라이트닝 로그인으로만 이용 가능합니다.</p>
+      </div>
+    </div>
+    <div class=\"hero-side\">
+      <div class=\"hero-card\">
+        <p class=\"hero-card-title\">기본 원칙</p>
+        <ul>
+          <li><span class=\"hero-bullet\">역할 지원</span> 의뢰자/수행자 중 누구나 계약 개설</li>
+          <li><span class=\"hero-bullet\">라이트닝 인증</span> 지갑 서명으로 인증된 계정만 정산 정보 입력/서명 가능</li>
+          <li><span class=\"hero-bullet\">옵션 결제</span> 유료 정책이 켜지면 단계별 사토시 결제 후 진행</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+""".strip()
+
+    fallback_slide = ExpertHeroSlide(
+        name="기본 Hero",
+        background_css=(
+            "background: radial-gradient(circle at top left, rgba(255, 184, 0, 0.35), transparent 45%), "
+            "radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.25), transparent 50%), "
+            "linear-gradient(135deg, #0f172a, #111827 55%, #020617 100%);"
+        ),
+    )
+
+    template = Template(fallback_html)
+    rendered_fallback = template.render(RequestContext(request, payload))
+
+    return [
+        {
+            "id": "fallback",
+            "name": "기본 Hero",
+            "rotation_seconds": 8,
+            "background_style": fallback_slide.background_style,
+            "overlay_color": fallback_slide.overlay_style,
+            "html": mark_safe(rendered_fallback),
+        }
+    ]
 
 
 def record_stage_log(stage: str, *, document=None, token: str | None = None, meta: dict | None = None):
@@ -137,6 +239,7 @@ class ExpertLandingView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["usage_stats"] = aggregate_usage_stats()
+        context["hero_slides"] = _build_expert_hero_slides(self.request, context)
         return context
 
 
@@ -299,7 +402,7 @@ class DirectContractReviewView(LightningLoginRequiredMixin, FormView):
             {
                 "draft_payload": self.draft_payload,
                 "contract_generated_at": timezone.now(),
-                "work_log_html": render_contract_markdown(work_log_markdown),
+                "work_log_html": render_plaintext_block(work_log_markdown),
                 "payment_widget": payment_widget,
                 "payment_expire_seconds": PAYMENT_EXPIRE_SECONDS,
                 "creator_lightning_id": _get_lightning_public_key(self.request.user),
@@ -462,10 +565,34 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
             return None
         return super().get_form(form_class)
 
+    def get_initial(self):
+        initial = super().get_initial()
+        if not hasattr(self, "document"):
+            return initial
+        if self.document.counterparty_email:
+            initial.setdefault("email", self.document.counterparty_email)
+        if self.document.counterparty_role == "performer":
+            performer_address = (
+                (self.payload or {}).get("performer_lightning_address")
+                or self.document.counterparty_lightning_id
+            )
+            if performer_address:
+                initial.setdefault("performer_lightning_address", performer_address)
+        return initial
+
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["require_performer_lightning"] = self.document.counterparty_role == "performer"
+        kwargs["signature_optional"] = self._has_existing_counterparty_signature()
         return kwargs
+
+    def _has_existing_counterparty_signature(self) -> bool:
+        if self.document.counterparty_signature and getattr(self.document.counterparty_signature, "name", ""):
+            return True
+        asset = self.document.get_signature_asset("counterparty")
+        if asset:
+            return True
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -513,13 +640,14 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
                 or (self.document.creator_signature.url if self.document.creator_signature else ""),
                 "counterparty_signature_url": self.document.get_signature_url("counterparty")
                 or (self.document.counterparty_signature.url if self.document.counterparty_signature else ""),
-                "work_log_html": render_contract_markdown((self.payload or {}).get("work_log_markdown", "")),
+                "work_log_html": render_plaintext_block((self.payload or {}).get("work_log_markdown", "")),
                 "require_performer_lightning": self.document.counterparty_role == "performer",
                 "creator_role_label": creator_role_label,
                 "counterparty_role_label": counterparty_role_label,
                 "creator_lightning_id": creator_lightning_id,
                 "counterparty_lightning_id": counterparty_payload_lightning,
                 "viewer_lightning_id": viewer_lightning_id,
+                "counterparty_signature_optional": self._has_existing_counterparty_signature(),
             }
         )
         form_instance = context.get("form")
@@ -565,11 +693,27 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         if payment_widget.requires_payment and payment_widget.state.status != "paid":
             form.add_error(None, "라이트닝 결제를 완료한 뒤 서명해주세요.")
             return self.form_invalid(form)
-        asset, error, signature_file = store_signature_asset_from_data(
-            form.cleaned_data["signature_data"], f"counterparty-{self.document.slug}"
-        )
-        if not asset and not signature_media_fallback_enabled():
+        existing_asset = self.document.get_signature_asset("counterparty")
+        existing_signature_file = self.document.counterparty_signature if self.document.counterparty_signature else None
+        signature_payload = form.cleaned_data.get("signature_data")
+
+        asset = None
+        signature_file = None
+        error = None
+        if signature_payload:
+            asset, error, signature_file = store_signature_asset_from_data(
+                signature_payload, f"counterparty-{self.document.slug}"
+            )
+        else:
+            asset = existing_asset
+            signature_file = existing_signature_file
+
+        if signature_payload and not asset and not signature_media_fallback_enabled():
             form.add_error(None, error or "서명 이미지를 저장하지 못했습니다. 잠시 후 다시 시도해주세요.")
+            return self.form_invalid(form)
+
+        if not (asset or signature_file):
+            form.add_error(None, error or "서명 이미지를 찾을 수 없습니다. 다시 서명해 주세요.")
             return self.form_invalid(form)
 
         self.document.counterparty_email = form.cleaned_data["email"]
@@ -599,11 +743,19 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
         }
         if payment_receipt:
             stage_meta["payment"] = payment_receipt
+        stored_local_signature = False
         if asset:
-            self.document.set_signature_asset("counterparty", asset)
-            self.document.clear_signature_file("counterparty")
+            if asset != existing_asset:
+                self.document.set_signature_asset("counterparty", asset)
+                self.document.clear_signature_file("counterparty")
         else:
-            self.document.counterparty_signature.save(signature_file.name, signature_file)
+            if signature_file != existing_signature_file and signature_file and hasattr(signature_file, "name"):
+                self.document.counterparty_signature.save(signature_file.name, signature_file)
+                stored_local_signature = True
+            elif not signature_file and signature_media_fallback_enabled():
+                stored_local_signature = True
+
+        if stored_local_signature:
             messages.warning(
                 self.request,
                 "객체 스토리지 연결을 확인할 수 없어 임시로 로컬 저장소에 서명을 보관했습니다.",

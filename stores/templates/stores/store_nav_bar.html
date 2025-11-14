@@ -1,4 +1,4 @@
-{% load static %}
+{% load static user_extras %}
 
 <!-- 스토어 브랜드 및 탐색 메뉴 컴포넌트 -->
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,6 +27,9 @@
           </a>
           <a href="{% url 'boards:notice_list' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
             <i class="fas fa-bullhorn mr-2"></i>공지사항
+          </a>
+          <a href="{% url 'expert:landing' %}" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white">
+            <i class="fas fa-file-contract mr-2"></i>엑스퍼트
           </a>
         </div>
       </div>
@@ -94,7 +97,7 @@
         <!-- 사용자 드롭다운 -->
         <div class="relative group">
           <button class="flex items-center text-gray-300 hover:text-bitcoin transition-colors">
-            <i class="fas fa-user mr-2"></i>{{ user.username }}님
+            <i class="fas fa-user mr-2"></i>{{ user|lightning_username_tail }}님
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">

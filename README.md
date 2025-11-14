@@ -76,7 +76,7 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **환율 요약 이메일**: 1시간마다 최근 5개 환율 데이터를 모아서 요약 내용을 텔레그램으로 전송
 
 ### 🏠 메인 랜딩 페이지
-- **히어로 섹션**: 라이트닝 네트워크 기반 상점의 핵심 가치를 전달하고, 사용자 상태에 맞춘 CTA 버튼으로 빠른 온보딩 유도
+- **히어로 섹션**: 라이트닝 네트워크 기반 상점의 핵심 가치를 전달하고, Expert 전용 캐러셀에서 등록한 HTML/배경을 자동 롤링·이전·다음 네비게이션과 함께 노출
 - **실시간 지표 패널**: Django 어드민 데이터를 기반으로 전체/활성 스토어 수, 상품·밋업·디지털 파일·라이브 강의·메뉴 총합을 실시간 표시하며, 업비트 BTC/KRW 환율과 동기화 시각까지 함께 안내
 - **기능/프로세스 하이라이트**: 노코드 스토어 빌더, 실시간 환율 동기화 등 주요 기능과 3단계 온보딩 절차를 섹션별로 정리
 - **사용 사례 & 후기**: 굿즈샵, 디지털 콘텐츠, 오프라인 결제 등 다양한 활용 시나리오와 사용자 추천사를 통해 후킹 강화
@@ -472,6 +472,40 @@ SECURE_SSL_REDIRECT=True
 - 명령어: `uv run python manage.py test_telegram_bot`
 - 환율 업데이트 시 자동으로 텔레그램 알림 전송
 
+### Docker 기반 Render 배포 파이프라인
+
+`Dockerfile`, `.dockerignore`, `scripts/docker-entrypoint.sh`, `render.yaml`을 추가해 Render가 Docker 이미지를 그대로 받아 배포하도록 정리했습니다. 네이티브 배포에서는 ReportLab 기반 순수 파이썬 PDF 파이프라인을 사용하므로 별도의 OS 패키지 설치 없이도 동일한 결과를 얻을 수 있습니다.
+
+#### 1) 로컬에서 이미지 빌드·검증
+
+```bash
+docker build -t satoshop:latest .
+docker run \
+  --env-file ./env.production.example \
+  -e SECRET_KEY=로컬-시크릿 \
+  -e DB_HOST=host.docker.internal \
+  -e DB_NAME=satoshop \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=postgres \
+  -e DB_PORT=5432 \
+  -e ALLOWED_HOSTS=localhost \
+  -p 8000:8000 \
+  satoshop:latest
+```
+
+- 컨테이너에 Cairo/Pango, `fonts-noto-cjk`, `expert/static/expert/fonts`를 한꺼번에 등록해 Expert PDF 한글이 깨지지 않습니다. (`OSFONTDIR=/app/expert/static/expert/fonts:/usr/share/fonts/truetype/noto`)
+- `scripts/docker-entrypoint.sh`는 `scripts/render_setup_signer.sh`로 PKCS#12 인증서를 복원한 뒤 `uv run python manage.py migrate → collectstatic → check` 순으로 부트스트랩합니다. `RUN_MIGRATIONS`, `RUN_COLLECTSTATIC`, `RUN_SYSTEM_CHECK` 환경 변수로 각 단계를 선택적으로 건너뛸 수 있습니다.
+
+#### 2) Render Blueprint로 자동 배포 구성
+
+1. GitHub에 이 리포지토리를 연결한 뒤 Render 대시보드 → **Blueprints** → **New Blueprint**에서 `main` 브랜치를 선택합니다.
+2. `render.yaml`을 지정하면 `satoshop-django`(웹 서비스)와 `satoshop-postgres`(관리형 Postgres)가 한 번에 생성되고, Dockerfile 기반으로 이미지를 빌드합니다.
+3. Blueprint에서 `sync: false`로 표시되는 환경 변수(SECRET_KEY, Blink/S3/LNURL/ADMIN/EXPERT_* 등)는 Render 환경 변수 화면에서 직접 값을 채웁니다. 데이터베이스 연결 정보(`DB_HOST/NAME/USER/PASSWORD/PORT`)는 blueprint가 Postgres 인스턴스에서 자동으로 주입합니다.
+4. `autoDeploy: true`와 `branch: main` 덕분에 **main 브랜치에 푸시 → Render가 Docker 이미지를 재빌드 → 신규 컨테이너 배포**가 자동으로 이어집니다. 필요한 경우 같은 Dockerfile을 재사용해 Preview/Stage 서비스를 추가하세요.
+5. 헬스체크 경로는 기본으로 `/`에 맞춰 두었습니다. 별도 헬스 엔드포인트를 사용한다면 `render.yaml`의 `healthCheckPath` 값을 수정하면 됩니다.
+
+> 📌 Render가 서비스를 재시작해도 컨테이너 진입 시점마다 마이그레이션과 정적 파일 수집이 수행되어(수 초 내 완료) 한글 PDF/의존성 문제가 재발하지 않습니다. 대규모 마이그레이션이 예상되면 `RUN_MIGRATIONS=false`로 잠시 비활성화하고 Render의 Pre-deploy Command에서 수동으로 실행할 수 있습니다.
+
 
 ## 🔧 관리자 기능
 
@@ -483,6 +517,12 @@ SECURE_SSL_REDIRECT=True
 - **사이트 제목 및 설명**: 메타 태그 및 홈페이지 표시
 - **히어로 섹션**: 홈페이지 메인 섹션 제목/부제목
 - **유튜브 비디오**: 홈페이지 배경 비디오 설정
+
+#### Expert 히어로 캐러셀
+- **관리 위치**: `어드민 → Expert → Expert 히어로 슬라이드`에서 랜딩 상단 배너를 HTML/템플릿 단위로 등록하고 순서를 제어합니다.
+- **배경 옵션**: CSS 선언 또는 이미지를 조합해 슬라이드별 고유한 배경을 지정하고 투명도 오버레이까지 설정할 수 있습니다.
+- **콘텐츠 HTML**: Django 템플릿 문법을 그대로 사용할 수 있어 `{{ usage_stats }}`나 `{{ request.user }}` 같은 컨텍스트 값을 활용한 동적 메시지 구성이 가능합니다.
+- **자동 전환 제어**: 슬라이드마다 전환 간격(초)을 다르게 줄 수 있으며, 랜딩 화면에서는 자동 롤링·이전/다음 네비 버튼·인디케이터로 제어할 수 있습니다.
 
 #### 환율 관리
 - **자동 업데이트 간격**: 업비트 API 호출 주기 설정 (기본 5분)
@@ -518,14 +558,20 @@ SECURE_SSL_REDIRECT=True
 - **앱 비밀번호**: 2단계 인증 후 생성한 앱 전용 비밀번호 사용
 - **수신 이메일**: 사이트 설정에서 알림 받을 이메일 주소 설정
 
-#### Expert 계약 이메일 & 채팅
 - **서명 자산 S3 저장**: `DirectContractDocument`의 자필 서명 이미지는 S3 호환 오브젝트 스토리지(`expert/contracts/signatures/…`)에 업로드되어야 하며, 프로덕션에서는 `EXPERT_SIGNATURE_MEDIA_FALLBACK=False`로 설정해 로컬 저장을 차단하세요.
 - **실시간 채팅**: `/expert/contracts/<UUID>/` 페이지에서 웹소켓 기반 실시간 채팅을 제공합니다. 프로덕션 환경에서는 `CHANNEL_REDIS_URL` 환경 변수를 Redis 연결 문자열로 설정해 주십시오. (미설정 시 개발 편의용 In-Memory 채널 레이어가 사용됩니다.)
 - **채팅 PDF 아카이브**: 계약 채팅 로그는 ReportLab 기반 PDF로 아카이브되며, 관리자 패널에서 `채팅 로그 PDF 생성` 액션으로 수동 생성할 수 있습니다.
-- **한글 PDF 폰트**: 기본적으로 ReportLab `HYSMyeongJo-Medium` CID 폰트를 자동 등록해 계약서·채팅 PDF 모두에서 한글이 깨지지 않습니다. 레포의 `expert/fonts/` 폴더(비어 있음)에 `NanumGothic-Regular.ttf` 등 원하는 TTF/OTF를 추가하면 해당 폰트가 최우선으로 사용됩니다.
+- **최종 계약서 PDF 렌더링**: 계약 본문은 Markdown을 ElementTree로 파싱한 뒤 ReportLab(Platypus)로 직접 PDF를 생성합니다. 별도 템플릿/브라우저 엔진 없이도 Render 네이티브 환경에서 동작합니다.
+  - `expert/static/expert/fonts/` 디렉터리에 `NotoSansKR-Regular.ttf`, `NotoSansKR-Bold.ttf`를 배치하면 본문/굵은 글꼴이 자동으로 적용됩니다.
+  - 이모지를 그대로 유지하고 싶다면 Noto Color Emoji 등 컬러 이모지 폰트를 서버에 추가 설치하면 바로 반영됩니다.
+  - ReportLab 스타일은 `expert/contract_flow.py` 내부에 정의되어 있으며, `scripts/render_sample_contract.py`를 실행하면 동일한 레이아웃을 즉시 검증할 수 있습니다.
+  - **Markdown 사용 제한**: ReportLab 변환 특성상 `h1~h3`, 단순 목록, 표, 코드 블록, 구분선 정도만 안정적으로 표현됩니다. 이 외의 복잡한 HTML/Markdown(예: 중첩 div, custom span 스타일 등)은 PDF에서 자동으로 무시되거나 삭제됩니다.
+- **한글 PDF 폰트**: ReportLab에서 `resolve_contract_pdf_font()` 함수가 `expert/static/expert/fonts/`를 우선 탐색해 원하는 TTF/OTF를 등록합니다. `EXPERT_FONT_DIR` 환경 변수로 경로를 재정의할 수 있습니다.
+- **네이티브 PDF 테스트**: Docker 없이 Render 네이티브 환경을 쓴다면 `uv run python scripts/render_sample_contract.py`로 샘플 계약 PDF를 만들고 `expert/docs/`에서 한글 표시를 바로 확인하세요. 폰트를 교체했다면 제한된 리소스 환경에서도 동일하게 적용되는지 이 스크립트로 검증할 수 있습니다.
+- **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 같은 화면 상단의 “도구 활성화/비활성화” 버튼으로 바로 토글할 수 있습니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
-- **새 의존성 설치**: `uv sync`를 실행하여 `channels`와 `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
+- **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `reportlab` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
 - **단계 로그 메타 뷰**: Django Admin → Expert → *직접 계약 단계 로그*에서 meta 필드가 폼 형태로 펼쳐져 결제/서명 정보를 즉시 확인할 수 있습니다.
 - **빠른 내비게이션**: Expert 상단 우측 버튼에서 `로그아웃`(항상 개요 화면으로 리다이렉션)과 `Go! 사토샵`(도메인 루트 이동)으로 바로 이동할 수 있습니다.
 - **시크릿 모드 차단**: LNURL-auth는 브라우저 저장소를 사용하므로 시크릿/프라이빗 창에서는 인증이 차단됩니다. 로그인 화면과 Expert용 라이트닝 로그인 위젯은 자동으로 프라이빗 모드를 감지해 경고를 띄우고 버튼을 비활성화하며, 라이트닝 지갑 열기 버튼은 `lightning:` 스킴으로 강제 열려 모바일 지갑에서도 바로 동작합니다.
@@ -552,23 +598,25 @@ SECURE_SSL_REDIRECT=True
 
 #### Expert 통계 & Blink 수수료
 - **Blink 수수료 통계**: Django Admin → Expert → *Blink 수수료 통계*에서 Expert 결제 위젯으로 유입된 사토시 결제 내역을 기간·역할별로 확인할 수 있습니다. 위젯은 `DirectContractDocument.payment_meta`에 기록된 금액을 집계합니다.
+- **Expert 라이트닝 계정 수**: 현황 카드와 관리자 통계의 라이트닝 지표는 전체 LightningUser가 아니라 `DirectContractDocument` 생성/서명에 참여한 계정만 집계하며, 최근 N일 활동 수치 역시 동일 기준으로 계산됩니다.
 - **사용 통계 대시보드**: Django Admin → Expert → *Expert 사용 통계*는 누적/완료 계약 수, 계약 금액 합계, 라이트닝 인증 사용자(active/전체)를 한눈에 보여 줍니다.
 - **프런트 노출**: `/expert/contracts/direct/` 랜딩 페이지 상단에 계약·사용자 집계 카드가 노출되며, 금액/건수만 표시해 수수료 금액은 외부에 공유되지 않습니다.
 
 #### Expert 거래 계약서 템플릿
 - **마크다운 계약서 관리**: Django 어드민 → Expert → *거래 계약서* 메뉴에서 마크다운(MD) 형식의 계약서를 버전별로 등록할 수 있습니다. 레포지토리의 `expert/contracts/good_faith_private_contract.md` 파일은 신의성실 기반 1:1 거래 계약서 샘플입니다.
+- **드래프트 미리보기 일치**: 계약 초안 작성 화면이 `static/js/markdown-renderer.js`를 직접 로드해 2단/다단 목록, 표, 코드 블록 등 복잡한 마크다운도 미리보기 카드에 즉시 반영합니다.
 
 #### Expert 계약 결제 정책
 - **결제 정책 설정**: Django 어드민 → Expert → *직접 계약 결제 정책*에서 의뢰자/수행자 각각이 부담해야 할 사토시 금액을 입력하고 활성화하세요. 비활성화 시 결제 위젯은 자동으로 패스됩니다.
 - **Blink 자격 정보**: `.env` 파일에 `EXPERT_BLINK_API_KEY`, `EXPERT_BLINK_WALLET_ID`(미설정 시 `BLINK_*` 값을 자동 사용), `EXPERT_BLINK_MEMO_PREFIX`를 지정하면 리뷰/초대 화면에서 동일한 월렛으로 인보이스가 발행됩니다.
 - **결제 위젯 흐름**: `/expert/contracts/direct/review/<token>/`과 `/expert/contracts/direct/link/<slug>/`의 서명 박스 옆에 라이트닝 결제 카드가 노출되며, 정책에 등록된 금액만큼 결제 완료되어야 `계약서 주소 생성`/`계약 체결` 버튼이 활성화됩니다.
-- **만료 & 취소 처리**: 결제 시작 시 60초짜리 인보이스 QR/문자열과 카운트다운이 표시되며, 만료되거나 취소되면 HTMX로 해당 영역만 갱신하고 다시 시작할 수 있습니다. 모바일 접속자는 `lightning:` 링크로 즉시 지갑을 열 수 있습니다.
+- **만료 & 취소 처리**: 60초 카운트다운이 만료되거나 사용자가 *인보이스 취소*를 누르면 라이트닝 위젯 영역만 즉시 새로고침되어 `결제 시작` 버튼으로 복귀하며, 세션 내 기존 인보이스 메타가 모두 초기화됩니다. 모바일 접속자는 `lightning:` 링크로 즉시 지갑을 열 수 있습니다.
 - **상태 안내**: Blink API polling(1초 간격) 결과에 따라 "결제 확인 중", "완료", "만료" 등 상태 문구가 즉시 업데이트되며, 오류 발생 시 사유를 카드 내부에서 안내합니다.
 - **최종본 템플릿 반영**: `good_faith_private_contract.md`에는 실제 체결 시 바로 사용 가능한 최종 조항이 Markdown 문법으로 정리되어 있어 별도 서식 조정 없이도 PDF에 동일한 구조가 반영됩니다.
 - **PDF 출력 품질**: ReportLab Platypus 기반 템플릿으로 계약 제목/헤더/강조/인용이 그대로 스타일링되며, 인용문은 표 형태의 박스로 표현됩니다. 긴 문장은 자동 줄바꿈되고, 의뢰자 라이트닝 주소는 숨긴 채 수행자 주소만 노출합니다. 또한 `중개자(시스템)` 서명 해시를 포함해 세 당사자 해시가 모두 동일한 페이지에 출력됩니다.
 - **단일 노출 선택**: 계약서를 “노출”로 체크하면 다른 계약서는 자동으로 해제되어, 드래프트 화면에서는 항상 하나의 계약서만 노출됩니다.
 - **드래프트 입력 화면**: `/expert/contracts/direct/draft/` 화면에서 계약 조건을 모두 입력하고 즉시 공유 가능한 링크를 생성합니다. 표준 계약서가 등록되지 않은 경우에는 경고 문구가 표시됩니다.
-- **수행 내역 & 첨부 관리**: 계약 초안 화면에서 EasyMDE 기반 Markdown 메모 필드로 수행 내역을 최대 1만 자까지 기록하고, PDF를 오브젝트 스토리지(S3)로 직접 업로드하는 첨부 섹션을 제공합니다. 업로드 목록은 즉시 확인하고 제거할 수 있습니다.
+- **수행 내역 & 첨부 관리**: 계약 초안 화면에서 일반 텍스트 메모 필드로 수행 내역을 최대 1만 자까지 기록하고, PDF를 오브젝트 스토리지(S3)로 직접 업로드하는 첨부 섹션을 제공합니다. 업로드 목록은 즉시 확인하고 제거할 수 있습니다.
 
 
 ## 📁 프로젝트 구조
@@ -763,6 +811,13 @@ SiteSettings ──→ ExchangeRate
 2. `PaymentTransaction` 상세 화면에서 `pending` 주문과 연결된 라이브 강의 결제 건을 열고 `참가 확정하기`를 클릭합니다.
 3. 화면이 오류 없이 완료되고 `PaymentStageLog`의 `ORDER_FINALIZE` 단계에 `merged_existing_order: true`와 `cancelled_duplicate_order_id` 정보가 기록되는지 확인합니다.
 4. Django Admin의 `LiveLectureOrder` 목록을 확인해 `pending`이던 주문이 `cancelled`로 전환되고, 기존 확정 주문에 최신 결제 정보가 병합됐는지 검증합니다.
+
+### 수동 테스트 체크리스트 (Expert 직접 계약 초대 링크)
+
+1. Expert > 계약 라이브러리에서 수행자 역할을 `performer`로 지정한 직접 계약을 생성하고 공유 링크를 복사합니다.
+2. 생성자가 최종 서명을 완료한 뒤 동일 링크를 브라우저에서 열어 초대 페이지가 500 오류 없이 렌더링되는지 확인합니다.
+3. 상대방 역할이 `performer`일 때만 라이트닝 주소 입력 필드가 노출되고, 다른 역할에서는 필드가 숨겨지는지 점검합니다.
+4. 기존 서명이 저장된 상태(`counterparty_signature_optional = True`)에서는 서명 패드가 숨겨지고, 동의 체크박스와 라이트닝 주소만 제출해도 계약서 생성 단계가 정상적으로 완료되는지 확인합니다.
 
 2. **브랜치 관리**
    - main 브랜치는 운영 배포용으로만 사용

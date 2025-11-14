@@ -1,0 +1,89 @@
+services:
+  - type: web
+    name: satoshop-django
+    env: docker
+    plan: starter
+    region: singapore
+    autoDeploy: true
+    branch: main
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    healthCheckPath: /
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: satoshop.onrender.com
+      - key: DB_NAME
+        fromDatabase:
+          name: satoshop-postgres
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: satoshop-postgres
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: satoshop-postgres
+          property: password
+      - key: DB_HOST
+        fromDatabase:
+          name: satoshop-postgres
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: satoshop-postgres
+          property: port
+      - key: BLINK_API_KEY
+        sync: false
+      - key: BLINK_WALLET_ID
+        sync: false
+      - key: EXPERT_BLINK_API_KEY
+        sync: false
+      - key: EXPERT_BLINK_WALLET_ID
+        sync: false
+      - key: EXPERT_SIGNER_CERT_BASE64
+        sync: false
+      - key: EXPERT_SIGNER_CERT_PASSWORD
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_BUCKET_NAME
+        sync: false
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_REGION_NAME
+        sync: false
+      - key: S3_USE_SSL
+        value: "True"
+      - key: S3_FILE_OVERWRITE
+        value: "False"
+      - key: S3_CUSTOM_DOMAIN
+        sync: false
+      - key: LNURL_AUTH_ROOT_DOMAIN
+        sync: false
+      - key: HOTLINK_PROTECTION_ENABLED
+        value: "True"
+      - key: HOTLINK_ALLOWED_DOMAINS
+        sync: false
+      - key: RUN_MIGRATIONS
+        value: "true"
+      - key: RUN_COLLECTSTATIC
+        value: "true"
+      - key: RUN_SYSTEM_CHECK
+        value: "false"
+
+databases:
+  - name: satoshop-postgres
+    plan: starter
+    region: singapore

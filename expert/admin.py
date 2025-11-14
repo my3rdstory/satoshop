@@ -2,7 +2,9 @@ import json
 from datetime import datetime
 
 from django.contrib import admin, messages
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
+from django.template.response import TemplateResponse
 from django.urls import NoReverseMatch, reverse
 from django.utils.html import format_html, format_html_join
 from django.utils import timezone
@@ -15,8 +17,13 @@ from .models import (
     ContractPricingSetting,
     ExpertBlinkRevenueStats,
     ExpertUsageStats,
+    ExpertHeroSlide,
+    ExpertPdfPreviewProxy,
 )
 from .stats import aggregate_payment_stats, aggregate_usage_stats
+from .forms import ExpertPdfPreviewForm
+from .pdf_preview import DEFAULT_CONTRACT_BODY, build_preview_document, build_preview_payload
+from .contract_flow import render_contract_pdf
 
 
 @admin.register(ExpertEmailSettings)
@@ -133,6 +140,95 @@ class ContractTemplateAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(ExpertPdfPreviewProxy)
+class ExpertPdfPreviewAdmin(admin.ModelAdmin):
+    change_list_template = "admin/expert/pdf_preview.html"
+
+    def has_add_permission(self, request):  # pragma: no cover - admin guard
+        return False
+
+    def has_delete_permission(self, request, obj=None):  # pragma: no cover - admin guard
+        return False
+
+    def get_queryset(self, request):  # pragma: no cover - unused listing
+        return self.model.objects.none()
+
+    def changelist_view(self, request, extra_context=None):  # pylint: disable=arguments-differ
+        from myshop.models import SiteSettings  # local import to avoid circular deps
+
+        site_settings = SiteSettings.get_settings()
+        context = self.admin_site.each_context(request)
+        context.update(extra_context or {})
+        context["title"] = "계약서 PDF 검증"
+        context["tool_enabled"] = site_settings.enable_expert_pdf_preview_tool
+        context["toggle_url"] = reverse("admin:myshop_sitesettings_change", args=[site_settings.pk])
+
+        template_queryset = ContractTemplate.objects.all()
+        context["template_shortcuts"] = template_queryset
+
+        action = request.POST.get("action") if request.method == "POST" else None
+        if action == "toggle" and request.method == "POST":
+            desired_state = request.POST.get("toggle_state") == "enable"
+            if request.user.has_perm("myshop.change_sitesettings"):
+                site_settings.enable_expert_pdf_preview_tool = desired_state
+                site_settings.save(update_fields=["enable_expert_pdf_preview_tool"])
+                if desired_state:
+                    messages.success(request, "Expert 계약서 PDF 검증 도구가 활성화되었습니다.")
+                else:
+                    messages.info(request, "Expert 계약서 PDF 검증 도구가 비활성화되었습니다.")
+            else:
+                messages.error(request, "사이트 설정을 변경할 권한이 없습니다.")
+            return HttpResponseRedirect(request.path)
+
+        selected_template = None
+        template_param = request.GET.get("template")
+        if template_param:
+            selected_template = template_queryset.filter(pk=template_param).first()
+        if selected_template is None:
+            selected_template = template_queryset.filter(is_selected=True).first() or template_queryset.first()
+
+        initial_contract_body = (selected_template.content if selected_template else DEFAULT_CONTRACT_BODY)
+        default_payload = build_preview_payload()
+        default_payload_json = json.dumps(default_payload, ensure_ascii=False, indent=2)
+
+        if site_settings.enable_expert_pdf_preview_tool and action == "generate" and request.method == "POST":
+            form = ExpertPdfPreviewForm(request.POST, template_queryset=template_queryset)
+            if form.is_valid():
+                payload = form.cleaned_data.get("payload_data") or build_preview_payload()
+                contract_body = form.cleaned_data.get("contract_body") or ""
+                chosen_template = form.cleaned_data.get("template")
+                if not contract_body and chosen_template:
+                    contract_body = chosen_template.content
+                if not contract_body:
+                    contract_body = DEFAULT_CONTRACT_BODY
+                document = build_preview_document(payload)
+                pdf_content = render_contract_pdf(document, contract_body)
+                filename = form.cleaned_data.get("filename") or f"expert-contract-preview-{timezone.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                filename = filename.strip() or "expert-contract-preview.pdf"
+                response = HttpResponse(pdf_content.read(), content_type="application/pdf")
+                response["Content-Disposition"] = f'attachment; filename="{filename}"'
+                return response
+        elif site_settings.enable_expert_pdf_preview_tool:
+            initial = {
+                "template": selected_template.pk if selected_template else None,
+                "contract_body": initial_contract_body,
+                "payload_json": default_payload_json,
+                "filename": "expert-contract-preview.pdf",
+            }
+            form = ExpertPdfPreviewForm(initial=initial, template_queryset=template_queryset)
+        else:
+            form = None
+
+        context.update(
+            {
+                "form": form,
+                "selected_template": selected_template,
+                "default_payload_json": default_payload_json,
+            }
+        )
+        return TemplateResponse(request, self.change_list_template, context)
 
 
 @admin.register(ExpertBlinkRevenueStats)
@@ -553,3 +649,45 @@ class DirectContractStageLogAdmin(admin.ModelAdmin):
         return table
 
     hash_comparison.short_description = "해시 비교"
+
+
+@admin.register(ExpertHeroSlide)
+class ExpertHeroSlideAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active", "order", "rotation_seconds", "updated_at")
+    list_editable = ("is_active", "order")
+    list_filter = ("is_active",)
+    search_fields = ("name", "content_html")
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ("order", "-updated_at")
+
+    fieldsets = (
+        ("기본 정보", {"fields": ("name", "is_active", "order", "rotation_seconds")}),
+        (
+            "배경 설정",
+            {
+                "fields": ("background_css", "background_image", "overlay_color"),
+                "description": "CSS/이미지를 조합해 슬라이드 배경을 구성합니다.",
+            },
+        ),
+        (
+            "콘텐츠",
+            {
+                "fields": ("content_html",),
+                "description": "HTML 또는 Django 템플릿 문법으로 슬라이드 본문을 작성하세요.",
+            },
+        ),
+        ("메타", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+    def formfield_for_dbfield(self, db_field, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, **kwargs)
+        if db_field.name == "content_html" and formfield.widget:
+            formfield.widget.attrs.setdefault("rows", 28)
+            formfield.widget.attrs.setdefault(
+                "style",
+                'font-family: "JetBrains Mono", monospace; line-height:1.4;',
+            )
+        if db_field.name == "background_css" and formfield.widget:
+            formfield.widget.attrs.setdefault("rows", 6)
+            formfield.widget.attrs.setdefault("placeholder", "background: linear-gradient(...);")
+        return formfield

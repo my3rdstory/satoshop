@@ -83,11 +83,7 @@
                     <div class="lightning-mini-actions lightning-mini-actions--secondary">
                         <button type="button"
                                 class="button is-light"
-                                hx-post="{{ payment_widget.widget_urls.cancel }}"
-                                hx-target="#{{ payment_widget.dom_id }}"
-                                hx-swap="outerHTML"
-                                hx-vals='{"context":"{{ payment_widget.context_type }}","ref":"{{ payment_widget.identifier|escapejs }}","role":"{{ payment_widget.role }}"}'
-                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>인보이스 취소</button>
+                                data-payment-action="cancel">인보이스 취소</button>
                     </div>
                 </div>
             </div>
@@ -105,11 +101,7 @@
             {% endif %}
             <button type="button"
                     class="button is-primary is-fullwidth"
-                    hx-post="{{ payment_widget.widget_urls.start }}"
-                    hx-target="#{{ payment_widget.dom_id }}"
-                    hx-swap="outerHTML"
-                    hx-vals='{"context":"{{ payment_widget.context_type }}","ref":"{{ payment_widget.identifier|escapejs }}","role":"{{ payment_widget.role }}"}'
-                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>결제 시작</button>
+                    data-payment-action="start">결제 시작</button>
         {% endif %}
     {% endif %}
 

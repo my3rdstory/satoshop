@@ -1,5 +1,8 @@
 import base64
+import json
 from django import forms
+
+from .models import ContractTemplate
 
 
 ROLE_CHOICES = (
@@ -96,17 +99,17 @@ class ContractDraftForm(forms.Form):
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
     work_log_markdown = forms.CharField(
-        label="수행 내역 (Markdown)",
+        label="수행 내역 (일반 텍스트)",
         required=False,
         max_length=10000,
         widget=forms.Textarea(
             attrs={
                 "class": "textarea worklog-textarea",
                 "rows": 8,
-                "placeholder": "최대 10,000자까지 작성 가능합니다. Markdown 형식을 사용할 수 있어요.",
+                "placeholder": "최대 10,000자까지 일반 텍스트만 입력할 수 있어요. 줄바꿈으로 단락을 구분해 주세요.",
             }
         ),
-        help_text="최대 10,000자까지 입력 가능하며 Markdown(.md)만 지원합니다. HTML 태그는 사용하지 말고 Markdown 문법으로 작성해주세요.",
+        help_text="최대 10,000자까지 입력 가능하며 일반 텍스트만 지원합니다. 서식은 줄바꿈으로만 구분됩니다.",
     )
     agree_privacy = forms.BooleanField(
         label="개인정보 수집 및 이용에 동의합니다.",
@@ -172,6 +175,18 @@ class ContractReviewForm(forms.Form):
 class CounterpartySignatureForm(forms.Form):
     """공유 주소에서 상대방이 사용하는 서명 폼."""
 
+    def __init__(self, *args, signature_optional=False, require_performer_lightning=False, **kwargs):
+        self.signature_optional = signature_optional
+        self.require_performer_lightning = require_performer_lightning
+        super().__init__(*args, **kwargs)
+        self.fields["email"].required = False
+        if self.signature_optional:
+            self.fields["signature_data"].required = False
+        if self.require_performer_lightning:
+            self.fields["performer_lightning_address"].required = True
+        else:
+            self.fields.pop("performer_lightning_address", None)
+
     agree_reviewed = forms.BooleanField(
         label="계약 내용을 모두 확인했고, 자필 서명과 결제를 완료했습니다.",
         required=True,
@@ -179,6 +194,7 @@ class CounterpartySignatureForm(forms.Form):
     )
     email = forms.EmailField(
         label="이메일 (선택)",
+        required=False,
         widget=forms.EmailInput(attrs={"class": "input", "placeholder": "you@example.com"}),
     )
     performer_lightning_address = forms.CharField(
@@ -209,16 +225,10 @@ class CounterpartySignatureForm(forms.Form):
         widget=forms.CheckboxInput(attrs={"data-signature-confirm": "true"}),
     )
 
-    def __init__(self, *args, **kwargs):
-        self.require_performer_lightning = kwargs.pop("require_performer_lightning", False)
-        super().__init__(*args, **kwargs)
-        if not self.require_performer_lightning:
-            self.fields.pop("performer_lightning_address", None)
-        else:
-            self.fields["performer_lightning_address"].required = True
-
     def clean_signature_data(self):
-        data = self.cleaned_data["signature_data"]
+        data = self.cleaned_data.get("signature_data")
+        if self.signature_optional and not data:
+            return ""
         if not data or not data.startswith("data:image/"):
             raise forms.ValidationError("자필 서명을 캡처해 주세요.")
         try:
@@ -226,6 +236,16 @@ class CounterpartySignatureForm(forms.Form):
         except Exception as exc:  # pylint: disable=broad-except
             raise forms.ValidationError("서명 데이터가 올바르지 않습니다.") from exc
         return data
+
+    def clean(self):
+        cleaned = super().clean()
+        performer_address = cleaned.get("performer_lightning_address")
+        if self.require_performer_lightning and not performer_address:
+            self.add_error(
+                "performer_lightning_address",
+                "수행자는 정산 받을 라이트닝 주소를 반드시 입력해야 합니다.",
+            )
+        return cleaned
 
 
 class ContractIntegrityCheckForm(forms.Form):
@@ -273,3 +293,45 @@ class ContractIntegrityCheckForm(forms.Form):
     def get_document(self):
         slug = self.cleaned_data.get("document_slug")
         return self._document_map.get(slug)
+
+
+class ExpertPdfPreviewForm(forms.Form):
+    """어드민에서 사용되는 계약 PDF 미리보기 폼."""
+
+    template = forms.ModelChoiceField(
+        label="계약 템플릿",
+        queryset=ContractTemplate.objects.none(),
+        required=False,
+        help_text="선택하면 해당 템플릿 본문을 참고할 수 있습니다.",
+    )
+    contract_body = forms.CharField(
+        label="계약 본문 (Markdown)",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 12, "class": "vLargeTextField"}),
+        help_text="Markdown 형식으로 계약 본문을 입력하세요.",
+    )
+    payload_json = forms.CharField(
+        label="계약 Payload (JSON)",
+        widget=forms.Textarea(attrs={"rows": 18, "class": "vLargeTextField monospace"}),
+        help_text="계약 개요/지급/워크로그 데이터를 JSON으로 입력합니다.",
+    )
+    filename = forms.CharField(
+        label="다운로드 파일명",
+        max_length=120,
+        required=False,
+        initial="expert-contract-preview.pdf",
+    )
+
+    def __init__(self, *args, template_queryset=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        qs = template_queryset if template_queryset is not None else ContractTemplate.objects.none()
+        self.fields["template"].queryset = qs
+
+    def clean_payload_json(self):
+        raw = self.cleaned_data["payload_json"]
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:  # pragma: no cover - admin validation helper
+            raise forms.ValidationError(f"JSON 형식이 올바르지 않습니다: {exc}") from exc
+        self.cleaned_data["payload_data"] = payload
+        return raw

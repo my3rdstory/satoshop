@@ -82,7 +82,10 @@
             </article>
         </div>
 
-        <form method="post" class="contract-flow-card">
+        <form method="post"
+              class="contract-flow-card"
+              data-signature-form
+              data-signature-optional="false">
             {% csrf_token %}
             <input type="hidden"
                    data-payment-status-input
@@ -102,10 +105,12 @@
                         </div>
                     </div>
                 </div>
-                <div class="lightning-payment-wrapper">
-                    <h3>라이트닝 결제</h3>
-                    {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
-                </div>
+                {% if payment_widget and payment_widget.requires_payment %}
+                    <div class="lightning-payment-wrapper">
+                        <h3>라이트닝 결제</h3>
+                        {% include "expert/partials/lightning_payment_box.html" with payment_widget=payment_widget payment_expire_seconds=payment_expire_seconds %}
+                    </div>
+                {% endif %}
             </div>
             <div class="field mt-4 sign-checkbox-list">
                 <label class="checkbox">
