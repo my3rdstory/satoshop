@@ -1,6 +1,6 @@
 import base64
 import hashlib
-import html
+import html as html_utils
 import json
 import secrets
 from dataclasses import dataclass
@@ -193,7 +193,7 @@ def _format_plaintext_paragraphs(value: str) -> str:
 
     def flush_buffer():
         if buffer:
-            safe = html.escape("\n".join(buffer)).replace("\n", "<br/>")
+            safe = html_utils.escape("\n".join(buffer)).replace("\n", "<br/>")
             paragraphs.append(f"<p>{safe}</p>")
             buffer.clear()
 
@@ -222,7 +222,7 @@ def _build_intro_markdown(document, payload: Dict) -> str:
         f"# {contract_title}",
         "_SatoShop Expert Digital Contact_",
         "",
-        f"- 공유 ID: `{document.slug}`",
+        f"- 공유 ID: {document.slug}",
         f"- 생성 시각: {created_label}",
         "",
         CONTRACT_DIVIDER_MARKER,
@@ -447,6 +447,7 @@ def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
         "Body": ParagraphStyle(
             "ContractBody",
             parent=base,
+            spaceAfter=6,
         ),
         "List": ParagraphStyle(
             "ContractList",
@@ -499,6 +500,9 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
                     spaceAfter=8,
                 )
             )
+            return blocks
+        if not html or html == "&nbsp;":
+            blocks.append(Spacer(1, 10))
             return blocks
         if html:
             blocks.append(Paragraph(html, styles["Body"]))
@@ -556,7 +560,15 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             data.insert(0, header_row)
 
         if data:
-            table = Table(data, hAlign="LEFT")
+            def _table_paragraph(value: str) -> Paragraph:
+                text = (value or "").replace("\r\n", "\n")
+                safe = html_utils.escape(text).replace("\n", "<br/>").strip()
+                if not safe:
+                    safe = "-"
+                return Paragraph(safe, styles["Body"])
+
+            table_data = [[_table_paragraph(cell) for cell in row] for row in data]
+            table = Table(table_data, hAlign="LEFT")
             table_style = TableStyle(
                 [
                     ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f4f7")),

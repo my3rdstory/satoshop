@@ -566,6 +566,7 @@ docker run \
   - 이모지를 그대로 유지하고 싶다면 Noto Color Emoji 등 컬러 이모지 폰트를 서버에 추가 설치하면 바로 반영됩니다.
   - ReportLab 스타일은 `expert/contract_flow.py` 내부에 정의되어 있으며, `scripts/render_sample_contract.py`를 실행하면 동일한 레이아웃을 즉시 검증할 수 있습니다.
   - **Markdown 사용 제한**: ReportLab 변환 특성상 `h1~h3`, 단순 목록, 표, 코드 블록, 구분선 정도만 안정적으로 표현됩니다. 이 외의 복잡한 HTML/Markdown(예: 중첩 div, custom span 스타일 등)은 PDF에서 자동으로 무시되거나 삭제됩니다.
+  - 표 셀 내부에서 `<br>` 또는 줄바꿈을 사용하면 ReportLab Paragraph로 다시 감싸져 PDF에서도 줄바꿈이 그대로 유지됩니다.
 - **한글 PDF 폰트**: ReportLab에서 `resolve_contract_pdf_font()` 함수가 `expert/static/expert/fonts/`를 우선 탐색해 원하는 TTF/OTF를 등록합니다. `EXPERT_FONT_DIR` 환경 변수로 경로를 재정의할 수 있습니다.
 - **네이티브 PDF 테스트**: Docker 없이 Render 네이티브 환경을 쓴다면 `uv run python scripts/render_sample_contract.py`로 샘플 계약 PDF를 만들고 `expert/docs/`에서 한글 표시를 바로 확인하세요. 폰트를 교체했다면 제한된 리소스 환경에서도 동일하게 적용되는지 이 스크립트로 검증할 수 있습니다.
 - **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 같은 화면 상단의 “도구 활성화/비활성화” 버튼으로 바로 토글할 수 있습니다.

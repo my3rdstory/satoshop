@@ -16,3 +16,7 @@
 - [x] 캐러셀 인디케이터/버튼 겹침 수정 및 CSS 문서화
 - [x] Expert 계약서 PDF 검증 토글을 Expert 메뉴로 이동
 - [x] ReportLab 기반 순수 파이썬 계약서 PDF 파이프라인 구축
+- [x] Expert 최종 계약서 PDF 줄바꿈 표시 개선
+- [x] Expert 계약서 관련 문서 및 변경 이력 업데이트
+- [x] Expert 계약서 PDF 표 렌더링 NameError 해결
+- [x] 관련 변경 이력/README 점검

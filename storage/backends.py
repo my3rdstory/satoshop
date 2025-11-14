@@ -12,6 +12,7 @@ import uuid
 import io
 
 import boto3
+from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError, NoCredentialsError
 from django.conf import settings
 from django.core.files.storage import Storage
@@ -135,20 +136,26 @@ class S3Storage(Storage):
             
             logger.debug(f"업로드 정보: Content-Type={content_type}, ETag={etag}")
             
-            # boto3로 먼저 시도 (upload_fileobj 사용으로 Content-Length 문제 회피)
+            file_obj = io.BytesIO(content_data)
+            transfer_config = TransferConfig(
+                multipart_threshold=self.max_file_size + 1,
+                multipart_chunksize=self.max_file_size + 1,
+                max_concurrency=1,
+                use_threads=False,
+            )
             extra_args = {
                 'ContentType': content_type,
-                'ContentLength': len(content_data),
                 'Metadata': {
                     'uploaded-by': 'satoshop-django',
-                    'upload-method': 'put-object',
+                    'upload-method': 'upload-fileobj',
                 },
             }
-            self.client.put_object(
+            self.client.upload_fileobj(
+                Fileobj=file_obj,
                 Bucket=self.bucket_name,
                 Key=name,
-                Body=content_data,
-                **extra_args,
+                ExtraArgs=extra_args,
+                Config=transfer_config,
             )
             
             logger.info(f"파일 저장 성공 (boto3): {name}")
