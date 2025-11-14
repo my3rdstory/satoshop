@@ -5,14 +5,6 @@
     <title>{{ title }}</title>
 </head>
 <body>
-    <header class="contract-header">
-        <div>
-            <p class="contract-title">{{ title }}</p>
-            <p class="contract-meta">
-                공유 ID: {{ document.slug }} · 생성 시각: {{ generated_at|date:"Y년 n월 j일 G:i" }}
-            </p>
-        </div>
-    </header>
     <main class="contract-body">
         {{ contract_html|safe }}
     </main>
