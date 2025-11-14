@@ -101,9 +101,15 @@ def send_direct_contract_document_email(document):
     pdf_name = None
     if document.final_pdf:
         try:
-            with document.final_pdf.open("rb") as pdf_file:
-                pdf_binary = pdf_file.read()
-            pdf_name = document.final_pdf.name.split("/")[-1]
+            document.final_pdf.open("rb")
+            try:
+                pdf_binary = document.final_pdf.read()
+            finally:
+                document.final_pdf.close()
+            if document.final_pdf.name:
+                pdf_name = document.final_pdf.name.split("/")[-1] or None
+            if not pdf_name:
+                pdf_name = f"{document.slug}.pdf"
         except Exception:
             pdf_binary = None
             pdf_name = None
