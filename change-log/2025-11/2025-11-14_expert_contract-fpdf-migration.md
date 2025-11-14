@@ -6,3 +6,4 @@
 2. 수행 내역·표 셀·작업 로그 등 다중 줄 필드는 `InlineHTMLParser`로 인라인 태그를 해석하고, fpdf2 `write`/`multi_cell` 조합으로 줄바꿈과 굵기/기울임을 유지합니다. 표 셀 높이는 `split_only=True`로 선 계산 후 padding해 행 높이를 안정화했습니다.
 3. 채팅 로그 PDF(`expert/services.py`)도 fpdf2로 이관해 동일한 폰트 해상도와 페이지 번호 방식을 적용했습니다.
 4. `pyproject.toml`에서 `reportlab`을 제거하고 `fpdf2`를 의존성으로 추가했으며, README의 PDF 파이프라인 설명을 fpdf2 기반으로 갱신했습니다.
+5. fpdf2 `output(dest="S")`가 bytearray/str을 모두 반환할 수 있어 `.encode()` 호출 시 오류가 발생하던 문제를 방지하려고 바이트 변환 로직을 추가했습니다.

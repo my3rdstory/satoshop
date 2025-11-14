@@ -683,8 +683,10 @@ def _render_contract_via_fpdf(document, markdown_text: str, title: str) -> bytes
     blocks = _markdown_to_blocks(markdown_text)
     for block in blocks:
         _render_block(pdf, block)
-    output = pdf.output(dest="S").encode("latin1")
-    return output
+    rendered = pdf.output(dest="S")
+    if isinstance(rendered, str):
+        return rendered.encode("latin1")
+    return bytes(rendered)
 
 
 def _format_lightning_value(value: str) -> str:

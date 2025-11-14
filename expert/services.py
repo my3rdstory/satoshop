@@ -73,7 +73,8 @@ def generate_chat_archive_pdf(contract):
             pdf.ln(2)
 
     filename = f"contract-{contract.public_id}-chat.pdf"
-    pdf_bytes = pdf.output(dest="S").encode("latin1")
+    rendered = pdf.output(dest="S")
+    pdf_bytes = rendered.encode("latin1") if isinstance(rendered, str) else bytes(rendered)
     contract.chat_archive.save(filename, ContentFile(pdf_bytes), save=False)
     contract.archive_generated_at = timezone.now()
     contract.save(update_fields=["chat_archive", "archive_generated_at", "updated_at"])
