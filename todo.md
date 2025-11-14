@@ -20,3 +20,5 @@
 - [x] Expert 계약서 관련 문서 및 변경 이력 업데이트
 - [x] Expert 계약서 PDF 표 렌더링 NameError 해결
 - [x] 관련 변경 이력/README 점검
+- [x] Expert PDF 표 셀 줄바꿈 재현 및 클로저 오류 수정
+- [x] 변경 이력에 재수정 내용 추가

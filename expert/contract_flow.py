@@ -560,14 +560,16 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             data.insert(0, header_row)
 
         if data:
-            def _table_paragraph(value: str) -> Paragraph:
-                text = (value or "").replace("\r\n", "\n")
-                safe = html_utils.escape(text).replace("\n", "<br/>").strip()
-                if not safe:
-                    safe = "-"
-                return Paragraph(safe, styles["Body"])
-
-            table_data = [[_table_paragraph(cell) for cell in row] for row in data]
+            table_data: List[List[Paragraph]] = []
+            for row in data:
+                table_row: List[Paragraph] = []
+                for cell in row:
+                    text = (cell or "").replace("\r\n", "\n")
+                    safe = html_utils.escape(text).replace("\n", "<br/>").strip()
+                    if not safe:
+                        safe = "-"
+                    table_row.append(Paragraph(safe, styles["Body"]))
+                table_data.append(table_row)
             table = Table(table_data, hAlign="LEFT")
             table_style = TableStyle(
                 [
