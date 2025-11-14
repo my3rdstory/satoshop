@@ -205,8 +205,8 @@ def _build_intro_markdown(document, payload: Dict) -> str:
         f"# {contract_title}",
         "_SatoShop Expert Digital Contact_",
         "",
-        f"- **공유 ID**: `{document.slug}`",
-        f"- **생성 시각**: {created_label}",
+        f"- 공유 ID: `{document.slug}`",
+        f"- 생성 시각: {created_label}",
         "",
         CONTRACT_DIVIDER_MARKER,
     ]
