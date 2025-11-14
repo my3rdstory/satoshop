@@ -9,6 +9,8 @@ from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+import xml.etree.ElementTree as ET
+
 import markdown
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -76,7 +78,7 @@ class NumberedCanvas(canvas.Canvas):
 
     def _draw_page_number(self, total_pages: int):
         text = f"-{self._pageNumber}/{total_pages}-"
-        self.setFont("Helvetica", 9)
+        self.setFont("Helvetica-Bold", 9)
         x = self._pagesize[0] / 2
         self.drawCentredString(x, 18, text)
 
@@ -288,6 +290,46 @@ def _collect_text_content(element) -> str:
     return "".join(parts)
 
 
+def _element_inner_html(element) -> str:
+    parts: List[str] = []
+    if element.text:
+        parts.append(element.text)
+    for child in element:
+        parts.append(ET.tostring(child, encoding="unicode", method="html"))
+        if child.tail:
+            parts.append(child.tail)
+    return "".join(parts)
+
+
+def _sanitize_inline_markup(value: str) -> str:
+    if not value:
+        return ""
+    replacements = {
+        "<strong>": "<b>",
+        "</strong>": "</b>",
+        "<em>": "<i>",
+        "</em>": "</i>",
+        "<code>": '<font face="Courier">',
+        "</code>": "</font>",
+        "<tt>": '<font face="Courier">',
+        "</tt>": "</font>",
+        "<br>": "<br/>",
+        "<br />": "<br/>",
+    }
+    sanitized = value
+    for source, target in replacements.items():
+        sanitized = sanitized.replace(source, target)
+    return sanitized
+
+
+def _escape_paragraph_prefix(prefix: str) -> str:
+    return (
+        prefix.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
 def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
     styles = getSampleStyleSheet()
     base = styles["Normal"]
@@ -384,10 +426,10 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
 
     if tag.startswith("h") and len(tag) == 2 and tag[1].isdigit():
         level = int(tag[1])
-        text = _collect_text_content(element).strip()
-        if text:
+        html = _sanitize_inline_markup(_element_inner_html(element)).strip()
+        if html:
             style_key = f"Heading{min(level, 3)}"
-            blocks.append(Paragraph(text, styles[style_key]))
+            blocks.append(Paragraph(html, styles[style_key]))
         return blocks
 
     if tag == "hr":
@@ -404,27 +446,27 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
         return blocks
 
     if tag == "p":
-        text = _collect_text_content(element).strip()
-        if text:
-            blocks.append(Paragraph(text, styles["Body"]))
+        html = _sanitize_inline_markup(_element_inner_html(element)).strip()
+        if html:
+            blocks.append(Paragraph(html, styles["Body"]))
         return blocks
 
     if tag in {"ul", "ol"}:
         ordered = tag == "ol"
         index = 1
         for li in element.findall("li"):
-            item_text = _collect_text_content(li).strip()
-            if not item_text:
+            item_html = _sanitize_inline_markup(_element_inner_html(li)).strip()
+            if not item_html:
                 continue
             prefix = f"{index}. " if ordered else "• "
-            blocks.append(Paragraph(prefix + item_text, styles["List"]))
+            blocks.append(Paragraph(_escape_paragraph_prefix(prefix) + item_html, styles["List"]))
             index += 1
         return blocks
 
     if tag == "blockquote":
-        text = _collect_text_content(element).strip()
-        if text:
-            blocks.append(Paragraph(text, styles["Quote"]))
+        html = _sanitize_inline_markup(_element_inner_html(element)).strip()
+        if html:
+            blocks.append(Paragraph(html, styles["Quote"]))
         return blocks
 
     if tag == "pre":
@@ -513,7 +555,7 @@ def _render_contract_via_reportlab(document, markdown_text: str, title: str) -> 
         topMargin=48,
         bottomMargin=48,
     )
-    doc.build(story)
+    doc.build(story, canvasmaker=NumberedCanvas)
     return buffer.getvalue()
 
 
