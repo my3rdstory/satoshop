@@ -97,6 +97,13 @@
                 최근 {{ usage_stats.payments.window_days }}일 인증 {{ usage_stats.expert_lightning_users_active|default:0|intcomma }}명
             </p>
         </article>
+        {% with bsl_stats=usage_stats.payments.filtered_stats|default:usage_stats.payments %}
+        <article class="stat-card stat-card--bsl">
+            <p class="stat-label">BSL 후원 예정 금액</p>
+            <p class="stat-value">{{ bsl_stats.total_amount_sats|default:0|intcomma }} sats</p>
+            <p class="stat-note">이번 달 수수료 합계</p>
+        </article>
+        {% endwith %}
         </div>
     </div>
 </section>
