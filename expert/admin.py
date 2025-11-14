@@ -19,6 +19,7 @@ from .models import (
     ExpertUsageStats,
     ExpertHeroSlide,
     ExpertPdfPreviewProxy,
+    ContractIntegrityCheckLog,
 )
 from .stats import aggregate_payment_stats, aggregate_usage_stats
 from .forms import ExpertPdfPreviewForm
@@ -229,6 +230,66 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
             }
         )
         return TemplateResponse(request, self.change_list_template, context)
+
+
+@admin.register(ContractIntegrityCheckLog)
+class ContractIntegrityCheckLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "document_title",
+        "document_slug",
+        "result",
+        "lightning_public_key",
+        "user",
+    )
+    list_filter = ("result", "created_at")
+    search_fields = ("document_title", "document_slug", "lightning_public_key", "user__username")
+    readonly_fields = (
+        "document",
+        "document_title",
+        "document_slug",
+        "user",
+        "lightning_user",
+        "lightning_public_key",
+        "result",
+        "stored_hash",
+        "uploaded_hash",
+        "created_at",
+    )
+    date_hierarchy = "created_at"
+
+    fieldsets = (
+        (
+            "검증 정보",
+            {
+                "fields": (
+                    "document",
+                    "document_title",
+                    "document_slug",
+                    "result",
+                    "stored_hash",
+                    "uploaded_hash",
+                    "created_at",
+                )
+            },
+        ),
+        (
+            "사용자 정보",
+            {
+                "fields": (
+                    "user",
+                    "lightning_user",
+                    "lightning_public_key",
+                )
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(ExpertBlinkRevenueStats)

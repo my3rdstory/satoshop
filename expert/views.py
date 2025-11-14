@@ -40,6 +40,7 @@ from .models import (
     DirectContractDocument,
     DirectContractStageLog,
     ExpertHeroSlide,
+    ContractIntegrityCheckLog,
 )
 from .constants import DIRECT_CONTRACT_SESSION_PREFIX, ROLE_LABELS
 from .forms import (
@@ -896,6 +897,19 @@ class DirectContractIntegrityCheckView(LightningLoginRequiredMixin, FormView):
         }
         context["selected_document"] = document
         context["selected_document_slug"] = document.slug
+
+        lightning_profile = getattr(self.request.user, "lightning_profile", None)
+        ContractIntegrityCheckLog.objects.create(
+            document=document,
+            document_title=(document.payload or {}).get("title") or document.slug,
+            document_slug=document.slug,
+            user=self.request.user if self.request.user.is_authenticated else None,
+            lightning_user=lightning_profile if isinstance(lightning_profile, LightningUser) else None,
+            lightning_public_key=getattr(lightning_profile, "public_key", "") if lightning_profile else "",
+            result=status,
+            stored_hash=stored_hash,
+            uploaded_hash=uploaded_hash,
+        )
         return self.render_to_response(context)
 
 
