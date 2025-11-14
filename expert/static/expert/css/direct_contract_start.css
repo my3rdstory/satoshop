@@ -161,6 +161,11 @@
     color: rgba(248, 250, 252, 0.92);
 }
 
+.direct-contract-hero--clear {
+    background: transparent;
+    box-shadow: none;
+}
+
 .hero-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
