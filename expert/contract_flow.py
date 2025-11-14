@@ -16,6 +16,7 @@ from django.utils import timezone
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
@@ -453,13 +454,7 @@ def _markdown_to_story(markdown_text: str, styles: Dict[str, ParagraphStyle]) ->
 def _render_contract_via_reportlab(document, markdown_text: str, title: str) -> bytes:
     font_name = resolve_contract_pdf_font()
     styles = _build_paragraph_styles(font_name)
-    story: List = [
-        Paragraph(title, styles["Title"]),
-        Paragraph(
-            f"공유 ID: {document.slug} · 생성 시각: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}",
-            styles["Meta"],
-        ),
-    ]
+    story: List = []
     story.extend(_markdown_to_story(markdown_text, styles))
 
     buffer = BytesIO()

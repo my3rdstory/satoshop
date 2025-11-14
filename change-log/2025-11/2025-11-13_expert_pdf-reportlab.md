@@ -11,6 +11,9 @@
    - 기존 `resolve_contract_pdf_font()`를 활용해 등록된 TTF/OTF 폰트를 그대로 사용합니다.
 2. **불필요 자산 제거**
    - 더 이상 HTML 템플릿과 CSS가 필요 없어 `expert/templates/expert/contract_pdf.html`, `expert/static/expert/css/contract_pdf.css`를 삭제했습니다.
+3. **폰트 단순화**
+   - ReportLab 스타일은 기본 내장 폰트(Helvetica 계열)만 사용하도록 변경해 배포 환경에서 폰트 파일이 없어도 타이틀/본문이 렌더됩니다.
+   - 어드민 PDF 검증용 샘플 Payload와 `expert/docs/sample_worklog.md`를 실제 계약서 서식 예시로 업데이트했습니다.
 3. **문서화**
    - README를 업데이트해 새로운 ReportLab 파이프라인과 설치 방법을 안내했습니다.
 

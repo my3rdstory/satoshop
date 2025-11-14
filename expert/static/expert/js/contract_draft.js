@@ -60,6 +60,7 @@ let roleContactFieldset;
 let roleLightningCard;
 let roleEmailHelpTexts = [];
 const WORKLOG_MAX_LENGTH = 10000;
+const WORKLOG_PLACEHOLDER = '최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다. 에디터에서 제공하는 기본 Markdown 문법만 사용해 주세요. 복잡한 스타일의 마크다운 문법은 계약서에 제대로 반영되지 않습니다.';
 const worklogLengthFormatter = new Intl.NumberFormat('ko-KR');
 let worklogCounterNode = null;
 let worklogNoteNode = null;
@@ -909,6 +910,8 @@ function initWorkLogEditor() {
         updateWorkLogPreview(value);
     };
 
+    textarea.setAttribute('placeholder', WORKLOG_PLACEHOLDER);
+
     const applyValue = (rawValue) => {
         const source = rawValue || '';
         const normalized = clampWorklogValue(source);
@@ -951,8 +954,8 @@ function initWorkLogEditor() {
         maxLength: 10000,
         spellChecker: false,
         status: false,
-        placeholder: textarea.getAttribute('placeholder') || '최대 10,000자까지 작성할 수 있습니다.',
-        toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'preview'],
+        placeholder: WORKLOG_PLACEHOLDER,
+        toolbar: ['bold', 'italic', 'heading', '|', 'unordered-list', 'ordered-list', '|', 'link'],
     });
     if (workLogEditor.value() !== initialValue) {
         workLogEditor.value(initialValue);

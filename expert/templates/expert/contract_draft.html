@@ -194,8 +194,7 @@
                             <span class="worklog-counter-note" data-worklog-note hidden>
                                 (최대 10,000자까지만 저장되며 초과분은 자동으로 잘립니다)
                             </span>
-                        </p>
-                        <p class="help">최대 10,000자까지 작성할 수 있으며 마크다운 포맷을 지원합니다.</p>
+                        </p>                        
                         {% for error in form.work_log_markdown.errors %}
                             <p class="help is-danger">{{ error }}</p>
                         {% endfor %}
