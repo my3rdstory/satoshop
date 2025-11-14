@@ -630,13 +630,15 @@ def _render_table_block(pdf: ContractPDF, block: Dict[str, Any]):
         pdf.set_draw_color(*border_color)
 
         for col, text in enumerate(cell_texts):
-            pdf.set_xy(x_start + col * col_width, y_start)
+            cell_x = x_start + col * col_width
+            pdf.set_xy(cell_x, y_start)
             fill = idx == 0 and block.get("has_header")
             pdf.set_fill_color(*(header_bg if fill else (255, 255, 255)))
             pdf.set_font(pdf.body_font, "B" if fill else "", 10)
             pad_lines = max_count - line_counts[col]
-            padded_text = text + ("\n" * pad_lines)
-            pdf.multi_cell(col_width, line_height, padded_text, border=1, align="L", fill=fill)
+            content = text + ("\n" * pad_lines)
+            pdf.multi_cell(col_width, line_height, content, border=0, align="L", fill=fill)
+            pdf.rect(cell_x, y_start, col_width, max_height)
         pdf.set_y(y_start + max_height)
     pdf.ln(2)
 
