@@ -92,6 +92,11 @@
                             </li>
                         </ul>
                     </div>
+                {% elif payload.payment_type == 'custom' %}
+                    <div class="hash-note mt-4">
+                        <p class="has-text-weight-semibold">기타 지급 안내</p>
+                        <p class="has-text-grey-light">상세 지불 조건은 수행 내역에 기재하세요.</p>
+                    </div>
                 {% endif %}
                 {% if is_owner %}
                     <p class="mt-4 has-text-grey-light">

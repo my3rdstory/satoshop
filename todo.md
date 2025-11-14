@@ -1,3 +1,5 @@
+- [x] Expert 지불 조건 '기타' 옵션 및 PDF 반영
+- [x] PDF 검증용 지불 조건 샘플 페이로드 추가
 - [x] sample_worklog.md 최신 내용 반영
 - [x] 계약 PDF CSS에 페이지 번호 표시 추가
 - [x] PDF 한글 폰트 깨짐 원인 파악 및 수정

@@ -13,6 +13,7 @@ ROLE_CHOICES = (
 PAYMENT_TYPE_CHOICES = (
     ("one_time", "일괄 지급"),
     ("milestone", "분할 지급"),
+    ("custom", "기타"),
 )
 
 CHAT_MODE_CHOICES = (

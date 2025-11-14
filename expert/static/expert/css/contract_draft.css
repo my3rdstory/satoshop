@@ -665,6 +665,23 @@
     margin-bottom: 1.5rem;
 }
 
+.custom-payment-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.custom-payment-title {
+    margin: 0;
+    font-weight: 600;
+    color: rgba(125, 211, 252, 0.92);
+}
+
+.custom-payment-note {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.9);
+}
+
 .lightning-field .columns .column {
     margin-bottom: 1rem;
 }

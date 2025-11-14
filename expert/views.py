@@ -358,6 +358,16 @@ class DirectContractDraftView(LightningLoginRequiredMixin, FormView):
                 }
             )
         data["milestones"] = milestone_details
+        payment_type_value = data.get("payment_type")
+        if payment_type_value == "milestone":
+            data["one_time_due_date"] = ""
+            data["one_time_condition"] = ""
+        elif payment_type_value == "one_time":
+            data["milestones"] = []
+        elif payment_type_value == "custom":
+            data["milestones"] = []
+            data["one_time_due_date"] = ""
+            data["one_time_condition"] = ""
         data["generated_at"] = timezone.now().isoformat()
         role_display = dict(form.fields["role"].choices).get(data.get("role"), "-")
         payment_display = dict(form.fields["payment_type"].choices).get(data.get("payment_type"), "-")

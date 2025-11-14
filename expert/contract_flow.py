@@ -256,14 +256,27 @@ def _format_one_time_payment_markdown(payload: Dict) -> str:
     return _markdown_table(["항목", "내용"], rows)
 
 
+def _format_custom_payment_markdown(payload: Dict) -> str:
+    if payload.get("payment_type") != "custom":
+        return ""
+    rows = [
+        ["지급 예정일", "상세 내역 참조"],
+        ["지급 조건", "상세 내역 참조"],
+    ]
+    return _markdown_table(["항목", "내용"], rows)
+
+
 def _build_payment_markdown(payload: Dict) -> str:
     milestone_table = _format_milestones_markdown(payload)
     onetime_table = _format_one_time_payment_markdown(payload)
+    custom_table = _format_custom_payment_markdown(payload)
     sections: List[str] = []
     if milestone_table:
         sections.append("### 분할 지급 내역\n\n" + milestone_table)
     if (not milestone_table) and onetime_table:
         sections.append("### 일괄 지급 내역\n\n" + onetime_table)
+    if (not milestone_table) and custom_table:
+        sections.append("### 기타 지급 안내\n\n" + custom_table)
     if not sections:
         return ""
     return "## 지급 정보\n\n" + "\n\n".join(sections)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import secrets
 from pathlib import Path
 from types import SimpleNamespace
@@ -33,6 +34,7 @@ DEFAULT_PAYLOAD: Dict[str, Any] = {
     "start_date": "2025-11-05",
     "end_date": "2025-11-20",
     "amount_sats": "150000",
+    "payment_type": "milestone",
     "payment_display": "분할 지급",
     "performer_lightning_address": "performer@ln.example",
     "creator_lightning_id": "creator@ln.example",
@@ -53,6 +55,45 @@ DEFAULT_PAYLOAD: Dict[str, Any] = {
     "work_log_markdown": DEFAULT_WORKLOG_FALLBACK,
 }
 
+PAYMENT_SAMPLE_DEFINITIONS = [
+    {
+        "key": "milestone",
+        "label": "분할 지급",
+        "description": "2회 분할 지급(시안 전달/테스트 완료) 예시",
+        "overrides": {
+            "payment_type": "milestone",
+            "payment_display": "분할 지급",
+            "milestones": [
+                {"amount_sats": "60000", "due_date": "2025-11-08", "condition": "디자인 시안 승인"},
+                {"amount_sats": "90000", "due_date": "2025-11-18", "condition": "테스트 빌드 검수 완료"},
+            ],
+        },
+    },
+    {
+        "key": "one_time",
+        "label": "일괄 지급",
+        "description": "검수 완료 후 일괄 지급 예시",
+        "overrides": {
+            "payment_type": "one_time",
+            "payment_display": "일괄 지급",
+            "one_time_due_date": "2025-11-25",
+            "one_time_condition": "최종 산출물 전달 + 검수 완료 후 3영업일 내",
+            "milestones": [],
+        },
+    },
+    {
+        "key": "custom",
+        "label": "기타",
+        "description": "수행 내역에 지불 조건을 직접 서술하는 예시",
+        "overrides": {
+            "payment_type": "custom",
+            "payment_display": "기타",
+            "milestones": [],
+            "one_time_due_date": "",
+            "one_time_condition": "",
+        },
+    },
+]
 
 
 
@@ -77,6 +118,22 @@ def build_preview_payload(overrides: Optional[Dict[str, Any]] = None) -> Dict[st
     return payload
 
 
+def build_payment_sample_payloads():
+    samples = []
+    for definition in PAYMENT_SAMPLE_DEFINITIONS:
+        payload = build_preview_payload(definition.get("overrides"))
+        samples.append(
+            {
+                "key": definition["key"],
+                "label": definition["label"],
+                "description": definition["description"],
+                "payload": payload,
+                "payload_json": json.dumps(payload, ensure_ascii=False, indent=2),
+            }
+        )
+    return samples
+
+
 def build_preview_document(payload: Optional[Dict[str, Any]] = None):
     final_payload = payload or build_preview_payload()
     slug = final_payload.get("slug") or f"preview-{secrets.token_hex(4)}"
@@ -95,4 +152,5 @@ __all__ = [
     "DEFAULT_CONTRACT_BODY",
     "build_preview_payload",
     "build_preview_document",
+    "build_payment_sample_payloads",
 ]

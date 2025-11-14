@@ -571,6 +571,7 @@ docker run \
 - **한글 PDF 폰트**: `resolve_contract_pdf_font()` 함수가 `expert/static/expert/fonts/`를 우선 탐색해 원하는 TTF/OTF를 등록합니다. `EXPERT_FONT_DIR` 환경 변수로 경로를 재정의할 수 있습니다.
 - **네이티브 PDF 테스트**: Docker 없이 Render 네이티브 환경을 쓴다면 `uv run python scripts/render_sample_contract.py`로 샘플 계약 PDF를 만들고 `expert/docs/`에서 한글 표시를 바로 확인하세요. 폰트를 교체했다면 제한된 리소스 환경에서도 동일하게 적용되는지 이 스크립트로 검증할 수 있습니다.
 - **장고 어드민 PDF 검증 도구**: `어드민 → Expert → 계약서 PDF 검증`에서 샘플 Payload(JSON)과 계약 본문(Markdown)을 수정해 즉시 PDF를 내려받을 수 있습니다. 같은 화면 상단의 “도구 활성화/비활성화” 버튼으로 바로 토글할 수 있습니다.
+  - **지불 조건 샘플**: Payload JSON 입력란 아래의 *분할 지급/일괄 지급/기타* 버튼을 눌러 각 시나리오에 맞는 샘플 데이터를 즉시 불러오고 테이블 변화를 비교할 수 있습니다. 수행 내역 텍스트는 모든 샘플에서 동일하게 유지됩니다.
 - **자동 이메일 발송**: 계약 확정 시 첨부 파일과 함께 Gmail을 통해 이메일이 전송됩니다. 관리자 패널 → 사이트 설정 → *Expert 계약 이메일 설정*에서 Gmail 주소와 앱 비밀번호, 발신자 이름을 입력하세요.
   - **Gmail 설정 안내**: ① Google 계정에서 2단계 인증 활성화 → ② “앱 비밀번호” 메뉴에서 16자리 비밀번호 생성 → ③ 어드민에 공백 포함 없이 입력 (예: `abcd efgh ijkl mnop`).
 - **새 의존성 설치**: `uv sync`를 실행하여 `channels`, `fpdf2` 패키지를 설치한 뒤 `uv run python manage.py migrate`를 실행해 새 마이그레이션을 적용하세요.
@@ -610,6 +611,7 @@ docker run \
 - **드래프트 미리보기 일치**: 계약 초안 작성 화면이 `static/js/markdown-renderer.js`를 직접 로드해 2단/다단 목록, 표, 코드 블록 등 복잡한 마크다운도 미리보기 카드에 즉시 반영합니다.
 
 #### Expert 계약 결제 정책
+- **지불 조건 옵션**: 계약 초안 화면에서 일괄/분할/기타를 선택할 수 있으며, *기타*를 선택하면 세부 입력 대신 “상세 지불 조건은 수행 내역에 기재하세요.” 안내가 노출되고 최종 PDF에는 지급 예정일·조건이 “상세 내역 참조”로 고정 표기됩니다.
 - **결제 정책 설정**: Django 어드민 → Expert → *직접 계약 결제 정책*에서 의뢰자/수행자 각각이 부담해야 할 사토시 금액을 입력하고 활성화하세요. 비활성화 시 결제 위젯은 자동으로 패스됩니다.
 - **Blink 자격 정보**: `.env` 파일에 `EXPERT_BLINK_API_KEY`, `EXPERT_BLINK_WALLET_ID`(미설정 시 `BLINK_*` 값을 자동 사용), `EXPERT_BLINK_MEMO_PREFIX`를 지정하면 리뷰/초대 화면에서 동일한 월렛으로 인보이스가 발행됩니다.
 - **결제 위젯 흐름**: `/expert/contracts/direct/review/<token>/`과 `/expert/contracts/direct/link/<slug>/`의 서명 박스 옆에 라이트닝 결제 카드가 노출되며, 정책에 등록된 금액만큼 결제 완료되어야 `계약서 주소 생성`/`계약 체결` 버튼이 활성화됩니다.

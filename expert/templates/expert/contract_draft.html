@@ -183,6 +183,13 @@
                         <p class="help">일괄 지급이라도 지급일과 조건을 명시해 주세요.</p>
                     </div>
 
+                    <div class="field payment-meta" id="custom-payment-section" hidden>
+                        <div class="custom-payment-card">
+                            <p class="custom-payment-title">기타 지급 안내</p>
+                            <p class="custom-payment-note">상세 지불 조건은 수행 내역에 기재하세요.</p>
+                        </div>
+                    </div>
+
                     <div class="field worklog-field">
                         {{ form.work_log_markdown.label_tag }}
                         <div class="control worklog-editor-wrapper">
@@ -258,6 +265,10 @@
                                 <li><span>지급일</span><strong id="preview-one-time-date">-</strong></li>
                                 <li><span>지급 조건</span><strong id="preview-one-time-condition">-</strong></li>
                             </ul>
+                        </div>
+                        <div class="preview-subsection" id="preview-custom-panel" hidden>
+                            <p class="preview-subsection-title">기타 지급 안내</p>
+                            <p class="custom-payment-note">상세 지불 조건은 수행 내역에 기재하세요.</p>
                         </div>
                         <div class="preview-subsection">
                             <p class="preview-subsection-title">수행 내역</p>
