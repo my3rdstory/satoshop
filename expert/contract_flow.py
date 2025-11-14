@@ -183,7 +183,7 @@ def _build_intro_markdown(document, payload: Dict) -> str:
     created_label = _format_generated_at(payload)
     lines = [
         f"# {contract_title}",
-        "_SatoShop Expert - 전자 계약서_",
+        "- SatoShop Expert Digital Contact -",
         "",
         f"- **공유 ID**: `{document.slug}`",
         f"- **생성 시각**: {created_label}",
