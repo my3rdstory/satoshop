@@ -110,16 +110,39 @@ function convertPlainTextToHtml(value) {
     if (typeof value !== 'string') {
         return '';
     }
-    const normalized = value.replace(/\r\n/g, '\n').trim();
-    if (!normalized) {
+    const normalized = value.replace(/\r\n/g, '\n');
+    const trimmed = normalized.trim();
+    if (!trimmed) {
         return '';
     }
-    return normalized
-        .split(/\n{2,}/)
-        .map((block) => block.trim())
-        .filter((block) => block)
-        .map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br>')}</p>`)
-        .join('');
+
+    const paragraphs = [];
+    const buffer = [];
+
+    const flushBuffer = () => {
+        if (!buffer.length) {
+            return;
+        }
+        const safe = escapeHtml(buffer.join('\n')).replace(/\n/g, '<br>');
+        paragraphs.push(`<p>${safe}</p>`);
+        buffer.length = 0;
+    };
+
+    normalized.split('\n').forEach((line) => {
+        if (line.trim()) {
+            buffer.push(line.replace(/\s+$/, ''));
+        } else {
+            flushBuffer();
+            paragraphs.push('<p>&nbsp;</p>');
+        }
+    });
+    flushBuffer();
+
+    while (paragraphs.length && paragraphs[paragraphs.length - 1] === '<p>&nbsp;</p>') {
+        paragraphs.pop();
+    }
+
+    return paragraphs.join('');
 }
 
 function updateWorklogCounterDisplay(length, truncated = false) {

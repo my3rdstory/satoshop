@@ -16,7 +16,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template import RequestContext, Template, TemplateSyntaxError
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.utils.html import linebreaks
 from django.utils.safestring import mark_safe
 from django.utils.http import urlencode
 from django.views.decorators.http import require_http_methods, require_POST
@@ -31,6 +30,7 @@ from .contract_flow import (
     build_mediator_hash,
     generate_share_slug,
     render_contract_pdf,
+    _format_plaintext_paragraphs,
 )
 from .emails import send_direct_contract_document_email
 from .models import (
@@ -101,7 +101,7 @@ def render_contract_markdown(text: str) -> str:
 def render_plaintext_block(text: str) -> str:
     if not text:
         return ""
-    return linebreaks(text.strip())
+    return mark_safe(_format_plaintext_paragraphs(text))
 
 
 def _build_expert_hero_slides(request, base_context: dict) -> list[dict]:
