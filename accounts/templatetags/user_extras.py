@@ -56,3 +56,25 @@ def lightning_short(pubkey, visible=8):
     if len(pubkey) <= visible * 2:
         return pubkey
     return f"{pubkey[:visible]}…{pubkey[-visible:]}"
+
+
+@register.filter
+def lightning_username_tail(user, tail=6):
+    """라이트닝 로그인 사용자의 ID를 끝 몇 자리만 노출."""
+    if not user:
+        return ""
+    try:
+        tail = int(tail)
+    except (TypeError, ValueError):
+        tail = 6
+    tail = max(1, tail)
+
+    # 라이트닝 사용자면 username 또는 공개키를 축약
+    if is_lightning_user(user):
+        identifier = user.username or getattr(user.lightning_profile, "public_key", "")
+        identifier = str(identifier)
+        if len(identifier) <= tail:
+            return identifier
+        return f"…{identifier[-tail:]}"
+
+    return user.username
