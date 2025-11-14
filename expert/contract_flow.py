@@ -17,13 +17,20 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.pdfgen import canvas
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    HRFlowable,
+)
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
 
 BASE_DIR = Path(__file__).resolve().parent
-FONT_BUNDLE_DIR = BASE_DIR / "fonts"
+FONT_BUNDLE_DIR = (Path(settings.BASE_DIR) / "expert" / "static" / "expert" / "fonts").resolve()
 
 
 def _bundle_font_candidates() -> List[Path]:
@@ -48,6 +55,30 @@ CID_FONT_CANDIDATES = [
 LATIN_FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
 ]
+
+
+class NumberedCanvas(canvas.Canvas):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._saved_page_states = []
+
+    def showPage(self):
+        self._saved_page_states.append(dict(self.__dict__))
+        self._startPage()
+
+    def save(self):
+        total_pages = len(self._saved_page_states)
+        for state in self._saved_page_states:
+            self.__dict__.update(state)
+            self._draw_page_number(total_pages)
+            super().showPage()
+        super().save()
+
+    def _draw_page_number(self, total_pages: int):
+        text = f"-{self._pageNumber}/{total_pages}-"
+        self.setFont("Helvetica", 9)
+        x = self._pagesize[0] / 2
+        self.drawCentredString(x, 18, text)
 
 
 def _format_sats(value) -> str:
@@ -151,7 +182,7 @@ def _build_overview_markdown(payload: Dict) -> str:
         ["수행자 라이트닝 주소", performer_ln],
     ]
     table = _markdown_table(["항목", "내용"], rows)
-    return "\n\n".join(["## Ⅰ. 계약 개요", table]).strip()
+    return "\n\n".join(["---", "## Ⅰ. 계약 개요", table]).strip()
 
 
 def _format_milestones_markdown(payload: Dict) -> str:
@@ -205,7 +236,7 @@ def _build_contract_body_markdown(contract_markdown: str) -> str:
     body = contract_markdown.strip()
     if not body:
         return ""
-    return "## Ⅱ. 계약 본문\n\n" + body
+    return "\n\n".join(["---", "## Ⅱ. 계약 본문", body]).strip()
 
 
 def _build_signature_markdown(document) -> str:
@@ -221,6 +252,7 @@ def _build_signature_markdown(document) -> str:
     timestamp = timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M:%S")
     return "\n\n".join(
         [
+            "---",
             "## Ⅲ. 서명 및 해시",
             table,
             f"PDF 생성 시각: {timestamp}",
@@ -269,7 +301,9 @@ def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
             pdfmetrics.getFont(bold_candidate)
             return bold_candidate
         except KeyError:
-            return "Helvetica-Bold"
+            return font_name
+        except Exception:
+            return font_name
 
     custom_styles = {
         "Title": ParagraphStyle(
@@ -354,6 +388,19 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
         if text:
             style_key = f"Heading{min(level, 3)}"
             blocks.append(Paragraph(text, styles[style_key]))
+        return blocks
+
+    if tag == "hr":
+        blocks.append(
+            HRFlowable(
+                width="100%",
+                thickness=1,
+                lineCap="round",
+                color=colors.HexColor("#cbd5f5"),
+                spaceBefore=12,
+                spaceAfter=8,
+            )
+        )
         return blocks
 
     if tag == "p":
