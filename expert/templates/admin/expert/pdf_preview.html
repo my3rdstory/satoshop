@@ -31,7 +31,7 @@
       <input type="hidden" name="action" value="generate">
       <fieldset class="module aligned">
         {% for field in form %}
-          {% if field.name not in ("contract_body", "payload_json") %}
+          {% if field.name != "contract_body" and field.name != "payload_json" %}
           <div class="form-row">
             {{ field.errors }}
             <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
