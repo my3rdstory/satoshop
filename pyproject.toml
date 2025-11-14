@@ -23,7 +23,7 @@ dependencies = [
     "bech32>=1.2.0",
     "faker>=37.4.0",
     "channels>=4.1.0",
-    "reportlab>=4.1.0",
+    "fpdf2>=2.8.0",
     "pypdf>=5.1.0",
     "pyhanko>=0.31.0",
 ]
