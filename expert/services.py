@@ -1,31 +1,42 @@
-import io
 from django.core.files.base import ContentFile
 from django.utils import timezone
+from fpdf import FPDF
 
-from .contract_flow import resolve_contract_pdf_font
+from .contract_flow import FontConfig, resolve_contract_pdf_font
 from .emails import send_contract_finalized_email
 
 
+class ChatArchivePDF(FPDF):
+    def __init__(self, font_config: FontConfig):
+        super().__init__(orientation="P", unit="mm", format="A4")
+        self.font_config = font_config
+        self.body_font = self._register_fonts(font_config)
+        self.set_margins(15, 18, 15)
+        self.set_auto_page_break(auto=True, margin=18)
+
+    def _register_fonts(self, config: FontConfig) -> str:
+        family = config.family or "Helvetica"
+        if config.regular_path:
+            self.add_font(family, "", str(config.regular_path), uni=True)
+            bold_path = config.bold_path or config.regular_path
+            self.add_font(family, "B", str(bold_path), uni=True)
+        return family
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(self.body_font, "B", 9)
+        text = f"-{self.page_no()}/{{nb}}-"
+        self.cell(0, 10, text, 0, 0, "C")
+
+
 def generate_chat_archive_pdf(contract):
-    """
-    계약 채팅 로그를 PDF로 생성해 계약에 첨부한다.
-
-    ReportLab이 설치되어 있어야 하며, 설치되어 있지 않을 경우 RuntimeError를 발생시킨다.
-    """
-    try:
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.units import mm
-        from reportlab.pdfgen import canvas
-    except ImportError as exc:
-        raise RuntimeError("ReportLab 패키지가 설치되어 있어야 채팅 PDF를 생성할 수 있습니다.") from exc
-
-    buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    margin = 20 * mm
-    text_object = pdf.beginText(margin, height - margin)
-    font_name = resolve_contract_pdf_font()
-    text_object.setFont(font_name, 11)
+    """FPDF 기반으로 계약 채팅 로그 PDF를 생성한다."""
+    font_config = resolve_contract_pdf_font()
+    pdf = ChatArchivePDF(font_config)
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    pdf.set_font(pdf.body_font, "", 11)
+    line_height = 5
 
     header_lines = [
         "SatoShop Expert - 계약 채팅 로그",
@@ -39,11 +50,11 @@ def generate_chat_archive_pdf(contract):
     ]
 
     for line in header_lines:
-        text_object.textLine(line)
+        pdf.multi_cell(0, line_height, line)
 
     messages = contract.messages.select_related("sender").order_by("created_at")
     if not messages.exists():
-        text_object.textLine("채팅 메시지가 존재하지 않습니다.")
+        pdf.multi_cell(0, line_height, "채팅 메시지가 존재하지 않습니다.")
     else:
         for message in messages:
             timestamp = timezone.localtime(message.created_at).strftime("%Y-%m-%d %H:%M")
@@ -54,25 +65,17 @@ def generate_chat_archive_pdf(contract):
             header = f"[{timestamp}] {sender}"
             if role:
                 header += f" ({role})"
-            text_object.textLine(header)
-
+            pdf.set_font(pdf.body_font, "B", 11)
+            pdf.multi_cell(0, line_height, header)
+            pdf.set_font(pdf.body_font, "", 11)
             for paragraph_line in message.content.splitlines() or [""]:
-                text_object.textLine(f"  {paragraph_line}")
-            text_object.textLine("")
+                pdf.multi_cell(0, line_height, f"  {paragraph_line}")
+            pdf.ln(2)
 
-            if text_object.getY() <= margin:
-                pdf.drawText(text_object)
-                pdf.showPage()
-                text_object = pdf.beginText(margin, height - margin)
-                text_object.setFont(font_name, 11)
-
-    pdf.drawText(text_object)
-    pdf.showPage()
-    pdf.save()
-
-    buffer.seek(0)
     filename = f"contract-{contract.public_id}-chat.pdf"
-    contract.chat_archive.save(filename, ContentFile(buffer.getvalue()), save=False)
+    rendered = pdf.output(dest="S")
+    pdf_bytes = rendered.encode("latin1") if isinstance(rendered, str) else bytes(rendered)
+    contract.chat_archive.save(filename, ContentFile(pdf_bytes), save=False)
     contract.archive_generated_at = timezone.now()
     contract.save(update_fields=["chat_archive", "archive_generated_at", "updated_at"])
     return contract.chat_archive

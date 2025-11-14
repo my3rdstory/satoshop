@@ -16,3 +16,18 @@
 - [x] 캐러셀 인디케이터/버튼 겹침 수정 및 CSS 문서화
 - [x] Expert 계약서 PDF 검증 토글을 Expert 메뉴로 이동
 - [x] ReportLab 기반 순수 파이썬 계약서 PDF 파이프라인 구축
+- [x] Expert 최종 계약서 PDF 줄바꿈 표시 개선
+- [x] Expert 계약서 관련 문서 및 변경 이력 업데이트
+- [x] Expert 계약서 PDF 표 렌더링 NameError 해결
+- [x] 관련 변경 이력/README 점검
+- [x] Expert PDF 표 셀 줄바꿈 재현 및 클로저 오류 수정
+- [x] 변경 이력에 재수정 내용 추가
+- [x] Expert 표 셀 다중 줄 공백 처리 개선
+- [x] 문서/로그에 줄바꿈 처리 방식 반영
+- [x] Expert 표 셀 JSON `\\n`/줄바꿈 치환 재구성
+- [x] 줄바꿈 보존 꼼수(보이지 않는 문자) 문서화
+- [x] Expert 다중 줄 필드 `\\n` → 개행 정규화
+- [x] Expert 수행 내역 전용 줄바꿈/공백 처리
+- [x] Expert 계약서 PDF fpdf2 렌더러 전환
+- [x] Expert 채팅 로그 PDF fpdf2 전환 및 문서화
+- [x] Expert 수행 내역 연속 줄바꿈 축약 규칙 적용

@@ -1,39 +1,34 @@
 import base64
 import hashlib
-import html
+import html as html_utils
 import json
 import secrets
+import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
+from html import unescape
+from html.parser import HTMLParser
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Tuple
-
-import xml.etree.ElementTree as ET
+from typing import Any, Dict, List, Optional, Tuple
 
 import markdown
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.pdfgen import canvas
-from reportlab.platypus import (
-    SimpleDocTemplate,
-    Paragraph,
-    Spacer,
-    Table,
-    TableStyle,
-    HRFlowable,
-)
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.pdfbase.ttfonts import TTFont
+from fpdf import FPDF
 
 BASE_DIR = Path(__file__).resolve().parent
 FONT_BUNDLE_DIR = (Path(settings.BASE_DIR) / "expert" / "static" / "expert" / "fonts").resolve()
+
+
+@dataclass
+class FontConfig:
+    family: str
+    regular_path: Optional[Path]
+    bold_path: Optional[Path]
 
 
 def _bundle_font_candidates() -> List[Path]:
@@ -72,38 +67,9 @@ FONT_CANDIDATES = _sort_fonts_by_weight(
     ]
 )
 
-CID_FONT_CANDIDATES = [
-    "HYSMyeongJo-Medium",
-    "HYGoThic-Medium",
-]
-
 LATIN_FONT_CANDIDATES = [
     Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
 ]
-
-
-class NumberedCanvas(canvas.Canvas):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._saved_page_states = []
-
-    def showPage(self):
-        self._saved_page_states.append(dict(self.__dict__))
-        self._startPage()
-
-    def save(self):
-        total_pages = len(self._saved_page_states)
-        for state in self._saved_page_states:
-            self.__dict__.update(state)
-            self._draw_page_number(total_pages)
-            super().showPage()
-        super().save()
-
-    def _draw_page_number(self, total_pages: int):
-        text = f"-{self._pageNumber}/{total_pages}-"
-        self.setFont("Helvetica-Bold", 9)
-        x = self._pagesize[0] / 2
-        self.drawCentredString(x, 18, text)
 
 
 def _format_sats(value) -> str:
@@ -120,8 +86,8 @@ def _normalize_value(value, default: str = "-") -> str:
     return str(value)
 
 
-def _register_bold_variant(font_name: str, font_path: Path):
-    """가능한 경우 동일 경로의 Bold 폰트를 함께 등록."""
+def _find_bold_variant(font_path: Path) -> Optional[Path]:
+    """가능한 경우 동일 경로의 Bold 폰트 파일 경로를 찾는다."""
     candidates: List[Path] = []
     stem = font_path.stem
     suffix = font_path.suffix
@@ -131,15 +97,9 @@ def _register_bold_variant(font_name: str, font_path: Path):
         candidates.append(font_path.with_name(stem.replace("Medium", "Bold") + suffix))
     candidates.append(font_path.with_name(stem + "-Bold" + suffix))
     for candidate in candidates:
-        if not candidate.exists():
-            continue
-        bold_name = f"{font_name}-Bold"
-        try:
-            pdfmetrics.registerFont(TTFont(bold_name, str(candidate)))
-        except Exception:
-            continue
-        else:
-            break
+        if candidate.exists():
+            return candidate
+    return None
 
 
 
@@ -182,8 +142,24 @@ def _markdown_table(headers: List[str], rows: List[List[str]]) -> str:
 CONTRACT_DIVIDER_MARKER = "[[CONTRACT_DIVIDER]]"
 
 
+def _normalize_multiline_text(value: str) -> str:
+    if value is None:
+        return ""
+    text = str(value)
+    replacements = [
+        ("\r\n", "\n"),
+        ("\\r\\n", "\n"),
+        ("\r", "\n"),
+        ("\\n", "\n"),
+    ]
+    for source, target in replacements:
+        text = text.replace(source, target)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text
+
+
 def _format_plaintext_paragraphs(value: str) -> str:
-    normalized = (value or "").replace("\r\n", "\n")
+    normalized = _normalize_multiline_text(value or "")
     stripped = normalized.strip()
     if not stripped:
         return ""
@@ -193,7 +169,7 @@ def _format_plaintext_paragraphs(value: str) -> str:
 
     def flush_buffer():
         if buffer:
-            safe = html.escape("\n".join(buffer)).replace("\n", "<br/>")
+            safe = html_utils.escape("\n".join(buffer)).replace("\n", "<br/>")
             paragraphs.append(f"<p>{safe}</p>")
             buffer.clear()
 
@@ -215,6 +191,13 @@ def _format_plaintext_paragraphs(value: str) -> str:
     return "\n".join(paragraphs)
 
 
+def _format_worklog_block(value: str) -> str:
+    normalized = _normalize_multiline_text(value or "")
+    if not normalized.strip():
+        return "-"
+    return normalized.strip()
+
+
 def _build_intro_markdown(document, payload: Dict) -> str:
     contract_title = payload.get("title") or "SatoShop Expert 계약"
     created_label = _format_generated_at(payload)
@@ -222,7 +205,7 @@ def _build_intro_markdown(document, payload: Dict) -> str:
         f"# {contract_title}",
         "_SatoShop Expert Digital Contact_",
         "",
-        f"- 공유 ID: `{document.slug}`",
+        f"- 공유 ID: {document.slug}",
         f"- 생성 시각: {created_label}",
         "",
         CONTRACT_DIVIDER_MARKER,
@@ -290,7 +273,7 @@ def _build_worklog_markdown(payload: Dict) -> str:
     work_log = (payload or {}).get("work_log_markdown")
     if not work_log:
         return ""
-    content = _format_plaintext_paragraphs(work_log)
+    content = _format_worklog_block(work_log)
     return "\n\n".join([CONTRACT_DIVIDER_MARKER, "## 수행 내역", content]).strip()
 
 
@@ -384,124 +367,92 @@ def _sanitize_inline_markup(value: str) -> str:
     return sanitized
 
 
-def _build_paragraph_styles(font_name: str) -> Dict[str, ParagraphStyle]:
-    styles = getSampleStyleSheet()
-    base = styles["Normal"]
-    base.fontName = font_name
-    base.fontSize = 11
-    base.leading = 16
-
-    def bold_name() -> str:
-        bold_candidate = f"{font_name}-Bold"
-        try:
-            pdfmetrics.getFont(bold_candidate)
-            return bold_candidate
-        except KeyError:
-            return font_name
-        except Exception:
-            return font_name
-
-    custom_styles = {
-        "Title": ParagraphStyle(
-            "ContractTitle",
-            parent=base,
-            fontName=bold_name(),
-            fontSize=18,
-            leading=22,
-            spaceAfter=6,
-        ),
-        "Meta": ParagraphStyle(
-            "ContractMeta",
-            parent=base,
-            fontSize=10,
-            textColor=colors.grey,
-            spaceAfter=12,
-        ),
-        "Heading1": ParagraphStyle(
-            "Heading1",
-            parent=base,
-            fontName=bold_name(),
-            fontSize=16,
-            leading=20,
-            spaceBefore=12,
-            spaceAfter=6,
-        ),
-        "Heading2": ParagraphStyle(
-            "Heading2",
-            parent=base,
-            fontName=bold_name(),
-            fontSize=14,
-            leading=18,
-            spaceBefore=10,
-            spaceAfter=4,
-        ),
-        "Heading3": ParagraphStyle(
-            "Heading3",
-            parent=base,
-            fontName=bold_name(),
-            fontSize=12,
-            leading=16,
-            spaceBefore=8,
-            spaceAfter=4,
-        ),
-        "Body": ParagraphStyle(
-            "ContractBody",
-            parent=base,
-        ),
-        "List": ParagraphStyle(
-            "ContractList",
-            parent=base,
-            leftIndent=12,
-        ),
-        "Quote": ParagraphStyle(
-            "ContractQuote",
-            parent=base,
-            textColor=colors.HexColor("#374151"),
-            leftIndent=12,
-            borderColor=colors.HexColor("#94a3b8"),
-            borderPadding=6,
-            borderLeft=2,
-        ),
-        "Code": ParagraphStyle(
-            "ContractCode",
-            parent=base,
-            fontName="Courier",
-            backColor=colors.whitesmoke,
-            leftIndent=4,
-            rightIndent=4,
-        ),
-    }
-    return custom_styles
+@dataclass
+class InlineStyle:
+    bold: bool = False
+    italic: bool = False
+    font: Optional[str] = None
 
 
-def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
+class InlineHTMLParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.tokens: List[Dict[str, Any]] = []
+        self._stack: List[InlineStyle] = [InlineStyle()]
+
+    def handle_starttag(self, tag, attrs):
+        style = InlineStyle(
+            bold=self._stack[-1].bold,
+            italic=self._stack[-1].italic,
+            font=self._stack[-1].font,
+        )
+        tag = tag.lower()
+        if tag in {"b", "strong"}:
+            style.bold = True
+        elif tag in {"i", "em"}:
+            style.italic = True
+        elif tag == "font":
+            attr_map = {name: value for name, value in attrs}
+            if attr_map.get("face"):
+                style.font = attr_map["face"]
+        elif tag == "br":
+            self.tokens.append({"type": "br"})
+        self._stack.append(style)
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag == "br":
+            return
+        if len(self._stack) > 1:
+            self._stack.pop()
+
+    def handle_data(self, data):
+        if not data:
+            return
+        text = data.replace("\xa0", " ")
+        if not text:
+            return
+        self.tokens.append({"type": "text", "text": text, "style": self._stack[-1]})
+
+
+def _parse_inline_html(html_fragment: str) -> List[Dict[str, Any]]:
+    parser = InlineHTMLParser()
+    parser.feed(html_fragment or "")
+    parser.close()
+    return parser.tokens
+
+
+def _html_to_plain_text(value: str) -> str:
+    if not value:
+        return "-"
+    text = re.sub(r"<br\s*/?>", "\n", value, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = unescape(text)
+    cleaned = "\n".join(line.rstrip() for line in text.splitlines())
+    cleaned = cleaned.strip()
+    return cleaned or "-"
+
+
+def _element_to_blocks(element) -> List[Dict[str, Any]]:
     tag = element.tag.lower()
-    blocks: List = []
+    blocks: List[Dict[str, Any]] = []
 
     if tag.startswith("h") and len(tag) == 2 and tag[1].isdigit():
         level = int(tag[1])
         html = _sanitize_inline_markup(_element_inner_html(element)).strip()
         if html:
-            style_key = f"Heading{min(level, 3)}"
-            blocks.append(Paragraph(html, styles[style_key]))
+            blocks.append({"type": "heading", "level": level, "html": html})
         return blocks
 
     if tag == "p":
         html = _sanitize_inline_markup(_element_inner_html(element)).strip()
         if html == CONTRACT_DIVIDER_MARKER:
-            blocks.append(
-                HRFlowable(
-                    width="100%",
-                    thickness=1,
-                    lineCap="round",
-                    color=colors.HexColor("#cbd5f5"),
-                    spaceBefore=12,
-                    spaceAfter=8,
-                )
-            )
+            blocks.append({"type": "divider"})
             return blocks
-        if html:
-            blocks.append(Paragraph(html, styles["Body"]))
+        if not html or html == "&nbsp;":
+            blocks.append({"type": "spacer", "size": 4})
+            return blocks
+        blocks.append({"type": "paragraph", "html": html})
         return blocks
 
     if tag in {"ul", "ol"}:
@@ -514,20 +465,23 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             while item_html.startswith("<p>") and item_html.endswith("</p>"):
                 item_html = item_html[3:-4].strip()
             bullet_text = f"{index}. " if ordered else "• "
-            blocks.append(Paragraph(item_html, styles["List"], bulletText=bullet_text))
+            blocks.append({"type": "list_item", "html": item_html, "bullet": bullet_text})
             index += 1
         return blocks
 
     if tag == "blockquote":
         html = _sanitize_inline_markup(_element_inner_html(element)).strip()
         if html:
-            blocks.append(Paragraph(html, styles["Quote"]))
+            blocks.append({"type": "blockquote", "html": html})
         return blocks
 
     if tag == "pre":
-        code_text = _collect_text_content(element).strip().replace(" ", "&nbsp;")
-        safe = code_text.replace("<", "&lt;").replace(">", "&gt;")
-        blocks.append(Paragraph(f'<font face="Courier">{safe}</font>', styles["Code"]))
+        code_text = _collect_text_content(element).rstrip("\n")
+        blocks.append({"type": "code", "text": code_text})
+        return blocks
+
+    if tag == "hr":
+        blocks.append({"type": "divider"})
         return blocks
 
     if tag == "table":
@@ -537,7 +491,7 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
         thead = element.find("thead")
         if thead is not None:
             header_cells = [
-                _collect_text_content(th).strip()
+                _sanitize_inline_markup(_element_inner_html(th)).strip()
                 for rows in thead.findall("tr")
                 for th in rows.findall("th")
             ]
@@ -550,32 +504,22 @@ def _element_to_flowables(element, styles: Dict[str, ParagraphStyle]) -> List:
             cells = tr.findall("td")
             if not cells:
                 continue
-            data.append([_collect_text_content(td).strip() for td in cells])
+            row = [_sanitize_inline_markup(_element_inner_html(td)).strip() for td in cells]
+            data.append(row)
 
+        has_header = False
         if header_row:
             data.insert(0, header_row)
+            has_header = True
 
         if data:
-            table = Table(data, hAlign="LEFT")
-            table_style = TableStyle(
-                [
-                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f2f4f7")),
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5f5")),
-                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("FONTNAME", (0, 0), (-1, -1), styles["Body"].fontName),
-                    ("FONTSIZE", (0, 0), (-1, -1), 10.5),
-                ]
-            )
-            table.setStyle(table_style)
-            blocks.append(table)
+            blocks.append({"type": "table", "rows": data, "has_header": has_header})
         return blocks
 
     return blocks
 
 
-def _markdown_to_story(markdown_text: str, styles: Dict[str, ParagraphStyle]) -> List:
+def _markdown_to_blocks(markdown_text: str) -> List[Dict[str, Any]]:
     md = markdown.Markdown(
         extensions=[
             "markdown.extensions.fenced_code",
@@ -585,33 +529,166 @@ def _markdown_to_story(markdown_text: str, styles: Dict[str, ParagraphStyle]) ->
         ]
     )
     root = md.parser.parseDocument(markdown_text.splitlines()).getroot()
-    story: List = []
+    blocks: List[Dict[str, Any]] = []
     for element in root:
-        flowables = _element_to_flowables(element, styles)
-        if not flowables:
+        items = _element_to_blocks(element)
+        if not items:
             continue
-        story.extend(flowables)
-        story.append(Spacer(1, 8))
-    return story
+        blocks.extend(items)
+        blocks.append({"type": "gap", "size": 4})
+    if blocks and blocks[-1].get("type") == "gap":
+        blocks.pop()
+    return blocks
 
 
-def _render_contract_via_reportlab(document, markdown_text: str, title: str) -> bytes:
-    font_name = resolve_contract_pdf_font()
-    styles = _build_paragraph_styles(font_name)
-    story: List = []
-    story.extend(_markdown_to_story(markdown_text, styles))
+class ContractPDF(FPDF):
+    def __init__(self, font_config: FontConfig, title: str):
+        super().__init__(orientation="P", unit="mm", format="A4")
+        self.font_config = font_config
+        self.title_text = title
+        self.body_font = self._register_fonts(font_config)
+        self.set_margins(15, 18, 15)
+        self.set_auto_page_break(auto=True, margin=18)
 
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer,
-        pagesize=A4,
-        leftMargin=40,
-        rightMargin=40,
-        topMargin=48,
-        bottomMargin=48,
-    )
-    doc.build(story, canvasmaker=NumberedCanvas)
-    return buffer.getvalue()
+    def _register_fonts(self, config: FontConfig) -> str:
+        family = config.family or "Helvetica"
+        if config.regular_path:
+            self.add_font(family, "", str(config.regular_path), uni=True)
+            bold_path = config.bold_path or config.regular_path
+            self.add_font(family, "B", str(bold_path), uni=True)
+        return family
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font(self.body_font, "B", 9)
+        text = f"-{self.page_no()}/{{nb}}-"
+        self.cell(0, 10, text, 0, 0, "C")
+
+
+def _render_rich_text(pdf: ContractPDF, html_content: str, font_size: int = 11, indent: float = 0):
+    tokens = _parse_inline_html(html_content or "")
+    line_height = 5
+    pdf.set_x(pdf.l_margin + indent)
+    for token in tokens:
+        if token.get("type") == "br":
+            pdf.ln(line_height)
+            pdf.set_x(pdf.l_margin + indent)
+            continue
+        text = token.get("text", "")
+        if not text:
+            continue
+        style = token["style"]
+        font_family = pdf.body_font
+        if style.font and style.font.lower().startswith("courier"):
+            font_family = "Courier"
+        font_style = ""
+        if style.bold:
+            font_style += "B"
+        if style.italic:
+            font_style += "I"
+        pdf.set_font(font_family, font_style, font_size)
+        pdf.write(line_height, text)
+    pdf.ln(line_height)
+
+
+def _render_code_block(pdf: ContractPDF, content: str):
+    line_height = 5
+    pdf.set_fill_color(245, 245, 245)
+    pdf.set_font("Courier", "", 10)
+    text = content.replace("\t", "    ").rstrip("\n") or "-"
+    pdf.multi_cell(0, line_height, text, border=0, fill=True)
+    pdf.set_fill_color(255, 255, 255)
+    pdf.ln(2)
+
+
+def _render_table_block(pdf: ContractPDF, block: Dict[str, Any]):
+    rows: List[List[str]] = block.get("rows") or []
+    if not rows:
+        return
+    col_count = max(len(row) for row in rows)
+    if col_count == 0:
+        return
+    available_width = pdf.w - pdf.l_margin - pdf.r_margin
+    col_width = available_width / col_count
+    line_height = 5
+    header_bg = (242, 244, 247)
+    border_color = (203, 213, 245)
+
+    for idx, row in enumerate(rows):
+        cell_texts: List[str] = []
+        line_counts: List[int] = []
+        for cell in row:
+            text = _html_to_plain_text(cell)
+            lines = pdf.multi_cell(col_width, line_height, text, split_only=True)
+            line_counts.append(max(1, len(lines)))
+            cell_texts.append(text)
+
+        max_count = max(line_counts) if line_counts else 1
+        max_height = max_count * line_height
+        y_start = pdf.get_y()
+        x_start = pdf.l_margin
+        pdf.set_draw_color(*border_color)
+
+        for col, text in enumerate(cell_texts):
+            cell_x = x_start + col * col_width
+            pdf.set_xy(cell_x, y_start)
+            fill = idx == 0 and block.get("has_header")
+            pdf.set_fill_color(*(header_bg if fill else (255, 255, 255)))
+            pdf.set_font(pdf.body_font, "B" if fill else "", 10)
+            pad_lines = max_count - line_counts[col]
+            content = text + ("\n" * pad_lines)
+            pdf.multi_cell(col_width, line_height, content, border=0, align="L", fill=fill)
+            pdf.rect(cell_x, y_start, col_width, max_height)
+        pdf.set_y(y_start + max_height)
+    pdf.ln(2)
+
+
+def _render_block(pdf: ContractPDF, block: Dict[str, Any]):
+    kind = block.get("type")
+    if kind == "heading":
+        level = min(block.get("level", 1), 3)
+        size_map = {1: 18, 2: 14, 3: 12}
+        text = _html_to_plain_text(block.get("html"))
+        pdf.set_font(pdf.body_font, "B", size_map.get(level, 12))
+        pdf.multi_cell(0, 6, text)
+        pdf.ln(1)
+    elif kind == "paragraph":
+        _render_rich_text(pdf, block.get("html", ""))
+    elif kind == "list_item":
+        bullet = block.get("bullet", "")
+        html_content = f"{bullet} {block.get('html', '')}"
+        _render_rich_text(pdf, html_content, indent=4)
+    elif kind == "blockquote":
+        pdf.set_text_color(55, 65, 81)
+        _render_rich_text(pdf, block.get("html", ""), indent=4)
+        pdf.set_text_color(0, 0, 0)
+    elif kind == "code":
+        _render_code_block(pdf, block.get("text", ""))
+    elif kind == "table":
+        _render_table_block(pdf, block)
+    elif kind == "divider":
+        y = pdf.get_y()
+        pdf.set_draw_color(203, 213, 245)
+        pdf.set_line_width(0.4)
+        pdf.line(pdf.l_margin, y, pdf.w - pdf.r_margin, y)
+        pdf.ln(4)
+    elif kind in {"spacer", "gap"}:
+        pdf.ln(block.get("size", 4))
+
+
+def _render_contract_via_fpdf(document, markdown_text: str, title: str) -> bytes:
+    font_config = resolve_contract_pdf_font()
+    pdf = ContractPDF(font_config, title)
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    pdf.set_font(pdf.body_font, "", 11)
+    blocks = _markdown_to_blocks(markdown_text)
+    for block in blocks:
+        _render_block(pdf, block)
+    rendered = pdf.output(dest="S")
+    if isinstance(rendered, str):
+        return rendered.encode("latin1")
+    return bytes(rendered)
 
 
 def _format_lightning_value(value: str) -> str:
@@ -695,63 +772,28 @@ def build_mediator_hash(counterparty_hash: str) -> HashResult:
 
 
 @lru_cache(maxsize=None)
-def resolve_contract_pdf_font(default: str = "Helvetica") -> str:
+def resolve_contract_pdf_font(default: str = "Helvetica") -> FontConfig:
     for path in FONT_CANDIDATES:
         if not path.exists():
             continue
         font_name = f"SatoContract-{path.stem}"
-        try:
-            pdfmetrics.getFont(font_name)
-            return font_name
-        except KeyError:
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, str(path)))
-                _register_bold_variant(font_name, path)
-                return font_name
-            except Exception:
-                continue
-        except Exception:
-            continue
-
-    for cid_font in CID_FONT_CANDIDATES:
-        try:
-            pdfmetrics.getFont(cid_font)
-            return cid_font
-        except KeyError:
-            try:
-                pdfmetrics.registerFont(UnicodeCIDFont(cid_font))
-                return cid_font
-            except Exception:
-                continue
-        except Exception:
-            continue
+        return FontConfig(font_name, path, _find_bold_variant(path))
 
     for path in LATIN_FONT_CANDIDATES:
         if not path.exists():
             continue
         font_name = f"SatoContract-{path.stem}"
-        try:
-            pdfmetrics.getFont(font_name)
-            return font_name
-        except KeyError:
-            try:
-                pdfmetrics.registerFont(TTFont(font_name, str(path)))
-                _register_bold_variant(font_name, path)
-                return font_name
-            except Exception:
-                continue
-        except Exception:
-            continue
+        return FontConfig(font_name, path, _find_bold_variant(path))
 
-    return default
+    return FontConfig(default, None, None)
 
 
 def render_contract_pdf(document, contract_markdown: str) -> ContentFile:
-    """Markdown을 ReportLab 기반 PDF로 변환."""
+    """Markdown을 fpdf2 기반 PDF로 변환."""
     payload = document.payload or {}
     markdown_text = _compose_contract_markdown(document, contract_markdown or "")
     title = payload.get("title") or "SatoShop Expert 계약"
-    pdf_bytes = _render_contract_via_reportlab(document, markdown_text, title)
+    pdf_bytes = _render_contract_via_fpdf(document, markdown_text, title)
     timestamp = timezone.localtime(timezone.now()).strftime("%Y%m%d%H%M%S")
     filename = f"direct-contract-{document.slug}-{timestamp}.pdf"
     return ContentFile(pdf_bytes, name=filename)
