@@ -31,3 +31,4 @@
 - [x] Expert 계약서 PDF fpdf2 렌더러 전환
 - [x] Expert 채팅 로그 PDF fpdf2 전환 및 문서화
 - [x] Expert 수행 내역 연속 줄바꿈 축약 규칙 적용
+- [x] Expert 위변조 검증 로그 모델/어드민 추가

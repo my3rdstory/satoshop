@@ -485,3 +485,55 @@ class ExpertUsageStats(DirectContractDocument):
         proxy = True
         verbose_name = "Expert 사용 통계"
         verbose_name_plural = "Expert 사용 통계"
+
+
+class ContractIntegrityCheckLog(models.Model):
+    """계약 위변조 검증 로그."""
+
+    RESULT_CHOICES = [
+        ("match", "해시 일치"),
+        ("mismatch", "해시 불일치"),
+        ("pending", "해시 미저장"),
+    ]
+
+    document = models.ForeignKey(
+        DirectContractDocument,
+        on_delete=models.CASCADE,
+        related_name="integrity_logs",
+        verbose_name="계약 문서",
+    )
+    document_title = models.CharField(max_length=150, verbose_name="계약명")
+    document_slug = models.CharField(max_length=32, db_index=True, verbose_name="계약 슬러그")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="integrity_logs",
+        verbose_name="검증 사용자",
+    )
+    lightning_user = models.ForeignKey(
+        "accounts.LightningUser",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="integrity_logs",
+        verbose_name="라이트닝 유저",
+    )
+    lightning_public_key = models.CharField(max_length=80, blank=True, verbose_name="라이트닝 공개키")
+    result = models.CharField(max_length=16, choices=RESULT_CHOICES, verbose_name="검증 결과")
+    stored_hash = models.CharField(max_length=64, blank=True, verbose_name="저장된 해시")
+    uploaded_hash = models.CharField(max_length=64, blank=True, verbose_name="업로드 해시")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="검증 시각")
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["document_slug", "-created_at"], name="integrity_doc_slug_idx"),
+            models.Index(fields=["result", "-created_at"], name="integrity_result_idx"),
+        ]
+        verbose_name = "계약 위변조 검증 로그"
+        verbose_name_plural = "계약 위변조 검증 로그"
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.document_slug} - {self.get_result_display()}"
