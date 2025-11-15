@@ -822,6 +822,7 @@ class DirectContractInviteView(LightningLoginRequiredMixin, FormView):
 
         self.document.email_delivery = delivery
         update_fields = ["status", "email_delivery", "updated_at"]
+        update_fields.extend(["mediator_hash", "mediator_hash_meta"])
         if storage_saved:
             update_fields.extend(["final_pdf", "final_pdf_hash", "final_pdf_generated_at"])
         self.document.save(update_fields=update_fields)
