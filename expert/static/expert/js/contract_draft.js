@@ -29,6 +29,9 @@ let previewOneTimePanel;
 let modalOneTimePanel;
 let modalOneTimeDate;
 let modalOneTimeCondition;
+let customPaymentSection;
+let previewCustomPanel;
+let modalCustomPanel;
 let performerLightningInput;
 let previewModalButton;
 let previewModal;
@@ -63,6 +66,7 @@ const WORKLOG_PLACEHOLDER = '최대 10,000자까지 일반 텍스트만 입력�
 const worklogLengthFormatter = new Intl.NumberFormat('ko-KR');
 let worklogCounterNode = null;
 let worklogNoteNode = null;
+const CUSTOM_PAYMENT_MESSAGE = '상세 지불 조건은 수행 내역에 기재하세요.';
 
 const attachmentConfig = {
     maxItems: 3,
@@ -174,6 +178,7 @@ function updateWorklogCounterDisplay(length, truncated = false) {
 function formatPayment(value) {
     if (value === 'one_time') return '일괄 지급';
     if (value === 'milestone') return '분할 지급';
+    if (value === 'custom') return '기타';
     return '-';
 }
 
@@ -290,6 +295,27 @@ function updateOneTimePreview() {
     }
     if (modalOneTimeCondition) {
         modalOneTimeCondition.textContent = conditionText;
+    }
+    updateCustomPaymentPreview();
+}
+
+function updateCustomPaymentPreview() {
+    const paymentValue = getCheckedValue(paymentInputs);
+    const show = paymentValue === 'custom';
+    if (previewCustomPanel) {
+        previewCustomPanel.hidden = !show;
+        if (show) {
+            previewCustomPanel.setAttribute('data-payment-note', CUSTOM_PAYMENT_MESSAGE);
+        }
+    }
+    if (modalCustomPanel) {
+        modalCustomPanel.hidden = !show;
+        if (show) {
+            const note = modalCustomPanel.querySelector('[data-custom-payment-note]');
+            if (note) {
+                note.textContent = CUSTOM_PAYMENT_MESSAGE;
+            }
+        }
     }
 }
 
@@ -720,6 +746,9 @@ function togglePaymentSections(value) {
     if (oneTimeSection) {
         oneTimeSection.hidden = !showOneTime;
     }
+    if (customPaymentSection) {
+        customPaymentSection.hidden = value !== 'custom';
+    }
     updateOneTimePreview();
 }
 
@@ -827,11 +856,13 @@ function bindFieldUpdates() {
         const currentPayment = getCheckedValue(paymentInputs);
         previewMap.payment.textContent = formatPayment(currentPayment);
         togglePaymentSections(currentPayment || 'one_time');
+        updateCustomPaymentPreview();
         paymentInputs.forEach((input) => {
             input.addEventListener('change', (event) => {
                 const { value } = event.target;
                 previewMap.payment.textContent = formatPayment(value);
                 togglePaymentSections(value);
+                updateCustomPaymentPreview();
                 if (value === 'milestone') {
                     updateMilestoneTotals();
                 } else {
@@ -1216,10 +1247,13 @@ document.addEventListener('DOMContentLoaded', () => {
     milestoneRemaining = document.getElementById('milestone-remaining');
     milestoneError = document.getElementById('milestone-error');
     oneTimeSection = document.getElementById('one-time-section');
+    customPaymentSection = document.getElementById('custom-payment-section');
     previewOneTimePanel = document.getElementById('preview-one-time-panel');
+    previewCustomPanel = document.getElementById('preview-custom-panel');
     modalOneTimePanel = document.getElementById('modal-preview-one-time');
     modalOneTimeDate = document.getElementById('modal-preview-one-time-date');
     modalOneTimeCondition = document.getElementById('modal-preview-one-time-condition');
+    modalCustomPanel = document.getElementById('modal-preview-custom');
     previewMilestonePanel = document.getElementById('preview-milestone-panel');
     previewMilestoneList = document.getElementById('preview-milestone-list');
     modalMilestonePanel = document.getElementById('modal-preview-milestones');

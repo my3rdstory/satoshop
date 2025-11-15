@@ -31,13 +31,50 @@
       <input type="hidden" name="action" value="generate">
       <fieldset class="module aligned">
         {% for field in form %}
+          {% if field.name != "contract_body" and field.name != "payload_json" %}
           <div class="form-row">
             {{ field.errors }}
             <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required">*</span>{% endif %}</label>
             {{ field }}
             {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
           </div>
+          {% endif %}
         {% endfor %}
+
+        <div class="form-row form-row--split">
+          <div class="form-field">
+            {{ form.contract_body.errors }}
+            <label for="{{ form.contract_body.id_for_label }}">{{ form.contract_body.label }}{% if form.contract_body.field.required %}<span class="required">*</span>{% endif %}</label>
+            {{ form.contract_body }}
+            {% if form.contract_body.help_text %}<p class="help">{{ form.contract_body.help_text }}</p>{% endif %}
+          </div>
+          <div class="form-field">
+            {{ form.payload_json.errors }}
+            <label for="{{ form.payload_json.id_for_label }}">{{ form.payload_json.label }}{% if form.payload_json.field.required %}<span class="required">*</span>{% endif %}</label>
+            {{ form.payload_json }}
+            {% if form.payload_json.help_text %}<p class="help">{{ form.payload_json.help_text }}</p>{% endif %}
+            {% if payment_samples %}
+              <div class="payload-sample-helper">
+                <p class="help" style="margin-bottom:0.4rem;">지불 조건별 샘플 Payload</p>
+                <ul class="payload-sample-list" style="list-style:none; margin:0 0 0.6rem; padding:0; display:flex; flex-direction:column; gap:0.35rem;">
+                  {% for sample in payment_samples %}
+                    <li style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+                      <textarea class="payload-sample-data" data-sample-key="{{ sample.key }}" hidden>{{ sample.payload_json }}</textarea>
+                      <button type="button"
+                              class="button payload-sample-button"
+                              data-payload-target="{{ form.payload_json.id_for_label }}"
+                              data-sample-key="{{ sample.key }}">
+                        {{ sample.label }} 샘플
+                      </button>
+                      <span class="help" style="margin:0;">{{ sample.description }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+                <p class="help">버튼을 누르면 Payload JSON이 해당 샘플로 교체되며, 수행 내역 텍스트는 동일하게 유지됩니다.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
       </fieldset>
       <div class="submit-row">
         <button type="submit" class="default" name="action" value="generate">PDF 다운로드</button>
@@ -69,6 +106,54 @@
         <li>CLI에서 `uv run python scripts/render_sample_contract.py`를 실행하면 동일한 샘플 PDF를 생성할 수 있습니다.</li>
       </ul>
     </div>
+    <style>
+      .form-row--split {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+        flex-wrap: wrap;
+      }
+      .form-row--split .form-field {
+        flex: 1 1 360px;
+        min-width: 280px;
+      }
+      .form-row--split textarea {
+        min-height: 320px;
+      }
+      @media (max-width: 1024px) {
+        .form-row--split {
+          flex-direction: column;
+        }
+        .form-row--split textarea {
+          min-height: 260px;
+        }
+      }
+    </style>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        var sampleMap = {};
+        document.querySelectorAll('.payload-sample-data').forEach(function (textarea) {
+          var key = textarea.getAttribute('data-sample-key');
+          if (key) {
+            sampleMap[key] = textarea.value;
+          }
+        });
+        document.querySelectorAll('.payload-sample-button').forEach(function (button) {
+          button.addEventListener('click', function () {
+            var targetId = button.getAttribute('data-payload-target');
+            var sampleKey = button.getAttribute('data-sample-key');
+            var payloadField = document.getElementById(targetId);
+            if (!payloadField) {
+              return;
+            }
+            var nextValue = sampleMap[sampleKey] || '';
+            payloadField.value = nextValue;
+            payloadField.focus();
+            payloadField.scrollTop = 0;
+          });
+        });
+      });
+    </script>
   {% endif %}
 </div>
 {% endblock %}

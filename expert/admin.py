@@ -23,7 +23,12 @@ from .models import (
 )
 from .stats import aggregate_payment_stats, aggregate_usage_stats
 from .forms import ExpertPdfPreviewForm
-from .pdf_preview import DEFAULT_CONTRACT_BODY, build_preview_document, build_preview_payload
+from .pdf_preview import (
+    DEFAULT_CONTRACT_BODY,
+    build_payment_sample_payloads,
+    build_preview_document,
+    build_preview_payload,
+)
 from .contract_flow import render_contract_pdf
 
 
@@ -193,6 +198,7 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
         initial_contract_body = (selected_template.content if selected_template else DEFAULT_CONTRACT_BODY)
         default_payload = build_preview_payload()
         default_payload_json = json.dumps(default_payload, ensure_ascii=False, indent=2)
+        payment_samples = build_payment_sample_payloads()
 
         if site_settings.enable_expert_pdf_preview_tool and action == "generate" and request.method == "POST":
             form = ExpertPdfPreviewForm(request.POST, template_queryset=template_queryset)
@@ -227,6 +233,7 @@ class ExpertPdfPreviewAdmin(admin.ModelAdmin):
                 "form": form,
                 "selected_template": selected_template,
                 "default_payload_json": default_payload_json,
+                "payment_samples": payment_samples,
             }
         )
         return TemplateResponse(request, self.change_list_template, context)
