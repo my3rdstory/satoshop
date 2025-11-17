@@ -1,0 +1,176 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 메인 노출 관리{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit_featured_display.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div class="text-center space-y-3">
+      <p class="text-sm uppercase tracking-wider text-bitcoin font-semibold">Store Main Showcase</p>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">스토어 메인 노출 관리</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        활성화된 상품·밋업·라이브 강의·디지털 파일 중 최대 8개까지 대문에서 우선 노출할 항목을 선택하고 순서를 정리하세요.
+        클릭한 순서대로 추가되며, 위/아래 버튼으로 세밀하게 조정할 수 있습니다.
+      </p>
+      <p class="text-xs text-gray-500 dark:text-gray-500">
+        대문에 여유 슬롯이 남으면 선택하지 않은 활성 항목이 최신순으로 자동 채워집니다.
+      </p>
+    </div>
+
+    <form id="featured-csrf" class="hidden">{% csrf_token %}</form>
+
+    {% for section in sections %}
+    {% with config=section.config %}
+    <section
+      class="featured-section-card"
+      data-featured-section
+      data-item-type="{{ config.key }}"
+      data-limit="{{ config.limit }}"
+      data-update-url="{{ update_featured_url }}"
+    >
+      <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-gradient-to-br {{ config.accent_from }} {{ config.accent_to }} text-white flex items-center justify-center shadow-lg">
+            <i class="fas {{ config.icon }} text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ config.label }} 노출 순서</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ config.helper_text }}</p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+            <i class="fas fa-circle text-[6px] text-green-500"></i>
+            활성 {{ config.label }} <strong class="text-gray-900 dark:text-white ml-1">{{ section.active_count }}</strong> 개
+          </span>
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800">
+            <i class="fas fa-layer-group text-gray-500"></i>
+            대문 노출 한도 <strong class="text-gray-900 dark:text-white ml-1">{{ config.limit }}</strong> 개
+          </span>
+        </div>
+      </header>
+
+      <p class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+        {{ config.type_description }}
+      </p>
+
+      <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 선택된 항목 -->
+        <div class="selected-panel">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">선택된 {{ config.label }}</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">오른쪽 목록을 클릭하면 이 영역에 추가됩니다.</p>
+            </div>
+            <div class="text-sm font-semibold text-gray-700 dark:text-gray-200" data-selection-counter>
+              {{ section.selected_items|length }} / {{ config.limit }}
+            </div>
+          </div>
+          <p class="selected-empty-message {% if section.selected_items %}hidden{% endif %}" data-selected-empty>
+            아직 선택된 항목이 없습니다. 오른쪽 리스트에서 원하는 항목을 클릭하세요.
+          </p>
+          <div class="space-y-3" data-selected-list>
+            {% for item in section.selected_items %}
+            <div class="selected-card" data-selected-item data-item-id="{{ item.id }}">
+              <div class="order-indicator" data-order-indicator>{{ forloop.counter }}</div>
+              <div class="flex-1">
+                <p class="selected-title">{{ item.title }}</p>
+                <p class="selected-meta">{{ item.meta_primary }}</p>
+                {% if item.meta_secondary %}
+                <p class="selected-meta-secondary">{{ item.meta_secondary }}</p>
+                {% endif %}
+                {% if item.badge %}
+                <span class="selected-badge">{{ item.badge }}</span>
+                {% endif %}
+              </div>
+              <div class="selected-actions">
+                <button type="button" class="action-btn" data-move="up" aria-label="위로 이동">
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button type="button" class="action-btn" data-move="down" aria-label="아래로 이동">
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <button type="button" class="action-btn danger" data-remove aria-label="선택 해제">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 활성 항목 -->
+        <div class="available-panel">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">활성 {{ config.label }} 목록</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400">클릭 순서대로 선택 영역에 추가됩니다.</p>
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">
+              선택 가능: <strong>{{ config.limit }}</strong>개
+            </div>
+          </div>
+          {% if section.available_items %}
+          <div class="space-y-3" data-available-list>
+            {% for item in section.available_items %}
+            <button
+              type="button"
+              class="available-card {% if item.id in section.selected_ids %}is-selected{% endif %}"
+              data-available-item
+              data-item-id="{{ item.id }}"
+              data-title="{{ item.title|escape }}"
+              data-metaprimary="{{ item.meta_primary|escape }}"
+              data-metasecondary="{{ item.meta_secondary|default:''|escape }}"
+              data-badge="{{ item.badge|default:''|escape }}"
+            >
+              <div class="flex-1 text-left">
+                <p class="available-title">{{ item.title }}</p>
+                <p class="available-meta">{{ item.meta_primary }}</p>
+                {% if item.meta_secondary %}
+                <p class="available-meta-secondary">{{ item.meta_secondary }}</p>
+                {% endif %}
+              </div>
+              <div class="available-status" aria-hidden="true">
+                <i class="fas fa-plus"></i>
+              </div>
+            </button>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-available">
+            <i class="fas fa-circle-info"></i>
+            <p>{{ config.empty_text }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
+        <p class="text-xs text-gray-500 dark:text-gray-400" data-feedback></p>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="px-5 py-3 rounded-lg text-sm font-semibold text-white bg-gradient-to-r {{ config.accent_from }} {{ config.accent_to }} shadow-md hover:opacity-90 disabled:opacity-40"
+            data-save-featured
+            disabled
+          >
+            <i class="fas fa-floppy-disk mr-2"></i>
+            변경사항 저장
+          </button>
+        </div>
+      </div>
+    </section>
+    {% endwith %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/edit_featured_display.js' %}"></script>
+{% endblock %}

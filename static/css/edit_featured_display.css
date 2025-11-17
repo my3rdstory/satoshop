@@ -1,0 +1,252 @@
+:root {
+  font-size: 0.875rem;
+}
+
+.featured-section-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1.25rem;
+  border: 1px solid #e5e7eb;
+  padding: 2rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.dark .featured-section-card {
+  background: rgba(17, 24, 39, 0.8);
+  border-color: #374151;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
+.selected-panel,
+.available-panel {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  min-height: 22rem;
+}
+
+.dark .selected-panel,
+.dark .available-panel {
+  background: rgba(17, 24, 39, 0.6);
+  border-color: #374151;
+}
+
+.selected-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.85rem;
+  background: white;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+}
+
+.dark .selected-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.order-indicator {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f97316, #facc15);
+  color: white;
+}
+
+.selected-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .selected-title {
+  color: #f9fafb;
+}
+
+.selected-meta {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.dark .selected-meta {
+  color: #d1d5db;
+}
+
+.selected-meta-secondary {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.dark .selected-meta-secondary {
+  color: #9ca3af;
+}
+
+.selected-badge {
+  margin-top: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.7rem;
+  background: rgba(248, 113, 113, 0.12);
+  color: #b91c1c;
+}
+
+.dark .selected-badge {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+}
+
+.selected-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.action-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  background: white;
+  transition: all 0.15s ease;
+}
+
+.action-btn:hover {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.action-btn.danger {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.action-btn.danger:hover {
+  color: white;
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.dark .action-btn {
+  border-color: #4b5563;
+  background: #111827;
+  color: #d1d5db;
+}
+
+.dark .action-btn:hover {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.available-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.85rem;
+  background: rgba(249, 250, 251, 0.8);
+  transition: all 0.2s ease;
+}
+
+.available-card:hover {
+  border-style: solid;
+  border-color: #10b981;
+  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.15);
+}
+
+.available-card.is-selected {
+  border-style: solid;
+  border-color: #10b981;
+  background: rgba(187, 247, 208, 0.5);
+}
+
+.dark .available-card {
+  border-color: #374151;
+  background: rgba(31, 41, 55, 0.6);
+}
+
+.dark .available-card.is-selected {
+  border-color: #10b981;
+  background: rgba(5, 150, 105, 0.35);
+}
+
+.available-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .available-title {
+  color: #f9fafb;
+}
+
+.available-meta,
+.available-meta-secondary {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.dark .available-meta,
+.dark .available-meta-secondary {
+  color: #d1d5db;
+}
+
+.available-status {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.85rem;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.available-card.is-selected .available-status {
+  background: #059669;
+  color: white;
+}
+
+.selected-empty-message {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  padding: 1rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.85rem;
+  text-align: center;
+}
+
+.dark .selected-empty-message {
+  color: #d1d5db;
+  border-color: #4b5563;
+}
+
+.empty-available {
+  border: 1px dashed #d1d5db;
+  border-radius: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.dark .empty-available {
+  border-color: #374151;
+  color: #9ca3af;
+}
+
+[data-feedback] {
+  min-height: 1.5rem;
+}

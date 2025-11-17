@@ -27,6 +27,8 @@ urlpatterns = [
     path('edit/<str:store_id>/theme/', views.edit_theme, name='edit_theme'),
     path('edit/<str:store_id>/shipping-settings/', views.edit_shipping_settings, name='edit_shipping_settings'),
     path('edit/<str:store_id>/completion-message/', views.edit_completion_message, name='edit_completion_message'),
+    path('edit/<str:store_id>/featured-display/', views.edit_featured_display, name='edit_featured_display'),
+    path('edit/<str:store_id>/featured-display/order/', views.update_featured_order, name='update_featured_order'),
     path('edit/<str:store_id>/manage/', views.manage_store, name='manage_store'),
     
     # 스토어 관리 액션들
