@@ -8,6 +8,7 @@ from django.db import transaction, models
 from django.db.models import Prefetch
 from django.utils import timezone
 from django.db.models import Q, Max
+from django.urls import reverse
 import json
 import qrcode
 import io
@@ -17,6 +18,17 @@ import csv
 from datetime import datetime, timedelta
 from .models import (
     Store, StoreCreationStep, ReservedStoreId, StoreImage
+)
+from .constants import (
+    FEATURE_ITEM_TYPE_FILE,
+    FEATURE_ITEM_TYPE_LIVE,
+    FEATURE_ITEM_TYPE_MEETUP,
+    FEATURE_ITEM_TYPE_PRODUCT,
+)
+from .featured_services import (
+    get_featured_items_for_display,
+    get_featured_sections_for_editor,
+    save_featured_order,
 )
 from products.models import (
     Product, ProductImage, ProductOption, ProductOptionChoice, ProductCategory
@@ -677,33 +689,11 @@ def store_detail(request, store_id):
         }, status=404)
     
     if store.is_active:
-        # 활성화된 스토어는 정상적으로 표시
-        # 상품 목록도 함께 가져오기 (최대 8개만)
-        products = store.products.filter(is_active=True).order_by('-created_at')[:8]
-        
-        # 밋업 목록도 함께 가져오기 (최대 8개만)
-        from meetup.models import Meetup
-        meetups = Meetup.objects.filter(
-            store=store, 
-            is_active=True
-        ).order_by('-created_at')[:8]
-        
-        # 라이브 강의 목록도 함께 가져오기 (최대 8개만)
-        from lecture.models import LiveLecture
-        live_lectures = LiveLecture.objects.filter(
-            store=store,
-            is_active=True,
-            deleted_at__isnull=True
-        ).order_by('-created_at')[:8]
-        
-        # 디지털 파일 목록도 함께 가져오기 (최대 8개만)
-        from file.models import DigitalFile
-        digital_files = DigitalFile.objects.filter(
-            store=store,
-            is_active=True,
-            deleted_at__isnull=True
-        ).order_by('-created_at')[:8]
-        
+        products = get_featured_items_for_display(store, FEATURE_ITEM_TYPE_PRODUCT)
+        meetups = get_featured_items_for_display(store, FEATURE_ITEM_TYPE_MEETUP)
+        live_lectures = get_featured_items_for_display(store, FEATURE_ITEM_TYPE_LIVE)
+        digital_files = get_featured_items_for_display(store, FEATURE_ITEM_TYPE_FILE)
+
         return render(request, 'stores/store_detail.html', {
             'store': store,
             'products': products,
@@ -1190,6 +1180,49 @@ def edit_shipping_settings(request, store_id):
     }
 
     return render(request, 'stores/edit_shipping_settings.html', context)
+
+
+@login_required
+def edit_featured_display(request, store_id):
+    """스토어 메인 노출 순서를 편집하는 화면"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    sections = get_featured_sections_for_editor(store)
+    update_url = reverse('stores:update_featured_order', args=[store.store_id])
+
+    return render(request, 'stores/edit_featured_display.html', {
+        'store': store,
+        'sections': sections,
+        'update_featured_url': update_url,
+    })
+
+
+@login_required
+@require_POST
+def update_featured_order(request, store_id):
+    """AJAX로 메인 노출 순서를 저장"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '잘못된 요청입니다.'}, status=400)
+
+    item_type = payload.get('item_type')
+    selected_ids = payload.get('selected_ids') or []
+
+    if not item_type:
+        return JsonResponse({'success': False, 'error': '노출 항목 유형이 필요합니다.'}, status=400)
+
+    try:
+        saved_ids = save_featured_order(store, item_type, selected_ids)
+    except ValueError as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=400)
+
+    return JsonResponse({
+        'success': True,
+        'message': '노출 순서를 저장했습니다.',
+        'selected_ids': saved_ids,
+    })
 
 @login_required
 def manage_store(request, store_id):

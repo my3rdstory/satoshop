@@ -6,6 +6,7 @@ from django.conf import settings
 from django.utils import timezone
 import os
 import base64
+from .constants import FEATURE_ITEM_TYPE_CHOICES
 
 
 MAX_PROMOTION_IMAGES = 4
@@ -510,6 +511,43 @@ class StoreImage(models.Model):
                 return f"{self.file_size:.1f} {unit}"
             self.file_size /= 1024.0
         return f"{self.file_size:.1f} TB"
+
+
+class StoreFeaturedItem(models.Model):
+    """스토어 메인 노출 항목"""
+
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.CASCADE,
+        related_name='featured_items',
+    )
+    item_type = models.CharField(max_length=20, choices=FEATURE_ITEM_TYPE_CHOICES)
+    object_id = models.PositiveIntegerField(help_text='연결된 객체 PK')
+    order = models.PositiveIntegerField(default=0, help_text='해당 타입 내 노출 순서')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = '스토어 노출 항목'
+        verbose_name_plural = '스토어 노출 항목'
+        ordering = ['item_type', 'order', 'created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['store', 'item_type', 'object_id'],
+                name='store_featured_unique_item',
+            ),
+            models.UniqueConstraint(
+                fields=['store', 'item_type', 'order'],
+                name='store_featured_unique_order',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['store', 'item_type']),
+            models.Index(fields=['item_type', 'order']),
+        ]
+
+    def __str__(self):
+        return f"{self.store.store_name} - {self.get_item_type_display()} #{self.object_id}"
 
 
 class BahPromotionRequest(models.Model):
