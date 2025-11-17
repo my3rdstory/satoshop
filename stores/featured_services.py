@@ -258,14 +258,12 @@ def save_featured_order(store: Store, item_type: str, object_ids: Sequence[int |
         raise ValueError('활성 상태가 아닌 항목이 포함되어 있습니다. 새로고침 후 다시 시도하세요.')
 
     with transaction.atomic():
-        StoreFeaturedItem.objects.filter(store=store, item_type=item_type).exclude(
-            object_id__in=normalized_ids,
-        ).delete()
+        StoreFeaturedItem.objects.filter(store=store, item_type=item_type).delete()
         for order, object_id in enumerate(normalized_ids, start=1):
-            StoreFeaturedItem.objects.update_or_create(
+            StoreFeaturedItem.objects.create(
                 store=store,
                 item_type=item_type,
                 object_id=object_id,
-                defaults={'order': order},
+                order=order,
             )
     return normalized_ids
