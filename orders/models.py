@@ -164,6 +164,7 @@ class Order(models.Model):
     DELIVERY_STATUS_CHOICES = [
         ('preparing', '발송준비중'),
         ('completed', '발송완료'),
+        ('pickup', '현장 수령'),
     ]
     
     # 주문 기본 정보

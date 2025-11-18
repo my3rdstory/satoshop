@@ -295,6 +295,12 @@
                   {% endif %}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
+                  {% if item.order.delivery_status == 'pickup' %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-100">
+                    <i class="fas fa-store mr-1"></i>
+                    현장 수령
+                  </span>
+                  {% else %}
                   <button 
                     onclick="toggleDeliveryStatus('{{ item.order.id }}', '{{ item.order.delivery_status }}')"
                     class="delivery-status-btn inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors {% if item.order.delivery_status == 'preparing' %}bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-900/50{% else %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-900/50{% endif %}"
@@ -303,8 +309,12 @@
                     <i class="fas {% if item.order.delivery_status == 'preparing' %}fa-box{% else %}fa-check-circle{% endif %} mr-1"></i>
                     {{ item.order.get_delivery_status_display }}
                   </button>
+                  {% endif %}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
+                  {% if item.order.delivery_status == 'pickup' %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400">현장 수령 주문은 송장 정보가 필요 없습니다.</p>
+                  {% else %}
                   <div class="flex items-center space-x-2">
                     <input 
                       type="text" 
@@ -323,6 +333,7 @@
                       data-field="tracking_number"
                     >
                   </div>
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}

@@ -155,8 +155,11 @@ def export_product_orders_csv(request, store, product):
             options_str = ', '.join(options_list)
         
         # 우편번호 처리 - 0으로 시작하는 경우 문자열로 보존
-        postal_code = _format_text_for_csv(order.shipping_postal_code or '')
+        pickup_mode = order.delivery_status == 'pickup'
+        postal_code = '' if pickup_mode else _format_text_for_csv(order.shipping_postal_code or '')
         phone_value = _format_text_for_csv(order.buyer_phone or '')
+        shipping_address = '' if pickup_mode else (order.shipping_address or '')
+        shipping_detail = '' if pickup_mode else (order.shipping_detail_address or '')
         
         writer.writerow([
             order.order_number,
@@ -172,8 +175,8 @@ def export_product_orders_csv(request, store, product):
             phone_value,
             order.buyer_email or '',
             postal_code,
-            order.shipping_address or '',
-            order.shipping_detail_address or '',
+            shipping_address,
+            shipping_detail,
             order.order_memo or '',
         ])
     
@@ -316,15 +319,16 @@ def export_product_orders_excel(request, store, product):
             ws.cell(row=row, column=9, value=order.get_delivery_status_display())
             ws.cell(row=row, column=10, value=options_str)
             # 우편번호 처리 - 0으로 시작하는 경우 문자열로 보존
-            postal_code = order.shipping_postal_code or ''
-            if postal_code and postal_code.startswith('0'):
+            pickup_mode = order.delivery_status == 'pickup'
+            postal_code = '' if pickup_mode else (order.shipping_postal_code or '')
+            if postal_code and isinstance(postal_code, str) and postal_code.startswith('0'):
                 postal_code = f'="{postal_code}"'  # Excel에서 문자열로 인식하도록 처리
             
             ws.cell(row=row, column=11, value=order.buyer_phone or '')
             ws.cell(row=row, column=12, value=order.buyer_email or '')
-            ws.cell(row=row, column=13, value=postal_code)
-            ws.cell(row=row, column=14, value=order.shipping_address or '')
-            ws.cell(row=row, column=15, value=order.shipping_detail_address or '')
+            ws.cell(row=row, column=13, value=postal_code if not pickup_mode else '')
+            ws.cell(row=row, column=14, value='' if pickup_mode else (order.shipping_address or ''))
+            ws.cell(row=row, column=15, value='' if pickup_mode else (order.shipping_detail_address or ''))
             ws.cell(row=row, column=16, value=order.order_memo or '')
         
         # 열 너비 자동 조정

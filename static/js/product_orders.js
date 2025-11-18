@@ -279,11 +279,13 @@ async function toggleDeliveryStatus(orderId, currentStatus) {
             }
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
         const data = await response.json();
+
+        if (!response.ok) {
+            const message = data.error || `HTTP ${response.status}: ${response.statusText}`;
+            alert(message);
+            return;
+        }
         
         if (data.success) {
             // 버튼 업데이트
@@ -307,7 +309,7 @@ async function toggleDeliveryStatus(orderId, currentStatus) {
                 button.setAttribute('onclick', `toggleDeliveryStatus('${orderId}', '${newStatus}')`);
             }
         } else {
-            alert('배송상태 변경에 실패했습니다.');
+            alert(data.error || '배송상태 변경에 실패했습니다.');
         }
     } catch (error) {
         console.error('배송상태 변경 오류:', error);
