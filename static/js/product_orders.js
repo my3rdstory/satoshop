@@ -371,12 +371,21 @@ async function updateTrackingInfo(orderId, field, value) {
                     input.classList.remove('border-green-500');
                 }, 2000);
             }
+
+            updateEmailButtonTrackingState(orderId, Boolean(trackingNumber));
         } else {
             alert('택배 정보 저장에 실패했습니다.');
         }
     } catch (error) {
         console.error('택배 정보 업데이트 오류:', error);
         alert('택배 정보 저장 중 오류가 발생했습니다.');
+    }
+}
+
+function updateEmailButtonTrackingState(orderId, hasTracking) {
+    const emailButton = document.querySelector(`.tracking-email-btn[data-order-id="${orderId}"]`);
+    if (emailButton) {
+        emailButton.dataset.hasTracking = hasTracking ? 'true' : 'false';
     }
 }
 
@@ -441,13 +450,96 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    function handleTrackingEmailClick(event) {
+        event.preventDefault();
+        const button = event.currentTarget;
+        if (!button || button.dataset.loading === 'true') {
+            return;
+        }
+
+        const reasons = [];
+        if (button.dataset.hasTracking !== 'true') {
+            reasons.push('송장번호가 입력되어 있지 않습니다.');
+        }
+        if (button.dataset.emailEnabled !== 'true') {
+            reasons.push('스토어 이메일 발송 옵션이 꺼져 있거나 발신 계정이 설정되지 않았습니다.');
+        }
+
+        if (reasons.length) {
+            alert(`이메일을 발송할 수 없습니다.\n- ${reasons.join('\n- ')}`);
+            return;
+        }
+
+        const orderId = button.dataset.orderId;
+        const labelElement = button.querySelector('.email-button-label');
+        const previousLabel = labelElement ? labelElement.textContent.trim() : (button.textContent.trim() || '이메일 발송');
+
+        sendTrackingEmail(button, orderId, previousLabel);
+    }
+
+    async function sendTrackingEmail(button, orderId, previousLabel) {
+        try {
+            button.dataset.loading = 'true';
+            button.disabled = true;
+            button.classList.add('opacity-60', 'cursor-not-allowed');
+            setEmailButtonLabel(button, '전송 중...');
+
+            const response = await fetch(`/orders/orders/${orderId}/send-tracking-email/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({})
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setEmailButtonLabel(button, '전송 완료');
+            } else {
+                const errorMessage = data && data.error ? data.error : '이메일 발송에 실패했습니다.';
+                alert(errorMessage);
+                setEmailButtonLabel(button, previousLabel);
+            }
+        } catch (error) {
+            console.error('송장 안내 이메일 발송 오류:', error);
+            alert('이메일을 발송하는 중 오류가 발생했습니다.');
+            setEmailButtonLabel(button, previousLabel);
+        } finally {
+            button.dataset.loading = 'false';
+            button.disabled = false;
+            button.classList.remove('cursor-not-allowed', 'opacity-60');
+        }
+    }
+
+    function setEmailButtonLabel(button, text) {
+        const labelElement = button.querySelector('.email-button-label');
+        if (labelElement) {
+            labelElement.textContent = text;
+        } else {
+            button.textContent = text;
+        }
+    }
+
+    function attachTrackingEmailEvents() {
+        const emailButtons = document.querySelectorAll('.tracking-email-btn');
+        emailButtons.forEach(button => {
+            button.removeEventListener('click', handleTrackingEmailClick);
+            button.addEventListener('click', handleTrackingEmailClick);
+        });
+    }
+    
     // 초기 이벤트 연결
     attachTrackingEvents();
+    attachTrackingEmailEvents();
     
     // AJAX로 새 컨텐츠가 로드될 때마다 이벤트 재연결
     const originalAttachPaginationEvents = attachPaginationEvents;
     window.attachPaginationEvents = function() {
         originalAttachPaginationEvents();
         attachTrackingEvents();
+        attachTrackingEmailEvents();
     };
 }); 

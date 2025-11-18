@@ -25,6 +25,7 @@ from .services import (
     restore_live_lecture_transaction,
     restore_meetup_transaction,
     restore_order_from_payment_transaction,
+    send_tracking_email_to_buyer,
 )
 from stores.decorators import store_owner_required
 from ln_payment.blink_service import get_blink_service_for_store
@@ -983,6 +984,9 @@ def product_orders(request, store_id, product_id):
         'last_month_name': f'{last_month_month}월',
         'last_month_year': last_month_year,
         'filtered_stats': filtered_stats,
+        'store_email_ready': bool(
+            store.email_enabled and store.email_host_user and store.email_host_password_encrypted
+        ),
     }
     return render(request, 'orders/product_orders.html', context)
 
@@ -2613,3 +2617,29 @@ def update_tracking_info(request, order_id):
         return JsonResponse({'error': '잘못된 JSON 형식입니다.'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def send_tracking_email(request, order_id):
+    """주문자에게 송장 안내 이메일 발송"""
+    try:
+        order = Order.objects.select_related('store').prefetch_related('items').get(id=order_id)
+
+        if order.store.owner != request.user:
+            return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+
+        if order.delivery_status == 'pickup':
+            return JsonResponse({'error': '현장 수령 주문은 송장 안내가 필요하지 않습니다.'}, status=400)
+
+        success, error_message = send_tracking_email_to_buyer(order)
+
+        if success:
+            return JsonResponse({'success': True})
+
+        return JsonResponse({'error': error_message or '이메일을 발송할 수 없습니다.'}, status=400)
+    except Order.DoesNotExist:
+        return JsonResponse({'error': '주문을 찾을 수 없습니다.'}, status=404)
+    except Exception as exc:
+        logger.exception("송장 안내 이메일 발송 중 오류 - order_id=%s", order_id)
+        return JsonResponse({'error': str(exc)}, status=500)
