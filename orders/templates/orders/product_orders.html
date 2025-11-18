@@ -346,19 +346,30 @@
                   {% if item.order.delivery_status == 'pickup' %}
                   <p class="text-xs text-gray-500 dark:text-gray-400">현장 수령 주문은 이메일 안내가 필요 없습니다.</p>
                   {% else %}
+                  {% with has_tracking=item.order.tracking_number %}
                   <button
                     type="button"
-                    class="tracking-email-btn inline-flex items-center px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-600 transition-colors"
+                    class="tracking-email-btn inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium transition-colors bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:hover:bg-white disabled:dark:hover:bg-gray-700"
                     data-order-id="{{ item.order.id }}"
-                    data-has-tracking="{{ item.order.tracking_number|yesno:'true,false' }}"
+                    data-has-tracking="{{ has_tracking|yesno:'true,false' }}"
                     data-email-enabled="{{ store_email_ready|yesno:'true,false' }}"
+                    {% if not has_tracking or not store_email_ready %}disabled aria-disabled="true"{% endif %}
                   >
                     <i class="fas fa-paper-plane mr-2 text-bitcoin"></i>
                     <span class="email-button-label">이메일 발송</span>
                   </button>
                   <p class="tracking-email-feedback mt-2 text-xs text-gray-500 dark:text-gray-400" data-order-id="{{ item.order.id }}">
-                    이메일 전송 결과가 여기에 표시됩니다.
+                    {% if not store_email_ready and not has_tracking %}
+                      스토어 이메일 설정을 활성화하고 송장번호를 입력하면 발송할 수 있습니다.
+                    {% elif not store_email_ready %}
+                      스토어 이메일 발송 옵션을 활성화한 뒤 이용해주세요.
+                    {% elif not has_tracking %}
+                      송장번호를 입력 후 저장하면 버튼이 활성화됩니다.
+                    {% else %}
+                      이메일 발송 버튼을 사용할 수 있습니다.
+                    {% endif %}
                   </p>
+                  {% endwith %}
                   {% endif %}
                 </td>
               </tr>
