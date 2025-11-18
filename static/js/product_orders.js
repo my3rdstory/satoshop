@@ -389,6 +389,30 @@ function updateEmailButtonTrackingState(orderId, hasTracking) {
     }
 }
 
+function setEmailFeedback(orderId, message, status = 'info') {
+    const feedback = document.querySelector(`.tracking-email-feedback[data-order-id="${orderId}"]`);
+    if (!feedback) return;
+
+    const classMap = {
+        info: ['text-gray-500', 'dark:text-gray-400'],
+        success: ['text-green-600', 'dark:text-green-400'],
+        error: ['text-rose-500', 'dark:text-rose-400'],
+    };
+
+    const removableClasses = [
+        'text-gray-500',
+        'dark:text-gray-400',
+        'text-green-600',
+        'dark:text-green-400',
+        'text-rose-500',
+        'dark:text-rose-400',
+    ];
+    feedback.classList.remove(...removableClasses);
+    const classes = classMap[status] || classMap.info;
+    feedback.classList.add(...classes);
+    feedback.textContent = message;
+}
+
 // 페이지 로드 시 초기화
 document.addEventListener('DOMContentLoaded', function() {
     updateFilterButtons(); // 이 함수 안에서 updateCsvDownloadLink()도 호출됨
@@ -457,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        const orderId = button.dataset.orderId;
         const reasons = [];
         if (button.dataset.hasTracking !== 'true') {
             reasons.push('송장번호가 입력되어 있지 않습니다.');
@@ -467,13 +492,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (reasons.length) {
             alert(`이메일을 발송할 수 없습니다.\n- ${reasons.join('\n- ')}`);
+            setEmailFeedback(orderId, '송장번호와 이메일 설정을 확인해주세요.', 'error');
             return;
         }
 
-        const orderId = button.dataset.orderId;
         const labelElement = button.querySelector('.email-button-label');
         const previousLabel = labelElement ? labelElement.textContent.trim() : (button.textContent.trim() || '이메일 발송');
 
+        setEmailFeedback(orderId, '이메일을 전송 중입니다...', 'info');
         sendTrackingEmail(button, orderId, previousLabel);
     }
 
@@ -498,15 +524,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (response.ok && data.success) {
                 setEmailButtonLabel(button, '전송 완료');
+                const now = new Date();
+                const timeText = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+                setEmailFeedback(orderId, `최근 전송 완료 · ${timeText}`, 'success');
             } else {
                 const errorMessage = data && data.error ? data.error : '이메일 발송에 실패했습니다.';
                 alert(errorMessage);
                 setEmailButtonLabel(button, previousLabel);
+                setEmailFeedback(orderId, errorMessage, 'error');
             }
         } catch (error) {
             console.error('송장 안내 이메일 발송 오류:', error);
             alert('이메일을 발송하는 중 오류가 발생했습니다.');
             setEmailButtonLabel(button, previousLabel);
+            setEmailFeedback(orderId, '이메일 발송 중 오류가 발생했습니다.', 'error');
         } finally {
             button.dataset.loading = 'false';
             button.disabled = false;
