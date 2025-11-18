@@ -28,16 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
         'buyer_email'
     ];
     const SHIPPING_REQUIRED_FIELDS = ['shipping_postal_code', 'shipping_address'];
-    const pickupOnlyFields = ['order_memo'];
     const trackedFields = Array.from(new Set([
         ...ALWAYS_REQUIRED_FIELDS,
         ...SHIPPING_REQUIRED_FIELDS,
-        ...pickupOnlyFields,
+        'order_memo',
     ]));
     const pickupCheckbox = document.getElementById('pickup_requested');
     const shippingSection = document.getElementById('shipping-section');
     const pickupNotice = document.getElementById('pickup-shipping-notice');
-    const memoRequiredBadge = document.getElementById('pickup-memo-required');
     const memoHint = document.getElementById('pickup-memo-hint');
     const orderMemoField = document.getElementById('order_memo');
 
@@ -52,9 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.required = !pickupMode;
             }
         });
-        if (orderMemoField) {
-            orderMemoField.required = pickupMode;
-        }
     }
 
     function updatePickupState() {
@@ -65,9 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pickupNotice) {
             pickupNotice.classList.toggle('hidden', !pickupMode);
         }
-        if (memoRequiredBadge) {
-            memoRequiredBadge.classList.toggle('hidden', !pickupMode);
-        }
         if (memoHint) {
             memoHint.classList.toggle('hidden', !pickupMode);
         }
@@ -77,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getActiveRequiredFields() {
         const pickupMode = isPickupMode();
         return pickupMode
-            ? [...ALWAYS_REQUIRED_FIELDS, ...pickupOnlyFields]
+            ? [...ALWAYS_REQUIRED_FIELDS]
             : [...ALWAYS_REQUIRED_FIELDS, ...SHIPPING_REQUIRED_FIELDS];
     }
     

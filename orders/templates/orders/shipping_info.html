@@ -304,10 +304,6 @@
           <div>
             <label for="order_memo" id="order_memo_label" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               배송 요청사항
-              <span 
-                id="pickup-memo-required" 
-                class="text-red-500 font-semibold {% if not form_data.pickup_requested %}hidden{% endif %}"
-              >*</span>
             </label>
             <p id="pickup-memo-hint" class="text-xs text-purple-600 dark:text-purple-300 mb-2 {% if not form_data.pickup_requested %}hidden{% endif %}">
               현장 수령 시 수령 예정 시간과 본인 확인이 가능한 정보를 꼭 남겨주세요.
@@ -318,7 +314,6 @@
               rows="4"
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors resize-vertical" 
               placeholder="배송 시 요청사항이 있으시면 입력해주세요."
-              {% if form_data.pickup_requested %}required{% endif %}
             >{{ form_data.order_memo|default:'' }}</textarea>
           </div>
         </div>

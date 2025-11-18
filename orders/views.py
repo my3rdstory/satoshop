@@ -1185,9 +1185,6 @@ def shipping_info(request):
             if not shipping_data[field]:
                 missing_fields.append(field)
 
-        if pickup_requested and not shipping_data['order_memo']:
-            missing_fields.append('order_memo')
-        
         if missing_fields:
             messages.error(request, '필수 정보를 모두 입력해주세요.')
             
