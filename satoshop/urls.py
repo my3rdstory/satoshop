@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from coupon.views import CouponGeneratorView
 from myshop.views import service_worker_view, manifest_view
 
 urlpatterns = [
@@ -31,6 +32,8 @@ urlpatterns = [
     path('orders/', include('orders.urls')),
     path('ln_payment/', include('ln_payment.urls')),
     path('boards/', include('boards.urls')),
+    path('coupon', CouponGeneratorView.as_view(), name='coupon_page'),
+    path('coupon/', include('coupon.urls')),
     path('meetup/', include('meetup.urls')),
     path('lecture/', include('lecture.urls')),
     path('file/', include('file.urls')),

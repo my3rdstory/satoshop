@@ -1,0 +1,119 @@
+{% extends "myshop/base.html" %}
+{% load static %}
+
+{% block body_class %} coupon-light-body{% endblock %}
+
+{% block title %}사토시 임시 쿠폰 생성기{% endblock %}
+{% block meta_description %}라이트닝 인보이스로 캐슈 이캐시를 충전하고 이캐시 QR 쿠폰 이미지를 바로 뽑을 수 있는 사토시 임시 쿠폰 생성기{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'coupon/css/coupon_generator.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="coupon-hero">
+  <div class="coupon-hero__glow"></div>
+  <div class="coupon-hero__body">
+    <p class="coupon-hero__subtitle">
+      라이트닝 인보이스로 캐슈 이캐시(Cashu eCash) 충전하고 이캐시 QR 쿠폰 이미지를 다운로드하세요.
+    </p>
+  </div>
+</section>
+
+<section class="coupon-grid" data-create-url="{% url 'coupon:create_invoice' %}" data-status-url="{% url 'coupon:invoice_status' payment_hash='__HASH__' %}">
+  <div class="coupon-card coupon-card--input">
+    <div class="coupon-card__header">
+      <h2>1. 수량 선택</h2>
+      <p>최대 {{ coupon_config.max_amount|default:10000 }} sats · 제작 수수료 {{ service_fee }} sats</p>
+    </div>
+    <div class="preset-grid">
+      {% for amount in coupon_config.presets %}
+      <button type="button" class="preset-button" data-amount="{{ amount }}">
+        {{ amount }} <span>sats</span>
+      </button>
+      {% endfor %}
+      <div class="preset-custom">
+        <label for="coupon-amount" class="sr-only">기타 수량</label>
+        <input id="coupon-amount" type="number" inputmode="numeric" min="1" max="{{ coupon_config.max_amount }}" placeholder="기타 (직접 입력)" class="preset-custom__input">
+        <span class="preset-custom__unit">sats</span>
+      </div>
+    </div>
+    <div class="amount-info">
+      <div>
+        <p class="amount-info__label">선택한 쿠폰</p>
+        <p class="amount-info__value"><span id="selected-amount">0</span> sats</p>
+      </div>
+      <div>
+        <p class="amount-info__label">제작 수수료</p>
+        <p class="amount-info__value fee">{{ service_fee }} sats</p>
+      </div>
+      <div>
+        <p class="amount-info__label">총 결제</p>
+        <p class="amount-info__value total"><span id="total-amount">0</span> sats</p>
+      </div>
+    </div>
+    <button type="button" id="create-invoice-btn" class="action-button">
+      <i class="fa-solid fa-bolt mr-2"></i> 라이트닝 인보이스 생성
+    </button>
+    <p class="helper-text">* 제작 수수료 5 sats 는 라이트닝 라우팅 수수료로 사용됩니다.</p>
+  </div>
+
+  <div class="coupon-card coupon-card--invoice">
+    <div class="coupon-card__header">
+      <h2>2. 입금 인보이스</h2>
+      <p>라이트닝 지갑으로 QR을 스캔해 결제하세요. <br />캐슈 이캐시 토큰을 리딤(Redeem) 할 수 있는 쿠폰 QR이 오른쪽에 생성됩니다.</p>
+    </div>
+    <div id="invoice-placeholder" class="invoice-placeholder">
+      <p>수량을 선택하고 인보이스를 생성하면<br>여기에 QR 코드가 표시됩니다.</p>
+    </div>
+    <div id="invoice-panel" class="invoice-panel hidden">
+      <div class="invoice-panel__status">
+        <span class="badge badge--pending" id="invoice-status-badge">대기중</span>
+        <p id="invoice-countdown">만료까지 --:--</p>
+      </div>
+      <div class="invoice-panel__qr">
+        <canvas id="invoice-qr-canvas" width="320" height="320" aria-label="Lightning Invoice QR"></canvas>
+      </div>
+      <div class="invoice-panel__details">
+        <label class="invoice-label">Invoice</label>
+        <textarea id="invoice-text" readonly rows="4"></textarea>
+        <button class="secondary-button" id="copy-invoice-btn"><i class="fa-regular fa-copy mr-2"></i>복사</button>
+      </div>
+    </div>
+    <div class="invoice-alert" id="invoice-alert">
+      결제가 확인되면 다음 단계에서 쿠폰 이미지를 만들 수 있습니다.
+    </div>
+    <div id="invoice-settled-message" class="invoice-settled hidden">
+      라이트닝 결제가 완료되었습니다. 아래에서 메시지를 적고 쿠폰 이미지를 내려받아 배포하세요.
+    </div>
+  </div>
+
+  <div class="coupon-card coupon-card--coupon">
+    <div class="coupon-card__header">
+      <h2>3. 메시지 & 다운로드</h2>
+      <p>쿠폰 QR 오른쪽에 메시지가 들어간 이미지로 저장됩니다.</p>
+    </div>
+    <label for="coupon-message" class="coupon-label">쿠폰 메시지</label>
+    <textarea id="coupon-message" rows="4" maxlength="80" placeholder="예) 축하해요! 라이트닝으로 사토시를 불러와요"></textarea>
+    <div class="message-meta">
+      <span id="message-count">0 / 80</span>
+      <span id="payment-gate-hint">⚠️ 결제가 완료되면 다운로드 버튼이 활성화됩니다.</span>
+    </div>
+    <div class="coupon-preview" id="coupon-preview">
+      <canvas id="coupon-preview-canvas" width="560" height="320" class="hidden"></canvas>
+      <p>결제가 완료되고 메시지를 입력하면<br>여기에 미리보기가 표시됩니다.</p>
+    </div>
+    <button type="button" id="download-coupon-btn" class="action-button disabled" disabled>
+      <i class="fa-solid fa-download mr-2"></i> 캐슈 이캐시 쿠폰 이미지 다운로드
+    </button>
+    <p class="coupon-note">* 다운로드한 쿠폰 QR은 캐슈 이캐시 전용입니다. 캐슈 전용 지갑에서 받기(Receive) 후 사용하세요.</p>
+  </div>
+</section>
+
+<script type="application/json" id="coupon-config">{{ coupon_config_json }}</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="{% static 'coupon/js/coupon_generator.js' %}"></script>
+{% endblock %}
