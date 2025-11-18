@@ -22,15 +22,67 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 필수 필드들
-    const requiredFields = [
+    const ALWAYS_REQUIRED_FIELDS = [
         'buyer_name',
         'buyer_phone', 
-        'buyer_email',
-        'shipping_postal_code',
-        'shipping_address'
+        'buyer_email'
     ];
+    const SHIPPING_REQUIRED_FIELDS = ['shipping_postal_code', 'shipping_address'];
+    const pickupOnlyFields = ['order_memo'];
+    const trackedFields = Array.from(new Set([
+        ...ALWAYS_REQUIRED_FIELDS,
+        ...SHIPPING_REQUIRED_FIELDS,
+        ...pickupOnlyFields,
+    ]));
+    const pickupCheckbox = document.getElementById('pickup_requested');
+    const shippingSection = document.getElementById('shipping-section');
+    const pickupNotice = document.getElementById('pickup-shipping-notice');
+    const memoRequiredBadge = document.getElementById('pickup-memo-required');
+    const memoHint = document.getElementById('pickup-memo-hint');
+    const orderMemoField = document.getElementById('order_memo');
+
+    function isPickupMode() {
+        return pickupCheckbox ? pickupCheckbox.checked : false;
+    }
+
+    function toggleShippingFieldRequirements(pickupMode) {
+        SHIPPING_REQUIRED_FIELDS.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.required = !pickupMode;
+            }
+        });
+        if (orderMemoField) {
+            orderMemoField.required = pickupMode;
+        }
+    }
+
+    function updatePickupState() {
+        const pickupMode = isPickupMode();
+        if (shippingSection) {
+            shippingSection.classList.toggle('hidden', pickupMode);
+        }
+        if (pickupNotice) {
+            pickupNotice.classList.toggle('hidden', !pickupMode);
+        }
+        if (memoRequiredBadge) {
+            memoRequiredBadge.classList.toggle('hidden', !pickupMode);
+        }
+        if (memoHint) {
+            memoHint.classList.toggle('hidden', !pickupMode);
+        }
+        toggleShippingFieldRequirements(pickupMode);
+    }
+
+    function getActiveRequiredFields() {
+        const pickupMode = isPickupMode();
+        return pickupMode
+            ? [...ALWAYS_REQUIRED_FIELDS, ...pickupOnlyFields]
+            : [...ALWAYS_REQUIRED_FIELDS, ...SHIPPING_REQUIRED_FIELDS];
+    }
     
     function validateForm() {
+        const requiredFields = getActiveRequiredFields();
         let allFilled = true;
         
         requiredFields.forEach(fieldId => {
@@ -283,14 +335,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 각 필수 필드에 이벤트 리스너 추가
-    requiredFields.forEach(fieldId => {
+    trackedFields.forEach(fieldId => {
         const field = document.getElementById(fieldId);
         if (field) {
             field.addEventListener('input', validateForm);
             field.addEventListener('blur', validateForm);
         }
     });
+
+    if (pickupCheckbox) {
+        pickupCheckbox.addEventListener('change', () => {
+            updatePickupState();
+            validateForm();
+        });
+    }
     
     // 초기 검증
+    updatePickupState();
     validateForm();
 }); 

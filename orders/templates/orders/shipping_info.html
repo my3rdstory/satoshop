@@ -180,8 +180,43 @@
           </div>
         </div>
 
+        <div class="rounded-2xl border border-dashed border-bitcoin/40 bg-white dark:bg-gray-900/40 dark:border-bitcoin/30 px-5 py-4 flex gap-4 items-start">
+          <div class="pt-1">
+            <input
+              type="checkbox"
+              id="pickup_requested"
+              name="pickup_requested"
+              value="1"
+              class="w-6 h-6 text-bitcoin border-2 border-bitcoin/70 rounded-md focus:ring-bitcoin"
+              {% if form_data.pickup_requested %}checked{% endif %}
+            >
+          </div>
+          <div>
+            <p class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <i class="fas fa-store text-bitcoin"></i>
+              현장 수령을 원하는 경우 체크하세요.
+            </p>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+              체크하면 배송지 정보를 입력하지 않고 주문 메모에 수령 장소와 시간을 남길 수 있습니다. 결제 후 스토어에서 직접 수령 안내를 드립니다.
+            </p>
+          </div>
+        </div>
+
+        <div
+          id="pickup-shipping-notice"
+          class="rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50/60 dark:bg-purple-900/30 px-5 py-4 text-sm text-purple-800 dark:text-purple-100 {% if not form_data.pickup_requested %}hidden{% endif %}"
+        >
+          <div class="flex items-start gap-3">
+            <i class="fas fa-info-circle mt-1"></i>
+            <div>
+              <p class="font-semibold">현장 수령 모드 ON</p>
+              <p>주소 입력 대신 주문 메모에 수령 정보를 남기면 바로 결제 단계로 이동합니다.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- 배송지 정보 -->
-        <div class="space-y-6">
+        <div id="shipping-section" class="space-y-6 {% if form_data.pickup_requested %}hidden{% endif %}">
           <div class="flex items-center pb-4 border-b border-gray-200 dark:border-gray-600">
             <div class="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg mr-3">
               <i class="fas fa-map-marker-alt text-green-600 dark:text-green-400"></i>
@@ -204,7 +239,7 @@
                   value="{{ form_data.shipping_postal_code|default:'' }}" 
                   placeholder="클릭하여 주소 검색" 
                   readonly
-                  required
+                  {% if not form_data.pickup_requested %}required{% endif %}
                 >
               </div>
               <div class="flex items-end">
@@ -232,7 +267,7 @@
                 value="{{ form_data.shipping_address|default:'' }}" 
                 placeholder="클릭하여 주소 검색" 
                 readonly
-                required
+                {% if not form_data.pickup_requested %}required{% endif %}
               >
             </div>
           </div>
@@ -267,15 +302,23 @@
           </div>
           
           <div>
-            <label for="order_memo" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label for="order_memo" id="order_memo_label" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               배송 요청사항
+              <span 
+                id="pickup-memo-required" 
+                class="text-red-500 font-semibold {% if not form_data.pickup_requested %}hidden{% endif %}"
+              >*</span>
             </label>
+            <p id="pickup-memo-hint" class="text-xs text-purple-600 dark:text-purple-300 mb-2 {% if not form_data.pickup_requested %}hidden{% endif %}">
+              현장 수령 시 수령 예정 시간과 본인 확인이 가능한 정보를 꼭 남겨주세요.
+            </p>
             <textarea 
               id="order_memo" 
               name="order_memo" 
               rows="4"
               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors resize-vertical" 
               placeholder="배송 시 요청사항이 있으시면 입력해주세요."
+              {% if form_data.pickup_requested %}required{% endif %}
             >{{ form_data.order_memo|default:'' }}</textarea>
           </div>
         </div>

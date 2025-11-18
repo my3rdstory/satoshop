@@ -746,17 +746,19 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
                 },
             )
 
+        pickup_requested = bool(shipping_data.get('pickup_requested'))
+
         order = Order.objects.create(
             user=user,
             store=store,
             status='paid',
-            delivery_status='preparing',
+            delivery_status='pickup' if pickup_requested else 'preparing',
             buyer_name=shipping_data.get('buyer_name', ''),
             buyer_phone=shipping_data.get('buyer_phone', ''),
             buyer_email=shipping_data.get('buyer_email', '') or (user.email or ''),
-            shipping_postal_code=shipping_data.get('shipping_postal_code', ''),
-            shipping_address=shipping_data.get('shipping_address', ''),
-            shipping_detail_address=shipping_data.get('shipping_detail_address', ''),
+            shipping_postal_code='' if pickup_requested else shipping_data.get('shipping_postal_code', ''),
+            shipping_address='' if pickup_requested else shipping_data.get('shipping_address', ''),
+            shipping_detail_address='' if pickup_requested else shipping_data.get('shipping_detail_address', ''),
             order_memo=shipping_data.get('order_memo', ''),
             subtotal=0,
             shipping_fee=shipping_fee,

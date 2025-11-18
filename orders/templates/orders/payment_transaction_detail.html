@@ -121,37 +121,54 @@
       <article class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg p-6 space-y-4">
         <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">배송 정보</h2>
         {% if shipping_data %}
-        <dl class="meta-grid">
-          <div>
-            <dt>받는 분</dt>
-            <dd>{{ shipping_data.buyer_name|default:'-' }}</dd>
+          {% if shipping_data.pickup_requested %}
+          <div class="rounded-xl border border-dashed border-bitcoin/30 bg-bitcoin/5 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 space-y-2">
+            <p class="font-semibold text-bitcoin flex items-center gap-2 text-base">
+              <i class="fas fa-store"></i>
+              현장 수령 주문
+            </p>
+            <p>{{ shipping_data.buyer_name|default:'-' }} / {{ shipping_data.buyer_phone|default:'-' }}</p>
+            <p>{{ shipping_data.buyer_email|default:'-' }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">주소 정보는 수집되지 않습니다.</p>
+            {% if shipping_data.order_memo %}
+            <div class="rounded-lg bg-white/60 dark:bg-gray-900/40 px-4 py-2 text-xs text-gray-700 dark:text-gray-200">
+              <span class="font-semibold text-gray-900 dark:text-gray-100 mr-2">수령 메모</span>{{ shipping_data.order_memo }}
+            </div>
+            {% endif %}
           </div>
-          <div>
-            <dt>연락처</dt>
-            <dd>{{ shipping_data.buyer_phone|default:'-' }}</dd>
+          {% else %}
+          <dl class="meta-grid">
+            <div>
+              <dt>받는 분</dt>
+              <dd>{{ shipping_data.buyer_name|default:'-' }}</dd>
+            </div>
+            <div>
+              <dt>연락처</dt>
+              <dd>{{ shipping_data.buyer_phone|default:'-' }}</dd>
+            </div>
+            <div>
+              <dt>이메일</dt>
+              <dd>{{ shipping_data.buyer_email|default:'-' }}</dd>
+            </div>
+            <div>
+              <dt>우편번호</dt>
+              <dd>{{ shipping_data.shipping_postal_code|default:'-' }}</dd>
+            </div>
+            <div>
+              <dt>주소</dt>
+              <dd>{{ shipping_data.shipping_address|default:'-' }}</dd>
+            </div>
+            <div>
+              <dt>상세주소</dt>
+              <dd>{{ shipping_data.shipping_detail_address|default:'-' }}</dd>
+            </div>
+          </dl>
+          {% if shipping_data.order_memo %}
+          <div class="rounded-xl bg-gray-50 dark:bg-gray-900/50 px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
+            <span class="font-semibold text-gray-800 dark:text-gray-100 mr-2">요청 사항</span>{{ shipping_data.order_memo }}
           </div>
-          <div>
-            <dt>이메일</dt>
-            <dd>{{ shipping_data.buyer_email|default:'-' }}</dd>
-          </div>
-          <div>
-            <dt>우편번호</dt>
-            <dd>{{ shipping_data.shipping_postal_code|default:'-' }}</dd>
-          </div>
-          <div>
-            <dt>주소</dt>
-            <dd>{{ shipping_data.shipping_address|default:'-' }}</dd>
-          </div>
-          <div>
-            <dt>상세주소</dt>
-            <dd>{{ shipping_data.shipping_detail_address|default:'-' }}</dd>
-          </div>
-        </dl>
-        {% if shipping_data.order_memo %}
-        <div class="rounded-xl bg-gray-50 dark:bg-gray-900/50 px-4 py-3 text-xs text-gray-600 dark:text-gray-300">
-          <span class="font-semibold text-gray-800 dark:text-gray-100 mr-2">요청 사항</span>{{ shipping_data.order_memo }}
-        </div>
-        {% endif %}
+          {% endif %}
+          {% endif %}
         {% else %}
         <p class="text-xs text-gray-500 dark:text-gray-400">저장된 배송 정보가 없습니다.</p>
         {% endif %}

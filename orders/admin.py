@@ -266,6 +266,7 @@ class OrderAdmin(admin.ModelAdmin):
         colors = {
             'preparing': '#f59e0b',  # 황색 - 발송준비중
             'completed': '#3b82f6',  # 파란색 - 발송완료
+            'pickup': '#8b5cf6',  # 보라색 - 현장 수령
         }
         color = colors.get(obj.delivery_status, '#6b7280')
         return format_html(

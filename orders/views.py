@@ -1156,6 +1156,8 @@ def shipping_info(request):
         return redirect('myshop:home')
     
     if request.method == 'POST':
+        pickup_requested = request.POST.get('pickup_requested') in ('1', 'true', 'on')
+
         # 배송 정보를 세션에 저장
         shipping_data = {
             'buyer_name': request.POST.get('buyer_name', '').strip(),
@@ -1165,14 +1167,26 @@ def shipping_info(request):
             'shipping_address': request.POST.get('shipping_address', '').strip(),
             'shipping_detail_address': request.POST.get('shipping_detail_address', '').strip(),
             'order_memo': request.POST.get('order_memo', '').strip(),
+            'pickup_requested': pickup_requested,
         }
+
+        if pickup_requested:
+            # 주소 입력 값은 저장하지 않음
+            shipping_data['shipping_postal_code'] = ''
+            shipping_data['shipping_address'] = ''
+            shipping_data['shipping_detail_address'] = ''
         
         # 필수 필드 검증
-        required_fields = ['buyer_name', 'buyer_phone', 'buyer_email', 'shipping_postal_code', 'shipping_address']
+        required_fields = ['buyer_name', 'buyer_phone', 'buyer_email']
+        if not pickup_requested:
+            required_fields += ['shipping_postal_code', 'shipping_address']
         missing_fields = []
         for field in required_fields:
             if not shipping_data[field]:
                 missing_fields.append(field)
+
+        if pickup_requested and not shipping_data['order_memo']:
+            missing_fields.append('order_memo')
         
         if missing_fields:
             messages.error(request, '필수 정보를 모두 입력해주세요.')
@@ -1363,6 +1377,7 @@ def shipping_info(request):
     ]
     for key in default_keys:
         form_data.setdefault(key, '')
+    form_data.setdefault('pickup_requested', False)
 
     context = {
         'cart': dummy_cart,
@@ -2175,7 +2190,10 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             'shipping_address': '디지털 상품',
             'shipping_detail_address': '',
             'order_memo': '라이트닝 결제로 주문',
+            'pickup_requested': False,
         }
+    else:
+        shipping_data.setdefault('pickup_requested', False)
     
     with transaction.atomic():
         for store_id, store_data in stores_data.items():
@@ -2191,6 +2209,7 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
             
             store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store, store_items)
 
+            pickup_requested = bool(shipping_data.get('pickup_requested'))
             # 주문 생성
             order = Order.objects.create(
                 user=user,
@@ -2198,14 +2217,15 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                 buyer_name=shipping_data.get('buyer_name', ''),
                 buyer_phone=shipping_data.get('buyer_phone', ''),
                 buyer_email=shipping_data.get('buyer_email', ''),
-                shipping_postal_code=shipping_data.get('shipping_postal_code', ''),
-                shipping_address=shipping_data.get('shipping_address', ''),
-                shipping_detail_address=shipping_data.get('shipping_detail_address', ''),
+                shipping_postal_code='' if pickup_requested else shipping_data.get('shipping_postal_code', ''),
+                shipping_address='' if pickup_requested else shipping_data.get('shipping_address', ''),
+                shipping_detail_address='' if pickup_requested else shipping_data.get('shipping_detail_address', ''),
                 order_memo=shipping_data.get('order_memo', ''),
                 subtotal=0,  # 나중에 계산
                 shipping_fee=store_shipping_fee,
                 total_amount=0,  # 나중에 계산
                 status='paid',
+                delivery_status='pickup' if pickup_requested else 'preparing',
                 payment_id=payment_hash,
                 paid_at=timezone.now()
             )
@@ -2361,7 +2381,10 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             'shipping_address': '디지털 상품',
             'shipping_detail_address': '',
             'order_memo': '라이트닝 결제로 주문',
+            'pickup_requested': False,
         }
+    else:
+        shipping_data.setdefault('pickup_requested', False)
     
     with transaction.atomic():
         for store, items in groupby(cart_items, key=lambda x: x.product.store):
@@ -2375,6 +2398,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
             # 스토어별 배송비 계산 (스토어 정책 기준)
             store_subtotal, store_shipping_fee, override_free = calculate_store_totals(store, store_items)
 
+            pickup_requested = bool(shipping_data.get('pickup_requested'))
             # 주문 생성
             order = Order.objects.create(
                 user=user,
@@ -2382,14 +2406,15 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                 buyer_name=shipping_data.get('buyer_name', ''),
                 buyer_phone=shipping_data.get('buyer_phone', ''),
                 buyer_email=shipping_data.get('buyer_email', ''),
-                shipping_postal_code=shipping_data.get('shipping_postal_code', ''),
-                shipping_address=shipping_data.get('shipping_address', ''),
-                shipping_detail_address=shipping_data.get('shipping_detail_address', ''),
+                shipping_postal_code='' if pickup_requested else shipping_data.get('shipping_postal_code', ''),
+                shipping_address='' if pickup_requested else shipping_data.get('shipping_address', ''),
+                shipping_detail_address='' if pickup_requested else shipping_data.get('shipping_detail_address', ''),
                 order_memo=shipping_data.get('order_memo', ''),
                 subtotal=0,  # 나중에 계산
                 shipping_fee=store_shipping_fee,
                 total_amount=0,  # 나중에 계산
                 status='paid',
+                delivery_status='pickup' if pickup_requested else 'preparing',
                 payment_id=payment_hash,
                 paid_at=timezone.now()
             )
@@ -2531,6 +2556,9 @@ def toggle_delivery_status(request, order_id):
         # 권한 확인 (스토어 주인만 변경 가능)
         if order.store.owner != request.user:
             return JsonResponse({'error': '권한이 없습니다.'}, status=403)
+
+        if order.delivery_status == 'pickup':
+            return JsonResponse({'error': '현장 수령 주문은 발송상태를 변경할 수 없습니다.'}, status=400)
         
         # 배송상태 토글
         if order.delivery_status == 'preparing':
