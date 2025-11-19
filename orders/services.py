@@ -180,12 +180,21 @@ class CartService:
                             existing_item.quantity += item_data['quantity']
                             existing_item.save()
                         else:
-                            # 새 아이템 생성
+                            # 세션에 저장된 고정 가격이 있으면 그대로 사용
+                            frozen_kwargs = {}
+                            for key in ['frozen_product_price_sats', 'frozen_options_price_sats', 'frozen_exchange_rate']:
+                                if item_data.get(key) is not None:
+                                    frozen_kwargs[key] = item_data.get(key)
+
+                            if not frozen_kwargs:
+                                frozen_kwargs = self._capture_price_snapshot(product, item_data['selected_options'])
+
                             CartItem.objects.create(
                                 cart=cart,
                                 product=product,
                                 quantity=item_data['quantity'],
-                                selected_options=item_data['selected_options']
+                                selected_options=item_data['selected_options'],
+                                **frozen_kwargs
                             )
                     except Product.DoesNotExist:
                         continue
@@ -199,43 +208,42 @@ class CartService:
     
     # === DB 카트 관련 메서드 ===
     
-    def _freeze_prices_if_krw_product(self, product, selected_options):
-        """원화 연동 상품인 경우 현재 환율로 가격을 고정"""
-        frozen_data = {}
-        
-        if product.price_krw:  # 원화 연동 상품인 경우
+    def _capture_price_snapshot(self, product, selected_options):
+        """현재 시점의 상품/옵션 가격(사토시)을 고정"""
+        snapshot = {
+            'frozen_product_price_sats': 0,
+            'frozen_options_price_sats': 0,
+        }
+
+        # 상품 기준 가격 (할인 우선 적용)
+        if product.is_discounted and product.public_discounted_price:
+            base_price = product.public_discounted_price
+        else:
+            base_price = product.public_price
+        snapshot['frozen_product_price_sats'] = int(base_price or 0)
+
+        # 옵션 합산 가격
+        if selected_options:
+            from products.models import ProductOptionChoice
+            options_total = 0
+            for option_id, choice_id in selected_options.items():
+                try:
+                    choice = ProductOptionChoice.objects.get(id=choice_id)
+                    options_total += choice.public_price
+                except ProductOptionChoice.DoesNotExist:
+                    continue
+            snapshot['frozen_options_price_sats'] = int(options_total)
+
+        # 원화 연동 상품은 당시 환율도 기록 (디버깅 및 추적용)
+        if product.price_krw:
             from myshop.models import ExchangeRate
-            
-            # 현재 환율 가져오기
             try:
                 exchange_rate = ExchangeRate.objects.latest('created_at')
-                frozen_data['frozen_exchange_rate'] = float(exchange_rate.btc_krw_rate)
-                
-                # 상품 가격 고정 (할인 적용)
-                # 할인 상품인 경우 할인가를 고정, 그렇지 않으면 정가 고정
-                if product.is_discounted and product.public_discounted_price:
-                    frozen_data['frozen_product_price_sats'] = product.public_discounted_price
-                else:
-                    frozen_data['frozen_product_price_sats'] = product.public_price
-                
-                # 옵션 가격 고정
-                options_price_sats = 0
-                if selected_options:
-                    from products.models import ProductOptionChoice
-                    for option_id, choice_id in selected_options.items():
-                        try:
-                            choice = ProductOptionChoice.objects.get(id=choice_id)
-                            options_price_sats += choice.public_price
-                        except ProductOptionChoice.DoesNotExist:
-                            continue
-                
-                frozen_data['frozen_options_price_sats'] = options_price_sats
-                
+                snapshot['frozen_exchange_rate'] = float(exchange_rate.btc_krw_rate)
             except ExchangeRate.DoesNotExist:
-                # 환율 정보가 없으면 고정하지 않음
                 pass
-        
-        return frozen_data
+
+        return snapshot
     
     def _get_db_cart_items(self):
         """DB에서 장바구니 아이템들 가져오기"""
@@ -248,7 +256,7 @@ class CartService:
                 options_display = []
                 if cart_item.selected_options:
                     # 고정된 옵션 가격이 있는 경우 사용 (환율 고정)
-                    if cart_item.frozen_options_price_sats is not None and cart_item.frozen_options_price_sats > 0:
+                    if cart_item.frozen_options_price_sats is not None:
                         # 고정된 총 옵션 가격을 개별 옵션들에 비례적으로 분배
                         total_current_option_price = 0
                         option_prices = {}
@@ -311,6 +319,9 @@ class CartService:
                     'store_name': cart_item.product.store.store_name,
                     'is_db_item': True,
                     'force_free_shipping': cart_item.product.force_free_shipping,
+                    'frozen_product_price_sats': cart_item.frozen_product_price_sats,
+                    'frozen_options_price_sats': cart_item.frozen_options_price_sats,
+                    'frozen_exchange_rate': cart_item.frozen_exchange_rate,
                 })
             
             return items
@@ -323,7 +334,7 @@ class CartService:
         cart, created = Cart.objects.get_or_create(user=self.user)
         
         # 원화 연동 상품인 경우 현재 환율을 고정
-        frozen_data = self._freeze_prices_if_krw_product(product, selected_options)
+        frozen_data = self._capture_price_snapshot(product, selected_options)
         
         # 항상 새 항목으로 추가 (기존 로직 유지)
         cart_item = CartItem.objects.create(
@@ -378,68 +389,82 @@ class CartService:
         """세션에서 장바구니 아이템들 가져오기"""
         cart_data = self.session.get('cart', {'items': []})
         items = []
-        
+
         for item_data in cart_data['items']:
             try:
                 product = Product.objects.get(id=item_data['product_id'], is_active=True)
-                
-                # 옵션 정보 처리
-                options_display = []
-                
-                # 고정된 옵션 가격이 있는 경우 사용 (환율 고정)
-                if item_data.get('frozen_options_price_sats') is not None and item_data.get('frozen_options_price_sats', 0) > 0:
-                    # 고정된 총 옵션 가격을 개별 옵션들에 비례적으로 분배
-                    total_current_option_price = 0
-                    option_prices = {}
-                    if item_data.get('selected_options'):
-                        for option_id, choice_id in item_data['selected_options'].items():
-                            try:
-                                option = ProductOption.objects.get(id=option_id)
-                                choice = ProductOptionChoice.objects.get(id=choice_id)
-                                current_price = choice.public_price
-                                option_prices[(option_id, choice_id)] = {
-                                    'option': option,
-                                    'choice': choice,
-                                    'current_price': current_price
-                                }
-                                total_current_option_price += current_price
-                            except:
-                                pass
-                    
-                    # 비례적으로 고정 가격 분배
-                    for (option_id, choice_id), data in option_prices.items():
-                        if total_current_option_price > 0:
-                            frozen_price = int((data['current_price'] / total_current_option_price) * item_data['frozen_options_price_sats'])
-                        else:
-                            frozen_price = 0
-                        
-                        options_display.append({
-                            'option_name': data['option'].name,
-                            'choice_name': data['choice'].name,
-                            'choice_price': frozen_price
-                        })
+
+                selected_options = item_data.get('selected_options') or {}
+                frozen_product_price = item_data.get('frozen_product_price_sats')
+                frozen_options_price = item_data.get('frozen_options_price_sats')
+
+                # 상품 기준 가격 (동결 값 우선)
+                if frozen_product_price is not None:
+                    base_price = frozen_product_price
                 else:
-                    # 고정된 가격이 없으면 실시간 가격 사용 (할인 적용)
-                    # 할인 상품인 경우 할인가를 사용, 그렇지 않으면 정가 사용
                     if product.is_discounted and product.public_discounted_price:
                         base_price = product.public_discounted_price
                     else:
                         base_price = product.public_price
-                    
-                    # 옵션 가격도 환율 적용 (public_price 사용)
-                    options_total = 0
-                    if item_data.get('selected_options'):
-                        for option_id, choice_id in item_data['selected_options'].items():
-                            try:
-                                choice = ProductOptionChoice.objects.get(id=choice_id)
-                                options_total += choice.public_price
-                            except:
-                                pass
-                    
-                    unit_price = base_price + options_total
-                
+
+                # 옵션 정보 및 표시값 구성
+                option_price_entries = []
+                if selected_options:
+                    for option_id, choice_id in selected_options.items():
+                        try:
+                            option = ProductOption.objects.get(id=option_id)
+                            choice = ProductOptionChoice.objects.get(id=choice_id)
+                            option_price_entries.append({
+                                'option': option,
+                                'choice': choice,
+                                'current_price': choice.public_price,
+                            })
+                        except:
+                            continue
+
+                options_display = []
+                if option_price_entries:
+                    if frozen_options_price is not None:
+                        total_current_option_price = sum(entry['current_price'] for entry in option_price_entries)
+                        for entry in option_price_entries:
+                            if total_current_option_price > 0:
+                                frozen_price = int((entry['current_price'] / total_current_option_price) * frozen_options_price)
+                            else:
+                                frozen_price = 0
+                            options_display.append({
+                                'option_name': entry['option'].name,
+                                'choice_name': entry['choice'].name,
+                                'choice_price': frozen_price,
+                            })
+                    else:
+                        for entry in option_price_entries:
+                            options_display.append({
+                                'option_name': entry['option'].name,
+                                'choice_name': entry['choice'].name,
+                                'choice_price': entry['current_price'],
+                            })
+
+                if frozen_options_price is not None:
+                    options_total = frozen_options_price
+                else:
+                    options_total = sum(entry['current_price'] for entry in option_price_entries)
+
+                base_price = int(base_price or 0)
+                options_total = int(options_total or 0)
+                unit_price = base_price + options_total
                 total_price = unit_price * item_data['quantity']
-                
+
+                normalized_snapshot = False
+                if frozen_product_price is None:
+                    item_data['frozen_product_price_sats'] = base_price
+                    normalized_snapshot = True
+                if frozen_options_price is None:
+                    item_data['frozen_options_price_sats'] = options_total
+                    normalized_snapshot = True
+                if normalized_snapshot:
+                    self.session['cart'] = cart_data
+                    self.session.modified = True
+
                 items.append({
                     'id': item_data['id'],
                     'product_id': product.id,
@@ -448,17 +473,20 @@ class CartService:
                     'quantity': item_data['quantity'],
                     'unit_price': unit_price,
                     'total_price': total_price,
-                    'selected_options': item_data.get('selected_options', {}),
+                    'selected_options': selected_options,
                     'options_display': options_display,
                     'store_id': product.store.store_id,
                     'store_name': product.store.store_name,
                     'is_db_item': False,
                     'force_free_shipping': product.force_free_shipping,
+                    'frozen_product_price_sats': base_price,
+                    'frozen_options_price_sats': options_total,
+                    'frozen_exchange_rate': item_data.get('frozen_exchange_rate'),
                 })
-                
+
             except Product.DoesNotExist:
                 continue
-        
+
         return items
     
     def _add_to_session_cart(self, product, quantity, selected_options):
@@ -470,7 +498,7 @@ class CartService:
         item_id = f"session_{int(time.time() * 1000)}"
         
         # 원화 연동 상품인 경우 현재 환율을 고정
-        frozen_data = self._freeze_prices_if_krw_product(product, selected_options)
+        frozen_data = self._capture_price_snapshot(product, selected_options)
         
         # 새 아이템 추가
         item_data = {
@@ -533,7 +561,10 @@ class CartService:
                     
                     # 고정된 가격이 있으면 사용 (환율 고정)
                     if item.get('frozen_product_price_sats') is not None:
-                        unit_price = item['frozen_product_price_sats'] + item.get('frozen_options_price_sats', 0)
+                        options_total = item.get('frozen_options_price_sats')
+                        if options_total is None:
+                            options_total = 0
+                        unit_price = item['frozen_product_price_sats'] + options_total
                     else:
                         # 실시간 가격 사용 (할인 적용)
                         # 할인 상품인 경우 할인가를 사용, 그렇지 않으면 정가 사용
@@ -888,14 +919,18 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
 
             options_display = item.get('options_display') or []
             selected_options_map = {}
-            options_price = 0
+            computed_options_price = 0
+            frozen_product_price = item.get('frozen_product_price_sats')
+            frozen_options_price = item.get('frozen_options_price_sats')
+
             if options_display:
                 for option in options_display:
                     name = option.get('option_name')
                     choice = option.get('choice_name')
                     if name and choice:
                         selected_options_map[name] = choice
-                    options_price += _to_int(option.get('choice_price'))
+                    if frozen_options_price is None:
+                        computed_options_price += _to_int(option.get('choice_price'))
             else:
                 raw_options = item.get('selected_options') or {}
                 for option_id, choice_id in raw_options.items():
@@ -903,14 +938,25 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
                         option_obj = ProductOption.objects.get(id=option_id)
                         choice_obj = ProductOptionChoice.objects.get(id=choice_id)
                         selected_options_map[option_obj.name] = choice_obj.name
-                        options_price += choice_obj.public_price
+                        if frozen_options_price is None:
+                            computed_options_price += choice_obj.public_price
                     except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                         continue
 
             unit_price = _to_int(item.get('unit_price'))
-            base_price = unit_price - options_price if unit_price > options_price else unit_price
-            if base_price <= 0:
-                base_price = _to_int(item.get('frozen_product_price_sats')) or (product.public_price or 0)
+
+            if frozen_options_price is not None:
+                options_price = max(_to_int(frozen_options_price), 0)
+            else:
+                options_price = max(computed_options_price, 0)
+
+            if frozen_product_price is not None:
+                base_price = _to_int(frozen_product_price)
+            else:
+                base_price = unit_price - options_price if unit_price > options_price else unit_price
+                if base_price <= 0:
+                    fallback_price = product.public_discounted_price if (product.is_discounted and product.public_discounted_price) else product.public_price
+                    base_price = fallback_price or 0
 
             order_item = OrderItem.objects.create(
                 order=order,
