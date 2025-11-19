@@ -77,6 +77,13 @@ def _mark_manual_restored(iterable):
             seen[order_id] = flag
 
 
+def _to_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _can_restore_transaction(transaction):
     metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
     is_meetup_transaction = transaction.meetup_order_id is not None or metadata.get('meetup_order_id') is not None
@@ -2268,20 +2275,31 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                             continue
                 
                 # 장바구니의 고정된 가격 사용 (환율 고정 반영)
-                unit_price = item['unit_price']  # 이미 고정된 가격 포함
-                
+                unit_price = _to_int(item.get('unit_price'))
+
+                frozen_product_price = item.get('frozen_product_price_sats')
+                frozen_options_price = item.get('frozen_options_price_sats')
+
                 # 기존 로직 호환을 위해 상품 가격과 옵션 가격 분리
                 # 하지만 총합은 장바구니의 고정된 가격을 사용
-                # 할인 상품인 경우 할인가를 사용
-                if hasattr(item, 'frozen_product_price_sats') and item.get('frozen_product_price_sats'):
-                    base_product_price = item.get('frozen_product_price_sats')
+                if frozen_product_price is not None:
+                    base_product_price = _to_int(frozen_product_price)
                 elif product.is_discounted and product.public_discounted_price:
                     base_product_price = product.public_discounted_price
                 else:
                     base_product_price = product.public_price
-                
-                options_price = unit_price - base_product_price if unit_price > base_product_price else 0
-                
+
+                if base_product_price is None or base_product_price <= 0:
+                    fallback_price = product.public_discounted_price if (product.is_discounted and product.public_discounted_price) else product.public_price
+                    base_product_price = fallback_price or 0
+
+                options_price = 0
+                if frozen_options_price is not None:
+                    options_price = max(_to_int(frozen_options_price), 0)
+                else:
+                    computed_options_price = unit_price - base_product_price if unit_price > base_product_price else 0
+                    options_price = max(computed_options_price, 0)
+
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=product,
@@ -2450,12 +2468,25 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                     except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
                         continue
                 
-                # 할인 상품인 경우 할인가를 사용
-                if item.product.is_discounted and item.product.public_discounted_price:
+                frozen_base = item.frozen_product_price_sats
+                frozen_options = item.frozen_options_price_sats
+
+                if frozen_base is not None:
+                    product_price = frozen_base
+                elif item.product.is_discounted and item.product.public_discounted_price:
                     product_price = item.product.public_discounted_price
                 else:
                     product_price = item.product.public_price
-                
+
+                if product_price is None or product_price <= 0:
+                    fallback_price = item.product.public_discounted_price if (item.product.is_discounted and item.product.public_discounted_price) else item.product.public_price
+                    product_price = fallback_price or 0
+
+                if frozen_options is not None:
+                    options_price = max(frozen_options, 0)
+                else:
+                    options_price = item.options_price
+
                 order_item = OrderItem.objects.create(
                     order=order,
                     product=item.product,
@@ -2463,7 +2494,7 @@ def create_order_from_cart(user, cart, payment_hash, shipping_data=None):
                     product_price=product_price,
                     quantity=item.quantity,
                     selected_options=options_display,
-                    options_price=item.options_price
+                    options_price=options_price
                 )
                 
                 if settings.DEBUG:
