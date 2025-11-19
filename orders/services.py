@@ -321,7 +321,7 @@ class CartService:
                     'force_free_shipping': cart_item.product.force_free_shipping,
                     'frozen_product_price_sats': cart_item.frozen_product_price_sats,
                     'frozen_options_price_sats': cart_item.frozen_options_price_sats,
-                    'frozen_exchange_rate': cart_item.frozen_exchange_rate,
+                    'frozen_exchange_rate': float(cart_item.frozen_exchange_rate) if cart_item.frozen_exchange_rate is not None else None,
                 })
             
             return items
