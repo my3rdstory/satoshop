@@ -3,6 +3,8 @@
 
 {% block title %}{{ product.title }} - 주문 목록{% endblock %}
 
+{% block store_messages %}{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/components.css' %}">
 <link rel="stylesheet" href="{% static 'css/product_orders.css' %}">
@@ -240,6 +242,12 @@
         </div>
       </div>
 
+      {% if not store_email_ready %}
+      <div class="px-6 py-4 bg-rose-50 dark:bg-rose-950/30 border-b border-rose-200 dark:border-rose-900 text-sm text-rose-700 dark:text-rose-200">
+        스토어 이메일 발송 옵션이 꺼져 있거나 Gmail 발신 계정이 설정되지 않아 안내 메일을 보낼 수 없습니다. <span class="font-medium">스토어 설정 &gt; 이메일 발송</span>에서 기능을 활성화하고 계정을 저장해주세요.
+      </div>
+      {% endif %}
+
       <div class="p-6">
         {% if page_obj or order_items %}
         <!-- 테이블 -->
@@ -259,6 +267,7 @@
                   송장번호
                   <span class="text-red-500 normal-case text-xs font-normal">(*입력 후 Enter 치면 즉시 저장)</span>
                 </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">이메일 발송</th>
               </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -333,6 +342,36 @@
                       data-field="tracking_number"
                     >
                   </div>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  {% if item.order.delivery_status == 'pickup' %}
+                  <p class="text-xs text-gray-500 dark:text-gray-400">현장 수령 주문은 이메일 안내가 필요 없습니다.</p>
+                  {% else %}
+                  {% with has_tracking=item.order.tracking_number %}
+                  <button
+                    type="button"
+                    class="tracking-email-btn inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm font-medium transition-colors bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-gray-600 disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:hover:bg-white disabled:dark:hover:bg-gray-700"
+                    data-order-id="{{ item.order.id }}"
+                    data-has-tracking="{{ has_tracking|yesno:'true,false' }}"
+                    data-email-enabled="{{ store_email_ready|yesno:'true,false' }}"
+                    {% if not has_tracking or not store_email_ready %}disabled aria-disabled="true"{% endif %}
+                  >
+                    <i class="fas fa-paper-plane mr-2 text-bitcoin"></i>
+                    <span class="email-button-label">이메일 발송</span>
+                  </button>
+                  <p class="tracking-email-feedback mt-2 text-xs text-gray-500 dark:text-gray-400" data-order-id="{{ item.order.id }}">
+                    {% if not store_email_ready and not has_tracking %}
+                      스토어 이메일 설정을 활성화하고 송장번호를 입력하면 발송할 수 있습니다.
+                    {% elif not store_email_ready %}
+                      스토어 이메일 발송 옵션을 활성화한 뒤 이용해주세요.
+                    {% elif not has_tracking %}
+                      송장번호를 입력 후 저장하면 버튼이 활성화됩니다.
+                    {% else %}
+                      이메일 발송 버튼을 사용할 수 있습니다.
+                    {% endif %}
+                  </p>
+                  {% endwith %}
                   {% endif %}
                 </td>
               </tr>

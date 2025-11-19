@@ -670,6 +670,95 @@ def send_order_notification_email(order):
         return False 
 
 
+def send_tracking_email_to_buyer(order):
+    """
+    주문자에게 송장 안내 이메일 발송
+
+    Args:
+        order: Order 인스턴스
+
+    Returns:
+        tuple[bool, str | None]: (성공 여부, 오류 메시지)
+    """
+    try:
+        tracking_number = (order.tracking_number or '').strip()
+        courier_company = (order.courier_company or '').strip()
+
+        if not tracking_number:
+            return False, '송장번호가 아직 등록되지 않았습니다.'
+
+        if not order.buyer_email:
+            return False, '주문자 이메일 정보가 없어 발송할 수 없습니다.'
+
+        store = order.store
+        if not store.email_enabled:
+            return False, '스토어의 이메일 발송 옵션이 비활성화되어 있습니다.'
+
+        if not store.email_host_user or not store.email_host_password_encrypted:
+            return False, '스토어 이메일 계정 정보가 설정되지 않아 발송할 수 없습니다.'
+
+        backend = EmailBackend(
+            host='smtp.gmail.com',
+            port=587,
+            username=store.email_host_user,
+            password=store.get_email_host_password(),
+            use_tls=True,
+            fail_silently=False,
+        )
+
+        order_items = []
+        for item in order.items.all():
+            option_text = ''
+            if item.selected_options:
+                option_pairs = [f"{key}: {value}" for key, value in item.selected_options.items()]
+                if option_pairs:
+                    option_text = f" ({', '.join(option_pairs)})"
+            order_items.append(f"- {item.product_title} x {item.quantity}개{option_text}")
+
+        items_text = '\n'.join(order_items) if order_items else '- 상품 정보가 없습니다.'
+
+        created_local = timezone.localtime(order.created_at) if order.created_at else None
+        created_text = created_local.strftime('%Y년 %m월 %d일 %H시 %M분') if created_local else '-'
+
+        subject = f'[{store.store_name}] 주문 {order.order_number} 송장 안내'
+
+        chat_line = f"\n문의: {store.chat_channel}" if store.chat_channel else ''
+
+        message = f"""안녕하세요, {order.buyer_name}님!
+
+{store.store_name}에서 주문하신 상품의 발송 정보를 안내드립니다.
+
+주문번호: {order.order_number}
+주문일시: {created_text}
+
+구매 상품:
+{items_text}
+
+배송 정보:
+- 택배사: {courier_company or '미입력'}
+- 송장번호: {tracking_number}
+
+배송 상태 확인이 필요하시면 언제든지 문의해주세요.{chat_line}
+
+감사합니다.
+{store.store_name} 드림"""
+
+        email = EmailMessage(
+            subject=subject,
+            body=message,
+            from_email=f'{store.email_from_display} <{store.email_host_user}>',
+            to=[order.buyer_email],
+            connection=backend
+        )
+
+        email.send()
+        logger.info("송장 안내 이메일 발송 성공 - 주문: %s, 수신: %s", order.order_number, order.buyer_email)
+        return True, None
+    except Exception as exc:
+        logger.error("송장 안내 이메일 발송 실패 - 주문: %s, 오류: %s", order.order_number, exc)
+        return False, '이메일 발송 중 오류가 발생했습니다.'
+
+
 
 def restore_order_from_payment_transaction(payment_transaction, *, operator=None):
     """수동으로 결제 트랜잭션을 주문으로 복구한다."""

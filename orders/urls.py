@@ -23,6 +23,7 @@ urlpatterns = [
     path('<str:store_id>/payment-transactions/<uuid:transaction_id>/restore/', views.payment_transaction_restore, name='payment_transaction_restore'),
     path('orders/<int:order_id>/toggle-delivery-status/', views.toggle_delivery_status, name='toggle_delivery_status'),
     path('orders/<int:order_id>/update-tracking/', views.update_tracking_info, name='update_tracking_info'),
+    path('orders/<int:order_id>/send-tracking-email/', views.send_tracking_email, name='send_tracking_email'),
     
     # 결제 및 구매
     path('shipping/', views.shipping_info, name='shipping_info'),

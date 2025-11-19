@@ -125,18 +125,20 @@
     <main class="flex-1 pt-16">
       <!-- 스토어 메인 컨텐츠 -->
       <div style="{% if store %}{% if store.hero_color1 and store.hero_color2 %}--hero-gradient: linear-gradient(135deg, {{ store.hero_color1 }}, {{ store.hero_color2 }});{% endif %}{% if store.hero_text_color %}--hero-text-color: {{ store.hero_text_color }};{% endif %}{% endif %}">
-        {% if messages %}
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          {% for message in messages %}
-          <div class="bg-{{ message.tags }}-100 dark:bg-{{ message.tags }}-900/30 border border-{{ message.tags }}-400 dark:border-{{ message.tags }}-600 text-{{ message.tags }}-700 dark:text-{{ message.tags }}-300 px-4 py-3 rounded-lg mb-4 relative">
-            <button class="absolute top-0 bottom-0 right-0 px-4 py-3 text-{{ message.tags }}-500 hover:text-{{ message.tags }}-700 dark:hover:text-{{ message.tags }}-300" onclick="this.parentElement.remove()">
-              <i class="fas fa-times"></i>
-            </button>
-            {{ message }}
+        {% block store_messages %}
+          {% if messages %}
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            {% for message in messages %}
+            <div class="bg-{{ message.tags }}-100 dark:bg-{{ message.tags }}-900/30 border border-{{ message.tags }}-400 dark:border-{{ message.tags }}-600 text-{{ message.tags }}-700 dark:text-{{ message.tags }}-300 px-4 py-3 rounded-lg mb-4 relative">
+              <button class="absolute top-0 bottom-0 right-0 px-4 py-3 text-{{ message.tags }}-500 hover:text-{{ message.tags }}-700 dark:hover:text-{{ message.tags }}-300" onclick="this.parentElement.remove()">
+                <i class="fas fa-times"></i>
+              </button>
+              {{ message }}
+            </div>
+            {% endfor %}
           </div>
-          {% endfor %}
-        </div>
-        {% endif %}
+          {% endif %}
+        {% endblock %}
 
         {% block store_content %}
         {% endblock %}
