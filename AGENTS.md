@@ -93,7 +93,7 @@
 - 테스트는 DB 연동 없는 모킹/단위 테스트로 작성하며, View/Service/Model별 최소 1개 이상과 커버리지 70% 이상을 유지한다.
 
 ### Frontend Agent
-- HTMX 기반 상호작용을 기본으로 하고, Bulma 조합을 우선 사용하며 커스텀 CSS/JS는 앱별 `static/js|css`로 최소화한다.
+- HTMX 기반 상호작용을 기본으로 하고, Bulma 기본 클래스를 우선 적용하되 기존 Tailwind 유틸리티와 병행 사용한다(충돌 시 Bulma 기본 → Tailwind 보정 순으로 설계). 커스텀 CSS/JS는 앱별 `static/js|css`로 최소화한다.
 - 온디멘드 카테고리/정렬/검색 컨트롤은 규정된 크기(`font-size: 0.85rem`, `min-height: 3.25rem`, `padding: 0 1rem`)를 지키고, 좌측 필터·우측 검색 2열 레이아웃을 유지한다.
 - 알림은 공통 토스트 컴포넌트 하나로 통일하고, 서버 `messages` 응답도 동일 토스트로 변환한다.
 - 서비스 워커와 manifest를 유지해 PWA 캐시를 관리하고, 이미지·첨부는 R2 업로드 정책(WebP 변환, 용량·개수 제한)을 준수한다.
