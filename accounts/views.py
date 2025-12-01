@@ -646,7 +646,8 @@ def check_lightning_auth_status(request):
             # 인증 성공한 사용자 정보가 있으면 실제 로그인 처리
             try:
                 user = User.objects.get(id=auth_data['user_id'])
-                login(request, user)
+                # LNURL-auth는 authenticate 단계를 거치지 않으므로 명시적으로 백엔드를 지정한다.
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
                 
                 # 세션 장바구니를 DB로 마이그레이션
                 try:
