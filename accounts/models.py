@@ -1,8 +1,6 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
 from django.utils import timezone
-from datetime import timedelta
-import uuid
 
 
 class LightningUser(models.Model):
@@ -63,6 +61,38 @@ class LightningUser(models.Model):
 
 
 from django.contrib.auth.models import User as DjangoUser
+
+
+class TemporaryPassword(models.Model):
+    """어드민에서 설정하는 임시 비밀번호 정보를 저장"""
+
+    user = models.OneToOneField(DjangoUser, on_delete=models.CASCADE, related_name='temporary_password_credential')
+    password = models.CharField(max_length=128, blank=True, default='')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'accounts_temporary_password'
+        verbose_name = '임시 비밀번호'
+        verbose_name_plural = '임시 비밀번호'
+
+    def __str__(self):
+        return f"{self.user.username} 임시 비밀번호"
+
+    def set_password(self, raw_password: str | None):
+        """입력값을 해시로 저장하거나 비워 임시 비밀번호를 제거"""
+        if raw_password:
+            self.password = make_password(raw_password)
+        else:
+            self.password = ''
+
+    def check_password(self, raw_password: str | None) -> bool:
+        """입력값이 임시 비밀번호 해시와 일치하는지 확인"""
+        if not raw_password or not self.password:
+            return False
+        return check_password(raw_password, self.password)
+
+    def clear(self):
+        self.password = ''
 
 
 class UserPurchaseHistory(DjangoUser):

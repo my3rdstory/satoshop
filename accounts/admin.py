@@ -1,6 +1,8 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
 from django.utils.html import format_html
 from django.urls import reverse
 from django.db import models
@@ -8,7 +10,7 @@ from django.db.models import Sum, Count, Q, Max
 from django.utils import timezone
 from django.http import HttpResponse
 import csv
-from .models import LightningUser, UserPurchaseHistory, UserMyPageHistory
+from .models import LightningUser, TemporaryPassword, UserPurchaseHistory, UserMyPageHistory
 from meetup.models import MeetupOrder
 from lecture.models import LiveLectureOrder
 from file.models import FileOrder
@@ -80,12 +82,61 @@ class LightningUserInline(admin.StackedInline):
         return True
 
 
+class TemporaryPasswordInlineForm(forms.ModelForm):
+    raw_password = forms.CharField(
+        label='임시 비밀번호',
+        required=False,
+        widget=forms.PasswordInput(render_value=True),
+        help_text='입력 시 해시로 저장됩니다. 비워두면 기존 임시 비밀번호를 유지합니다.'
+    )
+    clear_password = forms.BooleanField(
+        label='임시 비밀번호 삭제',
+        required=False,
+        help_text='선택하면 임시 비밀번호를 제거합니다.'
+    )
+
+    class Meta:
+        model = TemporaryPassword
+        fields = []
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        raw_password = self.cleaned_data.get('raw_password')
+        clear_password = self.cleaned_data.get('clear_password')
+
+        if clear_password:
+            instance.password = ''
+        elif raw_password:
+            instance.password = make_password(raw_password)
+
+        if commit:
+            instance.save()
+        return instance
+
+
+class TemporaryPasswordInline(admin.StackedInline):
+    model = TemporaryPassword
+    form = TemporaryPasswordInlineForm
+    extra = 1
+    max_num = 1
+    can_delete = False
+    verbose_name = '임시 비밀번호'
+    verbose_name_plural = '임시 비밀번호'
+    fields = ('raw_password', 'clear_password', 'updated_at_display')
+    readonly_fields = ('updated_at_display',)
+
+    def updated_at_display(self, obj):
+        if not obj.pk:
+            return '-'
+        return _format_local(obj.updated_at)
+
+
 # User 어드민 확장
 admin.site.unregister(User)
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    inlines = (LightningUserInline,)
+    inlines = (LightningUserInline, TemporaryPasswordInline)
     list_per_page = 10  # 페이지당 10개씩 표시
     
     # 기존 list_display에 라이트닝 연동 상태 추가

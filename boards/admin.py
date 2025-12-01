@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.db.models import F
 from django.contrib.auth.models import User
+from accounts.admin import CustomUserAdmin
 from .models import Notice, NoticeComment, MemePost, MemeTag, HallOfFame, HallOfFamePermission
 
 
@@ -215,13 +216,11 @@ class HallOfFamePermissionAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-# User 모델에 자동완성 기능 추가를 위한 Admin 설정
-class UserAdmin(admin.ModelAdmin):
-    search_fields = ['username', 'email', 'first_name', 'last_name']
-    
-# User 모델이 이미 등록되어 있다면 먼저 해제
+# User 모델 자동완성/검색 설정 + accounts 확장 인라인 포함
+class UserAdmin(CustomUserAdmin):
+    search_fields = CustomUserAdmin.search_fields
+
+# User 모델이 이미 등록되어 있다면 먼저 해제 후 재등록
 if admin.site.is_registered(User):
     admin.site.unregister(User)
-    
-# User 모델 다시 등록 (자동완성 지원)
 admin.site.register(User, UserAdmin)
