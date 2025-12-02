@@ -10,7 +10,7 @@ from django.db.models import Sum, Count, Q, Max
 from django.utils import timezone
 from django.http import HttpResponse
 import csv
-from .models import LightningUser, TemporaryPassword, UserPurchaseHistory, UserMyPageHistory
+from .models import LightningUser, TemporaryPassword, UserPurchaseHistory, UserMyPageHistory, UserPublicId
 from meetup.models import MeetupOrder
 from lecture.models import LiveLectureOrder
 from file.models import FileOrder
@@ -131,16 +131,27 @@ class TemporaryPasswordInline(admin.StackedInline):
         return _format_local(obj.updated_at)
 
 
+class UserPublicIdInline(admin.StackedInline):
+    model = UserPublicId
+    extra = 0
+    max_num = 1
+    can_delete = False
+    readonly_fields = ('public_id', 'created_at')
+    fields = ('public_id', 'created_at')
+    verbose_name = '공개 ID'
+    verbose_name_plural = '공개 ID'
+
+
 # User 어드민 확장
 admin.site.unregister(User)
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    inlines = (LightningUserInline, TemporaryPasswordInline)
+    inlines = (LightningUserInline, TemporaryPasswordInline, UserPublicIdInline)
     list_per_page = 10  # 페이지당 10개씩 표시
     
     # 기존 list_display에 라이트닝 연동 상태 추가
-    list_display = UserAdmin.list_display + ('lightning_status', 'meetup_participation_count')
+    list_display = UserAdmin.list_display + ('lightning_status', 'public_id_display', 'meetup_participation_count')
     
     def lightning_status(self, obj):
         """라이트닝 연동 상태 표시"""
@@ -175,9 +186,14 @@ class CustomUserAdmin(UserAdmin):
     
     meetup_participation_count.short_description = '밋업 참가'
     
+    def public_id_display(self, obj):
+        profile = getattr(obj, 'public_identity', None)
+        return profile.public_id if profile else '-'
+    public_id_display.short_description = '공개 ID'
+    
     def get_queryset(self, request):
         """쿼리 최적화 - 라이트닝 프로필 정보를 미리 로드하고 밋업 참가 횟수 annotation"""
-        qs = super().get_queryset(request).select_related('lightning_profile')
+        qs = super().get_queryset(request).select_related('lightning_profile', 'public_identity')
         
         # list view일 때만 meetup count annotation 추가
         # changelist view인지 확인하는 더 안전한 방법

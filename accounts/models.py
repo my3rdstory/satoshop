@@ -1,6 +1,38 @@
+import secrets
+import string
+import time
+
 from django.contrib.auth.hashers import check_password, make_password
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
+
+
+PUBLIC_ID_ALPHABET = string.digits + string.ascii_lowercase
+
+
+def _to_base36(number: int) -> str:
+    if number == 0:
+        return '0'
+
+    digits = []
+    while number:
+        number, remainder = divmod(number, 36)
+        digits.append(PUBLIC_ID_ALPHABET[remainder])
+    return ''.join(reversed(digits))
+
+
+def generate_public_id(length: int = 27) -> str:
+    """
+    URL-safe, 시간 축이 섞인 CUID 스타일 공개 ID 생성.
+    내부 PK와 별개로 외부 노출용 식별자에 사용한다.
+    """
+    timestamp = int(time.time() * 1000)
+    ts_part = _to_base36(timestamp)
+    random_length = max(length - len(ts_part) - 1, 8)
+    random_part = ''.join(secrets.choice(PUBLIC_ID_ALPHABET) for _ in range(random_length))
+    return f"c{ts_part}{random_part}"[:length]
 
 
 class LightningUser(models.Model):
@@ -63,6 +95,28 @@ class LightningUser(models.Model):
 from django.contrib.auth.models import User as DjangoUser
 
 
+class UserPublicId(models.Model):
+    """외부 노출용 공개 ID (CUID 스타일)"""
+
+    user = models.OneToOneField(DjangoUser, on_delete=models.CASCADE, related_name='public_identity')
+    public_id = models.CharField(max_length=27, unique=True, default=generate_public_id, help_text="외부 노출용 CUID")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'accounts_user_public_id'
+        verbose_name = '사용자 공개 ID'
+        verbose_name_plural = '사용자 공개 ID'
+
+    def __str__(self):
+        return f"{self.user.username} 공개 ID"
+
+    @classmethod
+    def ensure_for_user(cls, user: DjangoUser):
+        """주어진 사용자에 대한 공개 ID가 없으면 생성 후 반환"""
+        obj, _ = cls.objects.get_or_create(user=user, defaults={'public_id': generate_public_id()})
+        return obj
+
+
 class TemporaryPassword(models.Model):
     """어드민에서 설정하는 임시 비밀번호 정보를 저장"""
 
@@ -93,6 +147,13 @@ class TemporaryPassword(models.Model):
 
     def clear(self):
         self.password = ''
+
+
+@receiver(post_save, sender=DjangoUser)
+def create_public_id_profile(sender, instance, created, **kwargs):
+    """새 사용자 생성 시 공개 ID를 자동 부여"""
+    if created:
+        UserPublicId.objects.get_or_create(user=instance)
 
 
 class UserPurchaseHistory(DjangoUser):
