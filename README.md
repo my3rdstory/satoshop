@@ -429,6 +429,13 @@ ADMIN_PASSWORD=your-secure-admin-password
 BLINK_WEBHOOK_SECRET=whsec_xxxxxxxxxx
 ```
 
+## 사용자 공개 ID 정책
+
+- 내부 PK는 Django 기본 정수 PK를 유지하며, 외부 노출용 식별자는 `accounts_user_public_id.public_id`(CUID 스타일 27자)로 분리했습니다.
+- 신규 사용자 생성 시 `UserPublicId`가 자동 생성되며, 기존 사용자도 마이그레이션으로 채워집니다.
+- 외부 URL·API에서는 공개 ID를 사용하고, 내부 FK/조인은 기존 PK를 그대로 사용하세요.
+- 코드에서 공개 ID를 안전하게 확보하려면 `UserPublicId.ensure_for_user(user).public_id`를 호출하면 됩니다.
+
 ## 🚀 배포
 
 ### 배포 환경 구성
