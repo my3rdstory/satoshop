@@ -435,6 +435,7 @@ BLINK_WEBHOOK_SECRET=whsec_xxxxxxxxxx
 - 신규 사용자 생성 시 `UserPublicId`가 자동 생성되며, 기존 사용자도 마이그레이션으로 채워집니다.
 - 외부 URL·API에서는 공개 ID를 사용하고, 내부 FK/조인은 기존 PK를 그대로 사용하세요.
 - 코드에서 공개 ID를 안전하게 확보하려면 `UserPublicId.ensure_for_user(user).public_id`를 호출하면 됩니다.
+- 외부 시스템과 연결할 때는 공개 ID를 키로 전달하고, 내부 서비스에서 `public_id` → `user_id` 조회(역매핑) 후 기존 로직을 실행하세요. 공개 ID는 노출/로그 기록이 자유롭지만, 인증·권한 검증은 기존 세션/토큰 체계를 그대로 사용해야 합니다.
 
 ## 🚀 배포
 
