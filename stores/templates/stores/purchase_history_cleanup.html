@@ -1,0 +1,181 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}구입 이력 삭제 - SatoShop{% endblock %}
+{% block og_title %}구입 이력 삭제 - SatoShop{% endblock %}
+{% block og_description %}스토어 주인장이 직접 과거 구입 이력을 정리할 수 있습니다.{% endblock %}
+{% block twitter_title %}구입 이력 삭제 - SatoShop{% endblock %}
+{% block twitter_description %}스토어 주인장이 직접 과거 구입 이력을 정리할 수 있습니다.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/purchase_history_cleanup.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/purchase_history_cleanup.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">스토어 개인정보 최소화</p>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">구입 이력 삭제</h1>
+      </div>
+      <a href="{% url 'stores:my_stores' %}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>스토어 관리로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-red-500/10 border border-red-200 dark:border-red-700 flex items-center justify-center text-red-600 dark:text-red-300">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white">개인정보 최소 보관</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              선택한 구입 이력을 영구 삭제합니다. 삭제 후에는 복구할 수 없으니 신중히 진행해주세요.
+            </p>
+          </div>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+          가장 오래된 구입 내역부터 표시됩니다.
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+      <div class="border-b border-gray-100 dark:border-gray-700 px-4 sm:px-6 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div class="flex flex-wrap gap-2">
+          {% for kind_key, kind_label in kind_labels.items %}
+          <a
+            href="?kind={{ kind_key }}&page_size={{ page_size }}"
+            class="px-3 py-2 rounded-lg text-sm font-medium border transition
+              {% if selected_kind == kind_key %}
+                bg-blue-600 text-white border-blue-600 shadow-sm
+              {% else %}
+                bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600
+              {% endif %}">
+            {{ kind_label }}
+          </a>
+          {% endfor %}
+        </div>
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+          <span class="text-xs text-gray-500 dark:text-gray-400">페이지 당</span>
+          {% for option in page_size_options %}
+          <a
+            href="?kind={{ selected_kind }}&page_size={{ option }}"
+            class="px-3 py-1.5 rounded-md border text-xs transition
+              {% if page_size == option %}
+                bg-gray-900 text-white border-gray-900
+              {% else %}
+                bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600
+              {% endif %}">
+            {{ option }}개
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <form method="post" class="p-4 sm:p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="kind" value="{{ selected_kind }}">
+        <input type="hidden" name="page_size" value="{{ page_size }}">
+
+        {% if page_obj.object_list %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/50">
+              <tr>
+                <th class="px-3 py-2 text-left">
+                  <label class="inline-flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-200">
+                    <input type="checkbox" id="select-all" class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                    <span>화면의 내역 전체 선택</span>
+                  </label>
+                </th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200">거래 일시</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200">아이템 이름</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200">구입가격 (sats)</th>
+                <th class="px-3 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-200">구매자 아이디</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-700/60">
+              {% for entry in page_obj.object_list %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                <td class="px-3 py-3">
+                  <input type="checkbox" name="history_ids" value="{{ entry.id }}" class="history-checkbox rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                </td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-sm">
+                  {{ entry.purchased_at|date:"Y년 m월 d일 H시 i분 s초" }}
+                </td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-sm">
+                  {{ entry.item_name }}
+                </td>
+                <td class="px-3 py-3 text-gray-900 dark:text-white text-sm">
+                  {{ entry.price_sats|intcomma }}
+                </td>
+                <td class="px-3 py-3 text-gray-700 dark:text-gray-200 text-sm">
+                  {{ entry.buyer_id }}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="py-10 text-center space-y-2">
+          <div class="mx-auto w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-300">
+            <i class="fas fa-inbox text-lg"></i>
+          </div>
+          <p class="text-sm font-medium text-gray-900 dark:text-white">표시할 {{ selected_kind_label|default:"구입" }} 내역이 없습니다.</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">가장 오래된 내역부터 표시하며, 결제 완료된 건만 보여줍니다.</p>
+        </div>
+        {% endif %}
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-xs text-gray-600 dark:text-gray-300">
+            선택된 내역은 즉시 삭제되며 되돌릴 수 없습니다. 필요 시 최소한만 선택해 주세요.
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              type="submit"
+              id="delete-button"
+              class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 disabled:bg-red-400 disabled:cursor-not-allowed hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800 transition"
+              disabled
+            >
+              <i class="fas fa-trash-alt"></i>
+              구입 이력 삭제
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="border-t border-gray-100 dark:border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between text-sm text-gray-700 dark:text-gray-200">
+        <div>
+          {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ page_obj.paginator.count }}건
+        </div>
+        <div class="flex items-center gap-2">
+          {% if page_obj.has_previous %}
+          <a href="?kind={{ selected_kind }}&page_size={{ page_size }}&page={{ page_obj.previous_page_number }}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">이전</a>
+          {% else %}
+          <span class="px-3 py-1.5 rounded-md border border-gray-100 dark:border-gray-700 text-gray-400">이전</span>
+          {% endif %}
+          <span class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+          <a href="?kind={{ selected_kind }}&page_size={{ page_size }}&page={{ page_obj.next_page_number }}" class="px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">다음</a>
+          {% else %}
+          <span class="px-3 py-1.5 rounded-md border border-gray-100 dark:border-gray-700 text-gray-400">다음</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

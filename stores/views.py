@@ -4,8 +4,10 @@ from django.contrib import messages
 from django.http import JsonResponse, Http404, HttpResponse
 from django.views.decorators.http import require_POST
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import transaction, models
 from django.db.models import Prefetch
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.db.models import Q, Max
 from django.urls import reverse
@@ -46,6 +48,9 @@ from reviews.services import (
     get_paginated_reviews,
     user_has_purchased_product,
 )
+from meetup.models import MeetupOrder
+from lecture.models import LiveLectureOrder
+from file.models import FileOrder
 
 from .cache_utils import get_store_browse_cache, set_store_browse_cache
 
@@ -605,6 +610,226 @@ def my_stores(request):
     store = Store.objects.filter(owner=request.user, deleted_at__isnull=True).select_related('owner').first()
     
     return render(request, 'stores/my_stores.html', {'store': store})
+
+
+def _build_purchase_entries(store, kind):
+    entries = []
+
+    if kind == 'product':
+        orders = (
+            Order.objects.filter(store=store, paid_at__isnull=False)
+            .select_related('user')
+            .prefetch_related('items')
+            .annotate(purchased_at=Coalesce('paid_at', 'created_at'))
+            .order_by('purchased_at', 'id')
+        )
+
+        for order in orders:
+            items = list(order.items.all())
+            if items:
+                first_item = items[0].product_title
+                if len(items) > 1:
+                    first_item = f"{first_item} 외 {len(items) - 1}개"
+            else:
+                first_item = '상품 정보 없음'
+
+            entries.append({
+                'id': f'product:{order.id}',
+                'object_id': order.id,
+                'kind': 'product',
+                'item_name': first_item,
+                'price_sats': order.total_amount,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    elif kind == 'meetup':
+        meetup_orders = (
+            MeetupOrder.objects.filter(
+                meetup__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed']
+            )
+            .select_related('user', 'meetup')
+            .annotate(purchased_at=Coalesce('paid_at', 'created_at'))
+            .order_by('purchased_at', 'id')
+        )
+
+        for order in meetup_orders:
+            entries.append({
+                'id': f'meetup:{order.id}',
+                'object_id': order.id,
+                'kind': 'meetup',
+                'item_name': order.meetup.name,
+                'price_sats': order.total_price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    elif kind == 'live':
+        live_orders = (
+            LiveLectureOrder.objects.filter(
+                live_lecture__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed']
+            )
+            .select_related('user', 'live_lecture')
+            .annotate(purchased_at=Coalesce('paid_at', 'created_at'))
+            .order_by('purchased_at', 'id')
+        )
+
+        for order in live_orders:
+            entries.append({
+                'id': f'live:{order.id}',
+                'object_id': order.id,
+                'kind': 'live',
+                'item_name': order.live_lecture.name,
+                'price_sats': order.price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    elif kind == 'file':
+        file_orders = (
+            FileOrder.objects.filter(
+                digital_file__store=store,
+                paid_at__isnull=False,
+                status='confirmed'
+            )
+            .select_related('user', 'digital_file')
+            .annotate(purchased_at=Coalesce('paid_at', 'created_at'))
+            .order_by('purchased_at', 'id')
+        )
+
+        for order in file_orders:
+            entries.append({
+                'id': f'file:{order.id}',
+                'object_id': order.id,
+                'kind': 'file',
+                'item_name': order.digital_file.name,
+                'price_sats': order.price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    return entries
+
+
+def _delete_purchase_records(store, parsed_ids):
+    deleted_count = 0
+
+    with transaction.atomic():
+        if parsed_ids.get('product'):
+            product_orders = Order.objects.filter(
+                store=store,
+                paid_at__isnull=False,
+                id__in=parsed_ids['product']
+            )
+            deleted_count += product_orders.count()
+            product_orders.delete()
+
+        if parsed_ids.get('meetup'):
+            meetup_orders = MeetupOrder.objects.filter(
+                meetup__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+                id__in=parsed_ids['meetup']
+            )
+            deleted_count += meetup_orders.count()
+            meetup_orders.delete()
+
+        if parsed_ids.get('live'):
+            live_orders = LiveLectureOrder.objects.filter(
+                live_lecture__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+                id__in=parsed_ids['live']
+            )
+            deleted_count += live_orders.count()
+            live_orders.delete()
+
+        if parsed_ids.get('file'):
+            file_orders = FileOrder.objects.filter(
+                digital_file__store=store,
+                paid_at__isnull=False,
+                status='confirmed',
+                id__in=parsed_ids['file']
+            )
+            deleted_count += file_orders.count()
+            file_orders.delete()
+
+    return deleted_count
+
+
+@login_required
+def purchase_history_cleanup(request, store_id):
+    """스토어 구입 내역 삭제"""
+    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+    allowed_kinds = ['product', 'meetup', 'live', 'file']
+    kind = request.POST.get('kind') or request.GET.get('kind') or 'product'
+    if kind not in allowed_kinds:
+        kind = 'product'
+
+    page_size_options = [10, 50, 100]
+    try:
+        page_size = int(request.POST.get('page_size') or request.GET.get('page_size') or 10)
+    except (TypeError, ValueError):
+        page_size = 10
+
+    if page_size not in page_size_options:
+        page_size = 10
+
+    if request.method == 'POST':
+        raw_ids = request.POST.getlist('history_ids')
+        parsed_ids = {'product': [], 'meetup': [], 'live': [], 'file': []}
+
+        for raw_id in raw_ids:
+            if ':' not in raw_id:
+                continue
+            prefix, pk = raw_id.split(':', 1)
+            if prefix in parsed_ids:
+                try:
+                    parsed_ids[prefix].append(int(pk))
+                except ValueError:
+                    continue
+
+        deleted_count = _delete_purchase_records(store, parsed_ids)
+
+        if deleted_count > 0:
+            messages.success(request, f'{deleted_count}건의 구입 이력을 영구 삭제했습니다.')
+        else:
+            messages.info(request, '삭제할 구입 이력을 선택해주세요.')
+
+        redirect_url = (
+            f"{reverse('stores:purchase_history_cleanup', kwargs={'store_id': store.store_id})}"
+            f"?kind={kind}&page_size={page_size}"
+        )
+        return redirect(redirect_url)
+
+    entries = _build_purchase_entries(store, kind)
+    paginator = Paginator(entries, page_size)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    kind_labels = {
+        'product': '상품',
+        'meetup': '밋업',
+        'live': '라이브 강의',
+        'file': '디지털 파일',
+    }
+
+    context = {
+        'store': store,
+        'page_obj': page_obj,
+        'selected_kind': kind,
+        'kind_labels': kind_labels,
+        'page_size_options': page_size_options,
+        'page_size': page_size,
+        'selected_kind_label': kind_labels.get(kind, ''),
+    }
+
+    return render(request, 'stores/purchase_history_cleanup.html', context)
 
 @login_required
 def edit_store(request, store_id):
