@@ -855,6 +855,7 @@ class StorePurchaseCleanupForm(forms.Form):
         required=False,
         label='이 날짜/시간 이전 결제분',
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%dT%H:%M:%S'],
         help_text='지정 시 해당 시점(포함) 이전에 결제 완료된 건만 조회/삭제합니다. 비워두면 모든 결제 완료분을 대상으로 합니다.',
     )
 
