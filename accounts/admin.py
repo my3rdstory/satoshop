@@ -895,6 +895,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         before = None
         selected_kind_label = KIND_LABELS['all']
         store_label = '전체'
+        filter_applied = False
 
         if filter_form.is_valid():
             selected_store = filter_form.cleaned_data['store']
@@ -902,6 +903,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
             before = filter_form.cleaned_data.get('before')
             selected_kind_label = KIND_LABELS.get(selected_kind, KIND_LABELS['all'])
             store_label = selected_store.store_name if selected_store else '전체'
+            filter_applied = True
             entries, total_count = _build_store_purchase_entries(
                 selected_store,
                 selected_kind,
@@ -943,6 +945,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
             'store_label': store_label,
             'before': before,
             'display_limit': STORE_PURCHASE_DISPLAY_LIMIT,
+            'filter_applied': filter_applied,
         })
 
         return super().changelist_view(request, extra_context=extra_context)

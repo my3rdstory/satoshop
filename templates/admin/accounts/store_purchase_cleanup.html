@@ -1,10 +1,9 @@
 {% extends "admin/base_site.html" %}
 {% load static humanize %}
 
-{% block content_title %}{% endblock %}
+{% block content_title %}스토어 구입 이력 삭제{% endblock %}
 {% block content %}
 <div class="module">
-  <h1>스토어 구입 이력 삭제</h1>
   <p class="help">스토어별로 상품·밋업·라이브 강의·디지털 파일 구입 이력을 한 번에 조회하고 선택 삭제할 수 있습니다. 삭제 시 복구할 수 없습니다.</p>
 
   <form method="get" class="mb-3">
@@ -25,13 +24,14 @@
       {% if filter_form.before.help_text %}
       <p class="help">{{ filter_form.before.help_text }}</p>
       {% endif %}
+      <p class="help">결제 완료 시각(`paid_at`)을 우선 사용하며, 결제 완료 시각이 비어 있으면 생성 시각(`created_at`)을 기준으로 합니다. 조회와 삭제 모두 동일한 기준을 따릅니다.</p>
     </div>
     <div class="submit-row">
       <input type="submit" class="button default" value="필터 적용">
     </div>
   </form>
 
-  {% if selected_store %}
+  {% if filter_applied %}
     <div class="module" style="margin-top: 12px;">
       <h2>
         {{ store_label }} / {{ selected_kind_label }} / {{ total_count }}건
@@ -61,6 +61,7 @@
                       <input type="checkbox" id="select-all"> 전체
                     </label>
                   </th>
+                  <th>스토어</th>
                   <th>유형</th>
                   <th>거래 일시</th>
                   <th>아이템</th>
@@ -74,6 +75,7 @@
                   <td>
                     <input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="entry-checkbox">
                   </td>
+                  <td>{{ entry.store_name }}</td>
                   <td>{{ entry.kind_label }}</td>
                   <td>{{ entry.purchased_at|date:"Y-m-d H:i:s" }}</td>
                   <td>{{ entry.item_name }}</td>
@@ -94,7 +96,7 @@
       {% endif %}
     </div>
   {% else %}
-    <p class="help">스토어를 선택하고 필터를 적용하면 구입 이력 목록이 표시됩니다.</p>
+    <p class="help">스토어(또는 전체)와 아이템 종류를 선택해 필터를 적용하면 구입 이력 목록이 표시됩니다.</p>
   {% endif %}
 </div>
 
