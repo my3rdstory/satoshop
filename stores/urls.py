@@ -18,6 +18,7 @@ urlpatterns = [
     # 스토어 관리
     path('my-stores/', views.my_stores, name='my_stores'),
     path('edit/<str:store_id>/', views.edit_store, name='edit_store'),
+    path('edit/<str:store_id>/purchase-history/', views.purchase_history_cleanup, name='purchase_history_cleanup'),
     
     # 분리된 편집 기능들
     path('edit/<str:store_id>/basic-info/', views.edit_basic_info, name='edit_basic_info'),
