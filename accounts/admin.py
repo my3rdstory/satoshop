@@ -52,7 +52,7 @@ def _normalize_before(before_value):
 
 
 def _build_store_purchase_entries(store, item_type='all', before=None):
-    """스토어 기준 구입 내역을 유형별로 통합 조회"""
+    """스토어 기준(또는 전체) 구입 내역을 유형별로 통합 조회"""
     before = _normalize_before(before)
     entries = []
 
@@ -64,10 +64,12 @@ def _build_store_purchase_entries(store, item_type='all', before=None):
 
     def append_product_orders():
         qs = (
-            Order.objects.filter(store=store, paid_at__isnull=False)
+            Order.objects.filter(paid_at__isnull=False)
             .select_related('user')
             .prefetch_related('items')
         )
+        if store:
+            qs = qs.filter(store=store)
         qs = apply_time_filter(qs, 'paid_at')
         for order in qs:
             items = list(order.items.all())
@@ -81,7 +83,8 @@ def _build_store_purchase_entries(store, item_type='all', before=None):
                 'id': f'product:{order.id}',
                 'kind': 'product',
                 'kind_label': KIND_LABELS['product'],
-                'store': store,
+                'store': order.store,
+                'store_name': order.store.store_name,
                 'item_name': item_name,
                 'price_sats': order.total_amount,
                 'buyer_id': order.user.username if order.user else '비회원',
@@ -103,7 +106,8 @@ def _build_store_purchase_entries(store, item_type='all', before=None):
                 'id': f'meetup:{order.id}',
                 'kind': 'meetup',
                 'kind_label': KIND_LABELS['meetup'],
-                'store': store,
+                'store': order.meetup.store,
+                'store_name': order.meetup.store.store_name,
                 'item_name': order.meetup.name,
                 'price_sats': order.total_price,
                 'buyer_id': order.user.username if order.user else '비회원',
@@ -125,7 +129,8 @@ def _build_store_purchase_entries(store, item_type='all', before=None):
                 'id': f'live:{order.id}',
                 'kind': 'live',
                 'kind_label': KIND_LABELS['live'],
-                'store': store,
+                'store': order.live_lecture.store,
+                'store_name': order.live_lecture.store.store_name,
                 'item_name': order.live_lecture.name,
                 'price_sats': order.price,
                 'buyer_id': order.user.username if order.user else '비회원',
@@ -147,7 +152,8 @@ def _build_store_purchase_entries(store, item_type='all', before=None):
                 'id': f'file:{order.id}',
                 'kind': 'file',
                 'kind_label': KIND_LABELS['file'],
-                'store': store,
+                'store': order.digital_file.store,
+                'store_name': order.digital_file.store.store_name,
                 'item_name': order.digital_file.name,
                 'price_sats': order.price,
                 'buyer_id': order.user.username if order.user else '비회원',
@@ -195,43 +201,47 @@ def _delete_store_purchase_records(store, parsed_ids, before=None):
     with transaction.atomic():
         if parsed_ids.get('product'):
             qs = Order.objects.filter(
-                store=store,
                 paid_at__isnull=False,
                 id__in=parsed_ids['product'],
             )
+            if store:
+                qs = qs.filter(store=store)
             qs = apply_time_constraint(qs, 'paid_at')
             deleted['product'] = qs.count()
             qs.delete()
 
         if parsed_ids.get('meetup'):
             qs = MeetupOrder.objects.filter(
-                meetup__store=store,
                 paid_at__isnull=False,
                 status__in=['confirmed', 'completed'],
                 id__in=parsed_ids['meetup'],
             )
+            if store:
+                qs = qs.filter(meetup__store=store)
             qs = apply_time_constraint(qs, 'paid_at')
             deleted['meetup'] = qs.count()
             qs.delete()
 
         if parsed_ids.get('live'):
             qs = LiveLectureOrder.objects.filter(
-                live_lecture__store=store,
                 paid_at__isnull=False,
                 status__in=['confirmed', 'completed'],
                 id__in=parsed_ids['live'],
             )
+            if store:
+                qs = qs.filter(live_lecture__store=store)
             qs = apply_time_constraint(qs, 'paid_at')
             deleted['live'] = qs.count()
             qs.delete()
 
         if parsed_ids.get('file'):
             qs = FileOrder.objects.filter(
-                digital_file__store=store,
                 paid_at__isnull=False,
                 status='confirmed',
                 id__in=parsed_ids['file'],
             )
+            if store:
+                qs = qs.filter(digital_file__store=store)
             qs = apply_time_constraint(qs, 'paid_at')
             deleted['file'] = qs.count()
             qs.delete()
@@ -832,7 +842,8 @@ class StorePurchaseCleanupForm(forms.Form):
     store = forms.ModelChoiceField(
         queryset=Store.objects.filter(deleted_at__isnull=True).order_by('store_name'),
         label='스토어',
-        required=True,
+        required=False,
+        empty_label='전체',
     )
     item_type = forms.ChoiceField(
         choices=ITEM_CHOICES,
@@ -844,7 +855,7 @@ class StorePurchaseCleanupForm(forms.Form):
         required=False,
         label='이 날짜/시간 이전 결제분',
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
-        help_text='지정하지 않으면 모든 결제 완료분을 조회합니다.',
+        help_text='지정 시 해당 시점(포함) 이전에 결제 완료된 건만 조회/삭제합니다. 비워두면 모든 결제 완료분을 대상으로 합니다.',
     )
 
 
@@ -883,12 +894,14 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         selected_kind = 'all'
         before = None
         selected_kind_label = KIND_LABELS['all']
+        store_label = '전체'
 
         if filter_form.is_valid():
             selected_store = filter_form.cleaned_data['store']
             selected_kind = filter_form.cleaned_data.get('item_type') or 'all'
             before = filter_form.cleaned_data.get('before')
             selected_kind_label = KIND_LABELS.get(selected_kind, KIND_LABELS['all'])
+            store_label = selected_store.store_name if selected_store else '전체'
             entries, total_count = _build_store_purchase_entries(
                 selected_store,
                 selected_kind,
@@ -927,6 +940,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
             'selected_store': selected_store,
             'selected_kind': selected_kind,
             'selected_kind_label': selected_kind_label,
+            'store_label': store_label,
             'before': before,
             'display_limit': STORE_PURCHASE_DISPLAY_LIMIT,
         })

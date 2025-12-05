@@ -1,6 +1,7 @@
 {% extends "admin/base_site.html" %}
 {% load static humanize %}
 
+{% block content_title %}{% endblock %}
 {% block content %}
 <div class="module">
   <h1>스토어 구입 이력 삭제</h1>
@@ -33,7 +34,7 @@
   {% if selected_store %}
     <div class="module" style="margin-top: 12px;">
       <h2>
-        {{ selected_store.store_name }} / {{ selected_kind_label }} / {{ total_count }}건
+        {{ store_label }} / {{ selected_kind_label }} / {{ total_count }}건
       </h2>
       <p class="help">
         가장 오래된 순으로 정렬됩니다. 최대 {{ display_limit }}건까지 미리보기로 표시하며, 필터링된 내역만 삭제됩니다.
@@ -44,7 +45,9 @@
       {% if entries %}
         <form method="post">
           {% csrf_token %}
+          {% if selected_store %}
           <input type="hidden" name="store" value="{{ selected_store.id }}">
+          {% endif %}
           <input type="hidden" name="item_type" value="{{ selected_kind }}">
           {% if before %}
           <input type="hidden" name="before" value="{{ before|date:'Y-m-d\\TH:i' }}">
