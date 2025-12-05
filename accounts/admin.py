@@ -1,20 +1,30 @@
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password
 from django.utils.html import format_html
 from django.urls import reverse
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum, Count, Q, Max
+from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 import csv
-from .models import LightningUser, TemporaryPassword, UserPurchaseHistory, UserMyPageHistory, UserPublicId
+from .models import (
+    LightningUser,
+    TemporaryPassword,
+    UserPurchaseHistory,
+    UserMyPageHistory,
+    UserPublicId,
+    StorePurchaseCleanupProxy,
+)
 from meetup.models import MeetupOrder
 from lecture.models import LiveLectureOrder
 from file.models import FileOrder
-from orders.models import PurchaseHistory
+from orders.models import Order, PurchaseHistory
+from stores.models import Store
 
 
 def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
@@ -23,6 +33,210 @@ def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
     if timezone.is_naive(dt):
         dt = timezone.make_aware(dt, timezone.get_current_timezone())
     return timezone.localtime(dt).strftime(fmt)
+
+
+STORE_PURCHASE_DISPLAY_LIMIT = 300
+KIND_LABELS = {
+    'product': '상품',
+    'meetup': '밋업',
+    'live': '라이브 강의',
+    'file': '디지털 파일',
+    'all': '전체',
+}
+
+
+def _normalize_before(before_value):
+    if before_value and timezone.is_naive(before_value):
+        return timezone.make_aware(before_value, timezone.get_current_timezone())
+    return before_value
+
+
+def _build_store_purchase_entries(store, item_type='all', before=None):
+    """스토어 기준 구입 내역을 유형별로 통합 조회"""
+    before = _normalize_before(before)
+    entries = []
+
+    def apply_time_filter(qs, paid_field='paid_at'):
+        qs = qs.annotate(purchased_at=Coalesce(models.F(paid_field), models.F('created_at')))
+        if before:
+            qs = qs.filter(purchased_at__lte=before)
+        return qs.order_by('purchased_at', 'id')
+
+    def append_product_orders():
+        qs = (
+            Order.objects.filter(store=store, paid_at__isnull=False)
+            .select_related('user')
+            .prefetch_related('items')
+        )
+        qs = apply_time_filter(qs, 'paid_at')
+        for order in qs:
+            items = list(order.items.all())
+            item_name = '상품 정보 없음'
+            if items:
+                item_name = items[0].product_title
+                if len(items) > 1:
+                    item_name = f"{item_name} 외 {len(items) - 1}개"
+
+            entries.append({
+                'id': f'product:{order.id}',
+                'kind': 'product',
+                'kind_label': KIND_LABELS['product'],
+                'store': store,
+                'item_name': item_name,
+                'price_sats': order.total_amount,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    def append_meetup_orders():
+        qs = (
+            MeetupOrder.objects.filter(
+                meetup__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+            )
+            .select_related('user', 'meetup')
+        )
+        qs = apply_time_filter(qs, 'paid_at')
+        for order in qs:
+            entries.append({
+                'id': f'meetup:{order.id}',
+                'kind': 'meetup',
+                'kind_label': KIND_LABELS['meetup'],
+                'store': store,
+                'item_name': order.meetup.name,
+                'price_sats': order.total_price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    def append_live_orders():
+        qs = (
+            LiveLectureOrder.objects.filter(
+                live_lecture__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+            )
+            .select_related('user', 'live_lecture')
+        )
+        qs = apply_time_filter(qs, 'paid_at')
+        for order in qs:
+            entries.append({
+                'id': f'live:{order.id}',
+                'kind': 'live',
+                'kind_label': KIND_LABELS['live'],
+                'store': store,
+                'item_name': order.live_lecture.name,
+                'price_sats': order.price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    def append_file_orders():
+        qs = (
+            FileOrder.objects.filter(
+                digital_file__store=store,
+                paid_at__isnull=False,
+                status='confirmed',
+            )
+            .select_related('user', 'digital_file')
+        )
+        qs = apply_time_filter(qs, 'paid_at')
+        for order in qs:
+            entries.append({
+                'id': f'file:{order.id}',
+                'kind': 'file',
+                'kind_label': KIND_LABELS['file'],
+                'store': store,
+                'item_name': order.digital_file.name,
+                'price_sats': order.price,
+                'buyer_id': order.user.username if order.user else '비회원',
+                'purchased_at': order.purchased_at,
+            })
+
+    if item_type in ('all', 'product'):
+        append_product_orders()
+    if item_type in ('all', 'meetup'):
+        append_meetup_orders()
+    if item_type in ('all', 'live'):
+        append_live_orders()
+    if item_type in ('all', 'file'):
+        append_file_orders()
+
+    entries.sort(key=lambda entry: entry['purchased_at'] or timezone.now())
+    total_count = len(entries)
+    return entries[:STORE_PURCHASE_DISPLAY_LIMIT], total_count
+
+
+def _parse_raw_ids(raw_ids):
+    parsed = {'product': [], 'meetup': [], 'live': [], 'file': []}
+    for raw in raw_ids:
+        if ':' not in raw:
+            continue
+        prefix, pk = raw.split(':', 1)
+        if prefix in parsed:
+            try:
+                parsed[prefix].append(int(pk))
+            except ValueError:
+                continue
+    return parsed
+
+
+def _delete_store_purchase_records(store, parsed_ids, before=None):
+    before = _normalize_before(before)
+    deleted = {'product': 0, 'meetup': 0, 'live': 0, 'file': 0}
+
+    def apply_time_constraint(qs, paid_field='paid_at'):
+        qs = qs.annotate(purchased_at=Coalesce(models.F(paid_field), models.F('created_at')))
+        if before:
+            qs = qs.filter(purchased_at__lte=before)
+        return qs
+
+    with transaction.atomic():
+        if parsed_ids.get('product'):
+            qs = Order.objects.filter(
+                store=store,
+                paid_at__isnull=False,
+                id__in=parsed_ids['product'],
+            )
+            qs = apply_time_constraint(qs, 'paid_at')
+            deleted['product'] = qs.count()
+            qs.delete()
+
+        if parsed_ids.get('meetup'):
+            qs = MeetupOrder.objects.filter(
+                meetup__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+                id__in=parsed_ids['meetup'],
+            )
+            qs = apply_time_constraint(qs, 'paid_at')
+            deleted['meetup'] = qs.count()
+            qs.delete()
+
+        if parsed_ids.get('live'):
+            qs = LiveLectureOrder.objects.filter(
+                live_lecture__store=store,
+                paid_at__isnull=False,
+                status__in=['confirmed', 'completed'],
+                id__in=parsed_ids['live'],
+            )
+            qs = apply_time_constraint(qs, 'paid_at')
+            deleted['live'] = qs.count()
+            qs.delete()
+
+        if parsed_ids.get('file'):
+            qs = FileOrder.objects.filter(
+                digital_file__store=store,
+                paid_at__isnull=False,
+                status='confirmed',
+                id__in=parsed_ids['file'],
+            )
+            qs = apply_time_constraint(qs, 'paid_at')
+            deleted['file'] = qs.count()
+            qs.delete()
+
+    return deleted
 
 
 @admin.register(LightningUser)
@@ -604,6 +818,120 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
 
     def has_module_permission(self, request):
         return request.user.has_module_perms('accounts')
+
+
+class StorePurchaseCleanupForm(forms.Form):
+    ITEM_CHOICES = [
+        ('all', '전체'),
+        ('product', '상품'),
+        ('meetup', '밋업'),
+        ('live', '라이브 강의'),
+        ('file', '디지털 파일'),
+    ]
+
+    store = forms.ModelChoiceField(
+        queryset=Store.objects.filter(deleted_at__isnull=True).order_by('store_name'),
+        label='스토어',
+        required=True,
+    )
+    item_type = forms.ChoiceField(
+        choices=ITEM_CHOICES,
+        required=False,
+        initial='all',
+        label='아이템 종류',
+    )
+    before = forms.DateTimeField(
+        required=False,
+        label='이 날짜/시간 이전 결제분',
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        help_text='지정하지 않으면 모든 결제 완료분을 조회합니다.',
+    )
+
+
+@admin.register(StorePurchaseCleanupProxy)
+class StorePurchaseCleanupAdmin(admin.ModelAdmin):
+    """스토어별 구입 이력 일괄 삭제"""
+
+    change_list_template = 'admin/accounts/store_purchase_cleanup.html'
+    list_display = []
+    actions = None
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_module_perms('accounts')
+
+    def get_queryset(self, request):
+        return Store.objects.none()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        is_post = request.method == 'POST'
+        form_data = request.POST if is_post else request.GET
+        filter_form = StorePurchaseCleanupForm(form_data or None)
+
+        entries = []
+        total_count = 0
+        selected_store = None
+        selected_kind = 'all'
+        before = None
+        selected_kind_label = KIND_LABELS['all']
+
+        if filter_form.is_valid():
+            selected_store = filter_form.cleaned_data['store']
+            selected_kind = filter_form.cleaned_data.get('item_type') or 'all'
+            before = filter_form.cleaned_data.get('before')
+            selected_kind_label = KIND_LABELS.get(selected_kind, KIND_LABELS['all'])
+            entries, total_count = _build_store_purchase_entries(
+                selected_store,
+                selected_kind,
+                before,
+            )
+
+            if is_post:
+                raw_ids = request.POST.getlist('selected_ids')
+                parsed_ids = _parse_raw_ids(raw_ids)
+
+                if not any(parsed_ids.values()):
+                    messages.warning(request, '삭제할 구입 내역을 선택해주세요.')
+                else:
+                    deleted = _delete_store_purchase_records(selected_store, parsed_ids, before)
+                    deleted_count = sum(deleted.values())
+                    messages.success(
+                        request,
+                        f"{deleted_count}건 삭제 (상품 {deleted['product']}건 / 밋업 {deleted['meetup']}건 / 라이브 강의 {deleted['live']}건 / 디지털 파일 {deleted['file']}건)",
+                    )
+
+                    params = request.GET.copy()
+                    params['store'] = selected_store.id
+                    params['item_type'] = selected_kind
+                    if before:
+                        params['before'] = _normalize_before(before).strftime('%Y-%m-%dT%H:%M')
+                    redirect_url = reverse('admin:accounts_storepurchasecleanupproxy_changelist')
+                    if params:
+                        redirect_url = f"{redirect_url}?{params.urlencode()}"
+                    return HttpResponseRedirect(redirect_url)
+
+        extra_context.update({
+            'title': '스토어 구입 이력 삭제',
+            'filter_form': filter_form,
+            'entries': entries,
+            'total_count': total_count,
+            'selected_store': selected_store,
+            'selected_kind': selected_kind,
+            'selected_kind_label': selected_kind_label,
+            'before': before,
+            'display_limit': STORE_PURCHASE_DISPLAY_LIMIT,
+        })
+
+        return super().changelist_view(request, extra_context=extra_context)
 
 
 @admin.register(UserMyPageHistory)

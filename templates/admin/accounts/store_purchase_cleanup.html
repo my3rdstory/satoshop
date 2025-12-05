@@ -1,0 +1,131 @@
+{% extends "admin/base_site.html" %}
+{% load static humanize %}
+
+{% block content %}
+<div class="module">
+  <h1>스토어 구입 이력 삭제</h1>
+  <p class="help">스토어별로 상품·밋업·라이브 강의·디지털 파일 구입 이력을 한 번에 조회하고 선택 삭제할 수 있습니다. 삭제 시 복구할 수 없습니다.</p>
+
+  <form method="get" class="mb-3">
+    <div class="form-row">
+      <label for="{{ filter_form.store.id_for_label }}">스토어</label>
+      {{ filter_form.store }}
+      {% if filter_form.store.errors %}
+      <div class="errors">{{ filter_form.store.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="form-row">
+      <label for="{{ filter_form.item_type.id_for_label }}">아이템 종류</label>
+      {{ filter_form.item_type }}
+    </div>
+    <div class="form-row">
+      <label for="{{ filter_form.before.id_for_label }}">결제 일시 기준</label>
+      {{ filter_form.before }}
+      {% if filter_form.before.help_text %}
+      <p class="help">{{ filter_form.before.help_text }}</p>
+      {% endif %}
+    </div>
+    <div class="submit-row">
+      <input type="submit" class="button default" value="필터 적용">
+    </div>
+  </form>
+
+  {% if selected_store %}
+    <div class="module" style="margin-top: 12px;">
+      <h2>
+        {{ selected_store.store_name }} / {{ selected_kind_label }} / {{ total_count }}건
+      </h2>
+      <p class="help">
+        가장 오래된 순으로 정렬됩니다. 최대 {{ display_limit }}건까지 미리보기로 표시하며, 필터링된 내역만 삭제됩니다.
+      </p>
+      {% if total_count > display_limit %}
+      <p class="help">조회 결과가 {{ display_limit }}건을 초과해 상위 {{ display_limit }}건만 표시합니다. 필요하면 기간/유형을 더 좁혀주세요.</p>
+      {% endif %}
+      {% if entries %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="store" value="{{ selected_store.id }}">
+          <input type="hidden" name="item_type" value="{{ selected_kind }}">
+          {% if before %}
+          <input type="hidden" name="before" value="{{ before|date:'Y-m-d\\TH:i' }}">
+          {% endif %}
+          <div style="overflow-x: auto;">
+            <table class="listing">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">
+                    <label>
+                      <input type="checkbox" id="select-all"> 전체
+                    </label>
+                  </th>
+                  <th>유형</th>
+                  <th>거래 일시</th>
+                  <th>아이템</th>
+                  <th>구입가격(sats)</th>
+                  <th>구매자 아이디</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for entry in entries %}
+                <tr>
+                  <td>
+                    <input type="checkbox" name="selected_ids" value="{{ entry.id }}" class="entry-checkbox">
+                  </td>
+                  <td>{{ entry.kind_label }}</td>
+                  <td>{{ entry.purchased_at|date:"Y-m-d H:i:s" }}</td>
+                  <td>{{ entry.item_name }}</td>
+                  <td>{{ entry.price_sats|intcomma }}</td>
+                  <td>{{ entry.buyer_id }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="submit-row">
+            <p class="deletelink">선택 삭제 시 데이터가 영구 삭제됩니다. 신중히 진행해주세요.</p>
+            <input type="submit" class="button default deletelink" id="delete-button" value="선택 구입 이력 삭제" disabled>
+          </div>
+        </form>
+      {% else %}
+        <p>표시할 구입 이력이 없습니다.</p>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="help">스토어를 선택하고 필터를 적용하면 구입 이력 목록이 표시됩니다.</p>
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  const selectAll = document.getElementById('select-all');
+  const checkboxes = Array.from(document.querySelectorAll('.entry-checkbox'));
+  const deleteButton = document.getElementById('delete-button');
+
+  function updateButtonState() {
+    const checked = checkboxes.filter((box) => box.checked).length;
+    if (deleteButton) {
+      deleteButton.disabled = checked === 0;
+    }
+    if (selectAll) {
+      selectAll.checked = checked > 0 && checked === checkboxes.length;
+      selectAll.indeterminate = checked > 0 && checked < checkboxes.length;
+    }
+  }
+
+  if (selectAll) {
+    selectAll.addEventListener('change', function() {
+      checkboxes.forEach((box) => {
+        box.checked = selectAll.checked;
+      });
+      updateButtonState();
+    });
+  }
+
+  checkboxes.forEach((box) => {
+    box.addEventListener('change', updateButtonState);
+  });
+
+  updateButtonState();
+})();
+</script>
+{% endblock %}
