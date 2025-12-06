@@ -890,16 +890,11 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         is_post = request.method == 'POST'
         form_data = request.POST if is_post else request.GET
-        apply_filter = (
-            form_data.get('apply_filter') == '1'
-            or bool(request.GET)
-        )
-        filter_form = StorePurchaseCleanupForm(form_data if (is_post or apply_filter) else None)
+        filter_form = StorePurchaseCleanupForm(request.GET or None)
         logger.debug(
-            "[STORE_PURCHASE_CLEANUP] incoming form_data=%s is_post=%s apply_filter=%s",
+            "[STORE_PURCHASE_CLEANUP] incoming form_data=%s is_post=%s",
             dict(form_data),
             is_post,
-            apply_filter,
         )
 
         entries = []
@@ -911,7 +906,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         store_label = '전체'
         filter_applied = False
 
-        if filter_form.is_valid() and (is_post or apply_filter):
+        if filter_form.is_valid():
             selected_store = filter_form.cleaned_data['store']
             selected_kind = filter_form.cleaned_data.get('item_type') or 'all'
             before = filter_form.cleaned_data.get('before')
@@ -952,10 +947,15 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
                     )
 
                     params = request.GET.copy()
-                    params['store'] = selected_store.id
+                    if selected_store:
+                        params['store'] = selected_store.id
+                    else:
+                        params.pop('store', None)
                     params['item_type'] = selected_kind
                     if before:
                         params['before'] = _normalize_before(before).strftime('%Y-%m-%dT%H:%M')
+                    else:
+                        params.pop('before', None)
                     redirect_url = reverse('admin:accounts_storepurchasecleanupproxy_changelist')
                     if params:
                         redirect_url = f"{redirect_url}?{params.urlencode()}"
