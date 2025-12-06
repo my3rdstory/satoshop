@@ -969,9 +969,8 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
                 )
             else:
                 logger.debug(
-                    "[STORE_PURCHASE_CLEANUP] filter not applied (is_post=%s apply_filter=%s valid=%s)",
+                    "[STORE_PURCHASE_CLEANUP] filter not applied (is_post=%s valid=%s)",
                     is_post,
-                    apply_filter,
                     filter_form.is_valid(),
                 )
 
