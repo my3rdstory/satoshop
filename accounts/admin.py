@@ -12,6 +12,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.http import HttpResponse, HttpResponseRedirect
 import csv
+import logging
 from .models import (
     LightningUser,
     TemporaryPassword,
@@ -43,6 +44,8 @@ KIND_LABELS = {
     'file': '디지털 파일',
     'all': '전체',
 }
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_before(before_value):
@@ -889,6 +892,12 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         form_data = request.POST if is_post else request.GET
         apply_filter = form_data.get('apply_filter') == '1'
         filter_form = StorePurchaseCleanupForm(form_data if (is_post or apply_filter) else None)
+        logger.debug(
+            "[STORE_PURCHASE_CLEANUP] incoming form_data=%s is_post=%s apply_filter=%s",
+            dict(form_data),
+            is_post,
+            apply_filter,
+        )
 
         entries = []
         total_count = 0
@@ -911,6 +920,13 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
                 selected_kind,
                 before,
             )
+            logger.info(
+                "[STORE_PURCHASE_CLEANUP] filter applied store=%s kind=%s before=%s total_count=%s",
+                store_label,
+                selected_kind,
+                before,
+                total_count,
+            )
 
             if is_post:
                 raw_ids = request.POST.getlist('selected_ids')
@@ -918,12 +934,18 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
 
                 if not any(parsed_ids.values()):
                     messages.warning(request, '삭제할 구입 내역을 선택해주세요.')
+                    logger.warning("[STORE_PURCHASE_CLEANUP] delete skipped: no ids selected")
                 else:
                     deleted = _delete_store_purchase_records(selected_store, parsed_ids, before)
                     deleted_count = sum(deleted.values())
                     messages.success(
                         request,
                         f"{deleted_count}건 삭제 (상품 {deleted['product']}건 / 밋업 {deleted['meetup']}건 / 라이브 강의 {deleted['live']}건 / 디지털 파일 {deleted['file']}건)",
+                    )
+                    logger.info(
+                        "[STORE_PURCHASE_CLEANUP] deleted total=%s detail=%s",
+                        deleted_count,
+                        deleted,
                     )
 
                     params = request.GET.copy()
@@ -935,6 +957,13 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
                     if params:
                         redirect_url = f"{redirect_url}?{params.urlencode()}"
                     return HttpResponseRedirect(redirect_url)
+        else:
+            if filter_form.errors:
+                logger.warning(
+                    "[STORE_PURCHASE_CLEANUP] filter invalid errors=%s data=%s",
+                    filter_form.errors.as_json(),
+                    dict(form_data),
+                )
 
         extra_context.update({
             'title': '스토어 구입 이력 삭제',
