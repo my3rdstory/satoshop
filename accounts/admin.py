@@ -967,6 +967,13 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
                     filter_form.errors.as_json(),
                     dict(form_data),
                 )
+            else:
+                logger.debug(
+                    "[STORE_PURCHASE_CLEANUP] filter not applied (is_post=%s apply_filter=%s valid=%s)",
+                    is_post,
+                    apply_filter,
+                    filter_form.is_valid(),
+                )
 
         extra_context.update({
             'title': '스토어 구입 이력 삭제',
@@ -982,7 +989,20 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
             'filter_applied': filter_applied,
         })
 
-        return super().changelist_view(request, extra_context=extra_context)
+        response = super().changelist_view(request, extra_context=extra_context)
+        try:
+            status = getattr(response, 'status_code', 'unknown')
+            location = response.get('Location')
+            logger.debug(
+                "[STORE_PURCHASE_CLEANUP] response status=%s location=%s filter_applied=%s entries=%s",
+                status,
+                location,
+                filter_applied,
+                len(entries),
+            )
+        except Exception:
+            logger.exception("[STORE_PURCHASE_CLEANUP] response logging failed")
+        return response
 
 
 @admin.register(UserMyPageHistory)
