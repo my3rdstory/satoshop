@@ -890,7 +890,10 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         is_post = request.method == 'POST'
         form_data = request.POST if is_post else request.GET
-        apply_filter = form_data.get('apply_filter') == '1'
+        apply_filter = (
+            form_data.get('apply_filter') == '1'
+            or bool(request.GET)
+        )
         filter_form = StorePurchaseCleanupForm(form_data if (is_post or apply_filter) else None)
         logger.debug(
             "[STORE_PURCHASE_CLEANUP] incoming form_data=%s is_post=%s apply_filter=%s",
