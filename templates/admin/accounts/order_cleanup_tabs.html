@@ -1,0 +1,16 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+<div class="module" style="margin-bottom: 12px;">
+  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    {% for tab in cleanup_tabs %}
+      <a href="{{ tab.url }}"
+         class="button{% if tab.active %} default{% endif %}"
+         style="padding: 6px 10px; text-decoration: none;">
+        {{ tab.label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{{ block.super }}
+{% endblock %}
