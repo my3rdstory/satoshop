@@ -10,11 +10,23 @@ from django.db.models import Sum, Count, Q, Max
 from django.utils import timezone
 from django.http import HttpResponse
 import csv
-from .models import LightningUser, TemporaryPassword, UserPurchaseHistory, UserMyPageHistory, UserPublicId
+import logging
+from .models import (
+    LightningUser,
+    TemporaryPassword,
+    UserPurchaseHistory,
+    UserMyPageHistory,
+    UserPublicId,
+    OrderCleanupProxy,
+    MeetupOrderCleanupProxy,
+    LiveLectureOrderCleanupProxy,
+    FileOrderCleanupProxy,
+)
 from meetup.models import MeetupOrder
 from lecture.models import LiveLectureOrder
 from file.models import FileOrder
-from orders.models import PurchaseHistory
+from orders.models import Order, PurchaseHistory
+from stores.models import Store
 
 
 def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
@@ -23,6 +35,11 @@ def _format_local(dt, fmt='%Y-%m-%d %H:%M:%S', default=''):
     if timezone.is_naive(dt):
         dt = timezone.make_aware(dt, timezone.get_current_timezone())
     return timezone.localtime(dt).strftime(fmt)
+
+
+logger = logging.getLogger(__name__)
+
+
 
 
 @admin.register(LightningUser)
@@ -604,6 +621,126 @@ class UserPurchaseHistoryAdmin(admin.ModelAdmin):
 
     def has_module_permission(self, request):
         return request.user.has_module_perms('accounts')
+
+
+class CleanupTabsMixin:
+    """상품/밋업/라이브 강의/디지털 파일 간 전환 탭 제공"""
+
+    change_list_template = 'admin/accounts/order_cleanup_tabs.html'
+    tab_mapping = [
+        ('ordercleanupproxy', '상품'),
+        ('meetupordercleanupproxy', '밋업'),
+        ('livelectureordercleanupproxy', '라이브 강의'),
+        ('fileordercleanupproxy', '디지털 파일'),
+    ]
+
+    def changelist_view(self, request, extra_context=None):
+        current = self.model._meta.model_name
+        tabs = []
+        for model_name, label in self.tab_mapping:
+            url = reverse(f'admin:accounts_{model_name}_changelist')
+            tabs.append({
+                'label': label,
+                'url': url,
+                'active': current == model_name,
+            })
+        extra_context = extra_context or {}
+        extra_context['cleanup_tabs'] = tabs
+        extra_context.setdefault('title', '스토어 구입 이력')
+        return super().changelist_view(request, extra_context=extra_context)
+
+
+@admin.register(OrderCleanupProxy)
+class OrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
+    """스토어 구입 이력을 기본 테이블로 조회/삭제 (상품)"""
+
+    list_display = [
+        'order_number',
+        'store',
+        'buyer_name',
+        'buyer_email',
+        'status',
+        'total_amount',
+        'paid_at',
+        'created_at',
+    ]
+    list_filter = ['store', 'status', 'paid_at']
+    search_fields = ['order_number', 'buyer_name', 'buyer_email', 'user__username']
+    ordering = ['created_at']  # 오래된 순
+    date_hierarchy = 'created_at'
+    list_per_page = 10
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(MeetupOrderCleanupProxy)
+class MeetupOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
+    """밋업 구입 이력"""
+
+    list_display = [
+        'order_number',
+        'meetup',
+        'user',
+        'status',
+        'total_price',
+        'paid_at',
+        'created_at',
+    ]
+    list_filter = ['meetup__store', 'status', 'paid_at']
+    search_fields = ['order_number', 'participant_name', 'participant_email', 'user__username']
+    ordering = ['created_at']
+    date_hierarchy = 'created_at'
+    list_per_page = 10
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(LiveLectureOrderCleanupProxy)
+class LiveLectureOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
+    """라이브 강의 구입 이력"""
+
+    list_display = [
+        'order_number',
+        'live_lecture',
+        'user',
+        'status',
+        'price',
+        'paid_at',
+        'created_at',
+    ]
+    list_filter = ['live_lecture__store', 'status', 'paid_at']
+    search_fields = ['order_number', 'user__username', 'live_lecture__name']
+    ordering = ['created_at']
+    date_hierarchy = 'created_at'
+    list_per_page = 10
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(FileOrderCleanupProxy)
+class FileOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
+    """디지털 파일 구입 이력"""
+
+    list_display = [
+        'order_number',
+        'digital_file',
+        'user',
+        'status',
+        'price',
+        'paid_at',
+        'created_at',
+    ]
+    list_filter = ['digital_file__store', 'status', 'paid_at']
+    search_fields = ['order_number', 'user__username', 'digital_file__name']
+    ordering = ['created_at']
+    date_hierarchy = 'created_at'
+    list_per_page = 10
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(UserMyPageHistory)

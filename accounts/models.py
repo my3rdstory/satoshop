@@ -8,6 +8,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
+from stores.models import Store
+from orders.models import Order
+from meetup.models import MeetupOrder
+from lecture.models import LiveLectureOrder
+from file.models import FileOrder
 
 PUBLIC_ID_ALPHABET = string.digits + string.ascii_lowercase
 
@@ -170,3 +175,39 @@ class UserMyPageHistory(DjangoUser):
         proxy = True
         verbose_name = '사용자 마이페이지 이력'
         verbose_name_plural = '사용자 마이페이지 이력'
+
+
+class OrderCleanupProxy(Order):
+    """어드민에서 주문 내역 정리용 Proxy"""
+
+    class Meta:
+        proxy = True
+        verbose_name = '상품 구입 이력'
+        verbose_name_plural = '상품 구입 이력'
+
+
+class MeetupOrderCleanupProxy(MeetupOrder):
+    """어드민에서 밋업 주문 정리용 Proxy"""
+
+    class Meta:
+        proxy = True
+        verbose_name = '밋업 구입 이력'
+        verbose_name_plural = '밋업 구입 이력'
+
+
+class LiveLectureOrderCleanupProxy(LiveLectureOrder):
+    """어드민에서 라이브 강의 주문 정리용 Proxy"""
+
+    class Meta:
+        proxy = True
+        verbose_name = '라이브 강의 구입 이력'
+        verbose_name_plural = '라이브 강의 구입 이력'
+
+
+class FileOrderCleanupProxy(FileOrder):
+    """어드민에서 디지털 파일 주문 정리용 Proxy"""
+
+    class Meta:
+        proxy = True
+        verbose_name = '디지털 파일 구입 이력'
+        verbose_name_plural = '디지털 파일 구입 이력'
