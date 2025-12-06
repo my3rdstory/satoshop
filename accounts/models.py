@@ -182,8 +182,8 @@ class OrderCleanupProxy(Order):
 
     class Meta:
         proxy = True
-        verbose_name = '스토어 구입 이력'
-        verbose_name_plural = '스토어 구입 이력'
+        verbose_name = '상품 구입 이력'
+        verbose_name_plural = '상품 구입 이력'
 
 
 class MeetupOrderCleanupProxy(MeetupOrder):
