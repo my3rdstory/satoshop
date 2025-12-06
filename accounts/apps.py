@@ -22,21 +22,44 @@ class AccountsConfig(AppConfig):
             accounts_apps = []
             others = []
 
+            purchase_priority = {
+                'OrderCleanupProxy': 0,
+                'MeetupOrderCleanupProxy': 1,
+                'LiveLectureOrderCleanupProxy': 2,
+                'FileOrderCleanupProxy': 3,
+            }
+            account_priority = {
+                'LightningUser': 0,
+                'UserMyPageHistory': 1,
+                'UserPurchaseHistory': 2,
+            }
+
             for app in app_list:
                 label = app.get('app_label')
                 name = app.get('name') or ''
                 models = app.get('models', [])
 
-                purchase_models = {'스토어 구입 이력', '밋업 구입 이력', '라이브 강의 구입 이력', '디지털 파일 구입 이력'}
+                purchase_models = {'상품 구입 이력', '밋업 구입 이력', '라이브 강의 구입 이력', '디지털 파일 구입 이력'}
 
                 is_purchase_app = any(model.get('name') in purchase_models for model in models)
                 if is_purchase_app:
                     # 새 카테고리명으로 표시
                     app_copy = app.copy()
                     app_copy['name'] = '구입 이력 관리'
+                    sorted_models = sorted(
+                        models,
+                        key=lambda m: purchase_priority.get(m.get('object_name'), 999),
+                    )
+                    app_copy['models'] = sorted_models
                     purchase_apps.append(app_copy)
                 elif label == 'accounts':
-                    accounts_apps.append(app)
+                    sorted_models = sorted(
+                        models,
+                        key=lambda m: account_priority.get(m.get('object_name'), 999),
+                    )
+                    app_copy = app.copy()
+                    app_copy['models'] = sorted_models
+                    accounts_apps.append(app_copy)
                 else:
                     others.append(app)
 
