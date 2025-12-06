@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from stores.models import Store
+from orders.models import Order
 
 PUBLIC_ID_ALPHABET = string.digits + string.ascii_lowercase
 
@@ -173,10 +174,10 @@ class UserMyPageHistory(DjangoUser):
         verbose_name_plural = '사용자 마이페이지 이력'
 
 
-class StorePurchaseCleanupProxy(Store):
-    """어드민에서 스토어별 구입 내역 삭제용 Proxy"""
+class OrderCleanupProxy(Order):
+    """어드민에서 주문 내역 정리용 Proxy"""
 
     class Meta:
         proxy = True
-        verbose_name = '스토어 구입 이력 삭제'
-        verbose_name_plural = '스토어 구입 이력 삭제'
+        verbose_name = '스토어 구입 이력'
+        verbose_name_plural = '스토어 구입 이력'
