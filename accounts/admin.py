@@ -668,7 +668,7 @@ class OrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'user__username']
     ordering = ['created_at']  # 오래된 순
     date_hierarchy = 'created_at'
-    list_per_page = 50
+    list_per_page = 10
 
     def has_add_permission(self, request):
         return False
@@ -691,7 +691,7 @@ class MeetupOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
     search_fields = ['order_number', 'participant_name', 'participant_email', 'user__username']
     ordering = ['created_at']
     date_hierarchy = 'created_at'
-    list_per_page = 50
+    list_per_page = 10
 
     def has_add_permission(self, request):
         return False
@@ -714,7 +714,7 @@ class LiveLectureOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
     search_fields = ['order_number', 'user__username', 'live_lecture__name']
     ordering = ['created_at']
     date_hierarchy = 'created_at'
-    list_per_page = 50
+    list_per_page = 10
 
     def has_add_permission(self, request):
         return False
@@ -737,7 +737,7 @@ class FileOrderCleanupProxyAdmin(CleanupTabsMixin, admin.ModelAdmin):
     search_fields = ['order_number', 'user__username', 'digital_file__name']
     ordering = ['created_at']
     date_hierarchy = 'created_at'
-    list_per_page = 50
+    list_per_page = 10
 
     def has_add_permission(self, request):
         return False
