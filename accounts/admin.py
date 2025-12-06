@@ -887,7 +887,8 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         extra_context = extra_context or {}
         is_post = request.method == 'POST'
         form_data = request.POST if is_post else request.GET
-        filter_form = StorePurchaseCleanupForm(form_data or None)
+        apply_filter = form_data.get('apply_filter') == '1'
+        filter_form = StorePurchaseCleanupForm(form_data if (is_post or apply_filter) else None)
 
         entries = []
         total_count = 0
@@ -898,7 +899,7 @@ class StorePurchaseCleanupAdmin(admin.ModelAdmin):
         store_label = '전체'
         filter_applied = False
 
-        if filter_form.is_valid():
+        if filter_form.is_valid() and (is_post or apply_filter):
             selected_store = filter_form.cleaned_data['store']
             selected_kind = filter_form.cleaned_data.get('item_type') or 'all'
             before = filter_form.cleaned_data.get('before')

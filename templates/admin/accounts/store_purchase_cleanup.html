@@ -7,6 +7,7 @@
   <p class="help">스토어별로 상품·밋업·라이브 강의·디지털 파일 구입 이력을 한 번에 조회하고 선택 삭제할 수 있습니다. 삭제 시 복구할 수 없습니다.</p>
 
   <form method="get" class="mb-3">
+    <input type="hidden" name="apply_filter" value="1">
     <div class="form-row">
       <label for="{{ filter_form.store.id_for_label }}">스토어</label>
       {{ filter_form.store }}
