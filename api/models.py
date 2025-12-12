@@ -15,6 +15,11 @@ class ApiKey(models.Model):
     """외부 연동용 API 키 (해시 저장)"""
 
     name = models.CharField(max_length=100, help_text="키 용도/대상 메모")
+    channel_slug = models.SlugField(
+        max_length=50,
+        blank=True,
+        help_text="채널 구분 슬러그(예: partner-a, ios-app). 주문/집계용",
+    )
     key_prefix = models.CharField(
         max_length=16,
         db_index=True,

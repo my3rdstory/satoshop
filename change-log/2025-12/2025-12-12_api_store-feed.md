@@ -11,3 +11,4 @@
 - Explorer/RapiDoc 경로를 제거하고 Swagger UI만 남겼습니다.
 - 스토어별 활성 아이템을 종류별로 조회하는 엔드포인트를 추가했습니다: `/stores/{store_id}/products|meetups|live-lectures|digital-files/`.
 - 장바구니 없이 주문을 생성하는 `POST /stores/{store_id}/orders/` API를 추가해 외부 앱에서 바로 주문을 남길 수 있도록 했습니다.
+- API 키에 `channel_slug`를 설정하면 주문의 `channel` 필드에 자동 태깅되어 채널별 집계가 가능하도록 했습니다.

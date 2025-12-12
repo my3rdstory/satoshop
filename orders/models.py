@@ -198,6 +198,13 @@ class Order(models.Model):
     shipping_address = models.CharField(max_length=200, verbose_name='주소')
     shipping_detail_address = models.CharField(max_length=100, verbose_name='상세주소')
     order_memo = models.TextField(blank=True, verbose_name='주문 메모')
+
+    # 채널 정보
+    channel = models.SlugField(
+        max_length=50,
+        blank=True,
+        help_text='주문 유입 채널 (예: web, api-partner-a)',
+    )
     
     # 가격 정보
     subtotal = models.PositiveIntegerField(verbose_name='상품 금액', help_text='사토시 단위')

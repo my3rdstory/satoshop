@@ -7,6 +7,7 @@ from .models import ApiAllowedOrigin, ApiIpAllowlist, ApiKey
 class ApiKeyAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "channel_slug",
         "key_prefix",
         "is_active",
         "scopes",
@@ -14,8 +15,8 @@ class ApiKeyAdmin(admin.ModelAdmin):
         "created_at",
         "last_used_at",
     )
-    list_filter = ("is_active", "scopes", "created_by")
-    search_fields = ("name", "key_prefix")
+    list_filter = ("is_active", "scopes", "channel_slug", "created_by")
+    search_fields = ("name", "key_prefix", "channel_slug")
     readonly_fields = ("key_prefix", "key_hash", "created_at", "updated_at", "last_used_at")
     actions = ("activate_keys", "deactivate_keys", "regenerate_keys")
 

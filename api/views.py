@@ -96,6 +96,11 @@ def _store_item_response(request, store_id: str, fetch_fn, serializer_fn):
     if not store:
         return JsonResponse({"detail": "스토어를 찾을 수 없습니다."}, status=404)
 
+    api_key = auth_result.api_key
+    channel_value = ""
+    if api_key:
+        channel_value = api_key.channel_slug or f"api-{api_key.key_prefix}"
+
     items = fetch_fn(store)
     payload = serialize_store_item_payload(store, items, serializer_fn)
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
@@ -211,6 +216,11 @@ def store_create_order(request, store_id: str):
         defaults={"email": "api@satoshop.local", "first_name": "API", "last_name": "User"},
     )
 
+    api_key = auth_result.api_key
+    channel_value = ""
+    if api_key:
+        channel_value = api_key.channel_slug or f"api-{api_key.key_prefix}"
+
     status = "paid" if payload.get("mark_as_paid") else "pending"
     paid_at = timezone.now() if status == "paid" else None
 
@@ -219,6 +229,7 @@ def store_create_order(request, store_id: str):
         store=store,
         status=status,
         delivery_status="preparing",
+        channel=channel_value,
         buyer_name=payload["buyer_name"],
         buyer_phone=payload["buyer_phone"],
         buyer_email=payload["buyer_email"],
