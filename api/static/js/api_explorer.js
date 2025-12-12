@@ -3,7 +3,7 @@
   if (!endpointsDataEl) return;
 
   const endpoints = JSON.parse(endpointsDataEl.textContent);
-  const listEl = document.getElementById("api-endpoint-list");
+  const selectEl = document.getElementById("endpoint-select");
   const responseBodyEl = document.getElementById("response-body");
   const responseStatusEl = document.getElementById("response-status");
   const selectedLabelEl = document.getElementById("selected-endpoint-label");
@@ -16,40 +16,22 @@
 
   let selectedEndpoint = null;
 
-  function renderEndpointList() {
-    listEl.innerHTML = "";
+  function renderEndpointSelect() {
+    if (!selectEl) return;
+    selectEl.innerHTML = "";
     endpoints.forEach((ep, idx) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "endpoint-item";
-      item.setAttribute("role", "option");
-      item.setAttribute("aria-selected", "false");
-      item.innerHTML = `
-        <div class="method-badge">${ep.method}</div>
-        <div class="text-left">
-          <p class="text-sm font-semibold text-gray-900 dark:text-white">${ep.name}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">${ep.path}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${ep.description}</p>
-        </div>
-      `;
-      item.addEventListener("click", () => {
-        document.querySelectorAll(".endpoint-item").forEach((el) => {
-          el.classList.remove("active");
-          el.setAttribute("aria-selected", "false");
-        });
-        item.classList.add("active");
-        item.setAttribute("aria-selected", "true");
-        selectedEndpoint = ep;
-        selectedLabelEl.textContent = `${ep.method} ${ep.path}`;
-        fetchEndpoint();
-      });
-      if (idx === 0) {
-        item.classList.add("active");
-        item.setAttribute("aria-selected", "true");
-        selectedEndpoint = ep;
-        selectedLabelEl.textContent = `${ep.method} ${ep.path}`;
-      }
-      listEl.appendChild(item);
+      const opt = document.createElement("option");
+      opt.value = idx.toString();
+      opt.textContent = `${ep.method} ${ep.path} — ${ep.name}`;
+      selectEl.appendChild(opt);
+    });
+    selectedEndpoint = endpoints[0];
+    selectedLabelEl.textContent = `${selectedEndpoint.method} ${selectedEndpoint.path}`;
+    selectEl.addEventListener("change", (e) => {
+      const idx = Number(e.target.value);
+      selectedEndpoint = endpoints[idx];
+      selectedLabelEl.textContent = `${selectedEndpoint.method} ${selectedEndpoint.path}`;
+      fetchEndpoint();
     });
   }
 
@@ -152,6 +134,6 @@
     observer.observe(html, { attributes: true, attributeFilter: ["class"] });
   }
 
-  renderEndpointList();
+  renderEndpointSelect();
   fetchEndpoint();
 })();

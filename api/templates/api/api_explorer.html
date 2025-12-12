@@ -13,75 +13,63 @@
 {% endblock %}
 
 {% block content %}
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  <div class="mb-6 flex items-center justify-between gap-4">
-    <div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Bearer 키를 입력하고 엔드포인트를 선택하세요.</p>
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">API Explorer</h1>
+<section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+  <div>
+    <p class="text-sm text-gray-500 dark:text-gray-400">Bearer 키를 입력하고 엔드포인트를 선택해 응답을 확인하세요.</p>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">API Explorer</h1>
+  </div>
+
+  <div class="panel space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="flex flex-col gap-1">
+        <label for="api-base-url" class="text-sm text-gray-600 dark:text-gray-300">Base URL</label>
+        <input id="api-base-url" type="text" class="input-control" value="{{ base_api_url|default:'/api/v1/' }}" aria-label="API Base URL">
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="endpoint-select" class="text-sm text-gray-600 dark:text-gray-300">엔드포인트</label>
+        <select id="endpoint-select" class="input-control" aria-label="엔드포인트 선택"></select>
+      </div>
     </div>
-    <div class="flex items-center gap-2">
-      <label for="api-base-url" class="text-sm text-gray-600 dark:text-gray-300">Base URL</label>
-      <input id="api-base-url" type="text" class="input-control" value="{{ base_api_url|default:'/api/v1/' }}" aria-label="API Base URL">
+
+    <div class="flex flex-col md:flex-row md:items-center gap-3">
+      <div class="flex items-center gap-2">
+        <label for="api-key" class="text-sm text-gray-600 dark:text-gray-300">Bearer</label>
+        <input id="api-key" type="password" class="input-control w-72" placeholder="API 키 입력" aria-label="API 키">
+        <button id="toggle-key-visibility" class="ghost-btn text-xs">표시</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="copy-curl" class="ghost-btn text-xs" disabled>curl 복사</button>
+        <button id="refresh-response" class="ghost-btn text-xs" disabled>재조회</button>
+      </div>
+    </div>
+
+    <div class="response-shell" id="response-shell" aria-live="polite">
+      <div class="response-meta">
+        <div>
+          <p class="text-xs text-gray-500 dark:text-gray-400">선택된 엔드포인트</p>
+          <p id="selected-endpoint-label" class="text-sm font-semibold text-gray-900 dark:text-white">아직 선택되지 않음</p>
+        </div>
+        <div class="text-right">
+          <p class="text-xs text-gray-500 dark:text-gray-400">상태</p>
+          <p id="response-status" class="text-sm font-semibold text-gray-900 dark:text-white">-</p>
+        </div>
+      </div>
+      <pre id="response-body" class="response-body" aria-label="API 응답"></pre>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <div class="col-span-1">
-      <div class="panel h-full">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">엔드포인트</h2>
-          <span class="text-xs px-2 py-1 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">v1</span>
-        </div>
-        <div class="space-y-2" id="api-endpoint-list" role="listbox" aria-label="API 엔드포인트 목록"></div>
-      </div>
+  <div class="panel">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">OpenAPI (RapiDoc)</h2>
+      <span class="text-xs text-gray-500 dark:text-gray-400">읽기 전용</span>
     </div>
-
-    <div class="col-span-2 space-y-6">
-      <div class="panel">
-        <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400">Bearer 키를 입력 후 엔드포인트를 선택해 응답을 조회하세요.</p>
-            <div class="flex items-center gap-2 mt-2">
-              <label for="api-key" class="text-sm text-gray-600 dark:text-gray-300">Bearer</label>
-              <input id="api-key" type="password" class="input-control w-72" placeholder="API 키 입력" aria-label="API 키">
-              <button id="toggle-key-visibility" class="ghost-btn text-xs">표시</button>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button id="copy-curl" class="ghost-btn text-xs" disabled>curl 복사</button>
-            <button id="refresh-response" class="ghost-btn text-xs" disabled>재조회</button>
-          </div>
-        </div>
-
-        <div class="response-shell" id="response-shell" aria-live="polite">
-          <div class="response-meta">
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">선택된 엔드포인트</p>
-              <p id="selected-endpoint-label" class="text-sm font-semibold text-gray-900 dark:text-white">아직 선택되지 않음</p>
-            </div>
-            <div class="text-right">
-              <p class="text-xs text-gray-500 dark:text-gray-400">상태</p>
-              <p id="response-status" class="text-sm font-semibold text-gray-900 dark:text-white">-</p>
-            </div>
-          </div>
-          <pre id="response-body" class="response-body" aria-label="API 응답"></pre>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">OpenAPI (RapiDoc)</h2>
-          <span class="text-xs text-gray-500 dark:text-gray-400">읽기 전용</span>
-        </div>
-        <rapi-doc id="rapidoc"
-          spec-url="{{ openapi_url }}"
-          render-style="read"
-          show-header="false"
-          allow-try="false"
-          style="height: 560px; border-radius: 12px; overflow: hidden;">
-        </rapi-doc>
-      </div>
-    </div>
+    <rapi-doc id="rapidoc"
+      spec-url="{{ openapi_url }}"
+      render-style="read"
+      show-header="false"
+      allow-try="false"
+      style="height: 520px; border-radius: 12px; overflow: hidden;">
+    </rapi-doc>
   </div>
 </section>
 

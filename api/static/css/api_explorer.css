@@ -10,14 +10,6 @@
   @apply px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm;
 }
 
-.endpoint-item {
-  @apply flex items-start gap-3 px-3 py-3 rounded-lg border border-transparent cursor-pointer transition hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/40;
-}
-
-.endpoint-item.active {
-  @apply border-indigo-500 bg-indigo-50 dark:bg-indigo-900/40;
-}
-
 .method-badge {
   @apply text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-200;
 }
