@@ -647,6 +647,7 @@ docker run \
   - `GET /api/v1/stores/{store_id}/live-lectures/`
   - `GET /api/v1/stores/{store_id}/digital-files/`
   - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
+- **엔드포인트(주문 생성)**: `POST /api/v1/stores/{store_id}/orders/` — 장바구니 없이 바로 주문 생성. 필수 필드: 구매자 정보(이름/연락처/이메일), 배송지(우편번호/주소/상세주소), items 배열(`product_id`, `quantity`). 옵션: `order_memo`, `payment_id`, `mark_as_paid`(true 시 즉시 결제완료 처리). 응답에 주문번호, 금액, 품목 정보가 포함됩니다.
 - **응답 예시**
   ```bash
   curl -H "Authorization: Bearer <api_key>" https://<host>/api/v1/stores/
