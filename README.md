@@ -641,6 +641,12 @@ docker run \
 - **인증**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
 - **엔드포인트**: `GET /api/v1/stores/` — 활성 스토어 목록과 스토어별 공개 데이터(주인장 정보, 활성 상품/밋업/라이브 강의/디지털 파일)를 반환합니다.
 - **엔드포인트(스토어 주인장 정보)**: `GET /api/v1/stores/{store_id}/owner/` — 스토어별 주인장 정보(이름, 연락처, 이메일, 소통채널)를 반환합니다.
+- **엔드포인트(스토어별 활성 아이템)**:
+  - `GET /api/v1/stores/{store_id}/products/`
+  - `GET /api/v1/stores/{store_id}/meetups/`
+  - `GET /api/v1/stores/{store_id}/live-lectures/`
+  - `GET /api/v1/stores/{store_id}/digital-files/`
+  - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
 - **응답 예시**
   ```bash
   curl -H "Authorization: Bearer <api_key>" https://<host>/api/v1/stores/

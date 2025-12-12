@@ -9,3 +9,4 @@
 - `/api/v1/stores/{store_id}/owner/`에서 스토어별 주인장 정보만 조회하는 엔드포인트를 추가하고 Explorer에 파라미터 입력 UI를 붙였습니다.
 - `/api/v1/docs/`에서 Swagger UI로 OpenAPI 스펙을 확인하고 Try it 기능을 사용할 수 있게 했습니다.
 - Explorer/RapiDoc 경로를 제거하고 Swagger UI만 남겼습니다.
+- 스토어별 활성 아이템을 종류별로 조회하는 엔드포인트를 추가했습니다: `/stores/{store_id}/products|meetups|live-lectures|digital-files/`.

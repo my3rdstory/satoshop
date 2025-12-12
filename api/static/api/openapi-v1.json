@@ -6,7 +6,9 @@
     "description": "스토어 목록 및 공개 리소스 제공 API"
   },
   "servers": [
-    { "url": "/api/v1" }
+    {
+      "url": "/api/v1"
+    }
   ],
   "paths": {
     "/": {
@@ -21,15 +23,23 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "version": { "type": "string" },
+                    "version": {
+                      "type": "string"
+                    },
                     "endpoints": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "path": { "type": "string" },
-                          "method": { "type": "string" },
-                          "description": { "type": "string" }
+                          "path": {
+                            "type": "string"
+                          },
+                          "method": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          }
                         }
                       }
                     }
@@ -45,7 +55,11 @@
       "get": {
         "summary": "활성 스토어 목록",
         "description": "활성 스토어와 공개 리소스를 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "성공",
@@ -56,15 +70,21 @@
                   "properties": {
                     "stores": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Store" }
+                      "items": {
+                        "$ref": "#/components/schemas/Store"
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "401": { "description": "인증 실패" },
-          "403": { "description": "비활성 키 또는 차단" }
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          }
         }
       }
     },
@@ -72,13 +92,19 @@
       "get": {
         "summary": "스토어 주인장 정보",
         "description": "스토어별 주인장 공개 정보를 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "store_id",
             "in": "path",
             "required": true,
-            "schema": { "type": "string" }
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -86,13 +112,233 @@
             "description": "성공",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StoreOwner" }
+                "schema": {
+                  "$ref": "#/components/schemas/StoreOwner"
+                }
               }
             }
           },
-          "401": { "description": "인증 실패" },
-          "403": { "description": "비활성 키 또는 차단" },
-          "404": { "description": "스토어 없음" }
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          },
+          "404": {
+            "description": "스토어 없음"
+          }
+        }
+      }
+    },
+    "/stores/{store_id}/products/": {
+      "get": {
+        "summary": "스토어별 활성 상품",
+        "description": "스토어의 활성 상품 목록을 반환",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": {
+                      "$ref": "#/components/schemas/StoreShort"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          },
+          "404": {
+            "description": "스토어 없음"
+          }
+        }
+      }
+    },
+    "/stores/{store_id}/meetups/": {
+      "get": {
+        "summary": "스토어별 활성 밋업",
+        "description": "스토어의 활성 밋업 목록을 반환",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": {
+                      "$ref": "#/components/schemas/StoreShort"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Meetup"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          },
+          "404": {
+            "description": "스토어 없음"
+          }
+        }
+      }
+    },
+    "/stores/{store_id}/live-lectures/": {
+      "get": {
+        "summary": "스토어별 활성 라이브 강의",
+        "description": "스토어의 활성 라이브 강의 목록을 반환",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": {
+                      "$ref": "#/components/schemas/StoreShort"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/LiveLecture"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          },
+          "404": {
+            "description": "스토어 없음"
+          }
+        }
+      }
+    },
+    "/stores/{store_id}/digital-files/": {
+      "get": {
+        "summary": "스토어별 활성 디지털 파일",
+        "description": "스토어의 활성 디지털 파일 목록을 반환",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": {
+                      "$ref": "#/components/schemas/StoreShort"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DigitalFile"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 실패"
+          },
+          "403": {
+            "description": "비활성 키 또는 차단"
+          },
+          "404": {
+            "description": "스토어 없음"
+          }
         }
       }
     }
@@ -108,94 +354,267 @@
       "Owner": {
         "type": "object",
         "properties": {
-          "name": { "type": "string" },
-          "phone": { "type": "string" },
-          "email": { "type": "string" },
-          "chat_channel": { "type": "string", "format": "uri" }
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "chat_channel": {
+            "type": "string",
+            "format": "uri"
+          }
         }
       },
       "Product": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "title": { "type": "string" },
-          "price": { "type": "integer" },
-          "price_currency": { "type": "string" },
-          "is_discounted": { "type": "boolean" },
-          "discounted_price": { "type": ["integer", "null"] },
-          "stock_quantity": { "type": "integer" },
-          "is_out_of_stock": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer"
+          },
+          "price_currency": {
+            "type": "string"
+          },
+          "is_discounted": {
+            "type": "boolean"
+          },
+          "discounted_price": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "stock_quantity": {
+            "type": "integer"
+          },
+          "is_out_of_stock": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Meetup": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "date_time": { "type": ["string", "null"], "format": "date-time" },
-          "location": { "type": "string" },
-          "is_free": { "type": "boolean" },
-          "price": { "type": "integer" },
-          "is_discounted": { "type": "boolean" },
-          "discounted_price": { "type": ["integer", "null"] },
-          "status": { "type": "string" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "location": {
+            "type": "string"
+          },
+          "is_free": {
+            "type": "boolean"
+          },
+          "price": {
+            "type": "integer"
+          },
+          "is_discounted": {
+            "type": "boolean"
+          },
+          "discounted_price": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "LiveLecture": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "date_time": { "type": ["string", "null"], "format": "date-time" },
-          "price_mode": { "type": "string" },
-          "price": { "type": "integer" },
-          "is_discounted": { "type": "boolean" },
-          "discounted_price": { "type": ["integer", "null"] },
-          "is_free": { "type": "boolean" },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "price_mode": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer"
+          },
+          "is_discounted": {
+            "type": "boolean"
+          },
+          "discounted_price": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "is_free": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "DigitalFile": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "name": { "type": "string" },
-          "price_mode": { "type": "string" },
-          "price": { "type": "integer" },
-          "is_discounted": { "type": "boolean" },
-          "discounted_price": { "type": ["integer", "null"] },
-          "created_at": { "type": "string", "format": "date-time" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price_mode": {
+            "type": "string"
+          },
+          "price": {
+            "type": "integer"
+          },
+          "is_discounted": {
+            "type": "boolean"
+          },
+          "discounted_price": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Store": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "store_id": { "type": "string" },
-          "name": { "type": "string" },
-          "description": { "type": "string" },
-          "owner": { "$ref": "#/components/schemas/Owner" },
-          "products": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
-          "meetups": { "type": "array", "items": { "$ref": "#/components/schemas/Meetup" } },
-          "live_lectures": { "type": "array", "items": { "$ref": "#/components/schemas/LiveLecture" } },
-          "digital_files": { "type": "array", "items": { "$ref": "#/components/schemas/DigitalFile" } },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "store_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Owner"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Product"
+            }
+          },
+          "meetups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Meetup"
+            }
+          },
+          "live_lectures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LiveLecture"
+            }
+          },
+          "digital_files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DigitalFile"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "StoreOwner": {
         "type": "object",
         "properties": {
-          "id": { "type": "integer" },
-          "store_id": { "type": "string" },
-          "name": { "type": "string" },
-          "owner": { "$ref": "#/components/schemas/Owner" },
-          "updated_at": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "integer"
+          },
+          "store_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "$ref": "#/components/schemas/Owner"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "StoreShort": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "store_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
         }
       }
     }

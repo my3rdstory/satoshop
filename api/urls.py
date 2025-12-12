@@ -9,4 +9,8 @@ urlpatterns = [
     path("v1/docs/", views.api_docs, name="api_docs"),
     path("v1/stores/", views.store_feed, name="store_feed"),
     path("v1/stores/<str:store_id>/owner/", views.store_owner_info, name="store_owner_info"),
+    path("v1/stores/<str:store_id>/products/", views.store_products, name="store_products"),
+    path("v1/stores/<str:store_id>/meetups/", views.store_meetups, name="store_meetups"),
+    path("v1/stores/<str:store_id>/live-lectures/", views.store_live_lectures, name="store_live_lectures"),
+    path("v1/stores/<str:store_id>/digital-files/", views.store_digital_files, name="store_digital_files"),
 ]

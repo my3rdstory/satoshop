@@ -4,8 +4,23 @@ from django.views.decorators.http import require_GET
 
 from .authentication import authenticate_request
 from .policies import apply_cors_headers, enforce_ip_allowlist, enforce_origin_allowlist
-from .serializers import serialize_store_list, serialize_store_owner
-from .services import get_active_stores_with_relations, get_store_owner
+from .serializers import (
+    serialize_digital_file,
+    serialize_live_lecture,
+    serialize_meetup,
+    serialize_product,
+    serialize_store_item_payload,
+    serialize_store_list,
+    serialize_store_owner,
+)
+from .services import (
+    get_active_digital_files,
+    get_active_live_lectures,
+    get_active_meetups,
+    get_active_products,
+    get_active_stores_with_relations,
+    get_store_owner,
+)
 
 
 @require_GET
@@ -53,6 +68,50 @@ def store_owner_info(request, store_id: str):
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
     apply_cors_headers(response, origin_check)
     return response
+
+
+def _store_item_response(request, store_id: str, fetch_fn, serializer_fn):
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    store = get_store_owner(store_id)
+    if not store:
+        return JsonResponse({"detail": "스토어를 찾을 수 없습니다."}, status=404)
+
+    items = fetch_fn(store)
+    payload = serialize_store_item_payload(store, items, serializer_fn)
+    response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
+@require_GET
+def store_products(request, store_id: str):
+    return _store_item_response(request, store_id, get_active_products, serialize_product)
+
+
+@require_GET
+def store_meetups(request, store_id: str):
+    return _store_item_response(request, store_id, get_active_meetups, serialize_meetup)
+
+
+@require_GET
+def store_live_lectures(request, store_id: str):
+    return _store_item_response(request, store_id, get_active_live_lectures, serialize_live_lecture)
+
+
+@require_GET
+def store_digital_files(request, store_id: str):
+    return _store_item_response(request, store_id, get_active_digital_files, serialize_digital_file)
 
 
 @require_GET
