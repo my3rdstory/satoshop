@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 
-from .models import ApiKey
+from .models import ApiAllowedOrigin, ApiIpAllowlist, ApiKey
 
 
 @admin.register(ApiKey)
@@ -62,3 +62,19 @@ class ApiKeyAdmin(admin.ModelAdmin):
                 "다음 키가 재발급되었습니다(기존 키는 즉시 폐기됨):\n" + "\n".join(regenerated_messages),
                 level=messages.SUCCESS,
             )
+
+
+@admin.register(ApiIpAllowlist)
+class ApiIpAllowlistAdmin(admin.ModelAdmin):
+    list_display = ("name", "cidr", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "cidr")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(ApiAllowedOrigin)
+class ApiAllowedOriginAdmin(admin.ModelAdmin):
+    list_display = ("name", "origin", "is_active", "created_at")
+    list_filter = ("is_active",)
+    search_fields = ("name", "origin")
+    readonly_fields = ("created_at",)

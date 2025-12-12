@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
+from django.core.validators import URLValidator
 
 
 User = get_user_model()
@@ -80,3 +81,52 @@ class ApiKey(models.Model):
         """마지막 사용 시각 기록."""
         self.last_used_at = timezone.now()
         self.save(update_fields=["last_used_at", "updated_at"])
+
+
+class ApiIpAllowlist(models.Model):
+    """API 접근 허용 IP/CIDR"""
+
+    name = models.CharField(max_length=100, help_text="설명용 이름")
+    cidr = models.CharField(
+        max_length=64,
+        help_text="IPv4/IPv6 주소 또는 CIDR (예: 203.0.113.0/24)",
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "API IP 허용 목록"
+        verbose_name_plural = "API IP 허용 목록"
+        ordering = ["cidr"]
+        indexes = [
+            models.Index(fields=["cidr"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.cidr})"
+
+
+class ApiAllowedOrigin(models.Model):
+    """API CORS 허용 Origin"""
+
+    name = models.CharField(max_length=100, help_text="설명용 이름")
+    origin = models.CharField(
+        max_length=200,
+        help_text="스킴 포함 Origin (예: https://example.com:8443)",
+        validators=[URLValidator(schemes=["http", "https"])],
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "API 허용 Origin"
+        verbose_name_plural = "API 허용 Origin"
+        ordering = ["origin"]
+        indexes = [
+            models.Index(fields=["origin"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.origin})"
