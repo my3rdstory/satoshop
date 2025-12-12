@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'myshop',
     'accounts',
     'stores',
+    'api',
     'products',
     'expert',
     'reviews',
