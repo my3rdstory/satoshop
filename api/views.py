@@ -27,3 +27,25 @@ def store_feed(request):
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
     apply_cors_headers(response, origin_check)
     return response
+
+
+@require_GET
+def api_index(request):
+    """사용 가능한 API 엔드포인트 목록 안내."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    payload = {
+        "version": "v1",
+        "endpoints": [
+            {"path": "/api/v1/stores/", "method": "GET", "description": "활성 스토어와 공개 데이터 목록"},
+        ],
+    }
+    response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
