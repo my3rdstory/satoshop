@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .admin_views import ChannelSalesView
 
 app_name = "api"
 
@@ -13,4 +14,8 @@ urlpatterns = [
     path("v1/stores/<str:store_id>/meetups/", views.store_meetups, name="store_meetups"),
     path("v1/stores/<str:store_id>/live-lectures/", views.store_live_lectures, name="store_live_lectures"),
     path("v1/stores/<str:store_id>/digital-files/", views.store_digital_files, name="store_digital_files"),
+    path("v1/stores/<str:store_id}/orders/", views.store_create_order, name="store_create_order"),
+
+    # Admin 통합 채널 판매 리포트
+    path("admin/channel-sales/", ChannelSalesView.as_view(), name="channel_sales"),
 ]

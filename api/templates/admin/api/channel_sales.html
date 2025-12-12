@@ -1,0 +1,101 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}채널 판매 목록{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>채널 판매 목록</h1>
+  <form method="get" class="form-inline" style="margin-bottom: 16px;">
+    <label for="channel">채널:</label>
+    <input type="text" id="channel" name="channel" value="{{ channel }}" class="vTextField" placeholder="예: partner-a">
+    <button type="submit" class="button">필터</button>
+  </form>
+
+  <h3>요약</h3>
+  <table class="table" style="margin-bottom:16px;">
+    <thead>
+      <tr><th>구분</th><th>건수</th><th>총액</th></tr>
+    </thead>
+    <tbody>
+      {% for row in summary %}
+      <tr>
+        <td>{{ row.label }}</td>
+        <td>{{ row.count }}</td>
+        <td>{{ row.amount|default:0 }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="3">데이터 없음</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>상품 주문</h2>
+  <table class="table">
+    <thead><tr><th>주문번호</th><th>스토어</th><th>구매자</th><th>금액</th><th>상태</th><th>생성일</th></tr></thead>
+    <tbody>
+      {% for o in product_orders %}
+      <tr>
+        <td>{{ o.order_number }}</td>
+        <td>{{ o.store }}</td>
+        <td>{{ o.buyer_name }}</td>
+        <td>{{ o.total_amount }}</td>
+        <td>{{ o.get_status_display }}</td>
+        <td>{{ o.created_at }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6">데이터 없음</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2>라이브 강의 주문</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>스토어</th><th>사용자</th><th>금액</th><th>상태</th><th>생성일</th></tr></thead>
+    <tbody>
+      {% for o in live_orders %}
+      <tr>
+        <td>{{ o.id }}</td>
+        <td>{{ o.live_lecture.store }}</td>
+        <td>{{ o.user }}</td>
+        <td>{{ o.total_amount }}</td>
+        <td>{{ o.status }}</td>
+        <td>{{ o.created_at }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6">데이터 없음</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2>밋업 주문</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>스토어</th><th>사용자</th><th>금액</th><th>상태</th><th>생성일</th></tr></thead>
+    <tbody>
+      {% for o in meetup_orders %}
+      <tr>
+        <td>{{ o.id }}</td>
+        <td>{{ o.meetup.store }}</td>
+        <td>{{ o.user }}</td>
+        <td>{{ o.total_amount }}</td>
+        <td>{{ o.status }}</td>
+        <td>{{ o.created_at }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6">데이터 없음</td></tr>{% endfor %}
+    </tbody>
+  </table>
+
+  <h2>디지털 파일 주문</h2>
+  <table class="table">
+    <thead><tr><th>ID</th><th>스토어</th><th>사용자</th><th>금액</th><th>상태</th><th>생성일</th></tr></thead>
+    <tbody>
+      {% for o in file_orders %}
+      <tr>
+        <td>{{ o.id }}</td>
+        <td>{{ o.digital_file.store }}</td>
+        <td>{{ o.user }}</td>
+        <td>{{ o.total_amount }}</td>
+        <td>{{ o.status }}</td>
+        <td>{{ o.created_at }}</td>
+      </tr>
+      {% empty %}<tr><td colspan="6">데이터 없음</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
