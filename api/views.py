@@ -114,3 +114,14 @@ def api_explorer(request):
             "openapi_url": request.build_absolute_uri("/static/api/openapi-v1.json"),
         },
     )
+
+
+def api_docs(request):
+    """Swagger UI 기반 문서 페이지."""
+    return render(
+        request,
+        "api/swagger_ui.html",
+        {
+            "openapi_url": request.build_absolute_uri("/static/api/openapi-v1.json"),
+        },
+    )

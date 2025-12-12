@@ -670,6 +670,7 @@ docker run \
   ```
 - **추가 보안 설정**: Django Admin → **API IP 허용 목록**에서 허용 IP/CIDR을 등록할 수 있고, **API 허용 Origin**에서 CORS Origin을 복수 등록할 수 있습니다. HTTPS는 필수이며, 프록시/방화벽 레이트리밋을 병행해 키 유출 시 피해를 최소화하세요.
 - **브라우저 뷰어**: `/api/v1/explorer/`에서 좌측 엔드포인트 목록과 우측 실시간 응답 뷰어를 제공하며, 하단에 RapiDoc 기반 OpenAPI 뷰어를 함께 보여줍니다.
+- **Swagger UI**: `/api/v1/docs/`에서 Swagger UI로 스펙을 확인하고 Try it 기능을 사용할 수 있습니다.
 
 ## 📁 프로젝트 구조
 

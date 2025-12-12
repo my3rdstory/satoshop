@@ -8,3 +8,4 @@
 - `/api/v1/`로 호출 시 사용 가능한 엔드포인트 목록을 JSON으로 안내하도록 인덱스 응답을 추가했습니다.
 - `/api/v1/explorer/` UI를 추가해 좌측 엔드포인트 선택, 우측 실시간 응답 뷰, 하단 RapiDoc(OpenAPI) 뷰어를 제공했습니다.
 - `/api/v1/stores/{store_id}/owner/`에서 스토어별 주인장 정보만 조회하는 엔드포인트를 추가하고 Explorer에 파라미터 입력 UI를 붙였습니다.
+- `/api/v1/docs/`에서 Swagger UI로 OpenAPI 스펙을 확인하고 Try it 기능을 사용할 수 있게 했습니다.
