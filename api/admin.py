@@ -70,7 +70,7 @@ class ApiKeyAdmin(admin.ModelAdmin):
     def view_orders_link(self, obj):
         channel = obj.channel_slug or f"api-{obj.key_prefix}"
         url = reverse("api:channel_sales") + f"?channel={channel}"
-        return format_html('<a class="button" href="{}">판매 목록 보기</a>', url)
+        return format_html('<a class="button" href="{}" target="_blank" rel="noopener noreferrer">판매 목록 보기</a>', url)
     view_orders_link.short_description = "판매 목록"
 
 
