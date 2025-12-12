@@ -12,7 +12,6 @@
   const refreshBtn = document.getElementById("refresh-response");
   const copyCurlBtn = document.getElementById("copy-curl");
   const toggleKeyBtn = document.getElementById("toggle-key-visibility");
-  const rapidocEl = document.getElementById("rapidoc");
   const paramsContainer = document.createElement("div");
   paramsContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
 
@@ -166,18 +165,6 @@
     apiKeyInput.type = apiKeyInput.type === "password" ? "text" : "password";
     toggleKeyBtn.textContent = apiKeyInput.type === "password" ? "표시" : "숨김";
   });
-
-  // Sync RapiDoc theme with current mode
-  const html = document.documentElement;
-  if (rapidocEl) {
-    const applyTheme = () => {
-      const isDark = html.classList.contains("dark");
-      rapidocEl.setAttribute("theme", isDark ? "dark" : "light");
-    };
-    applyTheme();
-    const observer = new MutationObserver(applyTheme);
-    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
-  }
 
   renderEndpointSelect();
   fetchEndpoint();

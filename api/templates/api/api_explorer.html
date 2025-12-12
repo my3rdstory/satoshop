@@ -4,11 +4,93 @@
 {% block title %}API Explorer{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/api_explorer.css' %}">
+<style>
+  .panel {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .dark .panel {
+    background-color: #1f2937;
+    border-color: #374151;
+  }
+  .input-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    color: #111827;
+    font-size: 14px;
+  }
+  .input-control:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.25);
+  }
+  .dark .input-control {
+    background: #111827;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+  .ghost-btn {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: transparent;
+    color: #374151;
+    font-size: 13px;
+    transition: background 0.15s ease;
+  }
+  .ghost-btn:hover { background: #f3f4f6; }
+  .dark .ghost-btn {
+    border-color: #4b5563;
+    color: #e5e7eb;
+  }
+  .dark .ghost-btn:hover { background: #374151; }
+  .response-shell {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #f9fafb;
+  }
+  .dark .response-shell {
+    border-color: #374151;
+    background: #0f172a;
+  }
+  .response-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 10px 10px 0 0;
+  }
+  .dark .response-meta {
+    background: #1f2937;
+    border-color: #374151;
+  }
+  .response-body {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #111827;
+    background: #f9fafb;
+    padding: 14px;
+    border-radius: 0 0 10px 10px;
+    min-height: 240px;
+    max-height: 420px;
+    overflow: auto;
+  }
+  .dark .response-body {
+    color: #f9fafb;
+    background: #0f172a;
+  }
+</style>
 {% endblock %}
 
 {% block extra_js %}
-<script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
 <script src="{% static 'js/api_explorer.js' %}"></script>
 {% endblock %}
 
@@ -20,8 +102,8 @@
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">API Explorer</h1>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-      <div class="panel space-y-4 lg:col-span-2">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="panel space-y-4">
         <div class="grid grid-cols-1 gap-3">
           <div class="flex flex-col gap-1">
             <label for="api-base-url" class="text-sm text-gray-600 dark:text-gray-300">Base URL</label>
@@ -61,21 +143,7 @@
         </div>
       </div>
 
-      <div class="panel h-full lg:col-span-3">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">OpenAPI (RapiDoc)</h2>
-          <span class="text-xs text-gray-500 dark:text-gray-400">읽기 전용</span>
-        </div>
-        <div class="h-[560px] w-full overflow-hidden rounded-lg">
-          <rapi-doc id="rapidoc"
-            spec-url="{{ openapi_url }}"
-            render-style="read"
-            show-header="false"
-            allow-try="false"
-            style="height: 100%; width: 100%;">
-          </rapi-doc>
-        </div>
-      </div>
+      <!-- 오른쪽 패널 제거: RapiDoc 삭제 -->
     </div>
   </div>
 </section>
