@@ -13,8 +13,11 @@
   const copyCurlBtn = document.getElementById("copy-curl");
   const toggleKeyBtn = document.getElementById("toggle-key-visibility");
   const rapidocEl = document.getElementById("rapidoc");
+  const paramsContainer = document.createElement("div");
+  paramsContainer.className = "grid grid-cols-1 md:grid-cols-2 gap-3";
 
   let selectedEndpoint = null;
+  let paramValues = {};
 
   function renderEndpointSelect() {
     if (!selectEl) return;
@@ -31,14 +34,56 @@
       const idx = Number(e.target.value);
       selectedEndpoint = endpoints[idx];
       selectedLabelEl.textContent = `${selectedEndpoint.method} ${selectedEndpoint.path}`;
+      renderParams();
       fetchEndpoint();
     });
+    renderParams();
+  }
+
+  function renderParams() {
+    if (!paramsContainer || !selectedEndpoint) return;
+    paramsContainer.innerHTML = "";
+    paramValues = {};
+    const target = document.getElementById("param-slot");
+    if (!target) return;
+    if (!selectedEndpoint.params || selectedEndpoint.params.length === 0) {
+      target.innerHTML = "";
+      return;
+    }
+    selectedEndpoint.params.forEach((p) => {
+      const wrap = document.createElement("div");
+      wrap.className = "flex flex-col gap-1";
+      const label = document.createElement("label");
+      label.className = "text-sm text-gray-600 dark:text-gray-300";
+      label.textContent = p.label || p.name;
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "input-control";
+      input.value = p.default || "";
+      input.placeholder = p.placeholder || "";
+      input.addEventListener("input", () => {
+        paramValues[p.name] = input.value.trim();
+      });
+      paramValues[p.name] = input.value.trim();
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      paramsContainer.appendChild(wrap);
+    });
+    target.innerHTML = "";
+    target.appendChild(paramsContainer);
   }
 
   function buildUrl(ep) {
     try {
       const base = baseUrlInput.value || "/api/v1/";
-      return new URL(ep.path, base).toString();
+      let path = ep.path;
+      if (ep.params && ep.params.length > 0) {
+        ep.params.forEach((p) => {
+          const val = encodeURIComponent(paramValues[p.name] || "");
+          path = path.replace(`{${p.name}}`, val);
+        });
+      }
+      return new URL(path, base).toString();
     } catch (e) {
       return ep.path;
     }

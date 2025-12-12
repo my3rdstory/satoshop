@@ -37,3 +37,12 @@ def get_active_stores_with_relations():
         )
         .order_by("store_name")
     )
+
+
+def get_store_owner(store_id: str):
+    """스토어 단건과 주인장 정보 조회."""
+    return (
+        Store.objects.filter(store_id=store_id, is_active=True, deleted_at__isnull=True)
+        .select_related("owner")
+        .first()
+    )

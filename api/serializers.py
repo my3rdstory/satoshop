@@ -115,3 +115,18 @@ def serialize_store(store: Store) -> dict:
 
 def serialize_store_list(stores) -> dict:
     return {"stores": [serialize_store(store) for store in stores]}
+
+
+def serialize_store_owner(store: Store) -> dict:
+    return {
+        "id": store.id,
+        "store_id": store.store_id,
+        "name": store.store_name,
+        "owner": {
+            "name": store.owner_name,
+            "phone": store.owner_phone,
+            "email": store.owner_email,
+            "chat_channel": store.chat_channel,
+        },
+        "updated_at": _format_datetime(store.updated_at),
+    }

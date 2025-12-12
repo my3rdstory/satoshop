@@ -67,6 +67,34 @@
           "403": { "description": "비활성 키 또는 차단" }
         }
       }
+    },
+    "/stores/{store_id}/owner/": {
+      "get": {
+        "summary": "스토어 주인장 정보",
+        "description": "스토어별 주인장 공개 정보를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StoreOwner" }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
     }
   },
   "components": {
@@ -157,6 +185,16 @@
           "meetups": { "type": "array", "items": { "$ref": "#/components/schemas/Meetup" } },
           "live_lectures": { "type": "array", "items": { "$ref": "#/components/schemas/LiveLecture" } },
           "digital_files": { "type": "array", "items": { "$ref": "#/components/schemas/DigitalFile" } },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "StoreOwner": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "store_id": { "type": "string" },
+          "name": { "type": "string" },
+          "owner": { "$ref": "#/components/schemas/Owner" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
       }

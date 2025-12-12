@@ -4,8 +4,8 @@ from django.views.decorators.http import require_GET
 
 from .authentication import authenticate_request
 from .policies import apply_cors_headers, enforce_ip_allowlist, enforce_origin_allowlist
-from .serializers import serialize_store_list
-from .services import get_active_stores_with_relations
+from .serializers import serialize_store_list, serialize_store_owner
+from .services import get_active_stores_with_relations, get_store_owner
 
 
 @require_GET
@@ -25,6 +25,31 @@ def store_feed(request):
 
     stores = get_active_stores_with_relations()
     payload = serialize_store_list(stores)
+    response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
+@require_GET
+def store_owner_info(request, store_id: str):
+    """스토어별 주인장 공개 정보를 반환."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    store = get_store_owner(store_id)
+    if not store:
+        return JsonResponse({"detail": "스토어를 찾을 수 없습니다."}, status=404)
+
+    payload = serialize_store_owner(store)
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
     apply_cors_headers(response, origin_check)
     return response
@@ -60,12 +85,23 @@ def api_explorer(request):
             "path": "/api/v1/stores/",
             "method": "GET",
             "description": "활성 스토어와 공개 데이터 목록",
+            "params": [],
+        },
+        {
+            "name": "스토어 주인장 정보",
+            "path": "/api/v1/stores/{store_id}/owner/",
+            "method": "GET",
+            "description": "스토어별 주인장 공개 정보",
+            "params": [
+                {"name": "store_id", "label": "Store ID", "default": ""},
+            ],
         },
         {
             "name": "API 인덱스",
             "path": "/api/v1/",
             "method": "GET",
             "description": "사용 가능한 API 목록",
+            "params": [],
         },
     ]
     base_api_url = request.build_absolute_uri("/api/v1/")

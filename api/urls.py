@@ -8,4 +8,5 @@ urlpatterns = [
     path("v1/", views.api_index, name="api_index"),
     path("v1/explorer/", views.api_explorer, name="api_explorer"),
     path("v1/stores/", views.store_feed, name="store_feed"),
+    path("v1/stores/<str:store_id>/owner/", views.store_owner_info, name="store_owner_info"),
 ]
