@@ -1,0 +1,165 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SatoShop External API",
+    "version": "1.0.0",
+    "description": "스토어 목록 및 공개 리소스 제공 API"
+  },
+  "servers": [
+    { "url": "/api/v1" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API 목록",
+        "description": "사용 가능한 API 엔드포인트 목록을 반환",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string" },
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": { "type": "string" },
+                          "method": { "type": "string" },
+                          "description": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/stores/": {
+      "get": {
+        "summary": "활성 스토어 목록",
+        "description": "활성 스토어와 공개 리소스를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stores": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Store" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Owner": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string" },
+          "chat_channel": { "type": "string", "format": "uri" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "price": { "type": "integer" },
+          "price_currency": { "type": "string" },
+          "is_discounted": { "type": "boolean" },
+          "discounted_price": { "type": ["integer", "null"] },
+          "stock_quantity": { "type": "integer" },
+          "is_out_of_stock": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Meetup": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "date_time": { "type": ["string", "null"], "format": "date-time" },
+          "location": { "type": "string" },
+          "is_free": { "type": "boolean" },
+          "price": { "type": "integer" },
+          "is_discounted": { "type": "boolean" },
+          "discounted_price": { "type": ["integer", "null"] },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LiveLecture": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "date_time": { "type": ["string", "null"], "format": "date-time" },
+          "price_mode": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_discounted": { "type": "boolean" },
+          "discounted_price": { "type": ["integer", "null"] },
+          "is_free": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DigitalFile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "price_mode": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_discounted": { "type": "boolean" },
+          "discounted_price": { "type": ["integer", "null"] },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "store_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "owner": { "$ref": "#/components/schemas/Owner" },
+          "products": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
+          "meetups": { "type": "array", "items": { "$ref": "#/components/schemas/Meetup" } },
+          "live_lectures": { "type": "array", "items": { "$ref": "#/components/schemas/LiveLecture" } },
+          "digital_files": { "type": "array", "items": { "$ref": "#/components/schemas/DigitalFile" } },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}
