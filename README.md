@@ -649,7 +649,7 @@ docker run \
   - `GET /api/v1/stores/{store_id}/meetups/`
   - `GET /api/v1/stores/{store_id}/live-lectures/`
   - `GET /api/v1/stores/{store_id}/digital-files/`
-  - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
+  - 각 항목에서 제목/설명, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
   - **아이템 가격 필드 가이드(상품/밋업/라이브 강의/디지털 파일)**:
     - `pricing_mode`: `sats|krw` (일부 아이템은 `free` 포함)
     - `display_currency`, `display_price`, `display_discounted_price`: 화면 표시용

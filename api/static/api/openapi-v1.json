@@ -633,6 +633,7 @@
         "properties": {
           "id": { "type": "integer" },
           "title": { "type": "string" },
+          "description": { "type": "string" },
           "thumbnail": { "type": ["string", "null"], "format": "uri" },
           "pricing_mode": { "type": "string", "description": "가격 입력 모드(sats|krw)" },
           "display_currency": { "type": "string", "description": "표시 통화(krw|sats)" },
@@ -652,6 +653,7 @@
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
+          "description": { "type": "string" },
           "date_time": { "type": ["string", "null"], "format": "date-time" },
           "location": { "type": "string" },
           "is_free": { "type": "boolean" },
@@ -672,6 +674,7 @@
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
+          "description": { "type": "string" },
           "thumbnail": { "type": ["string", "null"], "format": "uri" },
           "date_time": { "type": ["string", "null"], "format": "date-time" },
           "pricing_mode": { "type": "string", "description": "가격 입력 모드(free|sats|krw)" },
@@ -691,6 +694,7 @@
         "properties": {
           "id": { "type": "integer" },
           "name": { "type": "string" },
+          "description": { "type": "string" },
           "thumbnail": { "type": ["string", "null"], "format": "uri" },
           "pricing_mode": { "type": "string", "description": "가격 입력 모드(free|sats|krw)" },
           "display_currency": { "type": "string", "description": "표시 통화(sats|krw)" },

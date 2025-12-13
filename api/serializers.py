@@ -28,6 +28,7 @@ def serialize_product(product: Product) -> dict:
     return {
         "id": product.id,
         "title": product.title,
+        "description": product.description,
         "thumbnail": product.images.first().file_url if hasattr(product, "images") and product.images.exists() else None,
         "pricing_mode": product.price_display,
         "display_currency": display_currency,
@@ -53,6 +54,7 @@ def serialize_meetup(meetup: Meetup) -> dict:
     return {
         "id": meetup.id,
         "name": meetup.name,
+        "description": meetup.description,
         "date_time": _format_datetime(meetup.date_time),
         "location": meetup.location_full_address,
         "is_free": meetup.is_free,
@@ -88,6 +90,7 @@ def serialize_live_lecture(live_lecture: LiveLecture) -> dict:
     return {
         "id": live_lecture.id,
         "name": live_lecture.name,
+        "description": live_lecture.description,
         "thumbnail": live_lecture.images.first().file_url if hasattr(live_lecture, "images") and live_lecture.images.exists() else None,
         "date_time": _format_datetime(live_lecture.date_time),
         "pricing_mode": pricing_mode,
@@ -132,6 +135,7 @@ def serialize_digital_file(digital_file: DigitalFile) -> dict:
     return {
         "id": digital_file.id,
         "name": digital_file.name,
+        "description": digital_file.description,
         "thumbnail": digital_file.preview_image.url if digital_file.preview_image else None,
         "pricing_mode": pricing_mode,
         "display_currency": display_currency,
