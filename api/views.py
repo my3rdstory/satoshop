@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.db import transaction, models
 from django.contrib.auth import get_user_model
 from boards.models import Notice
@@ -421,10 +422,28 @@ def api_index(request):
         "version": "v1",
         "endpoints": [
             {"path": "/api/v1/stores/", "method": "GET", "description": "활성 스토어와 공개 데이터 목록"},
+            {"path": "/api/v1/csrf/", "method": "GET", "description": "CSRF 쿠키 발급(로컬 SPA 테스트용)"},
             {"path": "/api/v1/stores/<store_id>/lightning-invoices/", "method": "POST", "description": "스토어 라이트닝 인보이스 발행"},
         ],
     }
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
+@require_GET
+@ensure_csrf_cookie
+def api_csrf(request):
+    """CSRF 쿠키를 발급한다(브라우저 기반 API 테스트 지원)."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    response = JsonResponse({"detail": "ok"}, status=200, json_dumps_params={"ensure_ascii": False})
     apply_cors_headers(response, origin_check)
     return response
 
