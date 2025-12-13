@@ -649,7 +649,12 @@ docker run \
   - `GET /api/v1/stores/{store_id}/meetups/`
   - `GET /api/v1/stores/{store_id}/live-lectures/`
   - `GET /api/v1/stores/{store_id}/digital-files/`
-  - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다. 상품의 경우 `price`는 표시 통화(사토시/원화) 기준이고, 실제 결제에 사용할 사토시 금액은 `price_sats`(할인 시 `discounted_price_sats`)를 사용하세요.
+  - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
+  - **상품 가격 필드 가이드(권장)**:
+    - `pricing_mode`: `sats|krw` (입력 모드)
+    - `display_currency`, `display_price`, `display_discounted_price`: 화면 표시용
+    - `pay_price_sats`, `pay_discounted_price_sats`: 결제/정산/합계 계산용(항상 사토시, 환율 적용 포함)
+    - 하위 호환으로 `price*`, `discounted_price*` 필드도 유지되지만, 외부 앱은 위 “표준 필드” 사용을 권장합니다.
 - **엔드포인트(스토어별 상품 주문 생성)**: `POST /api/v1/stores/{store_id}/orders/` — 장바구니 없이 바로 주문 생성. 필수 필드: 구매자 정보(이름/연락처/이메일), 배송지(우편번호/주소/상세주소), items 배열(`product_id`, `quantity`). 옵션: `order_memo`, `payment_id`, `mark_as_paid`(true 시 즉시 결제완료 처리). 응답에 주문번호, 금액, 품목 정보가 포함됩니다.
 - **엔드포인트(스토어별 밋업 주문 생성)**: `POST /api/v1/stores/{store_id}/meetups/{meetup_id}/orders/` — 참가자 정보와 선택 옵션(`selected_options` 배열: `option_id`, `choice_id`, `additional_price`)을 받아 밋업 주문을 생성합니다. 응답에 주문번호, 기본/옵션 가격, 총액이 포함됩니다.
 - **엔드포인트(스토어별 라이브 강의 주문 생성)**: `POST /api/v1/stores/{store_id}/live-lectures/{live_lecture_id}/orders/` — 구매자 정보(이름/이메일/연락처)를 받아 라이브 강의 참가 주문을 생성하고 결제 대기 상태로 저장합니다. 응답에 주문번호, 금액, 할인 적용 여부가 포함됩니다.

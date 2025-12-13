@@ -19,17 +19,32 @@ def _format_datetime(value) -> Optional[str]:
 
 
 def serialize_product(product: Product) -> dict:
+    display_currency = "krw" if product.price_display == "krw" else "sats"
+    display_price = product.display_price
+    display_discounted_price = product.display_discounted_price
+    pay_price_sats = product.public_price
+    pay_discounted_price_sats = product.public_discounted_price
+
     return {
         "id": product.id,
         "title": product.title,
         "thumbnail": product.images.first().file_url if hasattr(product, "images") and product.images.exists() else None,
+        # 새 표준 필드(외부 앱 권장)
+        "pricing_mode": product.price_display,
+        "display_currency": display_currency,
+        "display_price": display_price,
+        "display_discounted_price": display_discounted_price,
+        "pay_price_sats": pay_price_sats,
+        "pay_discounted_price_sats": pay_discounted_price_sats,
+
+        # 기존 필드(하위 호환, 차후 제거 후보)
         "price_mode": product.price_display,
-        "price": product.display_price,
-        "price_currency": "krw" if product.price_display == "krw" else "sats",
-        "price_sats": product.public_price,
+        "price": display_price,
+        "price_currency": display_currency,
+        "price_sats": pay_price_sats,
         "is_discounted": product.is_discounted,
-        "discounted_price": product.display_discounted_price,
-        "discounted_price_sats": product.public_discounted_price,
+        "discounted_price": display_discounted_price,
+        "discounted_price_sats": pay_discounted_price_sats,
         "stock_quantity": product.stock_quantity,
         "is_out_of_stock": product.is_temporarily_out_of_stock,
         "created_at": _format_datetime(product.created_at),
