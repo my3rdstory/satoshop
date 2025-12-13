@@ -26,6 +26,7 @@ from .services import (
     get_active_stores_with_relations,
     get_store_owner,
     get_active_notices,
+    issue_store_lightning_invoice,
 )
 from orders.models import Order, OrderItem
 from products.models import Product
@@ -337,6 +338,74 @@ def store_create_order(request, store_id: str):
     return response
 
 
+@require_POST
+def store_create_lightning_invoice(request, store_id: str):
+    """스토어 주인장용 BOLT11 인보이스 발행 API."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    store = get_store_owner(store_id)
+    if not store:
+        return JsonResponse({"detail": "스토어를 찾을 수 없습니다."}, status=404)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "JSON 형식이 아닙니다."}, status=400)
+
+    amount_sats = payload.get("amount_sats")
+    if not isinstance(amount_sats, int) or amount_sats < 1:
+        return JsonResponse({"detail": "amount_sats는 1 이상의 정수여야 합니다."}, status=400)
+
+    memo = payload.get("memo") or "외부 앱 결제"
+    if not isinstance(memo, str):
+        return JsonResponse({"detail": "memo는 문자열이어야 합니다."}, status=400)
+    if len(memo) > 120:
+        return JsonResponse({"detail": "memo는 최대 120자까지 허용됩니다."}, status=400)
+
+    expires_in_minutes = payload.get("expires_in_minutes", 15)
+    if not isinstance(expires_in_minutes, int) or expires_in_minutes < 1:
+        return JsonResponse({"detail": "expires_in_minutes는 1 이상의 정수여야 합니다."}, status=400)
+
+    try:
+        result = issue_store_lightning_invoice(
+            store,
+            amount_sats=amount_sats,
+            memo=memo,
+            expires_in_minutes=expires_in_minutes,
+        )
+    except ValueError as exc:
+        return JsonResponse({"detail": str(exc)}, status=400)
+    except RuntimeError as exc:
+        return JsonResponse({"detail": str(exc)}, status=502)
+
+    payment_request = result.get("invoice") or ""
+    expires_at = result.get("expires_at")
+    if expires_at and timezone.is_naive(expires_at):
+        expires_at = timezone.make_aware(expires_at)
+
+    response_payload = {
+        "store_id": store.store_id,
+        "amount_sats": result.get("amount_sats") or amount_sats,
+        "payment_request": payment_request,
+        "invoice_uri": f"lightning:{payment_request}" if payment_request else "",
+        "payment_hash": result.get("payment_hash") or "",
+        "expires_at": expires_at.isoformat() if expires_at else None,
+    }
+    response = JsonResponse(response_payload, status=201, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
 @require_GET
 def api_index(request):
     """사용 가능한 API 엔드포인트 목록 안내."""
@@ -352,6 +421,7 @@ def api_index(request):
         "version": "v1",
         "endpoints": [
             {"path": "/api/v1/stores/", "method": "GET", "description": "활성 스토어와 공개 데이터 목록"},
+            {"path": "/api/v1/stores/<store_id>/lightning-invoices/", "method": "POST", "description": "스토어 라이트닝 인보이스 발행"},
         ],
     }
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})

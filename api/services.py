@@ -6,6 +6,7 @@ from meetup.models import Meetup
 from lecture.models import LiveLecture
 from file.models import DigitalFile
 from boards.models import Notice
+from ln_payment.blink_service import get_blink_service_for_store
 
 
 def get_active_stores_with_relations():
@@ -72,3 +73,22 @@ def get_active_notices():
         .select_related("author")
         .order_by("-is_pinned", "-created_at")
     )
+
+
+def issue_store_lightning_invoice(
+    store: Store,
+    *,
+    amount_sats: int,
+    memo: str,
+    expires_in_minutes: int,
+):
+    """스토어 Blink 지갑으로 BOLT11 인보이스를 발행한다."""
+    blink = get_blink_service_for_store(store)
+    result = blink.create_invoice(
+        amount_sats=amount_sats,
+        memo=memo,
+        expires_in_minutes=expires_in_minutes,
+    )
+    if not result.get("success"):
+        raise RuntimeError(result.get("error") or "인보이스 생성 실패")
+    return result

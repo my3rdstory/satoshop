@@ -15,6 +15,11 @@ urlpatterns = [
     path("v1/stores/<str:store_id>/live-lectures/", views.store_live_lectures, name="store_live_lectures"),
     path("v1/stores/<str:store_id>/digital-files/", views.store_digital_files, name="store_digital_files"),
     path("v1/stores/<str:store_id}/orders/", views.store_create_order, name="store_create_order"),
+    path(
+        "v1/stores/<str:store_id>/lightning-invoices/",
+        views.store_create_lightning_invoice,
+        name="store_create_lightning_invoice",
+    ),
     path("v1/notices/", views.notice_list, name="notice_list"),
     path("v1/notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
 
