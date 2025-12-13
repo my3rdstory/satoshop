@@ -300,6 +300,147 @@
         }
       }
     },
+    "/stores/{store_id}/live-lectures/{live_lecture_id}/orders/": {
+      "post": {
+        "summary": "라이브 강의 주문 생성",
+        "description": "구매자 정보를 받아 라이브 강의 참가 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "live_lecture_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buyer_name": { "type": "string" },
+                  "buyer_email": { "type": "string", "format": "email" },
+                  "buyer_phone": { "type": "string" },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["buyer_name", "buyer_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveLectureOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 강의 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/meetups/{meetup_id}/orders/": {
+      "post": {
+        "summary": "밋업 주문 생성",
+        "description": "참가자 정보를 받아 밋업 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "meetup_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "participant_name": { "type": "string" },
+                  "participant_email": { "type": "string", "format": "email" },
+                  "participant_phone": { "type": "string" },
+                  "selected_options": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "option_id": { "type": "integer" },
+                        "choice_id": { "type": "integer" },
+                        "additional_price": { "type": "integer" }
+                      },
+                      "required": ["option_id", "choice_id"]
+                    }
+                  },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["participant_name", "participant_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MeetupOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 밋업 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/digital-files/{file_id}/orders/": {
+      "post": {
+        "summary": "디지털 파일 주문 생성",
+        "description": "구매자 정보를 받아 디지털 파일 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "file_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buyer_name": { "type": "string" },
+                  "buyer_email": { "type": "string", "format": "email" },
+                  "buyer_phone": { "type": "string" },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["buyer_name", "buyer_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DigitalFileOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 파일 없음" }
+        }
+      }
+    },
     "/stores/{store_id}/lightning-invoices/": {
       "post": {
         "summary": "스토어 주인장 라이트닝 인보이스 발행",
@@ -451,6 +592,45 @@
           "name": { "type": "string" },
           "owner": { "$ref": "#/components/schemas/Owner" },
           "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LiveLectureOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_early_bird": { "type": "boolean" },
+          "discount_rate": { "type": "integer" },
+          "original_price": { "type": ["integer", "null"] },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MeetupOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "base_price": { "type": "integer" },
+          "options_price": { "type": "integer" },
+          "total_price": { "type": "integer" },
+          "is_early_bird": { "type": "boolean" },
+          "discount_rate": { "type": "integer" },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "DigitalFileOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_discounted": { "type": "boolean" },
+          "download_expires_at": { "type": ["string", "null"], "format": "date-time" },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
         }
       },
       "LightningInvoice": {
