@@ -68,6 +68,56 @@
         }
       }
     },
+    "/notices/": {
+      "get": {
+        "summary": "공지사항 목록",
+        "description": "활성 공지사항 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notices": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/NoticeSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" }
+        }
+      }
+    },
+    "/notices/{notice_id}/": {
+      "get": {
+        "summary": "공지사항 상세",
+        "description": "공지사항 단건 상세를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "notice_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NoticeDetail" }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "공지사항 없음" }
+        }
+      }
+    },
     "/stores/{store_id}/owner/": {
       "get": {
         "summary": "스토어 주인장 정보",
@@ -438,56 +488,6 @@
           "401": { "description": "인증 실패" },
           "403": { "description": "비활성 키 또는 차단" },
           "404": { "description": "스토어 또는 파일 없음" }
-        }
-      }
-    },
-    "/notices/": {
-      "get": {
-        "summary": "공지사항 목록",
-        "description": "활성 공지사항 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "성공",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "notices": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/NoticeSummary" }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "인증 실패" },
-          "403": { "description": "비활성 키 또는 차단" }
-        }
-      }
-    },
-    "/notices/{notice_id}/": {
-      "get": {
-        "summary": "공지사항 상세",
-        "description": "공지사항 단건 상세를 반환",
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "notice_id", "in": "path", "required": true, "schema": { "type": "integer" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "성공",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/NoticeDetail" }
-              }
-            }
-          },
-          "401": { "description": "인증 실패" },
-          "403": { "description": "비활성 키 또는 차단" },
-          "404": { "description": "공지사항 없음" }
         }
       }
     },
