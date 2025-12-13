@@ -41,6 +41,16 @@
         }
       }
     },
+    "/csrf/": {
+      "get": {
+        "summary": "CSRF 쿠키 발급",
+        "description": "브라우저(예: Vite 개발 서버)에서 POST 요청을 테스트하기 위한 CSRF 쿠키(csrftoken)를 발급한다. 먼저 이 엔드포인트를 credentials 포함으로 호출한 뒤, 이후 POST 요청에 X-CSRFToken 헤더를 포함해야 한다.",
+        "responses": {
+          "200": { "description": "CSRF 쿠키 발급 성공" },
+          "403": { "description": "허용되지 않은 Origin/IP" }
+        }
+      }
+    },
     "/notices/": {
       "get": {
         "summary": "공지사항 목록",

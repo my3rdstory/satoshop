@@ -639,6 +639,7 @@ docker run \
 ## 🔌 외부 API
 
 - **인증**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
+- **브라우저 로컬 테스트(CSRF)**: 프런트 개발 서버(예: `http://localhost:5173`)에서 `POST /api/v1/...`를 호출하면 CSRF 보호로 403이 날 수 있습니다. 이때 `CSRF_TRUSTED_ORIGINS`에 프런트 Origin을 등록하고, 먼저 `GET /api/v1/csrf/`(쿠키 발급) 호출 후 `X-CSRFToken` 헤더 + `credentials: include`로 POST를 수행하세요.
 - **엔드포인트(공지사항 목록)**: `GET /api/v1/notices/` — 활성 공지사항을 고정 여부/작성일 역순으로 반환합니다. 제목, 본문, 고정 여부, 생성·수정 시각을 포함합니다.
 - **엔드포인트(공지사항 상세)**: `GET /api/v1/notices/{notice_id}/` — 특정 공지의 제목/내용/작성자/고정 여부와 생성·수정 시각을 반환합니다.
 - **엔드포인트**: `GET /api/v1/stores/` — 활성 스토어 목록과 스토어별 공개 데이터(주인장 정보, 활성 상품/밋업/라이브 강의/디지털 파일)를 반환합니다.
