@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction, models
 from django.contrib.auth import get_user_model
 from boards.models import Notice
@@ -183,6 +184,7 @@ def notice_detail(request, notice_id: int):
 
 @require_POST
 @transaction.atomic
+@csrf_exempt
 def store_create_order(request, store_id: str):
     """스토어별 상품 주문 생성 (장바구니 없이 단일 호출)."""
     ip_block = enforce_ip_allowlist(request)
@@ -339,6 +341,7 @@ def store_create_order(request, store_id: str):
 
 
 @require_POST
+@csrf_exempt
 def store_create_lightning_invoice(request, store_id: str):
     """스토어 주인장용 BOLT11 인보이스 발행 API."""
     ip_block = enforce_ip_allowlist(request)
