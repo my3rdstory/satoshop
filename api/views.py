@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from django.db import transaction, models
 from django.contrib.auth import get_user_model
+from boards.models import Notice
 
 from .authentication import authenticate_request
 from .policies import apply_cors_headers, enforce_ip_allowlist, enforce_origin_allowlist
@@ -14,6 +15,8 @@ from .serializers import (
     serialize_store_item_payload,
     serialize_store_list,
     serialize_store_owner,
+    serialize_notice_summary,
+    serialize_notice_detail,
 )
 from .services import (
     get_active_digital_files,
@@ -22,6 +25,7 @@ from .services import (
     get_active_products,
     get_active_stores_with_relations,
     get_store_owner,
+    get_active_notices,
 )
 from orders.models import Order, OrderItem
 from products.models import Product
@@ -126,6 +130,54 @@ def store_live_lectures(request, store_id: str):
 @require_GET
 def store_digital_files(request, store_id: str):
     return _store_item_response(request, store_id, get_active_digital_files, serialize_digital_file)
+
+
+@require_GET
+def notice_list(request):
+    """공지사항 목록을 반환."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    notices = get_active_notices()
+    payload = {"notices": [serialize_notice_summary(notice) for notice in notices]}
+    response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
+@require_GET
+def notice_detail(request, notice_id: int):
+    """공지사항 단건 상세를 반환."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    try:
+        notice = get_active_notices().get(id=notice_id)
+    except Notice.DoesNotExist:
+        return JsonResponse({"detail": "공지사항을 찾을 수 없습니다."}, status=404)
+
+    payload = serialize_notice_detail(notice)
+    response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
 
 
 @require_POST

@@ -652,6 +652,8 @@ docker run \
 - **엔드포인트(스토어별 라이브 강의 주문 생성)**: `POST /api/v1/stores/{store_id}/live-lectures/{live_lecture_id}/orders/` — 구매자 정보(이름/이메일/연락처)를 받아 라이브 강의 참가 주문을 생성하고 결제 대기 상태로 저장합니다. 응답에 주문번호, 금액, 할인 적용 여부가 포함됩니다.
 - **엔드포인트(스토어별 디지털 파일 주문 생성)**: `POST /api/v1/stores/{store_id}/digital-files/{file_id}/orders/` — 구매자 정보(이름/이메일/연락처)를 받아 디지털 파일 주문을 생성합니다. 응답에 주문번호, 금액, 다운로드 가능 여부(결제 후)가 포함됩니다.
 - **엔드포인트(라이트닝 인보이스 생성)**: `POST /api/v1/stores/{store_id}/lightning-invoices/` — 스토어 주인장이 외부 앱 결제용 BOLT11 인보이스를 발행합니다. 필수: `amount_sats`(정수, 최소 1). 옵션: `memo`(최대 120자), `expires_in_minutes`(기본 15분). 응답: `payment_request`(BOLT11), `payment_hash`, `invoice_uri`(`lightning:<payment_request>`), `amount_sats`, `expires_at`, `store_id`. 스토어 주인장 소유 API 키만 허용되며, 만료 후 재발행 시 새 `payment_hash`가 부여됩니다.
+- **엔드포인트(공지사항 목록)**: `GET /api/v1/notices/` — 활성 공지사항을 고정 여부/작성일 역순으로 반환합니다. 제목, 본문, 고정 여부, 생성·수정 시각을 포함합니다.
+- **엔드포인트(공지사항 상세)**: `GET /api/v1/notices/{notice_id}/` — 특정 공지의 제목/내용/작성자/고정 여부와 생성·수정 시각을 반환합니다.
 - **채널 태깅**: API 키에 `channel_slug`를 설정하면 해당 키로 생성한 주문의 `channel` 필드에 자동 저장되어 채널별 집계/필터가 가능합니다(없으면 `api-<key_prefix>`로 기록).
 - **응답 예시**
   ```bash

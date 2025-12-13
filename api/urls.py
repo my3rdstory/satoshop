@@ -15,6 +15,8 @@ urlpatterns = [
     path("v1/stores/<str:store_id>/live-lectures/", views.store_live_lectures, name="store_live_lectures"),
     path("v1/stores/<str:store_id>/digital-files/", views.store_digital_files, name="store_digital_files"),
     path("v1/stores/<str:store_id}/orders/", views.store_create_order, name="store_create_order"),
+    path("v1/notices/", views.notice_list, name="notice_list"),
+    path("v1/notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
 
     # Admin 통합 채널 판매 리포트
     path("admin/channel-sales/", ChannelSalesView.as_view(), name="channel_sales"),

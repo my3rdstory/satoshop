@@ -7,6 +7,7 @@ from products.models import Product
 from meetup.models import Meetup
 from lecture.models import LiveLecture
 from file.models import DigitalFile
+from boards.models import Notice
 
 
 def _format_datetime(value) -> Optional[str]:
@@ -143,4 +144,30 @@ def serialize_store_item_payload(store: Store, items: list, serializer_fn):
             "name": store.store_name,
         },
         "items": [serializer_fn(item) for item in items],
+    }
+
+
+def serialize_notice_summary(notice: Notice) -> dict:
+    return {
+        "id": notice.id,
+        "title": notice.title,
+        "content": notice.content,
+        "is_pinned": notice.is_pinned,
+        "created_at": _format_datetime(notice.created_at),
+        "updated_at": _format_datetime(notice.updated_at),
+    }
+
+
+def serialize_notice_detail(notice: Notice) -> dict:
+    return {
+        "id": notice.id,
+        "title": notice.title,
+        "content": notice.content,
+        "is_pinned": notice.is_pinned,
+        "created_at": _format_datetime(notice.created_at),
+        "updated_at": _format_datetime(notice.updated_at),
+        "author": {
+            "id": notice.author.id,
+            "username": notice.author.username,
+        },
     }

@@ -5,6 +5,7 @@ from products.models import Product
 from meetup.models import Meetup
 from lecture.models import LiveLecture
 from file.models import DigitalFile
+from boards.models import Notice
 
 
 def get_active_stores_with_relations():
@@ -62,3 +63,12 @@ def get_active_live_lectures(store):
 
 def get_active_digital_files(store):
     return store.digital_files.filter(is_active=True, is_temporarily_closed=False, deleted_at__isnull=True).order_by("-created_at")
+
+
+def get_active_notices():
+    """활성화된 공지사항 목록을 고정 여부/생성일 역순으로 조회."""
+    return (
+        Notice.objects.filter(is_active=True)
+        .select_related("author")
+        .order_by("-is_pinned", "-created_at")
+    )
