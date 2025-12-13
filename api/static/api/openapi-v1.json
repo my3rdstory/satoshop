@@ -41,33 +41,6 @@
         }
       }
     },
-    "/stores/": {
-      "get": {
-        "summary": "활성 스토어 목록",
-        "description": "활성 스토어와 공개 리소스를 반환",
-        "security": [{ "bearerAuth": [] }],
-        "responses": {
-          "200": {
-            "description": "성공",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "stores": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Store" }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": { "description": "인증 실패" },
-          "403": { "description": "비활성 키 또는 차단" }
-        }
-      }
-    },
     "/notices/": {
       "get": {
         "summary": "공지사항 목록",
@@ -115,6 +88,33 @@
           "401": { "description": "인증 실패" },
           "403": { "description": "비활성 키 또는 차단" },
           "404": { "description": "공지사항 없음" }
+        }
+      }
+    },
+    "/stores/": {
+      "get": {
+        "summary": "활성 스토어 목록",
+        "description": "활성 스토어와 공개 리소스를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stores": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Store" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" }
         }
       }
     },
