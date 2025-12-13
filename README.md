@@ -648,6 +648,7 @@ docker run \
   - `GET /api/v1/stores/{store_id}/digital-files/`
   - 각 항목에서 제목, 썸네일(있을 경우), 가격/할인, 재고/일시중단 상태 등을 조회할 수 있습니다.
 - **엔드포인트(주문 생성)**: `POST /api/v1/stores/{store_id}/orders/` — 장바구니 없이 바로 주문 생성. 필수 필드: 구매자 정보(이름/연락처/이메일), 배송지(우편번호/주소/상세주소), items 배열(`product_id`, `quantity`). 옵션: `order_memo`, `payment_id`, `mark_as_paid`(true 시 즉시 결제완료 처리). 응답에 주문번호, 금액, 품목 정보가 포함됩니다.
+- **엔드포인트(라이트닝 인보이스 생성)**: `POST /api/v1/stores/{store_id}/lightning-invoices/` — 스토어 주인장이 외부 앱 결제용 BOLT11 인보이스를 발행합니다. 필수: `amount_sats`(정수, 최소 1). 옵션: `memo`(최대 120자), `expires_in_minutes`(기본 15분). 응답: `payment_request`(BOLT11), `payment_hash`, `invoice_uri`(`lightning:<payment_request>`), `amount_sats`, `expires_at`, `store_id`. 스토어 주인장 소유 API 키만 허용되며, 만료 후 재발행 시 새 `payment_hash`가 부여됩니다.
 - **채널 태깅**: API 키에 `channel_slug`를 설정하면 해당 키로 생성한 주문의 `channel` 필드에 자동 저장되어 채널별 집계/필터가 가능합니다(없으면 `api-<key_prefix>`로 기록).
 - **응답 예시**
   ```bash
@@ -674,6 +675,23 @@ docker run \
         "updated_at": "2025-12-12T08:51:00Z"
       }
     ]
+  }
+  ```
+- **요청/응답 예시(라이트닝 인보이스 생성)**
+  ```bash
+  curl -X POST https://<host>/api/v1/stores/sample-store/lightning-invoices/ \
+    -H "Authorization: Bearer <api_key>" \
+    -H "Content-Type: application/json" \
+    -d '{"amount_sats": 12000, "memo": "외부 앱 결제", "expires_in_minutes": 10}'
+  ```
+  ```json
+  {
+    "store_id": "sample-store",
+    "amount_sats": 12000,
+    "payment_request": "lnbc120u1p...8p0gsqd8s9...",
+    "invoice_uri": "lightning:lnbc120u1p...8p0gsqd8s9...",
+    "payment_hash": "b3c4e4d6c9f14842b2da12fdd5f3a1aa",
+    "expires_at": "2025-12-13T12:50:00Z"
   }
   ```
 - **추가 보안 설정**: Django Admin → **API IP 허용 목록**에서 허용 IP/CIDR을 등록할 수 있고, **API 허용 Origin**에서 CORS Origin을 복수 등록할 수 있습니다. HTTPS는 필수이며, 프록시/방화벽 레이트리밋을 병행해 키 유출 시 피해를 최소화하세요.
