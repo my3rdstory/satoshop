@@ -299,6 +299,46 @@
           "404": { "description": "스토어 없음" }
         }
       }
+    },
+    "/stores/{store_id}/lightning-invoices/": {
+      "post": {
+        "summary": "스토어 주인장 라이트닝 인보이스 발행",
+        "description": "스토어 주인장이 외부 앱 결제용 BOLT11 인보이스를 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount_sats": { "type": "integer", "minimum": 1 },
+                  "memo": { "type": "string", "maxLength": 120 },
+                  "expires_in_minutes": { "type": "integer", "minimum": 1, "default": 15 }
+                },
+                "required": ["amount_sats"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "인보이스 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LightningInvoice" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키, 주인장 아님, 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
     }
   },
   "components": {
@@ -412,6 +452,18 @@
           "owner": { "$ref": "#/components/schemas/Owner" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
+      },
+      "LightningInvoice": {
+        "type": "object",
+        "properties": {
+          "store_id": { "type": "string" },
+          "amount_sats": { "type": "integer" },
+          "payment_request": { "type": "string" },
+          "invoice_uri": { "type": "string", "format": "uri" },
+          "payment_hash": { "type": "string" },
+          "expires_at": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "required": ["store_id", "amount_sats", "payment_request", "payment_hash"]
       }
     }
   }
