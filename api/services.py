@@ -51,7 +51,7 @@ def get_store_owner(store_id: str):
 
 
 def get_active_products(store):
-    return store.products.filter(is_active=True).order_by("-created_at")
+    return store.products.filter(is_active=True).prefetch_related("images").order_by("-created_at")
 
 
 def get_active_meetups(store):
