@@ -92,3 +92,12 @@ def issue_store_lightning_invoice(
     if not result.get("success"):
         raise RuntimeError(result.get("error") or "인보이스 생성 실패")
     return result
+
+
+def check_store_lightning_invoice_status(store: Store, *, payment_hash: str):
+    """스토어 Blink 지갑 기준으로 인보이스 결제 상태를 확인한다."""
+    blink = get_blink_service_for_store(store)
+    result = blink.check_invoice_status(payment_hash)
+    if not result.get("success"):
+        raise RuntimeError(result.get("error") or "결제 상태 확인 실패")
+    return result

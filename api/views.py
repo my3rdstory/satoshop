@@ -28,6 +28,7 @@ from .services import (
     get_store_owner,
     get_active_notices,
     issue_store_lightning_invoice,
+    check_store_lightning_invoice_status,
 )
 from orders.models import Order, OrderItem
 from products.models import Product
@@ -407,6 +408,188 @@ def store_create_lightning_invoice(request, store_id: str):
     return response
 
 
+@require_POST
+@transaction.atomic
+def store_confirm_lightning_invoice_and_create_order(request, store_id: str):
+    """인보이스 결제 완료를 확인한 뒤 주문을 생성한다."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    auth_result = authenticate_request(request)
+    if not auth_result.is_authenticated:
+        return auth_result.response
+
+    store = get_store_owner(store_id)
+    if not store:
+        return JsonResponse({"detail": "스토어를 찾을 수 없습니다."}, status=404)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"detail": "JSON 형식이 아닙니다."}, status=400)
+
+    payment_hash = payload.get("payment_hash")
+    if not payment_hash or not isinstance(payment_hash, str):
+        return JsonResponse({"detail": "payment_hash는 필수입니다."}, status=400)
+
+    existing = Order.objects.filter(store=store, payment_id=payment_hash).first()
+    if existing:
+        response_payload = {
+            "order_id": existing.id,
+            "order_number": existing.order_number,
+            "status": existing.status,
+            "paid_at": existing.paid_at.isoformat() if existing.paid_at else None,
+        }
+        response = JsonResponse(response_payload, status=200, json_dumps_params={"ensure_ascii": False})
+        apply_cors_headers(response, origin_check)
+        return response
+
+    try:
+        status_result = check_store_lightning_invoice_status(store, payment_hash=payment_hash)
+    except RuntimeError as exc:
+        return JsonResponse({"detail": str(exc)}, status=502)
+
+    invoice_status = status_result.get("status")
+    if invoice_status != "paid":
+        response = JsonResponse(
+            {"detail": "아직 결제 완료가 확인되지 않았습니다.", "status": invoice_status},
+            status=409,
+            json_dumps_params={"ensure_ascii": False},
+        )
+        apply_cors_headers(response, origin_check)
+        return response
+
+    payload["payment_id"] = payment_hash
+    payload["mark_as_paid"] = True
+
+    # store_create_order의 검증/생성 로직을 그대로 재사용하기 위해 내부 호출용 request.body를 재구성하지 않고
+    # 아래와 동일한 규칙으로 한 번 더 생성한다.
+    required_fields = [
+        "buyer_name",
+        "buyer_phone",
+        "buyer_email",
+        "shipping_postal_code",
+        "shipping_address",
+        "shipping_detail_address",
+        "items",
+    ]
+    missing = [f for f in required_fields if not payload.get(f)]
+    if missing:
+        return JsonResponse({"detail": f"필수 필드 누락: {', '.join(missing)}"}, status=400)
+
+    items_data = payload.get("items") or []
+    if not isinstance(items_data, list) or not items_data:
+        return JsonResponse({"detail": "items 는 비어 있을 수 없습니다."}, status=400)
+
+    product_ids = []
+    quantities = {}
+    for item in items_data:
+        pid = item.get("product_id")
+        qty = item.get("quantity", 0)
+        if not pid or qty <= 0:
+            return JsonResponse({"detail": "product_id와 quantity는 필수이며 수량은 1 이상이어야 합니다."}, status=400)
+        product_ids.append(pid)
+        quantities[pid] = qty
+
+    products = list(
+        Product.objects.filter(
+            id__in=product_ids,
+            store=store,
+            is_active=True,
+            is_temporarily_out_of_stock=False,
+        )
+    )
+    if len(products) != len(set(product_ids)):
+        return JsonResponse({"detail": "유효하지 않은 상품이 포함되어 있습니다."}, status=400)
+
+    subtotal = 0
+    order_items_data = []
+    for product in products:
+        qty = quantities[product.id]
+        if product.stock_quantity is not None and product.stock_quantity < qty:
+            return JsonResponse({"detail": f"{product.title} 재고 부족"}, status=400)
+        unit_price = product.public_discounted_price if product.public_discounted_price else product.public_price
+        order_items_data.append(
+            {
+                "product": product,
+                "title": product.title,
+                "unit_price": unit_price,
+                "quantity": qty,
+            }
+        )
+        subtotal += unit_price * qty
+
+    shipping_fee = store.get_shipping_fee_sats(subtotal_sats=subtotal) if hasattr(store, "get_shipping_fee_sats") else 0
+    total_amount = subtotal + (shipping_fee or 0)
+
+    system_user, _ = User.objects.get_or_create(
+        username="api_order_user",
+        defaults={"email": "api@satoshop.local", "first_name": "API", "last_name": "User"},
+    )
+
+    api_key = auth_result.api_key
+    channel_value = ""
+    if api_key:
+        channel_value = api_key.channel_slug or f"api-{api_key.key_prefix}"
+
+    status = "paid"
+    paid_at = timezone.now()
+
+    order = Order.objects.create(
+        user=system_user,
+        store=store,
+        status=status,
+        delivery_status="preparing",
+        channel=channel_value,
+        buyer_name=payload["buyer_name"],
+        buyer_phone=payload["buyer_phone"],
+        buyer_email=payload["buyer_email"],
+        shipping_postal_code=payload["shipping_postal_code"],
+        shipping_address=payload["shipping_address"],
+        shipping_detail_address=payload["shipping_detail_address"],
+        order_memo=payload.get("order_memo", ""),
+        subtotal=subtotal,
+        shipping_fee=shipping_fee or 0,
+        total_amount=total_amount,
+        payment_id=payment_hash,
+        paid_at=paid_at,
+    )
+
+    for item in order_items_data:
+        OrderItem.objects.create(
+            order=order,
+            product=item["product"],
+            product_title=item["title"],
+            product_price=item["unit_price"],
+            quantity=item["quantity"],
+            selected_options={},
+            options_price=0,
+        )
+        if item["product"].stock_quantity is not None:
+            Product.objects.filter(id=item["product"].id).update(
+                stock_quantity=models.F("stock_quantity") - item["quantity"]
+            )
+
+    response_payload = {
+        "order_id": order.id,
+        "order_number": order.order_number,
+        "status": order.status,
+        "subtotal": subtotal,
+        "shipping_fee": shipping_fee or 0,
+        "total_amount": total_amount,
+        "paid_at": paid_at.isoformat(),
+        "payment_hash": payment_hash,
+    }
+    response = JsonResponse(response_payload, status=201, json_dumps_params={"ensure_ascii": False})
+    apply_cors_headers(response, origin_check)
+    return response
+
+
 @require_GET
 def api_index(request):
     """사용 가능한 API 엔드포인트 목록 안내."""
@@ -424,6 +607,7 @@ def api_index(request):
             {"path": "/api/v1/stores/", "method": "GET", "description": "활성 스토어와 공개 데이터 목록"},
             {"path": "/api/v1/csrf/", "method": "GET", "description": "CSRF 쿠키 발급(로컬 SPA 테스트용)"},
             {"path": "/api/v1/stores/<store_id>/lightning-invoices/", "method": "POST", "description": "스토어 라이트닝 인보이스 발행"},
+            {"path": "/api/v1/stores/<store_id>/lightning-invoices/confirm-order/", "method": "POST", "description": "결제 확인 후 주문 생성"},
         ],
     }
     response = JsonResponse(payload, status=200, json_dumps_params={"ensure_ascii": False})

@@ -21,6 +21,11 @@ urlpatterns = [
         views.store_create_lightning_invoice,
         name="store_create_lightning_invoice",
     ),
+    path(
+        "v1/stores/<str:store_id>/lightning-invoices/confirm-order/",
+        views.store_confirm_lightning_invoice_and_create_order,
+        name="store_confirm_lightning_invoice_and_create_order",
+    ),
     path("v1/notices/", views.notice_list, name="notice_list"),
     path("v1/notices/<int:notice_id>/", views.notice_detail, name="notice_detail"),
 

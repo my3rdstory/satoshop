@@ -540,6 +540,67 @@
           "404": { "description": "스토어 없음" }
         }
       }
+    },
+    "/stores/{store_id}/lightning-invoices/confirm-order/": {
+      "post": {
+        "summary": "인보이스 결제 확인 후 주문 생성",
+        "description": "payment_hash 결제 완료(paid)를 확인한 뒤 주문을 생성한다. 이미 동일 payment_hash로 생성된 주문이 있으면 기존 주문을 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payment_hash": { "type": "string" },
+                  "buyer_name": { "type": "string" },
+                  "buyer_phone": { "type": "string" },
+                  "buyer_email": { "type": "string" },
+                  "shipping_postal_code": { "type": "string" },
+                  "shipping_address": { "type": "string" },
+                  "shipping_detail_address": { "type": "string" },
+                  "order_memo": { "type": "string" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": { "type": "integer" },
+                        "quantity": { "type": "integer", "minimum": 1 }
+                      },
+                      "required": ["product_id", "quantity"]
+                    }
+                  }
+                },
+                "required": [
+                  "payment_hash",
+                  "buyer_name",
+                  "buyer_phone",
+                  "buyer_email",
+                  "shipping_postal_code",
+                  "shipping_address",
+                  "shipping_detail_address",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "이미 생성된 주문 반환" },
+          "201": { "description": "주문 생성 성공" },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" },
+          "409": { "description": "아직 결제 완료 아님" },
+          "502": { "description": "결제 상태 확인 실패" }
+        }
+      }
     }
   },
   "components": {
