@@ -44,15 +44,25 @@ def serialize_product(product: Product) -> dict:
 
 
 def serialize_meetup(meetup: Meetup) -> dict:
+    display_currency = "sats"
+    display_price = 0 if meetup.is_free else meetup.price
+    display_discounted_price = meetup.discounted_price if meetup.is_discounted else None
+    pay_price_sats = display_price
+    pay_discounted_price_sats = display_discounted_price
+
     return {
         "id": meetup.id,
         "name": meetup.name,
         "date_time": _format_datetime(meetup.date_time),
         "location": meetup.location_full_address,
         "is_free": meetup.is_free,
-        "price": meetup.price,
         "is_discounted": meetup.is_discounted,
-        "discounted_price": meetup.discounted_price,
+        "pricing_mode": "sats",
+        "display_currency": display_currency,
+        "display_price": display_price,
+        "display_discounted_price": display_discounted_price,
+        "pay_price_sats": pay_price_sats,
+        "pay_discounted_price_sats": pay_discounted_price_sats,
         "status": meetup.status_display,
         "created_at": _format_datetime(meetup.created_at),
         "updated_at": _format_datetime(meetup.updated_at),
@@ -60,19 +70,33 @@ def serialize_meetup(meetup: Meetup) -> dict:
 
 
 def serialize_live_lecture(live_lecture: LiveLecture) -> dict:
+    pricing_mode = live_lecture.price_display
+    display_currency = "krw" if pricing_mode == "krw" else "sats"
+    display_price = live_lecture.display_price
+    display_discounted_price = live_lecture.display_discounted_price
+
+    if pricing_mode == "free":
+        pay_price_sats = 0
+        pay_discounted_price_sats = 0 if live_lecture.is_discounted else None
+    elif pricing_mode == "krw":
+        pay_price_sats = live_lecture.public_price_krw
+        pay_discounted_price_sats = live_lecture.public_discounted_price_krw if live_lecture.is_discounted else None
+    else:
+        pay_price_sats = live_lecture.price
+        pay_discounted_price_sats = live_lecture.discounted_price if live_lecture.is_discounted else None
+
     return {
         "id": live_lecture.id,
         "name": live_lecture.name,
         "thumbnail": live_lecture.images.first().file_url if hasattr(live_lecture, "images") and live_lecture.images.exists() else None,
         "date_time": _format_datetime(live_lecture.date_time),
-        "price_mode": live_lecture.price_display,
-        "price": live_lecture.price if live_lecture.price_display != "krw" else live_lecture.price_krw,
+        "pricing_mode": pricing_mode,
+        "display_currency": display_currency,
+        "display_price": display_price,
+        "display_discounted_price": display_discounted_price,
+        "pay_price_sats": pay_price_sats,
+        "pay_discounted_price_sats": pay_discounted_price_sats,
         "is_discounted": live_lecture.is_discounted,
-        "discounted_price": (
-            live_lecture.discounted_price_krw
-            if live_lecture.price_display == "krw"
-            else live_lecture.discounted_price
-        ),
         "is_free": live_lecture.price_display == "free",
         "created_at": _format_datetime(live_lecture.created_at),
         "updated_at": _format_datetime(live_lecture.updated_at),
@@ -80,22 +104,42 @@ def serialize_live_lecture(live_lecture: LiveLecture) -> dict:
 
 
 def serialize_digital_file(digital_file: DigitalFile) -> dict:
+    pricing_mode = digital_file.price_display
+    display_currency = "krw" if pricing_mode == "krw" else "sats"
+    if pricing_mode == "free":
+        display_price = 0
+        display_discounted_price = None
+        pay_price_sats = 0
+        pay_discounted_price_sats = None
+    else:
+        display_price = digital_file.price_krw if pricing_mode == "krw" else digital_file.price
+        display_discounted_price = None
+        if digital_file.is_discounted:
+            display_discounted_price = digital_file.discounted_price_krw if pricing_mode == "krw" else digital_file.discounted_price
+        pay_price_sats = digital_file.price_sats
+        pay_discounted_price_sats = None
+        if digital_file.is_discounted:
+            if pricing_mode == "krw":
+                from myshop.models import ExchangeRate
+
+                latest_rate = ExchangeRate.get_latest_rate()
+                if latest_rate and latest_rate.btc_krw_rate and latest_rate.btc_krw_rate > 0 and digital_file.discounted_price_krw is not None:
+                    btc_amount = digital_file.discounted_price_krw / float(latest_rate.btc_krw_rate)
+                    pay_discounted_price_sats = round(btc_amount * 100_000_000)
+            else:
+                pay_discounted_price_sats = digital_file.discounted_price
+
     return {
         "id": digital_file.id,
         "name": digital_file.name,
         "thumbnail": digital_file.preview_image.url if digital_file.preview_image else None,
-        "price_mode": digital_file.price_display,
-        "price": (
-            digital_file.price_krw
-            if digital_file.price_display == "krw"
-            else digital_file.price
-        ),
+        "pricing_mode": pricing_mode,
+        "display_currency": display_currency,
+        "display_price": display_price,
+        "display_discounted_price": display_discounted_price,
+        "pay_price_sats": pay_price_sats,
+        "pay_discounted_price_sats": pay_discounted_price_sats,
         "is_discounted": digital_file.is_discounted,
-        "discounted_price": (
-            digital_file.discounted_price_krw
-            if digital_file.price_display == "krw"
-            else digital_file.discounted_price
-        ),
         "created_at": _format_datetime(digital_file.created_at),
         "updated_at": _format_datetime(digital_file.updated_at),
     }

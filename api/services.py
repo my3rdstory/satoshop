@@ -59,7 +59,7 @@ def get_active_meetups(store):
 
 
 def get_active_live_lectures(store):
-    return store.live_lectures.filter(is_active=True, is_temporarily_closed=False, deleted_at__isnull=True).order_by("-created_at")
+    return store.live_lectures.filter(is_active=True, is_temporarily_closed=False, deleted_at__isnull=True).prefetch_related("images").order_by("-created_at")
 
 
 def get_active_digital_files(store):
