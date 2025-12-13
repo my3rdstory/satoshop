@@ -2,7 +2,6 @@ import ipaddress
 from dataclasses import dataclass
 from typing import Optional
 
-from django.conf import settings
 from django.http import JsonResponse
 
 from .models import ApiAllowedOrigin, ApiIpAllowlist
@@ -22,8 +21,6 @@ def enforce_ip_allowlist(request) -> Optional[JsonResponse]:
         return None
 
     client_ip = _get_client_ip(request)
-    if settings.DEBUG and client_ip in {"127.0.0.1", "::1"}:
-        return None
     if not client_ip:
         return JsonResponse({"detail": "클라이언트 IP를 확인할 수 없습니다."}, status=403)
 
@@ -61,11 +58,6 @@ def enforce_origin_allowlist(request) -> OriginCheckResult:
 
     if not origin_header:
         return OriginCheckResult(allowed=True, origin=None, response=None)
-
-    if settings.DEBUG:
-        normalized_dev = origin_header.rstrip("/").lower()
-        if normalized_dev.startswith("http://localhost:") or normalized_dev.startswith("http://127.0.0.1:"):
-            return OriginCheckResult(allowed=True, origin=origin_header, response=None)
 
     normalized_header = origin_header.rstrip("/").lower()
     allowed_origins = {r.origin.rstrip("/").lower() for r in rules}
