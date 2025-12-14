@@ -40,7 +40,7 @@
         
         <!-- 스토어별 상품 리스트 -->
         <div class="p-2 space-y-2">
-          {% regroup cart_items by product.store as stores_list %}
+          {% regroup cart_items by store_name as stores_list %}
           {% for store_group in stores_list %}
           <!-- 스토어 그룹 컨테이너 -->
           <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
@@ -49,7 +49,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
                   <i class="fas fa-store mr-2 text-bitcoin"></i>
-                  <span class="font-semibold text-gray-900 dark:text-white">{{ store_group.grouper.store_name }}</span>
+                  <span class="font-semibold text-gray-900 dark:text-white">{{ store_group.grouper|default:'스토어' }}</span>
                 </div>
                 <span class="text-xs text-gray-500 dark:text-gray-400">{{ store_group.list|length }}개 상품</span>
               </div>
@@ -61,8 +61,8 @@
               <div class="flex items-start space-x-2 p-1.5 bg-gray-50 dark:bg-gray-700/50 rounded border border-gray-100 dark:border-gray-600">
                 <!-- 상품 이미지 -->
                 <div class="flex-shrink-0 w-10 h-10">
-                  {% if item.product.images.first %}
-                  <img src="{{ item.product.images.first.file_url }}" alt="{{ item.product.title }}" 
+                  {% if item.product_image_url %}
+                  <img src="{{ item.product_image_url }}" alt="{{ item.product_title|default:'상품' }}" 
                        class="w-full h-full object-cover rounded">
                   {% else %}
                   <div class="w-full h-full bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
@@ -76,7 +76,7 @@
                   <!-- 상품명과 삭제 버튼 -->
                   <div class="flex items-start justify-between mb-0">
                     <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate pr-2 mb-0">
-                      {{ item.product.title|truncatechars:20 }}
+                      {{ item.product_title|default:'상품'|truncatechars:20 }}
                     </h4>
                     <button class="flex-shrink-0 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded p-0.5" 
                             data-item-id="{{ item.id }}" onclick="removeFromCart(this.dataset.itemId)" title="삭제">
