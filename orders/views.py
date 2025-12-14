@@ -586,10 +586,68 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
             return 0
 
     cart_items = []
+    option_ids_to_resolve = set()
+    choice_ids_to_resolve = set()
+    for item in cart_snapshot:
+        if item.get('options_display'):
+            continue
+        selected_options = item.get('selected_options') or {}
+        if not isinstance(selected_options, dict) or not selected_options:
+            continue
+        normalized_pairs = []
+        for option_id, choice_id in selected_options.items():
+            try:
+                normalized_pairs.append((int(option_id), int(choice_id)))
+            except (TypeError, ValueError):
+                continue
+        if normalized_pairs:
+            option_ids_to_resolve.update(option_id for option_id, _ in normalized_pairs)
+            choice_ids_to_resolve.update(choice_id for _, choice_id in normalized_pairs)
+
+    options_by_id = {}
+    if option_ids_to_resolve:
+        options_by_id = {
+            option.id: option for option in ProductOption.objects.filter(id__in=option_ids_to_resolve)
+        }
+
+    choices_by_id = {}
+    if choice_ids_to_resolve:
+        choices_by_id = {
+            choice.id: choice for choice in ProductOptionChoice.objects.filter(id__in=choice_ids_to_resolve)
+        }
+
     for item in cart_snapshot:
         quantity = _safe_int(item.get('quantity'))
         unit_price = _safe_int(item.get('unit_price'))
         total_price = _safe_int(item.get('total_price')) or (unit_price * quantity)
+        options_display = item.get('options_display') or []
+        selected_options = item.get('selected_options') or {}
+        if isinstance(options_display, dict):
+            options_display = [
+                {
+                    'option_name': option_name,
+                    'choice_name': choice_name,
+                    'choice_price': None,
+                }
+                for option_name, choice_name in options_display.items()
+                if option_name and choice_name
+            ]
+        if not options_display and isinstance(selected_options, dict) and selected_options:
+            resolved = []
+            for option_id, choice_id in selected_options.items():
+                try:
+                    option_obj = options_by_id.get(int(option_id))
+                    choice_obj = choices_by_id.get(int(choice_id))
+                except (TypeError, ValueError):
+                    continue
+                if not option_obj or not choice_obj:
+                    continue
+                resolved.append({
+                    'option_name': option_obj.name,
+                    'choice_name': choice_obj.name,
+                    'choice_price': choice_obj.public_price,
+                })
+            options_display = sorted(resolved, key=lambda entry: (entry.get('option_name') or ''))
         cart_items.append({
             'product_id': item.get('product_id'),
             'product_title': item.get('product_title'),
@@ -597,8 +655,8 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
             'quantity': quantity,
             'unit_price': unit_price,
             'total_price': total_price,
-            'options_display': item.get('options_display') or [],
-            'selected_options': item.get('selected_options') or {},
+            'options_display': options_display,
+            'selected_options': selected_options,
         })
 
     cart_summary = {
