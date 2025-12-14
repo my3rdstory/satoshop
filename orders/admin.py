@@ -172,13 +172,13 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
-        'order_number_link', 'buyer_name', 'store', 'status_colored', 
+        'order_number_link', 'buyer_name', 'store', 'channel_badge', 'status_colored', 
         'delivery_status_colored', 'courier_company', 'tracking_number', 'items_count', 
         'total_amount_formatted', 'created_at', 'paid_at'
     ]
-    list_filter = ['status', 'delivery_status', 'store', 'created_at', 'paid_at']
+    list_filter = ['status', 'delivery_status', 'store', 'channel', 'created_at', 'paid_at']
     search_fields = ['order_number', 'buyer_name', 'buyer_email', 'buyer_phone']
-    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary', 'courier_company', 'tracking_number']
+    readonly_fields = ['order_number', 'created_at', 'updated_at', 'items_summary', 'courier_company', 'tracking_number', 'channel']
     list_per_page = 10
     change_list_template = 'admin/orders/order/change_list.html'
     
@@ -260,6 +260,17 @@ class OrderAdmin(admin.ModelAdmin):
         )
     status_colored.short_description = '주문 상태'
     status_colored.admin_order_field = 'status'
+
+    def channel_badge(self, obj):
+        """채널 표시"""
+        channel = obj.channel or ''
+        if not channel:
+            return format_html('<span style="color:#9ca3af;">-</span>')
+        return format_html(
+            '<span style="background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:10px;font-size:12px;">{}</span>',
+            channel
+        )
+    channel_badge.short_description = '채널'
     
     def delivery_status_colored(self, obj):
         """발송상태를 색상과 함께 표시"""

@@ -141,6 +141,8 @@ function updateTotalPrice() {
     selectedOptions.forEach(option => {
         optionsPrice += parseInt(option.dataset.choicePrice || 0);
     });
+
+    updateSelectedOptionsSummary(selectedOptions);
     
     // 총 계산
     const productTotal = (productPrice + optionsPrice) * quantity;
@@ -198,6 +200,40 @@ function updateTotalPrice() {
             optionsRow.classList.add('hidden');
         }
     }
+}
+
+function updateSelectedOptionsSummary(selectedOptionNodes) {
+    const summaryContainer = document.getElementById('selectedOptionsSummary');
+    const summaryList = document.getElementById('selectedOptionsList');
+    if (!summaryContainer || !summaryList) return;
+
+    while (summaryList.firstChild) {
+        summaryList.removeChild(summaryList.firstChild);
+    }
+
+    const nodes = Array.from(selectedOptionNodes || []);
+    const entries = nodes
+        .map(node => {
+            const optionName = (node.dataset.optionName || '').trim();
+            const choiceName = (node.dataset.choiceName || '').trim();
+            return { optionName, choiceName };
+        })
+        .filter(entry => entry.optionName && entry.choiceName)
+        .sort((a, b) => a.optionName.localeCompare(b.optionName, 'ko'));
+
+    if (!entries.length) {
+        summaryContainer.classList.add('hidden');
+        return;
+    }
+
+    for (const entry of entries) {
+        const item = document.createElement('li');
+        item.className = 'inline-flex items-center rounded-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-2 py-0.5';
+        item.textContent = `${entry.optionName}: ${entry.choiceName}`;
+        summaryList.appendChild(item);
+    }
+
+    summaryContainer.classList.remove('hidden');
 }
 
 // 장바구니에 추가

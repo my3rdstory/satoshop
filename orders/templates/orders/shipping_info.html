@@ -60,6 +60,30 @@
           <span>상품 수량</span>
           <span class="font-medium">{{ cart.total_items }}개</span>
         </div>
+        {% if cart_items %}
+        <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+          <div class="text-sm font-semibold text-gray-900 dark:text-white mb-2">담긴 상품</div>
+          <ul class="space-y-3 text-sm">
+            {% for item in cart_items %}
+            <li class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <p class="font-medium text-gray-900 dark:text-white truncate">{{ item.product_title|default:'상품' }}</p>
+                {% if item.options_display %}
+                <ul class="mt-1 flex flex-wrap gap-1.5 text-[0.72rem] text-gray-600 dark:text-gray-300">
+                  {% for option in item.options_display %}
+                  <li class="inline-flex items-center rounded-full border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-2 py-0.5">
+                    {{ option.option_name }}: {{ option.choice_name }}
+                  </li>
+                  {% endfor %}
+                </ul>
+                {% endif %}
+              </div>
+              <div class="flex-shrink-0 font-semibold text-gray-700 dark:text-gray-200">{{ item.quantity }}개</div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         <div class="flex justify-between items-center text-gray-600 dark:text-gray-400">
           <span>상품 금액</span>
           <span class="font-medium">{{ subtotal_amount|floatformat:0|intcomma }} sats</span>

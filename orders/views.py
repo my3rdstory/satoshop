@@ -50,6 +50,83 @@ TRANSACTION_STAGE_DESCRIPTIONS = {
     PaymentStage.ORDER_FINALIZE: '5단계 · 주문 저장 및 알림',
 }
 
+FREE_ORDER_STATUS_DESCRIPTION = '무료 주문입니다. 결제 정보가 없습니다.'
+
+
+def _ensure_free_order_payment_transactions(store):
+    """무료 주문(0 sats)이 결제 트랜잭션 목록에 보이도록 백필한다."""
+    free_orders = (
+        Order.objects.filter(
+            store=store,
+            total_amount=0,
+        )
+        .select_related('user', 'store')
+        .prefetch_related('items', 'items__product', 'items__product__images')
+    )
+
+    for order in free_orders:
+        if PaymentTransaction.objects.filter(store=store, order=order).exists():
+            continue
+
+        pickup_requested = order.delivery_status == 'pickup'
+        shipping_data = {
+            'buyer_name': order.buyer_name,
+            'buyer_phone': order.buyer_phone,
+            'buyer_email': order.buyer_email,
+            'shipping_postal_code': order.shipping_postal_code,
+            'shipping_address': order.shipping_address,
+            'shipping_detail_address': order.shipping_detail_address,
+            'order_memo': order.order_memo,
+            'pickup_requested': pickup_requested,
+        }
+
+        cart_snapshot = []
+        for item in order.items.all():
+            product = item.product
+            product_image_url = None
+            if product and getattr(product, 'images', None):
+                first_image = product.images.first()
+                if first_image:
+                    product_image_url = first_image.file_url
+
+            options_display = item.selected_options if isinstance(item.selected_options, dict) else {}
+
+            cart_snapshot.append({
+                'id': None,
+                'product_id': product.id if product else None,
+                'product_title': item.product_title,
+                'product_image_url': product_image_url,
+                'quantity': item.quantity,
+                'unit_price': item.unit_price,
+                'total_price': item.total_price,
+                'selected_options': {},
+                'options_display': options_display,
+                'store_id': store.store_id,
+                'store_name': store.store_name,
+            })
+
+        PaymentTransaction.objects.create(
+            user=order.user,
+            store=store,
+            order=order,
+            amount_sats=0,
+            currency=PaymentTransaction.CURRENCY_BTC,
+            status=PaymentTransaction.STATUS_COMPLETED,
+            current_stage=PaymentStage.ORDER_FINALIZE,
+            payment_hash='',
+            payment_request='',
+            metadata={
+                'free_order': True,
+                'shipping': shipping_data,
+                'cart_snapshot': cart_snapshot,
+                'subtotal_sats': 0,
+                'shipping_fee_sats': 0,
+                'total_sats': 0,
+                'detail_source': 'orders',
+                'payment_id': order.payment_id,
+            },
+        )
+
 
 def _is_manual_restored(order):
     cache = getattr(order, 'manual_restored', None)
@@ -502,6 +579,8 @@ def payment_transactions(request, store_id):
     """Blink 결제 트랜잭션 현황"""
     store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
 
+    _ensure_free_order_payment_transactions(store)
+
     status_filter = request.GET.get('status')
     stage_filter = request.GET.get('stage')
 
@@ -523,7 +602,10 @@ def payment_transactions(request, store_id):
         shipping = metadata.get('shipping') or {}
         cart_snapshot = metadata.get('cart_snapshot') or []
 
-        tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
+        if metadata.get('free_order'):
+            tx.status_description = FREE_ORDER_STATUS_DESCRIPTION
+        else:
+            tx.status_description = TRANSACTION_STATUS_DESCRIPTIONS.get(tx.status, '')
         tx.manual_restore_enabled = tx.status != PaymentTransaction.STATUS_COMPLETED
         label = shipping.get('buyer_name') or shipping.get('buyer_email')
         if not label and tx.user:
@@ -586,10 +668,68 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
             return 0
 
     cart_items = []
+    option_ids_to_resolve = set()
+    choice_ids_to_resolve = set()
+    for item in cart_snapshot:
+        if item.get('options_display'):
+            continue
+        selected_options = item.get('selected_options') or {}
+        if not isinstance(selected_options, dict) or not selected_options:
+            continue
+        normalized_pairs = []
+        for option_id, choice_id in selected_options.items():
+            try:
+                normalized_pairs.append((int(option_id), int(choice_id)))
+            except (TypeError, ValueError):
+                continue
+        if normalized_pairs:
+            option_ids_to_resolve.update(option_id for option_id, _ in normalized_pairs)
+            choice_ids_to_resolve.update(choice_id for _, choice_id in normalized_pairs)
+
+    options_by_id = {}
+    if option_ids_to_resolve:
+        options_by_id = {
+            option.id: option for option in ProductOption.objects.filter(id__in=option_ids_to_resolve)
+        }
+
+    choices_by_id = {}
+    if choice_ids_to_resolve:
+        choices_by_id = {
+            choice.id: choice for choice in ProductOptionChoice.objects.filter(id__in=choice_ids_to_resolve)
+        }
+
     for item in cart_snapshot:
         quantity = _safe_int(item.get('quantity'))
         unit_price = _safe_int(item.get('unit_price'))
         total_price = _safe_int(item.get('total_price')) or (unit_price * quantity)
+        options_display = item.get('options_display') or []
+        selected_options = item.get('selected_options') or {}
+        if isinstance(options_display, dict):
+            options_display = [
+                {
+                    'option_name': option_name,
+                    'choice_name': choice_name,
+                    'choice_price': None,
+                }
+                for option_name, choice_name in options_display.items()
+                if option_name and choice_name
+            ]
+        if not options_display and isinstance(selected_options, dict) and selected_options:
+            resolved = []
+            for option_id, choice_id in selected_options.items():
+                try:
+                    option_obj = options_by_id.get(int(option_id))
+                    choice_obj = choices_by_id.get(int(choice_id))
+                except (TypeError, ValueError):
+                    continue
+                if not option_obj or not choice_obj:
+                    continue
+                resolved.append({
+                    'option_name': option_obj.name,
+                    'choice_name': choice_obj.name,
+                    'choice_price': choice_obj.public_price,
+                })
+            options_display = sorted(resolved, key=lambda entry: (entry.get('option_name') or ''))
         cart_items.append({
             'product_id': item.get('product_id'),
             'product_title': item.get('product_title'),
@@ -597,8 +737,8 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
             'quantity': quantity,
             'unit_price': unit_price,
             'total_price': total_price,
-            'options_display': item.get('options_display') or [],
-            'selected_options': item.get('selected_options') or {},
+            'options_display': options_display,
+            'selected_options': selected_options,
         })
 
     cart_summary = {
@@ -785,7 +925,7 @@ def payment_transaction_detail(request, store_id, transaction_id, source=None):
         'manual_restore_message': manual_restore_message,
         'manual_restore_confirm': manual_restore_confirm,
         'manual_restore_history': metadata.get('manual_restore_history', []),
-        'status_description': TRANSACTION_STATUS_DESCRIPTIONS.get(transaction.status, ''),
+        'status_description': FREE_ORDER_STATUS_DESCRIPTION if metadata.get('free_order') else TRANSACTION_STATUS_DESCRIPTIONS.get(transaction.status, ''),
         'status_descriptions': TRANSACTION_STATUS_DESCRIPTIONS,
         'stage_descriptions': TRANSACTION_STAGE_DESCRIPTIONS,
         'stage_label': TRANSACTION_STAGE_DESCRIPTIONS.get(transaction.current_stage, f'{transaction.current_stage}단계'),
@@ -2330,6 +2470,38 @@ def create_order_from_cart_service(request, payment_hash, shipping_data=None):
                     store_name=order.store.store_name,
                     total_amount=order.total_amount,
                     purchase_date=order.paid_at
+                )
+
+            if order.total_amount == 0 and not PaymentTransaction.objects.filter(store=order.store, order=order).exists():
+                PaymentTransaction.objects.create(
+                    user=order.user,
+                    store=order.store,
+                    order=order,
+                    amount_sats=0,
+                    currency=PaymentTransaction.CURRENCY_BTC,
+                    status=PaymentTransaction.STATUS_COMPLETED,
+                    current_stage=PaymentStage.ORDER_FINALIZE,
+                    payment_hash='',
+                    payment_request='',
+                    metadata={
+                        'free_order': True,
+                        'shipping': {
+                            'buyer_name': order.buyer_name,
+                            'buyer_phone': order.buyer_phone,
+                            'buyer_email': order.buyer_email,
+                            'shipping_postal_code': order.shipping_postal_code,
+                            'shipping_address': order.shipping_address,
+                            'shipping_detail_address': order.shipping_detail_address,
+                            'order_memo': order.order_memo,
+                            'pickup_requested': order.delivery_status == 'pickup',
+                        },
+                        'cart_snapshot': cart_items,
+                        'subtotal_sats': 0,
+                        'shipping_fee_sats': 0,
+                        'total_sats': 0,
+                        'detail_source': 'orders',
+                        'payment_id': order.payment_id,
+                    },
                 )
             
         # 🎉 주문 완료 이메일 발송 (스토어별로 중복 방지)

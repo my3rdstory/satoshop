@@ -61,6 +61,15 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
 
+# CSRF Trusted Origins (콤마 구분 환경변수 지원)
+# 예: CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+_csrf_trusted_origins_raw = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in _csrf_trusted_origins_raw.split(",")
+    if origin.strip()
+]
+
 # 개발 환경에서 로컬 네트워크 접근 허용
 if DEBUG:
     ALLOWED_HOSTS.extend([
@@ -89,6 +98,7 @@ INSTALLED_APPS = [
     'myshop',
     'accounts',
     'stores',
+    'api',
     'products',
     'expert',
     'reviews',

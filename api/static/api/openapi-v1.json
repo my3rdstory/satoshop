@@ -1,0 +1,816 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SatoShop External API",
+    "version": "1.0.0",
+    "description": "스토어 목록, 아이템, 주문 생성 API"
+  },
+  "servers": [
+    { "url": "/api/v1" }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API 목록",
+        "description": "사용 가능한 API 엔드포인트 목록을 반환",
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string" },
+                    "endpoints": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": { "type": "string" },
+                          "method": { "type": "string" },
+                          "description": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/csrf/": {
+      "get": {
+        "summary": "CSRF 쿠키 발급",
+        "description": "브라우저(예: Vite 개발 서버)에서 POST 요청을 테스트하기 위한 CSRF 쿠키(csrftoken)를 발급한다. 먼저 이 엔드포인트를 credentials 포함으로 호출한 뒤, 이후 POST 요청에 X-CSRFToken 헤더를 포함해야 한다.",
+        "responses": {
+          "200": { "description": "CSRF 쿠키 발급 성공" },
+          "403": { "description": "허용되지 않은 Origin/IP" }
+        }
+      }
+    },
+    "/notices/": {
+      "get": {
+        "summary": "공지사항 목록",
+        "description": "활성 공지사항 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notices": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/NoticeSummary" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" }
+        }
+      }
+    },
+    "/notices/{notice_id}/": {
+      "get": {
+        "summary": "공지사항 상세",
+        "description": "공지사항 단건 상세를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "notice_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NoticeDetail" }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "공지사항 없음" }
+        }
+      }
+    },
+    "/stores/": {
+      "get": {
+        "summary": "활성 스토어 목록",
+        "description": "활성 스토어와 공개 리소스를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stores": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Store" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" }
+        }
+      }
+    },
+    "/stores/{store_id}/owner/": {
+      "get": {
+        "summary": "스토어 주인장 정보",
+        "description": "스토어별 주인장 공개 정보를 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/StoreOwner" } }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/products/": {
+      "get": {
+        "summary": "스토어별 활성 상품",
+        "description": "스토어의 활성 상품 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": { "$ref": "#/components/schemas/StoreShort" },
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/meetups/": {
+      "get": {
+        "summary": "스토어별 활성 밋업",
+        "description": "스토어의 활성 밋업 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": { "$ref": "#/components/schemas/StoreShort" },
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/Meetup" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/live-lectures/": {
+      "get": {
+        "summary": "스토어별 활성 라이브 강의",
+        "description": "스토어의 활성 라이브 강의 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": { "$ref": "#/components/schemas/StoreShort" },
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/LiveLecture" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/digital-files/": {
+      "get": {
+        "summary": "스토어별 활성 디지털 파일",
+        "description": "스토어의 활성 디지털 파일 목록을 반환",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "store": { "$ref": "#/components/schemas/StoreShort" },
+                    "items": { "type": "array", "items": { "$ref": "#/components/schemas/DigitalFile" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/orders/": {
+      "post": {
+        "summary": "스토어별 상품 주문 생성",
+        "description": "장바구니 없이 상품 목록을 받아 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buyer_name": { "type": "string" },
+                  "buyer_phone": { "type": "string" },
+                  "buyer_email": { "type": "string", "format": "email" },
+                  "shipping_postal_code": { "type": "string" },
+                  "shipping_address": { "type": "string" },
+                  "shipping_detail_address": { "type": "string" },
+                  "order_memo": { "type": "string" },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": { "type": "integer" },
+                        "quantity": { "type": "integer", "minimum": 1 }
+                      },
+                      "required": ["product_id", "quantity"]
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "buyer_name",
+                  "buyer_phone",
+                  "buyer_email",
+                  "shipping_postal_code",
+                  "shipping_address",
+                  "shipping_detail_address",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order_id": { "type": "integer" },
+                    "order_number": { "type": "string" },
+                    "status": { "type": "string" },
+                    "subtotal": { "type": "integer" },
+                    "shipping_fee": { "type": "integer" },
+                    "total_amount": { "type": "integer" },
+                    "paid_at": { "type": ["string", "null"], "format": "date-time" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "product_id": { "type": "integer" },
+                          "title": { "type": "string" },
+                          "unit_price": { "type": "integer" },
+                          "quantity": { "type": "integer" },
+                          "line_total": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/meetups/{meetup_id}/orders/": {
+      "post": {
+        "summary": "스토어별 밋업 주문 생성",
+        "description": "참가자 정보를 받아 밋업 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "meetup_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "participant_name": { "type": "string" },
+                  "participant_email": { "type": "string", "format": "email" },
+                  "participant_phone": { "type": "string" },
+                  "selected_options": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "option_id": { "type": "integer" },
+                        "choice_id": { "type": "integer" },
+                        "additional_price": { "type": "integer" }
+                      },
+                      "required": ["option_id", "choice_id"]
+                    }
+                  },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["participant_name", "participant_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MeetupOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 밋업 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/live-lectures/{live_lecture_id}/orders/": {
+      "post": {
+        "summary": "스토어별 라이브 강의 주문 생성",
+        "description": "구매자 정보를 받아 라이브 강의 참가 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "live_lecture_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buyer_name": { "type": "string" },
+                  "buyer_email": { "type": "string", "format": "email" },
+                  "buyer_phone": { "type": "string" },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["buyer_name", "buyer_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LiveLectureOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 강의 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/digital-files/{file_id}/orders/": {
+      "post": {
+        "summary": "스토어별 디지털 파일 주문 생성",
+        "description": "구매자 정보를 받아 디지털 파일 주문을 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "file_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "buyer_name": { "type": "string" },
+                  "buyer_email": { "type": "string", "format": "email" },
+                  "buyer_phone": { "type": "string" },
+                  "payment_id": { "type": "string" },
+                  "mark_as_paid": { "type": "boolean" }
+                },
+                "required": ["buyer_name", "buyer_email"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "주문 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DigitalFileOrderResponse" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 또는 파일 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/lightning-invoices/": {
+      "post": {
+        "summary": "스토어 주인장 라이트닝 인보이스 발행",
+        "description": "스토어 주인장이 외부 앱 결제용 BOLT11 인보이스를 생성",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount_sats": { "type": "integer", "minimum": 1 },
+                  "memo": { "type": "string", "maxLength": 120 },
+                  "expires_in_minutes": { "type": "integer", "minimum": 1, "default": 15 }
+                },
+                "required": ["amount_sats"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "인보이스 생성 성공",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LightningInvoice" }
+              }
+            }
+          },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키, 주인장 아님, 또는 차단" },
+          "404": { "description": "스토어 없음" }
+        }
+      }
+    },
+    "/stores/{store_id}/lightning-invoices/confirm-order/": {
+      "post": {
+        "summary": "인보이스 결제 확인 후 주문 생성",
+        "description": "payment_hash 결제 완료(paid)를 확인한 뒤 주문을 생성한다. 이미 동일 payment_hash로 생성된 주문이 있으면 기존 주문을 반환한다.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payment_hash": { "type": "string" },
+                  "buyer_name": { "type": "string" },
+                  "buyer_phone": { "type": "string" },
+                  "buyer_email": { "type": "string" },
+                  "shipping_postal_code": { "type": "string" },
+                  "shipping_address": { "type": "string" },
+                  "shipping_detail_address": { "type": "string" },
+                  "order_memo": { "type": "string" },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": { "type": "integer" },
+                        "quantity": { "type": "integer", "minimum": 1 }
+                      },
+                      "required": ["product_id", "quantity"]
+                    }
+                  }
+                },
+                "required": [
+                  "payment_hash",
+                  "buyer_name",
+                  "buyer_phone",
+                  "buyer_email",
+                  "shipping_postal_code",
+                  "shipping_address",
+                  "shipping_detail_address",
+                  "items"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "이미 생성된 주문 반환" },
+          "201": { "description": "주문 생성 성공" },
+          "400": { "description": "잘못된 요청" },
+          "401": { "description": "인증 실패" },
+          "403": { "description": "비활성 키 또는 차단" },
+          "404": { "description": "스토어 없음" },
+          "409": { "description": "아직 결제 완료 아님" },
+          "502": { "description": "결제 상태 확인 실패" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "StoreShort": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "store_id": { "type": "string" },
+          "name": { "type": "string" }
+        }
+      },
+      "Owner": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string" },
+          "chat_channel": { "type": "string", "format": "uri" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "thumbnail": { "type": ["string", "null"], "format": "uri" },
+          "pricing_mode": { "type": "string", "description": "가격 입력 모드(sats|krw)" },
+          "display_currency": { "type": "string", "description": "표시 통화(krw|sats)" },
+          "display_price": { "type": "integer", "description": "표시 가격(표시 통화 기준)" },
+          "display_discounted_price": { "type": ["integer", "null"], "description": "표시 할인가(표시 통화 기준)" },
+          "pay_price_sats": { "type": "integer", "description": "결제/정산용 사토시 가격(환율 적용 포함)" },
+          "pay_discounted_price_sats": { "type": ["integer", "null"], "description": "결제/정산용 사토시 할인가(환율 적용 포함)" },
+          "is_discounted": { "type": "boolean" },
+          "stock_quantity": { "type": "integer" },
+          "is_out_of_stock": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Meetup": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "date_time": { "type": ["string", "null"], "format": "date-time" },
+          "location": { "type": "string" },
+          "is_free": { "type": "boolean" },
+          "is_discounted": { "type": "boolean" },
+          "pricing_mode": { "type": "string", "description": "가격 입력 모드(밋업은 sats 고정)" },
+          "display_currency": { "type": "string", "description": "표시 통화(sats)" },
+          "display_price": { "type": "integer", "description": "표시 가격(사토시)" },
+          "display_discounted_price": { "type": ["integer", "null"], "description": "표시 할인가(사토시)" },
+          "pay_price_sats": { "type": "integer", "description": "결제/정산용 사토시 가격" },
+          "pay_discounted_price_sats": { "type": ["integer", "null"], "description": "결제/정산용 사토시 할인가" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LiveLecture": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "thumbnail": { "type": ["string", "null"], "format": "uri" },
+          "date_time": { "type": ["string", "null"], "format": "date-time" },
+          "pricing_mode": { "type": "string", "description": "가격 입력 모드(free|sats|krw)" },
+          "display_currency": { "type": "string", "description": "표시 통화(sats|krw)" },
+          "display_price": { "type": "integer", "description": "표시 가격(표시 통화 기준)" },
+          "display_discounted_price": { "type": ["integer", "null"], "description": "표시 할인가(표시 통화 기준)" },
+          "pay_price_sats": { "type": "integer", "description": "결제/정산용 사토시 가격(환율 적용 포함)" },
+          "pay_discounted_price_sats": { "type": ["integer", "null"], "description": "결제/정산용 사토시 할인가(환율 적용 포함)" },
+          "is_discounted": { "type": "boolean" },
+          "is_free": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DigitalFile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "thumbnail": { "type": ["string", "null"], "format": "uri" },
+          "pricing_mode": { "type": "string", "description": "가격 입력 모드(free|sats|krw)" },
+          "display_currency": { "type": "string", "description": "표시 통화(sats|krw)" },
+          "display_price": { "type": "integer", "description": "표시 가격(표시 통화 기준)" },
+          "display_discounted_price": { "type": ["integer", "null"], "description": "표시 할인가(표시 통화 기준)" },
+          "pay_price_sats": { "type": "integer", "description": "결제/정산용 사토시 가격(환율 적용 포함)" },
+          "pay_discounted_price_sats": { "type": ["integer", "null"], "description": "결제/정산용 사토시 할인가(환율 적용 포함)" },
+          "is_discounted": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Store": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "store_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "owner": { "$ref": "#/components/schemas/Owner" },
+          "products": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } },
+          "meetups": { "type": "array", "items": { "$ref": "#/components/schemas/Meetup" } },
+          "live_lectures": { "type": "array", "items": { "$ref": "#/components/schemas/LiveLecture" } },
+          "digital_files": { "type": "array", "items": { "$ref": "#/components/schemas/DigitalFile" } },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "StoreOwner": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "store_id": { "type": "string" },
+          "name": { "type": "string" },
+          "owner": { "$ref": "#/components/schemas/Owner" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "LiveLectureOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_early_bird": { "type": "boolean" },
+          "discount_rate": { "type": "integer" },
+          "original_price": { "type": ["integer", "null"] },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "MeetupOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "base_price": { "type": "integer" },
+          "options_price": { "type": "integer" },
+          "total_price": { "type": "integer" },
+          "is_early_bird": { "type": "boolean" },
+          "discount_rate": { "type": "integer" },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "DigitalFileOrderResponse": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "integer" },
+          "order_number": { "type": "string" },
+          "status": { "type": "string" },
+          "price": { "type": "integer" },
+          "is_discounted": { "type": "boolean" },
+          "download_expires_at": { "type": ["string", "null"], "format": "date-time" },
+          "paid_at": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "NoticeSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "is_pinned": { "type": "boolean" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "NoticeDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/NoticeSummary" },
+          {
+            "type": "object",
+            "properties": {
+              "author": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer" },
+                  "username": { "type": "string" }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "LightningInvoice": {
+        "type": "object",
+        "properties": {
+          "store_id": { "type": "string" },
+          "amount_sats": { "type": "integer" },
+          "payment_request": { "type": "string" },
+          "invoice_uri": { "type": "string", "format": "uri" },
+          "payment_hash": { "type": "string" },
+          "expires_at": { "type": ["string", "null"], "format": "date-time" }
+        },
+        "required": ["store_id", "amount_sats", "payment_request", "payment_hash"]
+      }
+    }
+  }
+}

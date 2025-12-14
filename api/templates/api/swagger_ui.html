@@ -1,0 +1,40 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}API Docs{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="w-full px-4 sm:px-6 lg:px-8 py-10">
+  <div class="max-w-6xl mx-auto">
+    <div id="swagger-container" class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"></div>
+  </div>
+</section>
+
+<script>
+  window.addEventListener('load', function () {
+    SwaggerUIBundle({
+      url: "{{ openapi_url }}",
+      dom_id: '#swagger-container',
+      deepLinking: true,
+      persistAuthorization: true,
+      presets: [
+        SwaggerUIBundle.presets.apis,
+        SwaggerUIBundle.SwaggerUIStandalonePreset
+      ],
+      layout: "BaseLayout",
+      requestInterceptor: function (req) {
+        // Bearer 키 입력 후 Try it 할 때 Authorization 헤더 유지
+        return req;
+      }
+    });
+  });
+</script>
+{% endblock %}
