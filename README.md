@@ -395,7 +395,7 @@ ADMIN_PASSWORD=your-secure-admin-password
 2. **인보이스 생성** – Blink GraphQL을 호출해 인보이스를 발행하고 QR/문자열을 반환합니다.
 3. **결제 확인** – `lnInvoicePaymentStatus`를 폴링하여 사용자의 결제 여부를 확인합니다.
 4. **입금 확인** – Blink webhook(`receive.lightning`) 또는 `transactionsByPaymentHash` 조회 결과로 스토어 지갑 입금을 기록합니다.
-5. **주문 저장** – 결제가 확인되면 기존 주문 생성 로직을 통해 주문/이메일/마이페이지 정보를 완성합니다.
+5. **주문 저장** – 결제가 확인되면 기존 주문 생성 로직을 통해 주문/이메일/마이페이지 정보를 완성하며, 웹훅 수신 시에도 트랜잭션 메타데이터 스냅샷으로 자동 확정됩니다.
 
 #### 백엔드 연동 포인트
 - `ln_payment/services.py`의 `LightningPaymentProcessor`가 상태 머신, soft-lock, Blink API 호출을 담당합니다.
