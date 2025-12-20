@@ -1,5 +1,6 @@
 import logging
 from typing import Iterable, List, Tuple
+from urllib.parse import urlparse
 
 import requests
 from django.utils import timezone
@@ -94,11 +95,27 @@ def _build_image_embeds(image_urls: Iterable[str]) -> List[dict]:
     for index, url in enumerate(image_urls):
         if not url:
             continue
+        normalized = _normalize_image_url(url)
+        if not normalized:
+            logger.warning('디스코드 임베드 이미지 URL 무시됨: %s', url)
+            continue
         embeds.append({
             'title': f'첨부 이미지 {index + 1}',
-            'image': {'url': url},
+            'image': {'url': normalized},
         })
     return embeds
+
+
+def _normalize_image_url(url: str) -> str | None:
+    candidate = url.strip()
+    if not candidate:
+        return None
+    if candidate.startswith('//'):
+        candidate = f'https:{candidate}'
+    parsed = urlparse(candidate)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        return None
+    return candidate
 
 
 def _send_discord_message(
