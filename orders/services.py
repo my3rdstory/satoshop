@@ -1051,6 +1051,292 @@ def restore_order_from_payment_transaction(payment_transaction, *, operator=None
     return order
 
 
+def finalize_order_from_payment_transaction(payment_transaction, *, source='blink_webhook'):
+    """웹훅 등 세션 없는 경로에서 결제 트랜잭션을 주문으로 확정한다.
+
+    - 저장된 `metadata.shipping`, `metadata.cart_snapshot` 기반으로 주문/구매내역을 생성한다.
+    - 이미 `payment_id`로 주문이 만들어져 있으면 중복 생성하지 않고 트랜잭션만 연결한다.
+    - 수동 복구 플래그(`manual_*`)는 남기지 않는다.
+    """
+    from django.contrib.auth import get_user_model
+    from django.utils import timezone
+    from ln_payment.models import OrderItemReservation, PaymentStageLog, PaymentTransaction
+    from ln_payment.services import PaymentStage
+
+    def _to_int(value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+
+    with transaction.atomic():
+        locked_tx = (
+            PaymentTransaction.objects.select_for_update()
+            .select_related('store', 'order')
+            .get(pk=payment_transaction.pk)
+        )
+
+        if locked_tx.order_id:
+            return locked_tx.order
+
+        metadata = locked_tx.metadata if isinstance(locked_tx.metadata, dict) else {}
+        shipping_data = metadata.get('shipping') or {}
+        cart_snapshot = metadata.get('cart_snapshot') or []
+
+        if not shipping_data or not cart_snapshot:
+            raise ValueError('저장된 배송 정보 또는 장바구니 정보가 없습니다.')
+
+        store = locked_tx.store
+        if not store:
+            raise ValueError('트랜잭션의 스토어 정보를 확인할 수 없습니다.')
+
+        payment_identifier = locked_tx.payment_hash or str(locked_tx.id)
+
+        existing_order = (
+            Order.objects.filter(store=store, payment_id=payment_identifier)
+            .order_by('-created_at')
+            .first()
+        )
+        if existing_order:
+            PurchaseHistory.objects.update_or_create(
+                user=existing_order.user,
+                order=existing_order,
+                defaults={
+                    'store_name': store.store_name,
+                    'total_amount': existing_order.total_amount,
+                    'purchase_date': existing_order.paid_at or existing_order.created_at,
+                },
+            )
+
+            OrderItemReservation.objects.filter(transaction=locked_tx).update(
+                status=OrderItemReservation.STATUS_CONVERTED,
+            )
+            locked_tx.order = existing_order
+            locked_tx.status = PaymentTransaction.STATUS_COMPLETED
+            locked_tx.current_stage = PaymentStage.ORDER_FINALIZE
+            locked_tx.save(update_fields=['order', 'status', 'current_stage', 'updated_at'])
+
+            if not locked_tx.stage_logs.filter(
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+            ).exists():
+                PaymentStageLog.objects.create(
+                    transaction=locked_tx,
+                    stage=PaymentStage.USER_PAYMENT,
+                    status=PaymentStageLog.STATUS_COMPLETED,
+                    message='웹훅으로 결제 완료를 확인했습니다.',
+                    detail={'source': source, 'recorded_at': timezone.now().isoformat()},
+                )
+
+            PaymentStageLog.objects.create(
+                transaction=locked_tx,
+                stage=PaymentStage.ORDER_FINALIZE,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='주문 저장 완료',
+                detail={'source': source, 'order_number': existing_order.order_number},
+            )
+            return existing_order
+
+        UserModel = get_user_model()
+        user = locked_tx.user
+        if not user:
+            email_hint = None
+            if isinstance(shipping_data, dict):
+                email_hint = shipping_data.get('buyer_email') or shipping_data.get('buyerEmail')
+            if email_hint:
+                user = UserModel.objects.filter(email__iexact=email_hint).first()
+        if not user:
+            user, _ = UserModel.objects.get_or_create(
+                username='anonymous_guest',
+                defaults={
+                    'email': 'anonymous@satoshop.com',
+                    'first_name': 'Anonymous',
+                    'last_name': 'Guest',
+                },
+            )
+
+        shipping_fee = _to_int(metadata.get('shipping_fee_sats'))
+        subtotal_hint = _to_int(metadata.get('subtotal_sats'))
+        total_hint = _to_int(metadata.get('total_sats'))
+
+        now = timezone.now()
+        stock_issues = []
+
+        if not locked_tx.stage_logs.filter(
+            stage=PaymentStage.USER_PAYMENT,
+            status=PaymentStageLog.STATUS_COMPLETED,
+        ).exists():
+            PaymentStageLog.objects.create(
+                transaction=locked_tx,
+                stage=PaymentStage.USER_PAYMENT,
+                status=PaymentStageLog.STATUS_COMPLETED,
+                message='웹훅으로 결제 완료를 확인했습니다.',
+                detail={'source': source, 'recorded_at': now.isoformat()},
+            )
+
+        pickup_requested = bool(shipping_data.get('pickup_requested'))
+        order = Order.objects.create(
+            user=user,
+            store=store,
+            status='paid',
+            delivery_status='pickup' if pickup_requested else 'preparing',
+            buyer_name=shipping_data.get('buyer_name', ''),
+            buyer_phone=shipping_data.get('buyer_phone', ''),
+            buyer_email=shipping_data.get('buyer_email', '') or (user.email or ''),
+            shipping_postal_code='' if pickup_requested else shipping_data.get('shipping_postal_code', ''),
+            shipping_address='' if pickup_requested else shipping_data.get('shipping_address', ''),
+            shipping_detail_address='' if pickup_requested else shipping_data.get('shipping_detail_address', ''),
+            order_memo=shipping_data.get('order_memo', ''),
+            subtotal=0,
+            shipping_fee=shipping_fee,
+            total_amount=0,
+            payment_id=payment_identifier,
+            paid_at=locked_tx.updated_at or now,
+        )
+
+        computed_subtotal = 0
+
+        for item in cart_snapshot:
+            if item.get('store_id') and item.get('store_id') != store.store_id:
+                raise ValueError('장바구니 정보의 스토어와 트랜잭션 스토어가 일치하지 않습니다.')
+
+            product_id = item.get('product_id')
+            if not product_id:
+                raise ValueError('상품 정보가 누락된 항목이 있습니다.')
+
+            product = Product.objects.select_for_update().filter(id=product_id, store=store).first()
+            if not product:
+                raise ValueError(f"상품({item.get('product_title') or product_id})을 찾을 수 없습니다.")
+
+            quantity = _to_int(item.get('quantity'))
+            if quantity <= 0:
+                raise ValueError('유효하지 않은 수량 값이 포함되어 있습니다.')
+
+            if not product.decrease_stock(quantity):
+                stock_issues.append({
+                    'product_id': product.id,
+                    'product_title': product.title,
+                    'requested': quantity,
+                    'available': product.stock_quantity,
+                })
+                product.stock_quantity = 0
+                product.save(update_fields=['stock_quantity'])
+
+            options_display = item.get('options_display') or []
+            selected_options_map = {}
+            computed_options_price = 0
+            frozen_product_price = item.get('frozen_product_price_sats')
+            frozen_options_price = item.get('frozen_options_price_sats')
+
+            if options_display:
+                for option in options_display:
+                    name = option.get('option_name')
+                    choice = option.get('choice_name')
+                    if name and choice:
+                        selected_options_map[name] = choice
+                    if frozen_options_price is None:
+                        computed_options_price += _to_int(option.get('choice_price'))
+            else:
+                raw_options = item.get('selected_options') or {}
+                for option_id, choice_id in raw_options.items():
+                    try:
+                        option_obj = ProductOption.objects.get(id=option_id)
+                        choice_obj = ProductOptionChoice.objects.get(id=choice_id)
+                        selected_options_map[option_obj.name] = choice_obj.name
+                        if frozen_options_price is None:
+                            computed_options_price += choice_obj.public_price
+                    except (ProductOption.DoesNotExist, ProductOptionChoice.DoesNotExist):
+                        continue
+
+            unit_price = _to_int(item.get('unit_price'))
+
+            if frozen_options_price is not None:
+                options_price = max(_to_int(frozen_options_price), 0)
+            else:
+                options_price = max(computed_options_price, 0)
+
+            if frozen_product_price is not None:
+                base_price = _to_int(frozen_product_price)
+            else:
+                base_price = unit_price - options_price if unit_price > options_price else unit_price
+                if base_price <= 0:
+                    fallback_price = (
+                        product.public_discounted_price
+                        if (product.is_discounted and product.public_discounted_price)
+                        else product.public_price
+                    )
+                    base_price = fallback_price or 0
+
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=product,
+                product_title=item.get('product_title') or product.title,
+                product_price=base_price,
+                quantity=quantity,
+                selected_options=selected_options_map,
+                options_price=max(options_price, 0),
+            )
+            computed_subtotal += order_item.total_price
+
+        if computed_subtotal <= 0:
+            raise ValueError('주문 금액을 계산할 수 없습니다.')
+
+        order.subtotal = subtotal_hint or computed_subtotal
+        if order.subtotal <= 0:
+            order.subtotal = computed_subtotal
+        order.total_amount = total_hint or (order.subtotal + shipping_fee)
+        if order.total_amount <= 0:
+            order.total_amount = order.subtotal + shipping_fee
+        order.save(update_fields=['subtotal', 'total_amount', 'updated_at'])
+
+        PurchaseHistory.objects.update_or_create(
+            user=user,
+            order=order,
+            defaults={
+                'store_name': store.store_name,
+                'total_amount': order.total_amount,
+                'purchase_date': order.paid_at or now,
+            },
+        )
+
+        OrderItemReservation.objects.filter(transaction=locked_tx).update(
+            status=OrderItemReservation.STATUS_CONVERTED,
+        )
+
+        locked_tx.order = order
+        locked_tx.status = PaymentTransaction.STATUS_COMPLETED
+        locked_tx.current_stage = PaymentStage.ORDER_FINALIZE
+        locked_tx.save(update_fields=['order', 'status', 'current_stage', 'updated_at'])
+
+        PaymentStageLog.objects.create(
+            transaction=locked_tx,
+            stage=PaymentStage.ORDER_FINALIZE,
+            status=PaymentStageLog.STATUS_COMPLETED,
+            message='주문 저장 완료',
+            detail={
+                'source': source,
+                'order_number': order.order_number,
+                'stock_issues': stock_issues,
+            },
+        )
+
+        meta = dict(metadata)
+        meta['auto_finalize'] = True
+        meta['auto_finalize_source'] = source
+        meta['auto_finalize_at'] = now.isoformat()
+        if stock_issues:
+            meta['stock_issues'] = stock_issues
+        locked_tx.metadata = meta
+        locked_tx.save(update_fields=['metadata'])
+
+        try:
+            send_order_notification_email(order)
+        except Exception:
+            logger.warning('웹훅 주문 생성 알림 이메일 발송 실패 order=%s', order.order_number, exc_info=True)
+
+    return order
+
+
 def restore_meetup_transaction(payment_transaction, *, operator=None):
     """수동으로 밋업 결제 트랜잭션을 참가 확정 상태로 복구한다."""
     from django.utils import timezone

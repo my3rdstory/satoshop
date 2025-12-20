@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',  # 천단위 콤마 등 humanize 기능
     'myshop',
+    'satoshop_bot.apps.SatoshopBotConfig',
     'accounts',
     'stores',
     'api',

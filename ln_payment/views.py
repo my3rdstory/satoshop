@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db import transaction as db_transaction
 from django.utils import timezone
 from django.urls import reverse
 
@@ -413,13 +414,44 @@ def blink_webhook(request):
         return JsonResponse({'success': False, 'error': 'payment hash missing'}, status=400)
 
     try:
-        transaction = PaymentTransaction.objects.select_related('store').get(payment_hash=payment_hash)
+        transaction = PaymentTransaction.objects.select_related(
+            'store',
+            'order',
+            'meetup_order',
+            'live_lecture_order',
+            'file_order',
+        ).get(payment_hash=payment_hash)
     except PaymentTransaction.DoesNotExist:
         logger.info('Blink webhook: 해당 payment_hash 트랜잭션 없음 %s', payment_hash)
         return JsonResponse({'success': True})
 
     processor = LightningPaymentProcessor(transaction.store)
-    processor.mark_settlement(transaction, tx_payload=transaction_payload)
+    with db_transaction.atomic():
+        locked_tx = PaymentTransaction.objects.select_for_update().get(pk=transaction.pk)
+        settled = locked_tx.stage_logs.filter(
+            stage=PaymentStage.MERCHANT_SETTLEMENT,
+            status=PaymentStatus.COMPLETED,
+        ).exists()
+        if not settled:
+            processor.mark_settlement(locked_tx, tx_payload=transaction_payload)
+
+    should_finalize_order = (
+        transaction.order_id is None
+        and transaction.meetup_order_id is None
+        and transaction.live_lecture_order_id is None
+        and transaction.file_order_id is None
+    )
+    metadata = transaction.metadata if isinstance(transaction.metadata, dict) else {}
+    has_snapshot = bool(metadata.get('shipping')) and bool(metadata.get('cart_snapshot'))
+
+    if should_finalize_order and has_snapshot:
+        from orders.services import finalize_order_from_payment_transaction  # 지연 임포트로 순환 의존 방지
+
+        try:
+            finalize_order_from_payment_transaction(transaction, source='blink_webhook')
+        except Exception:  # pylint: disable=broad-except
+            logger.exception('Blink webhook 주문 자동 저장 실패 payment_hash=%s', payment_hash)
+            return JsonResponse({'success': False, 'error': 'order_finalize_failed'}, status=500)
 
     return JsonResponse({'success': True})
 

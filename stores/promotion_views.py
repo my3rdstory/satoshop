@@ -205,6 +205,7 @@ def bah_promotion_request_view(request):
                 lightning_public_key = request.user.lightning_profile.public_key
                 promotion_request.lightning_public_key = lightning_public_key
                 promotion_request.lightning_verified_at = timezone.now()
+            promotion_request._skip_discord_notification = True
             promotion_request.save()
 
             if delete_ids:
@@ -222,6 +223,10 @@ def bah_promotion_request_view(request):
                 _send_bah_promotion_email(promotion_request, is_new=is_new_request)
             except Exception:
                 logger.exception('BAH 홍보요청 이메일 전송 중 오류 발생', extra={'request_id': promotion_request.id})
+
+            promotion_request._skip_discord_notification = False
+            promotion_request._discord_is_new = is_new_request
+            promotion_request.save(update_fields=['updated_at'])
 
             query_status = 'created' if is_new_request else 'updated'
             return redirect(f"{reverse('stores:bah_promotion_request')}?status={query_status}")
