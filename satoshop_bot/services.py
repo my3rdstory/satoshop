@@ -1,18 +1,26 @@
+import json
 import logging
+import mimetypes
+import os
 from typing import Iterable, List, Tuple
 from urllib.parse import urlparse
 
 import requests
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+from django.core.files.storage import FileSystemStorage
 from django.utils import timezone
 
 from stores.models import BahPromotionRequest
 
 from .models import DiscordBot
+from storage.backends import S3Storage
 
 logger = logging.getLogger(__name__)
 
 DISCORD_API_BASE = "https://discord.com/api/v10"
 DISCORD_MESSAGE_LIMIT = 1900
+DISCORD_MAX_ATTACHMENTS = 10
 
 
 def _split_message(text: str, max_length: int = DISCORD_MESSAGE_LIMIT) -> List[str]:
@@ -118,12 +126,49 @@ def _normalize_image_url(url: str) -> str | None:
     return candidate
 
 
+def _get_storage():
+    s3_ready = all([
+        getattr(settings, 'S3_ACCESS_KEY_ID', None),
+        getattr(settings, 'S3_SECRET_ACCESS_KEY', None),
+        getattr(settings, 'S3_BUCKET_NAME', None),
+        getattr(settings, 'S3_ENDPOINT_URL', None),
+    ])
+    if s3_ready:
+        try:
+            return S3Storage()
+        except ImproperlyConfigured:
+            logger.warning('S3Storage 초기화 실패, 로컬 스토리지를 사용합니다.')
+    return FileSystemStorage(location=settings.MEDIA_ROOT)
+
+
+def _load_image_attachment(image, storage) -> Tuple[str, bytes, str] | None:
+    file_path = getattr(image, 'file_path', '')
+    if not file_path:
+        return None
+
+    try:
+        with storage.open(file_path, 'rb') as file_obj:
+            data = file_obj.read()
+    except Exception:
+        logger.exception('디스코드 첨부용 이미지 읽기 실패: %s', file_path)
+        return None
+
+    if not data:
+        logger.warning('디스코드 첨부용 이미지 데이터가 비었습니다: %s', file_path)
+        return None
+
+    filename = image.original_name or os.path.basename(file_path) or f"bah-image-{image.id}.bin"
+    content_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+    return filename, data, content_type
+
+
 def _send_discord_message(
     bot_token: str,
     *,
     channel_id: str,
     content: str,
     embeds: List[dict] | None = None,
+    attachments: List[Tuple[str, bytes, str]] | None = None,
 ) -> bool:
     if not bot_token or not channel_id:
         return False
@@ -133,12 +178,30 @@ def _send_discord_message(
         payload['embeds'] = embeds
 
     try:
-        response = requests.post(
-            f"{DISCORD_API_BASE}/channels/{channel_id}/messages",
-            json=payload,
-            headers={'Authorization': f'Bot {bot_token}'},
-            timeout=10,
-        )
+        url = f"{DISCORD_API_BASE}/channels/{channel_id}/messages"
+        headers = {'Authorization': f'Bot {bot_token}'}
+        if attachments:
+            attachment_files = attachments[:DISCORD_MAX_ATTACHMENTS]
+            files = {}
+            payload_attachments = []
+            for index, (filename, data, content_type) in enumerate(attachment_files):
+                files[f'files[{index}]'] = (filename, data, content_type)
+                payload_attachments.append({'id': index, 'filename': filename})
+            payload['attachments'] = payload_attachments
+            response = requests.post(
+                url,
+                data={'payload_json': json.dumps(payload, ensure_ascii=False)},
+                files=files,
+                headers=headers,
+                timeout=10,
+            )
+        else:
+            response = requests.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=10,
+            )
         if response.status_code >= 400:
             logger.warning(
                 '디스코드 메시지 전송 실패 (status=%s, channel=%s): %s',
@@ -172,6 +235,13 @@ def notify_bah_promotion_request(
     message_text, image_urls = _build_bah_promotion_message(promotion_request, is_new=is_new)
     message_chunks = _split_message(message_text)
     embeds = _build_image_embeds(image_urls)
+    images = list(promotion_request.images.order_by('order', 'uploaded_at'))
+    storage = _get_storage()
+    attachments: List[Tuple[str, bytes, str]] = []
+    for image in images:
+        attachment = _load_image_attachment(image, storage)
+        if attachment:
+            attachments.append(attachment)
 
     for channel in channels:
         for idx, chunk in enumerate(message_chunks):
@@ -181,3 +251,12 @@ def notify_bah_promotion_request(
                 content=chunk,
                 embeds=embeds if idx == 0 else None,
             )
+        if attachments:
+            total = len(attachments)
+            for idx, attachment in enumerate(attachments, start=1):
+                _send_discord_message(
+                    bot.token,
+                    channel_id=channel.channel_id,
+                    content=f'첨부 이미지 {idx}/{total}',
+                    attachments=[attachment],
+                )
