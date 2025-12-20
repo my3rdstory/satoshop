@@ -80,9 +80,6 @@ def _build_bah_promotion_message(
         f'- 라이트닝 인증: {"완료" if promotion_request.has_lightning_verification else "미완료"}',
     ]
 
-    if promotion_request.lightning_public_key:
-        lines.append(f'- 라이트닝 공개키: {promotion_request.lightning_public_key}')
-
     lines.extend([
         '',
         '소개 내용',
@@ -92,8 +89,6 @@ def _build_bah_promotion_message(
     image_urls = list(
         promotion_request.images.order_by('order', 'uploaded_at').values_list('file_url', flat=True)
     )
-    if image_urls:
-        lines.extend(['', '이미지 링크'] + [f'- {url}' for url in image_urls])
 
     return '\n'.join(lines), image_urls
 
