@@ -17,6 +17,8 @@ from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from satoshop_bot.services import notify_bah_promotion_request
+
 from .forms import BahPromotionRequestForm
 from .models import (
     BahPromotionAdmin,
@@ -222,6 +224,11 @@ def bah_promotion_request_view(request):
                 _send_bah_promotion_email(promotion_request, is_new=is_new_request)
             except Exception:
                 logger.exception('BAH 홍보요청 이메일 전송 중 오류 발생', extra={'request_id': promotion_request.id})
+
+            try:
+                notify_bah_promotion_request(promotion_request, is_new=is_new_request)
+            except Exception:
+                logger.exception('BAH 홍보요청 디스코드 알림 전송 중 오류 발생', extra={'request_id': promotion_request.id})
 
             query_status = 'created' if is_new_request else 'updated'
             return redirect(f"{reverse('stores:bah_promotion_request')}?status={query_status}")
