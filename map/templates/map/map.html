@@ -45,41 +45,26 @@
 </head>
 <body class="map-mode">
   <div class="map-root" id="mapRoot">
+    <div class="map-base is-hidden" id="mapBase">
+      <iframe class="map-base-frame" id="mapBaseFrame" title="배경 사이트" src="about:blank"></iframe>
+    </div>
     <div class="map-viewport" id="mapViewport">
       <div class="map-world" id="mapWorld" data-width="1800" data-height="1000" role="application" aria-label="맵 공간">
         <div class="map-backdrop" style="background-image: url('{% static 'map/images/map-bg.svg' %}');"></div>
-        <div class="map-layer map-zones" id="mapZones" aria-hidden="true"></div>
         <div class="map-player" id="mapPlayer" role="img" aria-label="플레이어 캐릭터"></div>
+        <div class="map-link-hint is-hidden" id="mapLinkHint"></div>
       </div>
     </div>
 
-    <div class="map-hud map-hud-left">
-      <div class="map-panel-card">
-        <span class="map-eyebrow">MAP SPACE</span>
-        <h1 class="map-hud-title">인터랙티브 맵</h1>
-        <p class="map-panel-muted">화살표로 이동하고 링크 존에서 상호작용하세요.</p>
-      </div>
-      <div class="map-panel-card">
-        <h2 class="map-panel-title">현재 캐릭터</h2>
-        <p class="map-panel-value" id="playerName">탐험자</p>
-        <p class="map-panel-muted">좌표: <span id="playerPosition">0, 0</span></p>
-      </div>
-    </div>
-
-    <div class="map-hud map-hud-right">
-      <div class="map-panel-card">
-        <h2 class="map-panel-title">인터랙티브 존</h2>
-        <p class="map-panel-muted" id="zoneStatus">아직 발견된 존이 없습니다.</p>
-        <div class="map-zone-actions is-hidden" id="zoneActions"></div>
-      </div>
-      <div class="map-panel-card">
-        <h2 class="map-panel-title">조작 안내</h2>
-        <ul class="map-list">
-          <li>화살표 키로 상하좌우 이동합니다.</li>
-          <li>링크 존에 들어가면 우측 패널에 버튼이 나타납니다.</li>
-          <li>모달은 ESC 또는 닫기 버튼으로 종료합니다.</li>
-        </ul>
-      </div>
+    <div class="map-link-panel">
+      <form class="map-link-form" id="mapLinkForm">
+        <label class="map-link-label" for="mapLinkInput">배경 https 링크</label>
+        <div class="map-link-controls">
+          <input class="map-link-input" id="mapLinkInput" type="url" inputmode="url" placeholder="https://example.com" autocomplete="off" />
+          <button class="map-link-button" type="submit">적용</button>
+        </div>
+      </form>
+      <p class="map-link-status" id="mapLinkStatus">링크 없음</p>
     </div>
   </div>
 

@@ -7,15 +7,114 @@
   const mapViewport = document.getElementById('mapViewport');
   const mapRoot = document.getElementById('mapRoot');
   const mapPlayer = document.getElementById('mapPlayer');
-  const mapZones = document.getElementById('mapZones');
-  const playerName = document.getElementById('playerName');
-  const playerPosition = document.getElementById('playerPosition');
-  const zoneStatus = document.getElementById('zoneStatus');
-  const zoneActions = document.getElementById('zoneActions');
+  const mapLinkHint = document.getElementById('mapLinkHint');
+  const mapLinkStatus = document.getElementById('mapLinkStatus');
+  const mapLinkForm = document.getElementById('mapLinkForm');
+  const mapLinkInput = document.getElementById('mapLinkInput');
+  const mapBase = document.getElementById('mapBase');
+  const mapBaseFrame = document.getElementById('mapBaseFrame');
   const modal = document.getElementById('mapModal');
   const modalTitle = document.getElementById('mapModalTitle');
   const modalFrame = document.getElementById('mapModalFrame');
   const modalClose = document.getElementById('mapModalClose');
+
+  const worldWidth = Number.parseInt(mapWorld.dataset.width, 10) || 1800;
+  const worldHeight = Number.parseInt(mapWorld.dataset.height, 10) || 1000;
+  mapWorld.style.width = `${worldWidth}px`;
+  mapWorld.style.height = `${worldHeight}px`;
+
+  const playerSize = 44;
+  const state = {
+    x: 120,
+    y: 160,
+    speed: 2.6,
+    cameraX: 0,
+    cameraY: 0,
+  };
+
+  const characters = [
+    {
+      symbol: 'A',
+      color: '#f97316',
+      glow: 'rgba(249, 115, 22, 0.65)',
+      text: '#0f172a',
+    },
+    {
+      symbol: 'B',
+      color: '#38bdf8',
+      glow: 'rgba(56, 189, 248, 0.65)',
+      text: '#0f172a',
+    },
+    {
+      symbol: 'C',
+      color: '#facc15',
+      glow: 'rgba(250, 204, 21, 0.65)',
+      text: '#0f172a',
+    },
+    {
+      symbol: 'D',
+      color: '#a855f7',
+      glow: 'rgba(168, 85, 247, 0.65)',
+      text: '#f8fafc',
+    },
+  ];
+
+  const selected = characters[Math.floor(Math.random() * characters.length)];
+  mapPlayer.textContent = selected.symbol;
+  mapPlayer.style.setProperty('--player-color', selected.color);
+  mapPlayer.style.setProperty('--player-glow', selected.glow);
+  mapPlayer.style.setProperty('--player-text', selected.text);
+
+  const keys = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    Shift: false,
+  };
+
+  const viewport = {
+    width: mapViewport.clientWidth,
+    height: mapViewport.clientHeight,
+  };
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  const updateViewport = () => {
+    viewport.width = mapViewport.clientWidth;
+    viewport.height = mapViewport.clientHeight;
+  };
+
+  const updateCamera = () => {
+    const targetX = viewport.width / 2 - (state.x + playerSize / 2);
+    const targetY = viewport.height / 2 - (state.y + playerSize / 2);
+    const minX = viewport.width - worldWidth;
+    const minY = viewport.height - worldHeight;
+    const clampedX = clamp(targetX, minX, 0);
+    const clampedY = clamp(targetY, minY, 0);
+    state.cameraX = clampedX;
+    state.cameraY = clampedY;
+    mapWorld.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+  };
+
+  const updateLinkHintPosition = () => {
+    if (!mapLinkHint) {
+      return;
+    }
+    mapLinkHint.style.left = `${state.x + playerSize / 2}px`;
+    mapLinkHint.style.top = `${state.y}px`;
+  };
+
+  const placePlayer = () => {
+    mapPlayer.style.left = `${state.x}px`;
+    mapPlayer.style.top = `${state.y}px`;
+    updateLinkHintPosition();
+  };
+
+  const pickSafeStart = () => {
+    state.x = 140 + Math.random() * (worldWidth - 280);
+    state.y = 140 + Math.random() * (worldHeight - 280);
+  };
 
   const openMapLayer = () => {
     if (mapRoot) {
@@ -37,208 +136,12 @@
     close: closeMapLayer,
   };
 
-  const worldWidth = Number.parseInt(mapWorld.dataset.width, 10) || 1800;
-  const worldHeight = Number.parseInt(mapWorld.dataset.height, 10) || 1000;
-  mapWorld.style.width = `${worldWidth}px`;
-  mapWorld.style.height = `${worldHeight}px`;
-
-  const playerSize = 44;
-  const state = {
-    x: 120,
-    y: 160,
-    speed: 2.6,
-  };
-
-  const characters = [
-    {
-      name: '빛의 러너',
-      symbol: 'A',
-      color: '#f97316',
-      glow: 'rgba(249, 115, 22, 0.65)',
-      text: '#0f172a',
-    },
-    {
-      name: '네온 탐험가',
-      symbol: 'B',
-      color: '#38bdf8',
-      glow: 'rgba(56, 189, 248, 0.65)',
-      text: '#0f172a',
-    },
-    {
-      name: '새벽 스트라이더',
-      symbol: 'C',
-      color: '#facc15',
-      glow: 'rgba(250, 204, 21, 0.65)',
-      text: '#0f172a',
-    },
-    {
-      name: '미드나잇 워커',
-      symbol: 'D',
-      color: '#a855f7',
-      glow: 'rgba(168, 85, 247, 0.65)',
-      text: '#f8fafc',
-    },
-  ];
-
-  const selected = characters[Math.floor(Math.random() * characters.length)];
-  playerName.textContent = selected.name;
-  mapPlayer.textContent = selected.symbol;
-  mapPlayer.style.setProperty('--player-color', selected.color);
-  mapPlayer.style.setProperty('--player-glow', selected.glow);
-  mapPlayer.style.setProperty('--player-text', selected.text);
-
-  const zones = [
-    {
-      id: 'zone-community',
-      name: '커뮤니티 라운지',
-      description: '새 탭으로 열리는 외부 링크 존',
-      action: { type: 'new_tab', url: 'https://example.org' },
-      x: 280,
-      y: 730,
-      width: 240,
-      height: 140,
-    },
-    {
-      id: 'zone-showcase',
-      name: '스토리 전시관',
-      description: '모달로 열리는 링크 프리뷰 존',
-      action: { type: 'modal', url: 'https://example.com' },
-      x: 980,
-      y: 640,
-      width: 260,
-      height: 160,
-    },
-    {
-      id: 'zone-portal',
-      name: '포털 게이트',
-      description: '새 탭으로 이동하는 링크 존',
-      action: { type: 'new_tab', url: 'https://example.com' },
-      x: 1380,
-      y: 320,
-      width: 220,
-      height: 140,
-    },
-  ];
-
-  const keys = {
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false,
-    Shift: false,
-  };
-
-  const viewport = {
-    width: mapViewport.clientWidth,
-    height: mapViewport.clientHeight,
-  };
-
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-  const rectsOverlap = (a, b) =>
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y;
-
-  const updateViewport = () => {
-    viewport.width = mapViewport.clientWidth;
-    viewport.height = mapViewport.clientHeight;
-  };
-
-  const updateCamera = () => {
-    const targetX = viewport.width / 2 - (state.x + playerSize / 2);
-    const targetY = viewport.height / 2 - (state.y + playerSize / 2);
-    const minX = viewport.width - worldWidth;
-    const minY = viewport.height - worldHeight;
-    const clampedX = clamp(targetX, minX, 0);
-    const clampedY = clamp(targetY, minY, 0);
-    mapWorld.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
-  };
-
-  const placePlayer = () => {
-    mapPlayer.style.left = `${state.x}px`;
-    mapPlayer.style.top = `${state.y}px`;
-    playerPosition.textContent = `${Math.round(state.x)}, ${Math.round(state.y)}`;
-  };
-
-  const pickSafeStart = () => {
-    state.x = 140 + Math.random() * (worldWidth - 280);
-    state.y = 140 + Math.random() * (worldHeight - 280);
-  };
-
-  const renderZones = () => {
-    mapZones.innerHTML = '';
-    zones.forEach((zone) => {
-      const element = document.createElement('div');
-      element.className = 'map-zone';
-      element.dataset.zoneId = zone.id;
-      element.style.left = `${zone.x}px`;
-      element.style.top = `${zone.y}px`;
-      element.style.width = `${zone.width}px`;
-      element.style.height = `${zone.height}px`;
-
-      const label = document.createElement('span');
-      label.className = 'map-zone-name';
-      label.textContent = zone.name;
-      element.appendChild(label);
-
-      mapZones.appendChild(element);
-    });
-  };
-
-  const renderZoneActions = (zone) => {
-    if (!zone) {
-      zoneActions.classList.add('is-hidden');
-      zoneActions.innerHTML = '';
+  const openModal = (link) => {
+    if (!modal || !modalFrame || !link) {
       return;
     }
-
-    zoneActions.classList.remove('is-hidden');
-    zoneActions.innerHTML = '';
-
-    const description = document.createElement('p');
-    description.className = 'map-panel-muted';
-    description.textContent = zone.description;
-    zoneActions.appendChild(description);
-
-    if (zone.action.type === 'new_tab') {
-      const link = document.createElement('a');
-      link.className = 'map-zone-button is-primary';
-      link.href = zone.action.url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = '새 탭으로 열기';
-      zoneActions.appendChild(link);
-    }
-
-    if (zone.action.type === 'modal') {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'map-zone-button is-secondary';
-      button.textContent = '모달로 보기';
-      button.addEventListener('click', () => openModal(zone));
-      zoneActions.appendChild(button);
-    }
-  };
-
-  const highlightZone = (zoneId) => {
-    const zoneElements = mapZones.querySelectorAll('.map-zone');
-    zoneElements.forEach((element) => {
-      if (element.dataset.zoneId === zoneId) {
-        element.classList.add('is-active');
-      } else {
-        element.classList.remove('is-active');
-      }
-    });
-  };
-
-  const openModal = (zone) => {
-    if (!modal || !modalFrame) {
-      return;
-    }
-    modalTitle.textContent = zone.name;
-    modalFrame.src = zone.action.url;
+    modalTitle.textContent = link.title || '링크 보기';
+    modalFrame.src = link.url;
     modal.classList.remove('is-hidden');
     modal.setAttribute('aria-hidden', 'false');
   };
@@ -252,26 +155,179 @@
     modalFrame.src = 'about:blank';
   };
 
-  let currentZone = null;
-
-  const updateZoneStatus = () => {
-    const playerRect = {
-      x: state.x,
-      y: state.y,
-      width: playerSize,
-      height: playerSize,
-    };
-
-    const activeZone = zones.find((zone) => rectsOverlap(playerRect, zone)) || null;
-    if (activeZone?.id !== currentZone?.id) {
-      currentZone = activeZone;
-      if (currentZone) {
-        zoneStatus.textContent = `${currentZone.name}에 진입했습니다.`;
-      } else {
-        zoneStatus.textContent = '아직 발견된 존이 없습니다.';
+  const normalizeUrl = (value) => {
+    if (!value) {
+      return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      const url = new URL(withProtocol);
+      if (!['http:', 'https:'].includes(url.protocol)) {
+        return null;
       }
-      renderZoneActions(currentZone);
-      highlightZone(currentZone?.id ?? null);
+      return url.href;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const setBaseUrl = (value) => {
+    const normalized = normalizeUrl(value);
+    if (!normalized) {
+      if (mapBase) {
+        mapBase.classList.add('is-hidden');
+      }
+      if (mapRoot) {
+        mapRoot.classList.remove('has-base');
+      }
+      if (mapBaseFrame) {
+        mapBaseFrame.src = 'about:blank';
+      }
+      return;
+    }
+
+    if (mapBaseFrame) {
+      mapBaseFrame.src = normalized;
+    }
+    if (mapBase) {
+      mapBase.classList.remove('is-hidden');
+    }
+    if (mapRoot) {
+      mapRoot.classList.add('has-base');
+    }
+  };
+
+  const getBaseDocument = () => {
+    if (!mapBaseFrame || !mapBase || mapBase.classList.contains('is-hidden')) {
+      return null;
+    }
+    try {
+      return mapBaseFrame.contentDocument;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const getBaseLocation = () => {
+    if (!mapBaseFrame || !mapBase || mapBase.classList.contains('is-hidden')) {
+      return window.location.href;
+    }
+    try {
+      return mapBaseFrame.contentWindow?.location?.href || window.location.href;
+    } catch (error) {
+      return window.location.href;
+    }
+  };
+
+  const extractLink = (element, baseHref) => {
+    if (!element) {
+      return null;
+    }
+    const anchor = element.closest ? element.closest('a[href]') : null;
+    if (!anchor) {
+      return null;
+    }
+    const rawHref = anchor.getAttribute('href');
+    if (!rawHref) {
+      return null;
+    }
+    if (rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('mailto:')) {
+      return null;
+    }
+    let url;
+    try {
+      url = new URL(rawHref, baseHref);
+    } catch (error) {
+      return null;
+    }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return null;
+    }
+    const title = anchor.textContent ? anchor.textContent.trim() : '';
+    return {
+      url: url.href,
+      title: title || url.href,
+    };
+  };
+
+  const findLinkAtPoint = (clientX, clientY) => {
+    const baseDocument = getBaseDocument();
+    const baseHref = getBaseLocation();
+
+    if (baseDocument && mapBaseFrame) {
+      const frameRect = mapBaseFrame.getBoundingClientRect();
+      if (
+        clientX >= frameRect.left &&
+        clientX <= frameRect.right &&
+        clientY >= frameRect.top &&
+        clientY <= frameRect.bottom
+      ) {
+        const localX = clientX - frameRect.left;
+        const localY = clientY - frameRect.top;
+        const element = baseDocument.elementFromPoint(localX, localY);
+        return {
+          link: extractLink(element, baseHref),
+          restricted: false,
+        };
+      }
+    } else if (mapBaseFrame && mapBase && !mapBase.classList.contains('is-hidden')) {
+      return { link: null, restricted: true };
+    }
+
+    const elements = document.elementsFromPoint(clientX, clientY);
+    const target = elements.find((element) => !element.closest('#mapRoot')) || null;
+    return {
+      link: extractLink(target, baseHref),
+      restricted: false,
+    };
+  };
+
+  const getPlayerScreenPoint = () => {
+    const viewportRect = mapViewport.getBoundingClientRect();
+    return {
+      x: viewportRect.left + state.x + playerSize / 2 + state.cameraX,
+      y: viewportRect.top + state.y + playerSize / 2 + state.cameraY,
+    };
+  };
+
+  let activeLink = null;
+  let linkRestricted = false;
+  let lastLinkCheck = 0;
+
+  const updateLinkUI = () => {
+    if (!mapLinkStatus || !mapLinkHint) {
+      return;
+    }
+
+    if (activeLink) {
+      mapLinkStatus.textContent = activeLink.url;
+      mapLinkHint.textContent = `링크 감지\n${activeLink.url}\nT 새 탭 / M 모달`;
+      mapLinkHint.classList.remove('is-hidden');
+    } else if (linkRestricted) {
+      mapLinkStatus.textContent = '외부 사이트는 링크 감지가 제한됩니다.';
+      mapLinkHint.classList.add('is-hidden');
+    } else {
+      mapLinkStatus.textContent = '링크 없음';
+      mapLinkHint.classList.add('is-hidden');
+    }
+  };
+
+  const updateLinkTarget = () => {
+    const now = performance.now();
+    if (now - lastLinkCheck < 120) {
+      return;
+    }
+    lastLinkCheck = now;
+    const point = getPlayerScreenPoint();
+    const { link, restricted } = findLinkAtPoint(point.x, point.y);
+    if (link?.url !== activeLink?.url || restricted !== linkRestricted) {
+      activeLink = link;
+      linkRestricted = restricted;
+      updateLinkUI();
     }
   };
 
@@ -309,17 +365,42 @@
 
     placePlayer();
     updateCamera();
-    updateZoneStatus();
+    updateLinkTarget();
     requestAnimationFrame(step);
   };
 
+  const isTypingTarget = () => {
+    const active = document.activeElement;
+    if (!active) {
+      return false;
+    }
+    const tagName = active.tagName;
+    return tagName === 'INPUT' || tagName === 'TEXTAREA' || active.isContentEditable;
+  };
+
   window.addEventListener('keydown', (event) => {
+    if (isTypingTarget()) {
+      return;
+    }
+
     if (Object.prototype.hasOwnProperty.call(keys, event.key)) {
       keys[event.key] = true;
       event.preventDefault();
     }
+
     if (event.key === 'Escape') {
       closeModal();
+    }
+
+    const key = event.key.toLowerCase();
+    if (key === 't' && activeLink) {
+      window.open(activeLink.url, '_blank', 'noopener');
+      event.preventDefault();
+    }
+
+    if (key === 'm' && activeLink) {
+      openModal(activeLink);
+      event.preventDefault();
     }
   });
 
@@ -347,11 +428,18 @@
     });
   }
 
-  renderZones();
+  if (mapLinkForm) {
+    mapLinkForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      setBaseUrl(mapLinkInput?.value || '');
+      updateLinkTarget();
+    });
+  }
+
   pickSafeStart();
   placePlayer();
   updateViewport();
   updateCamera();
-  updateZoneStatus();
+  updateLinkUI();
   requestAnimationFrame(step);
 })();
