@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>맵 오버레이</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Noto+Sans+KR:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="map-overlay.css">
+  <script>
+    (function() {
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored) {
+          theme = stored;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e) {
+        try {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            theme = 'dark';
+          }
+        } catch (e2) {
+          theme = 'light';
+        }
+      }
+
+      document.documentElement.setAttribute('data-theme', theme);
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+</head>
+<body class="map-overlay-body">
+  <div class="map-overlay-root" id="mapOverlayRoot">
+    <div class="map-base is-hidden" id="mapBase">
+      <iframe class="map-base-frame" id="mapBaseFrame" title="배경 사이트" src="about:blank"></iframe>
+    </div>
+
+    <div class="map-viewport" id="mapViewport">
+      <div class="map-world" id="mapWorld" data-width="1800" data-height="1000" role="application" aria-label="맵 공간">
+        <div class="map-backdrop"></div>
+        <div class="map-player" id="mapPlayer" role="img" aria-label="플레이어 캐릭터"></div>
+        <div class="map-link-hint is-hidden" id="mapLinkHint"></div>
+      </div>
+    </div>
+
+    <div class="map-link-panel">
+      <form class="map-link-form" id="mapLinkForm">
+        <label class="map-link-label" for="mapLinkInput">배경 http/https 링크</label>
+        <div class="map-link-controls">
+          <input class="map-link-input" id="mapLinkInput" type="url" inputmode="url" placeholder="http://example.com" autocomplete="off" />
+          <button class="map-link-button" type="submit">적용</button>
+        </div>
+      </form>
+      <p class="map-link-status" id="mapLinkStatus">링크 없음</p>
+    </div>
+  </div>
+
+  <div class="map-modal is-hidden" id="mapModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="map-modal-card">
+      <div class="map-modal-header">
+        <h3 class="map-modal-title" id="mapModalTitle">링크 보기</h3>
+        <button type="button" class="map-modal-close" id="mapModalClose">닫기</button>
+      </div>
+      <iframe class="map-modal-frame" id="mapModalFrame" title="링크 미리보기" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <script src="map-overlay.js"></script>
+</body>
+</html>
