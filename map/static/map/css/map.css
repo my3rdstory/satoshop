@@ -80,19 +80,6 @@
   inset: 0;
 }
 
-.map-barrier {
-  position: absolute;
-  border-radius: 0.6rem;
-  background: rgba(15, 23, 42, 0.02);
-  border: 1px dashed rgba(148, 163, 184, 0.35);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.map-root[data-debug='true'] .map-barrier {
-  opacity: 0.35;
-}
-
 .map-zone {
   position: absolute;
   border-radius: 1.1rem;

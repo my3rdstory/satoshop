@@ -7,7 +7,6 @@
   const mapViewport = document.getElementById('mapViewport');
   const mapRoot = document.getElementById('mapRoot');
   const mapPlayer = document.getElementById('mapPlayer');
-  const mapBarriers = document.getElementById('mapBarriers');
   const mapZones = document.getElementById('mapZones');
   const playerName = document.getElementById('playerName');
   const playerPosition = document.getElementById('playerPosition');
@@ -88,15 +87,6 @@
   mapPlayer.style.setProperty('--player-glow', selected.glow);
   mapPlayer.style.setProperty('--player-text', selected.text);
 
-  const barriers = [
-    { id: 'b1', x: 120, y: 120, width: 360, height: 140 },
-    { id: 'b2', x: 620, y: 90, width: 240, height: 190 },
-    { id: 'b3', x: 1040, y: 210, width: 420, height: 120 },
-    { id: 'b4', x: 160, y: 520, width: 280, height: 240 },
-    { id: 'b5', x: 620, y: 520, width: 300, height: 160 },
-    { id: 'b6', x: 1240, y: 520, width: 320, height: 200 },
-  ];
-
   const zones = [
     {
       id: 'zone-community',
@@ -135,6 +125,7 @@
     ArrowDown: false,
     ArrowLeft: false,
     ArrowRight: false,
+    Shift: false,
   };
 
   const viewport = {
@@ -149,8 +140,6 @@
     a.x + a.width > b.x &&
     a.y < b.y + b.height &&
     a.y + a.height > b.y;
-
-  const collidesAny = (rect, list) => list.some((item) => rectsOverlap(rect, item));
 
   const updateViewport = () => {
     viewport.width = mapViewport.clientWidth;
@@ -174,32 +163,8 @@
   };
 
   const pickSafeStart = () => {
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      const candidate = {
-        x: 140 + Math.random() * (worldWidth - 280),
-        y: 140 + Math.random() * (worldHeight - 280),
-        width: playerSize,
-        height: playerSize,
-      };
-      if (!collidesAny(candidate, barriers)) {
-        state.x = candidate.x;
-        state.y = candidate.y;
-        return;
-      }
-    }
-  };
-
-  const renderBarriers = () => {
-    mapBarriers.innerHTML = '';
-    barriers.forEach((barrier) => {
-      const element = document.createElement('div');
-      element.className = 'map-barrier';
-      element.style.left = `${barrier.x}px`;
-      element.style.top = `${barrier.y}px`;
-      element.style.width = `${barrier.width}px`;
-      element.style.height = `${barrier.height}px`;
-      mapBarriers.appendChild(element);
-    });
+    state.x = 140 + Math.random() * (worldWidth - 280);
+    state.y = 140 + Math.random() * (worldHeight - 280);
   };
 
   const renderZones = () => {
@@ -311,31 +276,8 @@
   };
 
   const movePlayer = (dx, dy) => {
-    let nextX = clamp(state.x + dx, 0, worldWidth - playerSize);
-    let nextY = clamp(state.y + dy, 0, worldHeight - playerSize);
-
-    const testX = {
-      x: nextX,
-      y: state.y,
-      width: playerSize,
-      height: playerSize,
-    };
-    if (collidesAny(testX, barriers)) {
-      nextX = state.x;
-    }
-
-    const testY = {
-      x: nextX,
-      y: nextY,
-      width: playerSize,
-      height: playerSize,
-    };
-    if (collidesAny(testY, barriers)) {
-      nextY = state.y;
-    }
-
-    state.x = nextX;
-    state.y = nextY;
+    state.x = clamp(state.x + dx, 0, worldWidth - playerSize);
+    state.y = clamp(state.y + dy, 0, worldHeight - playerSize);
   };
 
   const step = () => {
@@ -358,7 +300,8 @@
     const moving = dx !== 0 || dy !== 0;
     if (moving) {
       const length = Math.hypot(dx, dy) || 1;
-      movePlayer((dx / length) * state.speed, (dy / length) * state.speed);
+      const boost = keys.Shift ? 2 : 1;
+      movePlayer((dx / length) * state.speed * boost, (dy / length) * state.speed * boost);
       mapPlayer.classList.add('is-moving');
     } else {
       mapPlayer.classList.remove('is-moving');
@@ -404,7 +347,6 @@
     });
   }
 
-  renderBarriers();
   renderZones();
   pickSafeStart();
   placePlayer();
