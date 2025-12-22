@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     'lecture',
     'file',
     'game',
+    'map',
     'game.selker',
 ]
 

@@ -35,6 +35,7 @@ urlpatterns = [
     path('meetup/', include('meetup.urls')),
     path('lecture/', include('lecture.urls')),
     path('file/', include('file.urls')),
+    path('map/', include('map.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
     path('minigame/', include('game.urls')),
     

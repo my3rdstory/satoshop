@@ -1,0 +1,84 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}맵 스페이스{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'map/css/map.css' %}">
+{% endblock %}
+
+{% block body_class %} overflow-hidden{% endblock %}
+
+{% block content %}
+<section class="map-shell text-sm">
+  <div class="map-stage">
+    <header class="map-header">
+      <div class="map-header-copy">
+        <span class="map-eyebrow">MAP SPACE</span>
+        <h1 class="map-title">화살표로 움직이는 인터랙티브 맵</h1>
+        <p class="map-subtitle">배경 위에 배리어와 링크 존을 배치해, 탐색과 인터랙션이 가능한 공간을 만듭니다.</p>
+      </div>
+      <div class="map-header-card">
+        <div class="map-header-item">
+          <span class="map-label">조작</span>
+          <p>화살표 키로 이동, 인터랙티브 존에서 버튼을 눌러 새 탭/모달을 엽니다.</p>
+        </div>
+        <div class="map-header-item">
+          <span class="map-label">규칙</span>
+          <p>투명 배리어는 통과할 수 없고, 링크 존에 들어가면 안내가 표시됩니다.</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="map-grid">
+      <div class="map-viewport" id="mapViewport">
+        <div class="map-world" id="mapWorld" data-width="1800" data-height="1000" role="application" aria-label="맵 공간">
+          <div class="map-backdrop" style="background-image: url('{% static 'map/images/map-bg.svg' %}');"></div>
+          <div class="map-layer map-barriers" id="mapBarriers" aria-hidden="true"></div>
+          <div class="map-layer map-zones" id="mapZones" aria-hidden="true"></div>
+          <div class="map-player" id="mapPlayer" role="img" aria-label="플레이어 캐릭터"></div>
+        </div>
+      </div>
+
+      <aside class="map-panel">
+        <div class="map-panel-card">
+          <h2 class="map-panel-title">현재 캐릭터</h2>
+          <p class="map-panel-value" id="playerName">탐험자</p>
+          <p class="map-panel-muted">좌표: <span id="playerPosition">0, 0</span></p>
+        </div>
+
+        <div class="map-panel-card">
+          <h2 class="map-panel-title">인터랙티브 존</h2>
+          <p class="map-panel-muted" id="zoneStatus">아직 발견된 존이 없습니다.</p>
+          <div class="map-zone-actions is-hidden" id="zoneActions"></div>
+        </div>
+
+        <div class="map-panel-card">
+          <h2 class="map-panel-title">조작 안내</h2>
+          <ul class="map-list">
+            <li>화살표 키로 상하좌우 이동합니다.</li>
+            <li>링크 존에 들어가면 우측 패널에 버튼이 나타납니다.</li>
+            <li>모달은 ESC 또는 닫기 버튼으로 종료합니다.</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="map-modal is-hidden" id="mapModal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="map-modal-card">
+      <div class="map-modal-header">
+        <h3 class="map-modal-title" id="mapModalTitle">링크 보기</h3>
+        <button type="button" class="map-modal-close" id="mapModalClose">닫기</button>
+      </div>
+      <iframe class="map-modal-frame" id="mapModalFrame" title="링크 미리보기" src="about:blank"></iframe>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'map/js/map.js' %}"></script>
+{% endblock %}
