@@ -24,109 +24,32 @@
   --map-zone-border: rgba(56, 189, 248, 0.65);
 }
 
-.map-shell {
-  min-height: calc(100vh - 4rem);
-  padding: 2.5rem 1.5rem 3rem;
-  background: radial-gradient(circle at top, rgba(241, 245, 249, 0.9), rgba(226, 232, 240, 0.4)),
-    linear-gradient(135deg, rgba(148, 163, 184, 0.16), rgba(248, 250, 252, 0.4));
+.map-mode {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  font-size: 0.875rem;
   color: var(--map-text);
+  background: #0b1120;
 }
 
-.dark .map-shell {
-  background: radial-gradient(circle at top, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.95)),
-    linear-gradient(135deg, rgba(2, 6, 23, 0.85), rgba(15, 23, 42, 0.7));
+.map-root {
+  position: fixed;
+  inset: 0;
+  background: #0b1120;
+  overflow: hidden;
+  z-index: 60;
 }
 
-.map-stage {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.map-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.75rem;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.map-header-copy {
-  flex: 1 1 320px;
-}
-
-.map-eyebrow {
-  display: inline-block;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  color: var(--map-muted);
-}
-
-.map-title {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-top: 0.5rem;
-}
-
-.map-subtitle {
-  margin-top: 0.6rem;
-  color: var(--map-muted);
-  max-width: 560px;
-}
-
-.map-header-card {
-  display: grid;
-  gap: 0.85rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  flex: 1 1 320px;
-}
-
-.map-header-item {
-  background: var(--map-surface);
-  border: 1px solid var(--map-border);
-  border-radius: 1rem;
-  padding: 1rem 1.1rem;
-  box-shadow: var(--map-panel-shadow);
-}
-
-.map-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--map-muted);
-}
-
-.map-header-item p {
-  margin-top: 0.5rem;
-  color: var(--map-text);
-}
-
-.map-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 1.5rem;
-  align-items: stretch;
-}
-
-@media (max-width: 1024px) {
-  .map-grid {
-    grid-template-columns: 1fr;
-  }
+.map-root.is-hidden {
+  display: none;
 }
 
 .map-viewport {
-  position: relative;
-  border-radius: 1.5rem;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  border: 1px solid var(--map-border);
-  background: rgba(15, 23, 42, 0.9);
-  min-height: 520px;
-  height: 100%;
+  background: rgba(2, 6, 23, 0.92);
 }
 
 .map-world {
@@ -149,7 +72,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, rgba(15, 23, 42, 0.25), rgba(15, 23, 42, 0.4));
+  background: linear-gradient(120deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.6));
 }
 
 .map-layer {
@@ -166,7 +89,7 @@
   pointer-events: none;
 }
 
-.map-shell[data-debug='true'] .map-barrier {
+.map-root[data-debug='true'] .map-barrier {
   opacity: 0.35;
 }
 
@@ -249,10 +172,54 @@
   opacity: 0.6;
 }
 
-.map-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.map-hud {
+  position: absolute;
+  z-index: 12;
+  display: grid;
+  gap: 0.85rem;
+  width: min(320px, 92vw);
+}
+
+.map-hud-left {
+  top: 1.5rem;
+  left: 1.5rem;
+}
+
+.map-hud-right {
+  top: 1.5rem;
+  right: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .map-hud-left {
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+
+  .map-hud-right {
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+}
+
+.map-eyebrow {
+  display: inline-block;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--map-muted);
+}
+
+.map-hud-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
 }
 
 .map-panel-card {
@@ -261,6 +228,7 @@
   border-radius: 1.1rem;
   padding: 1rem 1.1rem;
   box-shadow: var(--map-panel-shadow);
+  backdrop-filter: blur(10px);
 }
 
 .map-panel-title {
@@ -329,7 +297,7 @@
   padding: 1.5rem;
   background: rgba(2, 6, 23, 0.6);
   backdrop-filter: blur(6px);
-  z-index: 60;
+  z-index: 70;
 }
 
 .map-modal-card {

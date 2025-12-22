@@ -5,6 +5,7 @@
   }
 
   const mapViewport = document.getElementById('mapViewport');
+  const mapRoot = document.getElementById('mapRoot');
   const mapPlayer = document.getElementById('mapPlayer');
   const mapBarriers = document.getElementById('mapBarriers');
   const mapZones = document.getElementById('mapZones');
@@ -16,6 +17,26 @@
   const modalTitle = document.getElementById('mapModalTitle');
   const modalFrame = document.getElementById('mapModalFrame');
   const modalClose = document.getElementById('mapModalClose');
+
+  const openMapLayer = () => {
+    if (mapRoot) {
+      mapRoot.classList.remove('is-hidden');
+    }
+    document.body.classList.add('map-mode');
+  };
+
+  const closeMapLayer = () => {
+    if (mapRoot) {
+      mapRoot.classList.add('is-hidden');
+    }
+    document.body.classList.remove('map-mode');
+    closeModal();
+  };
+
+  window.MapLayer = {
+    open: openMapLayer,
+    close: closeMapLayer,
+  };
 
   const worldWidth = Number.parseInt(mapWorld.dataset.width, 10) || 1800;
   const worldHeight = Number.parseInt(mapWorld.dataset.height, 10) || 1000;
