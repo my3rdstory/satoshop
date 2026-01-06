@@ -78,59 +78,12 @@
                   <div class="sm:w-1/2 flex items-center">
                     <div class="space-y-3">
                       <p class="text-slate-200 whitespace-pre-line">{{ item.description|default:'' }}</p>
-                      {% if can_manage %}
-                        <div class="minihome-owner-item">
-                          <button type="button" class="minihome-link minihome-link--sm" data-toggle-form="gallery-edit-{{ section.id }}-{{ item.id }}">수정</button>
-                          <form method="post" action="{% url 'minihome:delete_gallery_item' slug=minihome.slug %}">
-                            {% csrf_token %}
-                            <input type="hidden" name="section_id" value="{{ section.id }}">
-                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                            <button type="submit" class="minihome-link minihome-link--sm">삭제</button>
-                          </form>
-                        </div>
-                        <form id="gallery-edit-{{ section.id }}-{{ item.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:update_gallery_item' slug=minihome.slug %}">
-                          {% csrf_token %}
-                          <input type="hidden" name="section_id" value="{{ section.id }}">
-                          <input type="hidden" name="item_id" value="{{ item.id }}">
-                          <label class="minihome-field">
-                            <span>설명 (최대 100자)</span>
-                            <textarea name="description" rows="3" maxlength="100">{{ item.description|default:'' }}</textarea>
-                          </label>
-                          <label class="minihome-field">
-                            <span>이미지 교체</span>
-                            <input type="file" name="image" accept="image/*">
-                          </label>
-                          <div class="flex justify-end">
-                            <button type="submit" class="minihome-link minihome-link--sm">저장</button>
-                          </div>
-                        </form>
-                      {% endif %}
                     </div>
                   </div>
                 </div>
               {% empty %}
                 <div class="minihome-empty">갤러리 아이템이 없습니다.</div>
               {% endfor %}
-              {% if can_manage %}
-                <div class="minihome-owner-tools">
-                  <button type="button" class="minihome-link" data-toggle-form="gallery-form-{{ section.id }}">갤러리 아이템 추가</button>
-                  <form id="gallery-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_gallery_item' slug=minihome.slug %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="section_id" value="{{ section.id }}">
-                    <label class="minihome-field">
-                      <span>설명 (최대 100자)</span>
-                      <textarea name="description" rows="3" maxlength="100"></textarea>
-                    </label>
-                    <label class="minihome-field">
-                      <span>이미지 업로드</span>
-                      <input type="file" name="image" accept="image/*">
-                    </label>
-                    <div class="flex justify-end">
-                      <button type="submit" class="minihome-link">저장</button>
-                    </div>
-                  </form>
-                </div>
-              {% endif %}
             </section>
           {% endif %}
 
@@ -140,40 +93,6 @@
                 <h3 class="text-sm font-semibold">미니 블로그</h3>
                 <span class="text-xs text-slate-300">클릭해서 자세히 보기</span>
               </div>
-              {% if can_manage %}
-                <div class="minihome-owner-tools">
-                  <button type="button" class="minihome-link" data-toggle-form="blog-form-{{ section.id }}">글쓰기</button>
-                  <form id="blog-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_blog_post' slug=minihome.slug %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="section_id" value="{{ section.id }}">
-                    <label class="minihome-field">
-                      <span>내용</span>
-                      <textarea name="text" rows="6" maxlength="1000"></textarea>
-                    </label>
-                    <div class="grid gap-3 md:grid-cols-2">
-                      <label class="minihome-field">
-                        <span>이미지 1</span>
-                        <input type="file" name="image_0" accept="image/*">
-                      </label>
-                      <label class="minihome-field">
-                        <span>이미지 2</span>
-                        <input type="file" name="image_1" accept="image/*">
-                      </label>
-                      <label class="minihome-field">
-                        <span>이미지 3</span>
-                        <input type="file" name="image_2" accept="image/*">
-                      </label>
-                      <label class="minihome-field">
-                        <span>이미지 4</span>
-                        <input type="file" name="image_3" accept="image/*">
-                      </label>
-                    </div>
-                    <div class="flex justify-end">
-                      <button type="submit" class="minihome-link">저장</button>
-                    </div>
-                  </form>
-                </div>
-              {% endif %}
               <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
                 {% for post in section.data.posts %}
                   <div class="minihome-blog-item">
@@ -189,47 +108,6 @@
                         {% endif %}
                       </div>
                     </button>
-                    {% if can_manage %}
-                      <div class="minihome-owner-item">
-                        <button type="button" class="minihome-link minihome-link--sm" data-toggle-form="blog-edit-{{ section.id }}-{{ post.id }}">수정</button>
-                        <form method="post" action="{% url 'minihome:delete_blog_post' slug=minihome.slug %}">
-                          {% csrf_token %}
-                          <input type="hidden" name="section_id" value="{{ section.id }}">
-                          <input type="hidden" name="post_id" value="{{ post.id }}">
-                          <button type="submit" class="minihome-link minihome-link--sm">삭제</button>
-                        </form>
-                      </div>
-                      <form id="blog-edit-{{ section.id }}-{{ post.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:update_blog_post' slug=minihome.slug %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="section_id" value="{{ section.id }}">
-                        <input type="hidden" name="post_id" value="{{ post.id }}">
-                        <label class="minihome-field">
-                          <span>내용</span>
-                          <textarea name="text" rows="6" maxlength="1000">{{ post.text|default:'' }}</textarea>
-                        </label>
-                        <div class="grid gap-3 md:grid-cols-2">
-                          <label class="minihome-field">
-                            <span>이미지 1 교체</span>
-                            <input type="file" name="image_0" accept="image/*">
-                          </label>
-                          <label class="minihome-field">
-                            <span>이미지 2 교체</span>
-                            <input type="file" name="image_1" accept="image/*">
-                          </label>
-                          <label class="minihome-field">
-                            <span>이미지 3 교체</span>
-                            <input type="file" name="image_2" accept="image/*">
-                          </label>
-                          <label class="minihome-field">
-                            <span>이미지 4 교체</span>
-                            <input type="file" name="image_3" accept="image/*">
-                          </label>
-                        </div>
-                        <div class="flex justify-end">
-                          <button type="submit" class="minihome-link minihome-link--sm">저장</button>
-                        </div>
-                      </form>
-                    {% endif %}
                   </div>
                 {% empty %}
                   <div class="minihome-empty">등록된 글이 없습니다.</div>
@@ -246,30 +124,6 @@
           {% if section.type == 'store' %}
             <section class="minihome-section-card space-y-3">
               <h3 class="text-sm font-semibold">매장</h3>
-              {% if can_manage %}
-                <div class="minihome-owner-tools">
-                  <button type="button" class="minihome-link" data-toggle-form="store-form-{{ section.id }}">매장 추가</button>
-                  <form id="store-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_store_item' slug=minihome.slug %}">
-                    {% csrf_token %}
-                    <input type="hidden" name="section_id" value="{{ section.id }}">
-                    <label class="minihome-field">
-                      <span>매장명</span>
-                      <input type="text" name="name" maxlength="50">
-                    </label>
-                    <label class="minihome-field">
-                      <span>네이버 지도 공유 링크</span>
-                      <input type="text" name="map_url" maxlength="200">
-                    </label>
-                    <label class="minihome-field">
-                      <span>매장 커버 이미지</span>
-                      <input type="file" name="cover_image" accept="image/*">
-                    </label>
-                    <div class="flex justify-end">
-                      <button type="submit" class="minihome-link">저장</button>
-                    </div>
-                  </form>
-                </div>
-              {% endif %}
               <div class="space-y-3">
                 {% for store in section.data.stores %}
                   <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
@@ -286,37 +140,6 @@
                       <a class="minihome-link" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
                     {% endif %}
                   </div>
-                  {% if can_manage %}
-                    <div class="minihome-owner-item">
-                      <button type="button" class="minihome-link minihome-link--sm" data-toggle-form="store-edit-{{ section.id }}-{{ store.id }}">수정</button>
-                      <form method="post" action="{% url 'minihome:delete_store_item' slug=minihome.slug %}">
-                        {% csrf_token %}
-                        <input type="hidden" name="section_id" value="{{ section.id }}">
-                        <input type="hidden" name="store_id" value="{{ store.id }}">
-                        <button type="submit" class="minihome-link minihome-link--sm">삭제</button>
-                      </form>
-                    </div>
-                    <form id="store-edit-{{ section.id }}-{{ store.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:update_store_item' slug=minihome.slug %}">
-                      {% csrf_token %}
-                      <input type="hidden" name="section_id" value="{{ section.id }}">
-                      <input type="hidden" name="store_id" value="{{ store.id }}">
-                      <label class="minihome-field">
-                        <span>매장명</span>
-                        <input type="text" name="name" maxlength="50" value="{{ store.name|default:'' }}">
-                      </label>
-                      <label class="minihome-field">
-                        <span>네이버 지도 공유 링크</span>
-                        <input type="text" name="map_url" maxlength="200" value="{{ store.map_url|default:'' }}">
-                      </label>
-                      <label class="minihome-field">
-                        <span>매장 커버 이미지 교체</span>
-                        <input type="file" name="cover_image" accept="image/*">
-                      </label>
-                      <div class="flex justify-end">
-                        <button type="submit" class="minihome-link minihome-link--sm">저장</button>
-                      </div>
-                    </form>
-                  {% endif %}
                 {% empty %}
                   <div class="minihome-empty">등록된 매장이 없습니다.</div>
                 {% endfor %}

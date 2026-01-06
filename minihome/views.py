@@ -1,13 +1,19 @@
 import json
 import uuid
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponseForbidden
+from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import Minihome
-from .services import upload_minihome_image
+from .services import (
+    build_minihome_static_html,
+    get_minihome_static_page_path,
+    save_minihome_static_page,
+    update_minihome_publish_map,
+    upload_minihome_image,
+)
 
 
 SECTION_TYPES = (
@@ -286,6 +292,26 @@ def _apply_uploaded_files(minihome, sections, files):
                     "width": result["width"],
                     "height": result["height"],
                 }
+
+        if parts[0] == "store" and len(parts) == 3:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            for store in section["data"].get("stores", []):
+                if store.get("id") != parts[2]:
+                    continue
+                result = upload_minihome_image(
+                    file,
+                    prefix=f"{prefix_base}/store",
+                    target_width=STORE_IMAGE_WIDTH,
+                )
+                if result.get("success"):
+                    store["cover_image"] = {
+                        "path": result["file_path"],
+                        "url": result["file_url"],
+                        "width": result["width"],
+                        "height": result["height"],
+                    }
 
     return sections
 
@@ -722,24 +748,10 @@ def minihome_delete_store_item(request, slug):
 
 
 def minihome_landing(request, slug):
-    minihome = get_object_or_404(Minihome, slug=slug)
-    if not minihome.is_published:
+    static_path = get_minihome_static_page_path(slug)
+    if not static_path.exists():
         raise Http404
-
-    sections = minihome.published_sections
-    can_manage = _user_can_manage(minihome, request.user)
-    background_preset = _normalize_background_preset(minihome.published_background_preset)
-    return render(
-        request,
-        "minihome/landing.html",
-        {
-            "minihome": minihome,
-            "sections": sections,
-            "is_preview": False,
-            "can_manage": can_manage,
-            "background_preset": background_preset,
-        },
-    )
+    return FileResponse(static_path.open("rb"), content_type="text/html")
 
 
 @login_required
@@ -799,6 +811,15 @@ def minihome_manage(request, slug):
                     "updated_at",
                 ]
             )
+            html = build_minihome_static_html(
+                slug=minihome.slug,
+                display_name=minihome.display_name,
+                sections=sections,
+                background_preset=background_preset,
+            )
+            save_minihome_static_page(minihome.slug, html)
+            update_minihome_publish_map(minihome.slug, minihome.domain or "")
+            return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
         if action == "preview":
             return redirect(reverse("minihome:preview", kwargs={"slug": minihome.slug}))
 

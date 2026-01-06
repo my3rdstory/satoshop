@@ -1,8 +1,12 @@
 import io
+import json
 import os
+from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 
+from django.conf import settings
 from django.core.files.base import ContentFile
+from django.template.loader import render_to_string
 
 from storage.utils import upload_file_to_s3
 
@@ -101,3 +105,87 @@ def upload_minihome_image(
         "width": process_result["width"],
         "height": process_result["height"],
     }
+
+
+STATIC_MINIHOME_ROOT = Path(settings.BASE_DIR) / "storage" / "minihome_pages"
+STATIC_MINIHOME_MAP = STATIC_MINIHOME_ROOT / "published_map.json"
+
+
+def _ensure_static_root():
+    STATIC_MINIHOME_ROOT.mkdir(parents=True, exist_ok=True)
+
+
+def get_minihome_static_page_path(slug: str) -> Path:
+    _ensure_static_root()
+    return STATIC_MINIHOME_ROOT / slug / "index.html"
+
+
+def save_minihome_static_page(slug: str, html: str) -> Path:
+    path = get_minihome_static_page_path(slug)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(html, encoding="utf-8")
+    return path
+
+
+def _load_minihome_publish_map() -> Dict[str, Dict[str, str]]:
+    _ensure_static_root()
+    if not STATIC_MINIHOME_MAP.exists():
+        return {"domains": {}, "slugs": {}}
+    try:
+        data = json.loads(STATIC_MINIHOME_MAP.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {"domains": {}, "slugs": {}}
+    if not isinstance(data, dict):
+        return {"domains": {}, "slugs": {}}
+    data.setdefault("domains", {})
+    data.setdefault("slugs", {})
+    return data
+
+
+def _save_minihome_publish_map(data: Dict[str, Dict[str, str]]):
+    _ensure_static_root()
+    STATIC_MINIHOME_MAP.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def update_minihome_publish_map(slug: str, domain: str):
+    data = _load_minihome_publish_map()
+    domains = data.get("domains", {})
+    slugs = data.get("slugs", {})
+
+    for key, value in list(domains.items()):
+        if value == slug:
+            domains.pop(key, None)
+
+    if domain:
+        domains[domain] = slug
+
+    slugs[slug] = {"domain": domain or ""}
+    data["domains"] = domains
+    data["slugs"] = slugs
+    _save_minihome_publish_map(data)
+
+
+def resolve_minihome_slug_by_domain(domain: str) -> Optional[str]:
+    if not domain:
+        return None
+    data = _load_minihome_publish_map()
+    return data.get("domains", {}).get(domain)
+
+
+def build_minihome_static_html(
+    *,
+    slug: str,
+    display_name: str,
+    sections,
+    background_preset: str,
+) -> str:
+    context = {
+        "minihome": {"slug": slug, "display_name": display_name},
+        "sections": sections,
+        "is_preview": False,
+        "background_preset": background_preset,
+    }
+    return render_to_string("minihome/landing.html", context)

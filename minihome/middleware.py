@@ -2,28 +2,16 @@ from typing import Optional
 
 from django.http import HttpResponse
 
-from .models import Minihome, normalize_domain
-from .views import (
-    minihome_landing,
-    minihome_manage,
-    minihome_preview,
-    minihome_add_blog_post,
-    minihome_add_gallery_item,
-    minihome_add_store_item,
-    minihome_update_blog_post,
-    minihome_update_gallery_item,
-    minihome_update_store_item,
-    minihome_delete_blog_post,
-    minihome_delete_gallery_item,
-    minihome_delete_store_item,
-)
+from .models import normalize_domain
+from .services import resolve_minihome_slug_by_domain
+from .views import minihome_landing, minihome_manage, minihome_preview
 
 
-def _resolve_minihome_by_host(host: str) -> Optional[Minihome]:
+def _resolve_minihome_slug_by_host(host: str) -> Optional[str]:
     domain = normalize_domain(host)
     if not domain:
         return None
-    return Minihome.objects.filter(domain=domain).first()
+    return resolve_minihome_slug_by_domain(domain)
 
 
 class MinihomeDomainMiddleware:
@@ -32,34 +20,16 @@ class MinihomeDomainMiddleware:
 
     def __call__(self, request) -> HttpResponse:
         host = request.get_host().split(":")[0]
-        minihome = _resolve_minihome_by_host(host)
-        if not minihome:
+        slug = _resolve_minihome_slug_by_host(host)
+        if not slug:
             return self.get_response(request)
 
         path = request.path.strip("/")
         if path == "":
-            return minihome_landing(request, slug=minihome.slug)
+            return minihome_landing(request, slug=slug)
         if path in ("mng", "mng/"):
-            return minihome_manage(request, slug=minihome.slug)
+            return minihome_manage(request, slug=slug)
         if path in ("preview", "preview/"):
-            return minihome_preview(request, slug=minihome.slug)
-        if path in ("gallery/add", "gallery/add/"):
-            return minihome_add_gallery_item(request, slug=minihome.slug)
-        if path in ("gallery/update", "gallery/update/"):
-            return minihome_update_gallery_item(request, slug=minihome.slug)
-        if path in ("gallery/delete", "gallery/delete/"):
-            return minihome_delete_gallery_item(request, slug=minihome.slug)
-        if path in ("blog/add", "blog/add/"):
-            return minihome_add_blog_post(request, slug=minihome.slug)
-        if path in ("blog/update", "blog/update/"):
-            return minihome_update_blog_post(request, slug=minihome.slug)
-        if path in ("blog/delete", "blog/delete/"):
-            return minihome_delete_blog_post(request, slug=minihome.slug)
-        if path in ("store/add", "store/add/"):
-            return minihome_add_store_item(request, slug=minihome.slug)
-        if path in ("store/update", "store/update/"):
-            return minihome_update_store_item(request, slug=minihome.slug)
-        if path in ("store/delete", "store/delete/"):
-            return minihome_delete_store_item(request, slug=minihome.slug)
+            return minihome_preview(request, slug=slug)
 
         return self.get_response(request)
