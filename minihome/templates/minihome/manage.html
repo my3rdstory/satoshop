@@ -108,6 +108,11 @@
                 <button type="button" class="minihome-action-btn minihome-action-primary" data-action="publish">공개하기</button>
               </div>
             </div>
+            {% if publish_notice %}
+              <div class="mt-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-xs text-emerald-200">
+                공개가 완료되었습니다. 정적 랜딩에 반영되었습니다.
+              </div>
+            {% endif %}
 
             <div class="minihome-canvas minihome-bg minihome-bg--{{ selected_background }}">
               <div class="minihome-shell">

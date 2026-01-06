@@ -781,6 +781,7 @@ def minihome_manage(request, slug):
     if not _user_can_manage(minihome, request.user):
         return HttpResponseForbidden("권한이 없습니다.")
 
+    publish_notice = False
     if request.method == "POST":
         action = request.POST.get("action", "save")
         payload = request.POST.get("sections_payload", "[]")
@@ -820,6 +821,7 @@ def minihome_manage(request, slug):
             )
             save_minihome_static_page(minihome.slug, html)
             update_minihome_publish_map(minihome.slug, minihome.domain or "")
+            publish_notice = True
         if action == "preview":
             return redirect(reverse("minihome:preview", kwargs={"slug": minihome.slug}))
 
@@ -840,5 +842,6 @@ def minihome_manage(request, slug):
             "background_presets": BACKGROUND_PRESETS,
             "selected_background": selected_background,
             "selected_background_label": selected_background_label,
+            "publish_notice": publish_notice,
         },
     )
