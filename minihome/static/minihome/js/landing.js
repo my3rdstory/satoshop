@@ -10,6 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
       modal.classList.add('hidden');
     });
   }
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        modal.classList.add('hidden');
+      }
+    });
+  }
 
   const getImageUrl = (card, key) => {
     return card.dataset[key] || card.getAttribute(`data-${key}`) || '';
