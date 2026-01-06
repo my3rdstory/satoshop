@@ -1,0 +1,852 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>미니홈 관리 - {{ minihome.display_name|default:minihome.slug }}</title>
+  <link rel="icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="shortcut icon" type="image/png" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/satoshop-logo-1x1-favicon.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{% static 'js/tailwind-config.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'minihome/css/landing.css' %}">
+  <link rel="stylesheet" href="{% static 'minihome/css/backgrounds.css' %}">
+  <link rel="stylesheet" href="{% static 'minihome/css/manage.css' %}">
+  <script>
+    (function() {
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored) {
+          theme = stored;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e) {
+        theme = 'light';
+      }
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 text-sm">
+  <div class="min-h-screen">
+    <header class="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur">
+      <div class="w-full px-4 py-4 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">Minihome Manager</p>
+          <h1 class="text-xl font-semibold font-display">{{ minihome.display_name|default:minihome.slug }}</h1>
+          <p class="text-xs text-slate-400">/{{ minihome.slug }}/mng</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs">
+          {% if minihome.is_published %}
+            <span class="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-200">공개 중</span>
+          {% else %}
+            <span class="px-2 py-1 rounded-full bg-slate-800 text-slate-300">비공개</span>
+          {% endif %}
+          {% if minihome.domain %}
+            <a class="px-3 py-1.5 rounded-full border border-slate-700 hover:border-slate-500" href="//{{ minihome.domain }}/" target="_blank">랜딩 보기</a>
+          {% else %}
+            <a class="px-3 py-1.5 rounded-full border border-slate-700 hover:border-slate-500" href="/minihome/{{ minihome.slug }}/" target="_blank">랜딩 보기</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main class="w-full px-4 py-6">
+      <form id="minihome-form" class="space-y-4" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="sections_payload" id="sections-payload">
+        <input type="hidden" name="action" id="sections-action" value="save">
+        <div class="minihome-manage-grid">
+          <aside class="space-y-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+              <h2 class="text-sm font-semibold">섹션 추가</h2>
+              <p class="text-xs text-slate-400 mt-1">좌측에서 선택하면 오른쪽 하단에 추가돼요.</p>
+              <div class="mt-4 flex flex-col gap-2">
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="brand_image">브랜드 이미지</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="title">타이틀</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
+              </div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400">
+              <p class="font-semibold text-slate-200">편집 흐름</p>
+              <ol class="mt-2 space-y-1 list-decimal list-inside">
+                <li>섹션 추가 → 내용 작성</li>
+                <li>미리보기로 새 탭 확인</li>
+                <li>문제 없으면 공개하기</li>
+              </ol>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+              <h2 class="text-sm font-semibold">배경 효과</h2>
+              <p class="text-xs text-slate-400 mt-1">선택한 배경이 랜딩에 적용됩니다.</p>
+              <div class="mt-4 space-y-3">
+                <span class="minihome-bg-preview minihome-bg--{{ selected_background }}" data-current-bg></span>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400" data-current-bg-label>{{ selected_background_label }}</span>
+                  <button type="button" class="minihome-ghost-btn" data-action="open-background-modal">선택하기</button>
+                </div>
+              </div>
+              <input type="hidden" name="background_preset" id="background-preset" value="{{ selected_background }}">
+            </div>
+          </aside>
+
+          <section>
+            <div class="flex flex-wrap items-center gap-2 justify-between">
+              <div class="text-xs text-slate-400">랜딩 가로폭에 맞춰 편집됩니다.</div>
+              <div class="flex gap-2">
+                <button type="button" class="minihome-action-btn" data-action="save">임시저장</button>
+                <button type="button" class="minihome-action-btn" data-action="preview">미리보기</button>
+                <button type="button" class="minihome-action-btn minihome-action-primary" data-action="publish">공개하기</button>
+              </div>
+            </div>
+
+            <div class="minihome-canvas minihome-bg minihome-bg--{{ selected_background }} mt-4">
+              <div class="minihome-shell">
+                <header class="text-center space-y-3">
+                  <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Minihome</p>
+                  <h1 class="text-2xl font-semibold font-display">{{ minihome.display_name|default:minihome.slug }}</h1>
+                </header>
+                <div class="mt-8 space-y-6" data-section-list>
+                  {% for section in sections %}
+                    <section class="minihome-section minihome-section-card" data-section data-section-id="{{ section.id }}" data-section-type="{{ section.type }}">
+                      <div class="flex justify-end mb-3">
+                        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+                      </div>
+
+                      {% if section.type == 'brand_image' %}
+                        <div class="space-y-3">
+                          <div class="minihome-dropzone" data-dropzone>
+                            <input type="file" accept="image/*" name="brand_image__{{ section.id }}" data-image-input class="sr-only">
+                            <div class="minihome-dropzone-inner">
+                              <img src="{{ section.data.image.url|default:'' }}" alt="브랜드 이미지" class="minihome-preview {% if not section.data.image.url %}hidden{% endif %}" data-image-preview>
+                              <p class="text-xs text-slate-300">가로 기준 비율 유지로 900px 리사이즈</p>
+                              <div class="flex flex-wrap gap-2">
+                                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                              </div>
+                            </div>
+                          </div>
+                          <input type="hidden" data-image-meta="path" value="{{ section.data.image.path|default:'' }}">
+                          <input type="hidden" data-image-meta="url" value="{{ section.data.image.url|default:'' }}">
+                          <input type="hidden" data-image-meta="width" value="{{ section.data.image.width|default:'' }}">
+                          <input type="hidden" data-image-meta="height" value="{{ section.data.image.height|default:'' }}">
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'title' %}
+                        <div class="space-y-3">
+                          <label class="minihome-field">
+                            <span>제목 (최대 30자)</span>
+                            <input type="text" data-field="title" value="{{ section.data.title|default:'' }}" maxlength="30">
+                          </label>
+                          <label class="minihome-field">
+                            <span>설명 (최대 100자)</span>
+                            <textarea data-field="description" rows="3" maxlength="100">{{ section.data.description|default:'' }}</textarea>
+                          </label>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'gallery' %}
+                        <div class="minihome-section-summary">
+                          <div>
+                            <h3 class="text-sm font-semibold">갤러리</h3>
+                            <p class="text-xs text-slate-400">아이템 {{ section.data.items|length }}개</p>
+                          </div>
+                          <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="gallery">데이터 보기</button>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'mini_blog' %}
+                        <div class="minihome-section-summary">
+                          <div>
+                            <h3 class="text-sm font-semibold">미니 블로그</h3>
+                            <p class="text-xs text-slate-400">글 {{ section.data.posts|length }}개</p>
+                          </div>
+                          <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="mini_blog">데이터 보기</button>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'store' %}
+                        <div class="minihome-section-summary">
+                          <div>
+                            <h3 class="text-sm font-semibold">매장</h3>
+                            <p class="text-xs text-slate-400">매장 {{ section.data.stores|length }}개</p>
+                          </div>
+                          <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="store">데이터 보기</button>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'cta' %}
+                        <div class="space-y-3">
+                          <div class="minihome-dropzone" data-dropzone>
+                            <input type="file" accept="image/*" name="cta_profile__{{ section.id }}" data-image-input class="sr-only">
+                            <div class="minihome-dropzone-inner">
+                              <img src="{{ section.data.profile_image.url|default:'' }}" alt="프로필 이미지" class="minihome-preview {% if not section.data.profile_image.url %}hidden{% endif %}" data-image-preview>
+                              <p class="text-xs text-slate-300">300px 기준 비율 유지 리사이즈</p>
+                              <div class="flex flex-wrap gap-2">
+                                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">프로필 업로드</button>
+                                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                              </div>
+                            </div>
+                          </div>
+                          <input type="hidden" data-image-meta="path" value="{{ section.data.profile_image.path|default:'' }}">
+                          <input type="hidden" data-image-meta="url" value="{{ section.data.profile_image.url|default:'' }}">
+                          <input type="hidden" data-image-meta="width" value="{{ section.data.profile_image.width|default:'' }}">
+                          <input type="hidden" data-image-meta="height" value="{{ section.data.profile_image.height|default:'' }}">
+                          <label class="minihome-field">
+                            <span>설명</span>
+                            <textarea data-field="description" rows="3" maxlength="200">{{ section.data.description|default:'' }}</textarea>
+                          </label>
+                          <div class="grid grid-cols-2 gap-3">
+                            <label class="minihome-field">
+                              <span>Email (최대 20자)</span>
+                              <input type="text" data-field="email" value="{{ section.data.email|default:'' }}" maxlength="20">
+                            </label>
+                            <label class="minihome-field">
+                              <span>후원 주소 (최대 20자)</span>
+                              <input type="text" data-field="donation" value="{{ section.data.donation|default:'' }}" maxlength="20">
+                            </label>
+                          </div>
+                        </div>
+                      {% endif %}
+                    </section>
+                  {% empty %}
+                    <div class="minihome-section-card text-center text-xs text-slate-300">
+                      섹션을 추가해서 미니홈을 구성해보세요.
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="space-y-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-xs text-slate-400">
+              <p class="font-semibold text-slate-200">콘텐츠 데이터</p>
+              <p class="mt-1">갤러리/미니 블로그/매장 데이터는 여기서 편집합니다.</p>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold" data-data-title>데이터 보기</h3>
+                <span class="text-xs text-slate-400" data-data-subtitle>섹션을 선택하세요.</span>
+              </div>
+              <div class="mt-4 space-y-4" data-section-data-panels>
+                {% for section in sections %}
+                  {% if section.type == 'gallery' %}
+                    <div class="minihome-data-panel hidden" data-section-panel data-section-id="{{ section.id }}" data-section-type="gallery">
+                      <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold">갤러리 데이터</h4>
+                        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+                      </div>
+                      <div class="mt-4 space-y-5" data-gallery-items>
+                        {% for item in section.data.items %}
+                          <div class="minihome-gallery-item" data-gallery-item data-item-id="{{ item.id }}">
+                            <div class="flex flex-col gap-4 {% if forloop.counter0|divisibleby:2 %}sm:flex-row{% else %}sm:flex-row-reverse{% endif %}" data-gallery-row>
+                              <div class="sm:w-1/2">
+                                <div class="minihome-dropzone" data-dropzone>
+                                  <input type="file" accept="image/*" name="gallery__{{ section.id }}__{{ item.id }}" data-image-input class="sr-only">
+                                  <div class="minihome-dropzone-inner">
+                                    <img src="{{ item.image.url|default:'' }}" alt="갤러리 이미지" class="minihome-preview {% if not item.image.url %}hidden{% endif %}" data-image-preview>
+                                    <p class="text-xs text-slate-300">이미지 업로드</p>
+                                    <div class="flex flex-wrap gap-2">
+                                      <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                      <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <input type="hidden" data-image-meta="path" value="{{ item.image.path|default:'' }}">
+                                <input type="hidden" data-image-meta="url" value="{{ item.image.url|default:'' }}">
+                                <input type="hidden" data-image-meta="width" value="{{ item.image.width|default:'' }}">
+                                <input type="hidden" data-image-meta="height" value="{{ item.image.height|default:'' }}">
+                              </div>
+                              <div class="sm:w-1/2 flex items-center">
+                                <div class="space-y-3 w-full">
+                                  <label class="minihome-field">
+                                    <span>설명 (최대 100자)</span>
+                                    <textarea data-field="description" rows="3" maxlength="100">{{ item.description|default:'' }}</textarea>
+                                  </label>
+                                  <div class="flex justify-end">
+                                    <button type="button" class="minihome-link minihome-link--sm" data-action="remove-gallery-item">삭제</button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        <div class="minihome-empty {% if section.data.items|length %}hidden{% endif %}" data-empty-hint>갤러리 아이템을 추가해주세요.</div>
+                      </div>
+                      <div class="minihome-owner-tools">
+                        <button type="button" class="minihome-link" data-action="add-gallery-item">갤러리 아이템 추가</button>
+                      </div>
+                    </div>
+                  {% endif %}
+                  {% if section.type == 'mini_blog' %}
+                    <div class="minihome-data-panel hidden" data-section-panel data-section-id="{{ section.id }}" data-section-type="mini_blog">
+                      <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold">미니 블로그 데이터</h4>
+                        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+                      </div>
+                      <div class="mt-4 space-y-3" data-blog-posts data-blog-list>
+                        {% for post in section.data.posts %}
+                          <div class="minihome-blog-item" data-blog-post data-post-id="{{ post.id }}">
+                            <div class="minihome-blog-card">
+                              <div class="flex items-start gap-3">
+                                <div class="flex-1 text-left">
+                                  <p class="line-clamp-3 text-slate-200" data-preview-text>{{ post.text|default:'' }}</p>
+                                </div>
+                                {% if post.images.0.url %}
+                                  <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
+                                {% endif %}
+                              </div>
+                            </div>
+                            <div class="minihome-inline-form">
+                              <label class="minihome-field">
+                                <span>내용</span>
+                                <textarea data-field="text" rows="6" maxlength="1000">{{ post.text|default:'' }}</textarea>
+                              </label>
+                              <div class="grid gap-3 md:grid-cols-2">
+                                <div class="space-y-2" data-blog-image data-image-slot="0">
+                                  <div class="minihome-dropzone" data-dropzone>
+                                    <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__0" data-image-input class="sr-only">
+                                    <div class="minihome-dropzone-inner">
+                                      <img src="{{ post.images.0.url|default:'' }}" alt="이미지 1" class="minihome-preview {% if not post.images.0.url %}hidden{% endif %}" data-image-preview>
+                                      <p class="text-xs text-slate-300">이미지 1</p>
+                                      <div class="flex flex-wrap gap-2">
+                                        <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                        <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <input type="hidden" data-image-meta="path" value="{{ post.images.0.path|default:'' }}">
+                                  <input type="hidden" data-image-meta="url" value="{{ post.images.0.url|default:'' }}">
+                                  <input type="hidden" data-image-meta="width" value="{{ post.images.0.width|default:'' }}">
+                                  <input type="hidden" data-image-meta="height" value="{{ post.images.0.height|default:'' }}">
+                                </div>
+                                <div class="space-y-2" data-blog-image data-image-slot="1">
+                                  <div class="minihome-dropzone" data-dropzone>
+                                    <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__1" data-image-input class="sr-only">
+                                    <div class="minihome-dropzone-inner">
+                                      <img src="{{ post.images.1.url|default:'' }}" alt="이미지 2" class="minihome-preview {% if not post.images.1.url %}hidden{% endif %}" data-image-preview>
+                                      <p class="text-xs text-slate-300">이미지 2</p>
+                                      <div class="flex flex-wrap gap-2">
+                                        <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                        <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <input type="hidden" data-image-meta="path" value="{{ post.images.1.path|default:'' }}">
+                                  <input type="hidden" data-image-meta="url" value="{{ post.images.1.url|default:'' }}">
+                                  <input type="hidden" data-image-meta="width" value="{{ post.images.1.width|default:'' }}">
+                                  <input type="hidden" data-image-meta="height" value="{{ post.images.1.height|default:'' }}">
+                                </div>
+                                <div class="space-y-2" data-blog-image data-image-slot="2">
+                                  <div class="minihome-dropzone" data-dropzone>
+                                    <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__2" data-image-input class="sr-only">
+                                    <div class="minihome-dropzone-inner">
+                                      <img src="{{ post.images.2.url|default:'' }}" alt="이미지 3" class="minihome-preview {% if not post.images.2.url %}hidden{% endif %}" data-image-preview>
+                                      <p class="text-xs text-slate-300">이미지 3</p>
+                                      <div class="flex flex-wrap gap-2">
+                                        <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                        <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <input type="hidden" data-image-meta="path" value="{{ post.images.2.path|default:'' }}">
+                                  <input type="hidden" data-image-meta="url" value="{{ post.images.2.url|default:'' }}">
+                                  <input type="hidden" data-image-meta="width" value="{{ post.images.2.width|default:'' }}">
+                                  <input type="hidden" data-image-meta="height" value="{{ post.images.2.height|default:'' }}">
+                                </div>
+                                <div class="space-y-2" data-blog-image data-image-slot="3">
+                                  <div class="minihome-dropzone" data-dropzone>
+                                    <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__3" data-image-input class="sr-only">
+                                    <div class="minihome-dropzone-inner">
+                                      <img src="{{ post.images.3.url|default:'' }}" alt="이미지 4" class="minihome-preview {% if not post.images.3.url %}hidden{% endif %}" data-image-preview>
+                                      <p class="text-xs text-slate-300">이미지 4</p>
+                                      <div class="flex flex-wrap gap-2">
+                                        <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                        <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <input type="hidden" data-image-meta="path" value="{{ post.images.3.path|default:'' }}">
+                                  <input type="hidden" data-image-meta="url" value="{{ post.images.3.url|default:'' }}">
+                                  <input type="hidden" data-image-meta="width" value="{{ post.images.3.width|default:'' }}">
+                                  <input type="hidden" data-image-meta="height" value="{{ post.images.3.height|default:'' }}">
+                                </div>
+                              </div>
+                              <div class="flex justify-end">
+                                <button type="button" class="minihome-link minihome-link--sm" data-action="remove-blog-post">삭제</button>
+                              </div>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        <div class="minihome-empty {% if section.data.posts|length %}hidden{% endif %}" data-empty-hint>등록된 글이 없습니다.</div>
+                      </div>
+                      <div class="minihome-pagination hidden" data-blog-pagination>
+                        <button type="button" class="minihome-ghost-btn" data-action="blog-page-prev" data-page-control="prev">이전</button>
+                        <span class="text-xs text-slate-400" data-page-status>1 / 1</span>
+                        <button type="button" class="minihome-ghost-btn" data-action="blog-page-next" data-page-control="next">다음</button>
+                      </div>
+                      <div class="minihome-owner-tools">
+                        <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
+                      </div>
+                    </div>
+                  {% endif %}
+                  {% if section.type == 'store' %}
+                    <div class="minihome-data-panel hidden" data-section-panel data-section-id="{{ section.id }}" data-section-type="store">
+                      <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold">매장 데이터</h4>
+                        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+                      </div>
+                      <div class="mt-4 space-y-3" data-store-items>
+                        {% for store in section.data.stores %}
+                          <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="{{ store.id }}">
+                            <div class="minihome-store-card">
+                              {% if store.cover_image.url %}
+                                <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-32 w-full rounded-xl object-cover">
+                              {% endif %}
+                              <div class="space-y-1">
+                                <p class="font-semibold">{{ store.name|default:'매장' }}</p>
+                                <p class="text-xs text-slate-300 break-all">{{ store.map_url|default:'' }}</p>
+                              </div>
+                              {% if store.map_url %}
+                                <span class="minihome-link w-full justify-center text-center">지도 열기</span>
+                              {% endif %}
+                            </div>
+                            <div class="minihome-inline-form">
+                              <label class="minihome-field">
+                                <span>매장명</span>
+                                <input type="text" data-field="name" maxlength="50" value="{{ store.name|default:'' }}">
+                              </label>
+                              <label class="minihome-field">
+                                <span>네이버 지도 공유 링크</span>
+                                <input type="text" data-field="map_url" maxlength="200" value="{{ store.map_url|default:'' }}">
+                              </label>
+                              <div class="space-y-2">
+                                <div class="minihome-dropzone" data-dropzone>
+                                  <input type="file" accept="image/*" name="store__{{ section.id }}__{{ store.id }}" data-image-input class="sr-only">
+                                  <div class="minihome-dropzone-inner">
+                                    <img src="{{ store.cover_image.url|default:'' }}" alt="매장 커버 이미지" class="minihome-preview {% if not store.cover_image.url %}hidden{% endif %}" data-image-preview>
+                                    <p class="text-xs text-slate-300">매장 커버 이미지</p>
+                                    <div class="flex flex-wrap gap-2">
+                                      <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                      <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <input type="hidden" data-image-meta="path" value="{{ store.cover_image.path|default:'' }}">
+                                <input type="hidden" data-image-meta="url" value="{{ store.cover_image.url|default:'' }}">
+                                <input type="hidden" data-image-meta="width" value="{{ store.cover_image.width|default:'' }}">
+                                <input type="hidden" data-image-meta="height" value="{{ store.cover_image.height|default:'' }}">
+                              </div>
+                              <div class="flex justify-end">
+                                <button type="button" class="minihome-link minihome-link--sm" data-action="remove-store-item">삭제</button>
+                              </div>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        <div class="minihome-empty {% if section.data.stores|length %}hidden{% endif %}" data-empty-hint>등록된 매장이 없습니다.</div>
+                      </div>
+                      <div class="minihome-owner-tools">
+                        <button type="button" class="minihome-link" data-action="add-store-item">매장 추가</button>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              <div class="minihome-empty mt-4" data-data-empty>데이터 보기를 선택해주세요.</div>
+            </div>
+          </section>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <template id="template-brand_image">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="brand_image">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="space-y-3">
+        <div class="minihome-dropzone" data-dropzone>
+          <input type="file" accept="image/*" name="brand_image____SECTION_ID__" data-image-input class="sr-only">
+          <div class="minihome-dropzone-inner">
+            <img src="" alt="브랜드 이미지" class="minihome-preview hidden" data-image-preview>
+            <p class="text-xs text-slate-300">가로 기준 비율 유지로 900px 리사이즈</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+              <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" data-image-meta="path" value="">
+        <input type="hidden" data-image-meta="url" value="">
+        <input type="hidden" data-image-meta="width" value="">
+        <input type="hidden" data-image-meta="height" value="">
+      </div>
+    </section>
+  </template>
+
+  <template id="template-title">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="title">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="space-y-3">
+        <label class="minihome-field">
+          <span>제목 (최대 30자)</span>
+          <input type="text" data-field="title" maxlength="30">
+        </label>
+        <label class="minihome-field">
+          <span>설명 (최대 100자)</span>
+          <textarea data-field="description" rows="3" maxlength="100"></textarea>
+        </label>
+      </div>
+    </section>
+  </template>
+
+  <template id="template-gallery">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="gallery">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="minihome-section-summary">
+        <div>
+          <h3 class="text-sm font-semibold">갤러리</h3>
+          <p class="text-xs text-slate-400">아이템 0개</p>
+        </div>
+        <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="__SECTION_ID__" data-section-type="gallery">데이터 보기</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="template-mini_blog">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="mini_blog">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="minihome-section-summary">
+        <div>
+          <h3 class="text-sm font-semibold">미니 블로그</h3>
+          <p class="text-xs text-slate-400">글 0개</p>
+        </div>
+        <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="__SECTION_ID__" data-section-type="mini_blog">데이터 보기</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="template-store">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="store">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="minihome-section-summary">
+        <div>
+          <h3 class="text-sm font-semibold">매장</h3>
+          <p class="text-xs text-slate-400">매장 0개</p>
+        </div>
+        <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="__SECTION_ID__" data-section-type="store">데이터 보기</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="template-gallery-panel">
+    <div class="minihome-data-panel hidden" data-section-panel data-section-id="__SECTION_ID__" data-section-type="gallery">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-semibold">갤러리 데이터</h4>
+        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+      </div>
+      <div class="mt-4 space-y-5" data-gallery-items>
+        <div class="minihome-empty" data-empty-hint>갤러리 아이템을 추가해주세요.</div>
+      </div>
+      <div class="minihome-owner-tools">
+        <button type="button" class="minihome-link" data-action="add-gallery-item">갤러리 아이템 추가</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-mini_blog-panel">
+    <div class="minihome-data-panel hidden" data-section-panel data-section-id="__SECTION_ID__" data-section-type="mini_blog">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-semibold">미니 블로그 데이터</h4>
+        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+      </div>
+      <div class="mt-4 space-y-3" data-blog-posts data-blog-list>
+        <div class="minihome-empty" data-empty-hint>등록된 글이 없습니다.</div>
+      </div>
+      <div class="minihome-pagination hidden" data-blog-pagination>
+        <button type="button" class="minihome-ghost-btn" data-action="blog-page-prev" data-page-control="prev">이전</button>
+        <span class="text-xs text-slate-400" data-page-status>1 / 1</span>
+        <button type="button" class="minihome-ghost-btn" data-action="blog-page-next" data-page-control="next">다음</button>
+      </div>
+      <div class="minihome-owner-tools">
+        <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-store-panel">
+    <div class="minihome-data-panel hidden" data-section-panel data-section-id="__SECTION_ID__" data-section-type="store">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-semibold">매장 데이터</h4>
+        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+      </div>
+      <div class="mt-4 space-y-3" data-store-items>
+        <div class="minihome-empty" data-empty-hint>등록된 매장이 없습니다.</div>
+      </div>
+      <div class="minihome-owner-tools">
+        <button type="button" class="minihome-link" data-action="add-store-item">매장 추가</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-cta">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="cta">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="space-y-3">
+        <div class="minihome-dropzone" data-dropzone>
+          <input type="file" accept="image/*" name="cta_profile____SECTION_ID__" data-image-input class="sr-only">
+          <div class="minihome-dropzone-inner">
+            <img src="" alt="프로필 이미지" class="minihome-preview hidden" data-image-preview>
+            <p class="text-xs text-slate-300">300px 기준 비율 유지 리사이즈</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="minihome-ghost-btn" data-action="trigger-file">프로필 업로드</button>
+              <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" data-image-meta="path" value="">
+        <input type="hidden" data-image-meta="url" value="">
+        <input type="hidden" data-image-meta="width" value="">
+        <input type="hidden" data-image-meta="height" value="">
+        <label class="minihome-field">
+          <span>설명</span>
+          <textarea data-field="description" rows="3" maxlength="200"></textarea>
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="minihome-field">
+            <span>Email (최대 20자)</span>
+            <input type="text" data-field="email" maxlength="20">
+          </label>
+          <label class="minihome-field">
+            <span>후원 주소 (최대 20자)</span>
+            <input type="text" data-field="donation" maxlength="20">
+          </label>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <template id="template-gallery-item">
+    <div class="minihome-gallery-item" data-gallery-item data-item-id="__ITEM_ID__">
+      <div class="flex flex-col gap-4 __FLEX_CLASS__" data-gallery-row>
+        <div class="sm:w-1/2">
+          <div class="minihome-dropzone" data-dropzone>
+            <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+            <div class="minihome-dropzone-inner">
+              <img src="" alt="갤러리 이미지" class="minihome-preview hidden" data-image-preview>
+              <p class="text-xs text-slate-300">이미지 업로드</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" data-image-meta="path" value="">
+          <input type="hidden" data-image-meta="url" value="">
+          <input type="hidden" data-image-meta="width" value="">
+          <input type="hidden" data-image-meta="height" value="">
+        </div>
+        <div class="sm:w-1/2 flex items-center">
+          <div class="space-y-3 w-full">
+            <label class="minihome-field">
+              <span>설명 (최대 100자)</span>
+              <textarea data-field="description" rows="3" maxlength="100"></textarea>
+            </label>
+            <div class="flex justify-end">
+              <button type="button" class="minihome-link minihome-link--sm" data-action="remove-gallery-item">삭제</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-blog-post">
+    <div class="minihome-blog-item" data-blog-post data-post-id="__POST_ID__">
+      <div class="minihome-blog-card">
+        <div class="flex items-start gap-3">
+          <div class="flex-1 text-left">
+            <p class="line-clamp-3 text-slate-200" data-preview-text>내용을 입력해주세요.</p>
+          </div>
+        </div>
+      </div>
+      <div class="minihome-inline-form">
+        <label class="minihome-field">
+          <span>내용</span>
+          <textarea data-field="text" rows="6" maxlength="1000"></textarea>
+        </label>
+        <div class="grid gap-3 md:grid-cols-2">
+          <div class="space-y-2" data-blog-image data-image-slot="0">
+            <div class="minihome-dropzone" data-dropzone>
+              <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+              <div class="minihome-dropzone-inner">
+                <img src="" alt="이미지 1" class="minihome-preview hidden" data-image-preview>
+                <p class="text-xs text-slate-300">이미지 1</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                  <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" data-image-meta="path" value="">
+            <input type="hidden" data-image-meta="url" value="">
+            <input type="hidden" data-image-meta="width" value="">
+            <input type="hidden" data-image-meta="height" value="">
+          </div>
+          <div class="space-y-2" data-blog-image data-image-slot="1">
+            <div class="minihome-dropzone" data-dropzone>
+              <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+              <div class="minihome-dropzone-inner">
+                <img src="" alt="이미지 2" class="minihome-preview hidden" data-image-preview>
+                <p class="text-xs text-slate-300">이미지 2</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                  <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" data-image-meta="path" value="">
+            <input type="hidden" data-image-meta="url" value="">
+            <input type="hidden" data-image-meta="width" value="">
+            <input type="hidden" data-image-meta="height" value="">
+          </div>
+          <div class="space-y-2" data-blog-image data-image-slot="2">
+            <div class="minihome-dropzone" data-dropzone>
+              <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+              <div class="minihome-dropzone-inner">
+                <img src="" alt="이미지 3" class="minihome-preview hidden" data-image-preview>
+                <p class="text-xs text-slate-300">이미지 3</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                  <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" data-image-meta="path" value="">
+            <input type="hidden" data-image-meta="url" value="">
+            <input type="hidden" data-image-meta="width" value="">
+            <input type="hidden" data-image-meta="height" value="">
+          </div>
+          <div class="space-y-2" data-blog-image data-image-slot="3">
+            <div class="minihome-dropzone" data-dropzone>
+              <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+              <div class="minihome-dropzone-inner">
+                <img src="" alt="이미지 4" class="minihome-preview hidden" data-image-preview>
+                <p class="text-xs text-slate-300">이미지 4</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                  <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                </div>
+              </div>
+            </div>
+            <input type="hidden" data-image-meta="path" value="">
+            <input type="hidden" data-image-meta="url" value="">
+            <input type="hidden" data-image-meta="width" value="">
+            <input type="hidden" data-image-meta="height" value="">
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="minihome-link minihome-link--sm" data-action="remove-blog-post">삭제</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-store-item">
+    <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="__STORE_ID__">
+      <div class="minihome-store-card">
+        <div class="h-32 w-full rounded-xl bg-slate-800"></div>
+        <div class="space-y-1">
+          <p class="font-semibold">새 매장</p>
+          <p class="text-xs text-slate-300">지도 링크를 입력해주세요.</p>
+        </div>
+        <span class="minihome-link w-full justify-center text-center">지도 열기</span>
+      </div>
+      <div class="minihome-inline-form">
+        <label class="minihome-field">
+          <span>매장명</span>
+          <input type="text" data-field="name" maxlength="50">
+        </label>
+        <label class="minihome-field">
+          <span>네이버 지도 공유 링크</span>
+          <input type="text" data-field="map_url" maxlength="200">
+        </label>
+        <div class="space-y-2">
+          <div class="minihome-dropzone" data-dropzone>
+            <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+            <div class="minihome-dropzone-inner">
+              <img src="" alt="매장 커버 이미지" class="minihome-preview hidden" data-image-preview>
+              <p class="text-xs text-slate-300">매장 커버 이미지</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" data-image-meta="path" value="">
+          <input type="hidden" data-image-meta="url" value="">
+          <input type="hidden" data-image-meta="width" value="">
+          <input type="hidden" data-image-meta="height" value="">
+        </div>
+        <div class="flex justify-end">
+          <button type="button" class="minihome-link minihome-link--sm" data-action="remove-store-item">삭제</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <div class="minihome-modal hidden" data-background-modal>
+    <div class="minihome-modal-panel">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">배경 효과 선택</h3>
+        <button type="button" class="minihome-icon-btn" data-modal-close>닫기</button>
+      </div>
+      <div class="mt-3 space-y-2 text-xs text-slate-300">
+        <p>현재 선택</p>
+        <span class="minihome-bg-preview minihome-bg--{{ selected_background }}" data-modal-current-bg></span>
+        <p class="text-slate-400" data-current-bg-label>{{ selected_background_label }}</p>
+      </div>
+      <div class="mt-4 grid grid-cols-2 gap-2">
+        {% for preset in background_presets %}
+          <label class="minihome-bg-option">
+            <input type="radio" name="background_preset_choice" value="{{ preset.value }}" class="sr-only" data-bg-choice data-label="{{ preset.label }}" {% if preset.value == selected_background %}checked{% endif %}>
+            <span class="minihome-bg-preview minihome-bg--{{ preset.value }}"></span>
+            <span class="minihome-bg-label">{{ preset.label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <div class="mt-4 flex justify-end">
+        <button type="button" class="minihome-action-btn" data-modal-close>닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="minihome-floating-notice hidden" data-publish-notice role="status" aria-live="polite">
+    공개가 완료되었습니다. 정적 랜딩에 반영되었습니다.
+  </div>
+
+  <script src="{% static 'minihome/js/manage.js' %}"></script>
+</body>
+</html>

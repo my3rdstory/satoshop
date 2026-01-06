@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'file',
     'game',
     'game.selker',
+    'minihome',
 ]
 
 MIDDLEWARE = [
@@ -123,6 +124,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'minihome.middleware.MinihomeDomainMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -171,6 +173,7 @@ else:
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
+
 
 
 # Database

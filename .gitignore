@@ -190,6 +190,7 @@ store_encryption.key
 # Temporary files
 temp/
 tmp/
+storage/minihome_pages/
 
 # YoYo AI version control directory
 .yoyo/

@@ -1,0 +1,280 @@
+:root {
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.font-display {
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+.minihome-manage-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .minihome-manage-grid {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .minihome-manage-grid {
+    grid-template-columns: 240px 900px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.minihome-canvas {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  padding: 2.5rem 1rem;
+  box-sizing: border-box;
+}
+
+.minihome-canvas.minihome-bg {
+  border-radius: 1.5rem;
+  border: none;
+}
+
+.minihome-bg-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  cursor: pointer;
+}
+
+.minihome-bg-option input:checked + .minihome-bg-preview {
+  outline: 2px solid rgba(99, 102, 241, 0.9);
+  outline-offset: 2px;
+}
+
+.minihome-bg-option input:checked ~ .minihome-bg-label {
+  color: #e2e8f0;
+}
+
+.minihome-bg-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.minihome-section {
+  display: block;
+}
+
+.minihome-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.minihome-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.minihome-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.9rem;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.minihome-add-btn:hover {
+  border-color: #475569;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.3);
+}
+
+.dark .minihome-add-btn {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.minihome-action-btn {
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid #1e293b;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+}
+
+.minihome-action-btn:hover {
+  border-color: #475569;
+}
+
+.minihome-action-primary {
+  background: #1e3a8a;
+  border-color: #1e3a8a;
+  color: #ffffff;
+}
+
+.dark .minihome-action-btn {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.minihome-ghost-btn {
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+  background: #0f172a;
+}
+
+.dark .minihome-ghost-btn {
+  border-color: #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.minihome-icon-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.75rem;
+  border: 1px solid #334155;
+  font-size: 0.7rem;
+  color: #e2e8f0;
+  background: transparent;
+}
+
+.dark .minihome-icon-btn {
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.minihome-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #cbd5f5;
+}
+
+.minihome-field input,
+.minihome-field textarea {
+  border: 1px solid #334155;
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  background: #0f172a;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.minihome-card {
+  border-radius: 1rem;
+  border: 1px solid #334155;
+  padding: 0.9rem;
+  background: #111827;
+}
+
+.minihome-dropzone {
+  border: 1px dashed #334155;
+  border-radius: 1rem;
+  background: #0f172a;
+  padding: 0.8rem;
+  cursor: pointer;
+}
+
+.minihome-dropzone.dragover {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.minihome-dropzone-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  text-align: center;
+}
+
+.minihome-preview {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 0.8rem;
+}
+
+.minihome-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+
+.minihome-modal-panel {
+  background: #0f172a;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  width: min(520px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.4);
+}
+
+.minihome-data-panel {
+  border-radius: 1rem;
+  border: 1px solid #1e293b;
+  background: #0b1220;
+  padding: 1rem;
+}
+
+.minihome-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.minihome-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.minihome-floating-notice {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid #1e293b;
+  background: #0b1220;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  max-width: min(320px, calc(100% - 2.5rem));
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.6);
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
