@@ -10,6 +10,24 @@ body {
   font-family: 'Noto Sans KR', sans-serif;
 }
 
+.minihome-manage-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .minihome-manage-grid {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .minihome-manage-grid {
+    grid-template-columns: 240px 900px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
 .minihome-canvas {
   max-width: 900px;
   margin: 0 auto;
@@ -50,6 +68,13 @@ body {
 
 .minihome-section {
   display: block;
+}
+
+.minihome-section-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
 .minihome-section-header {
@@ -210,6 +235,13 @@ body {
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.4);
+}
+
+.minihome-data-panel {
+  border-radius: 1rem;
+  border: 1px solid #1e293b;
+  background: #0b1220;
+  padding: 1rem;
 }
 
 .minihome-floating-notice {
