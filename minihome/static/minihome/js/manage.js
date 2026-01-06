@@ -10,6 +10,7 @@ const backgroundPreview = document.querySelector('[data-current-bg]');
 const backgroundLabelTargets = document.querySelectorAll('[data-current-bg-label]');
 const backgroundModalPreview = document.querySelector('[data-modal-current-bg]');
 const blogPreviewPlaceholder = '내용을 입력해주세요.';
+const publishNotice = document.querySelector('[data-publish-notice]');
 
 const generateId = () => {
   if (window.crypto && window.crypto.randomUUID) {
@@ -494,3 +495,19 @@ document.addEventListener('click', (event) => {
 
 
 });
+
+const showPublishNotice = () => {
+  if (!publishNotice) return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('published') !== '1') return;
+  publishNotice.classList.remove('hidden');
+  window.setTimeout(() => {
+    publishNotice.classList.add('hidden');
+  }, 5000);
+  params.delete('published');
+  const nextQuery = params.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
+};
+
+showPublishNotice();
