@@ -61,6 +61,24 @@ body {
   background: rgba(15, 23, 42, 0.9);
 }
 
+.minihome-link--sm {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.7rem;
+}
+
+.minihome-owner-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.minihome-blog-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .minihome-chip {
   display: inline-flex;
   align-items: center;

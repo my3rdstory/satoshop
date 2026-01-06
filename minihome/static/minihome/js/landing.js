@@ -50,13 +50,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pagination = section.querySelector('[data-blog-pagination]');
     if (!list || !pagination) return;
 
-    const cards = Array.from(list.querySelectorAll('[data-blog-card]'));
-    if (cards.length <= postsPerPage) {
+    const items = Array.from(list.querySelectorAll('.minihome-blog-item'));
+    const targets = items.length ? items : Array.from(list.querySelectorAll('[data-blog-card]'));
+    if (targets.length <= postsPerPage) {
       pagination.classList.add('hidden');
       return;
     }
 
-    const totalPages = Math.ceil(cards.length / postsPerPage);
+    const totalPages = Math.ceil(targets.length / postsPerPage);
     const indicator = pagination.querySelector('[data-page-indicator]');
     const prevBtn = pagination.querySelector('[data-page-prev]');
     const nextBtn = pagination.querySelector('[data-page-next]');
@@ -66,8 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
       currentPage = page;
       const start = (page - 1) * postsPerPage;
       const end = start + postsPerPage;
-      cards.forEach((card, index) => {
-        card.classList.toggle('hidden', index < start || index >= end);
+      targets.forEach((target, index) => {
+        target.classList.toggle('hidden', index < start || index >= end);
       });
       if (indicator) {
         indicator.textContent = `${currentPage} / ${totalPages}`;

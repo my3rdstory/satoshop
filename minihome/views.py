@@ -275,6 +275,21 @@ def _find_section(sections, section_id, section_type):
     return None
 
 
+def _find_item(items, item_id):
+    for item in items:
+        if item.get("id") == item_id:
+            return item
+    return None
+
+
+def _save_sections(minihome, sections):
+    normalized = _normalize_sections(sections)
+    minihome.draft_sections = normalized
+    minihome.published_sections = normalized
+    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+    return normalized
+
+
 @login_required
 def minihome_add_gallery_item(request, slug):
     minihome = get_object_or_404(Minihome, slug=slug)
@@ -322,10 +337,7 @@ def minihome_add_gallery_item(request, slug):
     )
     section["data"]["items"] = items
 
-    sections = _normalize_sections(sections)
-    minihome.draft_sections = sections
-    minihome.published_sections = sections
-    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+    _save_sections(minihome, sections)
 
     return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
@@ -381,10 +393,7 @@ def minihome_add_blog_post(request, slug):
     )
     section["data"]["posts"] = posts
 
-    sections = _normalize_sections(sections)
-    minihome.draft_sections = sections
-    minihome.published_sections = sections
-    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+    _save_sections(minihome, sections)
 
     return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
@@ -438,10 +447,245 @@ def minihome_add_store_item(request, slug):
     )
     section["data"]["stores"] = stores
 
-    sections = _normalize_sections(sections)
-    minihome.draft_sections = sections
-    minihome.published_sections = sections
-    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_update_gallery_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    item_id = request.POST.get("item_id")
+    if not section_id or not item_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "gallery")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    items = section["data"].get("items", [])
+    if not isinstance(items, list):
+        items = []
+    item = _find_item(items, item_id)
+    if not item:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    item["description"] = _limit_text(request.POST.get("description"), 100)
+    image_file = request.FILES.get("image")
+    if image_file:
+        upload_result = upload_minihome_image(
+            image_file,
+            prefix=f"minihome/{minihome.slug}/gallery",
+            target_width=GALLERY_IMAGE_WIDTH,
+        )
+        if upload_result.get("success"):
+            item["image"] = {
+                "path": upload_result["file_path"],
+                "url": upload_result["file_url"],
+                "width": upload_result["width"],
+                "height": upload_result["height"],
+            }
+
+    section["data"]["items"] = items
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_delete_gallery_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    item_id = request.POST.get("item_id")
+    if not section_id or not item_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "gallery")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    items = section["data"].get("items", [])
+    if not isinstance(items, list):
+        items = []
+    section["data"]["items"] = [item for item in items if item.get("id") != item_id]
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_update_blog_post(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    post_id = request.POST.get("post_id")
+    if not section_id or not post_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "mini_blog")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    posts = section["data"].get("posts", [])
+    if not isinstance(posts, list):
+        posts = []
+    post = _find_item(posts, post_id)
+    if not post:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    post["text"] = _limit_text(request.POST.get("text"), 1000)
+    images = post.get("images", [])
+    if not isinstance(images, list):
+        images = []
+    while len(images) < 4:
+        images.append(None)
+
+    for index in range(4):
+        image_file = request.FILES.get(f"image_{index}")
+        if not image_file:
+            continue
+        upload_result = upload_minihome_image(
+            image_file,
+            prefix=f"minihome/{minihome.slug}/blog",
+            target_width=BLOG_IMAGE_WIDTH,
+        )
+        if upload_result.get("success"):
+            images[index] = {
+                "path": upload_result["file_path"],
+                "url": upload_result["file_url"],
+                "width": upload_result["width"],
+                "height": upload_result["height"],
+            }
+
+    post["images"] = images
+    section["data"]["posts"] = posts
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_delete_blog_post(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    post_id = request.POST.get("post_id")
+    if not section_id or not post_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "mini_blog")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    posts = section["data"].get("posts", [])
+    if not isinstance(posts, list):
+        posts = []
+    section["data"]["posts"] = [post for post in posts if post.get("id") != post_id]
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_update_store_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    store_id = request.POST.get("store_id")
+    if not section_id or not store_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "store")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    stores = section["data"].get("stores", [])
+    if not isinstance(stores, list):
+        stores = []
+    store = _find_item(stores, store_id)
+    if not store:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    store["name"] = _limit_text(request.POST.get("name"), 50)
+    store["map_url"] = _limit_text(request.POST.get("map_url"), 200)
+    image_file = request.FILES.get("cover_image")
+    if image_file:
+        upload_result = upload_minihome_image(
+            image_file,
+            prefix=f"minihome/{minihome.slug}/store",
+            target_width=STORE_IMAGE_WIDTH,
+        )
+        if upload_result.get("success"):
+            store["cover_image"] = {
+                "path": upload_result["file_path"],
+                "url": upload_result["file_url"],
+                "width": upload_result["width"],
+                "height": upload_result["height"],
+            }
+
+    section["data"]["stores"] = stores
+    _save_sections(minihome, sections)
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_delete_store_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    store_id = request.POST.get("store_id")
+    if not section_id or not store_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "store")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    stores = section["data"].get("stores", [])
+    if not isinstance(stores, list):
+        stores = []
+    section["data"]["stores"] = [store for store in stores if store.get("id") != store_id]
+    _save_sections(minihome, sections)
 
     return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 

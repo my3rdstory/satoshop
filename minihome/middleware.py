@@ -10,6 +10,12 @@ from .views import (
     minihome_add_blog_post,
     minihome_add_gallery_item,
     minihome_add_store_item,
+    minihome_update_blog_post,
+    minihome_update_gallery_item,
+    minihome_update_store_item,
+    minihome_delete_blog_post,
+    minihome_delete_gallery_item,
+    minihome_delete_store_item,
 )
 
 
@@ -39,9 +45,21 @@ class MinihomeDomainMiddleware:
             return minihome_preview(request, slug=minihome.slug)
         if path in ("gallery/add", "gallery/add/"):
             return minihome_add_gallery_item(request, slug=minihome.slug)
+        if path in ("gallery/update", "gallery/update/"):
+            return minihome_update_gallery_item(request, slug=minihome.slug)
+        if path in ("gallery/delete", "gallery/delete/"):
+            return minihome_delete_gallery_item(request, slug=minihome.slug)
         if path in ("blog/add", "blog/add/"):
             return minihome_add_blog_post(request, slug=minihome.slug)
+        if path in ("blog/update", "blog/update/"):
+            return minihome_update_blog_post(request, slug=minihome.slug)
+        if path in ("blog/delete", "blog/delete/"):
+            return minihome_delete_blog_post(request, slug=minihome.slug)
         if path in ("store/add", "store/add/"):
             return minihome_add_store_item(request, slug=minihome.slug)
+        if path in ("store/update", "store/update/"):
+            return minihome_update_store_item(request, slug=minihome.slug)
+        if path in ("store/delete", "store/delete/"):
+            return minihome_delete_store_item(request, slug=minihome.slug)
 
         return self.get_response(request)
