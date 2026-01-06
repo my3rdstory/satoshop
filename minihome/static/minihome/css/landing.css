@@ -192,8 +192,8 @@ body {
   height: 220px;
   top: 20px;
   right: 24px;
-  opacity: 0.2;
-  filter: drop-shadow(0 16px 40px rgba(247, 147, 26, 0.25));
+  opacity: 0.08;
+  filter: drop-shadow(0 10px 28px rgba(247, 147, 26, 0.18));
   z-index: 0;
   pointer-events: none;
 }
