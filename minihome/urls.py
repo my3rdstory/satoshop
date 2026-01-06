@@ -10,6 +10,7 @@ urlpatterns = [
     path("<slug:slug>/", views.minihome_landing, name="landing"),
     path("<slug:slug>/gallery/add/", views.minihome_add_gallery_item, name="add_gallery_item"),
     path("<slug:slug>/blog/add/", views.minihome_add_blog_post, name="add_blog_post"),
+    path("<slug:slug>/store/add/", views.minihome_add_store_item, name="add_store_item"),
     path("<slug:slug>/preview/", views.minihome_preview, name="preview"),
     path("<slug:slug>/mng/", views.minihome_manage, name="manage"),
 ]

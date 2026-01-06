@@ -174,7 +174,6 @@ else:
         },
     }
 
-NAVER_MAPS_CLIENT_ID = os.getenv('NAVER_MAPS_CLIENT_ID', '')
 
 
 # Database

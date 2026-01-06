@@ -91,9 +91,9 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **권한 기반 관리**: Django Admin에서 슬러그와 주인장(복수) 지정 후 `/minihome/<slug>/mng/`에서 편집
 - **도메인 매핑**: 미니홈에 도메인을 지정하면 해당 도메인 루트(`/`)에서 미니홈 랜딩을 제공합니다 (`/mng/`, `/preview/`도 동일 도메인에서 접근).
 - **섹션 편집 플로우**: 섹션 추가 → 미리보기(새 탭) → 공개하기
-- **섹션 유형**: 브랜드 이미지, 타이틀, 갤러리, 미니 블로그, 지도, 매장, CTA
+- **섹션 유형**: 브랜드 이미지, 타이틀, 갤러리, 미니 블로그, 매장, CTA
 - **미니 블로그 레이아웃**: 데스크톱 기준 2열 카드 배치, 4개 단위 페이지네이션 제공
-- **갤러리/블로그 입력**: 주인장 계정으로 미니홈 랜딩에 접속하면 갤러리 아이템 추가/글쓰기 버튼이 노출됨
+- **갤러리/블로그/매장 입력**: 주인장 계정으로 미니홈 랜딩에 접속하면 추가 버튼이 노출됨
 - **이미지 처리**: WebP 자동 변환 + 랜딩 최적화 리사이즈, S3 호환 스토리지 업로드
 
 ### 🛒 주문 관리
@@ -362,12 +362,6 @@ S3_CUSTOM_DOMAIN=your-cdn-domain.com
 # 핫링크 보호 설정 (이미지 외부 사용 방지)
 HOTLINK_PROTECTION_ENABLED=True
 HOTLINK_ALLOWED_DOMAINS=trusted-partner.com,cdn.example.com
-```
-
-### 네이버 지도 API 설정 (미니홈 지도 섹션)
-
-```env
-NAVER_MAPS_CLIENT_ID=your-naver-maps-client-id
 ```
 
 ### 알림 설정
@@ -657,7 +651,6 @@ docker run \
 ## 🔌 외부 API
 
 - **인증**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
-- **네이버 지도 API**: 미니홈 지도 섹션에서 사용합니다. `.env`의 `NAVER_MAPS_CLIENT_ID`가 필요하며, 키가 없을 경우 지도 영역은 안내 메시지로 대체됩니다.
 - **브라우저 로컬 테스트(CSRF)**: 프런트 개발 서버(예: `http://localhost:5173`)에서 `POST /api/v1/...`를 호출하면 CSRF 보호로 403이 날 수 있습니다. 이때 `CSRF_TRUSTED_ORIGINS`에 프런트 Origin을 등록하고, 먼저 `GET /api/v1/csrf/`(쿠키 발급) 호출 후 `X-CSRFToken` 헤더 + `credentials: include`로 POST를 수행하세요.
 - **엔드포인트(공지사항 목록)**: `GET /api/v1/notices/` — 활성 공지사항을 고정 여부/작성일 역순으로 반환합니다. 제목, 본문, 고정 여부, 생성·수정 시각을 포함합니다.
 - **엔드포인트(공지사항 상세)**: `GET /api/v1/notices/{notice_id}/` — 특정 공지의 제목/내용/작성자/고정 여부와 생성·수정 시각을 반환합니다.

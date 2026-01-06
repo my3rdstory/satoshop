@@ -108,29 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  const mapTargets = document.querySelectorAll('[data-map]');
-  if (mapTargets.length && window.naver && window.naver.maps) {
-    mapTargets.forEach((target) => {
-      const lat = parseFloat(target.dataset.lat || '');
-      const lng = parseFloat(target.dataset.lng || '');
-      if (Number.isNaN(lat) || Number.isNaN(lng)) {
-        target.textContent = '좌표 정보가 없습니다.';
-        target.classList.add('flex', 'items-center', 'justify-center', 'text-xs', 'text-slate-300');
-        return;
-      }
-      const location = new naver.maps.LatLng(lat, lng);
-      const map = new naver.maps.Map(target, {
-        center: location,
-        zoom: 14,
-        zoomControl: false,
-      });
-      new naver.maps.Marker({
-        position: location,
-        map: map,
-      });
-    });
-  }
-
   document.querySelectorAll('[data-toggle-form]').forEach((button) => {
     button.addEventListener('click', () => {
       const targetId = button.dataset.toggleForm;

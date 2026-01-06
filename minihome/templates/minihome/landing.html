@@ -170,31 +170,44 @@
             </section>
           {% endif %}
 
-          {% if section.type == 'map' %}
-            <section class="minihome-section-card space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-semibold">{{ section.data.title|default:'지도' }}</h3>
-                {% if section.data.address %}
-                  <span class="text-xs text-slate-300">{{ section.data.address }}</span>
-                {% endif %}
-              </div>
-              {% if naver_maps_client_id %}
-                <div class="minihome-map" data-map data-lat="{{ section.data.lat|default_if_none:'' }}" data-lng="{{ section.data.lng|default_if_none:'' }}" data-title="{{ section.data.title|default:'' }}"></div>
-              {% else %}
-                <div class="minihome-empty">네이버 지도 API 키가 설정되지 않았습니다.</div>
-              {% endif %}
-            </section>
-          {% endif %}
-
           {% if section.type == 'store' %}
             <section class="minihome-section-card space-y-3">
               <h3 class="text-sm font-semibold">매장</h3>
+              {% if can_manage %}
+                <div class="minihome-owner-tools">
+                  <button type="button" class="minihome-link" data-toggle-form="store-form-{{ section.id }}">매장 추가</button>
+                  <form id="store-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_store_item' slug=minihome.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="section_id" value="{{ section.id }}">
+                    <label class="minihome-field">
+                      <span>매장명</span>
+                      <input type="text" name="name" maxlength="50">
+                    </label>
+                    <label class="minihome-field">
+                      <span>네이버 지도 공유 링크</span>
+                      <input type="text" name="map_url" maxlength="200">
+                    </label>
+                    <label class="minihome-field">
+                      <span>매장 커버 이미지</span>
+                      <input type="file" name="cover_image" accept="image/*">
+                    </label>
+                    <div class="flex justify-end">
+                      <button type="submit" class="minihome-link">저장</button>
+                    </div>
+                  </form>
+                </div>
+              {% endif %}
               <div class="space-y-3">
                 {% for store in section.data.stores %}
                   <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
-                    <div>
-                      <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                      <p class="text-xs text-slate-300">{{ store.map_url|default:'' }}</p>
+                    <div class="flex items-center gap-3">
+                      {% if store.cover_image.url %}
+                        <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-12 w-12 rounded-xl object-cover">
+                      {% endif %}
+                      <div>
+                        <p class="font-semibold">{{ store.name|default:'매장' }}</p>
+                        <p class="text-xs text-slate-300">{{ store.map_url|default:'' }}</p>
+                      </div>
                     </div>
                     {% if store.map_url %}
                       <a class="minihome-link" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
@@ -247,9 +260,6 @@
     </div>
   </div>
 
-  {% if has_map_section and naver_maps_client_id %}
-    <script src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId={{ naver_maps_client_id }}"></script>
-  {% endif %}
   <script src="{% static 'minihome/js/landing.js' %}"></script>
 </body>
 </html>

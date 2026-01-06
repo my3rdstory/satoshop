@@ -1,7 +1,5 @@
 import json
 import uuid
-
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -17,7 +15,6 @@ SECTION_TYPES = (
     "title",
     "gallery",
     "mini_blog",
-    "map",
     "store",
     "cta",
 )
@@ -26,6 +23,7 @@ BRAND_IMAGE_WIDTH = 900
 GALLERY_IMAGE_WIDTH = 900
 BLOG_IMAGE_WIDTH = 1000
 CTA_PROFILE_MAX_SIZE = (300, 300)
+STORE_IMAGE_WIDTH = 600
 
 
 def _user_can_manage(minihome: Minihome, user) -> bool:
@@ -134,27 +132,6 @@ def _normalize_sections(sections):
             })
             continue
 
-        if section_type == "map":
-            try:
-                lat = float(data.get("lat")) if data.get("lat") not in (None, "") else None
-            except (TypeError, ValueError):
-                lat = None
-            try:
-                lng = float(data.get("lng")) if data.get("lng") not in (None, "") else None
-            except (TypeError, ValueError):
-                lng = None
-            normalized.append({
-                "id": section_id,
-                "type": section_type,
-                "data": {
-                    "title": _limit_text(data.get("title"), 30),
-                    "address": _limit_text(data.get("address"), 100),
-                    "lat": lat,
-                    "lng": lng,
-                },
-            })
-            continue
-
         if section_type == "store":
             stores = []
             for store in data.get("stores", []):
@@ -165,6 +142,7 @@ def _normalize_sections(sections):
                     "id": store_id,
                     "name": _limit_text(store.get("name"), 50),
                     "map_url": _limit_text(store.get("map_url"), 200),
+                    "cover_image": _normalize_image_meta(store.get("cover_image")),
                 })
             normalized.append({
                 "id": section_id,
@@ -411,6 +389,63 @@ def minihome_add_blog_post(request, slug):
     return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
 
+@login_required
+def minihome_add_store_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    if not section_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "store")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    name = _limit_text(request.POST.get("name"), 50)
+    map_url = _limit_text(request.POST.get("map_url"), 200)
+    cover_image = None
+    image_file = request.FILES.get("cover_image")
+    if image_file:
+        upload_result = upload_minihome_image(
+            image_file,
+            prefix=f"minihome/{minihome.slug}/store",
+            target_width=STORE_IMAGE_WIDTH,
+        )
+        if upload_result.get("success"):
+            cover_image = {
+                "path": upload_result["file_path"],
+                "url": upload_result["file_url"],
+                "width": upload_result["width"],
+                "height": upload_result["height"],
+            }
+
+    stores = section["data"].get("stores", [])
+    if not isinstance(stores, list):
+        stores = []
+    stores.append(
+        {
+            "id": uuid.uuid4().hex,
+            "name": name,
+            "map_url": map_url,
+            "cover_image": cover_image,
+        }
+    )
+    section["data"]["stores"] = stores
+
+    sections = _normalize_sections(sections)
+    minihome.draft_sections = sections
+    minihome.published_sections = sections
+    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
 def minihome_landing(request, slug):
     minihome = get_object_or_404(Minihome, slug=slug)
     if not minihome.is_published:
@@ -424,11 +459,6 @@ def minihome_landing(request, slug):
         {
             "minihome": minihome,
             "sections": sections,
-            "naver_maps_client_id": getattr(settings, "NAVER_MAPS_CLIENT_ID", ""),
-            "has_map_section": any(
-                isinstance(section, dict) and section.get("type") == "map"
-                for section in sections
-            ),
             "is_preview": False,
             "can_manage": can_manage,
         },
@@ -448,11 +478,6 @@ def minihome_preview(request, slug):
         {
             "minihome": minihome,
             "sections": sections,
-            "naver_maps_client_id": getattr(settings, "NAVER_MAPS_CLIENT_ID", ""),
-            "has_map_section": any(
-                isinstance(section, dict) and section.get("type") == "map"
-                for section in sections
-            ),
             "is_preview": True,
         },
     )

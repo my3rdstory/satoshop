@@ -67,7 +67,6 @@
               <button type="button" class="minihome-add-btn" data-add-section data-section-type="title">타이틀</button>
               <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
               <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="map">지도</button>
               <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
               <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
             </div>
@@ -107,7 +106,6 @@
                         {% if section.type == 'title' %}타이틀{% endif %}
                         {% if section.type == 'gallery' %}갤러리{% endif %}
                         {% if section.type == 'mini_blog' %}미니 블로그{% endif %}
-                        {% if section.type == 'map' %}지도{% endif %}
                         {% if section.type == 'store' %}매장{% endif %}
                         {% if section.type == 'cta' %}CTA{% endif %}
                       </h3>
@@ -162,52 +160,11 @@
                     </div>
                   {% endif %}
 
-                  {% if section.type == 'map' %}
-                    <div class="space-y-3">
-                      <label class="minihome-field">
-                        <span>장소명 (선택)</span>
-                        <input type="text" data-field="title" value="{{ section.data.title|default:'' }}" maxlength="30">
-                      </label>
-                      <label class="minihome-field">
-                        <span>주소 (선택)</span>
-                        <input type="text" data-field="address" value="{{ section.data.address|default:'' }}" maxlength="100">
-                      </label>
-                      <div class="grid grid-cols-2 gap-3">
-                        <label class="minihome-field">
-                          <span>위도</span>
-                          <input type="text" data-field="lat" value="{{ section.data.lat|default_if_none:'' }}">
-                        </label>
-                        <label class="minihome-field">
-                          <span>경도</span>
-                          <input type="text" data-field="lng" value="{{ section.data.lng|default_if_none:'' }}">
-                        </label>
-                      </div>
-                      <p class="text-xs text-slate-300">네이버 지도 API는 위도/경도 기준으로 표시됩니다.</p>
-                    </div>
-                  {% endif %}
-
                   {% if section.type == 'store' %}
-                    <div class="space-y-3" data-store-items>
-                      {% for store in section.data.stores %}
-                        <div class="minihome-card" data-store-item data-item-id="{{ store.id }}">
-                          <div class="flex items-center justify-between">
-                            <p class="text-xs font-semibold">매장</p>
-                            <button type="button" class="minihome-icon-btn" data-action="remove-item">삭제</button>
-                          </div>
-                          <label class="minihome-field mt-3">
-                            <span>이름</span>
-                            <input type="text" data-field="name" value="{{ store.name|default:'' }}" maxlength="50">
-                          </label>
-                          <label class="minihome-field mt-3">
-                            <span>네이버 지도 공유 링크</span>
-                            <input type="text" data-field="map_url" value="{{ store.map_url|default:'' }}" maxlength="200">
-                          </label>
-                        </div>
-                      {% empty %}
-                        <p class="text-xs text-slate-300" data-empty-hint>매장 정보를 추가하세요.</p>
-                      {% endfor %}
+                    <div class="space-y-2">
+                      <p class="text-xs text-slate-300">매장 정보는 미니홈에서 주인장으로 접속해 추가합니다.</p>
+                      <p class="text-xs text-slate-400">현재 {{ section.data.stores|length|default:0 }}개</p>
                     </div>
-                    <button type="button" class="minihome-ghost-btn mt-3" data-action="add-store-item">매장 추가</button>
                   {% endif %}
 
                   {% if section.type == 'cta' %}
@@ -339,39 +296,6 @@
     </div>
   </template>
 
-  <template id="template-map">
-    <div class="minihome-section" data-section data-section-id="__SECTION_ID__" data-section-type="map">
-      <div class="minihome-section-header">
-        <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-slate-400">섹션</p>
-          <h3 class="text-sm font-semibold">지도</h3>
-        </div>
-        <button type="button" class="minihome-icon-btn" data-action="remove-section">삭제</button>
-      </div>
-      <div class="space-y-3">
-        <label class="minihome-field">
-          <span>장소명 (선택)</span>
-          <input type="text" data-field="title" maxlength="30">
-        </label>
-        <label class="minihome-field">
-          <span>주소 (선택)</span>
-          <input type="text" data-field="address" maxlength="100">
-        </label>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="minihome-field">
-            <span>위도</span>
-            <input type="text" data-field="lat">
-          </label>
-          <label class="minihome-field">
-            <span>경도</span>
-            <input type="text" data-field="lng">
-          </label>
-        </div>
-        <p class="text-xs text-slate-300">네이버 지도 API는 위도/경도 기준으로 표시됩니다.</p>
-      </div>
-    </div>
-  </template>
-
   <template id="template-store">
     <div class="minihome-section" data-section data-section-id="__SECTION_ID__" data-section-type="store">
       <div class="minihome-section-header">
@@ -381,23 +305,10 @@
         </div>
         <button type="button" class="minihome-icon-btn" data-action="remove-section">삭제</button>
       </div>
-      <div class="space-y-3" data-store-items>
-        <div class="minihome-card" data-store-item data-item-id="__ITEM_ID__">
-          <div class="flex items-center justify-between">
-            <p class="text-xs font-semibold">매장</p>
-            <button type="button" class="minihome-icon-btn" data-action="remove-item">삭제</button>
-          </div>
-          <label class="minihome-field mt-3">
-            <span>이름</span>
-            <input type="text" data-field="name" maxlength="50">
-          </label>
-          <label class="minihome-field mt-3">
-            <span>네이버 지도 공유 링크</span>
-            <input type="text" data-field="map_url" maxlength="200">
-          </label>
-        </div>
+      <div class="space-y-2">
+        <p class="text-xs text-slate-300">매장 정보는 미니홈에서 주인장으로 접속해 추가합니다.</p>
+        <p class="text-xs text-slate-400">현재 0개</p>
       </div>
-      <button type="button" class="minihome-ghost-btn mt-3" data-action="add-store-item">매장 추가</button>
     </div>
   </template>
 
@@ -444,23 +355,6 @@
     </div>
   </template>
 
-
-  <template id="template-store-item">
-    <div class="minihome-card" data-store-item data-item-id="__ITEM_ID__">
-      <div class="flex items-center justify-between">
-        <p class="text-xs font-semibold">매장</p>
-        <button type="button" class="minihome-icon-btn" data-action="remove-item">삭제</button>
-      </div>
-      <label class="minihome-field mt-3">
-        <span>이름</span>
-        <input type="text" data-field="name" maxlength="50">
-      </label>
-      <label class="minihome-field mt-3">
-        <span>네이버 지도 공유 링크</span>
-        <input type="text" data-field="map_url" maxlength="200">
-      </label>
-    </div>
-  </template>
 
   {{ sections|json_script:"minihome-initial-sections" }}
   <script src="{% static 'minihome/js/manage.js' %}"></script>

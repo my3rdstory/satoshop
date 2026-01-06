@@ -71,13 +71,6 @@ body {
   font-size: 0.75rem;
 }
 
-.minihome-map {
-  height: 220px;
-  border-radius: 1.25rem;
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.8);
-}
-
 .minihome-modal {
   position: fixed;
   inset: 0;

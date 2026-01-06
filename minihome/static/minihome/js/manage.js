@@ -140,17 +140,6 @@ const addSection = (type) => {
   initializeSection(section);
 };
 
-const addStoreItem = (section) => {
-  const container = section.querySelector('[data-store-items]');
-  if (!container) return;
-  removeEmptyHint(container);
-  const itemId = generateId();
-  const item = renderTemplate('template-store-item', {
-    '__ITEM_ID__': itemId,
-  });
-  container.appendChild(item);
-};
-
 const collectSections = () => {
   const sections = [];
   sectionList.querySelectorAll('[data-section]').forEach((section) => {
@@ -208,19 +197,11 @@ const collectSections = () => {
       return;
     }
     if (type === 'store') {
-      const stores = [];
-      section.querySelectorAll('[data-store-item]').forEach((item) => {
-        stores.push({
-          id: item.dataset.itemId,
-          name: item.querySelector('[data-field="name"]')?.value || '',
-          map_url: item.querySelector('[data-field="map_url"]')?.value || '',
-        });
-      });
-      sections.push({
-        id,
-        type,
-        data: { stores },
-      });
+      const initial = initialSectionMap.get(id);
+      const stores = initial?.data?.stores && Array.isArray(initial.data.stores)
+        ? initial.data.stores
+        : [];
+      sections.push({ id, type, data: { stores } });
       return;
     }
     if (type === 'cta') {
@@ -285,18 +266,5 @@ document.addEventListener('click', (event) => {
     return;
   }
 
-  if (action === 'add-store-item') {
-    event.preventDefault();
-    const section = actionButton.closest('[data-section]');
-    if (section) addStoreItem(section);
-    return;
-  }
-
-  if (action === 'remove-item') {
-    event.preventDefault();
-    const item = actionButton.closest('[data-gallery-item],[data-store-item]');
-    if (item) item.remove();
-    return;
-  }
 
 });

@@ -3,7 +3,14 @@ from typing import Optional
 from django.http import HttpResponse
 
 from .models import Minihome, normalize_domain
-from .views import minihome_landing, minihome_manage, minihome_preview
+from .views import (
+    minihome_landing,
+    minihome_manage,
+    minihome_preview,
+    minihome_add_blog_post,
+    minihome_add_gallery_item,
+    minihome_add_store_item,
+)
 
 
 def _resolve_minihome_by_host(host: str) -> Optional[Minihome]:
@@ -30,5 +37,11 @@ class MinihomeDomainMiddleware:
             return minihome_manage(request, slug=minihome.slug)
         if path in ("preview", "preview/"):
             return minihome_preview(request, slug=minihome.slug)
+        if path in ("gallery/add", "gallery/add/"):
+            return minihome_add_gallery_item(request, slug=minihome.slug)
+        if path in ("blog/add", "blog/add/"):
+            return minihome_add_blog_post(request, slug=minihome.slug)
+        if path in ("store/add", "store/add/"):
+            return minihome_add_store_item(request, slug=minihome.slug)
 
         return self.get_response(request)
