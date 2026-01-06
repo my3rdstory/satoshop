@@ -39,7 +39,7 @@
       <header class="text-center space-y-3">
         <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Minihome</p>
         <h1 class="text-2xl font-semibold font-display">공개된 미니홈</h1>
-        <p class="text-xs text-slate-500 dark:text-slate-400">카드를 클릭하면 새 탭으로 이동합니다.</p>
+        <p class="text-xs text-slate-300">카드를 클릭하면 새 탭으로 이동합니다.</p>
       </header>
 
       <section class="mt-8 grid gap-4">
@@ -49,7 +49,7 @@
               <a class="minihome-card" href="{{ target_link }}" target="_blank" rel="noopener">
                 <div>
                   <h2 class="text-lg font-semibold">{{ minihome.display_name|default:minihome.slug }}</h2>
-                  <p class="text-xs text-slate-500 dark:text-slate-400">{{ minihome.domain }}</p>
+                  <p class="text-xs text-slate-300">{{ minihome.domain }}</p>
                 </div>
                 <span class="minihome-pill">도메인 연결</span>
               </a>
@@ -58,7 +58,7 @@
             <a class="minihome-card" href="/minihome/{{ minihome.slug }}/" target="_blank" rel="noopener">
               <div>
                 <h2 class="text-lg font-semibold">{{ minihome.display_name|default:minihome.slug }}</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">/minihome/{{ minihome.slug }}/</p>
+                <p class="text-xs text-slate-300">/minihome/{{ minihome.slug }}/</p>
               </div>
               <span class="minihome-pill">슬러그 기반</span>
             </a>

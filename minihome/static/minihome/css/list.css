@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
@@ -22,22 +22,16 @@ body {
   gap: 1rem;
   padding: 1.2rem 1.4rem;
   border-radius: 1.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .minihome-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(30, 58, 138, 0.4);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.15);
-}
-
-.dark .minihome-card {
-  background: rgba(15, 23, 42, 0.7);
-  border-color: rgba(51, 65, 85, 0.7);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.45);
 }
 
 .minihome-pill {
@@ -46,29 +40,19 @@ body {
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
   font-size: 0.7rem;
-  background: rgba(30, 58, 138, 0.12);
-  color: #1e3a8a;
+  background: rgba(99, 102, 241, 0.2);
+  color: #e0e7ff;
   white-space: nowrap;
 }
 
-.dark .minihome-pill {
-  background: rgba(99, 102, 241, 0.2);
-  color: #e0e7ff;
-}
-
 .minihome-empty {
-  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border: 1px dashed rgba(71, 85, 105, 0.8);
   border-radius: 1rem;
   padding: 1.5rem;
   text-align: center;
   font-size: 0.8rem;
-  color: #64748b;
-  background: rgba(248, 250, 252, 0.8);
-}
-
-.dark .minihome-empty {
   color: #cbd5f5;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
 }
 
 .minihome-glow {
@@ -76,13 +60,9 @@ body {
   width: 480px;
   height: 480px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(251, 191, 36, 0.35), transparent 60%);
+  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.25), transparent 60%);
   top: -120px;
   right: -160px;
   z-index: 0;
   pointer-events: none;
-}
-
-.dark .minihome-glow {
-  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.2), transparent 60%);
 }

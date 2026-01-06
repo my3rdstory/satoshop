@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 body {
@@ -16,32 +16,21 @@ body {
 }
 
 .minihome-section-card {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.8);
   border-radius: 1.5rem;
   padding: 1.25rem;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-}
-
-.dark .minihome-section-card {
-  background: rgba(15, 23, 42, 0.7);
-  border-color: rgba(51, 65, 85, 0.7);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
 }
 
 .minihome-empty {
-  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border: 1px dashed rgba(71, 85, 105, 0.8);
   border-radius: 1rem;
   padding: 1.5rem;
   text-align: center;
   font-size: 0.75rem;
-  color: #64748b;
-  background: rgba(248, 250, 252, 0.8);
-}
-
-.dark .minihome-empty {
   color: #cbd5f5;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
 }
 
 .minihome-blog-card {
@@ -49,20 +38,15 @@ body {
   width: 100%;
   padding: 1rem;
   border-radius: 1.25rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(51, 65, 85, 0.9);
+  background: rgba(15, 23, 42, 0.8);
   text-align: left;
   transition: all 0.2s ease;
 }
 
 .minihome-blog-card:hover {
-  border-color: rgba(30, 58, 138, 0.4);
+  border-color: rgba(99, 102, 241, 0.6);
   transform: translateY(-2px);
-}
-
-.dark .minihome-blog-card {
-  background: rgba(15, 23, 42, 0.7);
-  border-color: rgba(51, 65, 85, 0.7);
 }
 
 .minihome-link {
@@ -71,16 +55,10 @@ body {
   justify-content: center;
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border: 1px solid rgba(99, 102, 241, 0.4);
   font-size: 0.75rem;
-  color: #1e3a8a;
-  background: rgba(255, 255, 255, 0.9);
-}
-
-.dark .minihome-link {
   color: #c7d2fe;
-  border-color: rgba(99, 102, 241, 0.4);
-  background: rgba(15, 23, 42, 0.7);
+  background: rgba(15, 23, 42, 0.9);
 }
 
 .minihome-chip {
@@ -88,21 +66,16 @@ body {
   align-items: center;
   padding: 0.45rem 0.9rem;
   border-radius: 999px;
-  background: rgba(30, 58, 138, 0.1);
-  color: #1e3a8a;
-  font-size: 0.75rem;
-}
-
-.dark .minihome-chip {
   background: rgba(99, 102, 241, 0.2);
   color: #e0e7ff;
+  font-size: 0.75rem;
 }
 
 .minihome-map {
   height: 220px;
   border-radius: 1.25rem;
   overflow: hidden;
-  background: rgba(226, 232, 240, 0.6);
+  background: rgba(15, 23, 42, 0.8);
 }
 
 .minihome-modal {
@@ -117,17 +90,13 @@ body {
 }
 
 .minihome-modal-panel {
-  background: #ffffff;
+  background: #0f172a;
   border-radius: 1.25rem;
   padding: 1.5rem;
   width: min(520px, 100%);
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
-}
-
-.dark .minihome-modal-panel {
-  background: #0f172a;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.4);
 }
 
 .minihome-icon-btn {
@@ -149,13 +118,9 @@ body {
   width: 480px;
   height: 480px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(251, 191, 36, 0.35), transparent 60%);
+  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.25), transparent 60%);
   top: -120px;
   right: -160px;
   z-index: 0;
   pointer-events: none;
-}
-
-.dark .minihome-glow {
-  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.2), transparent 60%);
 }

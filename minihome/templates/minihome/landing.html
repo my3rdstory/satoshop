@@ -40,7 +40,7 @@
         <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Minihome</p>
         <h1 class="text-2xl font-semibold font-display">{{ minihome.display_name|default:minihome.slug }}</h1>
         {% if is_preview %}
-          <span class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200">미리보기 모드</span>
+          <span class="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-200">미리보기 모드</span>
         {% endif %}
       </header>
 
@@ -59,7 +59,7 @@
           {% if section.type == 'title' %}
             <section class="minihome-section-card text-center space-y-3">
               <h2 class="text-xl font-semibold">{{ section.data.title|default:'브랜드 타이틀' }}</h2>
-              <p class="text-slate-600 dark:text-slate-300 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
+              <p class="text-slate-300 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
             </section>
           {% endif %}
 
@@ -75,7 +75,7 @@
                     {% endif %}
                   </div>
                   <div class="sm:w-1/2 flex items-center">
-                    <p class="text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ item.description|default:'' }}</p>
+                    <p class="text-slate-200 whitespace-pre-line">{{ item.description|default:'' }}</p>
                   </div>
                 </div>
               {% empty %}
@@ -88,7 +88,7 @@
             <section class="minihome-section-card">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold">미니 블로그</h3>
-                <span class="text-xs text-slate-400">클릭해서 자세히 보기</span>
+                <span class="text-xs text-slate-300">클릭해서 자세히 보기</span>
               </div>
               <div class="mt-4 grid gap-3">
                 {% for post in section.data.posts %}
@@ -97,7 +97,7 @@
                     data-image-2="{{ post.images.2.url|default:'' }}" data-image-3="{{ post.images.3.url|default:'' }}">
                     <div class="flex items-start gap-3">
                       <div class="flex-1 text-left">
-                        <p class="line-clamp-3 text-slate-700 dark:text-slate-200">{{ post.text|default:'' }}</p>
+                        <p class="line-clamp-3 text-slate-200">{{ post.text|default:'' }}</p>
                       </div>
                       {% if post.images.0.url %}
                         <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
@@ -116,7 +116,7 @@
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold">{{ section.data.title|default:'지도' }}</h3>
                 {% if section.data.address %}
-                  <span class="text-xs text-slate-400">{{ section.data.address }}</span>
+                  <span class="text-xs text-slate-300">{{ section.data.address }}</span>
                 {% endif %}
               </div>
               {% if naver_maps_client_id %}
@@ -132,10 +132,10 @@
               <h3 class="text-sm font-semibold">매장</h3>
               <div class="space-y-3">
                 {% for store in section.data.stores %}
-                  <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/60">
+                  <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
                     <div>
                       <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                      <p class="text-xs text-slate-500">{{ store.map_url|default:'' }}</p>
+                      <p class="text-xs text-slate-300">{{ store.map_url|default:'' }}</p>
                     </div>
                     {% if store.map_url %}
                       <a class="minihome-link" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
@@ -154,14 +154,14 @@
                 {% if section.data.profile_image.url %}
                   <img src="{{ section.data.profile_image.url }}" alt="프로필" class="h-16 w-16 rounded-2xl object-cover">
                 {% else %}
-                  <div class="h-16 w-16 rounded-2xl bg-slate-200 dark:bg-slate-800"></div>
+                  <div class="h-16 w-16 rounded-2xl bg-slate-800"></div>
                 {% endif %}
                 <div>
                   <h3 class="text-sm font-semibold">함께하기</h3>
-                  <p class="text-xs text-slate-500">연락 또는 후원 정보를 확인하세요.</p>
+                  <p class="text-xs text-slate-300">연락 또는 후원 정보를 확인하세요.</p>
                 </div>
               </div>
-              <p class="text-slate-700 dark:text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
+              <p class="text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
               <div class="grid gap-2">
                 {% if section.data.email %}
                   <a class="minihome-link" href="mailto:{{ section.data.email }}">{{ section.data.email }}</a>
@@ -183,7 +183,7 @@
         <h4 class="text-sm font-semibold">미니 블로그</h4>
         <button type="button" class="minihome-icon-btn" data-modal-close>닫기</button>
       </div>
-      <p class="mt-3 text-slate-700 dark:text-slate-200 whitespace-pre-line" data-modal-text></p>
+      <p class="mt-3 text-slate-200 whitespace-pre-line" data-modal-text></p>
       <div class="mt-4 grid grid-cols-2 gap-3" data-modal-images></div>
     </div>
   </div>
