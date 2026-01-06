@@ -820,7 +820,6 @@ def minihome_manage(request, slug):
             )
             save_minihome_static_page(minihome.slug, html)
             update_minihome_publish_map(minihome.slug, minihome.domain or "")
-            return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
         if action == "preview":
             return redirect(reverse("minihome:preview", kwargs={"slug": minihome.slug}))
 
