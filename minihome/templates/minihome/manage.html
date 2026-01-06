@@ -311,21 +311,19 @@
 
                       {% if section.type == 'store' %}
                         <h3 class="text-sm font-semibold">매장</h3>
-                        <div class="space-y-3" data-store-items>
+                        <div class="grid gap-3 md:grid-cols-3" data-store-items>
                           {% for store in section.data.stores %}
-                            <div class="minihome-store-item" data-store-item data-store-id="{{ store.id }}">
-                              <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
-                                <div class="flex items-center gap-3">
-                                  {% if store.cover_image.url %}
-                                    <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-12 w-12 rounded-xl object-cover">
-                                  {% endif %}
-                                  <div>
-                                    <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                                    <p class="text-xs text-slate-300">{{ store.map_url|default:'' }}</p>
-                                  </div>
+                            <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="{{ store.id }}">
+                              <div class="minihome-store-card">
+                                {% if store.cover_image.url %}
+                                  <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-32 w-full rounded-xl object-cover">
+                                {% endif %}
+                                <div class="space-y-1">
+                                  <p class="font-semibold">{{ store.name|default:'매장' }}</p>
+                                  <p class="text-xs text-slate-300 break-all">{{ store.map_url|default:'' }}</p>
                                 </div>
                                 {% if store.map_url %}
-                                  <span class="minihome-link">지도 링크</span>
+                                  <span class="minihome-link w-full justify-center text-center">지도 열기</span>
                                 {% endif %}
                               </div>
                               <div class="minihome-inline-form">
@@ -671,16 +669,14 @@
   </template>
 
   <template id="template-store-item">
-    <div class="minihome-store-item" data-store-item data-store-id="__STORE_ID__">
-      <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
-        <div class="flex items-center gap-3">
-          <div class="h-12 w-12 rounded-xl bg-slate-800"></div>
-          <div>
-            <p class="font-semibold">새 매장</p>
-            <p class="text-xs text-slate-300">지도 링크를 입력해주세요.</p>
-          </div>
+    <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="__STORE_ID__">
+      <div class="minihome-store-card">
+        <div class="h-32 w-full rounded-xl bg-slate-800"></div>
+        <div class="space-y-1">
+          <p class="font-semibold">새 매장</p>
+          <p class="text-xs text-slate-300">지도 링크를 입력해주세요.</p>
         </div>
-        <span class="minihome-link">지도 링크</span>
+        <span class="minihome-link w-full justify-center text-center">지도 열기</span>
       </div>
       <div class="minihome-inline-form">
         <label class="minihome-field">

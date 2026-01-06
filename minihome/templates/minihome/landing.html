@@ -96,7 +96,7 @@
                 <span class="text-xs text-slate-300">클릭해서 자세히 보기</span>
               </div>
               <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
-                {% for post in section.data.posts %}
+                {% for post in section.data.posts|slice:"::-1" %}
                   <div class="minihome-blog-item">
                     <button type="button" class="minihome-blog-card" data-blog-card data-text="{{ post.text|escape }}"
                       data-image0="{{ post.images.0.url|default:'' }}" data-image1="{{ post.images.1.url|default:'' }}"
@@ -126,20 +126,18 @@
           {% if section.type == 'store' %}
             <section class="minihome-section-card space-y-3">
               <h3 class="text-sm font-semibold">매장</h3>
-              <div class="space-y-3">
+              <div class="grid gap-3 md:grid-cols-3">
                 {% for store in section.data.stores %}
-                  <div class="flex items-center justify-between gap-3 p-3 rounded-2xl border border-slate-700 bg-slate-900/60">
-                    <div class="flex items-center gap-3">
-                      {% if store.cover_image.url %}
-                        <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-12 w-12 rounded-xl object-cover">
-                      {% endif %}
-                      <div>
-                        <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                        <p class="text-xs text-slate-300">{{ store.map_url|default:'' }}</p>
-                      </div>
+                  <div class="minihome-store-card">
+                    {% if store.cover_image.url %}
+                      <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-32 w-full rounded-xl object-cover">
+                    {% endif %}
+                    <div class="space-y-1">
+                      <p class="font-semibold">{{ store.name|default:'매장' }}</p>
+                      <p class="text-xs text-slate-300 break-all">{{ store.map_url|default:'' }}</p>
                     </div>
                     {% if store.map_url %}
-                      <a class="minihome-link" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
+                      <a class="minihome-link w-full justify-center text-center" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
                     {% endif %}
                   </div>
                 {% empty %}
@@ -150,26 +148,30 @@
           {% endif %}
 
           {% if section.type == 'cta' %}
-            <section class="minihome-section-card space-y-4">
-              <div class="flex items-center gap-4">
-                {% if section.data.profile_image.url %}
-                  <img src="{{ section.data.profile_image.url }}" alt="프로필" class="h-16 w-16 rounded-2xl object-cover">
-                {% else %}
-                  <div class="h-16 w-16 rounded-2xl bg-slate-800"></div>
-                {% endif %}
-                <div>
-                  <h3 class="text-sm font-semibold">함께하기</h3>
-                  <p class="text-xs text-slate-300">연락 또는 후원 정보를 확인하세요.</p>
+            <section class="minihome-section-card">
+              <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div class="space-y-3 md:flex-1">
+                  <div class="flex items-center gap-4">
+                    {% if section.data.profile_image.url %}
+                      <img src="{{ section.data.profile_image.url }}" alt="프로필" class="h-16 w-16 rounded-2xl object-cover">
+                    {% else %}
+                      <div class="h-16 w-16 rounded-2xl bg-slate-800"></div>
+                    {% endif %}
+                    <div>
+                      <h3 class="text-sm font-semibold">함께하기</h3>
+                      <p class="text-xs text-slate-300">연락 또는 후원 정보를 확인하세요.</p>
+                    </div>
+                  </div>
+                  <p class="text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
                 </div>
-              </div>
-              <p class="text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
-              <div class="grid gap-2">
-                {% if section.data.email %}
-                  <a class="minihome-link" href="mailto:{{ section.data.email }}">{{ section.data.email }}</a>
-                {% endif %}
-                {% if section.data.donation %}
-                  <span class="minihome-chip">후원 주소: {{ section.data.donation }}</span>
-                {% endif %}
+                <div class="flex flex-col gap-2 md:w-56">
+                  {% if section.data.email %}
+                    <a class="minihome-link w-full justify-center text-center" href="mailto:{{ section.data.email }}">이메일: {{ section.data.email }}</a>
+                  {% endif %}
+                  {% if section.data.donation %}
+                    <span class="minihome-chip w-full justify-center text-center">후원 주소: {{ section.data.donation }}</span>
+                  {% endif %}
+                </div>
               </div>
             </section>
           {% endif %}

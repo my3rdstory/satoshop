@@ -89,6 +89,16 @@ body {
   font-size: 0.75rem;
 }
 
+.minihome-store-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.8);
+}
+
 .minihome-modal {
   position: fixed;
   inset: 0;
