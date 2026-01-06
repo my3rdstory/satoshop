@@ -90,11 +90,11 @@
                 <h3 class="text-sm font-semibold">미니 블로그</h3>
                 <span class="text-xs text-slate-300">클릭해서 자세히 보기</span>
               </div>
-              <div class="mt-4 grid gap-3">
+              <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
                 {% for post in section.data.posts %}
                   <button type="button" class="minihome-blog-card" data-blog-card data-text="{{ post.text|escape }}"
-                    data-image-0="{{ post.images.0.url|default:'' }}" data-image-1="{{ post.images.1.url|default:'' }}"
-                    data-image-2="{{ post.images.2.url|default:'' }}" data-image-3="{{ post.images.3.url|default:'' }}">
+                    data-image0="{{ post.images.0.url|default:'' }}" data-image1="{{ post.images.1.url|default:'' }}"
+                    data-image2="{{ post.images.2.url|default:'' }}" data-image3="{{ post.images.3.url|default:'' }}">
                     <div class="flex items-start gap-3">
                       <div class="flex-1 text-left">
                         <p class="line-clamp-3 text-slate-200">{{ post.text|default:'' }}</p>
@@ -107,6 +107,11 @@
                 {% empty %}
                   <div class="minihome-empty">등록된 글이 없습니다.</div>
                 {% endfor %}
+              </div>
+              <div class="minihome-pagination hidden" data-blog-pagination>
+                <button type="button" class="minihome-pagination-btn" data-page-prev>이전</button>
+                <span class="minihome-pagination-text" data-page-indicator>1 / 1</span>
+                <button type="button" class="minihome-pagination-btn" data-page-next>다음</button>
               </div>
             </section>
           {% endif %}

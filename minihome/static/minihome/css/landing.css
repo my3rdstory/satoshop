@@ -81,7 +81,7 @@ body {
 .minihome-modal {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(2, 6, 23, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -97,6 +97,33 @@ body {
   max-height: 80vh;
   overflow-y: auto;
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.4);
+}
+
+.minihome-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.minihome-pagination-btn {
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(15, 23, 42, 0.9);
+  color: #e0e7ff;
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.75rem;
+}
+
+.minihome-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.minihome-pagination-text {
+  font-size: 0.75rem;
+  color: #94a3b8;
 }
 
 .minihome-icon-btn {

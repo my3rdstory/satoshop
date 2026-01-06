@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalText = modal ? modal.querySelector('[data-modal-text]') : null;
   const modalImages = modal ? modal.querySelector('[data-modal-images]') : null;
   const closeButton = modal ? modal.querySelector('[data-modal-close]') : null;
+  const postsPerPage = 4;
 
   if (modal && closeButton) {
     closeButton.addEventListener('click', () => {
@@ -10,7 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.querySelectorAll('[data-blog-card]').forEach((card) => {
+  const getImageUrl = (card, key) => {
+    return card.dataset[key] || card.getAttribute(`data-${key}`) || '';
+  };
+
+  const bindBlogCards = (container) => {
+    container.querySelectorAll('[data-blog-card]').forEach((card) => {
     card.addEventListener('click', () => {
       if (!modal || !modalText || !modalImages) {
         return;
@@ -20,10 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
       modalImages.innerHTML = '';
 
       const imageUrls = [
-        card.dataset.image0,
-        card.dataset.image1,
-        card.dataset.image2,
-        card.dataset.image3,
+        getImageUrl(card, 'image0'),
+        getImageUrl(card, 'image1'),
+        getImageUrl(card, 'image2'),
+        getImageUrl(card, 'image3'),
       ].filter((url) => url);
 
       imageUrls.forEach((url) => {
@@ -36,6 +42,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
       modal.classList.remove('hidden');
     });
+    });
+  };
+
+  const initPagination = (section) => {
+    const list = section.querySelector('[data-blog-list]');
+    const pagination = section.querySelector('[data-blog-pagination]');
+    if (!list || !pagination) return;
+
+    const cards = Array.from(list.querySelectorAll('[data-blog-card]'));
+    if (cards.length <= postsPerPage) {
+      pagination.classList.add('hidden');
+      return;
+    }
+
+    const totalPages = Math.ceil(cards.length / postsPerPage);
+    const indicator = pagination.querySelector('[data-page-indicator]');
+    const prevBtn = pagination.querySelector('[data-page-prev]');
+    const nextBtn = pagination.querySelector('[data-page-next]');
+    let currentPage = 1;
+
+    const renderPage = (page) => {
+      currentPage = page;
+      const start = (page - 1) * postsPerPage;
+      const end = start + postsPerPage;
+      cards.forEach((card, index) => {
+        card.classList.toggle('hidden', index < start || index >= end);
+      });
+      if (indicator) {
+        indicator.textContent = `${currentPage} / ${totalPages}`;
+      }
+      if (prevBtn) {
+        prevBtn.disabled = currentPage === 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = currentPage === totalPages;
+      }
+    };
+
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+          renderPage(currentPage - 1);
+        }
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          renderPage(currentPage + 1);
+        }
+      });
+    }
+
+    pagination.classList.remove('hidden');
+    renderPage(1);
+  };
+
+  document.querySelectorAll('[data-blog-list]').forEach((list) => {
+    const section = list.closest('section');
+    bindBlogCards(section || list);
+    if (section) {
+      initPagination(section);
+    }
   });
 
   const mapTargets = document.querySelectorAll('[data-map]');
@@ -45,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const lng = parseFloat(target.dataset.lng || '');
       if (Number.isNaN(lat) || Number.isNaN(lng)) {
         target.textContent = '좌표 정보가 없습니다.';
-        target.classList.add('flex', 'items-center', 'justify-center', 'text-xs', 'text-slate-500');
+        target.classList.add('flex', 'items-center', 'justify-center', 'text-xs', 'text-slate-300');
         return;
       }
       const location = new naver.maps.LatLng(lat, lng);
