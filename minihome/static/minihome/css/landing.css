@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  font-family: 'Gowun Batang', serif;
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.minihome-shell {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.minihome-section-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+}
+
+.dark .minihome-section-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(51, 65, 85, 0.7);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+}
+
+.minihome-empty {
+  border: 1px dashed rgba(148, 163, 184, 0.5);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.dark .minihome-empty {
+  color: #cbd5f5;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.minihome-blog-card {
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(248, 250, 252, 0.9);
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.minihome-blog-card:hover {
+  border-color: rgba(30, 58, 138, 0.4);
+  transform: translateY(-2px);
+}
+
+.dark .minihome-blog-card {
+  background: rgba(15, 23, 42, 0.7);
+  border-color: rgba(51, 65, 85, 0.7);
+}
+
+.minihome-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 0.75rem;
+  color: #1e3a8a;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.dark .minihome-link {
+  color: #c7d2fe;
+  border-color: rgba(99, 102, 241, 0.4);
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.minihome-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(30, 58, 138, 0.1);
+  color: #1e3a8a;
+  font-size: 0.75rem;
+}
+
+.dark .minihome-chip {
+  background: rgba(99, 102, 241, 0.2);
+  color: #e0e7ff;
+}
+
+.minihome-map {
+  height: 220px;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: rgba(226, 232, 240, 0.6);
+}
+
+.minihome-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+
+.minihome-modal-panel {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  width: min(520px, 100%);
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.dark .minihome-modal-panel {
+  background: #0f172a;
+}
+
+.minihome-icon-btn {
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  font-size: 0.7rem;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.minihome-glow {
+  position: fixed;
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(251, 191, 36, 0.35), transparent 60%);
+  top: -120px;
+  right: -160px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.dark .minihome-glow {
+  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.2), transparent 60%);
+}

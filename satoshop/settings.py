@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'file',
     'game',
     'game.selker',
+    'minihome',
 ]
 
 MIDDLEWARE = [
@@ -171,6 +172,8 @@ else:
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
     }
+
+NAVER_MAPS_CLIENT_ID = os.getenv('NAVER_MAPS_CLIENT_ID', '')
 
 
 # Database

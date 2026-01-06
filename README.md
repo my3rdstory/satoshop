@@ -85,6 +85,13 @@ SatoShop은 비트코인 라이트닝 네트워크를 활용한 전자상거래 
 - **사용 사례 & 후기**: 굿즈샵, 디지털 콘텐츠, 오프라인 결제 등 다양한 활용 시나리오와 사용자 추천사를 통해 후킹 강화
 - **FAQ 및 최종 CTA**: 자주 묻는 질문 아코디언과 데모 링크를 포함해 가입 전 궁금증을 해소하고 행동 유도
 
+### 🏡 미니홈 (홍보용 랜딩)
+- **슬러그 기반 홍보 페이지**: `/minihome/<slug>/`에서 브랜드별 미니홈 랜딩 공개
+- **권한 기반 관리**: Django Admin에서 슬러그와 주인장(복수) 지정 후 `/minihome/<slug>/mng/`에서 편집
+- **섹션 편집 플로우**: 섹션 추가 → 미리보기(새 탭) → 공개하기
+- **섹션 유형**: 브랜드 이미지, 타이틀, 갤러리, 미니 블로그, 지도, 매장, CTA
+- **이미지 처리**: WebP 자동 변환 + 랜딩 최적화 리사이즈, S3 호환 스토리지 업로드
+
 ### 🛒 주문 관리
 - **장바구니 기능**: 단일 스토어 상품 주문 (스토어별 분리 구매)
 - **주문 추적**: 주문 상태별 관리
@@ -351,6 +358,12 @@ S3_CUSTOM_DOMAIN=your-cdn-domain.com
 # 핫링크 보호 설정 (이미지 외부 사용 방지)
 HOTLINK_PROTECTION_ENABLED=True
 HOTLINK_ALLOWED_DOMAINS=trusted-partner.com,cdn.example.com
+```
+
+### 네이버 지도 API 설정 (미니홈 지도 섹션)
+
+```env
+NAVER_MAPS_CLIENT_ID=your-naver-maps-client-id
 ```
 
 ### 알림 설정
@@ -640,6 +653,7 @@ docker run \
 ## 🔌 외부 API
 
 - **인증**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
+- **네이버 지도 API**: 미니홈 지도 섹션에서 사용합니다. `.env`의 `NAVER_MAPS_CLIENT_ID`가 필요하며, 키가 없을 경우 지도 영역은 안내 메시지로 대체됩니다.
 - **브라우저 로컬 테스트(CSRF)**: 프런트 개발 서버(예: `http://localhost:5173`)에서 `POST /api/v1/...`를 호출하면 CSRF 보호로 403이 날 수 있습니다. 이때 `CSRF_TRUSTED_ORIGINS`에 프런트 Origin을 등록하고, 먼저 `GET /api/v1/csrf/`(쿠키 발급) 호출 후 `X-CSRFToken` 헤더 + `credentials: include`로 POST를 수행하세요.
 - **엔드포인트(공지사항 목록)**: `GET /api/v1/notices/` — 활성 공지사항을 고정 여부/작성일 역순으로 반환합니다. 제목, 본문, 고정 여부, 생성·수정 시각을 포함합니다.
 - **엔드포인트(공지사항 상세)**: `GET /api/v1/notices/{notice_id}/` — 특정 공지의 제목/내용/작성자/고정 여부와 생성·수정 시각을 반환합니다.
@@ -755,6 +769,10 @@ satoshop/
 │   ├── backends.py          # S3 스토리지 백엔드
 │   ├── utils.py             # S3 파일 처리 유틸리티
 │   └── models.py            # 첨부파일, 임시 업로드 모델
+├── 📁 minihome/             # 미니홈(홍보용 랜딩) 앱
+│   ├── models.py            # 미니홈 슬러그/섹션 구성 모델
+│   ├── views.py             # 랜딩/미리보기/관리 뷰
+│   └── templates/           # 미니홈 템플릿
 ├── 📁 myshop/               # 메인 앱 (홈페이지)
 │   ├── models.py            # 사이트 설정, 환율 모델
 │   ├── views.py             # 홈페이지 뷰
