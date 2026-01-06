@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>미니홈 목록</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{% static 'js/tailwind-config.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'minihome/css/list.css' %}">
+  <script>
+    (function() {
+      let theme = 'light';
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored) {
+          theme = stored;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          theme = 'dark';
+        }
+      } catch (e) {
+        theme = 'light';
+      }
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-amber-50 via-white to-slate-50 text-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 dark:text-slate-100 text-sm">
+  <div class="minihome-glow"></div>
+  <main class="px-4 py-10">
+    <div class="minihome-shell">
+      <header class="text-center space-y-3">
+        <p class="text-xs uppercase tracking-[0.4em] text-slate-400">Minihome</p>
+        <h1 class="text-2xl font-semibold font-display">공개된 미니홈</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400">카드를 클릭하면 새 탭으로 이동합니다.</p>
+      </header>
+
+      <section class="mt-8 grid gap-4">
+        {% for minihome in minihomes %}
+          {% if minihome.domain %}
+            {% with target_link="//"|add:minihome.domain|add:"/" %}
+              <a class="minihome-card" href="{{ target_link }}" target="_blank" rel="noopener">
+                <div>
+                  <h2 class="text-lg font-semibold">{{ minihome.display_name|default:minihome.slug }}</h2>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">{{ minihome.domain }}</p>
+                </div>
+                <span class="minihome-pill">도메인 연결</span>
+              </a>
+            {% endwith %}
+          {% else %}
+            <a class="minihome-card" href="/minihome/{{ minihome.slug }}/" target="_blank" rel="noopener">
+              <div>
+                <h2 class="text-lg font-semibold">{{ minihome.display_name|default:minihome.slug }}</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">/minihome/{{ minihome.slug }}/</p>
+              </div>
+              <span class="minihome-pill">슬러그 기반</span>
+            </a>
+          {% endif %}
+        {% empty %}
+          <div class="minihome-empty">아직 공개된 미니홈이 없습니다.</div>
+        {% endfor %}
+      </section>
+    </div>
+  </main>
+
+  <script src="{% static 'minihome/js/list.js' %}"></script>
+</body>
+</html>

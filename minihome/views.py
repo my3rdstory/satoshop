@@ -281,6 +281,15 @@ def _apply_uploaded_files(minihome, sections, files):
     return sections
 
 
+def minihome_list(request):
+    minihomes = Minihome.objects.filter(is_published=True).order_by("-updated_at")
+    return render(
+        request,
+        "minihome/list.html",
+        {"minihomes": minihomes},
+    )
+
+
 def minihome_landing(request, slug):
     minihome = get_object_or_404(Minihome, slug=slug)
     if not minihome.is_published:
