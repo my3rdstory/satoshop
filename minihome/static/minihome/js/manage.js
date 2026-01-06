@@ -9,6 +9,8 @@ const initialSectionMap = new Map(
     .filter((section) => section && section.id)
     .map((section) => [section.id, section])
 );
+const backgroundRadios = document.querySelectorAll('[name="background_preset"]');
+const backgroundTarget = document.querySelector('.minihome-canvas');
 
 const generateId = () => {
   if (window.crypto && window.crypto.randomUUID) {
@@ -241,6 +243,21 @@ if (form) {
 }
 
 sectionList?.querySelectorAll('[data-section]').forEach(initializeSection);
+
+const updateBackgroundPreview = (value) => {
+  if (!backgroundTarget || !value) return;
+  const classes = Array.from(backgroundTarget.classList);
+  classes.forEach((className) => {
+    if (className.startsWith('minihome-bg--')) {
+      backgroundTarget.classList.remove(className);
+    }
+  });
+  backgroundTarget.classList.add(`minihome-bg--${value}`);
+};
+
+backgroundRadios.forEach((radio) => {
+  radio.addEventListener('change', () => updateBackgroundPreview(radio.value));
+});
 
 document.addEventListener('click', (event) => {
   const addButton = event.target.closest('[data-add-section]');

@@ -53,6 +53,18 @@ class Minihome(models.Model):
         blank=True,
         help_text="공개용 섹션 구성(JSON)",
     )
+    draft_background_preset = models.CharField(
+        max_length=50,
+        default="noir",
+        blank=True,
+        help_text="미리보기 배경 프리셋",
+    )
+    published_background_preset = models.CharField(
+        max_length=50,
+        default="noir",
+        blank=True,
+        help_text="공개 배경 프리셋",
+    )
     is_published = models.BooleanField(
         default=False,
         help_text="공개 여부",

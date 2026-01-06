@@ -19,6 +19,31 @@ SECTION_TYPES = (
     "cta",
 )
 
+BACKGROUND_PRESETS = (
+    {"value": "noir", "label": "노아르"},
+    {"value": "obsidian", "label": "옵시디언"},
+    {"value": "slate", "label": "슬레이트"},
+    {"value": "void", "label": "보이드"},
+    {"value": "nebula", "label": "네뷸라"},
+    {"value": "ember", "label": "엠버"},
+    {"value": "aurora", "label": "오로라"},
+    {"value": "frost", "label": "프로스트"},
+    {"value": "cobalt", "label": "코발트"},
+    {"value": "dusk", "label": "더스크"},
+    {"value": "graphite", "label": "그래파이트"},
+    {"value": "velvet", "label": "벨벳"},
+    {"value": "midnight", "label": "미드나이트"},
+    {"value": "eclipse", "label": "이클립스"},
+    {"value": "forge", "label": "포지"},
+    {"value": "horizon", "label": "호라이즌"},
+    {"value": "grid", "label": "그리드"},
+    {"value": "grain", "label": "그레인"},
+    {"value": "basalt", "label": "바솔트"},
+    {"value": "ripple", "label": "리플"},
+)
+DEFAULT_BACKGROUND_PRESET = "noir"
+BACKGROUND_PRESET_VALUES = {preset["value"] for preset in BACKGROUND_PRESETS}
+
 BRAND_IMAGE_WIDTH = 900
 GALLERY_IMAGE_WIDTH = 900
 BLOG_IMAGE_WIDTH = 1000
@@ -34,6 +59,12 @@ def _user_can_manage(minihome: Minihome, user) -> bool:
 
 def _limit_text(value, limit: int) -> str:
     return (value or "").strip()[:limit]
+
+
+def _normalize_background_preset(value: str) -> str:
+    if value in BACKGROUND_PRESET_VALUES:
+        return value
+    return DEFAULT_BACKGROUND_PRESET
 
 
 def _normalize_image_meta(meta):
@@ -697,6 +728,7 @@ def minihome_landing(request, slug):
 
     sections = minihome.published_sections
     can_manage = _user_can_manage(minihome, request.user)
+    background_preset = _normalize_background_preset(minihome.published_background_preset)
     return render(
         request,
         "minihome/landing.html",
@@ -705,6 +737,7 @@ def minihome_landing(request, slug):
             "sections": sections,
             "is_preview": False,
             "can_manage": can_manage,
+            "background_preset": background_preset,
         },
     )
 
@@ -716,6 +749,7 @@ def minihome_preview(request, slug):
         return HttpResponseForbidden("권한이 없습니다.")
 
     sections = minihome.draft_sections
+    background_preset = _normalize_background_preset(minihome.draft_background_preset)
     return render(
         request,
         "minihome/landing.html",
@@ -723,6 +757,7 @@ def minihome_preview(request, slug):
             "minihome": minihome,
             "sections": sections,
             "is_preview": True,
+            "background_preset": background_preset,
         },
     )
 
@@ -736,6 +771,9 @@ def minihome_manage(request, slug):
     if request.method == "POST":
         action = request.POST.get("action", "save")
         payload = request.POST.get("sections_payload", "[]")
+        background_preset = _normalize_background_preset(
+            request.POST.get("background_preset", minihome.draft_background_preset)
+        )
         try:
             sections = json.loads(payload)
         except json.JSONDecodeError:
@@ -744,15 +782,18 @@ def minihome_manage(request, slug):
         sections = _apply_uploaded_files(minihome, sections, request.FILES)
 
         minihome.draft_sections = sections
-        minihome.save(update_fields=["draft_sections", "updated_at"])
+        minihome.draft_background_preset = background_preset
+        minihome.save(update_fields=["draft_sections", "draft_background_preset", "updated_at"])
 
         if action == "publish":
             minihome.published_sections = sections
+            minihome.published_background_preset = background_preset
             minihome.is_published = True
             minihome.published_at = timezone.now()
             minihome.save(
                 update_fields=[
                     "published_sections",
+                    "published_background_preset",
                     "is_published",
                     "published_at",
                     "updated_at",
@@ -761,6 +802,9 @@ def minihome_manage(request, slug):
         if action == "preview":
             return redirect(reverse("minihome:preview", kwargs={"slug": minihome.slug}))
 
+    selected_background = _normalize_background_preset(
+        minihome.draft_background_preset or minihome.published_background_preset
+    )
     return render(
         request,
         "minihome/manage.html",
@@ -768,5 +812,7 @@ def minihome_manage(request, slug):
             "minihome": minihome,
             "sections": minihome.draft_sections,
             "section_types": SECTION_TYPES,
+            "background_presets": BACKGROUND_PRESETS,
+            "selected_background": selected_background,
         },
     )

@@ -14,6 +14,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/tailwind-config.js' %}"></script>
   <link rel="stylesheet" href="{% static 'minihome/css/landing.css' %}">
+  <link rel="stylesheet" href="{% static 'minihome/css/backgrounds.css' %}">
   <script>
     (function() {
       let theme = 'light';
@@ -32,7 +33,7 @@
     })();
   </script>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 text-sm">
+<body class="min-h-screen minihome-bg minihome-bg--{{ background_preset }} text-slate-100 text-sm">
   <div class="minihome-glow"></div>
   <main class="px-4 py-10">
     <div class="minihome-shell">

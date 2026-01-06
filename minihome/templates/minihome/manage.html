@@ -14,6 +14,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="{% static 'js/tailwind-config.js' %}"></script>
   <link rel="stylesheet" href="{% static 'minihome/css/manage.css' %}">
+  <link rel="stylesheet" href="{% static 'minihome/css/backgrounds.css' %}">
   <script>
     (function() {
       let theme = 'light';
@@ -57,35 +58,48 @@
     </header>
 
     <main class="max-w-6xl mx-auto px-4 py-6">
-      <div class="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside class="space-y-4">
-          <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
-            <h2 class="text-sm font-semibold">섹션 추가</h2>
-            <p class="text-xs text-slate-400 mt-1">좌측에서 선택하면 오른쪽 하단에 추가돼요.</p>
-            <div class="mt-4 flex flex-col gap-2">
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="brand_image">브랜드 이미지</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="title">타이틀</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
-              <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
+      <form id="minihome-form" class="space-y-4" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="sections_payload" id="sections-payload">
+        <input type="hidden" name="action" id="sections-action" value="save">
+        <div class="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside class="space-y-4">
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+              <h2 class="text-sm font-semibold">배경 효과</h2>
+              <p class="text-xs text-slate-400 mt-1">미니홈 전체 배경을 선택하세요.</p>
+              <div class="mt-4 grid grid-cols-2 gap-2">
+                {% for preset in background_presets %}
+                  <label class="minihome-bg-option">
+                    <input type="radio" name="background_preset" value="{{ preset.value }}" class="sr-only" {% if preset.value == selected_background %}checked{% endif %}>
+                    <span class="minihome-bg-preview minihome-bg--{{ preset.value }}"></span>
+                    <span class="minihome-bg-label">{{ preset.label }}</span>
+                  </label>
+                {% endfor %}
+              </div>
             </div>
-          </div>
-          <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400">
-            <p class="font-semibold text-slate-200">편집 흐름</p>
-            <ol class="mt-2 space-y-1 list-decimal list-inside">
-              <li>섹션 추가 → 내용 작성</li>
-              <li>미리보기로 새 탭 확인</li>
-              <li>문제 없으면 공개하기</li>
-            </ol>
-          </div>
-        </aside>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm">
+              <h2 class="text-sm font-semibold">섹션 추가</h2>
+              <p class="text-xs text-slate-400 mt-1">좌측에서 선택하면 오른쪽 하단에 추가돼요.</p>
+              <div class="mt-4 flex flex-col gap-2">
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="brand_image">브랜드 이미지</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="title">타이틀</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
+              </div>
+            </div>
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-400">
+              <p class="font-semibold text-slate-200">편집 흐름</p>
+              <ol class="mt-2 space-y-1 list-decimal list-inside">
+                <li>섹션 추가 → 내용 작성</li>
+                <li>미리보기로 새 탭 확인</li>
+                <li>문제 없으면 공개하기</li>
+              </ol>
+            </div>
+          </aside>
 
-        <section>
-          <form id="minihome-form" class="space-y-4" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="hidden" name="sections_payload" id="sections-payload">
-            <input type="hidden" name="action" id="sections-action" value="save">
+          <section>
             <div class="flex flex-wrap items-center gap-2 justify-between">
               <div class="text-xs text-slate-400">랜딩 가로폭에 맞춰 편집됩니다.</div>
               <div class="flex gap-2">
@@ -95,7 +109,7 @@
               </div>
             </div>
 
-            <div class="minihome-canvas" data-section-list>
+            <div class="minihome-canvas minihome-bg minihome-bg--{{ selected_background }}" data-section-list>
               {% for section in sections %}
                 <div class="minihome-section" data-section data-section-id="{{ section.id }}" data-section-type="{{ section.type }}">
                   <div class="minihome-section-header">
@@ -207,9 +221,9 @@
                 </div>
               {% endfor %}
             </div>
-          </form>
-        </section>
-      </div>
+          </section>
+        </div>
+      </form>
     </main>
   </div>
 
