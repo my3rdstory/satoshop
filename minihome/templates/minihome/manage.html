@@ -44,7 +44,11 @@
           {% else %}
             <span class="px-2 py-1 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300">비공개</span>
           {% endif %}
-          <a class="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:border-slate-400" href="/minihome/{{ minihome.slug }}/" target="_blank">랜딩 보기</a>
+          {% if minihome.domain %}
+            <a class="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:border-slate-400" href="//{{ minihome.domain }}/" target="_blank">랜딩 보기</a>
+          {% else %}
+            <a class="px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 hover:border-slate-400" href="/minihome/{{ minihome.slug }}/" target="_blank">랜딩 보기</a>
+          {% endif %}
         </div>
       </div>
     </header>

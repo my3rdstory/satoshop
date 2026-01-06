@@ -1,5 +1,22 @@
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.db import models
+
+
+def normalize_domain(value: str) -> str:
+    if not value:
+        return ""
+    domain = value.strip().lower()
+    if not domain:
+        return ""
+    if "://" in domain:
+        parsed = urlparse(domain)
+        domain = parsed.hostname or domain
+    else:
+        domain = domain.split("/")[0]
+    domain = domain.split(":")[0].strip()
+    return domain
 
 
 class Minihome(models.Model):
@@ -7,6 +24,13 @@ class Minihome(models.Model):
         max_length=100,
         unique=True,
         help_text="미니홈 접속 라우트 슬러그 (예: myhome)",
+    )
+    domain = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text="연결할 도메인 (비우면 /minihome/<slug>/ 사용)",
     )
     display_name = models.CharField(
         max_length=100,
@@ -43,3 +67,8 @@ class Minihome(models.Model):
 
     def __str__(self) -> str:
         return self.display_name or self.slug
+
+    def save(self, *args, **kwargs):
+        normalized = normalize_domain(self.domain)
+        self.domain = normalized or None
+        super().save(*args, **kwargs)
