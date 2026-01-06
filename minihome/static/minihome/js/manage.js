@@ -21,6 +21,7 @@ const sectionTypeLabels = {
   store: '매장',
 };
 let activeDataPanelId = null;
+const BLOG_PAGE_SIZE = 10;
 
 const generateId = () => {
   if (window.crypto && window.crypto.randomUUID) {
@@ -94,6 +95,42 @@ const showDataPanel = (sectionId, sectionType) => {
     dataEmptyHint.classList.add('hidden');
   }
   updateDataHeader(sectionType || panel.dataset.sectionType);
+  if (panel.dataset.sectionType === 'mini_blog') {
+    updateBlogPagination(panel);
+  }
+};
+
+const updateBlogPagination = (panel, options = {}) => {
+  if (!panel) return;
+  const container = panel.querySelector('[data-blog-posts]');
+  const pagination = panel.querySelector('[data-blog-pagination]');
+  if (!container || !pagination) return;
+  const posts = Array.from(container.querySelectorAll('[data-blog-post]'));
+  const totalPages = Math.max(1, Math.ceil(posts.length / BLOG_PAGE_SIZE));
+  let page = Number(pagination.dataset.page || 1);
+  if (options.toLast) {
+    page = totalPages;
+  }
+  if (options.page) {
+    page = Number(options.page);
+  }
+  if (page < 1) page = 1;
+  if (page > totalPages) page = totalPages;
+  pagination.dataset.page = String(page);
+  const start = (page - 1) * BLOG_PAGE_SIZE;
+  const end = start + BLOG_PAGE_SIZE;
+  posts.forEach((post, index) => {
+    post.classList.toggle('hidden', index < start || index >= end);
+  });
+  pagination.classList.toggle('hidden', totalPages <= 1);
+  const status = pagination.querySelector('[data-page-status]');
+  if (status) {
+    status.textContent = `${page} / ${totalPages}`;
+  }
+  const prev = pagination.querySelector('[data-page-control="prev"]');
+  const next = pagination.querySelector('[data-page-control="next"]');
+  if (prev) prev.disabled = page <= 1;
+  if (next) next.disabled = page >= totalPages;
 };
 
 const clearImageMeta = (scope) => {
@@ -202,6 +239,7 @@ const initializePanel = (panel) => {
   const blogContainer = panel.querySelector('[data-blog-posts]');
   if (blogContainer) {
     toggleEmptyHint(blogContainer, '[data-blog-post]');
+    updateBlogPagination(panel);
   }
   const storeContainer = panel.querySelector('[data-store-items]');
   if (storeContainer) {
@@ -302,6 +340,7 @@ const addBlogPost = (panel) => {
   initializeSection(post);
   bindBlogPreview(post);
   toggleEmptyHint(container, '[data-blog-post]');
+  updateBlogPagination(panel, { toLast: true });
 };
 
 const addStoreItem = (panel) => {
@@ -541,6 +580,16 @@ document.addEventListener('click', (event) => {
     resetDataPanel();
     return;
   }
+  if (action === 'blog-page-prev' || action === 'blog-page-next') {
+    event.preventDefault();
+    const panel = actionButton.closest('[data-section-panel]');
+    if (!panel) return;
+    const pagination = panel.querySelector('[data-blog-pagination]');
+    const current = Number(pagination?.dataset.page || 1);
+    const nextPage = action === 'blog-page-prev' ? current - 1 : current + 1;
+    updateBlogPagination(panel, { page: nextPage });
+    return;
+  }
   if (['save', 'preview', 'publish'].includes(action)) {
     event.preventDefault();
     submitWithAction(action, action === 'preview' ? '_blank' : '_self');
@@ -599,8 +648,12 @@ document.addEventListener('click', (event) => {
     event.preventDefault();
     const post = actionButton.closest('[data-blog-post]');
     const container = post?.closest('[data-blog-posts]');
+    const panel = actionButton.closest('[data-section-panel]');
     if (post) post.remove();
     toggleEmptyHint(container, '[data-blog-post]');
+    if (panel) {
+      updateBlogPagination(panel);
+    }
     return;
   }
 

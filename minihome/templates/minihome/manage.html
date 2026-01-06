@@ -295,7 +295,7 @@
                         <h4 class="text-sm font-semibold">미니 블로그 데이터</h4>
                         <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
                       </div>
-                      <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-posts data-blog-list>
+                      <div class="mt-4 space-y-3" data-blog-posts data-blog-list>
                         {% for post in section.data.posts %}
                           <div class="minihome-blog-item" data-blog-post data-post-id="{{ post.id }}">
                             <div class="minihome-blog-card">
@@ -391,6 +391,11 @@
                         {% endfor %}
                         <div class="minihome-empty {% if section.data.posts|length %}hidden{% endif %}" data-empty-hint>등록된 글이 없습니다.</div>
                       </div>
+                      <div class="minihome-pagination hidden" data-blog-pagination>
+                        <button type="button" class="minihome-ghost-btn" data-action="blog-page-prev" data-page-control="prev">이전</button>
+                        <span class="text-xs text-slate-400" data-page-status>1 / 1</span>
+                        <button type="button" class="minihome-ghost-btn" data-action="blog-page-next" data-page-control="next">다음</button>
+                      </div>
                       <div class="minihome-owner-tools">
                         <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
                       </div>
@@ -402,7 +407,7 @@
                         <h4 class="text-sm font-semibold">매장 데이터</h4>
                         <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
                       </div>
-                      <div class="mt-4 grid gap-3 md:grid-cols-3" data-store-items>
+                      <div class="mt-4 space-y-3" data-store-items>
                         {% for store in section.data.stores %}
                           <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="{{ store.id }}">
                             <div class="minihome-store-card">
@@ -575,8 +580,13 @@
         <h4 class="text-sm font-semibold">미니 블로그 데이터</h4>
         <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
       </div>
-      <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-posts data-blog-list>
+      <div class="mt-4 space-y-3" data-blog-posts data-blog-list>
         <div class="minihome-empty" data-empty-hint>등록된 글이 없습니다.</div>
+      </div>
+      <div class="minihome-pagination hidden" data-blog-pagination>
+        <button type="button" class="minihome-ghost-btn" data-action="blog-page-prev" data-page-control="prev">이전</button>
+        <span class="text-xs text-slate-400" data-page-status>1 / 1</span>
+        <button type="button" class="minihome-ghost-btn" data-action="blog-page-next" data-page-control="next">다음</button>
       </div>
       <div class="minihome-owner-tools">
         <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
@@ -590,7 +600,7 @@
         <h4 class="text-sm font-semibold">매장 데이터</h4>
         <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
       </div>
-      <div class="mt-4 grid gap-3 md:grid-cols-3" data-store-items>
+      <div class="mt-4 space-y-3" data-store-items>
         <div class="minihome-empty" data-empty-hint>등록된 매장이 없습니다.</div>
       </div>
       <div class="minihome-owner-tools">
