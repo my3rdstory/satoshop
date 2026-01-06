@@ -2,6 +2,13 @@ const sectionList = document.querySelector('[data-section-list]');
 const form = document.getElementById('minihome-form');
 const payloadInput = document.getElementById('sections-payload');
 const actionInput = document.getElementById('sections-action');
+const initialSectionsNode = document.getElementById('minihome-initial-sections');
+const initialSections = initialSectionsNode ? JSON.parse(initialSectionsNode.textContent || '[]') : [];
+const initialSectionMap = new Map(
+  initialSections
+    .filter((section) => section && section.id)
+    .map((section) => [section.id, section])
+);
 
 const generateId = () => {
   if (window.crypto && window.crypto.randomUUID) {
@@ -133,20 +140,6 @@ const addSection = (type) => {
   initializeSection(section);
 };
 
-const addGalleryItem = (section) => {
-  const container = section.querySelector('[data-gallery-items]');
-  if (!container) return;
-  removeEmptyHint(container);
-  const itemId = generateId();
-  const sectionId = section.dataset.sectionId;
-  const item = renderTemplate('template-gallery-item', {
-    '__SECTION_ID__': sectionId,
-    '__ITEM_ID__': itemId,
-  });
-  container.appendChild(item);
-  initializeSection(section);
-};
-
 const addStoreItem = (section) => {
   const container = section.querySelector('[data-store-items]');
   if (!container) return;
@@ -156,42 +149,6 @@ const addStoreItem = (section) => {
     '__ITEM_ID__': itemId,
   });
   container.appendChild(item);
-};
-
-const addBlogPost = (section) => {
-  const container = section.querySelector('[data-blog-posts]');
-  if (!container) return;
-  removeEmptyHint(container);
-  const postId = generateId();
-  const sectionId = section.dataset.sectionId;
-  const post = renderTemplate('template-blog-post', {
-    '__SECTION_ID__': sectionId,
-    '__POST_ID__': postId,
-  });
-  container.appendChild(post);
-  initializeSection(section);
-};
-
-const openPostModal = (post) => {
-  const modal = post.querySelector('[data-post-modal]');
-  if (modal) {
-    modal.classList.remove('hidden');
-  }
-};
-
-const closePostModal = (post) => {
-  const modal = post.querySelector('[data-post-modal]');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
-};
-
-const updatePostPreview = (post) => {
-  const preview = post.querySelector('[data-post-preview]');
-  const text = post.querySelector('[data-field="text"]')?.value || '';
-  if (preview) {
-    preview.textContent = text;
-  }
 };
 
 const collectSections = () => {
@@ -222,44 +179,19 @@ const collectSections = () => {
       return;
     }
     if (type === 'gallery') {
-      const items = [];
-      section.querySelectorAll('[data-gallery-item]').forEach((item) => {
-        items.push({
-          id: item.dataset.itemId,
-          description: item.querySelector('[data-field="description"]')?.value || '',
-          image: readImageMeta(item),
-        });
-      });
-      sections.push({
-        id,
-        type,
-        data: { items },
-      });
+      const initial = initialSectionMap.get(id);
+      const items = initial?.data?.items && Array.isArray(initial.data.items)
+        ? initial.data.items
+        : [];
+      sections.push({ id, type, data: { items } });
       return;
     }
     if (type === 'mini_blog') {
-      const posts = [];
-      section.querySelectorAll('[data-blog-post]').forEach((post) => {
-        const modal = post.querySelector('[data-post-modal]');
-        const text = modal?.querySelector('[data-field="text"]')?.value || '';
-        const images = [];
-        modal?.querySelectorAll('[data-dropzone]').forEach((zone) => {
-          images.push(readImageMeta(zone));
-        });
-        while (images.length < 4) {
-          images.push(null);
-        }
-        posts.push({
-          id: post.dataset.postId,
-          text,
-          images,
-        });
-      });
-      sections.push({
-        id,
-        type,
-        data: { posts },
-      });
+      const initial = initialSectionMap.get(id);
+      const posts = initial?.data?.posts && Array.isArray(initial.data.posts)
+        ? initial.data.posts
+        : [];
+      sections.push({ id, type, data: { posts } });
       return;
     }
     if (type === 'map') {
@@ -353,24 +285,10 @@ document.addEventListener('click', (event) => {
     return;
   }
 
-  if (action === 'add-gallery-item') {
-    event.preventDefault();
-    const section = actionButton.closest('[data-section]');
-    if (section) addGalleryItem(section);
-    return;
-  }
-
   if (action === 'add-store-item') {
     event.preventDefault();
     const section = actionButton.closest('[data-section]');
     if (section) addStoreItem(section);
-    return;
-  }
-
-  if (action === 'add-blog-post') {
-    event.preventDefault();
-    const section = actionButton.closest('[data-section]');
-    if (section) addBlogPost(section);
     return;
   }
 
@@ -381,33 +299,4 @@ document.addEventListener('click', (event) => {
     return;
   }
 
-  if (action === 'remove-post') {
-    event.preventDefault();
-    const post = actionButton.closest('[data-blog-post]');
-    if (post) post.remove();
-    return;
-  }
-
-  if (action === 'open-post-modal') {
-    event.preventDefault();
-    const post = actionButton.closest('[data-blog-post]');
-    if (post) openPostModal(post);
-    return;
-  }
-
-  if (action === 'close-post-modal') {
-    event.preventDefault();
-    const post = actionButton.closest('[data-blog-post]');
-    if (post) {
-      closePostModal(post);
-      updatePostPreview(post);
-    }
-  }
-});
-
-document.addEventListener('input', (event) => {
-  const textArea = event.target.closest('[data-field="text"]');
-  if (!textArea) return;
-  const post = textArea.closest('[data-blog-post]');
-  if (post) updatePostPreview(post);
 });

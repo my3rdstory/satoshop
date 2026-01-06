@@ -130,4 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  document.querySelectorAll('[data-toggle-form]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const targetId = button.dataset.toggleForm;
+      const target = targetId ? document.getElementById(targetId) : null;
+      if (target) {
+        target.classList.toggle('hidden');
+      }
+    });
+  });
 });

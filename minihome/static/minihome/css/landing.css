@@ -99,6 +99,41 @@ body {
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.4);
 }
 
+.minihome-owner-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.minihome-inline-form {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  background: rgba(15, 23, 42, 0.8);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.minihome-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: #cbd5f5;
+}
+
+.minihome-field input,
+.minihome-field textarea {
+  border: 1px solid #334155;
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  background: #0f172a;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
 .minihome-pagination {
   display: flex;
   align-items: center;

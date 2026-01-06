@@ -81,6 +81,26 @@
               {% empty %}
                 <div class="minihome-empty">갤러리 아이템이 없습니다.</div>
               {% endfor %}
+              {% if can_manage %}
+                <div class="minihome-owner-tools">
+                  <button type="button" class="minihome-link" data-toggle-form="gallery-form-{{ section.id }}">갤러리 아이템 추가</button>
+                  <form id="gallery-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_gallery_item' slug=minihome.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="section_id" value="{{ section.id }}">
+                    <label class="minihome-field">
+                      <span>설명 (최대 100자)</span>
+                      <textarea name="description" rows="3" maxlength="100"></textarea>
+                    </label>
+                    <label class="minihome-field">
+                      <span>이미지 업로드</span>
+                      <input type="file" name="image" accept="image/*">
+                    </label>
+                    <div class="flex justify-end">
+                      <button type="submit" class="minihome-link">저장</button>
+                    </div>
+                  </form>
+                </div>
+              {% endif %}
             </section>
           {% endif %}
 
@@ -90,6 +110,40 @@
                 <h3 class="text-sm font-semibold">미니 블로그</h3>
                 <span class="text-xs text-slate-300">클릭해서 자세히 보기</span>
               </div>
+              {% if can_manage %}
+                <div class="minihome-owner-tools">
+                  <button type="button" class="minihome-link" data-toggle-form="blog-form-{{ section.id }}">글쓰기</button>
+                  <form id="blog-form-{{ section.id }}" class="minihome-inline-form hidden" method="post" enctype="multipart/form-data" action="{% url 'minihome:add_blog_post' slug=minihome.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="section_id" value="{{ section.id }}">
+                    <label class="minihome-field">
+                      <span>내용</span>
+                      <textarea name="text" rows="6" maxlength="1000"></textarea>
+                    </label>
+                    <div class="grid gap-3 md:grid-cols-2">
+                      <label class="minihome-field">
+                        <span>이미지 1</span>
+                        <input type="file" name="image_0" accept="image/*">
+                      </label>
+                      <label class="minihome-field">
+                        <span>이미지 2</span>
+                        <input type="file" name="image_1" accept="image/*">
+                      </label>
+                      <label class="minihome-field">
+                        <span>이미지 3</span>
+                        <input type="file" name="image_2" accept="image/*">
+                      </label>
+                      <label class="minihome-field">
+                        <span>이미지 4</span>
+                        <input type="file" name="image_3" accept="image/*">
+                      </label>
+                    </div>
+                    <div class="flex justify-end">
+                      <button type="submit" class="minihome-link">저장</button>
+                    </div>
+                  </form>
+                </div>
+              {% endif %}
               <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
                 {% for post in section.data.posts %}
                   <button type="button" class="minihome-blog-card" data-blog-card data-text="{{ post.text|escape }}"

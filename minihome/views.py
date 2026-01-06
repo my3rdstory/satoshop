@@ -290,12 +290,134 @@ def minihome_list(request):
     )
 
 
+def _find_section(sections, section_id, section_type):
+    for section in sections:
+        if section.get("id") == section_id and section.get("type") == section_type:
+            return section
+    return None
+
+
+@login_required
+def minihome_add_gallery_item(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    if not section_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "gallery")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    description = _limit_text(request.POST.get("description"), 100)
+    image_file = request.FILES.get("image")
+    image_meta = None
+    if image_file:
+        upload_result = upload_minihome_image(
+            image_file,
+            prefix=f"minihome/{minihome.slug}/gallery",
+            target_width=GALLERY_IMAGE_WIDTH,
+        )
+        if upload_result.get("success"):
+            image_meta = {
+                "path": upload_result["file_path"],
+                "url": upload_result["file_url"],
+                "width": upload_result["width"],
+                "height": upload_result["height"],
+            }
+
+    items = section["data"].get("items", [])
+    if not isinstance(items, list):
+        items = []
+    items.append(
+        {
+            "id": uuid.uuid4().hex,
+            "description": description,
+            "image": image_meta,
+        }
+    )
+    section["data"]["items"] = items
+
+    sections = _normalize_sections(sections)
+    minihome.draft_sections = sections
+    minihome.published_sections = sections
+    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
+@login_required
+def minihome_add_blog_post(request, slug):
+    minihome = get_object_or_404(Minihome, slug=slug)
+    if not _user_can_manage(minihome, request.user):
+        return HttpResponseForbidden("권한이 없습니다.")
+
+    if request.method != "POST":
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    section_id = request.POST.get("section_id")
+    if not section_id:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    sections = _normalize_sections(minihome.published_sections)
+    section = _find_section(sections, section_id, "mini_blog")
+    if not section:
+        return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+    text = _limit_text(request.POST.get("text"), 1000)
+    images = []
+    for index in range(4):
+        file_field = f"image_{index}"
+        image_file = request.FILES.get(file_field)
+        image_meta = None
+        if image_file:
+            upload_result = upload_minihome_image(
+                image_file,
+                prefix=f"minihome/{minihome.slug}/blog",
+                target_width=BLOG_IMAGE_WIDTH,
+            )
+            if upload_result.get("success"):
+                image_meta = {
+                    "path": upload_result["file_path"],
+                    "url": upload_result["file_url"],
+                    "width": upload_result["width"],
+                    "height": upload_result["height"],
+                }
+        images.append(image_meta)
+
+    posts = section["data"].get("posts", [])
+    if not isinstance(posts, list):
+        posts = []
+    posts.append(
+        {
+            "id": uuid.uuid4().hex,
+            "text": text,
+            "images": images,
+        }
+    )
+    section["data"]["posts"] = posts
+
+    sections = _normalize_sections(sections)
+    minihome.draft_sections = sections
+    minihome.published_sections = sections
+    minihome.save(update_fields=["draft_sections", "published_sections", "updated_at"])
+
+    return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
+
+
 def minihome_landing(request, slug):
     minihome = get_object_or_404(Minihome, slug=slug)
     if not minihome.is_published:
         raise Http404
 
     sections = minihome.published_sections
+    can_manage = _user_can_manage(minihome, request.user)
     return render(
         request,
         "minihome/landing.html",
@@ -308,6 +430,7 @@ def minihome_landing(request, slug):
                 for section in sections
             ),
             "is_preview": False,
+            "can_manage": can_manage,
         },
     )
 
