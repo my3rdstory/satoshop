@@ -49,6 +49,7 @@ BACKGROUND_PRESETS = (
 )
 DEFAULT_BACKGROUND_PRESET = "noir"
 BACKGROUND_PRESET_VALUES = {preset["value"] for preset in BACKGROUND_PRESETS}
+BACKGROUND_PRESET_LABELS = {preset["value"]: preset["label"] for preset in BACKGROUND_PRESETS}
 
 BRAND_IMAGE_WIDTH = 900
 GALLERY_IMAGE_WIDTH = 900
@@ -826,6 +827,10 @@ def minihome_manage(request, slug):
     selected_background = _normalize_background_preset(
         minihome.draft_background_preset or minihome.published_background_preset
     )
+    selected_background_label = BACKGROUND_PRESET_LABELS.get(
+        selected_background,
+        BACKGROUND_PRESET_LABELS.get(DEFAULT_BACKGROUND_PRESET, ""),
+    )
     return render(
         request,
         "minihome/manage.html",
@@ -835,5 +840,6 @@ def minihome_manage(request, slug):
             "section_types": SECTION_TYPES,
             "background_presets": BACKGROUND_PRESETS,
             "selected_background": selected_background,
+            "selected_background_label": selected_background_label,
         },
     )

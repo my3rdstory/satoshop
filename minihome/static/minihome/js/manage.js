@@ -2,8 +2,13 @@ const sectionList = document.querySelector('[data-section-list]');
 const form = document.getElementById('minihome-form');
 const payloadInput = document.getElementById('sections-payload');
 const actionInput = document.getElementById('sections-action');
-const backgroundRadios = document.querySelectorAll('[name="background_preset"]');
+const backgroundChoiceInputs = document.querySelectorAll('[data-bg-choice]');
 const backgroundTarget = document.querySelector('.minihome-canvas');
+const backgroundValueInput = document.getElementById('background-preset');
+const backgroundModal = document.querySelector('[data-background-modal]');
+const backgroundPreview = document.querySelector('[data-current-bg]');
+const backgroundLabelTargets = document.querySelectorAll('[data-current-bg-label]');
+const backgroundModalPreview = document.querySelector('[data-modal-current-bg]');
 const blogPreviewPlaceholder = '내용을 입력해주세요.';
 
 const generateId = () => {
@@ -348,19 +353,65 @@ sectionList?.querySelectorAll('[data-store-items]').forEach((container) => {
   toggleEmptyHint(container, '[data-store-item]');
 });
 
-const updateBackgroundPreview = (value) => {
-  if (!backgroundTarget || !value) return;
-  const classes = Array.from(backgroundTarget.classList);
+const updateBackgroundPreview = (element, value) => {
+  if (!element || !value) return;
+  const classes = Array.from(element.classList);
   classes.forEach((className) => {
     if (className.startsWith('minihome-bg--')) {
-      backgroundTarget.classList.remove(className);
+      element.classList.remove(className);
     }
   });
-  backgroundTarget.classList.add(`minihome-bg--${value}`);
+  element.classList.add(`minihome-bg--${value}`);
 };
 
-backgroundRadios.forEach((radio) => {
-  radio.addEventListener('change', () => updateBackgroundPreview(radio.value));
+const setBackgroundPreset = (value, label) => {
+  if (!value) return;
+  if (backgroundValueInput) {
+    backgroundValueInput.value = value;
+  }
+  updateBackgroundPreview(backgroundTarget, value);
+  updateBackgroundPreview(backgroundPreview, value);
+  updateBackgroundPreview(backgroundModalPreview, value);
+  if (label) {
+    backgroundLabelTargets.forEach((target) => {
+      target.textContent = label;
+    });
+  }
+};
+
+const openBackgroundModal = () => {
+  if (!backgroundModal) return;
+  backgroundModal.classList.remove('hidden');
+  if (backgroundValueInput) {
+    backgroundChoiceInputs.forEach((input) => {
+      input.checked = input.value === backgroundValueInput.value;
+    });
+  }
+};
+
+const closeBackgroundModal = () => {
+  if (!backgroundModal) return;
+  backgroundModal.classList.add('hidden');
+};
+
+backgroundChoiceInputs.forEach((input) => {
+  input.addEventListener('change', () => {
+    setBackgroundPreset(input.value, input.dataset.label || '');
+    closeBackgroundModal();
+  });
+});
+
+backgroundModal?.addEventListener('click', (event) => {
+  if (event.target === backgroundModal) {
+    closeBackgroundModal();
+  }
+});
+
+document.querySelectorAll('[data-modal-close]').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.preventDefault();
+    closeBackgroundModal();
+  });
 });
 
 document.addEventListener('click', (event) => {
@@ -374,6 +425,11 @@ document.addEventListener('click', (event) => {
   if (!actionButton) return;
 
   const action = actionButton.dataset.action;
+  if (action === 'open-background-modal') {
+    event.preventDefault();
+    openBackgroundModal();
+    return;
+  }
   if (['save', 'preview', 'publish'].includes(action)) {
     event.preventDefault();
     submitWithAction(action, action === 'preview' ? '_blank' : '_self');
