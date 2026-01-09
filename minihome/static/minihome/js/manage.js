@@ -15,6 +15,7 @@ const dataPanelContainer = document.querySelector('[data-section-data-panels]');
 const dataEmptyHint = document.querySelector('[data-data-empty]');
 const dataTitle = document.querySelector('[data-data-title]');
 const dataSubtitle = document.querySelector('[data-data-subtitle]');
+const DATA_PANEL_PARAM = 'data_panel';
 const sectionTypeLabels = {
   gallery: '갤러리',
   mini_blog: '미니 블로그',
@@ -49,6 +50,18 @@ const getDataPanel = (sectionId) => {
   );
 };
 
+const updateDataPanelParam = (sectionId) => {
+  const params = new URLSearchParams(window.location.search);
+  if (sectionId) {
+    params.set(DATA_PANEL_PARAM, sectionId);
+  } else {
+    params.delete(DATA_PANEL_PARAM);
+  }
+  const nextQuery = params.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
+};
+
 const updateDataHeader = (sectionType) => {
   const label = sectionTypeLabels[sectionType] || '데이터';
   if (dataTitle) {
@@ -77,6 +90,7 @@ const resetDataPanel = () => {
     dataEmptyHint.classList.remove('hidden');
   }
   resetDataHeader();
+  updateDataPanelParam('');
 };
 
 const showDataPanel = (sectionId, sectionType) => {
@@ -95,6 +109,7 @@ const showDataPanel = (sectionId, sectionType) => {
     dataEmptyHint.classList.add('hidden');
   }
   updateDataHeader(sectionType || panel.dataset.sectionType);
+  updateDataPanelParam(sectionId);
   if (panel.dataset.sectionType === 'mini_blog') {
     updateBlogPagination(panel);
   }
@@ -491,7 +506,21 @@ dataPanelContainer?.querySelectorAll('[data-blog-posts]').forEach((container) =>
 dataPanelContainer?.querySelectorAll('[data-store-items]').forEach((container) => {
   toggleEmptyHint(container, '[data-store-item]');
 });
-resetDataPanel();
+
+const initializeDataPanelFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  const sectionId = params.get(DATA_PANEL_PARAM);
+  if (!sectionId) {
+    resetDataPanel();
+    return;
+  }
+  const panel = getDataPanel(sectionId);
+  if (!panel) {
+    resetDataPanel();
+    return;
+  }
+  showDataPanel(sectionId, panel.dataset.sectionType);
+};
 
 const updateBackgroundPreview = (element, value) => {
   if (!element || !value) return;
@@ -690,3 +719,4 @@ const showPublishNotice = () => {
 };
 
 showPublishNotice();
+initializeDataPanelFromUrl();
