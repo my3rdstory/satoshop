@@ -143,12 +143,31 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.removeChild(textarea);
   };
 
+  const showCopyFeedback = (target) => {
+    if (!target) return;
+    const original = target.dataset.copyLabel || target.textContent;
+    target.dataset.copyLabel = original;
+    target.textContent = '복사되었습니다';
+    target.classList.add('minihome-copy--done');
+    const previous = target.dataset.copyTimeoutId;
+    if (previous) {
+      window.clearTimeout(Number(previous));
+    }
+    const timeoutId = window.setTimeout(() => {
+      target.textContent = target.dataset.copyLabel || original;
+      target.classList.remove('minihome-copy--done');
+      target.dataset.copyTimeoutId = '';
+    }, 2000);
+    target.dataset.copyTimeoutId = String(timeoutId);
+  };
+
   const bindCopyTargets = () => {
     document.querySelectorAll('[data-copy-text]').forEach((target) => {
       const text = target.dataset.copyText || '';
       const handleCopy = async (event) => {
         event.preventDefault();
         await copyToClipboard(text);
+        showCopyFeedback(target);
       };
       target.addEventListener('click', handleCopy);
       target.addEventListener('keydown', (event) => {

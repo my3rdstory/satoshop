@@ -70,6 +70,12 @@ body {
   cursor: pointer;
 }
 
+.minihome-copy--done {
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #d1fae5;
+  background: rgba(15, 23, 42, 0.95);
+}
+
 .minihome-owner-item {
   display: flex;
   align-items: center;
