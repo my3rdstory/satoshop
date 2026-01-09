@@ -124,7 +124,7 @@
 
                       {% if section.type == 'brand_image' %}
                         <div class="space-y-3">
-                          <div class="minihome-dropzone" data-dropzone>
+                          <div class="minihome-dropzone minihome-dropzone--brand" data-dropzone>
                             <input type="file" accept="image/*" name="brand_image__{{ section.id }}" data-image-input class="sr-only">
                             <div class="minihome-dropzone-inner">
                               <img src="{{ section.data.image.url|default:'' }}" alt="브랜드 이미지" class="minihome-preview {% if not section.data.image.url %}hidden{% endif %}" data-image-preview>
@@ -188,7 +188,7 @@
                       {% if section.type == 'cta' %}
                         <div class="space-y-3">
                           <div class="space-y-2" data-cta-profile>
-                            <div class="minihome-dropzone" data-dropzone>
+                            <div class="minihome-dropzone minihome-dropzone--cta-profile" data-dropzone>
                               <input type="file" accept="image/*" name="cta_profile__{{ section.id }}" data-image-input class="sr-only">
                               <div class="minihome-dropzone-inner">
                                 <img src="{{ section.data.profile_image.url|default:'' }}" alt="프로필 이미지" class="minihome-preview {% if not section.data.profile_image.url %}hidden{% endif %}" data-image-preview>
@@ -219,7 +219,7 @@
                             </label>
                           </div>
                           <div class="space-y-2" data-cta-donation-qr>
-                            <div class="minihome-dropzone" data-dropzone>
+                            <div class="minihome-dropzone minihome-dropzone--cta-qr" data-dropzone>
                               <input type="file" accept="image/*" name="cta_donation_qr__{{ section.id }}" data-image-input class="sr-only">
                               <div class="minihome-dropzone-inner">
                                 <img src="{{ section.data.donation_qr.url|default:'' }}" alt="후원 QR" class="minihome-preview {% if not section.data.donation_qr.url %}hidden{% endif %}" data-image-preview>
@@ -271,7 +271,7 @@
                           <div class="minihome-gallery-item" data-gallery-item data-item-id="{{ item.id }}">
                             <div class="flex flex-col gap-4 {% if forloop.counter0|divisibleby:2 %}sm:flex-row{% else %}sm:flex-row-reverse{% endif %}" data-gallery-row>
                               <div class="sm:w-1/2">
-                                <div class="minihome-dropzone" data-dropzone>
+                                <div class="minihome-dropzone minihome-dropzone--gallery" data-dropzone>
                                   <input type="file" accept="image/*" name="gallery__{{ section.id }}__{{ item.id }}" data-image-input class="sr-only">
                                   <div class="minihome-dropzone-inner">
                                     <img src="{{ item.image.url|default:'' }}" alt="갤러리 이미지" class="minihome-preview {% if not item.image.url %}hidden{% endif %}" data-image-preview>
@@ -334,7 +334,7 @@
                               </label>
                               <div class="grid gap-3 md:grid-cols-2">
                                 <div class="space-y-2" data-blog-image data-image-slot="0">
-                                  <div class="minihome-dropzone" data-dropzone>
+                                  <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
                                     <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__0" data-image-input class="sr-only">
                                     <div class="minihome-dropzone-inner">
                                       <img src="{{ post.images.0.url|default:'' }}" alt="이미지 1" class="minihome-preview {% if not post.images.0.url %}hidden{% endif %}" data-image-preview>
@@ -351,7 +351,7 @@
                                   <input type="hidden" data-image-meta="height" value="{{ post.images.0.height|default:'' }}">
                                 </div>
                                 <div class="space-y-2" data-blog-image data-image-slot="1">
-                                  <div class="minihome-dropzone" data-dropzone>
+                                  <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
                                     <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__1" data-image-input class="sr-only">
                                     <div class="minihome-dropzone-inner">
                                       <img src="{{ post.images.1.url|default:'' }}" alt="이미지 2" class="minihome-preview {% if not post.images.1.url %}hidden{% endif %}" data-image-preview>
@@ -368,7 +368,7 @@
                                   <input type="hidden" data-image-meta="height" value="{{ post.images.1.height|default:'' }}">
                                 </div>
                                 <div class="space-y-2" data-blog-image data-image-slot="2">
-                                  <div class="minihome-dropzone" data-dropzone>
+                                  <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
                                     <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__2" data-image-input class="sr-only">
                                     <div class="minihome-dropzone-inner">
                                       <img src="{{ post.images.2.url|default:'' }}" alt="이미지 3" class="minihome-preview {% if not post.images.2.url %}hidden{% endif %}" data-image-preview>
@@ -385,7 +385,7 @@
                                   <input type="hidden" data-image-meta="height" value="{{ post.images.2.height|default:'' }}">
                                 </div>
                                 <div class="space-y-2" data-blog-image data-image-slot="3">
-                                  <div class="minihome-dropzone" data-dropzone>
+                                  <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
                                     <input type="file" accept="image/*" name="blog__{{ section.id }}__{{ post.id }}__3" data-image-input class="sr-only">
                                     <div class="minihome-dropzone-inner">
                                       <img src="{{ post.images.3.url|default:'' }}" alt="이미지 4" class="minihome-preview {% if not post.images.3.url %}hidden{% endif %}" data-image-preview>
@@ -455,7 +455,7 @@
                                 <input type="text" data-field="map_url" maxlength="200" value="{{ store.map_url|default:'' }}">
                               </label>
                               <div class="space-y-2">
-                                <div class="minihome-dropzone" data-dropzone>
+                                <div class="minihome-dropzone minihome-dropzone--store" data-dropzone>
                                   <input type="file" accept="image/*" name="store__{{ section.id }}__{{ store.id }}" data-image-input class="sr-only">
                                   <div class="minihome-dropzone-inner">
                                     <img src="{{ store.cover_image.url|default:'' }}" alt="매장 커버 이미지" class="minihome-preview {% if not store.cover_image.url %}hidden{% endif %}" data-image-preview>
@@ -500,7 +500,7 @@
         <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
       </div>
       <div class="space-y-3">
-        <div class="minihome-dropzone" data-dropzone>
+        <div class="minihome-dropzone minihome-dropzone--brand" data-dropzone>
           <input type="file" accept="image/*" name="brand_image____SECTION_ID__" data-image-input class="sr-only">
           <div class="minihome-dropzone-inner">
             <img src="" alt="브랜드 이미지" class="minihome-preview hidden" data-image-preview>
@@ -639,7 +639,7 @@
       </div>
       <div class="space-y-3">
         <div class="space-y-2" data-cta-profile>
-          <div class="minihome-dropzone" data-dropzone>
+          <div class="minihome-dropzone minihome-dropzone--cta-profile" data-dropzone>
             <input type="file" accept="image/*" name="cta_profile____SECTION_ID__" data-image-input class="sr-only">
             <div class="minihome-dropzone-inner">
               <img src="" alt="프로필 이미지" class="minihome-preview hidden" data-image-preview>
@@ -670,7 +670,7 @@
           </label>
         </div>
         <div class="space-y-2" data-cta-donation-qr>
-          <div class="minihome-dropzone" data-dropzone>
+          <div class="minihome-dropzone minihome-dropzone--cta-qr" data-dropzone>
             <input type="file" accept="image/*" name="cta_donation_qr____SECTION_ID__" data-image-input class="sr-only">
             <div class="minihome-dropzone-inner">
               <img src="" alt="후원 QR" class="minihome-preview hidden" data-image-preview>
@@ -694,7 +694,7 @@
     <div class="minihome-gallery-item" data-gallery-item data-item-id="__ITEM_ID__">
       <div class="flex flex-col gap-4 __FLEX_CLASS__" data-gallery-row>
         <div class="sm:w-1/2">
-          <div class="minihome-dropzone" data-dropzone>
+          <div class="minihome-dropzone minihome-dropzone--gallery" data-dropzone>
             <input type="file" accept="image/*" name="" data-image-input class="sr-only">
             <div class="minihome-dropzone-inner">
               <img src="" alt="갤러리 이미지" class="minihome-preview hidden" data-image-preview>
@@ -741,7 +741,7 @@
         </label>
         <div class="grid gap-3 md:grid-cols-2">
           <div class="space-y-2" data-blog-image data-image-slot="0">
-            <div class="minihome-dropzone" data-dropzone>
+            <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
               <input type="file" accept="image/*" name="" data-image-input class="sr-only">
               <div class="minihome-dropzone-inner">
                 <img src="" alt="이미지 1" class="minihome-preview hidden" data-image-preview>
@@ -758,7 +758,7 @@
             <input type="hidden" data-image-meta="height" value="">
           </div>
           <div class="space-y-2" data-blog-image data-image-slot="1">
-            <div class="minihome-dropzone" data-dropzone>
+            <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
               <input type="file" accept="image/*" name="" data-image-input class="sr-only">
               <div class="minihome-dropzone-inner">
                 <img src="" alt="이미지 2" class="minihome-preview hidden" data-image-preview>
@@ -775,7 +775,7 @@
             <input type="hidden" data-image-meta="height" value="">
           </div>
           <div class="space-y-2" data-blog-image data-image-slot="2">
-            <div class="minihome-dropzone" data-dropzone>
+            <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
               <input type="file" accept="image/*" name="" data-image-input class="sr-only">
               <div class="minihome-dropzone-inner">
                 <img src="" alt="이미지 3" class="minihome-preview hidden" data-image-preview>
@@ -792,7 +792,7 @@
             <input type="hidden" data-image-meta="height" value="">
           </div>
           <div class="space-y-2" data-blog-image data-image-slot="3">
-            <div class="minihome-dropzone" data-dropzone>
+            <div class="minihome-dropzone minihome-dropzone--blog" data-dropzone>
               <input type="file" accept="image/*" name="" data-image-input class="sr-only">
               <div class="minihome-dropzone-inner">
                 <img src="" alt="이미지 4" class="minihome-preview hidden" data-image-preview>
@@ -840,7 +840,7 @@
           <input type="text" data-field="map_url" maxlength="200">
         </label>
         <div class="space-y-2">
-          <div class="minihome-dropzone" data-dropzone>
+          <div class="minihome-dropzone minihome-dropzone--store" data-dropzone>
             <input type="file" accept="image/*" name="" data-image-input class="sr-only">
             <div class="minihome-dropzone-inner">
               <img src="" alt="매장 커버 이미지" class="minihome-preview hidden" data-image-preview>
