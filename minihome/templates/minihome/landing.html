@@ -203,6 +203,10 @@
     </div>
   </main>
 
+  {% if show_manage_link %}
+    <a class="minihome-manage-fab" href="{{ manage_url }}">관리화면 이동</a>
+  {% endif %}
+
   <div class="minihome-modal hidden" data-blog-modal>
     <div class="minihome-modal-panel">
       <div class="flex items-center justify-between">

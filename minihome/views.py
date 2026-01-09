@@ -803,6 +803,31 @@ def minihome_landing(request, slug):
     static_path = get_minihome_static_page_path(slug)
     if not static_path.exists():
         raise Http404
+
+    if request.user.is_authenticated:
+        minihome = Minihome.objects.filter(slug=slug).first()
+        if minihome and _user_can_manage(minihome, request.user):
+            background_preset = _normalize_background_preset(
+                minihome.published_background_preset
+            )
+            manage_url = (
+                reverse("minihome:manage", kwargs={"slug": minihome.slug})
+                if request.path.startswith("/minihome/")
+                else "/mng/"
+            )
+            return render(
+                request,
+                "minihome/landing.html",
+                {
+                    "minihome": minihome,
+                    "sections": minihome.published_sections,
+                    "is_preview": False,
+                    "background_preset": background_preset,
+                    "show_manage_link": True,
+                    "manage_url": manage_url,
+                },
+            )
+
     return FileResponse(static_path.open("rb"), content_type="text/html")
 
 
