@@ -384,7 +384,7 @@ const collectSections = () => {
     const type = section.dataset.sectionType;
     const id = section.dataset.sectionId;
     if (!type || !id) return;
-    if (type === 'brand_image') {
+    if (type === 'brand_image' || type === 'infographic') {
       sections.push({
         id,
         type,

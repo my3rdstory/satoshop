@@ -147,6 +147,16 @@
             </section>
           {% endif %}
 
+          {% if section.type == 'infographic' %}
+            <section class="minihome-section-card">
+              {% if section.data.image.url %}
+                <img src="{{ section.data.image.url }}" alt="인포그래픽" class="w-full h-auto rounded-3xl shadow-lg">
+              {% else %}
+                <div class="minihome-empty">인포그래픽 이미지를 등록해주세요.</div>
+              {% endif %}
+            </section>
+          {% endif %}
+
           {% if section.type == 'cta' %}
             <section class="minihome-section-card">
               <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

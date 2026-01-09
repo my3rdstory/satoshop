@@ -22,6 +22,7 @@ SECTION_TYPES = (
     "gallery",
     "mini_blog",
     "store",
+    "infographic",
     "cta",
 )
 
@@ -57,6 +58,7 @@ BLOG_IMAGE_WIDTH = 1000
 CTA_PROFILE_MAX_SIZE = (300, 300)
 CTA_DONATION_QR_WIDTH = 300
 STORE_IMAGE_WIDTH = 600
+INFOGRAPHIC_IMAGE_WIDTH = 1000
 
 
 def _user_can_manage(minihome: Minihome, user) -> bool:
@@ -108,6 +110,15 @@ def _normalize_sections(sections):
         data = raw_section.get("data") if isinstance(raw_section.get("data"), dict) else {}
 
         if section_type == "brand_image":
+            image_meta = _normalize_image_meta(data.get("image"))
+            normalized.append({
+                "id": section_id,
+                "type": section_type,
+                "data": {"image": image_meta},
+            })
+            continue
+
+        if section_type == "infographic":
             image_meta = _normalize_image_meta(data.get("image"))
             normalized.append({
                 "id": section_id,
@@ -224,6 +235,23 @@ def _apply_uploaded_files(minihome, sections, files):
                 file,
                 prefix=f"{prefix_base}/brand",
                 target_width=BRAND_IMAGE_WIDTH,
+            )
+            if result.get("success"):
+                section["data"]["image"] = {
+                    "path": result["file_path"],
+                    "url": result["file_url"],
+                    "width": result["width"],
+                    "height": result["height"],
+                }
+
+        if parts[0] == "infographic" and len(parts) == 2:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            result = upload_minihome_image(
+                file,
+                prefix=f"{prefix_base}/infographic",
+                target_width=INFOGRAPHIC_IMAGE_WIDTH,
             )
             if result.get("success"):
                 section["data"]["image"] = {

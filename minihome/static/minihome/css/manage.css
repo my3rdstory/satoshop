@@ -221,6 +221,11 @@ body {
   object-fit: contain;
 }
 
+.minihome-dropzone--infographic .minihome-preview {
+  height: auto;
+  object-fit: contain;
+}
+
 .minihome-dropzone--gallery .minihome-preview {
   height: 12rem;
 }

@@ -74,6 +74,7 @@
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="infographic">인포그래픽</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
               </div>
             </div>
@@ -182,6 +183,26 @@
                             <p class="text-xs text-slate-400">매장 {{ section.data.stores|length }}개</p>
                           </div>
                           <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="store">데이터 보기</button>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'infographic' %}
+                        <div class="space-y-3">
+                          <div class="minihome-dropzone minihome-dropzone--infographic" data-dropzone>
+                            <input type="file" accept="image/*" name="infographic__{{ section.id }}" data-image-input class="sr-only">
+                            <div class="minihome-dropzone-inner">
+                              <img src="{{ section.data.image.url|default:'' }}" alt="인포그래픽" class="minihome-preview {% if not section.data.image.url %}hidden{% endif %}" data-image-preview>
+                              <p class="text-xs text-slate-300">가로 1000px 기준 비율 유지 리사이즈</p>
+                              <div class="flex flex-wrap gap-2">
+                                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                              </div>
+                            </div>
+                          </div>
+                          <input type="hidden" data-image-meta="path" value="{{ section.data.image.path|default:'' }}">
+                          <input type="hidden" data-image-meta="url" value="{{ section.data.image.url|default:'' }}">
+                          <input type="hidden" data-image-meta="width" value="{{ section.data.image.width|default:'' }}">
+                          <input type="hidden" data-image-meta="height" value="{{ section.data.image.height|default:'' }}">
                         </div>
                       {% endif %}
 
@@ -505,6 +526,31 @@
           <div class="minihome-dropzone-inner">
             <img src="" alt="브랜드 이미지" class="minihome-preview hidden" data-image-preview>
             <p class="text-xs text-slate-300">가로 기준 비율 유지로 900px 리사이즈</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+              <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" data-image-meta="path" value="">
+        <input type="hidden" data-image-meta="url" value="">
+        <input type="hidden" data-image-meta="width" value="">
+        <input type="hidden" data-image-meta="height" value="">
+      </div>
+    </section>
+  </template>
+
+  <template id="template-infographic">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="infographic">
+      <div class="flex justify-end mb-3">
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="space-y-3">
+        <div class="minihome-dropzone minihome-dropzone--infographic" data-dropzone>
+          <input type="file" accept="image/*" name="infographic____SECTION_ID__" data-image-input class="sr-only">
+          <div class="minihome-dropzone-inner">
+            <img src="" alt="인포그래픽" class="minihome-preview hidden" data-image-preview>
+            <p class="text-xs text-slate-300">가로 1000px 기준 비율 유지 리사이즈</p>
             <div class="flex flex-wrap gap-2">
               <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
               <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
