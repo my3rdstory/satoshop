@@ -103,7 +103,6 @@ body {
   gap: 0.5rem;
   justify-items: stretch;
   max-width: 100%;
-  margin-left: auto;
 }
 
 .minihome-cta-buttons > * {
