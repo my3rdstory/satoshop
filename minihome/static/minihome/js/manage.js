@@ -93,6 +93,23 @@ const resetDataPanel = () => {
   updateDataPanelParam('');
 };
 
+const moveSection = (section, direction) => {
+  if (!sectionList || !section) return;
+  if (direction === 'up') {
+    const previous = section.previousElementSibling;
+    if (previous) {
+      sectionList.insertBefore(section, previous);
+    }
+    return;
+  }
+  if (direction === 'down') {
+    const next = section.nextElementSibling;
+    if (next) {
+      sectionList.insertBefore(next, section);
+    }
+  }
+};
+
 const showDataPanel = (sectionId, sectionType) => {
   if (!dataPanelContainer) return;
   const panel = getDataPanel(sectionId);
@@ -608,6 +625,12 @@ document.addEventListener('click', (event) => {
     if (sectionId) {
       showDataPanel(sectionId, sectionType);
     }
+    return;
+  }
+  if (action === 'move-section-up' || action === 'move-section-down') {
+    event.preventDefault();
+    const section = actionButton.closest('[data-section]');
+    moveSection(section, action === 'move-section-up' ? 'up' : 'down');
     return;
   }
   if (action === 'close-data-panel') {
