@@ -433,12 +433,12 @@
                               {% if store.cover_image.url %}
                                 <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-32 w-full rounded-xl object-cover">
                               {% endif %}
-                              <div class="space-y-1">
+                              <div class="space-y-1 flex-1">
                                 <p class="font-semibold">{{ store.name|default:'매장' }}</p>
                                 <p class="text-xs text-slate-300 break-words">{{ store.description|default:'' }}</p>
                               </div>
                               {% if store.map_url %}
-                                <span class="minihome-link w-full justify-center text-center">지도 열기</span>
+                                <span class="minihome-link w-full justify-center text-center mt-auto">지도 열기</span>
                               {% endif %}
                             </div>
                             <div class="minihome-inline-form">
@@ -820,11 +820,11 @@
     <div class="minihome-store-item flex flex-col gap-3" data-store-item data-store-id="__STORE_ID__">
       <div class="minihome-store-card">
         <div class="h-32 w-full rounded-xl bg-slate-800"></div>
-        <div class="space-y-1">
+        <div class="space-y-1 flex-1">
           <p class="font-semibold">새 매장</p>
           <p class="text-xs text-slate-300">매장 소개를 입력해주세요.</p>
         </div>
-        <span class="minihome-link w-full justify-center text-center">지도 열기</span>
+        <span class="minihome-link w-full justify-center text-center mt-auto">지도 열기</span>
       </div>
       <div class="minihome-inline-form">
         <label class="minihome-field">

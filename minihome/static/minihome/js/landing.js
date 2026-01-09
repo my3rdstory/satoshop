@@ -125,4 +125,40 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const copyToClipboard = async (text) => {
+    if (!text) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
+
+  const bindCopyTargets = () => {
+    document.querySelectorAll('[data-copy-text]').forEach((target) => {
+      const text = target.dataset.copyText || '';
+      const handleCopy = async (event) => {
+        event.preventDefault();
+        await copyToClipboard(text);
+      };
+      target.addEventListener('click', handleCopy);
+      target.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleCopy(event);
+        }
+      });
+    });
+  };
+
+  bindCopyTargets();
 });
