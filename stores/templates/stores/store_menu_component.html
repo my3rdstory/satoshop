@@ -170,6 +170,52 @@
         </div>
       </a>
 
+      <!-- 라이브 강의 관리 -->
+      <a 
+        href="{% url 'lecture:live_lecture_list' store_id=store.store_id %}" 
+        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-fuchsia-500 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 transition-all duration-200"
+      >
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-lg flex items-center justify-center group-hover:bg-fuchsia-200 dark:group-hover:bg-fuchsia-800/50 transition-colors">
+            <i class="fas fa-video text-fuchsia-600 dark:text-fuchsia-400 group-hover:text-fuchsia-700 dark:group-hover:text-fuchsia-300"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-fuchsia-700 dark:group-hover:text-fuchsia-300 transition-colors">
+            라이브 강의 관리
+          </h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            라이브 강의 등록 및 운영 현황 확인
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-chevron-right text-gray-400 group-hover:text-fuchsia-500 transition-colors"></i>
+        </div>
+      </a>
+
+      <!-- 파일 관리 -->
+      <a 
+        href="{% url 'file:file_manage' store_id=store.store_id %}" 
+        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-200"
+      >
+        <div class="flex-shrink-0">
+          <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
+            <i class="fas fa-file text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300"></i>
+          </div>
+        </div>
+        <div class="ml-4 flex-1">
+          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
+            파일 관리
+          </h4>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            디지털 파일 등록 및 판매 현황 관리
+          </p>
+        </div>
+        <div class="flex-shrink-0">
+          <i class="fas fa-chevron-right text-gray-400 group-hover:text-emerald-500 transition-colors"></i>
+        </div>
+      </a>
+
       <!-- 구입 이력 삭제 -->
       <a 
         href="{% url 'stores:purchase_history_cleanup' store_id=store.store_id %}" 
