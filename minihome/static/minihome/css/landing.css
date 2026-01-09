@@ -76,6 +76,18 @@ body {
   background: rgba(15, 23, 42, 0.95);
 }
 
+.minihome-cta-buttons {
+  display: inline-grid;
+  gap: 0.5rem;
+  justify-items: stretch;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.minihome-cta-buttons > * {
+  width: 100%;
+}
+
 .minihome-owner-item {
   display: flex;
   align-items: center;

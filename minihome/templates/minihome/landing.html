@@ -176,13 +176,15 @@
                 </div>
                 <div class="flex flex-col gap-3 md:w-[340px]">
                   <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div class="flex flex-col gap-2 md:flex-1 md:self-center">
-                      {% if section.data.email %}
-                        <a class="minihome-link minihome-copy w-fit max-w-full justify-center text-center break-words" href="mailto:{{ section.data.email }}" data-copy-text="{{ section.data.email }}">이메일: {{ section.data.email }}</a>
-                      {% endif %}
-                      {% if section.data.donation %}
-                        <span class="minihome-chip minihome-copy w-fit max-w-full justify-center text-center break-words" role="button" tabindex="0" data-copy-text="{{ section.data.donation }}">⚡후원주소:{{ section.data.donation }}</span>
-                      {% endif %}
+                    <div class="md:flex-1 md:self-center">
+                      <div class="minihome-cta-buttons">
+                        {% if section.data.email %}
+                          <a class="minihome-link minihome-copy justify-center text-center break-words" href="mailto:{{ section.data.email }}" data-copy-text="{{ section.data.email }}">이메일: {{ section.data.email }}</a>
+                        {% endif %}
+                        {% if section.data.donation %}
+                          <span class="minihome-chip minihome-copy justify-center text-center break-words" role="button" tabindex="0" data-copy-text="{{ section.data.donation }}">⚡후원주소:{{ section.data.donation }}</span>
+                        {% endif %}
+                      </div>
                     </div>
                     {% if section.data.donation_qr.url %}
                       <div class="minihome-cta-qr">
