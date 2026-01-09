@@ -1,12 +1,13 @@
 import json
 import uuid
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Minihome
+from .models import Minihome, normalize_domain
 from .services import (
     build_minihome_static_html,
     get_minihome_static_page_path,
@@ -367,10 +368,17 @@ def _apply_uploaded_files(minihome, sections, files):
 
 def minihome_list(request):
     minihomes = Minihome.objects.filter(is_published=True).order_by("-updated_at")
+    host = request.get_host().split(":")[0]
+    list_domain = normalize_domain(settings.MINIHOME_LIST_DOMAIN)
+    is_list_domain = bool(list_domain) and normalize_domain(host) == list_domain
+    base_path = "/" if is_list_domain else "/minihome/"
     return render(
         request,
         "minihome/list.html",
-        {"minihomes": minihomes},
+        {
+            "minihomes": minihomes,
+            "minihome_base_path": base_path,
+        },
     )
 
 
@@ -810,11 +818,13 @@ def minihome_landing(request, slug):
             background_preset = _normalize_background_preset(
                 minihome.published_background_preset
             )
-            manage_url = (
-                reverse("minihome:manage", kwargs={"slug": minihome.slug})
-                if request.path.startswith("/minihome/")
-                else "/mng/"
-            )
+            path = request.path.strip("/")
+            if request.path.startswith("/minihome/"):
+                manage_url = reverse("minihome:manage", kwargs={"slug": minihome.slug})
+            elif path.startswith(f"{minihome.slug}/") or path == minihome.slug:
+                manage_url = f"/{minihome.slug}/mng/"
+            else:
+                manage_url = "/mng/"
             return render(
                 request,
                 "minihome/landing.html",

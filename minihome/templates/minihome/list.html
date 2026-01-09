@@ -57,10 +57,10 @@
               </a>
             {% endwith %}
           {% else %}
-            <a class="minihome-card" href="/minihome/{{ minihome.slug }}/" target="_blank" rel="noopener">
+            <a class="minihome-card" href="{{ minihome_base_path }}{{ minihome.slug }}/" target="_blank" rel="noopener">
               <div>
                 <h2 class="text-lg font-semibold">{{ minihome.display_name|default:minihome.slug }}</h2>
-                <p class="text-xs text-slate-300">/minihome/{{ minihome.slug }}/</p>
+                <p class="text-xs text-slate-300">{{ minihome_base_path }}{{ minihome.slug }}/</p>
               </div>
               <span class="minihome-pill">슬러그 기반</span>
             </a>
