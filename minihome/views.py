@@ -371,6 +371,12 @@ def minihome_list(request):
     host = request.get_host().split(":")[0]
     list_domain = normalize_domain(settings.MINIHOME_LIST_DOMAIN)
     is_list_domain = bool(list_domain) and normalize_domain(host) == list_domain
+    if list_domain and not is_list_domain:
+        query = request.GET.urlencode()
+        target = f"{request.scheme}://{list_domain}/"
+        if query:
+            target = f"{target}?{query}"
+        return redirect(target)
     base_path = "/" if is_list_domain else "/minihome/"
     return render(
         request,
@@ -808,6 +814,15 @@ def minihome_delete_store_item(request, slug):
 
 
 def minihome_landing(request, slug):
+    host = request.get_host().split(":")[0]
+    list_domain = normalize_domain(settings.MINIHOME_LIST_DOMAIN)
+    if list_domain and normalize_domain(host) != list_domain and request.path.startswith("/minihome/"):
+        query = request.GET.urlencode()
+        target = f"{request.scheme}://{list_domain}/{slug}/"
+        if query:
+            target = f"{target}?{query}"
+        return redirect(target)
+
     static_path = get_minihome_static_page_path(slug)
     if not static_path.exists():
         raise Http404
