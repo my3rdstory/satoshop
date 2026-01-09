@@ -13,7 +13,7 @@
 {% block store_content %}
 <div id="productListRoot"
      class="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50 dark:from-gray-900 dark:to-gray-800 py-8"
-     data-category-url="{% if is_public_view %}{% url 'products:public_category_sections_partial' store.store_id %}{% else %}{% url 'products:owner_category_sections_partial' store.store_id %}{% endif %}"
+     data-category-url="{% if is_public_view %}{% url 'products:public_category_sections_partial' store.store_id %}{% else %}{% url 'products:owner_category_sections_partial' store.store_id %}{{ admin_access_query }}{% endif %}"
      data-store-id="{{ store.store_id }}"
      data-is-public="{{ is_public_view|yesno:'true,false' }}"
      data-default-category-id="{% if display_category_sections %}{{ display_category_sections.0.category.id }}{% endif %}">
@@ -50,12 +50,12 @@
           </a>
           {% endif %}
           {% else %}
-          <a href="{% url 'products:category_manage' store.store_id %}" 
+          <a href="{% url 'products:category_manage' store.store_id %}{{ admin_access_query }}" 
              class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
             <i class="fas fa-tags mr-2"></i>
             카테고리 관리
           </a>
-          <a href="{% url 'products:add_product' store.store_id %}" 
+          <a href="{% url 'products:add_product' store.store_id %}{{ admin_access_query }}" 
              class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
             <i class="fas fa-plus mr-2"></i>
             상품 추가
@@ -123,7 +123,7 @@ function toggleTemporaryOutOfStock(productId, productTitle) {
     const action = document.querySelector(`button[onclick*="${productId}"] span`).textContent.includes('해제') ? '해제' : '설정';
     
     if (confirm(`"${productTitle}" 상품을 일시품절 ${action}하시겠습니까?`)) {
-        const url = `/products/{{ store.store_id }}/${productId}/toggle-temporary-out-of-stock/`;
+        const url = `/products/{{ store.store_id }}/${productId}/toggle-temporary-out-of-stock/{{ admin_access_query }}`;
         
         fetch(url, {
             method: 'POST',

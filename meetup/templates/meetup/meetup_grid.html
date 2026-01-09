@@ -240,7 +240,7 @@
       {% endif %}
     </p>
     {% if not is_public_view %}
-    <a href="{% url 'meetup:add_meetup' store.store_id %}" 
+    <a href="{% url 'meetup:add_meetup' store.store_id %}{{ admin_access_query }}" 
        class="inline-flex items-center px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors shadow-lg">
       <i class="fas fa-plus mr-2"></i>
       첫 밋업 만들기

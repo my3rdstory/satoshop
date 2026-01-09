@@ -7,6 +7,7 @@ from django.db.models import Prefetch
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from django.conf import settings
+from django.urls import reverse
 from django.views.decorators.http import require_POST, require_GET
 from django.template.loader import render_to_string
 from PIL import Image
@@ -18,7 +19,7 @@ import logging
 from stores.models import Store
 from .models import Product, ProductImage, ProductOption, ProductOptionChoice, ProductCategory
 from .views_category import DEFAULT_CATEGORY_NAME
-from stores.decorators import store_owner_required
+from stores.decorators import store_owner_required, get_admin_access_query
 from reviews.models import Review
 
 from reviews.services import (
@@ -29,6 +30,22 @@ from reviews.services import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _get_store_from_request(request, store_id):
+    store = getattr(request, 'store', None)
+    if store and store.store_id == store_id:
+        return store
+    return get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+
+
+def _get_store_actor(request):
+    return getattr(request, 'store_actor', None) or request.user
+
+
+def _build_admin_url(request, view_name, **kwargs):
+    url = reverse(view_name, kwargs=kwargs)
+    return f"{url}{get_admin_access_query(request)}"
 
 
 def _get_category_sections(store, include_inactive=False):
@@ -151,15 +168,17 @@ def public_product_list(request, store_id):
 @store_owner_required
 def product_list(request, store_id):
     """상품 목록"""
-    try:
-        store = Store.objects.get(store_id=store_id, owner=request.user, deleted_at__isnull=True)
-    except Store.DoesNotExist:
-        # 스토어가 존재하지 않거나 소유자가 아닌 경우
-        context = {
-            'store_id': store_id,
-            'error_type': 'store_not_found_or_not_owner'
-        }
-        return render(request, 'products/store_access_denied.html', context, status=404)
+    store = getattr(request, 'store', None)
+    if not store:
+        try:
+            store = Store.objects.get(store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        except Store.DoesNotExist:
+            # 스토어가 존재하지 않거나 소유자가 아닌 경우
+            context = {
+                'store_id': store_id,
+                'error_type': 'store_not_found_or_not_owner'
+            }
+            return render(request, 'products/store_access_denied.html', context, status=404)
     
     # 관리자 뷰에서는 비활성화된 상품도 포함하여 표시
     category_sections = _get_category_sections(store, include_inactive=True)
@@ -181,6 +200,7 @@ def product_list(request, store_id):
         'visible_category_count': visible_category_count,
         'categories': [section['category'] for section in category_sections],
         'is_public_view': False,  # 스토어 주인장의 관리 뷰
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/product_list.html', context)
 
@@ -228,8 +248,7 @@ def public_category_sections_partial(request, store_id):
 @require_GET
 def owner_category_sections_partial(request, store_id):
     """스토어 관리자용 상품 목록에서 카테고리 섹션을 비동기로 제공"""
-
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
 
     category_id = request.GET.get('category_id')
 
@@ -245,6 +264,7 @@ def owner_category_sections_partial(request, store_id):
             'store': store,
             'sections': filtered_sections,
             'is_public_view': False,
+            'admin_access_query': get_admin_access_query(request),
         },
         request=request,
     )
@@ -370,7 +390,7 @@ def product_detail(request, store_id, product_id):
 @store_owner_required
 def add_product(request, store_id):
     """상품 추가"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     
     if request.method == 'POST':
         logger.info(f"상품 추가 POST 요청 받음")
@@ -448,7 +468,7 @@ def add_product(request, store_id):
                         logger.info(f"이미지 처리 시작: {image_file.name}, 크기: {image_file.size}")
                         # storage.utils의 함수 사용 (편집 모드와 동일한 방식)
                         from storage.utils import upload_product_image
-                        result = upload_product_image(image_file, product, request.user)
+                        result = upload_product_image(image_file, product, _get_store_actor(request))
                         
                         if result['success']:
                             logger.info(f"이미지 처리 성공: {image_file.name}")
@@ -477,7 +497,7 @@ def add_product(request, store_id):
                                     order=choice_data.get('order', 0)
                                 )
                 
-                return redirect('products:product_list', store_id=store_id)
+                return redirect(_build_admin_url(request, 'products:product_list', store_id=store_id))
 
         except Exception as e:
             logger.error(f"상품 추가 오류: {e}", exc_info=True)
@@ -487,6 +507,7 @@ def add_product(request, store_id):
         'store': store,
         'store_shipping': store.get_shipping_fee_display(),
         'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/add_product.html', context)
 
@@ -498,7 +519,7 @@ def add_product(request, store_id):
 @store_owner_required
 def edit_product(request, store_id, product_id):
     """상품 수정"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
@@ -541,7 +562,7 @@ def edit_product(request, store_id, product_id):
                     try:
                         # storage.utils의 함수 사용 (편집 모드와 동일한 방식)
                         from storage.utils import upload_product_image
-                        result = upload_product_image(image_file, product, request.user)
+                        result = upload_product_image(image_file, product, _get_store_actor(request))
                         
                         if result['success']:
                             logger.info(f"이미지 처리 성공: {image_file.name}")
@@ -550,7 +571,7 @@ def edit_product(request, store_id, product_id):
                     except Exception as e:
                         logger.error(f"이미지 처리 오류: {e}", exc_info=True)
                 
-                return redirect('products:product_list', store_id=store_id)
+                return redirect(_build_admin_url(request, 'products:product_list', store_id=store_id))
                 
         except Exception as e:
             logger.error(f"상품 수정 오류: {e}", exc_info=True)
@@ -561,6 +582,7 @@ def edit_product(request, store_id, product_id):
         'product': product,
         'store_shipping': store.get_shipping_fee_display(),
         'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_product.html', context)
 
@@ -569,7 +591,7 @@ def edit_product(request, store_id, product_id):
 @store_owner_required
 def edit_product_unified(request, store_id, product_id):
     """통합 상품 수정"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
@@ -653,7 +675,7 @@ def edit_product_unified(request, store_id, product_id):
                 # 상품 옵션 처리
                 _process_product_options_form(request, product)
                 
-                return redirect('products:product_list', store_id=store_id)
+                return redirect(_build_admin_url(request, 'products:product_list', store_id=store_id))
                 
         except Exception as e:
             logger.error(f"통합 상품 수정 오류: {e}", exc_info=True)
@@ -664,6 +686,7 @@ def edit_product_unified(request, store_id, product_id):
         'product': product,
         'store_shipping': store.get_shipping_fee_display(),
         'categories': ProductCategory.objects.filter(store=store).order_by('order', 'created_at'),
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_product_unified.html', context)
 
@@ -672,7 +695,7 @@ def edit_product_unified(request, store_id, product_id):
 @store_owner_required
 def delete_product(request, store_id, product_id):
     """상품 삭제"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
@@ -694,7 +717,7 @@ def delete_product(request, store_id, product_id):
             logger.error(f"상품 삭제 오류: {e}", exc_info=True)
             messages.error(request, '상품 삭제 중 오류가 발생했습니다.')
     
-    return redirect('products:product_list', store_id=store_id)
+    return redirect(_build_admin_url(request, 'products:product_list', store_id=store_id))
 
 
 @login_required
@@ -702,7 +725,7 @@ def delete_product(request, store_id, product_id):
 def upload_product_image(request, store_id, product_id):
     """상품 이미지 업로드 (AJAX)"""
     try:
-        store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+        store = _get_store_from_request(request, store_id)
         product = get_object_or_404(Product, id=product_id, store=store)
         
         if 'image' not in request.FILES:
@@ -737,7 +760,7 @@ def upload_product_image(request, store_id, product_id):
         
         # S3에 이미지 업로드
         from storage.utils import upload_product_image
-        result = upload_product_image(image_file, product, request.user)
+        result = upload_product_image(image_file, product, _get_store_actor(request))
         
         if result['success']:
             product_image = result['product_image']
@@ -771,7 +794,7 @@ def upload_product_image(request, store_id, product_id):
 @store_owner_required
 def delete_product_image(request, store_id, product_id, image_id):
     """상품 이미지 삭제"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     image = get_object_or_404(ProductImage, id=image_id, product=product)
     
@@ -826,12 +849,13 @@ def _process_product_options(request, product):
 @store_owner_required
 def manage_product(request, store_id, product_id):
     """상품 관리 메인 페이지"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     context = {
         'store': store,
         'product': product,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/manage_product.html', context)
 
@@ -840,7 +864,7 @@ def manage_product(request, store_id, product_id):
 @store_owner_required
 def edit_basic_info(request, store_id, product_id):
     """상품 기본 정보 편집"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
@@ -911,7 +935,7 @@ def edit_basic_info(request, store_id, product_id):
 
                 product.save()
                 
-                return redirect('products:manage_product', store_id=store_id, product_id=product_id)
+                return redirect(_build_admin_url(request, 'products:manage_product', store_id=store_id, product_id=product_id))
                 
         except Exception as e:
             logger.error(f"기본 정보 수정 오류: {e}", exc_info=True)
@@ -920,6 +944,7 @@ def edit_basic_info(request, store_id, product_id):
     context = {
         'store': store,
         'product': product,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_basic_info.html', context)
 
@@ -928,14 +953,14 @@ def edit_basic_info(request, store_id, product_id):
 @store_owner_required
 def edit_options(request, store_id, product_id):
     """상품 옵션 편집"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
         try:
             with transaction.atomic():
                 _process_product_options_form(request, product)
-                return redirect('products:manage_product', store_id=store_id, product_id=product_id)
+                return redirect(_build_admin_url(request, 'products:manage_product', store_id=store_id, product_id=product_id))
                 
         except Exception as e:
             logger.error(f"옵션 수정 오류: {e}", exc_info=True)
@@ -944,6 +969,7 @@ def edit_options(request, store_id, product_id):
     context = {
         'store': store,
         'product': product,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_options.html', context)
 
@@ -952,12 +978,13 @@ def edit_options(request, store_id, product_id):
 @store_owner_required
 def edit_images(request, store_id, product_id):
     """상품 이미지 편집"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     context = {
         'store': store,
         'product': product,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_images.html', context)
 
@@ -966,7 +993,7 @@ def edit_images(request, store_id, product_id):
 @store_owner_required
 def edit_completion_message(request, store_id, product_id):
     """결제 완료 메시지 편집"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     if request.method == 'POST':
@@ -974,7 +1001,7 @@ def edit_completion_message(request, store_id, product_id):
             product.completion_message = request.POST.get('completion_message', '').strip()
             product.save()
             
-            return redirect('products:manage_product', store_id=store_id, product_id=product_id)
+            return redirect(_build_admin_url(request, 'products:manage_product', store_id=store_id, product_id=product_id))
             
         except Exception as e:
             logger.error(f"완료 메시지 수정 오류: {e}", exc_info=True)
@@ -983,6 +1010,7 @@ def edit_completion_message(request, store_id, product_id):
     context = {
         'store': store,
         'product': product,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'products/edit_completion_message.html', context)
 
@@ -1049,7 +1077,7 @@ def _process_product_options_form(request, product):
 @require_POST
 def toggle_product_status(request, store_id, product_id):
     """상품 활성화/비활성화 토글"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     try:
@@ -1075,7 +1103,7 @@ def toggle_product_status(request, store_id, product_id):
 @require_POST
 def toggle_temporary_out_of_stock(request, store_id, product_id):
     """상품 일시품절 토글"""
-    store = get_object_or_404(Store, store_id=store_id, owner=request.user, deleted_at__isnull=True)
+    store = _get_store_from_request(request, store_id)
     product = get_object_or_404(Product, id=product_id, store=store)
     
     try:

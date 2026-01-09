@@ -50,7 +50,7 @@
 
     <!-- 뒤로가기 버튼 -->
     <div class="mb-6">
-      <a href="{% url 'products:product_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+      <a href="{% url 'products:product_list' store.store_id %}{{ admin_access_query }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
         <i class="fas fa-arrow-left text-sm"></i>
         <span>목록으로 돌아가기</span>
       </a>
@@ -104,7 +104,7 @@
                 <option value="{{ category.id }}" {% if product.category_id == category.id %}selected{% elif product.category_id is None and category.name == '카테고리 없음' %}selected{% endif %}>{{ category.name }}</option>
                 {% endfor %}
               </select>
-              <a href="{% url 'products:category_manage' store.store_id %}" target="_blank"
+              <a href="{% url 'products:category_manage' store.store_id %}{{ admin_access_query }}" target="_blank"
                  class="inline-flex items-center justify-center px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                 <i class="fas fa-external-link-alt mr-2 text-xs"></i>
                 카테고리 관리
@@ -408,7 +408,7 @@
 
       <!-- 제출 버튼 -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{% url 'products:product_list' store.store_id %}" 
+        <a href="{% url 'products:product_list' store.store_id %}{{ admin_access_query }}" 
            class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
           취소
         </a>
@@ -423,7 +423,7 @@
 
 <!-- 페이지 데이터 -->
 <div id="page-data" 
-     data-upload-url="{% url 'products:upload_product_image' store.store_id product.id %}"
+     data-upload-url="{% url 'products:upload_product_image' store.store_id product.id %}{{ admin_access_query }}"
      data-store-id="{{ store.store_id }}"
      data-product-id="{{ product.id }}"
      style="display: none;"></div>
