@@ -140,6 +140,7 @@ const clearImageMeta = (scope) => {
 };
 
 const readImageMeta = (scope) => {
+  if (!scope) return null;
   const path = scope.querySelector('[data-image-meta="path"]')?.value?.trim();
   if (!path) return null;
   return {
@@ -194,8 +195,9 @@ const setupDropzone = (zone) => {
       }
       const scope = zone.querySelector('[data-image-meta]')
         ? zone
-        : zone.closest('[data-blog-image],[data-gallery-item],[data-store-item],[data-section]')
-          || zone.parentElement;
+        : zone.closest(
+            '[data-blog-image],[data-gallery-item],[data-store-item],[data-cta-profile],[data-cta-donation-qr],[data-section]'
+          ) || zone.parentElement;
       if (scope) {
         clearImageMeta(scope);
       }
@@ -430,6 +432,7 @@ const collectSections = () => {
         stores.push({
           id: store.dataset.storeId || generateId(),
           name: store.querySelector('[data-field="name"]')?.value || '',
+          description: store.querySelector('[data-field="description"]')?.value || '',
           map_url: store.querySelector('[data-field="map_url"]')?.value || '',
           cover_image: readImageMeta(store),
         });
@@ -438,11 +441,14 @@ const collectSections = () => {
       return;
     }
     if (type === 'cta') {
+      const profileScope = section.querySelector('[data-cta-profile]') || section;
+      const donationScope = section.querySelector('[data-cta-donation-qr]');
       sections.push({
         id,
         type,
         data: {
-          profile_image: readImageMeta(section),
+          profile_image: readImageMeta(profileScope),
+          donation_qr: readImageMeta(donationScope),
           description: section.querySelector('[data-field="description"]')?.value || '',
           email: section.querySelector('[data-field="email"]')?.value || '',
           donation: section.querySelector('[data-field="donation"]')?.value || '',

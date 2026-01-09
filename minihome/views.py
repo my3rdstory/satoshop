@@ -55,6 +55,7 @@ BRAND_IMAGE_WIDTH = 900
 GALLERY_IMAGE_WIDTH = 900
 BLOG_IMAGE_WIDTH = 1000
 CTA_PROFILE_MAX_SIZE = (300, 300)
+CTA_DONATION_QR_WIDTH = 300
 STORE_IMAGE_WIDTH = 600
 
 
@@ -179,6 +180,7 @@ def _normalize_sections(sections):
                 stores.append({
                     "id": store_id,
                     "name": _limit_text(store.get("name"), 50),
+                    "description": _limit_text(store.get("description"), 100),
                     "map_url": _limit_text(store.get("map_url"), 200),
                     "cover_image": _normalize_image_meta(store.get("cover_image")),
                 })
@@ -195,9 +197,10 @@ def _normalize_sections(sections):
                 "type": section_type,
                 "data": {
                     "profile_image": _normalize_image_meta(data.get("profile_image")),
+                    "donation_qr": _normalize_image_meta(data.get("donation_qr")),
                     "description": _limit_text(data.get("description"), 200),
-                    "email": _limit_text(data.get("email"), 20),
-                    "donation": _limit_text(data.get("donation"), 20),
+                    "email": _limit_text(data.get("email"), 100),
+                    "donation": _limit_text(data.get("donation"), 100),
                 },
             })
 
@@ -288,6 +291,23 @@ def _apply_uploaded_files(minihome, sections, files):
             )
             if result.get("success"):
                 section["data"]["profile_image"] = {
+                    "path": result["file_path"],
+                    "url": result["file_url"],
+                    "width": result["width"],
+                    "height": result["height"],
+                }
+
+        if parts[0] == "cta_donation_qr" and len(parts) == 2:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            result = upload_minihome_image(
+                file,
+                prefix=f"{prefix_base}/cta",
+                target_width=CTA_DONATION_QR_WIDTH,
+            )
+            if result.get("success"):
+                section["data"]["donation_qr"] = {
                     "path": result["file_path"],
                     "url": result["file_url"],
                     "width": result["width"],
@@ -475,6 +495,7 @@ def minihome_add_store_item(request, slug):
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
     name = _limit_text(request.POST.get("name"), 50)
+    description = _limit_text(request.POST.get("description"), 100)
     map_url = _limit_text(request.POST.get("map_url"), 200)
     cover_image = None
     image_file = request.FILES.get("cover_image")
@@ -499,6 +520,7 @@ def minihome_add_store_item(request, slug):
         {
             "id": uuid.uuid4().hex,
             "name": name,
+            "description": description,
             "map_url": map_url,
             "cover_image": cover_image,
         }
@@ -698,6 +720,7 @@ def minihome_update_store_item(request, slug):
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
     store["name"] = _limit_text(request.POST.get("name"), 50)
+    store["description"] = _limit_text(request.POST.get("description"), 100)
     store["map_url"] = _limit_text(request.POST.get("map_url"), 200)
     image_file = request.FILES.get("cover_image")
     if image_file:

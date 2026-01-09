@@ -134,7 +134,7 @@
                     {% endif %}
                     <div class="space-y-1">
                       <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                      <p class="text-xs text-slate-300 break-all">{{ store.map_url|default:'' }}</p>
+                      <p class="text-xs text-slate-300 break-words line-clamp-2">{{ store.description|default:'' }}</p>
                     </div>
                     {% if store.map_url %}
                       <a class="minihome-link w-full justify-center text-center" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
@@ -164,13 +164,24 @@
                   </div>
                   <p class="text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
                 </div>
-                <div class="flex flex-col gap-2 md:w-56">
-                  {% if section.data.email %}
-                    <a class="minihome-link w-full justify-center text-center" href="mailto:{{ section.data.email }}">이메일: {{ section.data.email }}</a>
-                  {% endif %}
-                  {% if section.data.donation %}
-                    <span class="minihome-chip w-full justify-center text-center">후원 주소: {{ section.data.donation }}</span>
-                  {% endif %}
+                <div class="flex flex-col gap-3 md:w-[340px]">
+                  <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div class="flex flex-col gap-2 md:flex-1">
+                      {% if section.data.email %}
+                        <a class="minihome-link w-full justify-center text-center" href="mailto:{{ section.data.email }}">이메일: {{ section.data.email }}</a>
+                      {% endif %}
+                      {% if section.data.donation %}
+                        <span class="minihome-chip w-full justify-center text-center">후원 주소: {{ section.data.donation }}</span>
+                      {% endif %}
+                    </div>
+                    {% if section.data.donation_qr.url %}
+                      <div class="minihome-cta-qr">
+                        <div class="h-24 w-24 rounded-2xl bg-white/90 p-2">
+                          <img src="{{ section.data.donation_qr.url }}" alt="후원 QR" class="h-full w-full object-contain">
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </section>
