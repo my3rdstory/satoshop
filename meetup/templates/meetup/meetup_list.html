@@ -35,7 +35,7 @@
             스토어로 돌아가기
           </a>
           {% else %}
-          <a href="{% url 'meetup:add_meetup' store.store_id %}" 
+          <a href="{% url 'meetup:add_meetup' store.store_id %}{{ admin_access_query }}" 
              class="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors">
             <i class="fas fa-plus mr-2"></i>
             밋업 추가
@@ -64,7 +64,7 @@ function toggleTemporaryClosure(meetupId, meetupTitle) {
     const action = document.querySelector(`button[onclick*="${meetupId}"] span`).textContent.includes('해제') ? '해제' : '설정';
     
     if (confirm(`"${meetupTitle}" 밋업을 일시중단 ${action}하시겠습니까?`)) {
-        const url = `/meetup/{{ store.store_id }}/${meetupId}/toggle-temporary-closure/`;
+        const url = `/meetup/{{ store.store_id }}/${meetupId}/toggle-temporary-closure/{{ admin_access_query }}`;
         
         fetch(url, {
             method: 'POST',

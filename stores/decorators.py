@@ -5,6 +5,17 @@ from django.contrib.auth.decorators import login_required
 from .models import Store
 
 
+def resolve_store_actor(request, store):
+    admin_access = request.GET.get('admin_access', '').lower() == 'true'
+    if request.user.is_superuser and admin_access and store.owner != request.user:
+        return store.owner
+    return request.user
+
+
+def get_admin_access_query(request):
+    return '?admin_access=true' if request.GET.get('admin_access', '').lower() == 'true' else ''
+
+
 def store_owner_required(view_func):
     """
     스토어 소유자만 접근할 수 있도록 하는 데코레이터
@@ -26,7 +37,10 @@ def store_owner_required(view_func):
             # 수퍼어드민이 다른 스토어에 접근하는 경우 알림 메시지 표시
             if is_superuser and admin_access and store.owner != request.user:
                 messages.info(request, f'관리자 권한으로 "{store.store_name}" 스토어에 접근 중입니다.')
-            
+
+            request.store = store
+            request.store_actor = resolve_store_actor(request, store)
+
             return view_func(request, store_id, *args, **kwargs)
         else:
             if is_superuser:

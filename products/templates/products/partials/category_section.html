@@ -16,7 +16,7 @@
       </p>
     </div>
     {% if not is_public_view %}
-    <a href="{% url 'products:category_manage' store.store_id %}#category-{{ section.category.id }}"
+    <a href="{% url 'products:category_manage' store.store_id %}{{ admin_access_query }}#category-{{ section.category.id }}"
        class="category-section__manage-link">
       <i class="fas fa-sliders-h mr-1"></i>
       카테고리 관리

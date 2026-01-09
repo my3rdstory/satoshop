@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
-from stores.decorators import store_owner_required
+from stores.decorators import store_owner_required, get_admin_access_query
 from stores.models import Store
 
 from .models import Product, ProductCategory
@@ -19,13 +19,16 @@ logger = logging.getLogger(__name__)
 DEFAULT_CATEGORY_NAME = '카테고리 없음'
 
 
-def _get_store_for_owner(store_id, user):
+def _get_store_for_owner(store_id, request):
     """스토어 소유자 권한이 있는지 확인하고 스토어 반환."""
+    store = getattr(request, 'store', None)
+    if store and store.store_id == store_id:
+        return store
 
     return get_object_or_404(
         Store,
         store_id=store_id,
-        owner=user,
+        owner=request.user,
         deleted_at__isnull=True,
     )
 
@@ -56,7 +59,7 @@ def _serialize_category(category):
 def category_manage(request, store_id):
     """상품 카테고리 관리 페이지"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
     categories_qs = ProductCategory.objects.filter(store=store).order_by('order', 'created_at')
     categories = list(categories_qs)
 
@@ -64,6 +67,7 @@ def category_manage(request, store_id):
         'store': store,
         'categories': categories,
         'category_data': [_serialize_category(category) for category in categories],
+        'admin_access_query': get_admin_access_query(request),
     }
 
     return render(request, 'products/product_category_manage.html', context)
@@ -75,7 +79,7 @@ def category_manage(request, store_id):
 def category_list_api(request, store_id):
     """카테고리 목록 조회 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
     categories = (
         ProductCategory.objects.filter(store=store)
         .annotate(product_count=Count('products'))
@@ -92,7 +96,7 @@ def category_list_api(request, store_id):
 def category_create_api(request, store_id):
     """카테고리 생성 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
 
     try:
         payload = json.loads(request.body or '{}')
@@ -130,7 +134,7 @@ def category_create_api(request, store_id):
 def category_update_api(request, store_id, category_id):
     """카테고리 이름 수정 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
     category = get_object_or_404(ProductCategory, id=category_id, store=store)
 
     try:
@@ -165,7 +169,7 @@ def category_update_api(request, store_id, category_id):
 def category_delete_api(request, store_id, category_id):
     """카테고리 삭제 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
     category = get_object_or_404(ProductCategory, id=category_id, store=store)
 
     if category.name == DEFAULT_CATEGORY_NAME:
@@ -190,7 +194,7 @@ def category_delete_api(request, store_id, category_id):
 def category_reorder_api(request, store_id):
     """카테고리 정렬 순서 변경 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
 
     try:
         payload = json.loads(request.body or '{}')
@@ -231,7 +235,7 @@ def category_reorder_api(request, store_id):
 def category_products_api(request, store_id):
     """카테고리 매칭용 상품 목록 API"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
 
     try:
         page = max(int(request.GET.get('page', 1)), 1)
@@ -307,7 +311,7 @@ def category_products_api(request, store_id):
 def category_assign_api(request, store_id):
     """상품을 카테고리에 매칭"""
 
-    store = _get_store_for_owner(store_id, request.user)
+    store = _get_store_for_owner(store_id, request)
 
     try:
         payload = json.loads(request.body or '{}')

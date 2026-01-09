@@ -3,10 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_POST, require_http_methods
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from django.utils import timezone
 from stores.models import Store
+from stores.decorators import resolve_store_actor, get_admin_access_query
 from .models import Meetup, MeetupImage, MeetupOption, MeetupChoice, MeetupOrder, MeetupOrderOption
 from .forms import MeetupForm
 import json
@@ -32,6 +34,10 @@ TRANSACTION_STAGE_LABELS = {
     PaymentStage.MERCHANT_SETTLEMENT: '4단계 · 입금 검증',
     PaymentStage.ORDER_FINALIZE: '5단계 · 참가 확정',
 }
+
+def _build_admin_url(request, view_name, **kwargs):
+    url = reverse(view_name, kwargs=kwargs)
+    return f"{url}{get_admin_access_query(request)}"
 
 def check_admin_access(request, store):
     """수퍼어드민 특별 접근 확인 및 메시지 표시"""
@@ -94,6 +100,7 @@ def meetup_list(request, store_id):
         'store': store,
         'meetups': meetups,
         'is_public_view': is_public_view,
+        'admin_access_query': get_admin_access_query(request),
     }
     
     return render(request, 'meetup/meetup_list.html', context)
@@ -148,7 +155,7 @@ def add_meetup(request, store_id):
                         image_file = images[0]
                         try:
                             from storage.utils import upload_meetup_image
-                            result = upload_meetup_image(image_file, meetup, request.user)
+                            result = upload_meetup_image(image_file, meetup, resolve_store_actor(request, store))
                             
                             if result['success']:
                                 import logging
@@ -190,7 +197,7 @@ def add_meetup(request, store_id):
                             pass  # 옵션 데이터 파싱 오류는 무시하고 계속 진행
                     
                     messages.success(request, f'"{meetup.name}" 밋업이 성공적으로 추가되었습니다.')
-                    return redirect('meetup:meetup_list', store_id=store_id)
+                    return redirect(_build_admin_url(request, 'meetup:meetup_list', store_id=store_id))
                     
             except Exception as e:
                 messages.error(request, '밋업 추가 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -201,6 +208,7 @@ def add_meetup(request, store_id):
     context = {
         'store': store,
         'form': form,
+        'admin_access_query': get_admin_access_query(request),
     }
     
     return render(request, 'meetup/meetup_add.html', context)
@@ -278,7 +286,7 @@ def edit_meetup_unified(request, store_id, meetup_id):
                         image_file = images[0]
                         try:
                             from storage.utils import upload_meetup_image
-                            result = upload_meetup_image(image_file, meetup, request.user)
+                            result = upload_meetup_image(image_file, meetup, resolve_store_actor(request, store))
                             
                             if result['success']:
                                 import logging
@@ -323,7 +331,7 @@ def edit_meetup_unified(request, store_id, meetup_id):
                             pass  # 옵션 데이터 파싱 오류는 무시하고 계속 진행
                     
                     messages.success(request, f'"{meetup.name}" 밋업이 성공적으로 수정되었습니다.')
-                    return redirect('meetup:meetup_list', store_id=store_id)
+                    return redirect(_build_admin_url(request, 'meetup:meetup_list', store_id=store_id))
                     
             except Exception as e:
                 messages.error(request, '밋업 수정 중 오류가 발생했습니다. 다시 시도해주세요.')
@@ -355,6 +363,7 @@ def edit_meetup_unified(request, store_id, meetup_id):
         'form': form,
         'existing_options': json.dumps(existing_options),
         'is_edit': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     
     return render(request, 'meetup/meetup_edit.html', context)
@@ -377,6 +386,7 @@ def manage_meetup(request, store_id, meetup_id):
         'store': store,
         'meetup': meetup,
         'meetup_id': meetup_id,
+        'admin_access_query': get_admin_access_query(request),
     }
     
     return render(request, 'meetup/meetup_manage.html', context)

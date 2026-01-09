@@ -28,7 +28,7 @@
 
     <!-- 뒤로가기 버튼 -->
     <div class="mb-6">
-      <a href="{% url 'products:manage_product' store.store_id product.id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+      <a href="{% url 'products:manage_product' store.store_id product.id %}{{ admin_access_query }}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
         <i class="fas fa-arrow-left text-sm"></i>
         <span>상품 관리로 돌아가기</span>
       </a>
@@ -143,7 +143,7 @@
 
       <!-- 제출 버튼 -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{% url 'products:manage_product' store.store_id product.id %}" 
+        <a href="{% url 'products:manage_product' store.store_id product.id %}{{ admin_access_query }}" 
            class="inline-flex items-center justify-center px-8 py-4 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
           <i class="fas fa-times mr-2"></i>
           <span>취소</span>
