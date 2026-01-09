@@ -125,4 +125,59 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  const copyToClipboard = async (text) => {
+    if (!text) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
+
+  const showCopyFeedback = (target) => {
+    if (!target) return;
+    const original = target.dataset.copyLabel || target.textContent;
+    target.dataset.copyLabel = original;
+    target.textContent = '복사되었습니다';
+    target.classList.add('minihome-copy--done');
+    const previous = target.dataset.copyTimeoutId;
+    if (previous) {
+      window.clearTimeout(Number(previous));
+    }
+    const timeoutId = window.setTimeout(() => {
+      target.textContent = target.dataset.copyLabel || original;
+      target.classList.remove('minihome-copy--done');
+      target.dataset.copyTimeoutId = '';
+    }, 2000);
+    target.dataset.copyTimeoutId = String(timeoutId);
+  };
+
+  const bindCopyTargets = () => {
+    document.querySelectorAll('[data-copy-text]').forEach((target) => {
+      const text = target.dataset.copyText || '';
+      const handleCopy = async (event) => {
+        event.preventDefault();
+        await copyToClipboard(text);
+        showCopyFeedback(target);
+      };
+      target.addEventListener('click', handleCopy);
+      target.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleCopy(event);
+        }
+      });
+    });
+  };
+
+  bindCopyTargets();
 });

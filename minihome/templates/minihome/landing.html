@@ -132,18 +132,28 @@
                     {% if store.cover_image.url %}
                       <img src="{{ store.cover_image.url }}" alt="{{ store.name|default:'매장' }} 커버" class="h-32 w-full rounded-xl object-cover">
                     {% endif %}
-                    <div class="space-y-1">
+                    <div class="space-y-1 flex-1">
                       <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                      <p class="text-xs text-slate-300 break-all">{{ store.map_url|default:'' }}</p>
+                      <p class="text-xs text-slate-300 break-words">{{ store.description|default:'' }}</p>
                     </div>
                     {% if store.map_url %}
-                      <a class="minihome-link w-full justify-center text-center" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
+                      <a class="minihome-link w-full justify-center text-center mt-auto" href="{{ store.map_url }}" target="_blank" rel="noopener">지도 열기</a>
                     {% endif %}
                   </div>
                 {% empty %}
                   <div class="minihome-empty">등록된 매장이 없습니다.</div>
                 {% endfor %}
               </div>
+            </section>
+          {% endif %}
+
+          {% if section.type == 'infographic' %}
+            <section class="minihome-section-card">
+              {% if section.data.image.url %}
+                <img src="{{ section.data.image.url }}" alt="인포그래픽" class="w-full h-auto rounded-3xl shadow-lg">
+              {% else %}
+                <div class="minihome-empty">인포그래픽 이미지를 등록해주세요.</div>
+              {% endif %}
             </section>
           {% endif %}
 
@@ -164,13 +174,26 @@
                   </div>
                   <p class="text-slate-200 whitespace-pre-line">{{ section.data.description|default:'' }}</p>
                 </div>
-                <div class="flex flex-col gap-2 md:w-56">
-                  {% if section.data.email %}
-                    <a class="minihome-link w-full justify-center text-center" href="mailto:{{ section.data.email }}">이메일: {{ section.data.email }}</a>
-                  {% endif %}
-                  {% if section.data.donation %}
-                    <span class="minihome-chip w-full justify-center text-center">후원 주소: {{ section.data.donation }}</span>
-                  {% endif %}
+                <div class="flex flex-col gap-3 md:w-[340px]">
+                  <div class="flex flex-col items-end gap-3 md:flex-row md:items-center md:justify-end md:gap-2">
+                    <div class="md:flex-none md:self-center">
+                      <div class="minihome-cta-buttons">
+                        {% if section.data.email %}
+                          <a class="minihome-link minihome-copy justify-center text-center break-words" href="mailto:{{ section.data.email }}" data-copy-text="{{ section.data.email }}">이메일: {{ section.data.email }}</a>
+                        {% endif %}
+                        {% if section.data.donation %}
+                          <span class="minihome-chip minihome-copy justify-center text-center break-words" role="button" tabindex="0" data-copy-text="{{ section.data.donation }}">⚡후원주소:{{ section.data.donation }}</span>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% if section.data.donation_qr.url %}
+                      <div class="minihome-cta-qr">
+                        <div class="h-24 w-24 rounded-2xl bg-white/90 p-2">
+                          <img src="{{ section.data.donation_qr.url }}" alt="후원 QR" class="h-full w-full object-contain">
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </section>
@@ -179,6 +202,10 @@
       </div>
     </div>
   </main>
+
+  {% if show_manage_link %}
+    <a class="minihome-manage-fab" href="{{ manage_url }}">관리화면 이동</a>
+  {% endif %}
 
   <div class="minihome-modal hidden" data-blog-modal>
     <div class="minihome-modal-panel">

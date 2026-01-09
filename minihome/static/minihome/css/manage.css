@@ -211,9 +211,45 @@ body {
 
 .minihome-preview {
   width: 100%;
-  max-height: 160px;
+  height: auto;
   object-fit: cover;
   border-radius: 0.8rem;
+}
+
+.minihome-dropzone--brand .minihome-preview {
+  height: auto;
+  object-fit: contain;
+}
+
+.minihome-dropzone--infographic .minihome-preview {
+  height: auto;
+  object-fit: contain;
+}
+
+.minihome-dropzone--gallery .minihome-preview {
+  height: 12rem;
+}
+
+.minihome-dropzone--blog .minihome-preview {
+  height: 10rem;
+}
+
+.minihome-dropzone--store .minihome-preview {
+  height: 8rem;
+}
+
+.minihome-dropzone--cta-profile .minihome-preview {
+  width: 4rem;
+  height: 4rem;
+}
+
+.minihome-dropzone--cta-qr .minihome-preview {
+  width: 6rem;
+  height: 6rem;
+  padding: 0.5rem;
+  background: #ffffff;
+  object-fit: contain;
+  border-radius: 1rem;
 }
 
 .minihome-modal {

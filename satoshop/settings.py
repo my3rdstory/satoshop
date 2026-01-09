@@ -60,6 +60,7 @@ DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+MINIHOME_LIST_DOMAIN = os.getenv('MINIHOME_LIST_DOMAIN', '').strip()
 
 # CSRF Trusted Origins (콤마 구분 환경변수 지원)
 # 예: CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173

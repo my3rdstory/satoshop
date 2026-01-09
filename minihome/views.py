@@ -1,12 +1,13 @@
 import json
 import uuid
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Minihome
+from .models import Minihome, normalize_domain
 from .services import (
     build_minihome_static_html,
     get_minihome_static_page_path,
@@ -22,6 +23,7 @@ SECTION_TYPES = (
     "gallery",
     "mini_blog",
     "store",
+    "infographic",
     "cta",
 )
 
@@ -55,7 +57,9 @@ BRAND_IMAGE_WIDTH = 900
 GALLERY_IMAGE_WIDTH = 900
 BLOG_IMAGE_WIDTH = 1000
 CTA_PROFILE_MAX_SIZE = (300, 300)
+CTA_DONATION_QR_WIDTH = 300
 STORE_IMAGE_WIDTH = 600
+INFOGRAPHIC_IMAGE_WIDTH = 1000
 
 
 def _user_can_manage(minihome: Minihome, user) -> bool:
@@ -107,6 +111,15 @@ def _normalize_sections(sections):
         data = raw_section.get("data") if isinstance(raw_section.get("data"), dict) else {}
 
         if section_type == "brand_image":
+            image_meta = _normalize_image_meta(data.get("image"))
+            normalized.append({
+                "id": section_id,
+                "type": section_type,
+                "data": {"image": image_meta},
+            })
+            continue
+
+        if section_type == "infographic":
             image_meta = _normalize_image_meta(data.get("image"))
             normalized.append({
                 "id": section_id,
@@ -179,6 +192,7 @@ def _normalize_sections(sections):
                 stores.append({
                     "id": store_id,
                     "name": _limit_text(store.get("name"), 50),
+                    "description": _limit_text(store.get("description"), 100),
                     "map_url": _limit_text(store.get("map_url"), 200),
                     "cover_image": _normalize_image_meta(store.get("cover_image")),
                 })
@@ -195,9 +209,10 @@ def _normalize_sections(sections):
                 "type": section_type,
                 "data": {
                     "profile_image": _normalize_image_meta(data.get("profile_image")),
+                    "donation_qr": _normalize_image_meta(data.get("donation_qr")),
                     "description": _limit_text(data.get("description"), 200),
-                    "email": _limit_text(data.get("email"), 20),
-                    "donation": _limit_text(data.get("donation"), 20),
+                    "email": _limit_text(data.get("email"), 100),
+                    "donation": _limit_text(data.get("donation"), 100),
                 },
             })
 
@@ -221,6 +236,23 @@ def _apply_uploaded_files(minihome, sections, files):
                 file,
                 prefix=f"{prefix_base}/brand",
                 target_width=BRAND_IMAGE_WIDTH,
+            )
+            if result.get("success"):
+                section["data"]["image"] = {
+                    "path": result["file_path"],
+                    "url": result["file_url"],
+                    "width": result["width"],
+                    "height": result["height"],
+                }
+
+        if parts[0] == "infographic" and len(parts) == 2:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            result = upload_minihome_image(
+                file,
+                prefix=f"{prefix_base}/infographic",
+                target_width=INFOGRAPHIC_IMAGE_WIDTH,
             )
             if result.get("success"):
                 section["data"]["image"] = {
@@ -294,6 +326,23 @@ def _apply_uploaded_files(minihome, sections, files):
                     "height": result["height"],
                 }
 
+        if parts[0] == "cta_donation_qr" and len(parts) == 2:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            result = upload_minihome_image(
+                file,
+                prefix=f"{prefix_base}/cta",
+                target_width=CTA_DONATION_QR_WIDTH,
+            )
+            if result.get("success"):
+                section["data"]["donation_qr"] = {
+                    "path": result["file_path"],
+                    "url": result["file_url"],
+                    "width": result["width"],
+                    "height": result["height"],
+                }
+
         if parts[0] == "store" and len(parts) == 3:
             section = section_map.get(parts[1])
             if not section:
@@ -319,10 +368,17 @@ def _apply_uploaded_files(minihome, sections, files):
 
 def minihome_list(request):
     minihomes = Minihome.objects.filter(is_published=True).order_by("-updated_at")
+    host = request.get_host().split(":")[0]
+    list_domain = normalize_domain(settings.MINIHOME_LIST_DOMAIN)
+    is_list_domain = bool(list_domain) and normalize_domain(host) == list_domain
+    base_path = "/" if is_list_domain else "/minihome/"
     return render(
         request,
         "minihome/list.html",
-        {"minihomes": minihomes},
+        {
+            "minihomes": minihomes,
+            "minihome_base_path": base_path,
+        },
     )
 
 
@@ -475,6 +531,7 @@ def minihome_add_store_item(request, slug):
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
     name = _limit_text(request.POST.get("name"), 50)
+    description = _limit_text(request.POST.get("description"), 100)
     map_url = _limit_text(request.POST.get("map_url"), 200)
     cover_image = None
     image_file = request.FILES.get("cover_image")
@@ -499,6 +556,7 @@ def minihome_add_store_item(request, slug):
         {
             "id": uuid.uuid4().hex,
             "name": name,
+            "description": description,
             "map_url": map_url,
             "cover_image": cover_image,
         }
@@ -698,6 +756,7 @@ def minihome_update_store_item(request, slug):
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
     store["name"] = _limit_text(request.POST.get("name"), 50)
+    store["description"] = _limit_text(request.POST.get("description"), 100)
     store["map_url"] = _limit_text(request.POST.get("map_url"), 200)
     image_file = request.FILES.get("cover_image")
     if image_file:
@@ -752,6 +811,33 @@ def minihome_landing(request, slug):
     static_path = get_minihome_static_page_path(slug)
     if not static_path.exists():
         raise Http404
+
+    if request.user.is_authenticated:
+        minihome = Minihome.objects.filter(slug=slug).first()
+        if minihome and _user_can_manage(minihome, request.user):
+            background_preset = _normalize_background_preset(
+                minihome.published_background_preset
+            )
+            path = request.path.strip("/")
+            if request.path.startswith("/minihome/"):
+                manage_url = reverse("minihome:manage", kwargs={"slug": minihome.slug})
+            elif path.startswith(f"{minihome.slug}/") or path == minihome.slug:
+                manage_url = f"/{minihome.slug}/mng/"
+            else:
+                manage_url = "/mng/"
+            return render(
+                request,
+                "minihome/landing.html",
+                {
+                    "minihome": minihome,
+                    "sections": minihome.published_sections,
+                    "is_preview": False,
+                    "background_preset": background_preset,
+                    "show_manage_link": True,
+                    "manage_url": manage_url,
+                },
+            )
+
     return FileResponse(static_path.open("rb"), content_type="text/html")
 
 

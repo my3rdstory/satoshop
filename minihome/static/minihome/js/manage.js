@@ -15,6 +15,7 @@ const dataPanelContainer = document.querySelector('[data-section-data-panels]');
 const dataEmptyHint = document.querySelector('[data-data-empty]');
 const dataTitle = document.querySelector('[data-data-title]');
 const dataSubtitle = document.querySelector('[data-data-subtitle]');
+const DATA_PANEL_PARAM = 'data_panel';
 const sectionTypeLabels = {
   gallery: '갤러리',
   mini_blog: '미니 블로그',
@@ -49,6 +50,18 @@ const getDataPanel = (sectionId) => {
   );
 };
 
+const updateDataPanelParam = (sectionId) => {
+  const params = new URLSearchParams(window.location.search);
+  if (sectionId) {
+    params.set(DATA_PANEL_PARAM, sectionId);
+  } else {
+    params.delete(DATA_PANEL_PARAM);
+  }
+  const nextQuery = params.toString();
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
+};
+
 const updateDataHeader = (sectionType) => {
   const label = sectionTypeLabels[sectionType] || '데이터';
   if (dataTitle) {
@@ -77,6 +90,24 @@ const resetDataPanel = () => {
     dataEmptyHint.classList.remove('hidden');
   }
   resetDataHeader();
+  updateDataPanelParam('');
+};
+
+const moveSection = (section, direction) => {
+  if (!sectionList || !section) return;
+  if (direction === 'up') {
+    const previous = section.previousElementSibling;
+    if (previous) {
+      sectionList.insertBefore(section, previous);
+    }
+    return;
+  }
+  if (direction === 'down') {
+    const next = section.nextElementSibling;
+    if (next) {
+      sectionList.insertBefore(next, section);
+    }
+  }
 };
 
 const showDataPanel = (sectionId, sectionType) => {
@@ -95,6 +126,7 @@ const showDataPanel = (sectionId, sectionType) => {
     dataEmptyHint.classList.add('hidden');
   }
   updateDataHeader(sectionType || panel.dataset.sectionType);
+  updateDataPanelParam(sectionId);
   if (panel.dataset.sectionType === 'mini_blog') {
     updateBlogPagination(panel);
   }
@@ -140,6 +172,7 @@ const clearImageMeta = (scope) => {
 };
 
 const readImageMeta = (scope) => {
+  if (!scope) return null;
   const path = scope.querySelector('[data-image-meta="path"]')?.value?.trim();
   if (!path) return null;
   return {
@@ -194,8 +227,9 @@ const setupDropzone = (zone) => {
       }
       const scope = zone.querySelector('[data-image-meta]')
         ? zone
-        : zone.closest('[data-blog-image],[data-gallery-item],[data-store-item],[data-section]')
-          || zone.parentElement;
+        : zone.closest(
+            '[data-blog-image],[data-gallery-item],[data-store-item],[data-cta-profile],[data-cta-donation-qr],[data-section]'
+          ) || zone.parentElement;
       if (scope) {
         clearImageMeta(scope);
       }
@@ -367,7 +401,7 @@ const collectSections = () => {
     const type = section.dataset.sectionType;
     const id = section.dataset.sectionId;
     if (!type || !id) return;
-    if (type === 'brand_image') {
+    if (type === 'brand_image' || type === 'infographic') {
       sections.push({
         id,
         type,
@@ -430,6 +464,7 @@ const collectSections = () => {
         stores.push({
           id: store.dataset.storeId || generateId(),
           name: store.querySelector('[data-field="name"]')?.value || '',
+          description: store.querySelector('[data-field="description"]')?.value || '',
           map_url: store.querySelector('[data-field="map_url"]')?.value || '',
           cover_image: readImageMeta(store),
         });
@@ -438,11 +473,14 @@ const collectSections = () => {
       return;
     }
     if (type === 'cta') {
+      const profileScope = section.querySelector('[data-cta-profile]') || section;
+      const donationScope = section.querySelector('[data-cta-donation-qr]');
       sections.push({
         id,
         type,
         data: {
-          profile_image: readImageMeta(section),
+          profile_image: readImageMeta(profileScope),
+          donation_qr: readImageMeta(donationScope),
           description: section.querySelector('[data-field="description"]')?.value || '',
           email: section.querySelector('[data-field="email"]')?.value || '',
           donation: section.querySelector('[data-field="donation"]')?.value || '',
@@ -485,7 +523,21 @@ dataPanelContainer?.querySelectorAll('[data-blog-posts]').forEach((container) =>
 dataPanelContainer?.querySelectorAll('[data-store-items]').forEach((container) => {
   toggleEmptyHint(container, '[data-store-item]');
 });
-resetDataPanel();
+
+const initializeDataPanelFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  const sectionId = params.get(DATA_PANEL_PARAM);
+  if (!sectionId) {
+    resetDataPanel();
+    return;
+  }
+  const panel = getDataPanel(sectionId);
+  if (!panel) {
+    resetDataPanel();
+    return;
+  }
+  showDataPanel(sectionId, panel.dataset.sectionType);
+};
 
 const updateBackgroundPreview = (element, value) => {
   if (!element || !value) return;
@@ -573,6 +625,12 @@ document.addEventListener('click', (event) => {
     if (sectionId) {
       showDataPanel(sectionId, sectionType);
     }
+    return;
+  }
+  if (action === 'move-section-up' || action === 'move-section-down') {
+    event.preventDefault();
+    const section = actionButton.closest('[data-section]');
+    moveSection(section, action === 'move-section-up' ? 'up' : 'down');
     return;
   }
   if (action === 'close-data-panel') {
@@ -684,3 +742,4 @@ const showPublishNotice = () => {
 };
 
 showPublishNotice();
+initializeDataPanelFromUrl();
