@@ -435,7 +435,7 @@
                               {% endif %}
                               <div class="space-y-1">
                                 <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                                <p class="text-xs text-slate-300 break-words line-clamp-2">{{ store.description|default:'' }}</p>
+                                <p class="text-xs text-slate-300 break-words">{{ store.description|default:'' }}</p>
                               </div>
                               {% if store.map_url %}
                                 <span class="minihome-link w-full justify-center text-center">지도 열기</span>
