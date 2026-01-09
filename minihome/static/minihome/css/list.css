@@ -57,12 +57,12 @@ body {
 
 .minihome-glow {
   position: fixed;
-  width: 480px;
-  height: 480px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.25), transparent 60%);
-  top: -120px;
-  right: -160px;
+  width: 240px;
+  height: 240px;
+  top: -90px;
+  right: -60px;
+  opacity: 0.18;
+  filter: drop-shadow(0 0 30px rgba(247, 147, 26, 0.45));
   z-index: 0;
   pointer-events: none;
 }
