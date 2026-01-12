@@ -133,8 +133,8 @@ def _normalize_sections(sections):
                 "id": section_id,
                 "type": section_type,
                 "data": {
-                    "title": _limit_text(data.get("title"), 30),
-                    "description": _limit_text(data.get("description"), 100),
+                    "title": _limit_text(data.get("title"), 1000),
+                    "description": _limit_text(data.get("description"), 10000),
                 },
             })
             continue
@@ -147,7 +147,7 @@ def _normalize_sections(sections):
                 item_id = _ensure_id(item.get("id"))
                 items.append({
                     "id": item_id,
-                    "description": _limit_text(item.get("description"), 100),
+                    "description": _limit_text(item.get("description"), 10000),
                     "image": _normalize_image_meta(item.get("image")),
                 })
             normalized.append({
@@ -428,7 +428,7 @@ def minihome_add_gallery_item(request, slug):
     if not section:
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
-    description = _limit_text(request.POST.get("description"), 100)
+    description = _limit_text(request.POST.get("description"), 10000)
     image_file = request.FILES.get("image")
     image_meta = None
     if image_file:
@@ -600,7 +600,7 @@ def minihome_update_gallery_item(request, slug):
     if not item:
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
-    item["description"] = _limit_text(request.POST.get("description"), 100)
+    item["description"] = _limit_text(request.POST.get("description"), 10000)
     image_file = request.FILES.get("image")
     if image_file:
         upload_result = upload_minihome_image(

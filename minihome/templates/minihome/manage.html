@@ -150,12 +150,12 @@
                       {% if section.type == 'title' %}
                         <div class="space-y-3">
                           <label class="minihome-field">
-                            <span>제목 (최대 30자)</span>
-                            <input type="text" data-field="title" value="{{ section.data.title|default:'' }}" maxlength="30">
+                            <span>제목 (최대 1000자)</span>
+                            <input type="text" data-field="title" value="{{ section.data.title|default:'' }}" maxlength="1000">
                           </label>
                           <label class="minihome-field">
-                            <span>설명 (최대 100자)</span>
-                            <textarea data-field="description" rows="3" maxlength="100">{{ section.data.description|default:'' }}</textarea>
+                            <span>설명 (최대 10000자)</span>
+                            <textarea data-field="description" rows="3" maxlength="10000">{{ section.data.description|default:'' }}</textarea>
                           </label>
                         </div>
                       {% endif %}
@@ -315,8 +315,8 @@
                               <div class="sm:w-1/2 flex items-center">
                                 <div class="space-y-3 w-full">
                                   <label class="minihome-field">
-                                    <span>설명 (최대 100자)</span>
-                                    <textarea data-field="description" rows="3" maxlength="100">{{ item.description|default:'' }}</textarea>
+                                    <span>설명 (최대 10000자)</span>
+                                    <textarea data-field="description" rows="3" maxlength="10000" class="minihome-textarea--gallery">{{ item.description|default:'' }}</textarea>
                                   </label>
                                   <div class="flex justify-end">
                                     <button type="button" class="minihome-link minihome-link--sm" data-action="remove-gallery-item">삭제</button>
@@ -460,7 +460,7 @@
                               {% endif %}
                               <div class="space-y-1 flex-1">
                                 <p class="font-semibold">{{ store.name|default:'매장' }}</p>
-                                <p class="text-xs text-slate-300 break-words">{{ store.description|default:'' }}</p>
+                                <p class="text-xs text-slate-300 break-words">{{ store.description|default:''|linebreaksbr }}</p>
                               </div>
                               {% if store.map_url %}
                                 <span class="minihome-link w-full justify-center text-center mt-auto">지도 열기</span>
@@ -588,12 +588,12 @@
       </div>
       <div class="space-y-3">
         <label class="minihome-field">
-          <span>제목 (최대 30자)</span>
-          <input type="text" data-field="title" maxlength="30">
+          <span>제목 (최대 1000자)</span>
+          <input type="text" data-field="title" maxlength="1000">
         </label>
         <label class="minihome-field">
-          <span>설명 (최대 100자)</span>
-          <textarea data-field="description" rows="3" maxlength="100"></textarea>
+          <span>설명 (최대 10000자)</span>
+          <textarea data-field="description" rows="3" maxlength="10000"></textarea>
         </label>
       </div>
     </section>
@@ -791,8 +791,8 @@
         <div class="sm:w-1/2 flex items-center">
           <div class="space-y-3 w-full">
             <label class="minihome-field">
-              <span>설명 (최대 100자)</span>
-              <textarea data-field="description" rows="3" maxlength="100"></textarea>
+              <span>설명 (최대 10000자)</span>
+              <textarea data-field="description" rows="3" maxlength="10000" class="minihome-textarea--gallery"></textarea>
             </label>
             <div class="flex justify-end">
               <button type="button" class="minihome-link minihome-link--sm" data-action="remove-gallery-item">삭제</button>

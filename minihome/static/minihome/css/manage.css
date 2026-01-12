@@ -230,6 +230,13 @@ body {
   height: 12rem;
 }
 
+.minihome-textarea--gallery {
+  height: 12rem;
+  min-height: 12rem;
+  overflow-y: auto;
+  resize: none;
+}
+
 .minihome-dropzone--blog .minihome-preview {
   height: 10rem;
 }
