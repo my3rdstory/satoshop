@@ -171,8 +171,16 @@ def update_minihome_publish_map(slug: str, domain: str):
 def resolve_minihome_slug_by_domain(domain: str) -> Optional[str]:
     if not domain:
         return None
-    data = _load_minihome_publish_map()
-    return data.get("domains", {}).get(domain)
+    from .models import Minihome, normalize_domain
+
+    normalized = normalize_domain(domain)
+    if not normalized:
+        return None
+    return (
+        Minihome.objects.filter(domain=normalized, is_published=True)
+        .values_list("slug", flat=True)
+        .first()
+    )
 
 
 def build_minihome_static_html(

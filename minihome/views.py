@@ -2,19 +2,13 @@ import json
 import uuid
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import Minihome, normalize_domain
-from .services import (
-    build_minihome_static_html,
-    get_minihome_static_page_path,
-    save_minihome_static_page,
-    update_minihome_publish_map,
-    upload_minihome_image,
-)
+from .services import upload_minihome_image
 
 
 SECTION_TYPES = (
@@ -823,37 +817,29 @@ def minihome_landing(request, slug):
             target = f"{target}?{query}"
         return redirect(target)
 
-    static_path = get_minihome_static_page_path(slug)
-    if not static_path.exists():
-        raise Http404
+    minihome = get_object_or_404(Minihome, slug=slug, is_published=True)
+    background_preset = _normalize_background_preset(
+        minihome.published_background_preset
+    )
+    context = {
+        "minihome": minihome,
+        "sections": minihome.published_sections,
+        "is_preview": False,
+        "background_preset": background_preset,
+    }
 
-    if request.user.is_authenticated:
-        minihome = Minihome.objects.filter(slug=slug).first()
-        if minihome and _user_can_manage(minihome, request.user):
-            background_preset = _normalize_background_preset(
-                minihome.published_background_preset
-            )
-            path = request.path.strip("/")
-            if request.path.startswith("/minihome/"):
-                manage_url = reverse("minihome:manage", kwargs={"slug": minihome.slug})
-            elif path.startswith(f"{minihome.slug}/") or path == minihome.slug:
-                manage_url = f"/{minihome.slug}/mng/"
-            else:
-                manage_url = "/mng/"
-            return render(
-                request,
-                "minihome/landing.html",
-                {
-                    "minihome": minihome,
-                    "sections": minihome.published_sections,
-                    "is_preview": False,
-                    "background_preset": background_preset,
-                    "show_manage_link": True,
-                    "manage_url": manage_url,
-                },
-            )
+    if request.user.is_authenticated and _user_can_manage(minihome, request.user):
+        path = request.path.strip("/")
+        if request.path.startswith("/minihome/"):
+            manage_url = reverse("minihome:manage", kwargs={"slug": minihome.slug})
+        elif path.startswith(f"{minihome.slug}/") or path == minihome.slug:
+            manage_url = f"/{minihome.slug}/mng/"
+        else:
+            manage_url = "/mng/"
+        context["show_manage_link"] = True
+        context["manage_url"] = manage_url
 
-    return FileResponse(static_path.open("rb"), content_type="text/html")
+    return render(request, "minihome/landing.html", context)
 
 
 @login_required
@@ -913,14 +899,6 @@ def minihome_manage(request, slug):
                     "updated_at",
                 ]
             )
-            html = build_minihome_static_html(
-                slug=minihome.slug,
-                display_name=minihome.display_name,
-                sections=sections,
-                background_preset=background_preset,
-            )
-            save_minihome_static_page(minihome.slug, html)
-            update_minihome_publish_map(minihome.slug, minihome.domain or "")
             return redirect(f"{reverse('minihome:manage', kwargs={'slug': minihome.slug})}?published=1")
         if action == "preview":
             return redirect(reverse("minihome:preview", kwargs={"slug": minihome.slug}))
