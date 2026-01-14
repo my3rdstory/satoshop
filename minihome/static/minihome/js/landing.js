@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const modal = document.querySelector('[data-blog-modal]');
-  const modalText = modal ? modal.querySelector('[data-modal-text]') : null;
+  const modalTitle = modal ? modal.querySelector('[data-modal-title]') : null;
+  const modalBody = modal ? modal.querySelector('[data-modal-body]') : null;
   const modalImages = modal ? modal.querySelector('[data-modal-images]') : null;
   const closeButton = modal ? modal.querySelector('[data-modal-close]') : null;
   const postsPerPage = 4;
@@ -24,31 +25,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const bindBlogCards = (container) => {
     container.querySelectorAll('[data-blog-card]').forEach((card) => {
-    card.addEventListener('click', () => {
-      if (!modal || !modalText || !modalImages) {
-        return;
-      }
-      const text = card.dataset.text || '';
-      modalText.textContent = text;
-      modalImages.innerHTML = '';
+      card.addEventListener('click', () => {
+        if (!modal || !modalBody || !modalImages) {
+          return;
+        }
+        const title = card.dataset.title || card.dataset.body || card.dataset.text || '';
+        const body = card.dataset.body || card.dataset.text || '';
+        if (modalTitle) {
+          modalTitle.textContent = title;
+        }
+        modalBody.textContent = body;
+        modalImages.innerHTML = '';
 
-      const imageUrls = [
-        getImageUrl(card, 'image0'),
-        getImageUrl(card, 'image1'),
-        getImageUrl(card, 'image2'),
-        getImageUrl(card, 'image3'),
-      ].filter((url) => url);
+        const imageUrls = [
+          getImageUrl(card, 'image0'),
+          getImageUrl(card, 'image1'),
+          getImageUrl(card, 'image2'),
+          getImageUrl(card, 'image3'),
+        ].filter((url) => url);
 
-      imageUrls.forEach((url) => {
-        const img = document.createElement('img');
-        img.src = url;
-        img.alt = '블로그 이미지';
-        img.className = 'w-full h-40 object-cover rounded-xl';
-        modalImages.appendChild(img);
+        imageUrls.forEach((url) => {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = '블로그 이미지';
+          img.className = 'w-full h-40 object-cover rounded-xl';
+          modalImages.appendChild(img);
+        });
+
+        modal.classList.remove('hidden');
       });
-
-      modal.classList.remove('hidden');
-    });
     });
   };
 

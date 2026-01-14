@@ -9,7 +9,7 @@ const backgroundModal = document.querySelector('[data-background-modal]');
 const backgroundPreview = document.querySelector('[data-current-bg]');
 const backgroundLabelTargets = document.querySelectorAll('[data-current-bg-label]');
 const backgroundModalPreview = document.querySelector('[data-modal-current-bg]');
-const blogPreviewPlaceholder = '내용을 입력해주세요.';
+const blogPreviewPlaceholder = '제목을 입력해주세요.';
 const publishNotice = document.querySelector('[data-publish-notice]');
 const dataPanelContainer = document.querySelector('[data-section-data-panels]');
 const dataEmptyHint = document.querySelector('[data-data-empty]');
@@ -20,6 +20,7 @@ const sectionTypeLabels = {
   gallery: '갤러리',
   mini_blog: '미니 블로그',
   store: '매장',
+  contributor: '컨트리뷰터',
 };
 let activeDataPanelId = null;
 const BLOG_PAGE_SIZE = 10;
@@ -260,11 +261,13 @@ const setupDropzone = (zone) => {
 const initializeSection = (section) => {
   section.querySelectorAll('[data-dropzone]').forEach(setupDropzone);
   section.querySelectorAll('[data-blog-post]').forEach(bindBlogPreview);
+  section.querySelectorAll('[data-contributor-item]').forEach(bindContributorPreview);
 };
 
 const initializePanel = (panel) => {
   panel.querySelectorAll('[data-dropzone]').forEach(setupDropzone);
   panel.querySelectorAll('[data-blog-post]').forEach(bindBlogPreview);
+  panel.querySelectorAll('[data-contributor-item]').forEach(bindContributorPreview);
   const galleryContainer = panel.querySelector('[data-gallery-items]');
   if (galleryContainer) {
     refreshGalleryLayout(galleryContainer);
@@ -279,6 +282,10 @@ const initializePanel = (panel) => {
   if (storeContainer) {
     toggleEmptyHint(storeContainer, '[data-store-item]');
   }
+  const contributorContainer = panel.querySelector('[data-contributor-items]');
+  if (contributorContainer) {
+    toggleEmptyHint(contributorContainer, '[data-contributor-item]');
+  }
 };
 
 const toggleEmptyHint = (container, itemSelector) => {
@@ -290,13 +297,33 @@ const toggleEmptyHint = (container, itemSelector) => {
 };
 
 const bindBlogPreview = (scope) => {
-  const textarea = scope.querySelector('[data-field="text"]');
-  const preview = scope.querySelector('[data-preview-text]');
-  if (!textarea || !preview) return;
+  const titleInput = scope.querySelector('[data-field="title"]');
+  const preview = scope.querySelector('[data-preview-title]') || scope.querySelector('[data-preview-text]');
+  if (!titleInput || !preview) return;
   const update = () => {
-    preview.textContent = textarea.value.trim() || blogPreviewPlaceholder;
+    preview.textContent = titleInput.value.trim() || blogPreviewPlaceholder;
   };
-  textarea.addEventListener('input', update);
+  titleInput.addEventListener('input', update);
+  update();
+};
+
+const bindContributorPreview = (scope) => {
+  const nicknameInput = scope.querySelector('[data-field="nickname"]');
+  const urlInput = scope.querySelector('[data-field="profile_url"]');
+  const nicknamePreview = scope.querySelector('[data-preview-nickname]');
+  const urlPreview = scope.querySelector('[data-preview-url]');
+  if (!nicknameInput || !nicknamePreview) return;
+  const update = () => {
+    const nickname = nicknameInput.value.trim();
+    if (nicknamePreview) {
+      nicknamePreview.textContent = nickname || '닉네임';
+    }
+    if (urlPreview && urlInput) {
+      urlPreview.textContent = urlInput.value.trim();
+    }
+  };
+  nicknameInput.addEventListener('input', update);
+  urlInput?.addEventListener('input', update);
   update();
 };
 
@@ -307,12 +334,13 @@ const addSection = (type) => {
     '__ITEM_ID__': generateId(),
     '__POST_ID__': generateId(),
     '__STORE_ID__': generateId(),
+    '__CONTRIBUTOR_ID__': generateId(),
   };
   const section = renderTemplate(`template-${type}`, replacements);
   if (!section) return;
   sectionList.appendChild(section);
   initializeSection(section);
-  if (dataPanelContainer && ['gallery', 'mini_blog', 'store'].includes(type)) {
+  if (dataPanelContainer && ['gallery', 'mini_blog', 'store', 'contributor'].includes(type)) {
     const panel = renderTemplate(`template-${type}-panel`, replacements);
     if (panel) {
       dataPanelContainer.appendChild(panel);
@@ -395,6 +423,24 @@ const addStoreItem = (panel) => {
   toggleEmptyHint(container, '[data-store-item]');
 };
 
+const addContributorItem = (panel) => {
+  const container = panel.querySelector('[data-contributor-items]');
+  if (!container) return;
+  const replacements = {
+    '__SECTION_ID__': panel.dataset.sectionId,
+    '__CONTRIBUTOR_ID__': generateId(),
+  };
+  const contributor = renderTemplate('template-contributor-item', replacements);
+  if (!contributor) return;
+  const contributorId = contributor.dataset.contributorId || replacements.__CONTRIBUTOR_ID__;
+  contributor.querySelectorAll('[data-image-input]').forEach((input) => {
+    input.name = `contributor__${panel.dataset.sectionId}__${contributorId}`;
+  });
+  container.appendChild(contributor);
+  initializeSection(contributor);
+  toggleEmptyHint(container, '[data-contributor-item]');
+};
+
 const collectSections = () => {
   const sections = [];
   sectionList.querySelectorAll('[data-section]').forEach((section) => {
@@ -450,7 +496,8 @@ const collectSections = () => {
         }
         posts.push({
           id: post.dataset.postId || generateId(),
-          text: post.querySelector('[data-field="text"]')?.value || '',
+          title: post.querySelector('[data-field="title"]')?.value || '',
+          body: post.querySelector('[data-field="body"]')?.value || '',
           images,
         });
       });
@@ -472,6 +519,20 @@ const collectSections = () => {
       sections.push({ id, type, data: { stores } });
       return;
     }
+    if (type === 'contributor') {
+      const contributors = [];
+      const scope = getDataPanel(id) || section;
+      scope.querySelectorAll('[data-contributor-item]').forEach((contributor) => {
+        contributors.push({
+          id: contributor.dataset.contributorId || generateId(),
+          nickname: contributor.querySelector('[data-field="nickname"]')?.value || '',
+          profile_url: contributor.querySelector('[data-field="profile_url"]')?.value || '',
+          thumbnail: readImageMeta(contributor),
+        });
+      });
+      sections.push({ id, type, data: { contributors } });
+      return;
+    }
     if (type === 'cta') {
       const profileScope = section.querySelector('[data-cta-profile]') || section;
       const donationScope = section.querySelector('[data-cta-donation-qr]');
@@ -491,7 +552,53 @@ const collectSections = () => {
   return sections;
 };
 
+const validateBeforeSubmit = () => {
+  const blogPosts = document.querySelectorAll('[data-blog-post]');
+  for (const post of blogPosts) {
+    const titleInput = post.querySelector('[data-field="title"]');
+    if (titleInput && !titleInput.value.trim()) {
+      window.alert('미니 블로그 제목을 입력해주세요.');
+      titleInput.focus();
+      return false;
+    }
+  }
+
+  const contributorItems = document.querySelectorAll('[data-contributor-item]');
+  for (const item of contributorItems) {
+    const nicknameInput = item.querySelector('[data-field="nickname"]');
+    const urlInput = item.querySelector('[data-field="profile_url"]');
+    if (nicknameInput && !nicknameInput.value.trim()) {
+      window.alert('컨트리뷰터 닉네임을 입력해주세요.');
+      nicknameInput.focus();
+      return false;
+    }
+    const urlValue = urlInput?.value.trim() || '';
+    if (!urlValue) {
+      window.alert('컨트리뷰터 주소를 입력해주세요.');
+      urlInput?.focus();
+      return false;
+    }
+    if (!/^https?:\/\//i.test(urlValue)) {
+      window.alert('컨트리뷰터 주소는 http/https 링크로 입력해주세요.');
+      urlInput?.focus();
+      return false;
+    }
+    const meta = readImageMeta(item);
+    const fileInput = item.querySelector('[data-image-input]');
+    if (!meta && !(fileInput && fileInput.files && fileInput.files.length)) {
+      window.alert('컨트리뷰터 썸네일을 업로드해주세요.');
+      fileInput?.focus();
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const submitWithAction = (action, target = '_self') => {
+  if (!validateBeforeSubmit()) {
+    return;
+  }
   actionInput.value = action;
   form.target = target;
   const payload = collectSections();
@@ -505,7 +612,11 @@ const submitWithAction = (action, target = '_self') => {
 };
 
 if (form) {
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', (event) => {
+    if (!validateBeforeSubmit()) {
+      event.preventDefault();
+      return;
+    }
     const payload = collectSections();
     payloadInput.value = JSON.stringify(payload);
   });
@@ -522,6 +633,9 @@ dataPanelContainer?.querySelectorAll('[data-blog-posts]').forEach((container) =>
 });
 dataPanelContainer?.querySelectorAll('[data-store-items]').forEach((container) => {
   toggleEmptyHint(container, '[data-store-item]');
+});
+dataPanelContainer?.querySelectorAll('[data-contributor-items]').forEach((container) => {
+  toggleEmptyHint(container, '[data-contributor-item]');
 });
 
 const initializeDataPanelFromUrl = () => {
@@ -691,6 +805,12 @@ document.addEventListener('click', (event) => {
     if (panel) addStoreItem(panel);
     return;
   }
+  if (action === 'add-contributor-item') {
+    event.preventDefault();
+    const panel = actionButton.closest('[data-section-panel]');
+    if (panel) addContributorItem(panel);
+    return;
+  }
 
   if (action === 'remove-gallery-item') {
     event.preventDefault();
@@ -721,6 +841,14 @@ document.addEventListener('click', (event) => {
     const container = store?.closest('[data-store-items]');
     if (store) store.remove();
     toggleEmptyHint(container, '[data-store-item]');
+    return;
+  }
+  if (action === 'remove-contributor-item') {
+    event.preventDefault();
+    const contributor = actionButton.closest('[data-contributor-item]');
+    const container = contributor?.closest('[data-contributor-items]');
+    if (contributor) contributor.remove();
+    toggleEmptyHint(container, '[data-contributor-item]');
     return;
   }
 

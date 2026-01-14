@@ -73,6 +73,7 @@
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="title">타이틀</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="gallery">갤러리</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="mini_blog">미니 블로그</button>
+                <button type="button" class="minihome-add-btn" data-add-section data-section-type="contributor">컨트리뷰터</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="store">매장</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="infographic">인포그래픽</button>
                 <button type="button" class="minihome-add-btn" data-add-section data-section-type="cta">CTA</button>
@@ -177,6 +178,16 @@
                             <p class="text-xs text-slate-400">글 {{ section.data.posts|length }}개</p>
                           </div>
                           <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="mini_blog">데이터 보기</button>
+                        </div>
+                      {% endif %}
+
+                      {% if section.type == 'contributor' %}
+                        <div class="minihome-section-summary">
+                          <div>
+                            <h3 class="text-sm font-semibold">컨트리뷰터</h3>
+                            <p class="text-xs text-slate-400">컨트리뷰터 {{ section.data.contributors|length }}명</p>
+                          </div>
+                          <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="{{ section.id }}" data-section-type="contributor">데이터 보기</button>
                         </div>
                       {% endif %}
 
@@ -345,7 +356,7 @@
                             <div class="minihome-blog-card">
                               <div class="flex items-start gap-3">
                                 <div class="flex-1 text-left">
-                                  <p class="line-clamp-3 text-slate-200" data-preview-text>{{ post.text|default:'' }}</p>
+                                  <p class="line-clamp-3 text-slate-200" data-preview-title>{{ post.title|default:post.body|default:post.text|default:'' }}</p>
                                 </div>
                                 {% if post.images.0.url %}
                                   <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
@@ -354,8 +365,12 @@
                             </div>
                             <div class="minihome-inline-form">
                               <label class="minihome-field">
-                                <span>내용</span>
-                                <textarea data-field="text" rows="6" maxlength="1000">{{ post.text|default:'' }}</textarea>
+                                <span>제목 (최대 100자)</span>
+                                <input type="text" data-field="title" maxlength="100" required value="{{ post.title|default:post.body|default:post.text|default:'' }}">
+                              </label>
+                              <label class="minihome-field">
+                                <span>본문 (최대 1000자)</span>
+                                <textarea data-field="body" rows="6" maxlength="1000">{{ post.body|default:post.text|default:'' }}</textarea>
                               </label>
                               <div class="grid gap-3 md:grid-cols-2">
                                 <div class="space-y-2" data-blog-image data-image-slot="0">
@@ -442,6 +457,67 @@
                       </div>
                       <div class="minihome-owner-tools">
                         <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
+                      </div>
+                    </div>
+                  {% endif %}
+                  {% if section.type == 'contributor' %}
+                    <div class="minihome-data-panel hidden" data-section-panel data-section-id="{{ section.id }}" data-section-type="contributor">
+                      <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold">컨트리뷰터 데이터</h4>
+                        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+                      </div>
+                      <div class="mt-4 space-y-3" data-contributor-items>
+                        {% for contributor in section.data.contributors %}
+                          <div class="minihome-contributor-item" data-contributor-item data-contributor-id="{{ contributor.id }}">
+                            <div class="minihome-contributor-card">
+                              <div class="flex items-center gap-3">
+                                {% if contributor.thumbnail.url %}
+                                  <img src="{{ contributor.thumbnail.url }}" alt="{{ contributor.nickname|default:'컨트리뷰터' }} 썸네일" class="minihome-contributor-avatar">
+                                {% else %}
+                                  <div class="minihome-contributor-avatar minihome-contributor-avatar--empty"></div>
+                                {% endif %}
+                                <div class="flex-1 text-left">
+                                  <p class="font-semibold text-slate-200" data-preview-nickname>{{ contributor.nickname|default:'닉네임' }}</p>
+                                  <p class="text-xs text-slate-400 break-all" data-preview-url>{{ contributor.profile_url|default:'' }}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="minihome-inline-form">
+                              <div class="space-y-2">
+                                <div class="minihome-dropzone minihome-dropzone--contributor" data-dropzone>
+                                  <input type="file" accept="image/*" name="contributor__{{ section.id }}__{{ contributor.id }}" data-image-input class="sr-only">
+                                  <div class="minihome-dropzone-inner">
+                                    <img src="{{ contributor.thumbnail.url|default:'' }}" alt="컨트리뷰터 썸네일" class="minihome-preview minihome-preview--square {% if not contributor.thumbnail.url %}hidden{% endif %}" data-image-preview>
+                                    <p class="text-xs text-slate-300">100px 정사각 리사이즈</p>
+                                    <div class="flex flex-wrap gap-2">
+                                      <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                                      <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+                                    </div>
+                                  </div>
+                                </div>
+                                <input type="hidden" data-image-meta="path" value="{{ contributor.thumbnail.path|default:'' }}">
+                                <input type="hidden" data-image-meta="url" value="{{ contributor.thumbnail.url|default:'' }}">
+                                <input type="hidden" data-image-meta="width" value="{{ contributor.thumbnail.width|default:'' }}">
+                                <input type="hidden" data-image-meta="height" value="{{ contributor.thumbnail.height|default:'' }}">
+                              </div>
+                              <label class="minihome-field">
+                                <span>닉네임 (최대 20자)</span>
+                                <input type="text" data-field="nickname" maxlength="20" required value="{{ contributor.nickname|default:'' }}">
+                              </label>
+                              <label class="minihome-field">
+                                <span>프로필 주소 (http/https)</span>
+                                <input type="url" data-field="profile_url" maxlength="200" required value="{{ contributor.profile_url|default:'' }}">
+                              </label>
+                              <div class="flex justify-end">
+                                <button type="button" class="minihome-link minihome-link--sm" data-action="remove-contributor-item">삭제</button>
+                              </div>
+                            </div>
+                          </div>
+                        {% endfor %}
+                        <div class="minihome-empty {% if section.data.contributors|length %}hidden{% endif %}" data-empty-hint>등록된 컨트리뷰터가 없습니다.</div>
+                      </div>
+                      <div class="minihome-owner-tools">
+                        <button type="button" class="minihome-link" data-action="add-contributor-item">컨트리뷰터 추가</button>
                       </div>
                     </div>
                   {% endif %}
@@ -637,6 +713,25 @@
     </section>
   </template>
 
+  <template id="template-contributor">
+    <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="contributor">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <button type="button" class="minihome-icon-btn" data-action="move-section-up">위로</button>
+          <button type="button" class="minihome-icon-btn" data-action="move-section-down">아래로</button>
+        </div>
+        <button type="button" class="minihome-icon-btn" data-action="remove-section">섹션 삭제</button>
+      </div>
+      <div class="minihome-section-summary">
+        <div>
+          <h3 class="text-sm font-semibold">컨트리뷰터</h3>
+          <p class="text-xs text-slate-400">컨트리뷰터 0명</p>
+        </div>
+        <button type="button" class="minihome-ghost-btn" data-action="open-data-panel" data-section-id="__SECTION_ID__" data-section-type="contributor">데이터 보기</button>
+      </div>
+    </section>
+  </template>
+
   <template id="template-store">
     <section class="minihome-section minihome-section-card" data-section data-section-id="__SECTION_ID__" data-section-type="store">
       <div class="flex items-center justify-between mb-3">
@@ -687,6 +782,21 @@
       </div>
       <div class="minihome-owner-tools">
         <button type="button" class="minihome-link" data-action="add-blog-post">글쓰기</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-contributor-panel">
+    <div class="minihome-data-panel hidden" data-section-panel data-section-id="__SECTION_ID__" data-section-type="contributor">
+      <div class="flex items-center justify-between">
+        <h4 class="text-sm font-semibold">컨트리뷰터 데이터</h4>
+        <button type="button" class="minihome-icon-btn" data-action="close-data-panel">닫기</button>
+      </div>
+      <div class="mt-4 space-y-3" data-contributor-items>
+        <div class="minihome-empty" data-empty-hint>등록된 컨트리뷰터가 없습니다.</div>
+      </div>
+      <div class="minihome-owner-tools">
+        <button type="button" class="minihome-link" data-action="add-contributor-item">컨트리뷰터 추가</button>
       </div>
     </div>
   </template>
@@ -808,14 +918,18 @@
       <div class="minihome-blog-card">
         <div class="flex items-start gap-3">
           <div class="flex-1 text-left">
-            <p class="line-clamp-3 text-slate-200" data-preview-text>내용을 입력해주세요.</p>
+            <p class="line-clamp-3 text-slate-200" data-preview-title>제목을 입력해주세요.</p>
           </div>
         </div>
       </div>
       <div class="minihome-inline-form">
         <label class="minihome-field">
-          <span>내용</span>
-          <textarea data-field="text" rows="6" maxlength="1000"></textarea>
+          <span>제목 (최대 100자)</span>
+          <input type="text" data-field="title" maxlength="100" required>
+        </label>
+        <label class="minihome-field">
+          <span>본문 (최대 1000자)</span>
+          <textarea data-field="body" rows="6" maxlength="1000"></textarea>
         </label>
         <div class="grid gap-3 md:grid-cols-2">
           <div class="space-y-2" data-blog-image data-image-slot="0">
@@ -889,6 +1003,50 @@
         </div>
         <div class="flex justify-end">
           <button type="button" class="minihome-link minihome-link--sm" data-action="remove-blog-post">삭제</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="template-contributor-item">
+    <div class="minihome-contributor-item" data-contributor-item data-contributor-id="__CONTRIBUTOR_ID__">
+      <div class="minihome-contributor-card">
+        <div class="flex items-center gap-3">
+          <div class="minihome-contributor-avatar minihome-contributor-avatar--empty"></div>
+          <div class="flex-1 text-left">
+            <p class="font-semibold text-slate-200" data-preview-nickname>닉네임</p>
+            <p class="text-xs text-slate-400 break-all" data-preview-url></p>
+          </div>
+        </div>
+      </div>
+      <div class="minihome-inline-form">
+        <div class="space-y-2">
+          <div class="minihome-dropzone minihome-dropzone--contributor" data-dropzone>
+            <input type="file" accept="image/*" name="" data-image-input class="sr-only">
+            <div class="minihome-dropzone-inner">
+              <img src="" alt="컨트리뷰터 썸네일" class="minihome-preview minihome-preview--square hidden" data-image-preview>
+              <p class="text-xs text-slate-300">100px 정사각 리사이즈</p>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="minihome-ghost-btn" data-action="trigger-file">이미지 업로드</button>
+                <button type="button" class="minihome-ghost-btn" data-action="clear-image">이미지 제거</button>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" data-image-meta="path" value="">
+          <input type="hidden" data-image-meta="url" value="">
+          <input type="hidden" data-image-meta="width" value="">
+          <input type="hidden" data-image-meta="height" value="">
+        </div>
+        <label class="minihome-field">
+          <span>닉네임 (최대 20자)</span>
+          <input type="text" data-field="nickname" maxlength="20" required>
+        </label>
+        <label class="minihome-field">
+          <span>프로필 주소 (http/https)</span>
+          <input type="url" data-field="profile_url" maxlength="200" required>
+        </label>
+        <div class="flex justify-end">
+          <button type="button" class="minihome-link minihome-link--sm" data-action="remove-contributor-item">삭제</button>
         </div>
       </div>
     </div>

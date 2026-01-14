@@ -98,12 +98,12 @@
               <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
                 {% for post in section.data.posts|slice:"::-1" %}
                   <div class="minihome-blog-item">
-                    <button type="button" class="minihome-blog-card" data-blog-card data-text="{{ post.text|escape }}"
+                    <button type="button" class="minihome-blog-card" data-blog-card data-title="{{ post.title|default:post.body|default:post.text|escape }}" data-body="{{ post.body|default:post.text|escape }}"
                       data-image0="{{ post.images.0.url|default:'' }}" data-image1="{{ post.images.1.url|default:'' }}"
                       data-image2="{{ post.images.2.url|default:'' }}" data-image3="{{ post.images.3.url|default:'' }}">
                       <div class="flex items-start gap-3">
                         <div class="flex-1 text-left">
-                          <p class="line-clamp-3 text-slate-200">{{ post.text|default:'' }}</p>
+                          <p class="minihome-blog-title text-slate-200">{{ post.title|default:post.body|default:post.text|default:'' }}</p>
                         </div>
                         {% if post.images.0.url %}
                           <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
@@ -119,6 +119,37 @@
                 <button type="button" class="minihome-pagination-btn" data-page-prev>이전</button>
                 <span class="minihome-pagination-text" data-page-indicator>1 / 1</span>
                 <button type="button" class="minihome-pagination-btn" data-page-next>다음</button>
+              </div>
+            </section>
+          {% endif %}
+
+          {% if section.type == 'contributor' %}
+            <section class="minihome-section-card space-y-3">
+              <h3 class="text-sm font-semibold">컨트리뷰터</h3>
+              <div class="minihome-contributor-grid">
+                {% for contributor in section.data.contributors %}
+                  {% if contributor.profile_url %}
+                    <a class="minihome-contributor-card" href="{{ contributor.profile_url }}" target="_blank" rel="noopener">
+                      {% if contributor.thumbnail.url %}
+                        <img src="{{ contributor.thumbnail.url }}" alt="{{ contributor.nickname|default:'컨트리뷰터' }} 썸네일" class="minihome-contributor-avatar">
+                      {% else %}
+                        <div class="minihome-contributor-avatar minihome-contributor-avatar--empty"></div>
+                      {% endif %}
+                      <span class="minihome-contributor-name">{{ contributor.nickname|default:'컨트리뷰터' }}</span>
+                    </a>
+                  {% else %}
+                    <div class="minihome-contributor-card">
+                      {% if contributor.thumbnail.url %}
+                        <img src="{{ contributor.thumbnail.url }}" alt="{{ contributor.nickname|default:'컨트리뷰터' }} 썸네일" class="minihome-contributor-avatar">
+                      {% else %}
+                        <div class="minihome-contributor-avatar minihome-contributor-avatar--empty"></div>
+                      {% endif %}
+                      <span class="minihome-contributor-name">{{ contributor.nickname|default:'컨트리뷰터' }}</span>
+                    </div>
+                  {% endif %}
+                {% empty %}
+                  <div class="minihome-empty">등록된 컨트리뷰터가 없습니다.</div>
+                {% endfor %}
               </div>
             </section>
           {% endif %}
@@ -213,7 +244,8 @@
         <h4 class="text-sm font-semibold">미니 블로그</h4>
         <button type="button" class="minihome-icon-btn" data-modal-close>닫기</button>
       </div>
-      <p class="mt-3 text-slate-200 whitespace-pre-line" data-modal-text></p>
+      <h5 class="mt-3 text-base font-semibold text-slate-100" data-modal-title></h5>
+      <p class="mt-2 text-slate-200 whitespace-pre-line" data-modal-body></p>
       <div class="mt-4 grid grid-cols-2 gap-3" data-modal-images></div>
     </div>
   </div>
