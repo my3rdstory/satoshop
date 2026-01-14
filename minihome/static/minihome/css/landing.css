@@ -152,6 +152,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: flex-start;
 }
 
 .minihome-contributor-card {
