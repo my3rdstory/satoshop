@@ -872,7 +872,7 @@ def minihome_landing(request, slug):
     )
     context = {
         "minihome": minihome,
-        "sections": minihome.published_sections,
+        "sections": _normalize_sections(minihome.published_sections),
         "is_preview": False,
         "background_preset": background_preset,
     }
@@ -897,7 +897,7 @@ def minihome_preview(request, slug):
     if not _user_can_manage(minihome, request.user):
         return HttpResponseForbidden("권한이 없습니다.")
 
-    sections = minihome.draft_sections
+    sections = _normalize_sections(minihome.draft_sections)
     background_preset = _normalize_background_preset(minihome.draft_background_preset)
     return render(
         request,
@@ -959,12 +959,13 @@ def minihome_manage(request, slug):
         selected_background,
         BACKGROUND_PRESET_LABELS.get(DEFAULT_BACKGROUND_PRESET, ""),
     )
+    sections = _normalize_sections(minihome.draft_sections)
     return render(
         request,
         "minihome/manage.html",
         {
             "minihome": minihome,
-            "sections": minihome.draft_sections,
+            "sections": sections,
             "section_types": SECTION_TYPES,
             "background_presets": BACKGROUND_PRESETS,
             "selected_background": selected_background,
