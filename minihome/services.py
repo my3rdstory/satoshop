@@ -47,20 +47,34 @@ def _resize_to_max(image, max_size: Tuple[int, int]):
     return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
 
+def _resize_to_square(image, size: int):
+    side = min(image.width, image.height)
+    left = int((image.width - side) / 2)
+    top = int((image.height - side) / 2)
+    right = left + side
+    bottom = top + side
+    image = image.crop((left, top, right, bottom))
+    return image.resize((size, size), Image.Resampling.LANCZOS)
+
+
 def process_minihome_image(
     image_file,
     *,
     target_width: Optional[int] = None,
     max_size: Optional[Tuple[int, int]] = None,
+    square_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     image, error = _open_image(image_file)
     if error:
         return {"success": False, "error": error}
 
-    if target_width:
-        image = _resize_to_width(image, target_width)
-    if max_size:
-        image = _resize_to_max(image, max_size)
+    if square_size:
+        image = _resize_to_square(image, square_size)
+    else:
+        if target_width:
+            image = _resize_to_width(image, target_width)
+        if max_size:
+            image = _resize_to_max(image, max_size)
 
     output = io.BytesIO()
     image.save(output, format="WEBP", quality=85, method=6)
@@ -85,11 +99,13 @@ def upload_minihome_image(
     prefix: str,
     target_width: Optional[int] = None,
     max_size: Optional[Tuple[int, int]] = None,
+    square_size: Optional[int] = None,
 ) -> Dict[str, Any]:
     process_result = process_minihome_image(
         image_file,
         target_width=target_width,
         max_size=max_size,
+        square_size=square_size,
     )
     if not process_result["success"]:
         return process_result

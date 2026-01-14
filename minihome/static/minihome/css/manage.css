@@ -259,6 +259,38 @@ body {
   border-radius: 1rem;
 }
 
+.minihome-preview--square {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+.minihome-dropzone--contributor .minihome-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+}
+
+.minihome-contributor-card {
+  border-radius: 1.25rem;
+  border: 1px solid #334155;
+  padding: 0.9rem;
+  background: #111827;
+}
+
+.minihome-contributor-avatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.9rem;
+  object-fit: cover;
+  background: #1f2937;
+  flex-shrink: 0;
+}
+
+.minihome-contributor-avatar--empty {
+  background: #1f2937;
+}
+
 .minihome-modal {
   position: fixed;
   inset: 0;

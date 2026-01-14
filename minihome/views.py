@@ -19,6 +19,7 @@ SECTION_TYPES = (
     "store",
     "infographic",
     "cta",
+    "contributor",
 )
 
 BACKGROUND_PRESETS = (
@@ -54,6 +55,7 @@ CTA_PROFILE_MAX_SIZE = (300, 300)
 CTA_DONATION_QR_WIDTH = 300
 STORE_IMAGE_WIDTH = 600
 INFOGRAPHIC_IMAGE_WIDTH = 1000
+CONTRIBUTOR_THUMB_SIZE = 100
 
 
 def _user_can_manage(minihome: Minihome, user) -> bool:
@@ -157,6 +159,8 @@ def _normalize_sections(sections):
                 if not isinstance(post, dict):
                     continue
                 post_id = _ensure_id(post.get("id"))
+                body = _limit_text(post.get("body") or post.get("text"), 1000)
+                title = _limit_text(post.get("title") or body, 100)
                 images = post.get("images", [])
                 if not isinstance(images, list):
                     images = []
@@ -167,7 +171,8 @@ def _normalize_sections(sections):
                     normalized_images.append(None)
                 posts.append({
                     "id": post_id,
-                    "text": _limit_text(post.get("text"), 1000),
+                    "title": title,
+                    "body": body,
                     "images": normalized_images,
                 })
             normalized.append({
@@ -208,6 +213,25 @@ def _normalize_sections(sections):
                     "email": _limit_text(data.get("email"), 100),
                     "donation": _limit_text(data.get("donation"), 100),
                 },
+            })
+            continue
+
+        if section_type == "contributor":
+            contributors = []
+            for contributor in data.get("contributors", []):
+                if not isinstance(contributor, dict):
+                    continue
+                contributor_id = _ensure_id(contributor.get("id"))
+                contributors.append({
+                    "id": contributor_id,
+                    "nickname": _limit_text(contributor.get("nickname"), 20),
+                    "profile_url": _limit_text(contributor.get("profile_url"), 200),
+                    "thumbnail": _normalize_image_meta(contributor.get("thumbnail")),
+                })
+            normalized.append({
+                "id": section_id,
+                "type": section_type,
+                "data": {"contributors": contributors},
             })
 
     return normalized
@@ -357,6 +381,26 @@ def _apply_uploaded_files(minihome, sections, files):
                         "height": result["height"],
                     }
 
+        if parts[0] == "contributor" and len(parts) == 3:
+            section = section_map.get(parts[1])
+            if not section:
+                continue
+            for contributor in section["data"].get("contributors", []):
+                if contributor.get("id") != parts[2]:
+                    continue
+                result = upload_minihome_image(
+                    file,
+                    prefix=f"{prefix_base}/contributor",
+                    square_size=CONTRIBUTOR_THUMB_SIZE,
+                )
+                if result.get("success"):
+                    contributor["thumbnail"] = {
+                        "path": result["file_path"],
+                        "url": result["file_url"],
+                        "width": result["width"],
+                        "height": result["height"],
+                    }
+
     return sections
 
 
@@ -474,7 +518,8 @@ def minihome_add_blog_post(request, slug):
     if not section:
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
-    text = _limit_text(request.POST.get("text"), 1000)
+    body = _limit_text(request.POST.get("body") or request.POST.get("text"), 1000)
+    title = _limit_text(request.POST.get("title") or body, 100)
     images = []
     for index in range(4):
         file_field = f"image_{index}"
@@ -501,7 +546,8 @@ def minihome_add_blog_post(request, slug):
     posts.append(
         {
             "id": uuid.uuid4().hex,
-            "text": text,
+            "title": title,
+            "body": body,
             "images": images,
         }
     )
@@ -670,7 +716,10 @@ def minihome_update_blog_post(request, slug):
     if not post:
         return redirect(reverse("minihome:landing", kwargs={"slug": minihome.slug}))
 
-    post["text"] = _limit_text(request.POST.get("text"), 1000)
+    body = _limit_text(request.POST.get("body") or request.POST.get("text"), 1000)
+    title = _limit_text(request.POST.get("title") or body, 100)
+    post["title"] = title
+    post["body"] = body
     images = post.get("images", [])
     if not isinstance(images, list):
         images = []
@@ -823,7 +872,7 @@ def minihome_landing(request, slug):
     )
     context = {
         "minihome": minihome,
-        "sections": minihome.published_sections,
+        "sections": _normalize_sections(minihome.published_sections),
         "is_preview": False,
         "background_preset": background_preset,
     }
@@ -848,7 +897,7 @@ def minihome_preview(request, slug):
     if not _user_can_manage(minihome, request.user):
         return HttpResponseForbidden("권한이 없습니다.")
 
-    sections = minihome.draft_sections
+    sections = _normalize_sections(minihome.draft_sections)
     background_preset = _normalize_background_preset(minihome.draft_background_preset)
     return render(
         request,
@@ -910,12 +959,13 @@ def minihome_manage(request, slug):
         selected_background,
         BACKGROUND_PRESET_LABELS.get(DEFAULT_BACKGROUND_PRESET, ""),
     )
+    sections = _normalize_sections(minihome.draft_sections)
     return render(
         request,
         "minihome/manage.html",
         {
             "minihome": minihome,
-            "sections": minihome.draft_sections,
+            "sections": sections,
             "section_types": SECTION_TYPES,
             "background_presets": BACKGROUND_PRESETS,
             "selected_background": selected_background,
