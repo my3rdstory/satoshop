@@ -50,9 +50,14 @@ body {
 }
 
 .minihome-blog-title {
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.minihome-blog-card .flex-1 {
+  min-width: 0;
 }
 
 .minihome-link {
