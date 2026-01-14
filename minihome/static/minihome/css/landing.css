@@ -60,6 +60,13 @@ body {
   min-width: 0;
 }
 
+.minihome-blog-thumb {
+  width: 96px;
+  height: 64px;
+  border-radius: 0.75rem;
+  object-fit: cover;
+}
+
 .minihome-link {
   display: inline-flex;
   align-items: center;

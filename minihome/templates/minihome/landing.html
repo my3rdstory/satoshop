@@ -106,7 +106,7 @@
                           <p class="minihome-blog-title text-slate-200">{{ post.title|default:post.body|default:'' }}</p>
                         </div>
                         {% if post.images.0.url %}
-                          <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
+                          <img src="{{ post.images.0.url }}" alt="썸네일" class="minihome-blog-thumb">
                         {% endif %}
                       </div>
                     </button>
