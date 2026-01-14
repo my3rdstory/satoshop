@@ -170,11 +170,6 @@ body {
   text-align: center;
 }
 
-.minihome-contributor-card:hover {
-  border-color: rgba(99, 102, 241, 0.6);
-  transform: translateY(-1px);
-}
-
 .minihome-contributor-avatar {
   width: 100px;
   height: 100px;
@@ -182,6 +177,11 @@ body {
   object-fit: cover;
   background: rgba(30, 41, 59, 0.9);
   flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.minihome-contributor-card:hover .minihome-contributor-avatar {
+  transform: scale(1.06);
 }
 
 .minihome-contributor-avatar--empty {
