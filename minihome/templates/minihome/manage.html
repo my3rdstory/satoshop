@@ -356,7 +356,7 @@
                             <div class="minihome-blog-card">
                               <div class="flex items-start gap-3">
                                 <div class="flex-1 text-left">
-                                  <p class="line-clamp-3 text-slate-200" data-preview-title>{{ post.title|default:post.body|default:post.text|default:'' }}</p>
+                                  <p class="line-clamp-3 text-slate-200" data-preview-title>{{ post.title|default:post.body|default:'' }}</p>
                                 </div>
                                 {% if post.images.0.url %}
                                   <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
@@ -366,11 +366,11 @@
                             <div class="minihome-inline-form">
                               <label class="minihome-field">
                                 <span>제목 (최대 100자)</span>
-                                <input type="text" data-field="title" maxlength="100" required value="{{ post.title|default:post.body|default:post.text|default:'' }}">
+                                <input type="text" data-field="title" maxlength="100" required value="{{ post.title|default:post.body|default:'' }}">
                               </label>
                               <label class="minihome-field">
                                 <span>본문 (최대 1000자)</span>
-                                <textarea data-field="body" rows="6" maxlength="1000">{{ post.body|default:post.text|default:'' }}</textarea>
+                                <textarea data-field="body" rows="6" maxlength="1000">{{ post.body|default:'' }}</textarea>
                               </label>
                               <div class="grid gap-3 md:grid-cols-2">
                                 <div class="space-y-2" data-blog-image data-image-slot="0">

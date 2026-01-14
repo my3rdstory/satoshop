@@ -98,12 +98,12 @@
               <div class="mt-4 grid gap-3 md:grid-cols-2" data-blog-list>
                 {% for post in section.data.posts|slice:"::-1" %}
                   <div class="minihome-blog-item">
-                    <button type="button" class="minihome-blog-card" data-blog-card data-title="{{ post.title|default:post.body|default:post.text|escape }}" data-body="{{ post.body|default:post.text|escape }}"
+                    <button type="button" class="minihome-blog-card" data-blog-card data-title="{{ post.title|default:post.body|default:''|escape }}" data-body="{{ post.body|default:''|escape }}"
                       data-image0="{{ post.images.0.url|default:'' }}" data-image1="{{ post.images.1.url|default:'' }}"
                       data-image2="{{ post.images.2.url|default:'' }}" data-image3="{{ post.images.3.url|default:'' }}">
                       <div class="flex items-start gap-3">
                         <div class="flex-1 text-left">
-                          <p class="minihome-blog-title text-slate-200">{{ post.title|default:post.body|default:post.text|default:'' }}</p>
+                          <p class="minihome-blog-title text-slate-200">{{ post.title|default:post.body|default:'' }}</p>
                         </div>
                         {% if post.images.0.url %}
                           <img src="{{ post.images.0.url }}" alt="썸네일" class="h-16 w-16 rounded-xl object-cover">
