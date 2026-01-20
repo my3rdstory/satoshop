@@ -108,7 +108,8 @@ class SignUpView(CreateView):
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        login(self.request, self.object)
+        # 다중 인증 백엔드 환경에서 회원가입 직후 로그인 처리 시 백엔드를 명시한다.
+        login(self.request, self.object, backend='django.contrib.auth.backends.ModelBackend')
         
         # 세션 장바구니를 DB로 마이그레이션
         try:
