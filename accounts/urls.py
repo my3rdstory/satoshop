@@ -11,6 +11,7 @@ urlpatterns = [
     path('mypage/', views.MyPageView.as_view(), name='mypage'),
     path('change-password/', views.ChangePasswordView.as_view(), name='change_password'),
     path('link-local-account/', views.LinkLocalAccountView.as_view(), name='link_local_account'),
+    path('check-local-username/', views.check_local_account_username, name='check_local_account_username'),
     
     # 구매 내역
     path('my-purchases/', views.my_purchases, name='my_purchases'),

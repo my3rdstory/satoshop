@@ -61,3 +61,28 @@ class LightningAccountLinkForm(forms.Form):
         self.user.set_password(self.cleaned_data['password1'])
         self.user.save(update_fields=['username', 'password'])
         return self.user
+
+
+class LocalAccountUsernameCheckForm(forms.Form):
+    username = forms.CharField(
+        label=_('아이디'),
+        max_length=User._meta.get_field('username').max_length,
+        validators=User._meta.get_field('username').validators,
+        error_messages={
+            'required': _('아이디를 입력하세요.'),
+        },
+        widget=forms.TextInput(attrs={
+            'autocomplete': 'username',
+            'spellcheck': 'false',
+        }),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if User.objects.filter(username=username).exclude(pk=self.user.pk).exists():
+            raise ValidationError(_('이미 사용 중인 아이디입니다.'))
+        return username

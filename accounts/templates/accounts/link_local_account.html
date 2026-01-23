@@ -43,8 +43,30 @@
       </div>
 
       <div class="p-8 text-sm">
-        <form method="post" class="space-y-6">
+        <form method="post" class="space-y-6" data-username-check-url="{% url 'accounts:check_local_account_username' %}">
           {% csrf_token %}
+
+          {% if success %}
+          <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200" role="status">
+            <div class="flex items-start gap-3">
+              <i class="fas fa-check-circle mt-0.5"></i>
+              <div>
+                <p class="font-semibold">일반 로그인 설정 완료</p>
+                <p class="mt-1 text-xs">{{ success_message }}</p>
+              </div>
+            </div>
+          </div>
+          {% elif form.errors %}
+          <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200" role="alert">
+            <div class="flex items-start gap-3">
+              <i class="fas fa-exclamation-circle mt-0.5"></i>
+              <div>
+                <p class="font-semibold">입력 정보를 확인해주세요</p>
+                <p class="mt-1 text-xs">아이디 중복 또는 비밀번호 조건을 다시 확인해 주세요.</p>
+              </div>
+            </div>
+          </div>
+          {% endif %}
 
           <div>
             <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -63,13 +85,21 @@
                 class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
                 placeholder="아이디를 입력하세요"
                 autocomplete="username"
+                {% if success %}disabled{% endif %}
               >
             </div>
-            {% if form.username.errors %}
-            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.username.errors.0 }}</p>
-            {% else %}
-            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ form.username.help_text }}</p>
-            {% endif %}
+            <p
+              id="usernameFeedback"
+              class="username-feedback mt-2 text-xs {% if form.username.errors %}text-red-600 dark:text-red-400{% else %}text-gray-500 dark:text-gray-400{% endif %}"
+              data-default-message="{{ form.username.help_text }}"
+              data-state="{% if form.username.errors %}error{% else %}idle{% endif %}"
+            >
+              {% if form.username.errors %}
+                {{ form.username.errors.0 }}
+              {% else %}
+                {{ form.username.help_text }}
+              {% endif %}
+            </p>
           </div>
 
           <div>
@@ -88,6 +118,7 @@
                 class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
                 placeholder="비밀번호를 입력하세요"
                 autocomplete="new-password"
+                {% if success %}disabled{% endif %}
               >
             </div>
             {% if form.password1.errors %}
@@ -111,6 +142,7 @@
                 class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
                 placeholder="비밀번호를 다시 입력하세요"
                 autocomplete="new-password"
+                {% if success %}disabled{% endif %}
               >
             </div>
             {% if form.password2.errors %}
@@ -133,20 +165,37 @@
 
           <div class="flex flex-col sm:flex-row gap-4 pt-4">
             <button
+              id="submitLocalAccount"
               type="submit"
-              class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin"
+              class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin{% if success %} opacity-60 cursor-not-allowed hover:bg-bitcoin/90{% endif %}"
+              {% if success %}disabled{% endif %}
             >
-              <i class="fas fa-save mr-2"></i>
-              일반 로그인 설정
+              {% if success %}
+                <i class="fas fa-check mr-2"></i>
+                설정 완료
+              {% else %}
+                <i class="fas fa-save mr-2"></i>
+                일반 로그인 설정
+              {% endif %}
             </button>
-            <button
-              type="button"
-              onclick="window.history.back()"
-              class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            >
-              <i class="fas fa-times mr-2"></i>
-              취소
-            </button>
+            {% if success %}
+              <a
+                href="{% url 'accounts:mypage' %}"
+                class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <i class="fas fa-arrow-right mr-2"></i>
+                마이페이지로 이동
+              </a>
+            {% else %}
+              <button
+                type="button"
+                onclick="window.history.back()"
+                class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <i class="fas fa-times mr-2"></i>
+                취소
+              </button>
+            {% endif %}
           </div>
         </form>
       </div>
