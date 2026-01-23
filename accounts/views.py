@@ -22,6 +22,7 @@ from django.core.cache import cache
 from orders.models import PurchaseHistory, Order
 from orders.services import CartService
 from .models import LightningUser
+from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
 
 logger = logging.getLogger(__name__)
@@ -141,21 +142,69 @@ class ChangePasswordView(View):
         return render(request, self.template_name, {
             'password_form': password_form,
         })
-    
-    def post(self, request):
-        password_form = PasswordChangeForm(user=request.user, data=request.POST)
-        
-        if password_form.is_valid():
-            user = password_form.save()
-            update_session_auth_hash(request, user)  # 세션 유지
-            messages.success(request, '비밀번호가 성공적으로 변경되었습니다.')
+
+
+@method_decorator(login_required, name='dispatch')
+class LinkLocalAccountView(View):
+    template_name = 'accounts/link_local_account.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.has_usable_password():
+            messages.info(request, '이미 일반 로그인 설정이 완료된 계정입니다.')
             return redirect('accounts:mypage')
-        else:
-            messages.error(request, '비밀번호 변경 중 오류가 발생했습니다.')
-        
-        return render(request, self.template_name, {
-            'password_form': password_form,
+        if not hasattr(request.user, 'lightning_profile'):
+            messages.error(request, '라이트닝 계정만 일반 로그인 설정이 가능합니다.')
+            return redirect('accounts:mypage')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        form = LightningAccountLinkForm(user=request.user, initial={
+            'username': request.user.username,
         })
+        return render(request, self.template_name, {
+            'form': form,
+        })
+
+    def post(self, request):
+        form = LightningAccountLinkForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            success_message = '일반 로그인 설정이 완료되었습니다.'
+            form = LightningAccountLinkForm(user=request.user, initial={
+                'username': user.username,
+            })
+            return render(request, self.template_name, {
+                'form': form,
+                'success': True,
+                'success_message': success_message,
+            })
+
+        return render(request, self.template_name, {
+            'form': form,
+            'success': False,
+        })
+
+
+@login_required
+@require_GET
+def check_local_account_username(request):
+    """일반 로그인 설정용 아이디 중복 확인"""
+    form = LocalAccountUsernameCheckForm(
+        user=request.user,
+        data={'username': request.GET.get('username', '')},
+    )
+    if form.is_valid():
+        return JsonResponse({
+            'available': True,
+            'message': '사용 가능한 아이디입니다.',
+        })
+
+    error_messages = form.errors.get('username')
+    return JsonResponse({
+        'available': False,
+        'message': error_messages[0] if error_messages else '아이디를 확인해주세요.',
+    })
 
 
 @login_required

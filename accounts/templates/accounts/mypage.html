@@ -108,6 +108,30 @@
             </a>
             {% endif %}
 
+            {% if not user.has_usable_password and user.lightning_profile %}
+            <a 
+              href="{% url 'accounts:link_local_account' %}" 
+              class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50/80 dark:hover:bg-emerald-900/20 transition-all duration-200"
+            >
+              <div class="flex-shrink-0">
+                <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center group-hover:bg-emerald-200/70 transition-colors">
+                  <i class="fas fa-user-plus text-emerald-600 dark:text-emerald-400"></i>
+                </div>
+              </div>
+              <div class="ml-4 flex-1">
+                <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300 transition-colors">
+                  일반 로그인 설정
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  아이디와 비밀번호를 추가해 일반 로그인을 활성화하세요
+                </p>
+              </div>
+              <div class="flex-shrink-0">
+                <i class="fas fa-chevron-right text-gray-400 group-hover:text-emerald-500 transition-colors"></i>
+              </div>
+            </a>
+            {% endif %}
+
             <!-- 라이트닝 인증 연동 -->
             {% if user.lightning_profile %}
             <div class="group flex items-center p-4 rounded-xl border border-green-200 dark:border-green-600 bg-green-50 dark:bg-green-900/20">
