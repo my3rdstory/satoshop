@@ -1,0 +1,4 @@
+/* 일반 로그인 설정 페이지 전용 스타일 */
+.account-icon {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}

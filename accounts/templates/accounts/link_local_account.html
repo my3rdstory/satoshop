@@ -1,0 +1,180 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}일반 로그인 설정 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/link-local-account.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 account-icon rounded-full mr-3">
+        <i class="fas fa-user-shield text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">일반 로그인 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          라이트닝 계정에 아이디와 비밀번호를 추가합니다
+        </p>
+      </div>
+    </div>
+
+    <div class="mb-6">
+      <a href="{% url 'accounts:mypage' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>마이페이지로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+      <div class="px-8 py-6 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center">
+          <div class="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg mr-3">
+            <i class="fas fa-user-plus text-emerald-600 dark:text-emerald-400"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">일반 계정 정보</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">아이디 중복 검사를 통과해야 저장됩니다</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-8 text-sm">
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+
+          <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              아이디
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-user text-gray-400"></i>
+              </div>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                value="{{ form.username.value|default_if_none:'' }}"
+                required
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+                placeholder="아이디를 입력하세요"
+                autocomplete="username"
+              >
+            </div>
+            {% if form.username.errors %}
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.username.errors.0 }}</p>
+            {% else %}
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ form.username.help_text }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="password1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              비밀번호
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input
+                id="password1"
+                name="password1"
+                type="password"
+                required
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+                placeholder="비밀번호를 입력하세요"
+                autocomplete="new-password"
+              >
+            </div>
+            {% if form.password1.errors %}
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password1.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div>
+            <label for="password2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              비밀번호 확인
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input
+                id="password2"
+                name="password2"
+                type="password"
+                required
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+                placeholder="비밀번호를 다시 입력하세요"
+                autocomplete="new-password"
+              >
+            </div>
+            {% if form.password2.errors %}
+            <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password2.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          {% if form.non_field_errors %}
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-400"></i>
+              </div>
+              <div class="ml-3 text-sm text-red-700 dark:text-red-300">
+                {{ form.non_field_errors }}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button
+              type="submit"
+              class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-bitcoin hover:bg-bitcoin/90 text-white font-medium rounded-lg transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin"
+            >
+              <i class="fas fa-save mr-2"></i>
+              일반 로그인 설정
+            </button>
+            <button
+              type="button"
+              onclick="window.history.back()"
+              class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            >
+              <i class="fas fa-times mr-2"></i>
+              취소
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <div class="bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/20 dark:to-emerald-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+        <div class="flex items-start">
+          <div class="flex-shrink-0">
+            <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+              <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+            </div>
+          </div>
+          <div class="ml-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">안내 사항</h3>
+            <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <li>• 설정 후에는 아이디/비밀번호로도 로그인할 수 있습니다</li>
+              <li>• 라이트닝 로그인은 그대로 유지됩니다</li>
+              <li>• 이미 다른 일반 계정을 사용 중이라면 통합은 지원하지 않습니다</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/link-local-account.js' %}"></script>
+{% endblock %}

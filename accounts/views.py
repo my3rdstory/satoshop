@@ -22,6 +22,7 @@ from django.core.cache import cache
 from orders.models import PurchaseHistory, Order
 from orders.services import CartService
 from .models import LightningUser
+from .forms import LightningAccountLinkForm
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
 
 logger = logging.getLogger(__name__)
@@ -140,6 +141,40 @@ class ChangePasswordView(View):
         password_form = PasswordChangeForm(user=request.user)
         return render(request, self.template_name, {
             'password_form': password_form,
+        })
+
+
+@method_decorator(login_required, name='dispatch')
+class LinkLocalAccountView(View):
+    template_name = 'accounts/link_local_account.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.has_usable_password():
+            messages.info(request, '이미 일반 로그인 설정이 완료된 계정입니다.')
+            return redirect('accounts:mypage')
+        if not hasattr(request.user, 'lightning_profile'):
+            messages.error(request, '라이트닝 계정만 일반 로그인 설정이 가능합니다.')
+            return redirect('accounts:mypage')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request):
+        form = LightningAccountLinkForm(user=request.user, initial={
+            'username': request.user.username,
+        })
+        return render(request, self.template_name, {
+            'form': form,
+        })
+
+    def post(self, request):
+        form = LightningAccountLinkForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, '일반 로그인 설정이 완료되었습니다.')
+            return redirect('accounts:mypage')
+
+        return render(request, self.template_name, {
+            'form': form,
         })
     
     def post(self, request):

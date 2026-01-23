@@ -10,6 +10,7 @@ urlpatterns = [
     path('signup/', views.SignUpView.as_view(), name='signup'),
     path('mypage/', views.MyPageView.as_view(), name='mypage'),
     path('change-password/', views.ChangePasswordView.as_view(), name='change_password'),
+    path('link-local-account/', views.LinkLocalAccountView.as_view(), name='link_local_account'),
     
     # 구매 내역
     path('my-purchases/', views.my_purchases, name='my_purchases'),
