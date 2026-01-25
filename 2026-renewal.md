@@ -100,7 +100,7 @@ themes/
   - `themes/minimal-dark/static/icons/feather/feather-sprite.svg`
   - `themes/minimal-dark/static/icons/feather/feather.min.js`
 - 권장 사용(스프라이트)
-  - `<svg class="icon"><use href="{% static 'icons/feather/feather-sprite.svg#camera' %}"></use></svg>`
+  - `<svg class="icon"><use href="{% static 'icons/feather/feather-sprite.svg' %}#camera"></use></svg>`
 - JS 사용이 필요하면 `<script src="{% static 'icons/feather/feather.min.js' %}"></script>` 로드 후 `feather.replace()`를 사용한다.
 
 ## 7) Bulma 전환 전략

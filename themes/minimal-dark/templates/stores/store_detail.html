@@ -21,28 +21,28 @@
       <div class="store-hero__actions">
         <a class="store-action" href="{% url 'products:public_product_list' store.store_id %}">
           <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg#box' %}"></use>
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#box"></use>
           </svg>
           <span>상품</span>
           <span class="store-action__count">{{ products|length }}</span>
         </a>
         <a class="store-action" href="{% url 'meetup:meetup_list' store.store_id %}">
           <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg#users' %}"></use>
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#users"></use>
           </svg>
           <span>밋업</span>
           <span class="store-action__count">{{ meetups|length }}</span>
         </a>
         <a class="store-action" href="{% url 'lecture:live_lecture_list' store.store_id %}">
           <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg#video' %}"></use>
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#video"></use>
           </svg>
           <span>라이브 강의</span>
           <span class="store-action__count">{{ live_lectures|length }}</span>
         </a>
         <a class="store-action" href="{% url 'file:file_list' store.store_id %}">
           <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg#file-text' %}"></use>
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#file-text"></use>
           </svg>
           <span>파일 관리</span>
           <span class="store-action__count">{{ digital_files|length }}</span>
