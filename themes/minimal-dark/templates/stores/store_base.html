@@ -45,16 +45,11 @@
 
   <script>
     (function() {
-      let theme = 'dark';
+      const theme = 'dark';
       try {
-        const stored = localStorage.getItem('theme');
-        if (stored) {
-          theme = stored;
-        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-          theme = 'light';
-        }
+        localStorage.setItem('theme', theme);
       } catch (e) {
-        theme = 'dark';
+        // localStorage 실패 시에도 다크 테마 유지
       }
 
       document.documentElement.setAttribute('data-theme', theme);
