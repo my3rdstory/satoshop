@@ -798,6 +798,7 @@ satoshop/
 │   │   ├── currency-exchange.js # 환율 변환
 │   │   └── product-form.js  # 상품 폼 관리
 │   └── admin/               # 관리자 정적 파일
+├── 📁 themes/               # 테마별 템플릿/정적 파일 (예: minimal-dark)
 ├── 📁 templates/            # 전역 템플릿
 ├── 📄 requirements.txt      # Python 의존성
 ├── 📄 pyproject.toml        # 프로젝트 메타데이터
