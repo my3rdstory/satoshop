@@ -1,0 +1,42 @@
+.page-shell {
+  min-height: 100vh;
+  background: var(--theme-bg);
+}
+
+.store-main {
+  padding: 2.5rem 0 4rem;
+}
+
+.store-messages {
+  margin-bottom: 2rem;
+}
+
+.notification {
+  border-radius: var(--theme-radius);
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
+}
+
+.notification.is-success {
+  border-color: hsl(150 40% 40%);
+}
+
+.notification.is-danger {
+  border-color: var(--theme-danger);
+}
+
+.notification.is-warning {
+  border-color: hsl(40 80% 50%);
+}
+
+.notification.is-info {
+  border-color: hsl(210 80% 50%);
+}
+
+.store-footer {
+  border-top: 1px solid var(--theme-border);
+  padding: 1.5rem 0 2rem;
+  color: var(--theme-muted);
+  font-size: 0.75rem;
+}

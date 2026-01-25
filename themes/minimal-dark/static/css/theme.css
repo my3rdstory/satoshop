@@ -1,0 +1,117 @@
+:root {
+  color-scheme: dark;
+  --theme-bg: hsl(0 0% 4%);
+  --theme-surface: hsl(0 0% 6%);
+  --theme-surface-strong: hsl(0 0% 12%);
+  --theme-border: hsl(0 0% 14%);
+  --theme-text: hsl(0 0% 98%);
+  --theme-muted: hsl(0 0% 42%);
+  --theme-danger: hsl(0 62% 50%);
+  --theme-radius: 0;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --theme-bg: hsl(0 0% 98%);
+  --theme-surface: hsl(0 0% 96%);
+  --theme-surface-strong: hsl(0 0% 92%);
+  --theme-border: hsl(0 0% 86%);
+  --theme-text: hsl(0 0% 12%);
+  --theme-muted: hsl(0 0% 50%);
+}
+
+:root {
+  --bulma-family-primary: "Noto Sans KR", "SUIT Variable", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  --bulma-family-secondary: "Noto Sans KR", "SUIT Variable", "Pretendard", "Apple SD Gothic Neo", sans-serif;
+  --bulma-radius: 0;
+  --bulma-radius-small: 0;
+  --bulma-radius-medium: 0;
+  --bulma-radius-large: 0;
+  --bulma-body-background-color: var(--theme-bg);
+  --bulma-body-color: var(--theme-text);
+  --bulma-text: var(--theme-text);
+  --bulma-text-strong: var(--theme-text);
+  --bulma-text-light: var(--theme-muted);
+  --bulma-border: var(--theme-border);
+  --bulma-link-text: var(--theme-text);
+  --bulma-link-text-hover: var(--theme-text);
+}
+
+html,
+body {
+  background: var(--theme-bg);
+  color: var(--theme-text);
+  font-size: 0.875rem;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+a:hover {
+  color: var(--theme-text);
+}
+
+.container.is-fluid {
+  max-width: 1400px;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.card,
+.box,
+.panel {
+  background: var(--theme-surface);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--theme-radius);
+  box-shadow: none;
+}
+
+.panel-heading {
+  background: transparent;
+  border-bottom: 1px solid var(--theme-border);
+  color: var(--theme-text);
+  font-weight: 500;
+}
+
+.button.is-ghost {
+  background: transparent;
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+}
+
+.button.is-ghost:hover {
+  border-color: var(--theme-text);
+}
+
+.tag.is-minimal {
+  background: var(--theme-surface-strong);
+  color: var(--theme-text);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+}
+
+.has-text-muted {
+  color: var(--theme-muted);
+}
+
+.content p {
+  color: var(--theme-muted);
+}

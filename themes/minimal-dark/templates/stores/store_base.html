@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ store.store_name }} - SatoShop{% endblock %}</title>
+
+  <meta name="description" content="{% block meta_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+  <meta name="keywords" content="{% if site_settings and site_settings.meta_keywords %}{{ site_settings.meta_keywords }}{% else %}비트코인, 쇼핑, 온라인스토어, 암호화폐{% endif %}">
+  <meta name="author" content="{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}">
+
+  <meta property="og:title" content="{% block og_title %}{{ store.store_name }} - SatoShop{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  <meta property="og:image" content="{% block og_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+  <meta property="og:site_name" content="{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{{ store.store_name }} - SatoShop{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{% if store and store.store_description %}{{ store.store_description|truncatewords:30 }}{% else %}SatoShop 스토어에서 비트코인으로 쇼핑하세요{% endif %}{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{% if store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+
+  <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'css/bulma.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'css/store_base.css' %}">
+  {% block extra_css %}{% endblock %}
+
+  {% if site_settings and site_settings.google_analytics_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.google_analytics_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ site_settings.google_analytics_id }}');
+  </script>
+  {% endif %}
+
+  <script>
+    (function() {
+      let theme = 'dark';
+      try {
+        const stored = localStorage.getItem('theme');
+        if (stored) {
+          theme = stored;
+        } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+          theme = 'light';
+        }
+      } catch (e) {
+        theme = 'dark';
+      }
+
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(theme);
+    })();
+  </script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="theme-minimal-dark{% block body_class %}{% endblock %}">
+  <div class="page-shell">
+    <main class="store-main">
+      <div class="container is-fluid">
+        {% block store_messages %}
+          {% if messages %}
+          <div class="store-messages">
+            {% for message in messages %}
+            <div class="notification is-{{ message.tags|default:'info' }}">
+              {{ message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        {% endblock %}
+      </div>
+
+      {% block store_content %}{% endblock %}
+    </main>
+
+    <footer class="store-footer">
+      <div class="container is-fluid">
+        <div>Powered by SatoShop</div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    window.csrfToken = '{{ csrf_token }}';
+    window.logoutUrl = "{% url 'accounts:logout' %}";
+    window.loginUrl = "{% url 'accounts:login' %}";
+    window.signupUrl = "{% url 'accounts:signup' %}";
+    window.homeUrl = "{% url 'myshop:home' %}";
+    {% if store.store_id %}
+    window.storeId = "{{ store.store_id }}";
+    {% endif %}
+  </script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  <script src="{% static 'js/store-common.js' %}"></script>
+  <script src="{% static 'js/store_base.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
