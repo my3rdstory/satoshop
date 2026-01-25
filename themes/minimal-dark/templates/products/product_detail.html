@@ -1,0 +1,285 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load product_extras %}
+{% load humanize %}
+
+{% block title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+
+{% block og_title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+{% block og_description %}{% if product.description %}{{ product.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 비트코인으로 구매하세요 - {{ product.title }}{% endif %}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_image %}{% if product.images.exists %}{{ product.images.first.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ product.title }} - {{ store.store_name }}{% endblock %}
+{% block twitter_description %}{% if product.description %}{{ product.description|truncatewords:30 }}{% else %}{{ store.store_name }}에서 비트코인으로 구매하세요 - {{ product.title }}{% endif %}{% endblock %}
+{% block twitter_image %}{% if product.images.exists %}{{ product.images.first.file_url }}{% elif store and store.images.exists %}{{ store.images.first.file_url }}{% elif site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/products.css' %}">
+<link rel="stylesheet" href="{% static 'css/markdown-renderer.css' %}">
+<link rel="stylesheet" href="{% static 'css/product_detail.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<section class="product-page">
+  <div class="container is-fluid">
+    <div class="product-hero">
+      <div class="columns is-variable is-6">
+        <div class="column is-6">
+          <div class="product-media">
+            <div class="product-media__main">
+              {% if product_images %}
+              <img id="mainImage" src="{{ product_images.0.file_url }}" alt="{{ product.title }}">
+              {% else %}
+              <div class="product-empty">이미지 없음</div>
+              {% endif %}
+            </div>
+            {% if product_images|length > 1 %}
+            <div class="product-thumbnails">
+              {% for image in product_images %}
+              <button type="button" class="product-thumbnail {% if forloop.first %}active{% endif %}" onclick="changeMainImage('{{ image.file_url }}', this)">
+                <img src="{{ image.file_url }}" alt="{{ product.title }}">
+              </button>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="column is-6">
+          <div class="product-panel">
+            <p class="product-eyebrow">{{ store.store_name }}</p>
+            <h1 class="product-title">{{ product.title }}</h1>
+            <p class="product-subtitle">{{ store.owner_name }}</p>
+          </div>
+
+          <div class="product-panel">
+            <div class="product-price">
+              {% if product.is_discounted %}
+                {{ product.public_discounted_price|floatformat:0|intcomma }} sats
+              {% else %}
+                {{ product.public_price|floatformat:0|intcomma }} sats
+              {% endif %}
+            </div>
+            {% if product.is_discounted %}
+            <div class="product-price__original">{{ product.public_price|floatformat:0|intcomma }} sats</div>
+            <span class="product-price__badge">{{ product.public_discount_rate }}% 할인</span>
+            {% endif %}
+            {% if product.price_display == 'krw' %}
+            <div class="product-row">
+              <span class="product-row__label">원화 연동</span>
+              <span>
+                {% if product.is_discounted %}
+                  {{ product.krw_discounted_price_display }}
+                {% else %}
+                  {{ product.krw_price_display }}
+                {% endif %}
+              </span>
+            </div>
+            {% if product.current_exchange_rate %}
+            <div class="product-row">
+              <span class="product-row__label">환율 기준</span>
+              <span>{{ product.current_exchange_rate.btc_krw_rate|floatformat:0|intcomma }}원 ({{ product.current_exchange_rate.created_at|date:"m월 d일 H:i" }})</span>
+            </div>
+            {% endif %}
+            {% endif %}
+            <div class="product-row">
+              <span class="product-row__label">배송비</span>
+              <span>
+                {% with shipping=product_shipping %}
+                  {% if shipping.override_free %}
+                    무료
+                  {% elif shipping.mode == 'free' or shipping.sats == 0 %}
+                    무료
+                  {% else %}
+                    {{ shipping.sats|intcomma }} sats
+                    {% if shipping.krw %}
+                      ({{ shipping.krw|intcomma }}원)
+                    {% endif %}
+                  {% endif %}
+                {% endwith %}
+              </span>
+            </div>
+          </div>
+
+          {% if product_options %}
+          <div class="product-panel">
+            <p class="product-eyebrow">상품 옵션</p>
+            <div class="content">
+              {% for option in product_options %}
+              <div class="mb-4">
+                <p class="product-subtitle">{{ option.name }}</p>
+                <div class="option-grid">
+                  {% for choice in option.choices.all %}
+                  <button type="button"
+                          class="option-choice"
+                          data-option-id="{{ option.id }}"
+                          data-option-name="{{ option.name }}"
+                          data-choice-id="{{ choice.id }}"
+                          data-choice-name="{{ choice.name }}"
+                          data-choice-price="{{ choice.public_price }}"
+                          onclick="selectOption(this)">
+                    <div>{{ choice.name }}</div>
+                    {% if choice.public_price > 0 %}
+                      <div class="has-text-muted">+ {{ choice.public_price|floatformat:0|intcomma }} sats</div>
+                      {% if product.price_display == 'krw' and choice.krw_price_display %}
+                      <div class="has-text-muted">{{ choice.krw_price_display }}</div>
+                      {% endif %}
+                    {% endif %}
+                  </button>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="product-panel">
+            <div class="product-row">
+              <span class="product-row__label">수량</span>
+              <span>
+                {% if product.is_temporarily_out_of_stock %}
+                  일시 품절
+                {% elif product.stock_quantity == 0 %}
+                  품절
+                {% else %}
+                  재고 {{ product.stock_quantity|intcomma }}개
+                {% endif %}
+              </span>
+            </div>
+            {% if product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
+            <div class="product-quantity">
+              <button class="button is-ghost" type="button" onclick="changeQuantity(-1)">-</button>
+              <input type="number" id="quantity" value="1" min="1" max="{{ product.stock_quantity }}" onchange="validateQuantity()">
+              <button class="button is-ghost" type="button" onclick="changeQuantity(1)">+</button>
+            </div>
+            {% else %}
+            <div class="product-empty">
+              {% if product.is_temporarily_out_of_stock %}
+                현재 일시품절된 상품입니다.
+              {% else %}
+                현재 품절된 상품입니다.
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="product-panel product-summary" id="totalCalculation">
+            <p class="product-eyebrow">주문 요약</p>
+            <div class="product-row">
+              <span class="product-row__label">상품 금액</span>
+              <span id="productTotal">
+                {% if product.is_discounted and product.public_discounted_price %}{{ product.public_discounted_price|floatformat:0|intcomma }}{% else %}{{ product.public_price|floatformat:0|intcomma }}{% endif %} sats
+              </span>
+            </div>
+            <div class="product-row hidden" id="optionsRow">
+              <span class="product-row__label">옵션 추가금액</span>
+              <span id="optionsTotal">0 sats</span>
+            </div>
+            <div id="selectedOptionsSummary" class="hidden">
+              <p class="product-row__label">선택 옵션</p>
+              <ul id="selectedOptionsList"></ul>
+            </div>
+            <div class="product-row">
+              <span class="product-row__label">수량</span>
+              <span id="quantityDisplay">1개</span>
+            </div>
+            {% with shipping=product_shipping %}
+            <div class="product-row">
+              <span class="product-row__label">배송비</span>
+              <span id="shippingFeeValue" data-base-sats="{{ shipping.sats }}" data-override="{% if shipping.override_free %}true{% else %}false{% endif %}">
+                <span class="shipping-amount">
+                  {% if shipping.override_free or shipping.mode == 'free' or shipping.sats|default_if_none:0 == 0 %}
+                    무료
+                  {% else %}
+                    {{ shipping.sats|intcomma }} sats
+                  {% endif %}
+                </span>
+                {% if shipping.override_free %}
+                  <span class="has-text-muted">상품 전용 무료 배송 적용</span>
+                {% endif %}
+              </span>
+            </div>
+            {% if not shipping.override_free %}
+              {% if shipping.threshold_krw %}
+                <p id="shippingStatusNote" class="has-text-muted">{{ shipping.threshold_sats|intcomma }} sats ({{ shipping.threshold_krw|intcomma }}원) 이상 주문 시 무료 배송</p>
+              {% elif shipping.threshold_sats %}
+                <p id="shippingStatusNote" class="has-text-muted">{{ shipping.threshold_sats|intcomma }} sats 이상 주문 시 무료 배송</p>
+              {% else %}
+                <p id="shippingStatusNote" class="has-text-muted hidden"></p>
+              {% endif %}
+            {% endif %}
+            <div class="product-row">
+              <span class="product-total">총 결제금액</span>
+              <span class="product-total" id="finalTotal">
+                {% with base_price=product.public_discounted_price|default:product.public_price %}{% with total_price=base_price|add:shipping.sats %}{{ total_price|floatformat:0|intcomma }}{% endwith %}{% endwith %} sats
+              </span>
+            </div>
+            {% endwith %}
+          </div>
+
+          <div class="product-actions">
+            {% if product.stock_quantity > 0 and not product.is_temporarily_out_of_stock %}
+              {% if user.is_authenticated %}
+              <button class="button is-primary is-fullwidth" type="button" onclick="addToCart()">장바구니 담기</button>
+              {% else %}
+              <button class="button is-muted is-fullwidth" type="button" onclick="redirectToLogin()">로그인 후 장바구니 담기</button>
+              {% endif %}
+            {% elif product.is_temporarily_out_of_stock %}
+            <button class="button is-muted is-fullwidth" type="button" disabled>일시품절</button>
+            {% else %}
+            <button class="button is-muted is-fullwidth" type="button" disabled>품절</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if product.description %}
+    <section class="product-section">
+      <h2 class="product-section__title">상품 설명</h2>
+      <div class="content markdown-content">{{ product.description }}</div>
+    </section>
+    {% endif %}
+
+    {% include 'products/product_review.html' %}
+  </div>
+</section>
+
+<button type="button" id="cartToggleButton" class="floating-cart-toggle" aria-controls="sidebarCart" aria-expanded="false" aria-label="장바구니 열기">
+  <span class="sr-only cart-toggle-label">장바구니 열기</span>
+  <svg class="icon cart-toggle-icon cart-toggle-icon-default" aria-hidden="true">
+    <use href="{% static 'icons/feather/feather-sprite.svg' %}#shopping-cart"></use>
+  </svg>
+  <svg class="icon cart-toggle-icon cart-toggle-icon-close" aria-hidden="true">
+    <use href="{% static 'icons/feather/feather-sprite.svg' %}#x"></use>
+  </svg>
+</button>
+
+{% include 'products/cart.html' %}
+
+<script type="application/json" id="product-data">
+{
+  "basePrice": {% if product.is_discounted and product.public_discounted_price %}{{ product.public_discounted_price }}{% else %}{{ product.public_price }}{% endif %},
+  "shippingFee": {{ product_shipping.sats|default:0 }},
+  "shippingOverride": {{ product_shipping.override_free|yesno:"true,false" }},
+  "freeShippingThreshold": {% if product_shipping.override_free %}null{% elif product_shipping.threshold_sats %}{{ product_shipping.threshold_sats }}{% else %}null{% endif %},
+  "productId": {{ product.id }},
+  "isAuthenticated": {{ user.is_authenticated|yesno:"true,false" }},
+  "isStoreOwner": {% if user == store.owner %}true{% else %}false{% endif %},
+  "loginUrl": "{% url 'accounts:login' %}",
+  "currentUrl": "{{ request.get_full_path|escapejs }}",
+  "addToCartUrl": "{% url 'orders:add_to_cart' %}",
+  "cartViewUrl": "{% url 'orders:cart_view' %}",
+  "csrfToken": "{{ csrf_token }}"
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="{% static 'js/reviews.js' %}"></script>
+<script src="{% static 'js/markdown-renderer.js' %}"></script>
+<script src="{% static 'js/cart-common.js' %}"></script>
+<script src="{% static 'js/product-detail.js' %}"></script>
+<script src="{% static 'js/cart.js' %}"></script>
+<script src="{% static 'js/product_detail.js' %}"></script>
+{% endblock %}

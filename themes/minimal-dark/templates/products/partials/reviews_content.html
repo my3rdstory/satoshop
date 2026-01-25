@@ -1,0 +1,86 @@
+{% load review_extras %}
+
+{% if reviews_page.object_list %}
+<div class="review-list">
+  {% for review in reviews_page.object_list %}
+  <article class="review-item">
+    <div class="review-item__header">
+      <div>
+        <div class="review-stars">
+          {% for _ in '12345'|make_list %}
+          <span class="review-star {% if forloop.counter <= review.rating %}is-active{% endif %}">★</span>
+          {% endfor %}
+          <span class="review-meta">{{ review.rating }}점</span>
+        </div>
+        <div class="review-meta">
+          {{ review.author.get_full_name|default:review.author.username|mask_middle }} · {{ review.created_at|date:"Y.m.d H:i" }}
+        </div>
+      </div>
+      {% if user == review.author %}
+      <form method="post"
+            action="{% url 'reviews:delete' store.store_id product.id review.id %}"
+            data-review-form="delete"
+            data-confirm-message="해당 후기를 삭제하시겠습니까?">
+        {% csrf_token %}
+        <input type="hidden" name="page" value="{{ reviews_page.number }}">
+        <button type="submit" class="button is-ghost is-small">삭제</button>
+      </form>
+      {% endif %}
+    </div>
+    <div class="review-item__content">{{ review.content|truncatechars:1000|linkify_review }}</div>
+
+    {% with review.content|first_x_post_url as review_x_url %}
+      {% if review_x_url %}
+      <div class="review-embed hidden" data-review-embed-container data-review-embed-url="{{ review_x_url }}">
+        <div class="review-embed__meta" data-review-embed-author></div>
+        <p class="review-item__content" data-review-embed-text></p>
+        <a href="{{ review_x_url }}" target="_blank" rel="noopener" class="review-meta hidden" data-review-embed-link>원문 보기</a>
+        <p class="review-meta hidden" data-review-embed-loading>미리보기를 불러오는 중...</p>
+        <p class="review-meta hidden" data-review-embed-error></p>
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if review.images.all %}
+    <div class="review-images">
+      {% for image in review.images.all %}
+      <div class="review-image">
+        <img src="{{ image.file_url }}" alt="구입 후기 이미지">
+        {% if user == review.author %}
+        <form method="post"
+              action="{% url 'reviews:delete_image' store.store_id product.id review.id image.id %}"
+              data-review-form="delete-image"
+              data-confirm-message="해당 이미지를 삭제하시겠습니까?">
+          {% csrf_token %}
+          <input type="hidden" name="page" value="{{ reviews_page.number }}">
+          <button type="submit" class="button is-ghost is-small">삭제</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="review-empty">아직 등록된 후기가 없습니다. 첫 번째 후기를 남겨보세요!</div>
+{% endif %}
+
+{% if reviews_page.paginator.num_pages > 1 %}
+<nav class="review-pagination" data-review-pagination>
+  {% if reviews_page.has_previous %}
+  <a href="?page={{ reviews_page.previous_page_number }}#reviews" class="button is-ghost is-small" data-review-page-link>이전</a>
+  {% else %}
+  <span class="button is-ghost is-small" disabled>이전</span>
+  {% endif %}
+
+  <span class="review-meta">{{ reviews_page.number }} / {{ reviews_page.paginator.num_pages }}</span>
+
+  {% if reviews_page.has_next %}
+  <a href="?page={{ reviews_page.next_page_number }}#reviews" class="button is-ghost is-small" data-review-page-link>다음</a>
+  {% else %}
+  <span class="button is-ghost is-small" disabled>다음</span>
+  {% endif %}
+</nav>
+{% endif %}
