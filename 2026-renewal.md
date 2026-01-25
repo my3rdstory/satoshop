@@ -94,7 +94,16 @@ themes/
   - 예: `themes/minimal-dark/static/css/theme.css`
 - 외부 CDN 링크는 사용하지 않는다
 
-## 6) Bulma 전환 전략
+## 6) 아이콘 세트 (Feather Icons 로컬 사용)
+- 아이콘 세트는 Feather Icons만 사용하며 CDN은 금지한다.
+- 로컬 경로
+  - `themes/minimal-dark/static/icons/feather/feather-sprite.svg`
+  - `themes/minimal-dark/static/icons/feather/feather.min.js`
+- 권장 사용(스프라이트)
+  - `<svg class="icon"><use href="{% static 'icons/feather/feather-sprite.svg#camera' %}"></use></svg>`
+- JS 사용이 필요하면 `<script src="{% static 'icons/feather/feather.min.js' %}"></script>` 로드 후 `feather.replace()`를 사용한다.
+
+## 7) Bulma 전환 전략
 - 1차 전환 대상(공통 뼈대)
   - `myshop/templates/myshop/base.html`
   - `myshop/templates/myshop/nav_bar.html`
@@ -107,12 +116,12 @@ themes/
 - 참고
   - `static/css/themes.css`에 Bulma 변수 오버라이드가 이미 존재하므로, Bulma 기반 다크모드 적용은 연속성 확보 가능
 
-## 7) 리스크 및 주의점
+## 8) 리스크 및 주의점
 - Tailwind 클래스가 전면적으로 박혀 있어 Bulma 전환은 마크업 대규모 수정이 필요
 - 독립 템플릿(메뉴판 등)은 베이스 교체 영향이 없으므로 별도 전환 작업이 필요
 - PWA 관련 경로는 `myshop/templates/myshop/components/pwa.html`과 `myshop/templatetags/static_versioned.py`에 고정되어 있어 테마별 manifest/icon 분리가 필요하면 추가 설계 필요
 
-## 8) 실행 순서(권장)
+## 9) 실행 순서(권장)
 1. 테마 디렉터리 구조 생성 및 설정 반영
 2. 베이스 템플릿 Bulma화 (플랫폼/스토어)
 3. 공통 컴포넌트 정리(nav/footer/공통 UI)
@@ -120,12 +129,12 @@ themes/
 5. 독립 템플릿(메뉴판 등) 리뉴얼
 6. PWA/정적 캐시 전략 재정리
 
-## 9) 결정 필요 사항
+## 10) 결정 필요 사항
 - 테마 전환은 빌드 단위 전환으로 충분한가? (런타임 전환 필요 시 템플릿 태그/로더 재설계 필요)
 - `game/` 앱도 Bulma 전환 범위에 포함할지 여부
 - PWA manifest/icon을 테마별로 분리할지 여부
 
-## 10) 체크리스트
+## 11) 체크리스트
 - [ ] `themes/<theme>/templates`/`static` 구조 도입
 - [ ] `TEMPLATES[DIRS]`, `STATICFILES_DIRS` 우선순위 반영
 - [ ] 베이스 템플릿 Bulma화 완료
