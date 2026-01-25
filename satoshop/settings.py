@@ -18,6 +18,12 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# 테마 경로 설정 (SATOSHOP_THEME 환경변수 기반)
+THEME_NAME = os.getenv('SATOSHOP_THEME', '').strip()
+THEME_DIR = BASE_DIR / 'themes' / THEME_NAME if THEME_NAME else None
+THEME_TEMPLATES_DIR = THEME_DIR / 'templates' if THEME_DIR else None
+THEME_STATIC_DIR = THEME_DIR / 'static' if THEME_DIR else None
+
 # .env 파일 로드 (로컬 개발용만)
 # 클라우드 환경(렌더 등)에서는 환경변수 설정 메뉴 사용 권장
 render_env = os.getenv('RENDER')  # 렌더 환경 감지
@@ -155,6 +161,9 @@ TEMPLATES = [
     },
 ]
 
+if THEME_TEMPLATES_DIR and THEME_TEMPLATES_DIR.exists():
+    TEMPLATES[0]['DIRS'].insert(0, THEME_TEMPLATES_DIR)
+
 WSGI_APPLICATION = 'satoshop.wsgi.application'
 ASGI_APPLICATION = 'satoshop.asgi.application'
 
@@ -236,6 +245,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
+if THEME_STATIC_DIR and THEME_STATIC_DIR.exists():
+    STATICFILES_DIRS.insert(0, THEME_STATIC_DIR)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
