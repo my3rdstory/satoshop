@@ -21,6 +21,44 @@
 {% endblock %}
 
 {% block store_content %}
+<section class="store-topbar">
+  <div class="container is-fluid">
+    <div class="store-topbar__inner">
+      <div class="store-topbar__brand">
+        <span class="store-topbar__eyebrow">SatoShop Storefront</span>
+        <a class="store-topbar__title" href="{% url 'stores:store_detail' store.store_id %}">{{ store.store_name }}</a>
+        <span class="store-topbar__meta">주인장 {{ store.owner_name }}</span>
+      </div>
+      <div class="store-topbar__actions">
+        <a class="store-action" href="{% url 'products:public_product_list' store.store_id %}">
+          <svg class="icon" aria-hidden="true">
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#box"></use>
+          </svg>
+          <span>상품</span>
+        </a>
+        <a class="store-action" href="{% url 'meetup:meetup_list' store.store_id %}">
+          <svg class="icon" aria-hidden="true">
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#users"></use>
+          </svg>
+          <span>밋업</span>
+        </a>
+        <a class="store-action" href="{% url 'lecture:live_lecture_list' store.store_id %}">
+          <svg class="icon" aria-hidden="true">
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#video"></use>
+          </svg>
+          <span>라이브 강의</span>
+        </a>
+        <a class="store-action" href="{% url 'file:file_list' store.store_id %}">
+          <svg class="icon" aria-hidden="true">
+            <use href="{% static 'icons/feather/feather-sprite.svg' %}#file-text"></use>
+          </svg>
+          <span>파일 관리</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="product-page">
   <div class="container is-fluid">
     <div class="product-hero">
