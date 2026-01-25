@@ -93,25 +93,17 @@
             </p>
           </div>
           <div class="column has-text-centered">
-            {% if documents %}
             <div class="store-footer__links">
-              {% if documents.terms %}
-                <a href="{% url 'myshop:document' 'terms' %}" class="store-footer__link">
-                  {{ documents.terms.title }}
-                </a>
-              {% endif %}
-              {% if documents.privacy %}
-                <a href="{% url 'myshop:document' 'privacy' %}" class="store-footer__link store-footer__link--accent">
-                  {{ documents.privacy.title }}
-                </a>
-              {% endif %}
-              {% if documents.refund %}
-                <a href="{% url 'myshop:document' 'refund' %}" class="store-footer__link">
-                  {{ documents.refund.title }}
-                </a>
-              {% endif %}
+              <a href="{% url 'myshop:document' 'terms' %}" class="store-footer__link">
+                {% if documents.terms %}{{ documents.terms.title }}{% else %}이용약관{% endif %}
+              </a>
+              <a href="{% url 'myshop:document' 'privacy' %}" class="store-footer__link store-footer__link--accent">
+                {% if documents.privacy %}{{ documents.privacy.title }}{% else %}개인정보처리방침{% endif %}
+              </a>
+              <a href="{% url 'myshop:document' 'refund' %}" class="store-footer__link">
+                {% if documents.refund %}{{ documents.refund.title }}{% else %}환불 및 반품 정책{% endif %}
+              </a>
             </div>
-            {% endif %}
           </div>
           <div class="column is-one-third has-text-right">
             <div class="store-footer__powered">
