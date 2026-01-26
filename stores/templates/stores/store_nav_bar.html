@@ -62,7 +62,7 @@
         </a>
         <!-- 파일 목록 버튼 (데스크톱에서만 표시) -->
         {% if user.is_authenticated %}
-          {% if user == store.owner or user.is_staff %}
+          {% if user == store.owner or (user.is_superuser and request.GET.admin_access == 'true') %}
           <a href="{% url 'file:file_manage' store_id=store.store_id %}{% if request.GET.admin_access == 'true' %}?admin_access=true{% endif %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
             <i class="fas fa-file-download mr-2 text-xs"></i>
             파일 관리
