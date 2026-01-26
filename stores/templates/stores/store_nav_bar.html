@@ -74,7 +74,7 @@
           </a>
           {% endif %}
         {% else %}
-        <a href="{% url 'file:file_list' store_id=store.id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
+        <a href="{% url 'file:file_list' store_id=store.store_id %}" class="hidden md:flex items-center px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-800 text-sm rounded-md transition-colors border border-gray-600">
           <i class="fas fa-file-download mr-2 text-xs"></i>
           파일 목록
         </a>
