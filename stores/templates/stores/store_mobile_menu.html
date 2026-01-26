@@ -41,7 +41,7 @@
     <!-- 스토어 전용: 파일 목록 (모바일에서만 표시) -->
     {% if user.is_authenticated %}
       {% if user == store.owner or user.is_staff %}
-      <a href="{% url 'file:file_manage' store_id=store.store_id %}{% if user.is_superuser %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
+      <a href="{% url 'file:file_manage' store_id=store.store_id %}{% if request.GET.admin_access == 'true' %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md border border-gray-600">
         <i class="fas fa-file-download mr-2 text-xs"></i>파일 관리
       </a>
       {% else %}
@@ -111,13 +111,13 @@
       <i class="fas fa-receipt mr-2"></i>결제 정보 확인
     </a>
     <div class="border-t border-gray-600 my-1"></div>
-    <a href="{% url 'file:file_manage' store_id=user_active_store.store_id %}{% if user.is_superuser %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+    <a href="{% url 'file:file_manage' store_id=user_active_store.store_id %}{% if request.GET.admin_access == 'true' %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-file-download mr-2"></i>파일 관리
     </a>
-    <a href="{% url 'file:file_orders' store_id=user_active_store.store_id %}{% if user.is_superuser %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+    <a href="{% url 'file:file_orders' store_id=user_active_store.store_id %}{% if request.GET.admin_access == 'true' %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-chart-area mr-2"></i>파일 현황
     </a>
-    <a href="{% url 'file:file_payment_transactions' store_id=user_active_store.store_id %}{% if user.is_superuser %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
+    <a href="{% url 'file:file_payment_transactions' store_id=user_active_store.store_id %}{% if request.GET.admin_access == 'true' %}?admin_access=true{% endif %}" class="block px-3 py-1.5 text-gray-300 hover:text-bitcoin hover:bg-gray-700 rounded-md">
       <i class="fas fa-receipt mr-2"></i>결제 정보 확인
     </a>
     <div class="border-t border-gray-600 my-1"></div>
