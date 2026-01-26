@@ -2,7 +2,8 @@
 
 // 일시중단 토글 함수 (템플릿에서 사용)
 function toggleTemporaryClosure(fileId) {
-    fetch(`/file/${window.storeId}/files/${fileId}/toggle-closure/`, {
+    const adminAccessQuery = window.adminAccessQuery || '';
+    fetch(`/file/${window.storeId}/files/${fileId}/toggle-closure/${adminAccessQuery}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

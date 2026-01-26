@@ -18,6 +18,7 @@ import mimetypes
 import urllib.parse
 
 from stores.models import Store
+from stores.decorators import get_admin_access_query
 from .models import DigitalFile, FileOrder, FileDownloadLog
 from .forms import DigitalFileForm
 from .services import (
@@ -80,6 +81,11 @@ def get_store_with_admin_check(request, store_id, require_auth=True):
     return store
 
 
+def _redirect_with_admin_access(request, view_name, *args, **kwargs):
+    url = reverse(view_name, args=args, kwargs=kwargs)
+    return redirect(f"{url}{get_admin_access_query(request)}")
+
+
 @login_required
 def add_file(request, store_id):
     """파일 추가 (다중 파일 지원)"""
@@ -100,7 +106,7 @@ def add_file(request, store_id):
             digital_file.store = store
             digital_file.save()
             
-            return redirect('file:file_manage', store_id=store.store_id)
+            return _redirect_with_admin_access(request, 'file:file_manage', store.store_id)
     else:
         form = DigitalFileForm()
     
@@ -108,6 +114,7 @@ def add_file(request, store_id):
         'store': store,
         'form': form,
         'is_owner': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'file/add_file.html', context)
 
@@ -205,7 +212,7 @@ def edit_file(request, store_id, file_id):
         if form.is_valid():
             # 파일 변경 시 기존 파일은 models.py의 save()에서 자동 삭제
             form.save()
-            return redirect('file:file_manage', store_id=store.store_id)
+            return _redirect_with_admin_access(request, 'file:file_manage', store.store_id)
     else:
         form = DigitalFileForm(instance=digital_file)
     
@@ -215,6 +222,7 @@ def edit_file(request, store_id, file_id):
         'digital_file': digital_file,
         'preview_image_url': preview_image_url,
         'is_owner': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'file/edit_file.html', context)
 
@@ -276,7 +284,7 @@ def delete_file(request, store_id, file_id):
             is_active=False
         )
         messages.success(request, f"파일 '{file_info['name']}'이(가) 삭제되었습니다.")
-        return redirect('file:file_manage', store_id=store.store_id)
+        return _redirect_with_admin_access(request, 'file:file_manage', store.store_id)
     
     # GET 요청에서는 템플릿에서 사용할 데이터만 준비
     # 판매 수와 다운로드 수는 별도로 계산
@@ -317,6 +325,7 @@ def delete_file(request, store_id, file_id):
         'store': store,
         'digital_file': digital_file,
         'is_owner': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'file/delete_file.html', context)
 
@@ -459,6 +468,7 @@ def file_manage(request, store_id):
         'files': files,
         'stats': stats,
         'is_owner': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'file/file_manage.html', context)
 
@@ -509,6 +519,7 @@ def file_orders(request, store_id):
         'status': status,
         'file_id': file_id,
         'is_owner': True,
+        'admin_access_query': get_admin_access_query(request),
     }
     return render(request, 'file/file_orders.html', context)
 

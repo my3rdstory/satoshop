@@ -282,14 +282,14 @@
 
       <!-- 버튼 -->
       <div class="flex justify-between">
-        <a href="{% url 'file:delete_file' store.store_id digital_file.id %}" 
+        <a href="{% url 'file:delete_file' store.store_id digital_file.id %}{{ admin_access_query }}" 
            class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
            onclick="return confirm('정말로 이 파일을 삭제하시겠습니까?');">
           <i class="fas fa-trash mr-2"></i>
           삭제
         </a>
         <div class="flex space-x-4">
-          <a href="{% url 'file:file_manage' store.store_id %}" 
+          <a href="{% url 'file:file_manage' store.store_id %}{{ admin_access_query }}" 
              class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
             취소
           </a>
