@@ -24,7 +24,7 @@
           </div>
         </div>
         <div class="flex items-center space-x-3">
-          <a href="{% url 'file:file_manage' store.store_id %}" 
+          <a href="{% url 'file:file_manage' store.store_id %}{{ admin_access_query }}" 
              class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
             <i class="fas fa-arrow-left mr-2"></i>
             파일 관리로 돌아가기
@@ -36,6 +36,9 @@
     <!-- 필터 -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6">
       <form method="get" class="flex flex-wrap items-center gap-4">
+        {% if admin_access_query %}
+        <input type="hidden" name="admin_access" value="true">
+        {% endif %}
         <!-- 상태 필터 -->
         <div class="flex items-center space-x-2">
           <label class="text-sm text-gray-600 dark:text-gray-400">상태:</label>

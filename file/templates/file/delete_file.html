@@ -61,7 +61,7 @@
       <!-- 버튼 -->
       <form method="post" class="flex justify-center space-x-4">
         {% csrf_token %}
-        <a href="{% url 'file:file_manage' store.store_id %}" 
+        <a href="{% url 'file:file_manage' store.store_id %}{{ admin_access_query }}" 
            class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
           취소
         </a>
