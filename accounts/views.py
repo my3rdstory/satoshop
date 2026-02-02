@@ -143,6 +143,25 @@ class ChangePasswordView(View):
             'password_form': password_form,
         })
 
+    def post(self, request):
+        if not request.user.has_usable_password():
+            messages.error(request, '일반 로그인 비밀번호가 없는 계정입니다. 먼저 일반 로그인 설정을 진행해 주세요.')
+            return redirect('accounts:link_local_account')
+
+        password_form = PasswordChangeForm(user=request.user, data=request.POST)
+        if password_form.is_valid():
+            user = password_form.save()
+            update_session_auth_hash(request, user)
+            return render(request, self.template_name, {
+                'password_form': PasswordChangeForm(user=user),
+                'success': True,
+            })
+
+        return render(request, self.template_name, {
+            'password_form': password_form,
+            'success': False,
+        })
+
 
 @method_decorator(login_required, name='dispatch')
 class LinkLocalAccountView(View):
