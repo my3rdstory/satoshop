@@ -1,5 +1,6 @@
 from django import forms
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, password_validation
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
@@ -86,3 +87,20 @@ class LocalAccountUsernameCheckForm(forms.Form):
         if User.objects.filter(username=username).exclude(pk=self.user.pk).exists():
             raise ValidationError(_('이미 사용 중인 아이디입니다.'))
         return username
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    error_messages = {
+        **PasswordChangeForm.error_messages,
+        'password_incorrect': _('현재 비밀번호가 올바르지 않습니다.'),
+        'password_mismatch': _('새 비밀번호가 서로 일치하지 않습니다.'),
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].error_messages.setdefault('required', _('현재 비밀번호를 입력하세요.'))
+        self.fields['new_password1'].error_messages.setdefault('required', _('새 비밀번호를 입력하세요.'))
+        self.fields['new_password2'].error_messages.setdefault('required', _('새 비밀번호 확인을 입력하세요.'))
+        help_texts = password_validation.password_validators_help_texts()
+        if help_texts:
+            self.fields['new_password1'].help_text = ' · '.join(help_texts)

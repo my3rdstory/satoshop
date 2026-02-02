@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, update_session_auth_hash
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -22,7 +22,7 @@ from django.core.cache import cache
 from orders.models import PurchaseHistory, Order
 from orders.services import CartService
 from .models import LightningUser
-from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm
+from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm, CustomPasswordChangeForm
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
 
 logger = logging.getLogger(__name__)
@@ -138,23 +138,34 @@ class ChangePasswordView(View):
     template_name = 'accounts/change_password.html'
     
     def get(self, request):
-        password_form = PasswordChangeForm(user=request.user)
+        if not request.user.has_usable_password():
+            if hasattr(request.user, 'lightning_profile'):
+                messages.info(request, '일반 로그인 설정 후 비밀번호 변경이 가능합니다.')
+                return redirect('accounts:link_local_account')
+            messages.error(request, '비밀번호가 설정되어 있지 않습니다.')
+            return redirect('accounts:mypage')
+
+        password_form = CustomPasswordChangeForm(user=request.user)
         return render(request, self.template_name, {
             'password_form': password_form,
         })
 
     def post(self, request):
         if not request.user.has_usable_password():
-            messages.error(request, '일반 로그인 비밀번호가 없는 계정입니다. 먼저 일반 로그인 설정을 진행해 주세요.')
-            return redirect('accounts:link_local_account')
+            if hasattr(request.user, 'lightning_profile'):
+                messages.error(request, '일반 로그인 비밀번호가 없는 계정입니다. 먼저 일반 로그인 설정을 진행해 주세요.')
+                return redirect('accounts:link_local_account')
+            messages.error(request, '비밀번호가 설정되어 있지 않습니다.')
+            return redirect('accounts:mypage')
 
-        password_form = PasswordChangeForm(user=request.user, data=request.POST)
+        password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
         if password_form.is_valid():
             user = password_form.save()
             update_session_auth_hash(request, user)
             return render(request, self.template_name, {
-                'password_form': PasswordChangeForm(user=user),
+                'password_form': CustomPasswordChangeForm(user=user),
                 'success': True,
+                'success_message': '비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인할 필요는 없습니다.',
             })
 
         return render(request, self.template_name, {
