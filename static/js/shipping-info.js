@@ -192,11 +192,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Postcode 인스턴스 생성 함수
     function createPostcodeInstance(container) {
+        if (!window.kakao || !window.kakao.Postcode) {
+            console.error('Kakao Postcode script is not loaded.');
+            closeAddressModal();
+            return;
+        }
+
         // 다크모드 감지
         const isDarkMode = document.documentElement.classList.contains('dark') || 
                           window.matchMedia('(prefers-color-scheme: dark)').matches;
         
-        currentPostcodeInstance = new daum.Postcode({
+        currentPostcodeInstance = new window.kakao.Postcode({
             oncomplete: function(data) {
                 // 검색결과 항목을 클릭했을때 실행할 코드
                 

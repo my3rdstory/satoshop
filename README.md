@@ -197,6 +197,7 @@ SiteSettings ──┬── ExchangeRate (환율 데이터)
 - **Blink API**: 라이트닝 네트워크 결제
 - **S3 호환 스토리지**: 이미지 파일 저장
 - **Upbit API**: BTC/KRW 환율 조회
+- **Kakao 우편번호 서비스**: 주소 검색 모달에서 `kakao.Postcode` + `https://t1.kakaocdn.net/.../postcode.v2.js` 사용
 
 ### 배포 및 인프라
 - **Render.com**: 메인 배포 플랫폼 (프로덕션 환경)

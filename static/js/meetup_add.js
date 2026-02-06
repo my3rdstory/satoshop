@@ -641,10 +641,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function createLocationPostcodeInstance(container) {
+        if (!window.kakao || !window.kakao.Postcode) {
+            console.error('Kakao Postcode script is not loaded.');
+            closeLocationAddressModal();
+            return;
+        }
+
         const isDarkMode = document.documentElement.classList.contains('dark') || 
                           window.matchMedia('(prefers-color-scheme: dark)').matches;
         
-        currentLocationPostcodeInstance = new daum.Postcode({
+        currentLocationPostcodeInstance = new window.kakao.Postcode({
             oncomplete: function(data) {
                 var addr = '';
                 var extraAddr = '';

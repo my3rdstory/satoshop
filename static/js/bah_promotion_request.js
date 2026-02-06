@@ -615,8 +615,8 @@
       if (addressModal.classList.contains('flex')) {
         return;
       }
-      if (!window.daum || !window.daum.Postcode) {
-        console.warn('Daum Postcode script is not loaded.');
+      if (!window.kakao || !window.kakao.Postcode) {
+        console.warn('Kakao Postcode script is not loaded.');
         return;
       }
 
@@ -624,7 +624,7 @@
       addressModal.classList.add('flex');
       addressContainer.innerHTML = '';
 
-      postcodeInstance = new window.daum.Postcode({
+      postcodeInstance = new window.kakao.Postcode({
         oncomplete: function(data) {
           var addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
           if (data.userSelectedType === 'R') {
