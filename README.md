@@ -506,7 +506,13 @@ SECURE_SSL_REDIRECT=True
 **디스코드 슬래시 명령어 동기화**
 - 디스코드 봇 설정 후 명령어 등록/갱신
 - 명령어: `uv run python manage.py sync_discord_commands`
+- 기본 동작: 글로벌 + 봇이 가입한 모든 길드 동기화(길드 명령어는 보통 즉시 반영)
+- 옵션:
+  - `--global-only`: 글로벌 명령어만 동기화
+  - `--guild-only --all-guilds`: 모든 길드에만 동기화
+  - `--guild-id <ID>`: 특정 길드만 동기화(여러 번 전달 가능)
 - 인터랙션 수신 URL: `/satoshop-bot/discord/interactions/`
+- 슬래시 명령어 응답은 에페메랄(`flags=64`)로 전송되어 실행자 본인에게만 노출됩니다.
 
 ### Docker 기반 Render 배포 파이프라인
 
