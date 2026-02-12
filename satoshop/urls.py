@@ -35,6 +35,7 @@ urlpatterns = [
     path('meetup/', include('meetup.urls')),
     path('lecture/', include('lecture.urls')),
     path('file/', include('file.urls')),
+    path('satoshop-bot/', include('satoshop_bot.urls')),
     path('media/', include('storage.urls')),  # 보안 강화된 이미지 서빙
     path('minigame/', include('game.urls')),
     path('minihome/', include('minihome.urls')),

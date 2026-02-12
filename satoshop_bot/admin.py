@@ -11,8 +11,8 @@ class DiscordChannelInline(admin.TabularInline):
 
 @admin.register(DiscordBot)
 class DiscordBotAdmin(admin.ModelAdmin):
-    list_display = ('name', 'is_active', 'updated_at')
+    list_display = ('name', 'application_id', 'is_active', 'updated_at')
     list_filter = ('is_active',)
-    search_fields = ('name',)
-    fields = ('name', 'token', 'is_active')
+    search_fields = ('name', 'application_id')
+    fields = ('name', 'application_id', 'public_key', 'token', 'is_active')
     inlines = [DiscordChannelInline]
