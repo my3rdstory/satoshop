@@ -1,0 +1,11 @@
+.recent-items-webview {
+  background:
+    radial-gradient(1200px 400px at 100% -10%, rgba(247, 147, 26, 0.12), transparent 55%),
+    radial-gradient(900px 320px at -10% 0%, rgba(234, 179, 8, 0.1), transparent 50%);
+}
+
+.dark .recent-items-webview {
+  background:
+    radial-gradient(1200px 400px at 100% -10%, rgba(247, 147, 26, 0.2), transparent 55%),
+    radial-gradient(900px 320px at -10% 0%, rgba(234, 179, 8, 0.14), transparent 50%);
+}

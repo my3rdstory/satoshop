@@ -5,6 +5,13 @@ class DiscordBot(models.Model):
     """디스코드 봇 설정"""
 
     name = models.CharField(max_length=120, default='satoshop', verbose_name='봇 이름')
+    application_id = models.CharField(max_length=40, blank=True, verbose_name='애플리케이션 ID')
+    public_key = models.CharField(
+        max_length=128,
+        blank=True,
+        verbose_name='인터랙션 공개키',
+        help_text='디스코드 Developer Portal의 Public Key(16진수)',
+    )
     token = models.CharField(max_length=220, verbose_name='봇 토큰')
     is_active = models.BooleanField(default=True, verbose_name='활성화 여부')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='생성 시각')
