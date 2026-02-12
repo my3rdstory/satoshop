@@ -507,6 +507,7 @@ SECURE_SSL_REDIRECT=True
 - 디스코드 봇 설정 후 명령어 등록/갱신
 - 명령어: `uv run python manage.py sync_discord_commands`
 - 기본 동작: 글로벌 + 봇이 가입한 모든 길드 동기화(길드 명령어는 보통 즉시 반영)
+- Django Admin의 **봇 연동 > 디스코드 봇**에서 저장 시에도 자동 동기화를 시도합니다. (`is_active=true`, `application_id/token` 설정 시)
 - 옵션:
   - `--global-only`: 글로벌 명령어만 동기화
   - `--guild-only --all-guilds`: 모든 길드에만 동기화
