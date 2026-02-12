@@ -45,6 +45,22 @@ def _sync_global_commands(bot: DiscordBot, *, timeout: int) -> list[dict]:
     return payload
 
 
+def _clear_global_commands(bot: DiscordBot, *, timeout: int) -> None:
+    url = f"{DISCORD_API_BASE}/applications/{bot.application_id}/commands"
+    response = requests.put(url, headers=_build_headers(bot), json=[], timeout=timeout)
+    if response.status_code >= 400:
+        logger.warning(
+            "디스코드 글로벌 명령어 정리 실패 status=%s body=%s",
+            response.status_code,
+            response.text,
+        )
+        raise RuntimeError(f"디스코드 글로벌 명령어 정리 실패: {response.status_code}")
+
+    payload = response.json()
+    if not isinstance(payload, list):
+        raise RuntimeError("디스코드 글로벌 명령어 정리 응답 형식이 올바르지 않습니다.")
+
+
 def _sync_guild_commands(bot: DiscordBot, *, guild_id: str, timeout: int) -> list[dict]:
     url = f"{DISCORD_API_BASE}/applications/{bot.application_id}/guilds/{guild_id}/commands"
     response = requests.put(url, headers=_build_headers(bot), json=SLASH_COMMANDS, timeout=timeout)
@@ -94,6 +110,7 @@ def sync_discord_application_commands(
     timeout: int = 10,
     guild_ids: list[str] | None = None,
     sync_global: bool = True,
+    clear_global_when_guild_only: bool = False,
 ) -> dict:
     if not bot.application_id:
         raise ValueError("application_id가 설정되지 않았습니다.")
@@ -102,12 +119,16 @@ def sync_discord_application_commands(
 
     summary = {
         "global_count": 0,
+        "global_cleared": False,
         "guild_results": [],
     }
 
     if sync_global:
         global_commands = _sync_global_commands(bot, timeout=timeout)
         summary["global_count"] = len(global_commands)
+    elif clear_global_when_guild_only:
+        _clear_global_commands(bot, timeout=timeout)
+        summary["global_cleared"] = True
 
     if guild_ids:
         unique_guild_ids = list(dict.fromkeys([str(gid).strip() for gid in guild_ids if str(gid).strip()]))

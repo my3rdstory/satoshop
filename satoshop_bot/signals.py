@@ -47,12 +47,14 @@ def sync_discord_commands_on_bot_save(sender, instance: DiscordBot, **kwargs) ->
             summary = sync_discord_application_commands(
                 instance,
                 guild_ids=guild_ids,
-                sync_global=True,
+                sync_global=False,
+                clear_global_when_guild_only=True,
             )
             logger.info(
-                "디스코드 명령어 자동 동기화 완료 bot_id=%s global=%s guilds=%s",
+                "디스코드 명령어 자동 동기화 완료 bot_id=%s global=%s cleared=%s guilds=%s",
                 instance.id,
                 summary.get("global_count"),
+                summary.get("global_cleared"),
                 len(summary.get("guild_results") or []),
             )
         except Exception:

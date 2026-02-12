@@ -33,6 +33,11 @@ class Command(BaseCommand):
             action="store_true",
             help="길드 명령어만 동기화합니다.",
         )
+        parser.add_argument(
+            "--keep-global",
+            action="store_true",
+            help="길드 전용 동기화 시 기존 글로벌 명령어를 유지합니다.",
+        )
 
     def handle(self, *args, **options):
         bot_id = options.get("bot_id")
@@ -53,9 +58,13 @@ class Command(BaseCommand):
         if options.get("global_only") and options.get("guild_only"):
             raise CommandError("--global-only와 --guild-only는 함께 사용할 수 없습니다.")
 
-        sync_global = not options.get("guild_only")
         if options.get("global_only"):
             sync_global = True
+        elif options.get("guild_only"):
+            sync_global = False
+        else:
+            # 기본값은 길드 전용 동기화(중복 노출 방지)
+            sync_global = bool(options.get("keep_global"))
 
         guild_ids: list[str] = []
         guild_ids.extend(options.get("guild_id") or [])
@@ -64,22 +73,27 @@ class Command(BaseCommand):
             discovered = fetch_bot_guild_ids(bot)
             guild_ids.extend(discovered)
 
-        # 기본값: 글로벌 + 모든 길드 동기화(즉시 반영용)
-        if not options.get("global_only") and not options.get("guild_only") and not guild_ids:
+        # 기본값: 길드 전용 전체 동기화(중복 노출 방지 + 즉시 반영)
+        if not options.get("global_only") and not guild_ids:
             guild_ids = fetch_bot_guild_ids(bot)
 
         if options.get("guild_only") and not guild_ids:
             raise CommandError("길드 전용 동기화에는 --guild-id 또는 --all-guilds가 필요합니다.")
 
+        clear_global_when_guild_only = bool(guild_ids) and (not sync_global) and (not options.get("keep_global"))
+
         summary = sync_discord_application_commands(
             bot,
             guild_ids=guild_ids,
             sync_global=sync_global,
+            clear_global_when_guild_only=clear_global_when_guild_only,
         )
 
         if sync_global:
             self.stdout.write(self.style.SUCCESS(f"글로벌 동기화 완료: {summary['global_count']}개"))
             self.stdout.write("  - 글로벌 명령어는 디스코드 전파에 시간이 걸릴 수 있습니다.")
+        elif summary.get("global_cleared"):
+            self.stdout.write(self.style.SUCCESS("글로벌 명령어 정리 완료: 중복 노출 방지"))
 
         guild_results = summary.get("guild_results") or []
         if guild_results:
