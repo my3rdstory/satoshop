@@ -239,29 +239,44 @@ def _handle_message_component(request, payload: dict) -> dict:
 @csrf_exempt
 @require_POST
 def discord_interactions(request):
-    active_bot = DiscordBot.get_active_bot()
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return _json_response({"detail": "JSON 파싱 실패"}, status=400)
+
+    payload_app_id = str(payload.get("application_id", "")).strip()
+    active_bot = DiscordBot.get_active_bot_by_application_id(payload_app_id) or DiscordBot.get_active_bot()
     if not active_bot:
         return _json_response({"detail": "활성 디스코드 봇이 없습니다."}, status=503)
     if not active_bot.public_key:
         return _json_response({"detail": "디스코드 공개키가 설정되지 않았습니다."}, status=503)
 
     if not _verify_discord_signature(request, active_bot.public_key):
+        logger.warning(
+            "디스코드 서명 검증 실패 bot_id=%s payload_app_id=%s bot_app_id=%s",
+            active_bot.id,
+            payload_app_id or "-",
+            active_bot.application_id or "-",
+        )
         return _json_response({"detail": "서명 검증 실패"}, status=401)
 
-    try:
-        payload = json.loads(request.body.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return _json_response({"detail": "JSON 파싱 실패"}, status=400)
-
     interaction_type = payload.get("type")
-    if interaction_type == DISCORD_PING:
-        return _json_response({"type": DISCORD_RESPONSE_PONG})
-    if interaction_type == DISCORD_APPLICATION_COMMAND:
-        return _json_response(_handle_application_command(request, payload))
-    if interaction_type == DISCORD_MESSAGE_COMPONENT:
-        return _json_response(_handle_message_component(request, payload))
+    try:
+        if interaction_type == DISCORD_PING:
+            return _json_response({"type": DISCORD_RESPONSE_PONG})
+        if interaction_type == DISCORD_APPLICATION_COMMAND:
+            return _json_response(_handle_application_command(request, payload))
+        if interaction_type == DISCORD_MESSAGE_COMPONENT:
+            return _json_response(_handle_message_component(request, payload))
+    except Exception:
+        logger.exception(
+            "디스코드 인터랙션 처리 중 오류 bot_id=%s interaction_type=%s",
+            active_bot.id,
+            interaction_type,
+        )
+        return _json_response(_interaction_message("명령 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."))
 
-    logger.info("미지원 디스코드 인터랙션 type=%s", interaction_type)
+    logger.info("미지원 디스코드 인터랙션 type=%s bot_id=%s", interaction_type, active_bot.id)
     return _json_response(_interaction_message("지원하지 않는 인터랙션입니다."))
 
 

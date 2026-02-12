@@ -28,6 +28,13 @@ class DiscordBot(models.Model):
     def get_active_bot(cls):
         return cls.objects.filter(is_active=True).order_by('-updated_at').first()
 
+    @classmethod
+    def get_active_bot_by_application_id(cls, application_id: str | None):
+        app_id = str(application_id or '').strip()
+        if not app_id:
+            return None
+        return cls.objects.filter(is_active=True, application_id=app_id).order_by('-updated_at').first()
+
 
 class DiscordChannel(models.Model):
     """디스코드 채널 설정"""
