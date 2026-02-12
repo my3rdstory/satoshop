@@ -515,6 +515,8 @@ SECURE_SSL_REDIRECT=True
   - `--keep-global`: 길드 동기화 시 기존 글로벌 명령어 유지
 - 인터랙션 수신 URL: `/satoshop-bot/discord/interactions/`
 - 슬래시 명령어 응답은 에페메랄(`flags=64`)로 전송되어 실행자 본인에게만 노출됩니다.
+- 인터랙션 요청은 payload의 `application_id`를 우선으로 해당 봇 설정(`public_key`)을 찾아 검증합니다. 테스트/운영 봇을 함께 쓰는 경우에도 앱 ID를 정확히 저장해야 합니다.
+- `is_active=true` 봇이 여러 개인 경우 혼선을 줄이려면 현재 사용할 봇만 활성화하는 것을 권장합니다.
 
 ### Docker 기반 Render 배포 파이프라인
 
