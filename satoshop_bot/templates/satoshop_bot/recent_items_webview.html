@@ -28,7 +28,7 @@
           <div class="min-w-0">
             <p class="truncate font-semibold text-gray-900 dark:text-white">{{ item.title }}</p>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {{ item.item_type_label }} · {{ item.store_id }} · {{ item.event_at|date:"Y-m-d H:i" }}
+              {{ item.item_type_label }} · {{ item.store_name|default:item.store_id }} · {{ item.event_at|date:"Y-m-d H:i" }}
             </p>
           </div>
           <div class="shrink-0 text-right">

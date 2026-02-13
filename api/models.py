@@ -3,6 +3,7 @@ import secrets
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.core.validators import URLValidator
@@ -13,6 +14,13 @@ User = get_user_model()
 
 class ApiKey(models.Model):
     """외부 연동용 API 키 (해시 저장)"""
+
+    AUTH_METHOD_API_KEY = "api_key"
+    AUTH_METHOD_NOSTR = "nostr"
+    AUTH_METHOD_CHOICES = (
+        (AUTH_METHOD_API_KEY, "기존 API 키(Bearer)"),
+        (AUTH_METHOD_NOSTR, "Nostr 공개키 서명"),
+    )
 
     name = models.CharField(max_length=100, help_text="키 용도/대상 메모")
     channel_slug = models.SlugField(
@@ -34,6 +42,20 @@ class ApiKey(models.Model):
         max_length=200,
         default="stores:read",
         help_text="허용 스코프(콤마 구분). 기본은 stores:read",
+    )
+    auth_method = models.CharField(
+        max_length=20,
+        choices=AUTH_METHOD_CHOICES,
+        default=AUTH_METHOD_API_KEY,
+        db_index=True,
+        help_text="인증 방식 선택. Nostr 선택 시 Bearer 키 대신 Nostr 서명 검증 사용",
+    )
+    nostr_pubkey = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Nostr 인증용 공개키(32바이트 hex). auth_method=nostr 일 때 필수",
     )
     is_active = models.BooleanField(default=True, help_text="비활성화 시 403 반환")
     created_by = models.ForeignKey(
@@ -59,6 +81,15 @@ class ApiKey(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name} ({self.key_prefix})"
+
+    @property
+    def uses_nostr_auth(self) -> bool:
+        return self.auth_method == self.AUTH_METHOD_NOSTR
+
+    def clean(self):
+        super().clean()
+        if self.uses_nostr_auth and not self.nostr_pubkey:
+            raise ValidationError({"nostr_pubkey": "Nostr 인증을 선택하면 공개키 입력이 필요합니다."})
 
     @staticmethod
     def generate_raw_key() -> str:

@@ -676,7 +676,9 @@ docker run \
 
 ## 🔌 외부 API
 
-- **인증**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
+- **인증(기존 API 키)**: `Authorization: Bearer <api_key>`(만료 없음). Django Admin → **API 키**에서 생성 시 원문 키가 1회 노출되며 DB에는 해시만 저장됩니다. 필요 시 목록 액션으로 재발급 또는 비활성화할 수 있습니다.
+- **인증(Nostr 서명)**: Django Admin → **API 키 추가**에서 `Nostr 인증 사용`을 체크하고 상대 공개키(`npub` 또는 64자리 hex)를 등록하면, 해당 키는 Bearer 인증을 무시하고 Nostr 인증만 허용합니다.
+- **Nostr 챌린지 발급**: `GET /api/v1/nostr/challenge/?pubkey=<hex_or_npub>` 응답으로 받은 `challenge`를 상대 개인키로 BIP340 Schnorr 서명 후, 보호 API 호출 시 `X-Nostr-Pubkey`, `X-Nostr-Challenge-Id`, `X-Nostr-Signature` 헤더를 함께 전달합니다. 챌린지는 1회성/5분 만료입니다.
 - **브라우저 로컬 테스트(CSRF)**: 프런트 개발 서버(예: `http://localhost:5173`)에서 `POST /api/v1/...`를 호출하면 CSRF 보호로 403이 날 수 있습니다. 이때 `CSRF_TRUSTED_ORIGINS`에 프런트 Origin을 등록하고, 먼저 `GET /api/v1/csrf/`(쿠키 발급) 호출 후 `X-CSRFToken` 헤더 + `credentials: include`로 POST를 수행하세요.
 - **엔드포인트(공지사항 목록)**: `GET /api/v1/notices/` — 활성 공지사항을 고정 여부/작성일 역순으로 반환합니다. 제목, 본문, 고정 여부, 생성·수정 시각을 포함합니다.
 - **엔드포인트(공지사항 상세)**: `GET /api/v1/notices/{notice_id}/` — 특정 공지의 제목/내용/작성자/고정 여부와 생성·수정 시각을 반환합니다.
@@ -702,6 +704,16 @@ docker run \
 - **응답 예시**
   ```bash
   curl -H "Authorization: Bearer <api_key>" https://<host>/api/v1/stores/
+  ```
+  ```bash
+  # 1) 챌린지 발급
+  curl "https://<host>/api/v1/nostr/challenge/?pubkey=<npub_or_hex>"
+
+  # 2) challenge를 서명한 뒤 보호 API 호출
+  curl https://<host>/api/v1/stores/ \
+    -H "X-Nostr-Pubkey: <hex_or_npub>" \
+    -H "X-Nostr-Challenge-Id: <challenge_id>" \
+    -H "X-Nostr-Signature: <bip340_signature_hex>"
   ```
   ```json
   {

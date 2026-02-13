@@ -51,11 +51,32 @@
         }
       }
     },
+    "/nostr/challenge/": {
+      "get": {
+        "summary": "Nostr 챌린지 발급",
+        "description": "등록된 Nostr 공개키 기준으로 1회성 챌린지를 발급한다. 응답의 challenge(32바이트 hex)를 BIP340으로 서명한 뒤 API 호출 시 X-Nostr-* 헤더로 전달한다.",
+        "parameters": [
+          {
+            "name": "pubkey",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Nostr 공개키(64자리 hex 또는 npub)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "챌린지 발급 성공" },
+          "400": { "description": "공개키 형식 오류" },
+          "403": { "description": "허용되지 않은 Origin/IP" },
+          "404": { "description": "활성화된 Nostr 인증 키 없음" }
+        }
+      }
+    },
     "/notices/": {
       "get": {
         "summary": "공지사항 목록",
         "description": "활성 공지사항 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "responses": {
           "200": {
             "description": "성공",
@@ -82,7 +103,7 @@
       "get": {
         "summary": "공지사항 상세",
         "description": "공지사항 단건 상세를 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "notice_id", "in": "path", "required": true, "schema": { "type": "integer" } }
         ],
@@ -105,7 +126,7 @@
       "get": {
         "summary": "활성 스토어 목록",
         "description": "활성 스토어와 공개 리소스를 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "responses": {
           "200": {
             "description": "성공",
@@ -132,7 +153,7 @@
       "get": {
         "summary": "스토어 주인장 정보",
         "description": "스토어별 주인장 공개 정보를 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           {
             "name": "store_id",
@@ -158,7 +179,7 @@
       "get": {
         "summary": "스토어별 활성 상품",
         "description": "스토어의 활성 상품 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -187,7 +208,7 @@
       "get": {
         "summary": "스토어별 활성 밋업",
         "description": "스토어의 활성 밋업 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -216,7 +237,7 @@
       "get": {
         "summary": "스토어별 활성 라이브 강의",
         "description": "스토어의 활성 라이브 강의 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -245,7 +266,7 @@
       "get": {
         "summary": "스토어별 활성 디지털 파일",
         "description": "스토어의 활성 디지털 파일 목록을 반환",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -274,7 +295,7 @@
       "post": {
         "summary": "스토어별 상품 주문 생성",
         "description": "장바구니 없이 상품 목록을 받아 주문을 생성",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -364,7 +385,7 @@
       "post": {
         "summary": "스토어별 밋업 주문 생성",
         "description": "참가자 정보를 받아 밋업 주문을 생성",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "meetup_id", "in": "path", "required": true, "schema": { "type": "integer" } }
@@ -419,7 +440,7 @@
       "post": {
         "summary": "스토어별 라이브 강의 주문 생성",
         "description": "구매자 정보를 받아 라이브 강의 참가 주문을 생성",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "live_lecture_id", "in": "path", "required": true, "schema": { "type": "integer" } }
@@ -462,7 +483,7 @@
       "post": {
         "summary": "스토어별 디지털 파일 주문 생성",
         "description": "구매자 정보를 받아 디지털 파일 주문을 생성",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "file_id", "in": "path", "required": true, "schema": { "type": "integer" } }
@@ -505,7 +526,7 @@
       "post": {
         "summary": "스토어 주인장 라이트닝 인보이스 발행",
         "description": "스토어 주인장이 외부 앱 결제용 BOLT11 인보이스를 생성",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -545,7 +566,7 @@
       "post": {
         "summary": "인보이스 결제 확인 후 주문 생성",
         "description": "payment_hash 결제 완료(paid)를 확인한 뒤 주문을 생성한다. 이미 동일 payment_hash로 생성된 주문이 있으면 기존 주문을 반환한다.",
-        "security": [{ "bearerAuth": [] }],
+        "security": [{ "bearerAuth": [] }, { "nostrPubkey": [], "nostrChallengeId": [], "nostrSignature": [] }],
         "parameters": [
           { "name": "store_id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
@@ -608,6 +629,24 @@
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer"
+      },
+      "nostrPubkey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Nostr-Pubkey",
+        "description": "Nostr 공개키(64자리 hex 또는 npub)"
+      },
+      "nostrChallengeId": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Nostr-Challenge-Id",
+        "description": "GET /api/v1/nostr/challenge/ 응답으로 받은 challenge_id"
+      },
+      "nostrSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Nostr-Signature",
+        "description": "challenge(32바이트 hex)를 BIP340 Schnorr로 서명한 64바이트 hex"
       }
     },
     "schemas": {

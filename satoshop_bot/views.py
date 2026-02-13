@@ -85,8 +85,9 @@ def _build_select_component(items: list[dict], *, custom_id: str, placeholder: s
         sales_suffix = ""
         if item.get("sales_count", 0) > 1:
             sales_suffix = f" (판매: {item['sales_count']}건)"
+        store_label = item.get("store_name") or item.get("store_id") or "-"
         label = _truncate(f"{item['title']} / {item['price_text']}{sales_suffix}", 100)
-        description = _truncate(f"{item['item_type_label']} · {item['store_id']}", 100)
+        description = _truncate(f"{item['item_type_label']} · {store_label}", 100)
         options.append(
             {
                 "label": label,
