@@ -35,3 +35,5 @@
 - [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 마이페이지 및 스토어 관리자 메뉴 화면 정렬/모바일 플로우 재설계
 - [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 테마 정적 자산(`themes/minimal-dark/static`)에서 누락 CSS/JS 보강
 - [x] SATOSHOP_THEME=minimal-dark 리뉴얼: README 및 change-log 반영
+- [x] SATOSHOP_THEME=minimal-dark 다크테마 고정(테마 토글 기능 제거)
+- [x] SATOSHOP_THEME=minimal-dark 스토어 주인장 관리 메뉴 재배치(카테고리형 허브, 모바일 단일 진입)

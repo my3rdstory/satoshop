@@ -43,13 +43,6 @@
   </script>
   {% endif %}
 
-  <script>
-    (function() {
-      const theme = localStorage.getItem('theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-
   {% block extra_css %}{% endblock %}
 </head>
 
@@ -84,7 +77,6 @@
     window.homeUrl = "{% url 'myshop:home' %}";
   </script>
   <script src="{% static 'js/common.js' %}"></script>
-  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <script src="{% static 'js/myshop_base.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>

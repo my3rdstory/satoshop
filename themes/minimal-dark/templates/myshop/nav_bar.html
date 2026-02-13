@@ -39,24 +39,12 @@
         </span>
         로그아웃
       </a>
-      <a class="minimal-desktop__action theme-toggle-menu-item" href="#" data-theme-toggle="main" onclick="toggleTheme(); return false;">
-        <svg class="icon" data-theme-icon data-theme-icon-sun="{% static 'icons/feather/feather-sprite.svg' %}#sun" data-theme-icon-moon="{% static 'icons/feather/feather-sprite.svg' %}#moon">
-          <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
-        </svg>
-        <span class="theme-text" data-theme-light-text="다크 모드로" data-theme-dark-text="라이트 모드로">다크 모드</span>
-      </a>
       {% if user_has_active_store and user_active_store.is_active %}
         <a class="minimal-desktop__action" href="{% url 'stores:my_stores' %}">스토어 관리</a>
       {% else %}
         <a class="minimal-desktop__action" href="{% url 'stores:create_store' %}">스토어 만들기</a>
       {% endif %}
     {% else %}
-      <a class="minimal-desktop__action theme-toggle-menu-item" href="#" data-theme-toggle="main-guest" onclick="toggleTheme(); return false;">
-        <svg class="icon" data-theme-icon data-theme-icon-sun="{% static 'icons/feather/feather-sprite.svg' %}#sun" data-theme-icon-moon="{% static 'icons/feather/feather-sprite.svg' %}#moon">
-          <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
-        </svg>
-        <span class="theme-text" data-theme-light-text="다크 모드로" data-theme-dark-text="라이트 모드로">다크 모드</span>
-      </a>
       <a class="minimal-desktop__action" href="javascript:void(0)" onclick="redirectToSignup()">
         회원가입
       </a>

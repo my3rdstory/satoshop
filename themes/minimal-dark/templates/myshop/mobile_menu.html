@@ -29,8 +29,5 @@
       <a class="minimal-mobile-menu__link" href="javascript:void(0)" onclick="redirectToLogin()">로그인</a>
       <a class="minimal-mobile-menu__link" href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">라이트닝 로그인</a>
     {% endif %}
-    <a class="minimal-mobile-menu__link" href="#" onclick="toggleTheme(); return false;">
-      <span class="theme-text">테마 전환</span>
-    </a>
   </div>
 </div>

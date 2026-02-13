@@ -50,31 +50,4 @@
       setMenuState(false);
     }
   });
-
-  const mobileMenuTextOnly = document.querySelectorAll('.theme-toggle-text');
-  const themeTextElements = document.querySelectorAll('.theme-text');
-  if (themeTextElements.length && mobileMenuTextOnly.length) {
-    const updateText = function(theme) {
-      themeTextElements.forEach(function(element) {
-        element.textContent = theme === 'dark' ? '라이트 모드' : '다크 모드';
-      });
-    };
-
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    updateText(savedTheme);
-
-    window.addEventListener('load', function() {
-      const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      updateText(currentTheme);
-    });
-
-    window.themeManager = window.themeManager || {};
-    const previousApply = window.themeManager.apply;
-    if (typeof previousApply === 'function') {
-      window.themeManager.apply = function(theme) {
-        previousApply.call(window.themeManager, theme);
-        updateText(theme);
-      };
-    }
-  }
 })();

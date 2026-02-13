@@ -21,15 +21,8 @@
 
   <div class="minimal-mobile-menu__section">
     <p class="minimal-mobile-menu__title">관리 메뉴</p>
-    <a class="minimal-mobile-menu__link" href="{% url 'products:product_list' store.store_id %}">상품 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'meetup:meetup_list' store.store_id %}">밋업 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'orders:order_management' store_id=store.store_id %}">주문 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'stores:edit_shipping_settings' store_id=store.store_id %}">배송비 설정</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'lecture:live_lecture_list' store_id=store.store_id %}">라이브 강의 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'file:file_manage' store_id=store.store_id %}">파일 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'stores:manage_store' store_id=store.store_id %}">스토어 관리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'stores:purchase_history_cleanup' store_id=store.store_id %}">구매 이력 정리</a>
-    <a class="minimal-mobile-menu__link" href="{% url 'orders:payment_transactions' store_id=store.store_id %}">결제 정보 확인</a>
-    <a class="minimal-mobile-menu__link" href="javascript:void(0)" onclick="toggleTheme(); return false;">테마 전환</a>
+    {% if user.is_authenticated and user == store.owner %}
+      <a class="minimal-mobile-menu__link" href="{% url 'stores:my_stores' %}">관리 허브로 이동</a>
+    {% endif %}
   </div>
 </div>

@@ -1,266 +1,154 @@
 <!-- 스토어 편집 메뉴 컴포넌트 -->
-<div class="mt-8">
-  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-    <div class="flex items-center mb-6">
-      <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg mr-3">
-        <i class="fas fa-cog text-gray-600 dark:text-gray-400"></i>
+<section class="mt-8">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex items-center">
+        <div class="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg mr-3">
+          <i class="fas fa-sliders-h text-gray-700 dark:text-gray-200"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">스토어 관리 허브</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">스토어 운영에 필요한 모든 기능을 한 화면에서 이동하세요</p>
+        </div>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">스토어 편집 메뉴</h3>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <!-- 기본 정보 편집 -->
-      <a 
-        href="{% url 'stores:edit_basic_info' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/50 transition-colors">
-            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300"></i>
-          </div>
+    <div class="p-6 space-y-6">
+      <div>
+        <h4 class="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 mb-3">기본 설정</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <a href="{% url 'stores:edit_basic_info' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">기본 정보 편집</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">스토어 이름, 설명, 연락처</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500"></i>
+          </a>
+          <a href="{% url 'stores:edit_api_settings' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors">
+            <i class="fas fa-key text-yellow-600 dark:text-yellow-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-yellow-700 dark:group-hover:text-yellow-300">블링크 API 설정</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">결제 API 키, 월렛 설정</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-yellow-500"></i>
+          </a>
+          <a href="{% url 'stores:edit_email_settings' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+            <i class="fas fa-envelope text-green-600 dark:text-green-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-green-700 dark:group-hover:text-green-300">이메일 발송 설정</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">고객 안내 메일 템플릿</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500"></i>
+          </a>
+          <a href="{% url 'stores:edit_shipping_settings' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+            <i class="fas fa-truck text-orange-600 dark:text-orange-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-300">배송비 설정</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">기본 배송비와 조건 설정</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500"></i>
+          </a>
         </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
-            기본 정보 편집
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            스토어 이름, 설명, 주인장 정보 수정
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"></i>
-        </div>
-      </a>
+      </div>
 
-      <!-- 블링크 API 설정 -->
-      <a 
-        href="{% url 'stores:edit_api_settings' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center group-hover:bg-yellow-200 dark:group-hover:bg-yellow-800/50 transition-colors">
-            <i class="fas fa-key text-yellow-600 dark:text-yellow-400 group-hover:text-yellow-700 dark:group-hover:text-yellow-300"></i>
-          </div>
+      <div>
+        <h4 class="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 mb-3">결제·노출 운영</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <a href="{% url 'stores:edit_completion_message' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+            <i class="fas fa-message text-indigo-600 dark:text-indigo-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300">결제완료 메시지</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">결제 완료 후 노출 문구</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-indigo-500"></i>
+          </a>
+          <a href="{% url 'stores:edit_featured_display' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors">
+            <i class="fas fa-star text-teal-600 dark:text-teal-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300">스토어 노출 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">메인 노출 항목과 순서 설정</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-teal-500"></i>
+          </a>
         </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-yellow-700 dark:group-hover:text-yellow-300 transition-colors">
-            블링크 API 설정
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            결제 API 키 및 월렛 정보 관리
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-yellow-500 transition-colors"></i>
-        </div>
-      </a>
+      </div>
 
-      <!-- 이메일 발송 설정 -->
-      <a 
-        href="{% url 'stores:edit_email_settings' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors">
-            <i class="fas fa-envelope text-green-600 dark:text-green-400 group-hover:text-green-700 dark:group-hover:text-green-300"></i>
-          </div>
+      <div>
+        <h4 class="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 mb-3">콘텐츠 운영</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <a href="{% url 'products:product_list' store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+            <i class="fas fa-shopping-bag text-blue-600 dark:text-blue-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">상품 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">상품 등록·수정·활성화</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500"></i>
+          </a>
+          <a href="{% url 'meetup:meetup_list' store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-fuchsia-500 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 transition-colors">
+            <i class="fas fa-calendar-alt text-fuchsia-600 dark:text-fuchsia-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-fuchsia-700 dark:group-hover:text-fuchsia-300">밋업 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">일정 등록·참가자 확인</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-fuchsia-500"></i>
+          </a>
+          <a href="{% url 'lecture:live_lecture_list' store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+            <i class="fas fa-video text-violet-600 dark:text-violet-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-violet-700 dark:group-hover:text-violet-300">라이브 강의 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">강의 등록·운영 상태</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-violet-500"></i>
+          </a>
+          <a href="{% url 'file:file_manage' store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+            <i class="fas fa-file text-emerald-600 dark:text-emerald-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300">파일 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">디지털 파일 등록·판매 관리</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-emerald-500"></i>
+          </a>
         </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-green-700 dark:group-hover:text-green-300 transition-colors">
-            이메일 발송 설정
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Gmail 이메일 발송 기능 설정 및 테스트
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-green-500 transition-colors"></i>
-        </div>
-      </a>
+      </div>
 
-      <!-- 스토어 테마 설정 -->
-      <a 
-        href="{% url 'stores:edit_theme' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800/50 transition-colors">
-            <i class="fas fa-palette text-purple-600 dark:text-purple-400 group-hover:text-purple-700 dark:group-hover:text-purple-300"></i>
-          </div>
+      <div>
+        <h4 class="text-xs font-semibold tracking-wide text-gray-500 dark:text-gray-400 mb-3">주문·정산</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <a href="{% url 'orders:order_management' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <i class="fas fa-receipt text-gray-700 dark:text-gray-300 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-300">주문 관리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">주문 상태와 결제 확인</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-gray-500"></i>
+          </a>
+          <a href="{% url 'orders:payment_transactions' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+            <i class="fas fa-credit-card text-purple-600 dark:text-purple-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-300">결제 정보 확인</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">결제 내역 조회 및 추적</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-purple-500"></i>
+          </a>
+          <a href="{% url 'stores:purchase_history_cleanup' store_id=store.store_id %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+            <i class="fas fa-eraser text-rose-600 dark:text-rose-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-rose-700 dark:group-hover:text-rose-300">구매 이력 정리</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">과거 주문 데이터 정리</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-rose-500"></i>
+          </a>
+          <a href="{% url 'stores:my_stores' %}" class="group flex items-center p-4 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+            <i class="fas fa-tachometer-alt text-indigo-600 dark:text-indigo-400 w-8"></i>
+            <div class="ml-3 flex-1">
+              <p class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300">스토어 관리 홈</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">모든 운영 지표와 메뉴로 이동</p>
+            </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-indigo-500"></i>
+          </a>
         </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
-            스토어 테마 설정
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            색상, 그라디언트, 디자인 커스터마이징
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-purple-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 배송비 설정 -->
-      <a 
-        href="{% url 'stores:edit_shipping_settings' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center group-hover:bg-orange-200 dark:group-hover:bg-orange-800/50 transition-colors">
-            <i class="fas fa-truck text-orange-600 dark:text-orange-400 group-hover:text-orange-700 dark:group-hover:text-orange-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors">
-            배송비 설정
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            스토어 공통 배송비와 무료 배송 조건 관리
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-orange-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 결제완료 안내 메시지 관리 -->
-      <a 
-        href="{% url 'stores:edit_completion_message' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800/50 transition-colors">
-            <i class="fas fa-message text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-indigo-700 dark:group-hover:text-indigo-300 transition-colors">
-            결제완료 안내 메시지 관리
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            결제 완료 후 고객에게 보여줄 기본 메시지 설정
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 스토어 메인 노출 관리 -->
-      <a 
-        href="{% url 'stores:edit_featured_display' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-teal-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center group-hover:bg-teal-200 dark:group-hover:bg-teal-800/50 transition-colors">
-            <i class="fas fa-star text-teal-600 dark:text-teal-400 group-hover:text-teal-700 dark:group-hover:text-teal-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors">
-            스토어 메인 노출 관리
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            상품·밋업·강의·파일의 대문 노출 순서를 지정하세요
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-teal-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 라이브 강의 관리 -->
-      <a 
-        href="{% url 'lecture:live_lecture_list' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-fuchsia-500 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-fuchsia-100 dark:bg-fuchsia-900/30 rounded-lg flex items-center justify-center group-hover:bg-fuchsia-200 dark:group-hover:bg-fuchsia-800/50 transition-colors">
-            <i class="fas fa-video text-fuchsia-600 dark:text-fuchsia-400 group-hover:text-fuchsia-700 dark:group-hover:text-fuchsia-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-fuchsia-700 dark:group-hover:text-fuchsia-300 transition-colors">
-            라이브 강의 관리
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            라이브 강의 등록 및 운영 현황 확인
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-fuchsia-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 파일 관리 -->
-      <a 
-        href="{% url 'file:file_manage' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center group-hover:bg-emerald-200 dark:group-hover:bg-emerald-800/50 transition-colors">
-            <i class="fas fa-file text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
-            파일 관리
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            디지털 파일 등록 및 판매 현황 관리
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-emerald-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 구입 이력 삭제 -->
-      <a 
-        href="{% url 'stores:purchase_history_cleanup' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-lg flex items-center justify-center group-hover:bg-rose-200 dark:group-hover:bg-rose-800/50 transition-colors">
-            <i class="fas fa-eraser text-rose-600 dark:text-rose-400 group-hover:text-rose-700 dark:group-hover:text-rose-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-rose-700 dark:group-hover:text-rose-300 transition-colors">
-            구입 이력 삭제
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            가장 오래된 구입 내역부터 선택해 영구 삭제
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-rose-500 transition-colors"></i>
-        </div>
-      </a>
-
-      <!-- 스토어 관리 -->
-      <a 
-        href="{% url 'stores:manage_store' store_id=store.store_id %}" 
-        class="group flex items-center p-4 h-full rounded-xl border border-gray-200 dark:border-gray-600 hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200"
-      >
-        <div class="flex-shrink-0">
-          <div class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors">
-            <i class="fas fa-cog text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300"></i>
-          </div>
-        </div>
-        <div class="ml-4 flex-1">
-          <h4 class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
-            스토어 관리
-          </h4>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            활성화/비활성화, 삭제 등 관리 기능
-          </p>
-        </div>
-        <div class="flex-shrink-0">
-          <i class="fas fa-chevron-right text-gray-400 group-hover:text-gray-500 transition-colors"></i>
-        </div>
-      </a>
+      </div>
     </div>
   </div>
-</div>
+</section>

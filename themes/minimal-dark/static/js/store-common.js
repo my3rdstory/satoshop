@@ -15,11 +15,9 @@ function scrollToProducts() {
   }
 }
 
-// 스토어 전용 테마 초기화 (theme-toggle.js와 연동)
 function initStoreTheme() {
   document.addEventListener('DOMContentLoaded', () => {
-    // theme-toggle.js에서 이미 테마가 초기화되므로 여기서는 추가 작업만 수행
-    // 스토어 테마 통합 로드 완료
+    // theme-toggle.js 연동은 더 이상 사용하지 않습니다.
   });
 }
 

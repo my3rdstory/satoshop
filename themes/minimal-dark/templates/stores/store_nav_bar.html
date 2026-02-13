@@ -20,12 +20,6 @@
   </nav>
 
   <div class="minimal-desktop">
-    <a class="minimal-desktop__action" href="javascript:void(0)" onclick="toggleTheme(); return false;">
-      <svg class="icon">
-        <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
-      </svg>
-      <span class="theme-text">테마</span>
-    </a>
     {% if user.is_authenticated %}
     <a class="minimal-desktop__action" href="{% url 'accounts:mypage' %}">{{ user|lightning_username_tail }} 님</a>
     <a class="minimal-desktop__action" href="javascript:void(0)" onclick="logout()">로그아웃</a>

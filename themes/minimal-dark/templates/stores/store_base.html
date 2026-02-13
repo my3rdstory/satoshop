@@ -30,13 +30,6 @@
     <link rel="stylesheet" href="{% static 'css/themes.css' %}">
     <link rel="stylesheet" href="{% static 'css/theme-utils.css' %}">
     
-    <script>
-        (function() {
-          const theme = localStorage.getItem('theme') || 'dark';
-          document.documentElement.setAttribute('data-theme', theme);
-        })();
-    </script>
-
 {% block extra_head %}
 {% endblock %}
 
@@ -95,7 +88,6 @@
     {% endif %}
   </script>
   <script src="{% static 'js/common.js' %}"></script>
-  <script src="{% static 'js/theme-toggle.js' %}"></script>
   <script src="{% static 'js/store-common.js' %}"></script>
   <script src="{% static 'js/store_base.js' %}"></script>
   {% block extra_js %}
