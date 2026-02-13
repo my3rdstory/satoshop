@@ -1,0 +1,141 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}구매 완료 - {{ file.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/file_complete.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 성공 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+      <!-- 헤더 -->
+      <div class="bg-gradient-to-r from-green-500 to-blue-500 p-8 text-white text-center">
+        <div class="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4">
+          <i class="fas fa-check text-4xl"></i>
+        </div>
+        <h1 class="text-3xl font-bold mb-2">구매가 완료되었습니다!</h1>
+        <p class="text-green-100">파일을 다운로드할 수 있습니다.</p>
+      </div>
+
+      <!-- 구매 정보 -->
+      <div class="p-8">
+        <!-- 파일 정보 -->
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-6">
+          <div class="flex items-start space-x-4">
+            {% if file.preview_image %}
+            <img src="{{ file.preview_image.url }}" alt="{{ file.name }}" 
+                 class="w-24 h-24 rounded-lg object-cover flex-shrink-0">
+            {% else %}
+            <div class="w-24 h-24 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-file text-3xl text-purple-600 dark:text-purple-400"></i>
+            </div>
+            {% endif %}
+            
+            <div class="flex-1">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                {{ file.name }}
+              </h2>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                크기: {{ file.get_file_size_display }}
+              </p>
+              {% if order.download_expires_at %}
+              <p class="text-sm text-orange-600 dark:text-orange-400">
+                <i class="fas fa-clock mr-1"></i>
+                다운로드 기한: {{ order.download_expires_at|date:"Y년 m월 d일 H:i" }}까지
+              </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- 주문 정보 -->
+        <div class="mb-6 space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">주문번호:</span>
+            <span class="font-mono text-gray-900 dark:text-white">{{ order.order_number }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">구매일시:</span>
+            <span class="text-gray-900 dark:text-white">{{ order.confirmed_at|date:"Y.m.d H:i" }}</span>
+          </div>
+          {% if order.price > 0 %}
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">결제금액:</span>
+            <span class="font-semibold text-bitcoin">
+              {{ order.price|intcomma }} sats
+              {% if order.is_discounted %}
+                <span class="text-xs text-gray-500">({{ order.discount_rate }}% 할인)</span>
+              {% endif %}
+            </span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 구매 안내 메시지 -->
+        {% if file.purchase_message %}
+        <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            <i class="fas fa-info-circle mr-1"></i>
+            판매자 안내사항
+          </h3>
+          <div class="text-sm text-blue-800 dark:text-blue-200">
+            {{ file.purchase_message|linebreaks }}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 액션 버튼 -->
+        <div class="space-y-3">
+          <!-- 다운로드 버튼 -->
+          <a href="{% url 'file:download_file' store.store_id file.id %}" 
+             class="block w-full px-6 py-4 bg-blue-500 text-white text-center rounded-lg hover:bg-blue-600 transition-colors font-semibold text-lg">
+            <i class="fas fa-download mr-2"></i>
+            파일 다운로드
+          </a>
+
+          <!-- 추가 버튼들 -->
+          <div class="grid grid-cols-2 gap-3">
+            <a href="{% url 'accounts:my_file_orders' %}" 
+               class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+              <i class="fas fa-list mr-2"></i>
+              내 구매 내역
+            </a>
+            <a href="{% url 'file:file_list' store.store_id %}" 
+               class="px-4 py-2 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-center rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors">
+              <i class="fas fa-store mr-2"></i>
+              더 둘러보기
+            </a>
+          </div>
+        </div>
+
+        <!-- 주의사항 -->
+        <div class="mt-6 text-xs text-gray-500 dark:text-gray-400 text-center">
+          <p>구매 내역은 마이페이지 > 파일 구매 내역에서 확인하실 수 있습니다.</p>
+          {% if order.download_expires_at %}
+          <p class="mt-1">다운로드 기한이 지나면 파일을 다운로드할 수 없으니 주의해주세요.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 이메일 알림 -->
+    {% if user.email %}
+    <div class="mt-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-center">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        <i class="fas fa-envelope mr-2"></i>
+        구매 확인 이메일이 {{ user.email }}로 발송되었습니다.
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/file_complete.js' %}"></script>
+{% endblock %}

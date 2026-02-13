@@ -1,0 +1,238 @@
+/* 파일 업로드 드래그 & 드롭 스타일 */
+
+/* 드롭존 스타일 */
+.file-drop-zone {
+    border: 2px dashed #cbd5e0;
+    border-radius: 0.5rem;
+    padding: 3rem 2rem;
+    text-align: center;
+    background-color: #f7fafc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 1rem;
+}
+
+.file-drop-zone:hover {
+    border-color: #9f7aea;
+    background-color: #f3ebff;
+}
+
+.file-drop-zone.drag-over {
+    border-color: #9f7aea;
+    background-color: #f3ebff;
+    transform: scale(1.02);
+}
+
+.drop-zone-content {
+    pointer-events: none;
+}
+
+.drop-zone-icon {
+    font-size: 3rem;
+    color: #9f7aea;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.drop-zone-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+}
+
+.drop-zone-subtext {
+    font-size: 0.875rem;
+    color: #718096;
+    margin-bottom: 1.5rem;
+}
+
+.btn-select-files {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #ffffff;
+    background-color: #9f7aea;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    pointer-events: auto;
+}
+
+.btn-select-files:hover {
+    background-color: #805ad5;
+}
+
+/* 파일 목록 컨테이너 */
+.file-list-container {
+    margin-top: 1.5rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.file-list-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.file-count {
+    color: #9f7aea;
+}
+
+.file-list {
+    space-y: 0.5rem;
+}
+
+/* 파일 아이템 */
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.15s ease;
+}
+
+.file-item:hover {
+    background-color: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-icon {
+    font-size: 1.5rem;
+    color: #718096;
+    flex-shrink: 0;
+}
+
+.file-details {
+    min-width: 0;
+    flex: 1;
+}
+
+.file-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #2d3748;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    color: #718096;
+    margin: 0;
+    margin-top: 0.25rem;
+}
+
+.btn-remove-file {
+    padding: 0.5rem;
+    background-color: transparent;
+    border: none;
+    border-radius: 0.25rem;
+    color: #e53e3e;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.btn-remove-file:hover {
+    background-color: #fed7d7;
+    color: #c53030;
+}
+
+/* 다크 모드 지원 */
+.dark .file-drop-zone {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+.dark .file-drop-zone:hover,
+.dark .file-drop-zone.drag-over {
+    background-color: #3a2d4d;
+    border-color: #9f7aea;
+}
+
+.dark .drop-zone-text {
+    color: #e2e8f0;
+}
+
+.dark .drop-zone-subtext {
+    color: #a0aec0;
+}
+
+.dark .file-list-container {
+    background-color: #2d3748;
+    border-color: #4a5568;
+}
+
+.dark .file-list-title {
+    color: #e2e8f0;
+}
+
+.dark .file-item {
+    background-color: #374151;
+    border-color: #4a5568;
+}
+
+.dark .file-item:hover {
+    background-color: #4a5568;
+    border-color: #718096;
+}
+
+.dark .file-name {
+    color: #e2e8f0;
+}
+
+.dark .file-icon,
+.dark .file-size {
+    color: #a0aec0;
+}
+
+.dark .btn-remove-file:hover {
+    background-color: #742a2a;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 640px) {
+    .file-drop-zone {
+        padding: 2rem 1rem;
+    }
+    
+    .drop-zone-icon {
+        font-size: 2.5rem;
+    }
+    
+    .file-list-container {
+        padding: 1rem;
+    }
+    
+    .file-item {
+        padding: 0.5rem;
+    }
+    
+    .file-info {
+        gap: 0.5rem;
+    }
+    
+    .file-icon {
+        font-size: 1.25rem;
+    }
+}

@@ -28,3 +28,10 @@
 - [x] 라이트닝 계정 일반 로그인 설정 폼/뷰 추가
 - [x] 마이페이지 일반 로그인 설정 진입 동선 추가
 - [x] README/변경 이력 업데이트
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 공통 레이아웃(myshop/base, stores/store_base) 오버레이 설계
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 전역 헤더/푸터/모바일 메뉴 구성 요소 교체(아이콘/푸터/네비)
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 주문/결제 뷰(장바구니, 배송지, 결제, 주문현황) 화면 정합성 점검
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 스토어 상세/상품/밋업/강의/디지털파일 상세·결제 뷰 정합성 점검
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 마이페이지 및 스토어 관리자 메뉴 화면 정렬/모바일 플로우 재설계
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: 테마 정적 자산(`themes/minimal-dark/static`)에서 누락 CSS/JS 보강
+- [x] SATOSHOP_THEME=minimal-dark 리뉴얼: README 및 change-log 반영

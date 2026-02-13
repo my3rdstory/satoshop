@@ -1,0 +1,37 @@
+{% load static %}
+
+<footer class="minimal-footer">
+  <div class="minimal-footer__inner">
+    <div class="minimal-footer__grid">
+      <p class="minimal-footer__copyright">
+        {% if site_settings and site_settings.footer_copyright %}
+          {{ site_settings.footer_copyright }}
+        {% else %}
+          © {% now "Y" %} SatoShop. All rights reserved.
+        {% endif %}
+      </p>
+
+      {% if documents %}
+      <div class="minimal-footer__links">
+        {% if documents.terms %}
+          <a href="{% url 'myshop:document' 'terms' %}">{{ documents.terms.title }}</a>
+        {% endif %}
+        {% if documents.privacy %}
+          <a href="{% url 'myshop:document' 'privacy' %}">{{ documents.privacy.title }}</a>
+        {% endif %}
+        {% if documents.refund %}
+          <a href="{% url 'myshop:document' 'refund' %}">{{ documents.refund.title }}</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <p class="minimal-footer__copyright minimal-footer__powered">
+        <span>Powered by</span>
+        <svg class="icon icon--small" aria-hidden="true">
+          <use href="{% static 'icons/feather/feather-sprite.svg' %}#zap"></use>
+        </svg>
+        <span>Bitcoin Lightning · SatoShop</span>
+      </p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,80 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}파일 삭제 - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/delete_file.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+      <!-- 경고 아이콘 -->
+      <div class="flex justify-center mb-6">
+        <div class="w-20 h-20 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+          <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-4xl"></i>
+        </div>
+      </div>
+
+      <!-- 제목 -->
+      <h1 class="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">
+        파일을 삭제하시겠습니까?
+      </h1>
+
+      <!-- 파일 정보 -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-6">
+        <h2 class="font-semibold text-lg text-gray-900 dark:text-white mb-4">
+          {{ digital_file.name }}
+        </h2>
+        
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">파일 크기:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ digital_file.get_file_size_display }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">등록일:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ digital_file.created_at|date:"Y.m.d" }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">판매 수:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ digital_file.sales_count }}개</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">다운로드 수:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ digital_file.download_count }}회</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 경고 메시지 -->
+      <div class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+        <p class="text-red-800 dark:text-red-200 text-sm">
+          <i class="fas fa-info-circle mr-2"></i>
+          이 작업은 되돌릴 수 없습니다. 파일이 삭제되면 구매자들이 더 이상 다운로드할 수 없게 됩니다.
+        </p>
+      </div>
+
+      <!-- 버튼 -->
+      <form method="post" class="flex justify-center space-x-4">
+        {% csrf_token %}
+        <a href="{% url 'file:file_manage' store.store_id %}" 
+           class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+          취소
+        </a>
+        <button type="submit" 
+                class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+          삭제 확인
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/delete_file.js' %}"></script>
+{% endblock %}

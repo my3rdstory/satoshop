@@ -1,0 +1,266 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}라이브 강의 관리 - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/lecture_live_manage.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 manage-avatar rounded-full mr-3">
+        <i class="fas fa-cog text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이브 강의 관리</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의의 정보를 관리하고 편집할 수 있습니다</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'lecture:live_lecture_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>라이브 강의 목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <div class="space-y-8">
+      <!-- 현재 라이브 강의 정보 표시 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 status-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">현재 라이브 강의 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의의 기본 정보와 현재 상태를 확인하세요</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <!-- 라이브 강의 이미지 -->
+          <div class="flex justify-center lg:justify-start">
+            {% if live_lecture.images.exists %}
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <img src="{{ live_lecture.images.first.file_url }}" alt="{{ live_lecture.name }}" 
+                   class="w-full h-full object-cover">
+            </div>
+            {% else %}
+            <div class="w-32 h-32 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+              <i class="fas fa-video text-gray-400 text-2xl"></i>
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- 라이브 강의 정보 -->
+          <div class="lg:col-span-1 space-y-3">
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">강의명:</span>
+              <span class="ml-2 text-sm text-gray-900 dark:text-white font-semibold">{{ live_lecture.name }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">참가비:</span>
+              <span class="ml-2 text-sm text-gray-900 dark:text-white">{{ live_lecture.current_price|floatformat:0|intcomma }} sats</span>
+            </div>
+            {% if live_lecture.date_time %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">일시:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ live_lecture.date_time|date:"Y년 m월 d일 H:i" }}</span>
+            </div>
+            {% endif %}
+            {% if not live_lecture.no_limit %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">정원:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ live_lecture.max_participants }}명</span>
+            </div>
+            {% else %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">정원:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">무제한</span>
+            </div>
+            {% endif %}
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">현재 참가자:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ live_lecture.current_participants }}명</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">생성일:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ live_lecture.created_at|date:"Y년 m월 d일" }}</span>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">마지막 수정:</span>
+              <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ live_lecture.updated_at|date:"Y년 m월 d일 H:i" }}</span>
+            </div>
+          </div>
+
+          <!-- 상태 표시 -->
+          <div class="lg:col-span-1 space-y-4">
+            <div>
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">현재 상태</h3>
+              {% if not live_lecture.is_active %}
+              <div class="status-indicator status-inactive">
+                <i class="fas fa-times-circle text-sm"></i>
+                <span>비활성화</span>
+              </div>
+              {% elif live_lecture.is_expired %}
+              <div class="status-indicator status-expired">
+                <i class="fas fa-calendar-times text-sm"></i>
+                <span>종료됨</span>
+              </div>
+              {% elif live_lecture.is_temporarily_closed %}
+              <div class="status-indicator status-paused">
+                <i class="fas fa-pause text-sm"></i>
+                <span>일시중단</span>
+              </div>
+              {% elif live_lecture.is_full %}
+              <div class="status-indicator status-inactive">
+                <i class="fas fa-users-slash text-sm"></i>
+                <span>정원마감</span>
+              </div>
+              {% else %}
+              <div class="status-indicator status-active">
+                <i class="fas fa-check-circle text-sm"></i>
+                <span>진행중</span>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 라이브 강의 관리 섹션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 product-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-video text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">라이브 강의 관리</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">이 라이브 강의의 참가자 현황과 관리 기능들을 이용할 수 있습니다</p>
+          </div>
+        </div>
+
+        <!-- 라이브 강의 관리 카드들 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- 참가자 현황 -->
+          <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-700 rounded-xl p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-white"></i>
+              </div>
+              <h3 class="ml-3 text-lg font-semibold text-blue-900 dark:text-blue-100">참가자 현황</h3>
+            </div>
+            <p class="text-sm text-blue-800 dark:text-blue-200 mb-4">
+              현재 참가자 수와 결제 상태를 확인할 수 있습니다.
+            </p>
+            <a href="{% url 'lecture:live_lecture_status_detail' store.store_id live_lecture_id %}" 
+               class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+              <i class="fas fa-chart-line mr-2"></i>
+              참가자 현황 보기
+            </a>
+          </div>
+
+          <!-- 라이브 강의 일시중단 상태 -->
+          <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-700 rounded-xl p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-pause text-white"></i>
+              </div>
+              <h3 class="ml-3 text-lg font-semibold text-purple-900 dark:text-purple-100">강의 일시중단</h3>
+            </div>
+            <p class="text-sm text-purple-800 dark:text-purple-200 mb-4">
+              라이브 강의의 일시중단 상태를 관리할 수 있습니다.
+            </p>
+            
+            <!-- 토글 스위치 -->
+            <form method="post" action="#" id="liveLectureToggleForm">
+              {% csrf_token %}
+              <div class="flex items-center justify-between p-4 bg-white dark:bg-gray-700 rounded-xl">
+                <div class="flex-1">
+                  <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">강의 일시중단/해제</h4>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">
+                    {% if live_lecture.is_temporarily_closed %}
+                    일시중단 해제하면 고객들이 다시 이 강의에 참가할 수 있습니다.
+                    {% else %}
+                    일시중단하면 고객들이 임시로 이 강의에 참가할 수 없습니다.
+                    {% endif %}
+                  </p>
+                </div>
+                <div class="ml-4">
+                  <label class="toggle-switch">
+                    <input type="checkbox" name="is_temporarily_closed" {% if live_lecture.is_temporarily_closed %}checked{% endif %}
+                           onchange="confirmLiveLecturePauseChange(this)">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- 위험한 작업 -->
+          <div class="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-700 rounded-xl p-6">
+            <div class="flex items-center mb-4">
+              <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+              </div>
+              <h3 class="ml-3 text-lg font-semibold text-red-900 dark:text-red-100">위험한 작업</h3>
+            </div>
+            <p class="text-sm text-red-800 dark:text-red-200 mb-4">
+              강의 삭제 및 기타 신중하게 처리해야 하는 작업들입니다.
+            </p>
+            <button onclick="confirmDeleteLiveLecture()" 
+                    class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm">
+              <i class="fas fa-trash mr-2"></i>
+              위험한 작업
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 빠른 액션 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 quick-avatar rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-bolt text-white text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">빠른 액션</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의 보기 및 편집 기능</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4 justify-center">
+          <a href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture_id %}" 
+             class="inline-flex items-center justify-center px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors shadow-lg">
+            <i class="fas fa-eye mr-2"></i>
+            <span>강의 상세 보기</span>
+          </a>
+          <a href="{% url 'lecture:edit_live_lecture' store.store_id live_lecture_id %}" 
+             class="inline-flex items-center justify-center px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-lg">
+            <i class="fas fa-edit mr-2"></i>
+            <span>강의 수정하기</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 전역 변수 설정
+window.liveLectureName = "{{ live_lecture.name|escapejs }}";
+window.csrfToken = "{{ csrf_token }}";
+window.toggleClosureUrl = "{% url 'lecture:toggle_live_lecture_temporary_closure' store.store_id live_lecture_id %}";
+window.deleteUrl = "{% url 'lecture:delete_live_lecture' store.store_id live_lecture_id %}";
+window.listUrl = "{% url 'lecture:live_lecture_list' store.store_id %}";
+</script>
+<script src="{% static 'js/lecture_live_manage.js' %}"></script>
+{% endblock %} 

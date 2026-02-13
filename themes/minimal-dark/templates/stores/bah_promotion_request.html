@@ -1,0 +1,327 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}BAH 스토어 홍보요청 - SatoShop{% endblock %}
+{% block og_title %}BAH 스토어 홍보요청{% endblock %}
+{% block og_description %}비트코인 결제 매장을 SatoShop BAH 허브에 소개하고 홍보 지원을 신청하세요.{% endblock %}
+{% block twitter_description %}비트코인 결제 매장을 SatoShop BAH 허브에 소개하고 홍보 지원을 신청하세요.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bah_promotion_request.css' %}">
+{% endblock %}
+
+{% block content %}
+<div id="bahPromotionApp"
+     class="bg-gray-50 dark:bg-gray-900 min-h-screen pb-16"
+     data-status="{{ status|default:'' }}"
+     data-show-form="{{ show_form|yesno:'true,false' }}"
+     data-user-has-lightning="{{ user_has_lightning|yesno:'true,false' }}"
+     data-user-authenticated="{{ user_is_authenticated|yesno:'true,false' }}"
+     data-max-images="{{ max_images }}"
+     data-existing-count="{{ existing_images|length }}"
+     data-lightning-login-url="{{ lightning_login_url }}"
+     data-link-lightning-url="{{ link_lightning_url }}"
+     data-wos-guide-url="{{ wos_guide_url }}"
+     data-wos-login-guide-url="{{ wos_login_guide_url }}"
+     data-requires-lightning-logout="{{ requires_lightning_logout|yesno:'true,false' }}"
+     data-logout-url="{{ logout_url }}"
+     data-logout-next="{{ logout_next }}"
+>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+    <div class="mb-10">
+      <div class="text-center">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-bitcoin/10 text-bitcoin mb-4">
+          <i class="fas fa-bullhorn mr-2"></i>BAH (Bitcoin Accepted Here) 홍보 지원 신청
+        </span>
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white leading-tight">
+          비트코인 결제 매장 홍보를 위한 정보를 입력해 주세요.
+        </h1>
+        <p class="mt-4 text-sm text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          매장 정보를 남겨주시면 검토 후 BAH 스토어 홍보 패키지를 보내드리고 커뮤니티 채널에 소개해 드릴게요.
+        </p>
+        {% if user_is_bah_admin and admin_list_url %}
+        <a href="{{ admin_list_url }}" class="inline-flex items-center gap-2 px-4 py-2 mt-6 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-700 rounded-lg shadow">
+          <i class="fas fa-table"></i>목록 관리하기
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-3 mb-8">
+      {% for message in messages %}
+      <div class="rounded-xl border px-4 py-3 text-sm font-medium flex items-start gap-3 {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200{% else %}bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200{% endif %}">
+        {% if message.tags == 'error' %}
+        <i class="fas fa-exclamation-triangle pt-1"></i>
+        {% else %}
+        <i class="fas fa-info-circle pt-1"></i>
+        {% endif %}
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- 성공 안내 섹션 -->
+    <section id="requestCompleteSection" class="hidden">
+      <div class="rounded-3xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-6 sm:p-8 shadow-lg">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xl shadow-lg">
+              <i class="fas fa-check"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-emerald-800 dark:text-emerald-200" id="completionTitle">홍보 요청이 저장되었습니다</h2>
+              <p class="mt-2 text-sm text-emerald-700 dark:text-emerald-300">
+                담당자가 내용을 확인한 뒤 연락드릴 예정입니다. 
+              </p>
+              <div class="mt-4 p-4 rounded-2xl bg-white/70 dark:bg-gray-900/50 border border-emerald-200/70 dark:border-emerald-700/60">
+                <h3 class="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-2">
+                  <i class="fas fa-info-circle mr-2"></i>신청 정보 확인 안내
+                </h3>
+                <p class="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                  저장한 내용은 이 페이지에서 언제든지 다시 확인하거나 수정할 수 있습니다. 진행 상황과 추가 안내는 담당자가 입력해 주신 연락처로 안내드릴 예정입니다.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-end sm:justify-end gap-3">
+            <a href="#requestFormSection" class="inline-flex items-center justify-center px-5 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-xl shadow-lg hover:bg-emerald-600 transition-colors">
+              <i class="fas fa-pen mr-2"></i>입력 내용 수정하기
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 안내 섹션 -->
+    <section id="requestIntroSection" class="mt-10">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="rounded-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <i class="fas fa-lightbulb mr-2 text-bitcoin"></i>홍보 요청 전 체크포인트
+          </h2>
+          <ul class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+            <li class="flex items-start gap-3">
+              <i class="fas fa-check text-bitcoin mt-0.5"></i>
+              <span>BAH는 <strong>Bitcoin Accepted Here</strong>의 약자입니다. 비트코인 라이트닝 결제를 실제로 받는 매장인지 확인해 주세요.</span>
+            </li>
+            <li class="flex items-start gap-3">
+              <i class="fas fa-check text-bitcoin mt-0.5"></i>
+              <span>방문객이 참고할 수 있도록 최신 사진과 소개 문구를 준비하면 검토가 빨라집니다.</span>
+            </li>
+          </ul>
+          {% if user_has_lightning %}
+          <button id="startRequestButton" type="button" class="mt-6 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-bitcoin hover:bg-bitcoin/90 text-white text-sm font-semibold shadow-lg transition-colors">
+            <i class="fas fa-edit"></i>홍보요청 내용 입력하기
+          </button>
+          {% else %}
+          <div class="mt-6 space-y-3">
+            <p class="text-xs text-red-500 font-semibold flex items-center gap-2">
+              <i class="fas fa-exclamation-circle"></i>
+              라이트닝 지갑으로 로그인/연동을 완료해야 신청서를 작성할 수 있습니다.
+            </p>
+            <a href="{{ lightning_login_url }}" class="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold shadow-lg transition-colors">
+              <i class="fas fa-bolt"></i>라이트닝 로그인으로 시작하기
+            </a>
+          </div>
+          {% endif %}
+        </div>
+        <div class="rounded-3xl bg-gradient-to-br from-blue-50 to-sky-100 dark:from-blue-900/40 dark:to-sky-900/20 border border-blue-200/70 dark:border-blue-800/60 p-6 shadow-lg">
+          <div class="flex items-start gap-4">
+            <div class="w-11 h-11 rounded-full bg-blue-500 text-white flex items-center justify-center text-lg shadow">
+              <i class="fas fa-wallet"></i>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-blue-900 dark:text-blue-100">월오사(Wallet of Satoshi) 사용법 먼저 확인하기</h3>
+              <p class="mt-2 text-sm text-blue-800/90 dark:text-blue-200/90 leading-relaxed">
+                라이트닝 인증과 결제 테스트는 월오사 지갑을 사용하는 것이 가장 간편합니다. 지갑 설치부터 LNURL-auth 서명 방법까지 정리한 가이드를 확인하고 진행해 주세요.
+              </p>
+              <div class="mt-4 flex flex-col sm:flex-row gap-3">
+                {% if wos_login_guide_url %}
+                <a href="{{ wos_login_guide_url }}" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 dark:bg-gray-900/70 border border-blue-300 dark:border-blue-700 text-sm font-semibold text-blue-700 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors">
+                  <i class="fas fa-bolt"></i>라이트닝 로그인 가이드 열기
+                </a>
+                {% endif %}
+                {% if wos_guide_url %}
+                <a href="{{ wos_guide_url }}" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/90 dark:bg-gray-900/70 border border-blue-300 dark:border-blue-700 text-sm font-semibold text-blue-700 dark:text-blue-200 hover:bg-blue-50 dark:hover:bg-gray-800 transition-colors">
+                  <i class="fas fa-book-reader"></i>월오사 사용법 영상 주소 열기
+                </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 폼 섹션 -->
+    <section id="requestFormSection" class="mt-12 hidden">
+      <form method="post" enctype="multipart/form-data" class="space-y-10">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="rounded-2xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-xs text-red-700 dark:text-red-200">
+          {{ form.non_field_errors|join:' ' }}
+        </div>
+        {% endif %}
+        <div class="rounded-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-6 sm:p-8">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-6">매장 기본 정보</h2>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.store_name.label }}</label>
+              {{ form.store_name }}
+              {% if form.store_name.errors %}
+              <p class="mt-1 text-xs text-red-500">{{ form.store_name.errors|join:', ' }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">연락받을 이메일</label>
+              {{ form.email }}
+              {% if form.email.errors %}
+              <p class="mt-1 text-xs text-red-500">{{ form.email.errors|join:', ' }}</p>
+              {% endif %}
+            </div>
+          </div>
+          <div class="grid md:grid-cols-[1fr_auto] gap-4 mt-6 items-center">
+            <div class="grid md:grid-cols-3 gap-4 md:items-center">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.postal_code.label }}</label>
+                {{ form.postal_code }}
+                {% if form.postal_code.errors %}
+                <p class="mt-1 text-xs text-red-500">{{ form.postal_code.errors|join:', ' }}</p>
+                {% endif %}
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.address.label }}</label>
+                {{ form.address }}
+                {% if form.address.errors %}
+                <p class="mt-1 text-xs text-red-500">{{ form.address.errors|join:', ' }}</p>
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex md:flex-col md:justify-end md:items-end md:self-end items-center">
+              <button type="button" id="addressSearchButton" class="px-4 py-2 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors" data-address-trigger="true">
+                <i class="fas fa-search-location mr-1"></i>주소 찾기
+              </button>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.address_detail.label }}</label>
+            {{ form.address_detail }}
+            {% if form.address_detail.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.address_detail.errors|join:', ' }}</p>
+            {% endif %}
+          </div>
+          <div class="mt-6">
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.phone_number.label }}</label>
+            {{ form.phone_number }}
+            {% if form.phone_number.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.phone_number.errors|join:', ' }}</p>
+            {% endif %}
+          </div>
+          <div class="mt-6">
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ form.introduction.label }}</label>
+            {{ form.introduction }}
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ form.introduction.help_text }}</p>
+            {% if form.introduction.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.introduction.errors|join:', ' }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="rounded-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-6 sm:p-8">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-5">홍보 사진 업로드</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mb-6">
+            매장의 분위기와 비트코인 결제 환경이 드러나는 사진을 최대 {{ max_images }}장까지 업로드할 수 있습니다. webp, jpeg, png, gif를 지원합니다.
+          </p>
+          {% if existing_images %}
+          <div class="mb-6">
+            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">등록된 사진</h3>
+            <div class="grid sm:grid-cols-2 gap-4">
+              {% for image in existing_images %}
+              <label class="relative group block rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900">
+                <img src="{{ image.file_url }}" alt="{{ image.original_name }}" class="w-full h-40 object-cover">
+                <div class="absolute inset-0 bg-gray-900/0 group-hover:bg-gray-900/40 transition-colors"></div>
+                <div class="absolute top-3 left-3 inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/90 dark:bg-gray-900/70 text-xs font-semibold text-gray-700 dark:text-gray-200 shadow">
+                  <i class="fas fa-image"></i>
+                  <span>{{ image.original_name }}</span>
+                </div>
+                <div class="absolute bottom-3 left-3 flex items-center gap-2">
+                  <input type="checkbox" name="delete_images" value="{{ image.id }}" class="h-4 w-4 text-bitcoin focus:ring-bitcoin border-gray-300 dark:border-gray-600 rounded">
+                  <span class="text-xs font-medium text-white">삭제하기</span>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          <div class="space-y-4">
+            <div id="imageDropzone" class="relative flex flex-col items-center justify-center px-6 py-10 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-900/40 text-center transition-colors">
+              <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-3"></i>
+              <p class="text-sm font-semibold text-gray-700 dark:text-gray-200">여기에 이미지를 끌어다 놓거나, 아래 버튼으로 찾아보세요.</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">최대 {{ max_images }}장, 5MB 이하 / JPEG·PNG·WEBP·GIF</p>
+              <button type="button" id="browseImagesButton" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-bitcoin text-white hover:bg-bitcoin/90">
+                <i class="fas fa-folder-open"></i>이미지 선택하기
+              </button>
+            </div>
+            <div class="hidden">
+              {{ form.images }}
+            </div>
+            {% if form.images.errors %}
+            <p class="text-xs text-red-500">{{ form.images.errors|join:', ' }}</p>
+            {% endif %}
+            <div id="imagePreviewWrapper" class="hidden mt-4">
+              <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">새로 업로드할 사진 미리보기</h3>
+              <div id="imagePreviewList" class="grid gap-4 sm:grid-cols-2"></div>
+            </div>
+            <p id="imageSlotInfo" class="text-xs text-gray-500 dark:text-gray-400">
+              현재 남은 업로드 가능 수: <span id="remainingImageCount">{{ remaining_slots }}</span>장
+            </p>
+          </div>
+        </div>
+
+        <div class="rounded-3xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xl p-6 sm:p-8">
+          <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">개인정보 수집·이용 동의</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">
+            신청서 확인 및 홍보 안내를 위해 입력하신 연락처와 매장 정보를 활용합니다. 접수된 정보는 홍보 진행과 관련된 커뮤니케이션 이외의 목적으로 사용되지 않습니다.
+          </p>
+          <label class="flex items-start gap-3 text-sm text-gray-700 dark:text-gray-300">
+            {{ form.accept_privacy }}
+            <span>위 내용을 확인했으며 개인정보 수집·이용에 동의합니다.</span>
+          </label>
+          {% if form.accept_privacy.errors %}
+          <p class="mt-2 text-xs text-red-500">{{ form.accept_privacy.errors|join:', ' }}</p>
+          {% endif %}
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
+          <a href="{% url 'myshop:home' %}" class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>메인으로 돌아가기
+          </a>
+          <button type="submit" id="saveRequestButton" class="inline-flex items-center justify-center px-5 py-3 bg-bitcoin text-white text-sm font-semibold rounded-xl shadow-lg hover:bg-bitcoin/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <i class="fas fa-save mr-2"></i>홍보요청 저장하기
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+<!-- 주소 검색 모달 -->
+<div id="addressSearchModal" class="hidden fixed inset-0 z-50 items-center justify-center bg-gray-900/70 backdrop-blur">
+  <div class="relative w-full max-w-md mx-4">
+    <button type="button" id="closeAddressModal" class="absolute -top-10 right-0 px-3 py-1.5 text-xs font-semibold text-white bg-gray-800/70 hover:bg-gray-700 transition-colors rounded-lg">
+      <i class="fas fa-times"></i>
+    </button>
+    <div id="addressSearchContainer" class="h-[26rem] bg-white dark:bg-gray-900 shadow-2xl"></div>
+  </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="{% static 'js/bah_promotion_request.js' %}"></script>
+{% endblock %}

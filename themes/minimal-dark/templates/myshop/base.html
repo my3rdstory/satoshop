@@ -1,0 +1,91 @@
+{% load static %}
+{% load static_versioned %}
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }} - {{ site_settings.site_description }}{% else %}SatoShop - 비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}</title>
+
+  <meta name="description" content="{% block meta_description %}{% if site_settings and site_settings.site_description %}{{ site_settings.site_description }}{% else %}비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}">
+  <meta name="keywords" content="{% block meta_keywords %}{% if site_settings and site_settings.meta_keywords %}{{ site_settings.meta_keywords }}{% else %}비트코인, 라이트닝, 온라인 스토어, 결제, 구매, 디지털 상품{% endif %}{% endblock %}">
+
+  <meta property="og:title" content="{% block og_title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{% if site_settings and site_settings.site_description %}{{ site_settings.site_description }}{% else %}비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}">
+  <meta property="og:image" content="{% block og_image %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+  <meta property="og:site_name" content="{% block og_site_name %}{% if site_settings and site_settings.og_site_name %}{{ site_settings.og_site_name }}{% else %}SatoShop{% endif %}{% endblock %}">
+  <meta property="og:locale" content="ko_KR">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}{% if site_settings and site_settings.site_title %}{{ site_settings.site_title }}{% else %}SatoShop{% endif %}{% endblock %}">
+  <meta name="twitter:description" content="{% block twitter_description %}{% if site_settings and site_settings.site_description %}{{ site_settings.site_description }}{% else %}비트코인 라이트닝 결제 플랫폼{% endif %}{% endblock %}">
+  <meta name="twitter:image" content="{% block twitter_image %}{% if site_settings and site_settings.og_default_image %}{{ site_settings.og_default_image }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}{% endblock %}">
+
+  <link rel="icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+  <link rel="shortcut icon" type="image/png" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+  <link rel="apple-touch-icon" href="{% if site_settings and site_settings.favicon_url %}{{ site_settings.favicon_url }}{% else %}{% static 'images/satoshop-logo-1x1-favicon.png' %}{% endif %}">
+
+  <link rel="stylesheet" href="{% static 'css/bulma.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'css/themes.css' %}">
+  <link rel="stylesheet" href="{% static 'css/myshop.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme-utils.css' %}">
+
+  {% if site_settings and site_settings.google_analytics_id %}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site_settings.google_analytics_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ site_settings.google_analytics_id }}');
+  </script>
+  {% endif %}
+
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body class="minimal-shell{% block body_class %}{% endblock %}">
+  <header class="minimal-shell__header">
+    {% include 'myshop/nav_bar.html' %}
+  </header>
+
+  <main class="minimal-shell__main">
+    {% if messages %}
+      <div class="minimal-messages">
+        {% for message in messages %}
+          <div class="notification is-{{ message.tags|default:'info' }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+    {% include 'myshop/footer.html' %}
+  {% endblock %}
+
+  <script>
+    window.csrfToken = '{{ csrf_token }}';
+    window.logoutUrl = "{% url 'accounts:logout' %}";
+    window.loginUrl = "{% url 'accounts:login' %}";
+    window.signupUrl = "{% url 'accounts:signup' %}";
+    window.homeUrl = "{% url 'myshop:home' %}";
+  </script>
+  <script src="{% static 'js/common.js' %}"></script>
+  <script src="{% static 'js/theme-toggle.js' %}"></script>
+  <script src="{% static 'js/myshop_base.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,265 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}회원가입 - SatoShop{% endblock %}
+
+{% block body_class %} auth-page{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 회원가입 페이지 스타일 조정 */
+body.auth-page {
+    min-height: 100vh;
+    /* 라이트 모드: 흐린 회색 그라데이션 */
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%) !important;
+}
+
+body.auth-page main {
+    min-height: calc(100vh - 4rem - 120px); /* 네비게이션과 푸터 높이 제외 */
+}
+
+/* 다크모드: 어두운 그라데이션 */
+body.auth-page.dark,
+body.auth-page[data-theme="dark"] {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%) !important;
+}
+
+/* 라이트닝 버튼 스타일 */
+.lightning-btn {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.lightning-btn:hover {
+    background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+/* QR 코드 스타일 */
+.qr-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.qr-code {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 로딩 애니메이션 */
+.loading-spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #f59e0b;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 상태 메시지 스타일 */
+.status-pending {
+    color: #d97706;
+    background-color: #fef3c7;
+    border-color: #fde68a;
+}
+
+.status-paid {
+    color: #059669;
+    background-color: #d1fae5;
+    border-color: #a7f3d0;
+}
+
+.status-error {
+    color: #dc2626;
+    background-color: #fee2e2;
+    border-color: #fecaca;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-full flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+  <div class="max-w-md w-full space-y-8">
+    <!-- 회원가입 카드 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
+      <!-- 헤더 -->
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">회원가입</h1>
+        <p class="text-gray-600 dark:text-gray-400">SatoShop 가족이 되어주세요</p>
+      </div>
+
+      <!-- 안내 메시지 -->
+      <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div class="flex items-start">
+          <i class="fas fa-info-circle text-blue-500 mr-2 mt-0.5"></i>
+          <div class="text-sm text-blue-700 dark:text-blue-300">
+            <p class="font-medium mb-1">더 쉬운 가입 방법</p>
+            <p class="mb-3">
+              <strong>LNURL-auth 지원 지갑</strong>(Wallet of Satoshi, Speed, Phoenix, Zeus 등)을 사용하시면 
+              별도의 회원가입 없이 자동으로 계정이 생성됩니다.
+            </p>
+            <!-- 라이트닝 로그인 버튼 -->
+            <a href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+               class="inline-flex items-center justify-center w-full px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white font-medium text-sm rounded-lg transition-all duration-200 transform hover:scale-105 hover:shadow-lg">
+              <i class="fas fa-bolt mr-2"></i>
+              라이트닝으로 즉시 가입하기
+            </a>            
+          </div>
+        </div>
+      </div>
+
+      <!-- 회원가입 폼 -->
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% if request.GET.next %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+        {% endif %}
+
+        <!-- 사용자명 입력 -->
+        <div>
+          <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            사용자명
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <input 
+              id="username"
+              name="username" 
+              type="text" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="사용자명을 입력하세요"
+            >
+          </div>
+          {% if form.username.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.username.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 비밀번호 입력 -->
+        <div>
+          <label for="password1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            비밀번호
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              id="password1"
+              name="password1" 
+              type="password" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="비밀번호를 입력하세요"
+            >
+          </div>
+          {% if form.password1.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password1.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 비밀번호 확인 입력 -->
+        <div>
+          <label for="password2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            비밀번호 확인
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input 
+              id="password2"
+              name="password2" 
+              type="password" 
+              required
+              class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-bitcoin focus:border-transparent transition-colors"
+              placeholder="비밀번호를 다시 입력하세요"
+            >
+          </div>
+          {% if form.password2.errors %}
+          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.password2.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- 전체 에러 메시지 -->
+        {% if form.non_field_errors %}
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-400"></i>
+            </div>
+            <div class="ml-3">
+              <div class="text-sm text-red-700 dark:text-red-300">
+                {{ form.non_field_errors }}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 회원가입 버튼 -->
+        <div>
+          <button 
+            type="submit"
+            class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-bitcoin hover:bg-bitcoin/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors shadow-lg"
+          >
+            <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+              <i class="fas fa-user-plus text-bitcoin-light group-hover:text-white"></i>
+            </span>
+            회원가입
+          </button>
+        </div>
+      </form>
+
+      <!-- 구분선 -->
+      <div class="mt-8">
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">또는</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 로그인 링크 -->
+      <div class="mt-6 text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          이미 계정이 있으신가요?
+        </p>
+        <a 
+          href="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" 
+          class="w-full inline-flex justify-center items-center px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bitcoin transition-colors"
+        >
+          <i class="fas fa-sign-in-alt mr-2"></i>
+          로그인
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 회원가입 페이지에서는 라이트닝 로그인 페이지로 리다이렉트하는 기능만 제공
+</script>
+{% endblock %}

@@ -1,0 +1,83 @@
+/* File checkout shares the unified payment workflow styling */
+
+.checkout-info-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.checkout-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.checkout-info-row dt {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.dark .checkout-info-row dt {
+  color: #94a3b8;
+}
+
+.checkout-info-row dd {
+  flex: 1 1 auto;
+  text-align: right;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.dark .checkout-info-row dd {
+  color: #f1f5f9;
+}
+
+.checkout-info-row dd a {
+  color: inherit;
+  text-decoration: underline dotted transparent;
+  transition: color 0.2s ease, text-decoration-color 0.2s ease;
+}
+
+.checkout-info-row dd a:hover {
+  color: #f7931a;
+  text-decoration-color: currentColor;
+}
+
+.file-guidelines {
+  display: grid;
+  gap: 0.65rem;
+  color: #475569;
+  font-size: 0.85rem;
+}
+
+.dark .file-guidelines {
+  color: #cbd5f5;
+}
+
+.file-guidelines li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.file-guidelines i {
+  color: #f7931a;
+  margin-top: 0.2rem;
+}
+
+@media (max-width: 640px) {
+  .checkout-info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .checkout-info-row dd {
+    text-align: left;
+  }
+}

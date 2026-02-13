@@ -1,241 +1,300 @@
 {% extends 'stores/store_base.html' %}
 {% load static %}
-{% load humanize %}
 {% load markdown_extras %}
+{% load humanize %}
 
 {% block title %}{{ store.store_name }} - SatoShop{% endblock %}
 
+
+
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/store_detail.css' %}">
+{{ block.super }}
+<style>
+  .store-header {
+    background: var(--hero-gradient, linear-gradient(135deg, #3b82f6, #8b5cf6));
+    color: var(--hero-text-color, white);
+  }
+  .store-header h1,
+  .store-header p {
+    color: var(--hero-text-color, white) !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    .store-header h1,
+    .store-header p {
+      color: var(--hero-text-color, white) !important;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block store_content %}
-<section class="store-hero">
-  <div class="container is-fluid">
-    <div class="store-hero__grid">
-      <div class="store-hero__brand">
-        <p class="store-hero__eyebrow">SatoShop Storefront</p>
-        <h1 class="store-hero__title">{{ store.store_name }}</h1>
-        <p class="store-hero__meta">주인장 {{ store.owner_name }}</p>
-      </div>
-      <div class="store-hero__actions">
-        <a class="store-action" href="{% url 'products:public_product_list' store.store_id %}">
-          <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg' %}#box"></use>
-          </svg>
-          <span>상품</span>
-          <span class="store-action__count">{{ products|length }}</span>
-        </a>
-        <a class="store-action" href="{% url 'meetup:meetup_list' store.store_id %}">
-          <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg' %}#users"></use>
-          </svg>
-          <span>밋업</span>
-          <span class="store-action__count">{{ meetups|length }}</span>
-        </a>
-        <a class="store-action" href="{% url 'lecture:live_lecture_list' store.store_id %}">
-          <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg' %}#video"></use>
-          </svg>
-          <span>라이브 강의</span>
-          <span class="store-action__count">{{ live_lectures|length }}</span>
-        </a>
-        <a class="store-action" href="{% url 'file:file_list' store.store_id %}">
-          <svg class="icon" aria-hidden="true">
-            <use href="{% static 'icons/feather/feather-sprite.svg' %}#file-text"></use>
-          </svg>
-          <span>파일 관리</span>
-          <span class="store-action__count">{{ digital_files|length }}</span>
-        </a>
+<!-- 스토어 헤더 -->
+<section class="store-header py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center relative">
+      <div class="flex flex-col items-center justify-center">
+        <div class="flex-shrink-0">
+          <h1 class="text-5xl font-bold mb-4 text-white">
+            <i class="fas fa-store mr-4"></i>
+            {{ store.store_name }}
+          </h1>
+        </div>
+        
+        <p class="text-2xl text-white mb-6">
+          주인장: {{ store.owner_name }}
+        </p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="store-info">
-  <div class="container is-fluid">
-    <div class="columns is-variable is-6">
-      <div class="column is-7">
-        <div class="panel">
-          <p class="panel-heading">스토어 소개</p>
-          <div class="panel-block">
-            <div class="content">
+<!-- 스토어 소개 및 커버 이미지 -->
+<section class="py-8 bg-gray-50 dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 왼쪽: 스토어 소개 + 커버 이미지 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-info-circle text-blue-500 mr-3"></i>
+            스토어 소개
+          </h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 왼쪽: 스토어 설명 -->
+            <div>
               {% if store.store_description %}
+              <div class="prose max-w-none">
                 {{ store.store_description|markdown_to_html }}
+              </div>
               {% else %}
-                <p>스토어 소개가 아직 등록되지 않았습니다.</p>
+              <div class="text-gray-500 dark:text-gray-400 italic">
+                <p>아직 스토어 설명이 등록되지 않았습니다.</p>
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- 오른쪽: 커버 이미지 -->
+            <div>
+              {% if store.images.exists %}
+              <div class="aspect-video rounded-lg overflow-hidden">
+                {% with store.images.first as store_image %}
+                  <img src="{{ store_image.file_url }}" alt="{{ store_image.original_name }}" loading="lazy"
+                    onclick="openImageModal('{{ store_image.file_url }}', '{{ store_image.original_name }}')"
+                    class="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-200">
+                {% endwith %}
+              </div>
+              {% else %}
+              <div class="aspect-video rounded-lg bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                <i class="fas fa-image text-4xl mb-2"></i>
+                <p>등록된 이미지가 없습니다</p>
+              </div>
               {% endif %}
             </div>
           </div>
         </div>
       </div>
-      <div class="column is-5">
-        <div class="panel">
-          <p class="panel-heading">연락 정보</p>
-          <div class="panel-block">
-            <div>
-              <p class="has-text-muted">오너</p>
-              <p>{{ store.owner_name }}</p>
+
+      <!-- 오른쪽: 주인장 정보 -->
+      <div>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+            <i class="fas fa-user text-blue-500 mr-3"></i>
+            주인장 정보
+          </h3>
+
+          <div class="space-y-4">
+            <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ store.owner_name }}</h4>
+
+            {% if store.owner_phone %}
+            <div class="flex items-center text-gray-600 dark:text-gray-400">
+              <i class="fas fa-phone text-blue-500 mr-3"></i>
+              <a href="tel:{{ store.owner_phone }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ store.owner_phone }}</a>
             </div>
-          </div>
-          {% if store.owner_phone %}
-          <div class="panel-block">
-            <div>
-              <p class="has-text-muted">전화</p>
-              <p><a href="tel:{{ store.owner_phone }}">{{ store.owner_phone }}</a></p>
+            {% endif %}
+
+            {% if store.owner_email %}
+            <div class="flex items-center text-gray-600 dark:text-gray-400">
+              <i class="fas fa-envelope text-blue-500 mr-3"></i>
+              <a href="mailto:{{ store.owner_email }}" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{{ store.owner_email }}</a>
             </div>
+            {% endif %}
+
+
           </div>
-          {% endif %}
-          {% if store.owner_email %}
-          <div class="panel-block">
-            <div>
-              <p class="has-text-muted">이메일</p>
-              <p><a href="mailto:{{ store.owner_email }}">{{ store.owner_email }}</a></p>
-            </div>
+
+          <div class="mt-6">
+            <a href="{{ store.chat_channel }}" target="_blank" class="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+              <i class="fas fa-comments mr-2"></i>
+              소통 채널 접속
+            </a>
           </div>
-          {% endif %}
-          {% if store.chat_channel %}
-          <div class="panel-block">
-            <a class="button is-ghost" href="{{ store.chat_channel }}" target="_blank" rel="noopener">소통 채널</a>
-          </div>
-          {% endif %}
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="store-section">
-  <div class="container is-fluid">
-    <div class="store-section__head">
-      <h2 class="store-section__title">상품</h2>
-      <a class="store-section__link" href="{% url 'products:public_product_list' store.store_id %}">전체 보기</a>
+<!-- 상품 목록 -->
+{% if products %}
+<section id="products-section" class="py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-shopping-bag text-blue-500 mr-3"></i>
+        상품
+      </h2>
+      <a href="{% url 'products:public_product_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
     </div>
-    {% if products %}
-    <div class="columns is-multiline">
-      {% for product in products|slice:":8" %}
-      <div class="column is-6-tablet is-3-desktop">
-        <a class="card store-card" href="{% url 'products:product_detail' store.store_id product.id %}">
-          <div class="card-content">
-            <div class="store-card__eyebrow">상품</div>
-            <h3 class="store-card__title">{{ product.title }}</h3>
-            <p class="store-card__meta">
-              {% if product.price_display == 'krw' and product.price_krw %}
-                {{ product.price_krw|intcomma }}원
-              {% else %}
-                {{ product.price|intcomma }} sats
-              {% endif %}
-            </p>
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="store-empty">등록된 상품이 없습니다.</div>
-    {% endif %}
-  </div>
-</section>
 
-<section class="store-section">
-  <div class="container is-fluid">
-    <div class="store-section__head">
-      <h2 class="store-section__title">밋업</h2>
-      <a class="store-section__link" href="{% url 'meetup:meetup_list' store.store_id %}">전체 보기</a>
-    </div>
-    {% if meetups %}
-    <div class="columns is-multiline">
-      {% for meetup in meetups|slice:":4" %}
-      <div class="column is-6-tablet is-3-desktop">
-        <a class="card store-card" href="{% url 'meetup:meetup_detail' store.store_id meetup.id %}">
-          <div class="card-content">
-            <div class="store-card__eyebrow">밋업</div>
-            <h3 class="store-card__title">{{ meetup.name }}</h3>
-            <p class="store-card__meta">
-              {% if meetup.date_time %}
-                {{ meetup.date_time|date:"Y.m.d H:i" }}
-              {% else %}
-                일정 추후 공지
-              {% endif %}
-            </p>
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="store-empty">예정된 밋업이 없습니다.</div>
-    {% endif %}
+    <!-- 상품 그리드 (최대 8개만 표시) -->
+    {% with products|slice:":8" as limited_products %}
+    {% with True as is_public_view %}
+    {% include 'products/product_grid.html' with products=limited_products %}
+    {% endwith %}
+    {% endwith %}
   </div>
 </section>
+{% endif %}
 
-<section class="store-section">
-  <div class="container is-fluid">
-    <div class="store-section__head">
-      <h2 class="store-section__title">라이브 강의</h2>
-      <a class="store-section__link" href="{% url 'lecture:live_lecture_list' store.store_id %}">전체 보기</a>
+<!-- 밋업 목록 -->
+{% if meetups %}
+<section id="meetups-section" class="py-8 {% if products %}bg-gray-50 dark:bg-gray-900{% endif %}">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-users text-purple-500 mr-3"></i>
+        밋업
+      </h2>
+      <a href="{% url 'meetup:public_meetup_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
     </div>
-    {% if live_lectures %}
-    <div class="columns is-multiline">
-      {% for live_lecture in live_lectures|slice:":4" %}
-      <div class="column is-6-tablet is-3-desktop">
-        <a class="card store-card" href="{% url 'lecture:live_lecture_detail' store.store_id live_lecture.id %}">
-          <div class="card-content">
-            <div class="store-card__eyebrow">라이브 강의</div>
-            <h3 class="store-card__title">{{ live_lecture.name }}</h3>
-            <p class="store-card__meta">
-              {% if live_lecture.date_time %}
-                {{ live_lecture.date_time|date:"Y.m.d H:i" }}
-              {% else %}
-                일정 추후 공지
-              {% endif %}
-            </p>
-          </div>
-        </a>
-      </div>
-      {% endfor %}
-    </div>
-    {% else %}
-    <div class="store-empty">예정된 라이브 강의가 없습니다.</div>
-    {% endif %}
-  </div>
-</section>
 
-<section class="store-section">
-  <div class="container is-fluid">
-    <div class="store-section__head">
-      <h2 class="store-section__title">파일</h2>
-      <a class="store-section__link" href="{% url 'file:file_list' store.store_id %}">전체 보기</a>
+    <!-- 밋업 그리드 (최대 8개만 표시) -->
+    {% with meetups|slice:":8" as limited_meetups %}
+    {% with True as is_public_view %}
+    {% include 'meetup/meetup_grid.html' with meetups=limited_meetups %}
+    {% endwith %}
+    {% endwith %}
+  </div>
+</section>
+{% endif %}
+
+<!-- 라이브 강의 목록 -->
+{% if live_lectures %}
+<section id="live-lectures-section" class="py-8 {% if products and meetups %}{% elif products and not meetups %}bg-gray-50 dark:bg-gray-900{% elif not products and meetups %}bg-gray-50 dark:bg-gray-900{% else %}{% endif %}">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-video text-green-500 mr-3"></i>
+        라이브 강의
+      </h2>
+      <a href="{% url 'lecture:live_lecture_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
     </div>
-    {% if digital_files %}
-    <div class="columns is-multiline">
-      {% for digital_file in digital_files|slice:":4" %}
-      <div class="column is-6-tablet is-3-desktop">
-        <a class="card store-card" href="{% url 'file:file_detail' store.store_id digital_file.id %}">
-          <div class="card-content">
-            <div class="store-card__eyebrow">파일</div>
-            <h3 class="store-card__title">{{ digital_file.name }}</h3>
-            <p class="store-card__meta">
-              {% if digital_file.price_display == 'free' %}
-                무료
-              {% elif digital_file.price_display == 'krw' and digital_file.price_krw %}
-                {{ digital_file.price_krw|intcomma }}원
+
+    <!-- 라이브 강의 그리드 (최대 8개만 표시) -->
+    {% with live_lectures|slice:":8" as limited_live_lectures %}
+    {% with True as is_public_view %}
+    {% include 'lecture/lecture_live_grid.html' with live_lectures=limited_live_lectures %}
+    {% endwith %}
+    {% endwith %}
+  </div>
+</section>
+{% endif %}
+
+<!-- 디지털 파일 목록 -->
+{% if digital_files %}
+<section id="digital-files-section" class="py-8 {% if products or meetups or live_lectures %}bg-gray-50 dark:bg-gray-900{% endif %}">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+        <i class="fas fa-file-download text-indigo-500 mr-3"></i>
+        디지털 파일
+      </h2>
+      <a href="{% url 'file:file_list' store.store_id %}" 
+         class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors text-sm">
+        <span>전체보기</span>
+        <i class="fas fa-arrow-right ml-2"></i>
+      </a>
+    </div>
+
+    <!-- 파일 그리드 (최대 8개만 표시) -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:gap-6">
+      {% for file in digital_files %}
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+        <a href="{% url 'file:file_detail' store.store_id file.id %}" class="block">
+          <!-- 미리보기 이미지 -->
+          <div class="relative h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            {% if file.preview_image_url %}
+              <img src="{{ file.preview_image_url }}" alt="{{ file.name }}" class="w-full h-full object-cover">
+            {% else %}
+              <div class="flex items-center justify-center h-full">
+                <i class="fas fa-file text-6xl text-gray-400"></i>
+              </div>
+            {% endif %}
+            {% if file.is_discount_active %}
+              <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                {{ file.discount_rate }}% 할인
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- 파일 정보 -->
+          <div class="p-4">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">{{ file.name }}</h3>
+            
+            <!-- 가격 -->
+            <div class="flex items-center justify-between">
+              {% if file.price_display == 'free' %}
+                <span class="text-green-600 dark:text-green-400 font-bold">무료</span>
               {% else %}
-                {{ digital_file.price|intcomma }} sats
+                {% if file.is_discount_active %}
+                  <div>
+                    <span class="text-gray-500 line-through text-sm">{{ file.price|intcomma }} sats</span>
+                    <span class="text-bitcoin font-bold ml-1">{{ file.current_price|intcomma }} sats</span>
+                  </div>
+                {% else %}
+                  <span class="text-bitcoin font-bold">{{ file.current_price|intcomma }} sats</span>
+                {% endif %}
               {% endif %}
-            </p>
+              
+              <span class="text-xs text-gray-500">
+                <i class="fas fa-download mr-1"></i>{{ file.get_file_size_display }}
+              </span>
+            </div>
           </div>
         </a>
       </div>
       {% endfor %}
     </div>
-    {% else %}
-    <div class="store-empty">등록된 파일이 없습니다.</div>
-    {% endif %}
   </div>
 </section>
+{% endif %}
+
+<!-- 이미지 모달 -->
+{% if store.images.exists %}
+<div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+  <div class="relative max-w-4xl max-h-full p-4">
+    <img id="modalImage" src="" alt="" class="max-w-full max-h-full object-contain rounded-lg">
+    <button onclick="closeImageModal()" class="absolute top-2 right-2 w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-full flex items-center justify-center text-white transition-colors">
+      <i class="fas fa-times text-xl"></i>
+    </button>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/store_detail.js' %}"></script>
+<script src="{% static 'js/store-detail.js' %}"></script>
 {% endblock %}

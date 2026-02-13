@@ -1,0 +1,36 @@
+{% load static %}
+{% load user_extras %}
+
+<div id="mobile-menu" class="minimal-mobile-menu" aria-label="모바일 메뉴">
+  <ul class="minimal-mobile-menu__list">
+    <li class="minimal-mobile-menu__item">
+      <a class="minimal-mobile-menu__link" href="{% url 'stores:browse_stores' %}">스토어 탐색</a>
+    </li>
+    <li class="minimal-mobile-menu__item">
+      <a class="minimal-mobile-menu__link" href="{% url 'boards:notice_list' %}">공지사항</a>
+    </li>
+    <li class="minimal-mobile-menu__item">
+      <a class="minimal-mobile-menu__link" href="{% url 'orders:order_management' %}">주문 관리</a>
+    </li>
+  </ul>
+
+  <div class="minimal-mobile-menu__section">
+    <p class="minimal-mobile-menu__title">계정</p>
+    {% if user.is_authenticated %}
+      <a class="minimal-mobile-menu__link" href="{% url 'accounts:mypage' %}">마이페이지</a>
+      <a class="minimal-mobile-menu__link" href="javascript:void(0)" onclick="logout()">로그아웃</a>
+      {% if user_has_active_store and user_active_store.is_active %}
+        <a class="minimal-mobile-menu__link" href="{% url 'stores:my_stores' %}">스토어 관리</a>
+      {% else %}
+        <a class="minimal-mobile-menu__link" href="{% url 'stores:create_store' %}">스토어 만들기</a>
+      {% endif %}
+    {% else %}
+      <a class="minimal-mobile-menu__link" href="javascript:void(0)" onclick="redirectToSignup()">회원가입</a>
+      <a class="minimal-mobile-menu__link" href="javascript:void(0)" onclick="redirectToLogin()">로그인</a>
+      <a class="minimal-mobile-menu__link" href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">라이트닝 로그인</a>
+    {% endif %}
+    <a class="minimal-mobile-menu__link" href="#" onclick="toggleTheme(); return false;">
+      <span class="theme-text">테마 전환</span>
+    </a>
+  </div>
+</div>

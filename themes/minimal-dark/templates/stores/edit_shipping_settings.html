@@ -1,0 +1,183 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - 배송비 설정{% endblock %}
+
+{% block og_title %}{{ store.store_name }} 배송비 설정 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }}의 배송비 정책을 설정하고 무료 배송 조건을 관리하세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 배송비 설정 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }}의 배송비 정책을 설정하고 무료 배송 조건을 관리하세요.{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">배송비 설정</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">스토어 전체에 적용될 공통 배송비를 관리합니다.</p>
+      </div>
+      <a href="{% url 'stores:manage_store' store.store_id %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-left mr-2"></i>
+        관리 메뉴로 돌아가기
+      </a>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg">
+      <form method="post" class="p-8 space-y-8" id="shippingSettingsForm">
+        {% csrf_token %}
+
+        <section>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">기본 정책</h2>
+          <div class="space-y-3">
+            <label class="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-orange-400 dark:hover:border-orange-400 transition-colors">
+              <input type="radio" name="shipping_fee_mode" value="free" class="w-4 h-4 text-orange-500 focus:ring-orange-500" {% if shipping_info.mode == 'free' %}checked{% endif %}>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">무료 배송</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">모든 주문에 배송비 없이 결제됩니다.</p>
+              </div>
+            </label>
+            <label class="flex items-center p-4 border border-gray-200 dark:border-gray-700 rounded-xl cursor-pointer hover:border-orange-400 dark:hover:border-orange-400 transition-colors">
+              <input type="radio" name="shipping_fee_mode" value="flat" class="w-4 h-4 text-orange-500 focus:ring-orange-500" {% if shipping_info.mode == 'flat' %}checked{% endif %}>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900 dark:text-white">고정 배송비</div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">스토어 공통 배송비를 설정합니다.</p>
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <section id="paidShippingFields" class="space-y-6">
+          <div>
+            <label for="shipping_fee_krw" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">배송비 (원화)</label>
+            <div class="relative">
+              <input type="number" min="0" id="shipping_fee_krw" name="shipping_fee_krw" value="{% if shipping_info.mode == 'flat' %}{{ shipping_info.krw|default_if_none:'' }}{% endif %}" class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="예: 3000">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">원</span>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400" id="shippingFeePreview" data-initial-sats="{{ shipping_info.sats|default:0 }}">
+              {% if shipping_info.mode == 'flat' and shipping_info.sats %}
+                현재 환율 기준 약 {{ shipping_info.sats|intcomma }} sats
+              {% else %}
+                현재 환율 기준 사토시 값이 표시됩니다.
+              {% endif %}
+            </p>
+          </div>
+
+          <div>
+            <label for="free_shipping_threshold_krw" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">무료 배송 기준 (옵션)</label>
+            <div class="relative">
+              <input type="number" min="0" id="free_shipping_threshold_krw" name="free_shipping_threshold_krw" value="{% if threshold_preview.krw %}{{ threshold_preview.krw }}{% elif shipping_info.threshold_krw %}{{ shipping_info.threshold_krw }}{% endif %}" class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="이 금액 이상 주문 시 배송비 무료">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">원</span>
+            </div>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400" id="freeShippingPreview" data-initial-sats="{{ threshold_preview.sats|default_if_none:'' }}">
+              {% if threshold_preview.sats %}
+                현재 환율 기준 약 {{ threshold_preview.sats|intcomma }} sats 이상 주문 시 무료 배송
+              {% else %}
+                기준 금액을 입력하면 대응하는 사토시 금액이 표시됩니다.
+              {% endif %}
+            </p>
+          </div>
+        </section>
+
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <a href="{% url 'stores:manage_store' store.store_id %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">취소</a>
+          <button type="submit" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg shadow hover:bg-orange-600 transition-colors">
+            <i class="fas fa-save mr-2"></i>
+            저장하기
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modeRadios = document.querySelectorAll('input[name="shipping_fee_mode"]');
+    const paidFields = document.getElementById('paidShippingFields');
+    const shippingInput = document.getElementById('shipping_fee_krw');
+    const thresholdInput = document.getElementById('free_shipping_threshold_krw');
+    const shippingPreview = document.getElementById('shippingFeePreview');
+    const thresholdPreview = document.getElementById('freeShippingPreview');
+
+    let btcRate = null;
+
+    function togglePaidFields() {
+      const isFlat = document.querySelector('input[name="shipping_fee_mode"]:checked').value === 'flat';
+      paidFields.classList.toggle('hidden', !isFlat);
+    }
+
+    async function loadRate() {
+      try {
+        const response = await fetch('/api/exchange-rate/');
+        if (!response.ok) {
+          return;
+        }
+        const data = await response.json();
+        if (data.success) {
+          btcRate = parseFloat(data.btc_krw_rate);
+          updatePreviews();
+        }
+      } catch (error) {
+        console.warn('환율 정보를 불러오지 못했습니다.', error);
+      }
+    }
+
+    function formatSats(amount) {
+      if (amount == null || isNaN(amount)) {
+        return null;
+      }
+      return Math.round(amount).toLocaleString('en-US');
+    }
+
+    function krwToSats(krw) {
+      if (!btcRate || !krw || krw <= 0) {
+        return null;
+      }
+      const btcAmount = krw / btcRate;
+      return btcAmount * 100000000;
+    }
+
+    function updatePreviews() {
+      const shippingKrw = parseFloat(shippingInput?.value);
+      const thresholdKrw = parseFloat(thresholdInput?.value);
+
+      if (shippingPreview) {
+        const initial = shippingPreview.dataset.initialSats;
+        shippingPreview.textContent = '현재 환율 기준 사토시 값이 표시됩니다.';
+        if (!isNaN(shippingKrw) && shippingKrw >= 0) {
+          const converted = krwToSats(shippingKrw);
+          if (converted !== null) {
+            shippingPreview.textContent = `현재 환율 기준 약 ${formatSats(converted)} sats`;
+          }
+        } else if (initial) {
+          shippingPreview.textContent = `현재 환율 기준 약 ${formatSats(parseFloat(initial))} sats`;
+        }
+      }
+
+      if (thresholdPreview) {
+        const initialThreshold = thresholdPreview.dataset.initialSats;
+        thresholdPreview.textContent = '기준 금액을 입력하면 대응하는 사토시 금액이 표시됩니다.';
+        if (!isNaN(thresholdKrw) && thresholdKrw > 0) {
+          const converted = krwToSats(thresholdKrw);
+          if (converted !== null) {
+            thresholdPreview.textContent = `현재 환율 기준 약 ${formatSats(converted)} sats 이상 주문 시 무료 배송`;
+          }
+        } else if (initialThreshold) {
+          thresholdPreview.textContent = `현재 환율 기준 약 ${formatSats(parseFloat(initialThreshold))} sats 이상 주문 시 무료 배송`;
+        }
+      }
+    }
+
+    modeRadios.forEach(radio => radio.addEventListener('change', togglePaidFields));
+    shippingInput?.addEventListener('input', updatePreviews);
+    thresholdInput?.addEventListener('input', updatePreviews);
+
+    togglePaidFields();
+    updatePreviews();
+    loadRate();
+  });
+</script>
+{% endblock %}

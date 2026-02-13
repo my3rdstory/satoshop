@@ -1,0 +1,19 @@
+.lecture-orders-page {
+  background: transparent;
+}
+
+.lecture-orders-page .details-arrow {
+  transition: transform 0.2s ease;
+}
+
+.group[open] .details-arrow,
+.group-open .details-arrow {
+  transform: rotate(180deg);
+}
+
+.lecture-orders-page .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+}

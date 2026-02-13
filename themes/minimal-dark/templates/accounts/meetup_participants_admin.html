@@ -1,0 +1,340 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}밋업 참가자 관리 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<style>
+.admin-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.participant-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.participant-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark .stats-card,
+.dark .participant-card {
+    background: #1f2937;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.dark .stats-card:hover,
+.dark .participant-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+  <!-- 헤더 -->
+  <div class="admin-header text-white py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">밋업 참가자 관리</h1>
+          <p class="text-blue-100">밋업에 참가한 사용자들을 확인하고 관리하세요</p>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="{% url 'accounts:mypage' %}" 
+             class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            마이페이지로
+          </a>
+          <a href="/admin/" 
+             class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors">
+            <i class="fas fa-cog mr-2"></i>
+            Django 어드민
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- 통계 카드 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="stats-card p-6 text-center">
+        <div class="text-3xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+          {{ total_participants|intcomma }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">총 참가자 수</div>
+      </div>
+      <div class="stats-card p-6 text-center">
+        <div class="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">
+          {{ total_meetup_orders|intcomma }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">총 밋업 신청 수</div>
+      </div>
+      <div class="stats-card p-6 text-center">
+        <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+          {{ total_revenue|intcomma }}
+        </div>
+        <div class="text-gray-600 dark:text-gray-400 text-sm">총 수익 (sats)</div>
+      </div>
+    </div>
+
+    <!-- 검색 및 필터 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+      <form method="get" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              사용자 검색
+            </label>
+            <input 
+              type="text" 
+              name="search" 
+              value="{{ search_query }}"
+              placeholder="사용자명, 이메일, 이름 검색..."
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              스토어 필터
+            </label>
+            <select 
+              name="store"
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="">모든 스토어</option>
+              {% for store in stores_with_meetups %}
+              <option value="{{ store.store_id }}" {% if store_filter == store.store_id %}selected{% endif %}>
+                {{ store.store_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex items-end">
+            <button 
+              type="submit"
+              class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              <i class="fas fa-search mr-2"></i>
+              검색
+            </button>
+            {% if search_query or store_filter %}
+            <a 
+              href="{% url 'accounts:meetup_participants_admin' %}"
+              class="ml-2 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+            >
+              초기화
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 참가자 목록 -->
+    {% if users %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          참가자 목록 ({{ page_obj.paginator.count }}명)
+        </h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-50 dark:bg-gray-900">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                사용자 정보
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                참가 통계
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                가입 정보
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                액션
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for user in users %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-6 py-4">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0 h-10 w-10">
+                    <div class="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                      <i class="fas fa-user text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                  </div>
+                  <div class="ml-4">
+                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                      {{ user.username }}
+                      {% if user.lightning_profile %}
+                      <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200">
+                        <i class="fas fa-bolt mr-1"></i>Lightning
+                      </span>
+                      {% endif %}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ user.email|default:"이메일 없음" }}
+                    </div>
+                    {% if user.first_name or user.last_name %}
+                    <div class="text-xs text-gray-400 dark:text-gray-500">
+                      {{ user.first_name }} {{ user.last_name }}
+                    </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm">
+                  <div class="text-gray-900 dark:text-white font-medium">
+                    참가: {{ user.meetup_count }}회
+                  </div>
+                  <div class="text-gray-500 dark:text-gray-400">
+                    지출: {{ user.total_spent|default:0|intcomma }} sats
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm">
+                  <div class="text-gray-900 dark:text-white">
+                    {{ user.date_joined|date:"Y.m.d" }}
+                  </div>
+                  {% if user.last_login %}
+                  <div class="text-gray-500 dark:text-gray-400">
+                    최근: {{ user.last_login|date:"m.d H:i" }}
+                  </div>
+                  {% else %}
+                  <div class="text-gray-400 dark:text-gray-500">
+                    로그인 기록 없음
+                  </div>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <a 
+                  href="{% url 'accounts:meetup_participant_detail' user.id %}"
+                  class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"
+                >
+                  <i class="fas fa-eye mr-1"></i>
+                  상세보기
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      {% if page_obj.has_other_pages %}
+      <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-gray-700 dark:text-gray-300">
+            {{ page_obj.start_index }}-{{ page_obj.end_index }} / {{ page_obj.paginator.count }}명 표시 중
+          </div>
+          <div class="flex space-x-2">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if store_filter %}&store={{ store_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              이전
+            </a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
+              <span class="px-3 py-2 border border-purple-500 bg-purple-500 text-white rounded-md text-sm">
+                {{ num }}
+              </span>
+              {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+              <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if store_filter %}&store={{ store_filter }}{% endif %}" 
+                 class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                {{ num }}
+              </a>
+              {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if store_filter %}&store={{ store_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              다음
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <!-- 참가자가 없을 때 -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+        <i class="fas fa-users text-3xl text-gray-400"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        {% if search_query or store_filter %}
+        검색 결과가 없습니다
+        {% else %}
+        아직 밋업 참가자가 없습니다
+        {% endif %}
+      </h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">
+        {% if search_query or store_filter %}
+        다른 검색 조건으로 다시 시도해보세요.
+        {% else %}
+        밋업에 참가한 사용자가 생기면 여기에 표시됩니다.
+        {% endif %}
+      </p>
+      {% if search_query or store_filter %}
+      <a 
+        href="{% url 'accounts:meetup_participants_admin' %}"
+        class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+      >
+        <i class="fas fa-refresh mr-2"></i>
+        전체 목록 보기
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 필요시 추가 JavaScript 기능
+document.addEventListener('DOMContentLoaded', function() {
+    // 검색 폼 엔터키 처리
+    const searchInput = document.querySelector('input[name="search"]');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.closest('form').submit();
+            }
+        });
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,51 @@
+{% load static user_extras %}
+
+<div class="minimal-container minimal-top-nav">
+  <div class="minimal-desktop" style="min-width: 0;">
+    <button class="minimal-desktop__action md:hidden" type="button" data-store-menu-open="false" disabled>
+      <span>메뉴</span>
+    </button>
+    <a href="{% url 'stores:store_detail' store_id=store.store_id %}" class="minimal-brand">
+      <span class="minimal-brand__badge">ST</span>
+      <span>{{ store.store_name }}</span>
+    </a>
+  </div>
+
+  <nav class="minimal-desktop" aria-label="스토어 탐색">
+    <a class="minimal-desktop__link" href="{% url 'stores:store_detail' store_id=store.store_id %}">스토어 홈</a>
+    <a class="minimal-desktop__link" href="{% url 'products:public_product_list' store.store_id %}">상품</a>
+    <a class="minimal-desktop__link" href="{% url 'meetup:meetup_list' store.store_id %}">밋업</a>
+    <a class="minimal-desktop__link" href="{% url 'lecture:live_lecture_list' store.store_id %}">라이브 강의</a>
+    <a class="minimal-desktop__link" href="{% url 'file:file_list' store.store_id %}">파일</a>
+  </nav>
+
+  <div class="minimal-desktop">
+    <a class="minimal-desktop__action" href="javascript:void(0)" onclick="toggleTheme(); return false;">
+      <svg class="icon">
+        <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
+      </svg>
+      <span class="theme-text">테마</span>
+    </a>
+    {% if user.is_authenticated %}
+    <a class="minimal-desktop__action" href="{% url 'accounts:mypage' %}">{{ user|lightning_username_tail }} 님</a>
+    <a class="minimal-desktop__action" href="javascript:void(0)" onclick="logout()">로그아웃</a>
+    {% if user_has_active_store and user_active_store.is_active %}
+      <a class="minimal-desktop__action" href="{% url 'stores:my_stores' %}">스토어 관리</a>
+    {% else %}
+      <a class="minimal-desktop__action" href="{% url 'stores:create_store' %}">스토어 만들기</a>
+    {% endif %}
+    {% else %}
+    <a class="minimal-desktop__action" href="javascript:void(0)" onclick="redirectToLogin()">로그인</a>
+    <a class="minimal-desktop__action" href="javascript:void(0)" onclick="redirectToSignup()">회원가입</a>
+    {% endif %}
+  </div>
+
+  <button id="store-mobile-menu-button" class="minimal-mobile-toggle md:hidden" type="button" aria-expanded="false" aria-controls="store-mobile-menu">
+    <span class="sr-only">모바일 메뉴 열기</span>
+    <svg class="icon" aria-hidden="true">
+      <use href="{% static 'icons/feather/feather-sprite.svg' %}#menu"></use>
+    </svg>
+  </button>
+</div>
+
+{% include 'stores/store_mobile_menu.html' %}

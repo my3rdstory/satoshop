@@ -1,10 +1,64 @@
-// 완전히 새로운 테마 전환 시스템
-// 중복 로드 방지 - IIFE 사용
 (function() {
   // 이미 로드되어 있으면 건너뛰기
   if (typeof window.ThemeManager !== 'undefined') {
     return;
   }
+
+const THEME_LIGHT_ICON = '#sun';
+const THEME_DARK_ICON = '#moon';
+
+function normalizeTheme(rawTheme) {
+  return rawTheme === 'light' ? 'light' : 'dark';
+}
+
+function setFeatherIcon(element, theme) {
+  if (!element) {
+    return;
+  }
+
+  const use = element.querySelector('use') || element;
+  const sunIcon = element.getAttribute('data-theme-icon-sun') || THEME_LIGHT_ICON;
+  const moonIcon = element.getAttribute('data-theme-icon-moon') || THEME_DARK_ICON;
+  const nextHref = theme === 'dark' ? moonIcon : sunIcon;
+
+  if (use.tagName === 'USE') {
+    const currentHref = use.getAttribute('href') || '';
+    const iconBase = currentHref.includes('#') ? currentHref.split('#')[0] : '';
+    use.setAttribute('href', `${iconBase}${nextHref}`);
+    return;
+  }
+
+  if (typeof element.setAttribute === 'function') {
+    element.setAttribute('data-theme-current', theme);
+  }
+
+  if (typeof element.innerHTML === 'string') {
+    element.innerHTML = `<use href="${nextHref}"></use>`;
+  }
+}
+
+function setToggleText(scope, theme) {
+  if (!scope) {
+    return;
+  }
+
+  const textNodes = scope.querySelectorAll('[data-theme-label], .theme-text');
+  const label = theme === 'dark' ? '라이트 모드로' : '다크 모드로';
+
+  textNodes.forEach((node) => {
+    const explicit = node.getAttribute('data-theme-light-text');
+    const explicitDark = node.getAttribute('data-theme-dark-text');
+    if (theme === 'dark' && explicitDark) {
+      node.textContent = explicitDark;
+      return;
+    }
+    if (theme === 'light' && explicit) {
+      node.textContent = explicit;
+      return;
+    }
+    node.textContent = label;
+  });
+}
 
 class ThemeManager {
     constructor() {
@@ -45,10 +99,10 @@ class ThemeManager {
 
     // 테마 적용
     applyTheme(theme) {
+        theme = normalizeTheme(theme);
         const html = document.documentElement;
         const body = document.body;
 
-        // 클래스 제거
         html.classList.remove('dark', 'light');
         body.classList.remove('dark', 'light');
 
@@ -78,18 +132,44 @@ class ThemeManager {
 
     // 플로팅 버튼 업데이트
     updateFloatingButton(theme) {
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
+        const themeIcons = document.querySelectorAll('[data-theme-icon]');
+        const menuItems = document.querySelectorAll('.theme-toggle-menu-item');
+        const themeButtons = document.querySelectorAll('[data-theme-toggle]');
 
-        if (themeToggle && themeIcon) {
-            if (theme === 'dark') {
-                themeIcon.className = 'fas fa-sun';
-                themeToggle.title = '라이트 모드로 전환';
-            } else {
-                themeIcon.className = 'fas fa-moon';
-                themeToggle.title = '다크 모드로 전환';
+        themeIcons.forEach((iconNode) => {
+            setFeatherIcon(iconNode, theme);
+            const button = iconNode.closest('[data-theme-toggle]');
+            if (button) {
+                button.dataset.themeState = theme;
             }
+        });
+
+        menuItems.forEach((item) => {
+            setToggleText(item, theme);
+            const menuIcon = item.querySelector('[data-theme-icon]');
+            if (menuIcon) {
+                setFeatherIcon(menuIcon, theme);
+            }
+        });
+
+        themeButtons.forEach((button) => {
+            setToggleText(button, theme);
+            const text = button.getAttribute('data-theme-button-text');
+            if (text) {
+                button.textContent = theme === 'dark' ? text : text;
+            }
+            const icon = button.querySelector('[data-theme-icon]');
+            if (icon) {
+                setFeatherIcon(icon, theme);
+            }
+        });
+
+        const globalIcon = document.getElementById('theme-icon');
+        if (globalIcon) {
+            setFeatherIcon(globalIcon, theme);
         }
+
+        setToggleText(document, theme);
     }
 
     // 메뉴 아이템들 업데이트
@@ -103,13 +183,21 @@ class ThemeManager {
 
             if (theme === 'dark') {
                 // 다크 모드 → 라이트 모드로 변경 가능
-                if (sunIcon) sunIcon.style.display = 'inline-block';
-                if (moonIcon) moonIcon.style.display = 'none';
+                if (sunIcon) {
+                  sunIcon.style.display = 'inline-block';
+                }
+                if (moonIcon) {
+                  moonIcon.style.display = 'none';
+                }
                 if (text) text.textContent = '라이트 모드로';
             } else {
                 // 라이트 모드 → 다크 모드로 변경 가능
-                if (sunIcon) sunIcon.style.display = 'none';
-                if (moonIcon) moonIcon.style.display = 'inline-block';
+                if (sunIcon) {
+                  sunIcon.style.display = 'none';
+                }
+                if (moonIcon) {
+                  moonIcon.style.display = 'inline-block';
+                }
                 if (text) text.textContent = '다크 모드로';
             }
         });

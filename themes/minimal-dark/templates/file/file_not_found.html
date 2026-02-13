@@ -1,0 +1,126 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}파일을 찾을 수 없습니다 - {{ store.store_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .not-found-container {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .not-found-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 2rem;
+  }
+  
+  .not-found-icon {
+    font-size: 5rem;
+    color: #9ca3af;
+    margin-bottom: 1.5rem;
+  }
+  
+  .not-found-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 1rem;
+  }
+  
+  .dark .not-found-title {
+    color: #f3f4f6;
+  }
+  
+  .not-found-message {
+    font-size: 1.125rem;
+    color: #6b7280;
+    margin-bottom: 2rem;
+  }
+  
+  .dark .not-found-message {
+    color: #9ca3af;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+  
+  .action-button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+  
+  .primary-button {
+    background-color: #9333ea;
+    color: white;
+  }
+  
+  .primary-button:hover {
+    background-color: #7c3aed;
+  }
+  
+  .secondary-button {
+    background-color: #f3f4f6;
+    color: #374151;
+  }
+  
+  .dark .secondary-button {
+    background-color: #374151;
+    color: #e5e7eb;
+  }
+  
+  .secondary-button:hover {
+    background-color: #e5e7eb;
+  }
+  
+  .dark .secondary-button:hover {
+    background-color: #4b5563;
+  }
+</style>
+{% endblock %}
+
+{% block store_content %}
+<div class="not-found-container">
+  <div class="not-found-content">
+    <div class="not-found-icon">
+      <i class="fas fa-file-exclamation"></i>
+    </div>
+    
+    <h1 class="not-found-title">파일을 찾을 수 없습니다</h1>
+    
+    <p class="not-found-message">
+      요청하신 파일이 존재하지 않거나 삭제되었습니다.<br>
+      다른 파일을 둘러보시거나 스토어 홈으로 돌아가세요.
+    </p>
+    
+    <div class="action-buttons">
+      <a href="{% url 'file:file_list' store.store_id %}" class="action-button primary-button">
+        <i class="fas fa-folder-open mr-2"></i>
+        파일 목록 보기
+      </a>
+      <a href="{% url 'stores:store_detail' store.store_id %}" class="action-button secondary-button">
+        <i class="fas fa-home mr-2"></i>
+        스토어 홈
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 5초 후 자동으로 파일 목록으로 이동
+setTimeout(function() {
+  window.location.href = "{% url 'file:file_list' store.store_id %}";
+}, 5000);
+</script>
+{% endblock %}

@@ -1,0 +1,460 @@
+/* 밋업 추가 스타일 */
+.meetup-add-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #faf5ff 0%, #e5e7eb 100%);
+    padding: 2rem 0;
+}
+
+.dark .meetup-add-container {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+/* 헤더 스타일 */
+.meetup-add-header {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dark .meetup-add-header {
+    background: #1f2937;
+}
+
+.meetup-add-title-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.meetup-add-icon {
+    width: 3rem;
+    height: 3rem;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 폼 섹션 */
+.meetup-form-section {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e5e7eb;
+}
+
+.dark .meetup-form-section {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+.meetup-form-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.meetup-form-section-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.meetup-form-section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 0.25rem;
+}
+
+.dark .meetup-form-section-title {
+    color: white;
+}
+
+.meetup-form-section-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.dark .meetup-form-section-description {
+    color: #9ca3af;
+}
+
+/* 입력 필드 */
+.meetup-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: white;
+    color: #111827;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.meetup-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dark .meetup-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+}
+
+.dark .meetup-input:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* 텍스트영역 */
+.meetup-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: white;
+    color: #111827;
+    font-size: 0.875rem;
+    resize: vertical;
+    min-height: 6rem;
+    transition: all 0.2s ease;
+}
+
+.meetup-textarea:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dark .meetup-textarea {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+}
+
+.dark .meetup-textarea:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* 버튼 스타일 */
+.meetup-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+}
+
+.meetup-btn-primary {
+    background: #8b5cf6;
+    color: white;
+}
+
+.meetup-btn-primary:hover {
+    background: #7c3aed;
+}
+
+.meetup-btn-secondary {
+    background: white;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.meetup-btn-secondary:hover {
+    background: #f9fafb;
+}
+
+.dark .meetup-btn-secondary {
+    background: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+}
+
+.dark .meetup-btn-secondary:hover {
+    background: #4b5563;
+}
+
+.meetup-btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.meetup-btn-danger:hover {
+    background: #dc2626;
+}
+
+/* 옵션 섹션 */
+.meetup-option-section {
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+}
+
+.dark .meetup-option-section {
+    background: rgba(55, 65, 81, 0.5);
+    border-color: #4b5563;
+}
+
+.meetup-option-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.meetup-option-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.meetup-option-choice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* 이미지 업로드 */
+.meetup-image-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    background: #f9fafb;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.meetup-image-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.dark .meetup-image-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark .meetup-image-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
+
+.meetup-image-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.meetup-image-preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.meetup-image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.meetup-image-remove-btn {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.meetup-image-remove-btn:hover {
+    background: #dc2626;
+}
+
+/* 카테고리 선택 */
+.meetup-category-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.meetup-category-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meetup-category-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #8b5cf6;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+}
+
+.meetup-category-checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dark .meetup-category-checkbox {
+    background: #374151;
+    border-color: #4b5563;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .meetup-add-container {
+        padding: 1rem 0;
+    }
+    
+    .meetup-form-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .meetup-form-section-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .meetup-option-choice {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .meetup-image-preview {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .meetup-form-section {
+        padding: 1rem;
+    }
+    
+    .meetup-option-section {
+        padding: 1rem;
+    }
+    
+    .meetup-image-preview {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* EasyMDE 에디터 커스터마이징 */
+.meetup-form-section .EasyMDEContainer {
+    margin-top: 0.5rem;
+}
+
+.meetup-form-section .EasyMDEContainer .editor-toolbar {
+    border-color: #d1d5db;
+    background: white;
+}
+
+.dark .meetup-form-section .EasyMDEContainer .editor-toolbar {
+    border-color: #4b5563;
+    background: #374151;
+}
+
+.meetup-form-section .EasyMDEContainer .CodeMirror {
+    border-color: #d1d5db;
+    background: white;
+    color: #111827;
+}
+
+.dark .meetup-form-section .EasyMDEContainer .CodeMirror {
+    border-color: #4b5563;
+    background: #374151;
+    color: white;
+}
+
+/* 가격 입력 관련 */
+.meetup-price-input-container {
+    position: relative;
+}
+
+.meetup-price-unit {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 0.875rem;
+    pointer-events: none;
+}
+
+.dark .meetup-price-unit {
+    color: #9ca3af;
+}
+
+/* 할인 섹션 */
+.meetup-discount-section {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.dark .meetup-discount-section {
+    background: rgba(251, 146, 60, 0.1);
+    border-color: rgba(251, 146, 60, 0.3);
+}
+
+/* 체크박스 스타일 */
+.meetup-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #8b5cf6;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+}
+
+.meetup-checkbox:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.dark .meetup-checkbox {
+    background: #374151;
+    border-color: #4b5563;
+} 

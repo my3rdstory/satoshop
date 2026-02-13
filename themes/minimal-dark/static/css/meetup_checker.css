@@ -1,0 +1,197 @@
+.scanner-container {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+#qr-video {
+    width: 100%;
+    max-width: 400px;
+    height: 300px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.scanner-overlay {
+    position: relative;
+    display: inline-block;
+}
+
+.scanner-frame {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    border: 2px solid #10b981;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+.scanner-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #10b981;
+}
+
+.scanner-corner.top-left {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.scanner-corner.top-right {
+    top: -2px;
+    right: -2px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.scanner-corner.bottom-left {
+    bottom: -2px;
+    left: -2px;
+    border-right: none;
+    border-top: none;
+}
+
+.scanner-corner.bottom-right {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+}
+
+.result-animation {
+    animation: pulse 1s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.scan-line {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #10b981, transparent);
+    animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(200px); }
+}
+
+/* 카메라 오류 안내 */
+.camera-error-notice {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.camera-error-notice.dark {
+    background: linear-gradient(135deg, #451a03 0%, #78350f 100%);
+    border-color: #d97706;
+    color: #fbbf24;
+}
+
+.camera-troubleshooting {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.camera-troubleshooting ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.camera-troubleshooting li {
+    margin: 4px 0;
+}
+
+/* 반응형 디자인 개선 */
+@media (max-width: 768px) {
+    .scanner-container {
+        max-width: 100%;
+    }
+    
+    #qr-video {
+        max-width: 300px;
+        height: 225px;
+    }
+    
+    .scanner-frame {
+        width: 150px;
+        height: 150px;
+    }
+    
+    @keyframes scan {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(150px); }
+    }
+}
+
+/* 접근성 개선 */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* 버튼 상태 */
+.btn-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* 토스트 메시지 */
+.toast {
+    max-width: 320px;
+    word-wrap: break-word;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* 참석 현황 카드 애니메이션 */
+.stats-card {
+    /* 호버 애니메이션 제거됨 */
+}
+
+/* 스캔 성공 효과 */
+.scan-success-flash {
+    animation: flash-green 0.5s ease-in-out;
+}
+
+@keyframes flash-green {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(16, 185, 129, 0.2); }
+    100% { background-color: transparent; }
+}
+
+/* 다크 모드 호환성 */
+@media (prefers-color-scheme: dark) {
+    .bg-white {
+        background-color: #1f2937;
+    }
+    
+    .text-gray-900 {
+        color: #f9fafb;
+    }
+    
+    .border-gray-300 {
+        border-color: #4b5563;
+    }
+} 

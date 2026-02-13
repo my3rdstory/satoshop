@@ -1,0 +1,80 @@
+{% load user_extras %}
+{% load static %}
+
+<div class="minimal-container minimal-top-nav">
+  <a href="{% url 'myshop:home' %}?force_home=1" class="minimal-brand">
+    <span class="minimal-brand__badge">SH</span>
+    <span>
+      {% if site_settings and site_settings.site_title %}
+        {{ site_settings.site_title }}
+      {% else %}
+        SatoShop
+      {% endif %}
+    </span>
+  </a>
+
+  <nav class="minimal-desktop" aria-label="주요 메뉴">
+    <a class="minimal-desktop__link" href="{% url 'stores:browse_stores' %}">
+      <span>스토어 탐색</span>
+    </a>
+    <a class="minimal-desktop__link" href="{% url 'boards:notice_list' %}">
+      <span>공지사항</span>
+    </a>
+    <a class="minimal-desktop__link" href="{% url 'stores:browse_stores' %}">
+      <span>스토어 메인</span>
+    </a>
+  </nav>
+
+  <div class="minimal-desktop">
+    {% if user.is_authenticated %}
+      <a class="minimal-desktop__action" href="{% url 'accounts:mypage' %}">
+        <svg class="icon">
+          <use href="{% static 'icons/feather/feather-sprite.svg' %}#user"></use>
+        </svg>
+        {{ user|lightning_username_tail }} 님
+      </a>
+      <a class="minimal-desktop__action" href="javascript:void(0)" onclick="logout()">
+        <span class="icon theme-sun-icon">
+          <use href="{% static 'icons/feather/feather-sprite.svg' %}#log-out"></use>
+        </span>
+        로그아웃
+      </a>
+      <a class="minimal-desktop__action theme-toggle-menu-item" href="#" data-theme-toggle="main" onclick="toggleTheme(); return false;">
+        <svg class="icon" data-theme-icon data-theme-icon-sun="{% static 'icons/feather/feather-sprite.svg' %}#sun" data-theme-icon-moon="{% static 'icons/feather/feather-sprite.svg' %}#moon">
+          <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
+        </svg>
+        <span class="theme-text" data-theme-light-text="다크 모드로" data-theme-dark-text="라이트 모드로">다크 모드</span>
+      </a>
+      {% if user_has_active_store and user_active_store.is_active %}
+        <a class="minimal-desktop__action" href="{% url 'stores:my_stores' %}">스토어 관리</a>
+      {% else %}
+        <a class="minimal-desktop__action" href="{% url 'stores:create_store' %}">스토어 만들기</a>
+      {% endif %}
+    {% else %}
+      <a class="minimal-desktop__action theme-toggle-menu-item" href="#" data-theme-toggle="main-guest" onclick="toggleTheme(); return false;">
+        <svg class="icon" data-theme-icon data-theme-icon-sun="{% static 'icons/feather/feather-sprite.svg' %}#sun" data-theme-icon-moon="{% static 'icons/feather/feather-sprite.svg' %}#moon">
+          <use href="{% static 'icons/feather/feather-sprite.svg' %}#sun"></use>
+        </svg>
+        <span class="theme-text" data-theme-light-text="다크 모드로" data-theme-dark-text="라이트 모드로">다크 모드</span>
+      </a>
+      <a class="minimal-desktop__action" href="javascript:void(0)" onclick="redirectToSignup()">
+        회원가입
+      </a>
+      <a class="minimal-desktop__action" href="javascript:void(0)" onclick="redirectToLogin()">
+        로그인
+      </a>
+      <a class="minimal-desktop__action" href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}">
+        라이트닝 로그인
+      </a>
+    {% endif %}
+  </div>
+
+  <button id="mobile-menu-button" class="minimal-mobile-toggle md:hidden" type="button" aria-expanded="false" aria-controls="mobile-menu">
+    <span class="sr-only">모바일 메뉴 열기</span>
+    <svg class="icon" aria-hidden="true">
+      <use href="{% static 'icons/feather/feather-sprite.svg' %}#menu"></use>
+    </svg>
+  </button>
+</div>
+
+{% include 'myshop/mobile_menu.html' %}

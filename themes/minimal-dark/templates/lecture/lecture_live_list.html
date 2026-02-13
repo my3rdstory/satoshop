@@ -1,0 +1,72 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ store.store_name }} - {% if is_public_view %}라이브 강의 목록{% else %}라이브 강의 관리{% endif %}{% endblock %}
+
+{% block extra_css %}
+{% endblock %}
+
+{% block store_content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 헤더 -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center">
+            <i class="fas fa-video text-white text-xl"></i>
+          </div>
+          <div>
+            {% if is_public_view %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이브 강의 목록</h1>
+            <p class="text-gray-600 dark:text-gray-300">{{ store.store_name }}의 라이브 강의에 참여하세요</p>
+            {% else %}
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이브 강의 관리</h1>
+            <p class="text-gray-600 dark:text-gray-300">{{ store.store_name }}의 라이브 강의를 관리하세요</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          {% if is_public_view %}
+          <a href="{% url 'stores:store_detail' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i>
+            스토어로 돌아가기
+          </a>
+          {% else %}
+          <a href="{% url 'lecture:add_live_lecture' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <i class="fas fa-plus mr-2"></i>
+            라이브 강의 추가
+          </a>
+          <a href="{% url 'lecture:live_lecture_status' store.store_id %}" 
+             class="inline-flex items-center px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+            <i class="fas fa-chart-bar mr-2"></i>
+            신청현황
+          </a>
+          <a href="{% url 'stores:my_stores' %}" 
+             class="inline-flex items-center px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+            스토어 관리로 돌아가기
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 라이브 강의 목록 -->
+    {% include 'lecture/lecture_live_grid.html' %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not is_public_view %}
+<script>
+// 전역 변수 설정
+window.storeId = '{{ store.store_id }}';
+window.csrfToken = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/lecture_live_list.js' %}"></script>
+{% endif %}
+{% endblock %} 

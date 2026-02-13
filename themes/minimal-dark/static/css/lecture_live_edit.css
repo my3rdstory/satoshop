@@ -1,0 +1,59 @@
+/* lecture_live_edit.css */
+/* 라이브 강의 수정 페이지 전용 스타일 */
+
+.lecture-form-avatar {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.drag-drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+
+.drag-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.dark .drag-drop-area {
+    background: #1f2937;
+    border-color: #4b5563;
+}
+
+.dark .drag-drop-area:hover {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
+
+.price-type-card {
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.price-type-card:hover {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.price-type-card.selected {
+    border-color: #8b5cf6;
+    background: #faf5ff;
+}
+
+.dark .price-type-card {
+    border-color: #4b5563;
+}
+
+.dark .price-type-card:hover {
+    border-color: #8b5cf6;
+    background: #322e54;
+}
+
+.dark .price-type-card.selected {
+    border-color: #8b5cf6;
+    background: #322e54;
+} 

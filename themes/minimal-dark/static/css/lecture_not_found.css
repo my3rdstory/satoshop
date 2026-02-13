@@ -1,0 +1,300 @@
+/* lecture_not_found.css - 삭제된 강의 오류 페이지 스타일 */
+
+/* 전체 페이지 스타일 */
+.lecture-not-found-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
+}
+
+.dark .lecture-not-found-container {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+/* 메인 카드 스타일 */
+.lecture-not-found-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.dark .lecture-not-found-card {
+  background: rgba(31, 41, 55, 0.95);
+  border: 1px solid rgba(55, 65, 81, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* 오류 아이콘 애니메이션 */
+.error-icon-container {
+  position: relative;
+  display: inline-block;
+}
+
+.error-icon-background {
+  background: linear-gradient(135deg, #ddd6fe 0%, #c7d2fe 100%);
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+.dark .error-icon-background {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(99, 102, 241, 0.3) 100%);
+}
+
+.error-icon {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+.floating-dot {
+  position: absolute;
+  border-radius: 50%;
+  animation: dotFloat 2s ease-in-out infinite;
+}
+
+.floating-dot:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.floating-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+/* 애니메이션 정의 */
+@keyframes iconFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes dotFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+/* 버튼 스타일 개선 */
+.lecture-primary-button {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lecture-primary-button:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  box-shadow: 0 20px 40px -5px rgba(139, 92, 246, 0.6);
+  transform: translateY(-2px);
+}
+
+.lecture-secondary-button {
+  background: rgba(243, 244, 246, 0.8);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(209, 213, 219, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .lecture-secondary-button {
+  background: rgba(55, 65, 81, 0.8);
+  border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.lecture-secondary-button:hover {
+  background: rgba(229, 231, 235, 0.9);
+  transform: translateY(-1px);
+}
+
+.dark .lecture-secondary-button:hover {
+  background: rgba(75, 85, 99, 0.9);
+}
+
+/* 스토어 정보 카드 */
+.store-info-card {
+  background: rgba(249, 250, 251, 0.8);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  transition: all 0.3s ease;
+}
+
+.dark .store-info-card {
+  background: rgba(55, 65, 81, 0.5);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.store-info-card:hover {
+  background: rgba(243, 244, 246, 0.9);
+  transform: translateY(-2px);
+}
+
+.dark .store-info-card:hover {
+  background: rgba(75, 85, 99, 0.6);
+}
+
+/* 안내 메시지 카드 */
+.info-message-card {
+  background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%);
+  border: 1px solid rgba(196, 181, 253, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .info-message-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.info-message-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #8b5cf6, #6366f1);
+}
+
+/* 추천 액션 카드 */
+.action-card {
+  background: rgba(249, 250, 251, 0.7);
+  backdrop-filter: blur(3px);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .action-card {
+  background: rgba(55, 65, 81, 0.5);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15);
+}
+
+.dark .action-card:hover {
+  box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* 액션 카드 아이콘 */
+.action-icon {
+  transition: all 0.3s ease;
+}
+
+.action-card:hover .action-icon {
+  transform: scale(1.2);
+}
+
+/* 페이지 로드 애니메이션 */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideInUp 0.8s ease-out forwards;
+}
+
+/* 텍스트 그라데이션 */
+.gradient-text {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 640px) {
+  .lecture-not-found-card {
+    margin: 1rem;
+    padding: 2rem 1.5rem;
+  }
+  
+  .error-icon-background {
+    width: 6rem;
+    height: 6rem;
+  }
+  
+  .error-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .floating-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+}
+
+/* 접근성 개선 */
+@media (prefers-reduced-motion: reduce) {
+  .error-icon-background,
+  .error-icon,
+  .floating-dot {
+    animation: none;
+  }
+  
+  .lecture-primary-button:hover,
+  .lecture-secondary-button:hover,
+  .action-card:hover {
+    transform: none;
+  }
+}
+
+/* 포커스 스타일 */
+.lecture-primary-button:focus,
+.lecture-secondary-button:focus,
+.action-card:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* 추가적인 시각적 효과 */
+.lecture-not-found-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #8b5cf6, #6366f1, #8b5cf6);
+  background-size: 200% 100%;
+  animation: gradientMove 3s ease infinite;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 다크 모드 전환 애니메이션 */
+.lecture-not-found-card,
+.store-info-card,
+.info-message-card,
+.action-card {
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 스크롤 스타일 */
+.lecture-not-found-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lecture-not-found-container::-webkit-scrollbar-track {
+  background: rgba(243, 244, 246, 0.5);
+}
+
+.lecture-not-found-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-radius: 4px;
+}
+
+.lecture-not-found-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+} 

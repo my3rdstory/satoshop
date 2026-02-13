@@ -1,0 +1,460 @@
+{% extends 'stores/store_base.html' %}
+{% load static %}
+
+{% block title %}{{ store.store_name }} - 라이브 강의 추가{% endblock %}
+
+{% block og_title %}{{ store.store_name }} 라이브 강의 추가 - SatoShop{% endblock %}
+{% block og_description %}{{ store.store_name }}의 라이브 강의를 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+{% block twitter_title %}{{ store.store_name }} 라이브 강의 추가 - SatoShop{% endblock %}
+{% block twitter_description %}{{ store.store_name }}의 라이브 강의를 추가하고 비트코인 라이트닝 결제로 참가비를 받으세요.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/category-management.css' %}">
+<link rel="stylesheet" href="{% static 'css/easymde.min.css' %}">
+<link rel="stylesheet" href="{% static 'css/lecture_live_add.css' %}">
+{% endblock %}
+
+{% block store_content %}
+<div class="bg-gray-50 dark:bg-gray-900 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- 페이지 헤더 -->
+    <div class="flex items-center justify-center mb-8">
+      <div class="p-2 lecture-form-avatar rounded-full mr-3">
+        <i class="fas fa-video text-3xl text-white"></i>
+      </div>
+      <div class="text-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">라이브 강의 추가</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">{{ store.store_name }}에 새로운 라이브 강의를 등록하세요</p>
+      </div>
+    </div>
+
+    <!-- 뒤로가기 버튼 -->
+    <div class="mb-6">
+      <a href="{% url 'lecture:live_lecture_list' store.store_id %}" class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>목록으로 돌아가기</span>
+      </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="liveLectureForm" class="space-y-8">
+      {% csrf_token %}
+      
+      <!-- 폼 에러 표시 -->
+      {% if form.errors %}
+        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 오류를 수정해주세요:</h3>
+              <ul class="text-sm text-red-700 dark:text-red-300 space-y-1">
+                {% for field, errors in form.errors.items %}
+                  {% for error in errors %}
+                    <li>• {% if field == '__all__' %}{{ error }}{% else %}{{ field|capfirst }}: {{ error }}{% endif %}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      
+      <!-- 일반 메시지 표시 -->
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300{% elif message.tags == 'success' %}bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-700 dark:text-green-300{% else %}bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300{% endif %} border rounded-lg p-4 mb-6">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% elif message.tags == 'success' %}check-circle{% else %}info-circle{% endif %} text-lg mr-3"></i>
+              </div>
+              <div>
+                <p class="text-sm">{{ message }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- 기본 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-info-circle text-blue-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">기본 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의의 기본적인 정보를 입력하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="basic-info-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="basic-info-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 강의명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="name">
+              라이브 강의명 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="text" id="name" name="name" required placeholder="강의명을 입력하세요">
+          </div>
+
+          <!-- 설명 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="description">
+              강의 설명 <span class="text-red-500">*</span>
+            </label>
+            <textarea id="description" name="description" rows="10" 
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      placeholder="강의에 대한 자세한 설명을 마크다운 형식으로 작성하세요"></textarea>
+          </div>
+
+          <!-- 강의 일시 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="date_time">
+              강의 일시 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="datetime-local" id="date_time" name="date_time" required>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">라이브 강의가 진행되는 날짜와 시간을 설정하세요</p>
+          </div>
+
+          <!-- 특이사항 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="special_notes">
+              특이사항
+            </label>
+            <textarea id="special_notes" name="special_notes" rows="3"
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      placeholder="강의 참가 시 주의사항이나 특별한 안내사항을 입력하세요"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 강사 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-chalkboard-teacher text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">강사 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">강사의 연락처 정보를 입력하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="instructor-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="instructor-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 강사 연락처 -->
+          <div>
+            <label for="instructor_contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              강사 연락처
+            </label>
+            <input 
+              type="text" 
+              id="instructor_contact" 
+              name="instructor_contact" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="010-1234-5678"
+            >
+          </div>
+
+          <!-- 강사 이메일 -->
+          <div>
+            <label for="instructor_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              강사 이메일
+            </label>
+            <input 
+              type="email" 
+              id="instructor_email" 
+              name="instructor_email" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="instructor@example.com"
+            >
+          </div>
+
+          <!-- 소통채널 -->
+          <div>
+            <label for="instructor_chat_channel" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              소통채널
+            </label>
+            <input 
+              type="url" 
+              id="instructor_chat_channel" 
+              name="instructor_chat_channel" 
+              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors" 
+              placeholder="https://..."
+            >
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">줌 링크, 카카오톡 오픈채팅 등의 링크를 입력하세요 (선택사항)</p>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-sm mt-0.5"></i>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                  <strong>알림:</strong> 강사 연락처 또는 이메일 중 최소 하나는 필수 입력 항목입니다.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 가격 정보 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-bitcoin-sign text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가비 정보</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의 참가비를 설정하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="price-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="price-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 가격 타입 선택 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              가격 타입 <span class="text-red-500">*</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <!-- 무료 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('free')">
+                <input type="radio" name="price_display" value="free" id="price_display_free" class="sr-only" checked>
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-heart text-green-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">무료</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">참가비 없음</p>
+                </div>
+              </div>
+
+              <!-- 사토시 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('sats')">
+                <input type="radio" name="price_display" value="sats" id="price_display_sats" class="sr-only">
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-bitcoin-sign text-orange-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">사토시</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">고정 사토시 가격</p>
+                </div>
+              </div>
+
+              <!-- 원화연동 -->
+              <div class="price-type-card rounded-lg p-4 cursor-pointer" onclick="selectPriceType('krw')">
+                <input type="radio" name="price_display" value="krw" id="price_display_krw" class="sr-only">
+                <div class="text-center">
+                  <div class="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-won-sign text-blue-500 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">원화연동</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">원화 기준 자동 계산</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 사토시 가격 -->
+          <div id="sats_price_section" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price">
+              사토시 가격 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price" name="price" min="0" placeholder="참가비를 입력하세요" value="">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">sats</span>
+            </div>
+          </div>
+
+          <!-- 원화 가격 -->
+          <div id="krw_price_section" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="price_krw">
+              원화 가격 <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <input class="w-full px-4 py-3 pr-16 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                     type="number" id="price_krw" name="price_krw" min="0" placeholder="참가비를 입력하세요" value="">
+              <span class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">원</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">실제 사토시 가격은 현재 환율 기준으로 자동 계산됩니다</p>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 exchange-info hidden">
+                <span class="converted-amount"></span>
+                <span class="text-xs text-gray-500 dark:text-gray-500">(실시간 환율 기준)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 정원 설정 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-users text-purple-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">정원 설정</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의 참가 정원을 설정하세요</p>
+          </div>
+        </div>
+
+        <!-- 에러 메시지 영역 -->
+        <div id="capacity-errors" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800 dark:text-red-200 mb-2">다음 항목을 확인해주세요:</h3>
+              <ul id="capacity-error-list" class="text-sm text-red-700 dark:text-red-300 space-y-1">
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 정원 제한 없음 체크박스 -->
+          <div class="flex items-center">
+            <input type="checkbox" id="no_limit" name="no_limit" 
+                   class="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+            <label for="no_limit" class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+              <span class="font-medium text-purple-600 dark:text-purple-400">정원 제한 없음</span>
+              <span class="text-gray-500 dark:text-gray-400 ml-1">(체크 시 무제한 참가 가능)</span>
+            </label>
+          </div>
+
+          <!-- 최대 참가자 수 -->
+          <div id="max_participants_section">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="max_participants">
+              최대 참가자 수 <span class="text-red-500">*</span>
+            </label>
+            <input class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400" 
+                   type="number" id="max_participants" name="max_participants" min="1" placeholder="최대 참가 가능 인원을 입력하세요">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">라이브 강의에 참가할 수 있는 최대 인원수를 설정하세요</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 커버 이미지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-image text-indigo-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">커버 이미지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">라이브 강의 커버 이미지를 업로드하세요 (1:1 비율, 1장)</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="drag-drop-area" id="imageDropArea">
+            <div class="text-center">
+              <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+              <p class="text-gray-600 dark:text-gray-400 mb-2">이미지를 드래그하여 업로드하거나 클릭하여 선택하세요</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">권장: 1:1 비율, 최대 5MB</p>
+            </div>
+            <input type="file" id="images" name="images" accept="image/*" class="hidden">
+          </div>
+          
+          <div id="imagePreview" class="hidden">
+            <div class="relative inline-block">
+              <img id="previewImg" class="w-48 h-48 object-cover rounded-lg border border-gray-300 dark:border-gray-600">
+              <button type="button" id="removeImage" class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 참가 완료 안내 메시지 -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-8">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center shadow-lg mr-4">
+            <i class="fas fa-check-circle text-green-500 text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">참가 완료 안내 메시지</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">참가 신청 완료 후 참가자에게 보여줄 메시지를 설정하세요</p>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" for="completion_message">
+              완료 안내 메시지
+            </label>
+            <textarea id="completion_message" name="completion_message" rows="6"
+                      class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-bitcoin focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                      placeholder="참가 신청 완료 후 보여줄 메시지를 마크다운 형식으로 입력하세요 (줌 링크, 준비물 등)"></textarea>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">마크다운 형식으로 작성하면 링크가 자동으로 새 탭에서 열립니다</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 제출 버튼 -->
+      <div class="flex justify-end space-x-4">
+        <a href="{% url 'lecture:live_lecture_list' store.store_id %}" class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          취소
+        </a>
+        <button type="submit" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium rounded-lg transition-colors shadow-lg hover:shadow-xl">
+          <i class="fas fa-plus mr-2"></i>
+          라이브 강의 추가
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 스크립트 -->
+<script src="{% static 'js/easymde.min.js' %}"></script>
+<script src="{% static 'js/lecture_live_add.js' %}"></script>
+{% endblock %} 
