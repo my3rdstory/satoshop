@@ -1,3 +1,11 @@
+- [x] API 키에 인증 모드(기존/Nostr) 필드 및 Nostr 공개키 필드 추가
+- [x] Nostr 인증 검증 모듈 분리 구현(api/nostr_auth.py)
+- [x] API 키 Admin 추가 폼에 Nostr 체크/공개키 검증 흐름 추가
+- [x] API 인증 로직에 Nostr 챌린지+서명 검증 분기 추가
+- [x] Nostr 챌린지 발급 엔드포인트 및 URL 연결
+- [x] OpenAPI/README/변경이력 문서 업데이트
+- [x] 마이그레이션 생성 및 커밋
+
 - [x] 디스코드 인터랙션에서 application_id 기준 봇 선택 로직 추가
 - [x] 인터랙션 예외 시 에페메랄 오류 응답 및 로그 보강
 - [x] README/변경 이력 문서화

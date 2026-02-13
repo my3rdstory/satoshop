@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from boards.models import Notice
 
 from .authentication import authenticate_request
+from .models import ApiKey
+from .nostr_auth import NostrAuthError, issue_nostr_challenge, normalize_nostr_pubkey
 from .policies import apply_cors_headers, enforce_ip_allowlist, enforce_origin_allowlist
 from .serializers import (
     serialize_digital_file,
@@ -37,6 +39,57 @@ import json
 
 
 User = get_user_model()
+
+
+@require_GET
+def nostr_challenge(request):
+    """Nostr 인증용 1회성 챌린지를 발급한다."""
+    ip_block = enforce_ip_allowlist(request)
+    if ip_block:
+        return ip_block
+
+    origin_check = enforce_origin_allowlist(request)
+    if origin_check.response:
+        return origin_check.response
+
+    raw_pubkey = (request.GET.get("pubkey") or "").strip()
+    if not raw_pubkey:
+        response = JsonResponse({"detail": "pubkey 쿼리 파라미터가 필요합니다."}, status=400)
+        apply_cors_headers(response, origin_check)
+        return response
+
+    try:
+        normalized_pubkey = normalize_nostr_pubkey(raw_pubkey)
+    except NostrAuthError as exc:
+        response = JsonResponse({"detail": str(exc)}, status=400)
+        apply_cors_headers(response, origin_check)
+        return response
+
+    api_key = ApiKey.objects.filter(
+        auth_method=ApiKey.AUTH_METHOD_NOSTR,
+        nostr_pubkey=normalized_pubkey,
+        is_active=True,
+    ).first()
+    if not api_key:
+        response = JsonResponse({"detail": "활성화된 Nostr 인증 API 키가 없습니다."}, status=404)
+        apply_cors_headers(response, origin_check)
+        return response
+
+    challenge = issue_nostr_challenge(normalized_pubkey)
+    response = JsonResponse(
+        {
+            "pubkey": normalized_pubkey,
+            "challenge_id": challenge.challenge_id,
+            "challenge": challenge.challenge,
+            "algorithm": "BIP340-schnorr",
+            "expires_in_seconds": challenge.expires_in_seconds,
+            "auth_mode": api_key.auth_method,
+        },
+        status=200,
+        json_dumps_params={"ensure_ascii": False},
+    )
+    apply_cors_headers(response, origin_check)
+    return response
 
 
 @require_GET
@@ -606,6 +659,11 @@ def api_index(request):
         "endpoints": [
             {"path": "/api/v1/stores/", "method": "GET", "description": "활성 스토어와 공개 데이터 목록"},
             {"path": "/api/v1/csrf/", "method": "GET", "description": "CSRF 쿠키 발급(로컬 SPA 테스트용)"},
+            {
+                "path": "/api/v1/nostr/challenge/?pubkey=<hex_or_npub>",
+                "method": "GET",
+                "description": "Nostr 인증용 1회성 챌린지 발급",
+            },
             {"path": "/api/v1/stores/<store_id>/lightning-invoices/", "method": "POST", "description": "스토어 라이트닝 인보이스 발행"},
             {"path": "/api/v1/stores/<store_id>/lightning-invoices/confirm-order/", "method": "POST", "description": "결제 확인 후 주문 생성"},
         ],
