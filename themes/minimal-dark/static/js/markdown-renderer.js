@@ -191,7 +191,7 @@ class MarkdownRenderer {
       return `<div class="bg-gray-200 dark:bg-gray-700 border-2 border-dashed border-gray-400 dark:border-gray-500 rounded-lg p-4 text-center text-gray-500 dark:text-gray-400 my-4">
         <i class="fas fa-image text-2xl mb-2"></i>
         <p class="text-sm font-medium">이미지: ${alt || '이미지'}</p>
-        <p class="text-xs text-gray-400 dark:text-gray-500 break-all">${src}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 break-words">${src}</p>
       </div>`;
     }
 
@@ -203,7 +203,7 @@ class MarkdownRenderer {
         <i class="fas fa-exclamation-triangle text-2xl mb-2 text-yellow-500"></i>
         <p class="text-sm font-medium">이미지 로드 실패</p>
         <p class="text-xs">이미지: ${alt || '이미지'}</p>
-        <p class="text-xs text-gray-400 dark:text-gray-500 break-all">${src}</p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 break-words">${src}</p>
       </div>
     </div>`;
   }

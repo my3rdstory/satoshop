@@ -127,7 +127,7 @@
   font-size: 0.875em;
   font-family: 'Courier New', Courier, monospace;
   color: #dc2626;
-  word-break: break-all;
+  word-break: break-word;
   overflow-wrap: break-word;
 }
 
@@ -163,7 +163,7 @@
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s ease;
-  word-break: break-all;
+  word-break: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
 }

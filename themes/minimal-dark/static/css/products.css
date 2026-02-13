@@ -1075,7 +1075,7 @@ html, body {
 }
 
 .markdown-content a {
-  word-break: break-all;
+  word-break: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
 }
@@ -1627,7 +1627,7 @@ input:checked + .slider:before {
   /* URL 링크의 경우 색상 유지하되 줄바꿈 처리 */
   .markdown-content a {
     color: #3b82f6 !important; /* 라이트 모드 링크 */
-    word-break: break-all !important;
+    word-break: break-word !important;
     overflow-wrap: break-word !important;
     hyphens: auto !important;
   }

@@ -854,7 +854,7 @@ function showErrorResult(error, orderNumber, errorType = 'unknown', participant 
                 <p class="text-gray-600 dark:text-gray-400 mb-4">${error}</p>
                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <p class="text-sm text-gray-600 dark:text-gray-400">스캔된 주문번호</p>
-                    <p class="font-mono text-gray-900 dark:text-white break-all">${orderNumber}</p>
+                <p class="font-mono text-gray-900 dark:text-white break-words">${orderNumber}</p>
                 </div>
             </div>
         `;
@@ -983,7 +983,7 @@ function addRecentCheck(participant, orderNumber, success, error = null, errorTy
             <div class="flex items-center justify-between">
                 <div>
                     <div class="font-medium text-gray-900 dark:text-white">확인 실패</div>
-                    <div class="text-sm text-gray-600 dark:text-gray-400 break-all">${orderNumber}</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400 break-words">${orderNumber}</div>
                     <div class="text-xs text-red-600 dark:text-red-400">${error}</div>
                 </div>
                 <div class="text-right">

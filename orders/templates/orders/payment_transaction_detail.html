@@ -50,7 +50,7 @@
             <div>
               <dt>결제 해시</dt>
               <dd class="flex items-center gap-2">
-                <span id="paymentHashValue" class="break-all">{{ transaction.payment_hash|default:'-' }}</span>
+                <span id="paymentHashValue" class="break-words">{{ transaction.payment_hash|default:'-' }}</span>
                 {% if transaction.payment_hash %}
                 <button type="button" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-600 px-2 py-1 text-[0.7rem] font-semibold text-gray-600 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition" data-copy-target="#paymentHashValue" data-label="복사">복사</button>
                 {% endif %}
@@ -58,7 +58,7 @@
             </div>
             <div>
               <dt>결제 ID</dt>
-              <dd class="break-all">{{ transaction.id }}</dd>
+              <dd class="break-words">{{ transaction.id }}</dd>
             </div>
           </dl>
         </div>
@@ -71,7 +71,7 @@
         <div class="flex-1 space-y-3">
           <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Lightning 인보이스</h2>
           <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">주문자의 지갑에서 받은 인보이스와 비교하거나 재확인할 때 사용하세요.</p>
-          <div id="paymentRequestValue" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-xs font-mono break-all text-gray-800 dark:text-gray-100">{{ payment_request }}</div>
+          <div id="paymentRequestValue" class="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 px-4 py-3 text-xs font-mono break-words text-gray-800 dark:text-gray-100">{{ payment_request }}</div>
         </div>
         <div class="flex flex-col gap-3 md:w-56">
           <div class="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/50 rounded-lg px-3 py-2">
@@ -267,13 +267,13 @@
               {% for key, value in log.detail_pairs %}
               <div class="flex justify-between gap-3">
                 <span class="font-medium text-gray-600 dark:text-gray-300">{{ key }}</span>
-                <span class="text-right break-all">{{ value }}</span>
+                <span class="text-right break-words">{{ value }}</span>
               </div>
               {% endfor %}
             </div>
             {% endif %}
             {% if log.detail_extra %}
-            <p class="text-[0.7rem] text-gray-500 dark:text-gray-400 break-all">{{ log.detail_extra }}</p>
+            <p class="text-[0.7rem] text-gray-500 dark:text-gray-400 break-words">{{ log.detail_extra }}</p>
             {% endif %}
           </div>
         </li>

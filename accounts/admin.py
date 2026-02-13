@@ -244,7 +244,7 @@ class OrderInline(admin.TabularInline):
         if obj.order_number:
             url = reverse('admin:orders_order_change', args=[obj.pk])
             return format_html(
-                '<a href="{}" style="word-break: break-all; display: inline-block; max-width: 250px;">{}</a>',
+                '<a href="{}" style="word-break: break-word; display: inline-block; max-width: 250px;">{}</a>',
                 url, obj.order_number
             )
         return '-'
