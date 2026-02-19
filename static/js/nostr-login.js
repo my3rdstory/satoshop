@@ -97,7 +97,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const clientSecretKey = tools.generateSecretKey();
         const clientPublicKey = tools.getPublicKey(clientSecretKey);
-        const connectSecret = tools.BunkerSigner.generateSecret();
+        const connectSecret = generateNostrConnectSecret(tools.BunkerSigner);
         const connectUri = tools.createNostrConnectURI(
             clientPublicKey,
             relayUrls,
@@ -115,14 +115,18 @@ document.addEventListener("DOMContentLoaded", () => {
         setStatus("pending", "지갑 앱에서 Nostr Connect를 승인해 주세요. (QR 스캔 또는 앱 열기)");
 
         activePool = new tools.SimplePool();
-        activeBunkerSigner = tools.BunkerSigner.fromURI(
-            activePool,
-            clientSecretKey,
-            connectUri,
-            {
-                autoCloseRelays: false,
-            },
-        );
+        if (tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function") {
+            activeBunkerSigner = tools.BunkerSigner.fromURI(
+                activePool,
+                clientSecretKey,
+                connectUri,
+                {
+                    autoCloseRelays: false,
+                },
+            );
+        } else {
+            throw new Error("NIP-46 signer 초기화 함수(fromURI)를 찾을 수 없습니다.");
+        }
 
         await withTimeout(
             activeBunkerSigner.waitForAuth(),
@@ -275,6 +279,25 @@ document.addEventListener("DOMContentLoaded", () => {
             }));
         }
         return nip46ToolsPromise;
+    }
+
+    function generateNostrConnectSecret(BunkerSigner) {
+        if (BunkerSigner && typeof BunkerSigner.generateSecret === "function") {
+            return BunkerSigner.generateSecret();
+        }
+
+        // 일부 nostr-tools 버전에는 BunkerSigner.generateSecret이 없어 직접 생성한다.
+        const bytes = new Uint8Array(16);
+        if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+            window.crypto.getRandomValues(bytes);
+        } else {
+            for (let i = 0; i < bytes.length; i += 1) {
+                bytes[i] = Math.floor(Math.random() * 256);
+            }
+        }
+        return Array.from(bytes)
+            .map((value) => value.toString(16).padStart(2, "0"))
+            .join("");
     }
 
     async function withTimeout(promise, ms, timeoutMessage) {

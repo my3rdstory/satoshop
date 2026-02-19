@@ -1,3 +1,5 @@
+- [x] NIP-46 `BunkerSigner.generateSecret` 미지원 버전 대응 폴백 추가
+
 - [x] Nostr 로그인 UX를 NIP-07 우선 + NIP-46 자동 전환 구조로 개선
 - [x] Nostr Connect QR/딥링크 패널 및 URI 복사/앱 열기 동작 추가
 - [x] 모바일/데스크톱 공통 로그인 안내 및 README 반영
