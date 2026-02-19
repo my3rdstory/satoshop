@@ -1,3 +1,8 @@
+- [x] 노스터 로그인 챌린지를 공개키 없이도 생성 가능하도록 백엔드 검증 로직 확장
+- [x] 노스터 로그인 상태 폴링 엔드포인트(`check-nostr-auth`) 추가
+- [x] 모바일 NIP-46 흐름에서 `getPublicKey` 의존 제거 및 서명 이벤트 pubkey 기반 검증으로 전환
+- [x] 프론트에서 챌린지 상태 폴링/복구를 통한 로그인 완료 처리 추가
+
 - [x] Primal 호환을 위해 NIP-46 URI 필드(pubkey/clientPubkey/perms/permissions) 다중 호환 처리
 - [x] BunkerSigner.fromURI 구/신 시그니처 자동 시도 로직 추가
 

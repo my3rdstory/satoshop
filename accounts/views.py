@@ -28,6 +28,8 @@ from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigExcep
 from .nostr_service import (
     authenticate_or_create_nostr_user,
     create_nostr_login_challenge,
+    pop_nostr_login_result,
+    store_nostr_login_result,
     verify_nostr_login_event,
 )
 
@@ -770,6 +772,13 @@ def verify_nostr_login_view(request):
             request_host=request.get_host(),
         )
         user, is_new = authenticate_or_create_nostr_user(verified_payload['pubkey'])
+        store_nostr_login_result(
+            challenge_id=challenge_id,
+            user_id=user.id,
+            username=user.username,
+            is_new=is_new,
+            next_url=verified_payload.get('next_url'),
+        )
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
         try:
             cart_service = CartService(request)
@@ -793,6 +802,52 @@ def verify_nostr_login_view(request):
         'username': user.username,
         'is_new': is_new,
         'next_url': verified_payload.get('next_url'),
+    })
+
+
+@require_GET
+def check_nostr_login_status_view(request):
+    """Nostr 로그인 완료 상태 확인 및 세션 로그인 처리"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'authenticated': True,
+            'username': request.user.username,
+        })
+
+    challenge_id = (request.GET.get('challenge_id') or '').strip()
+    if not challenge_id:
+        return JsonResponse({
+            'authenticated': False,
+            'pending': True,
+        })
+
+    auth_result = pop_nostr_login_result(challenge_id)
+    if not auth_result:
+        return JsonResponse({
+            'authenticated': False,
+            'pending': True,
+        })
+
+    try:
+        user = User.objects.get(id=auth_result['user_id'])
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        try:
+            cart_service = CartService(request)
+            cart_service.migrate_session_to_db()
+        except Exception as exc:
+            logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+    except User.DoesNotExist:
+        return JsonResponse({
+            'authenticated': False,
+            'pending': False,
+            'error': '사용자를 찾을 수 없습니다.',
+        }, status=400)
+
+    return JsonResponse({
+        'authenticated': True,
+        'username': user.username,
+        'is_new': auth_result.get('is_new', False),
+        'next_url': auth_result.get('next_url') or '',
     })
 
 

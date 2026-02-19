@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const challengeUrl = root.dataset.challengeUrl || "/accounts/nostr-auth-challenge/";
     const verifyUrl = root.dataset.verifyUrl || "/accounts/nostr-auth-verify/";
+    const statusUrl = root.dataset.statusUrl || "/accounts/check-nostr-auth/";
     const defaultNextUrl = root.dataset.defaultNext || "/accounts/mypage/";
     const nip46Relays = (root.dataset.nip46Relays || "wss://relay.nsec.app,wss://relay.damus.io")
         .split(",")
@@ -28,6 +29,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentNostrConnectUri = "";
     let nip46ToolsPromise = null;
     let activeNip46Task = null;
+    let statusPollingTimer = null;
+    let activeChallengeId = "";
+    let hasCompletedLogin = false;
 
     restorePendingNip46Session();
 
@@ -103,15 +107,17 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loginWithNip07() {
         const pubkey = await window.nostr.getPublicKey();
         const challenge = await fetchLoginChallenge(pubkey);
+        activeChallengeId = challenge.challenge_id;
+        startStatusPolling(activeChallengeId);
         const loginEvent = buildLoginEvent(challenge);
         setStatus("pending", "Nostr 확장에서 서명을 승인해 주세요...");
         const signedEvent = await window.nostr.signEvent(loginEvent);
-        const verified = await verifyLoginSignature({
+        await verifyLoginSignature({
             challengeId: challenge.challenge_id,
             pubkey,
             event: signedEvent,
         });
-        completeLogin(verified);
+        await finalizeLoginFromStatusOrFallback(challenge.challenge_id);
     }
 
     async function beginNip46Login({ usePending = false } = {}) {
@@ -136,8 +142,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 secret: connectSecret,
                 name: "SatoShop",
                 url: window.location.origin,
-                perms: ["sign_event", "get_public_key"],
-                permissions: ["sign_event", "get_public_key"],
+                perms: ["sign_event:22242", "sign_event", "get_public_key"],
+                permissions: ["sign_event:22242", "sign_event", "get_public_key"],
             });
             connectUri = appendNostrConnectCallback(baseConnectUri, buildNostrConnectCallbackUrl());
             savePendingNip46Session({
@@ -146,6 +152,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 createdAt: Date.now(),
             });
         }
+
+        const challenge = pendingSession?.challenge || await fetchLoginChallenge("");
+        activeChallengeId = challenge.challenge_id;
+        startStatusPolling(activeChallengeId);
+        savePendingNip46Session({
+            clientSecretKeyHex: secretKeyToHex(clientSecretKey),
+            connectUri,
+            challenge,
+            createdAt: Date.now(),
+        });
 
         currentNostrConnectUri = connectUri;
         renderNostrConnectUri(connectUri);
@@ -157,10 +173,11 @@ document.addEventListener("DOMContentLoaded", () => {
             clientSecretKey,
             connectUri,
             relayUrls,
+            challenge,
         });
     }
 
-    async function runNip46Handshake({ tools, clientSecretKey, connectUri, relayUrls }) {
+    async function runNip46Handshake({ tools, clientSecretKey, connectUri, relayUrls, challenge }) {
         if (activeNip46Task) {
             return activeNip46Task;
         }
@@ -190,13 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             setStatus("pending", "지갑 연결 완료. 로그인 서명을 요청합니다...");
-            const pubkey = await withTimeout(
-                activeBunkerSigner.getPublicKey(),
-                20000,
-                "지갑 공개키를 가져오지 못했습니다. 다시 시도해 주세요.",
-            );
-
-            const challenge = await fetchLoginChallenge(pubkey);
             const loginEvent = buildLoginEvent(challenge);
             const signedEvent = await withTimeout(
                 activeBunkerSigner.signEvent(loginEvent),
@@ -204,14 +214,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 "서명 대기 시간이 만료되었습니다. 지갑 앱에서 다시 승인해 주세요.",
             );
 
-            const verified = await verifyLoginSignature({
+            const signedPubkey = (signedEvent && typeof signedEvent.pubkey === "string") ? signedEvent.pubkey : "";
+            await verifyLoginSignature({
                 challengeId: challenge.challenge_id,
-                pubkey,
+                pubkey: signedPubkey,
                 event: signedEvent,
             });
+            await finalizeLoginFromStatusOrFallback(challenge.challenge_id);
             clearPendingNip46Session();
             cleanupNip46(relayUrls);
-            completeLogin(verified);
         })();
 
         try {
@@ -276,7 +287,52 @@ document.addEventListener("DOMContentLoaded", () => {
         return payload;
     }
 
+    async function checkNostrLoginStatus(challengeId) {
+        if (!challengeId) {
+            return {
+                authenticated: false,
+                pending: true,
+            };
+        }
+
+        const url = new URL(statusUrl, window.location.origin);
+        url.searchParams.set("challenge_id", challengeId);
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+            throw new Error(payload.error || payload.detail || "Nostr 로그인 상태 확인에 실패했습니다.");
+        }
+        return payload;
+    }
+
+    async function finalizeLoginFromStatusOrFallback(challengeId) {
+        try {
+            const status = await checkNostrLoginStatus(challengeId);
+            if (status.authenticated) {
+                completeLogin(status);
+                return;
+            }
+        } catch (error) {
+            console.warn("Nostr 상태 확인 실패, 기본 리다이렉트로 진행합니다.", error);
+        }
+
+        completeLogin({
+            is_new: false,
+            next_url: getNextParam() || defaultNextUrl,
+        });
+    }
+
     function completeLogin(verified) {
+        if (hasCompletedLogin) {
+            return;
+        }
+        hasCompletedLogin = true;
+        stopStatusPolling();
         setStatus(
             "success",
             verified.is_new
@@ -287,6 +343,35 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
             window.location.href = nextUrl;
         }, 800);
+    }
+
+    function startStatusPolling(challengeId) {
+        if (!challengeId) {
+            return;
+        }
+        stopStatusPolling();
+        statusPollingTimer = setInterval(async () => {
+            if (hasCompletedLogin) {
+                stopStatusPolling();
+                return;
+            }
+            try {
+                const status = await checkNostrLoginStatus(challengeId);
+                if (status.authenticated) {
+                    completeLogin(status);
+                }
+            } catch (error) {
+                console.warn("Nostr 상태 폴링 실패", error);
+            }
+        }, 2000);
+    }
+
+    function stopStatusPolling() {
+        if (!statusPollingTimer) {
+            return;
+        }
+        clearInterval(statusPollingTimer);
+        statusPollingTimer = null;
     }
 
     function isNip07Available() {
@@ -422,6 +507,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function cleanupNip46(relayUrls = nip46Relays) {
+        stopStatusPolling();
         try {
             if (activeBunkerSigner && typeof activeBunkerSigner.close === "function") {
                 activeBunkerSigner.close();
@@ -448,8 +534,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         currentNostrConnectUri = pending.connectUri;
+        activeChallengeId = pending.challenge?.challenge_id || "";
         renderNostrConnectUri(pending.connectUri);
         showNostrConnectPanel();
+        if (activeChallengeId) {
+            startStatusPolling(activeChallengeId);
+        }
         setStatus("pending", "이전 Nostr Connect 연결이 남아 있습니다. 지갑 승인 후 이 화면으로 돌아오면 자동 재시도합니다.");
 
         if (isNostrConnectReturnIntent()) {
@@ -467,6 +557,9 @@ document.addEventListener("DOMContentLoaded", () => {
             setStatus("error", error.message || "Nostr Connect 재연결에 실패했습니다. 다시 시도해 주세요.");
             startBtn.disabled = false;
             cleanupNip46();
+            if ((error.message || "").includes("챌린지")) {
+                clearPendingNip46Session();
+            }
         });
     }
 
@@ -485,7 +578,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return null;
             }
             const parsed = JSON.parse(raw);
-            if (!parsed || !parsed.clientSecretKeyHex || !parsed.connectUri || !parsed.createdAt) {
+            if (!parsed || !parsed.clientSecretKeyHex || !parsed.connectUri || !parsed.createdAt || !parsed.challenge) {
                 clearPendingNip46Session();
                 return null;
             }

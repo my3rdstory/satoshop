@@ -15,6 +15,7 @@ from .models import NostrUser
 
 
 WEB_LOGIN_CACHE_KEY_PREFIX = "accounts:nostr:web-login"
+WEB_LOGIN_RESULT_CACHE_KEY_PREFIX = "accounts:nostr:web-login:result"
 WEB_LOGIN_TTL_SECONDS = 300
 WEB_LOGIN_EVENT_KIND = 22242
 
@@ -29,7 +30,7 @@ class NostrWebLoginChallenge:
 
 
 def create_nostr_login_challenge(*, request, raw_pubkey: str, next_url: str | None) -> NostrWebLoginChallenge:
-    normalized_pubkey = normalize_nostr_pubkey(raw_pubkey)
+    normalized_pubkey = normalize_nostr_pubkey(raw_pubkey) if (raw_pubkey or "").strip() else ""
     challenge_id = secrets.token_urlsafe(24)
     challenge = secrets.token_hex(32)
     domain = request.get_host()
@@ -69,8 +70,8 @@ def verify_nostr_login_event(
         raise NostrAuthError("요청 도메인이 챌린지 발급 도메인과 일치하지 않습니다.")
 
     normalized_pubkey = normalize_nostr_pubkey(raw_pubkey or event_payload.get("pubkey", ""))
-    expected_pubkey = challenge_data.get("pubkey")
-    if normalized_pubkey != expected_pubkey:
+    expected_pubkey = (challenge_data.get("pubkey") or "").strip().lower()
+    if expected_pubkey and normalized_pubkey != expected_pubkey:
         raise NostrAuthError("챌린지의 공개키와 서명 공개키가 일치하지 않습니다.")
 
     event_pubkey = normalize_nostr_pubkey(event_payload.get("pubkey", ""))
@@ -155,6 +156,27 @@ def verify_nostr_login_event(
     }
 
 
+def store_nostr_login_result(*, challenge_id: str, user_id: int, username: str, is_new: bool, next_url: str | None):
+    cache.set(
+        _result_cache_key(challenge_id),
+        {
+            "user_id": user_id,
+            "username": username,
+            "is_new": is_new,
+            "next_url": next_url or "",
+        },
+        timeout=WEB_LOGIN_TTL_SECONDS,
+    )
+
+
+def pop_nostr_login_result(challenge_id: str) -> dict | None:
+    result_key = _result_cache_key(challenge_id)
+    payload = cache.get(result_key)
+    if payload:
+        cache.delete(result_key)
+    return payload
+
+
 def authenticate_or_create_nostr_user(pubkey_hex: str) -> tuple[User, bool]:
     try:
         nostr_user = NostrUser.objects.get(public_key=pubkey_hex)
@@ -208,3 +230,7 @@ def _safe_next_url(*, request, next_url: str | None) -> str:
 
 def _cache_key(challenge_id: str) -> str:
     return f"{WEB_LOGIN_CACHE_KEY_PREFIX}:{challenge_id}"
+
+
+def _result_cache_key(challenge_id: str) -> str:
+    return f"{WEB_LOGIN_RESULT_CACHE_KEY_PREFIX}:{challenge_id}"

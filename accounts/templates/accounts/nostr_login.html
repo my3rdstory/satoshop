@@ -35,6 +35,7 @@
       class="nostr-card"
       data-challenge-url="{% url 'accounts:nostr_auth_challenge' %}"
       data-verify-url="{% url 'accounts:nostr_auth_verify' %}"
+      data-status-url="{% url 'accounts:check_nostr_auth' %}"
       data-default-next="{% url 'accounts:mypage' %}"
       data-nip46-relays="wss://relay.nsec.app,wss://relay.damus.io"
     >
