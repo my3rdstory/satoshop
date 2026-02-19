@@ -1,3 +1,6 @@
+- [x] 데스크톱 NIP-07 실패 시 NIP-46 자동 폴백 처리 추가
+- [x] withTimeout 동기 반환값 호환(then is not a function 방지) 적용
+
 - [x] 모바일 배포 환경 `clientPubkey is required` NIP-46 호출 시그니처 오류 수정
 
 - [x] NIP-46 `BunkerSigner.generateSecret` 미지원 버전 대응 폴백 추가

@@ -32,7 +32,15 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             if (isNip07Available()) {
                 setStatus("pending", "NIP-07 확장 지갑을 확인했습니다. 서명 요청을 준비합니다...");
-                await loginWithNip07();
+                try {
+                    await loginWithNip07();
+                    return;
+                } catch (nip07Error) {
+                    console.warn("NIP-07 로그인 실패, NIP-46로 폴백합니다.", nip07Error);
+                    setStatus("pending", "NIP-07 로그인에 실패해 Nostr Connect로 전환합니다...");
+                    await loginWithNip46();
+                    return;
+                }
             } else {
                 setStatus("pending", "NIP-07 확장이 없어 Nostr Connect로 전환합니다...");
                 await loginWithNip46();
@@ -296,8 +304,9 @@ document.addEventListener("DOMContentLoaded", () => {
             .join("");
     }
 
-    async function withTimeout(promise, ms, timeoutMessage) {
+    async function withTimeout(valueOrPromise, ms, timeoutMessage) {
         let timer = null;
+        const promise = Promise.resolve(valueOrPromise);
         return new Promise((resolve, reject) => {
             timer = setTimeout(() => {
                 reject(new Error(timeoutMessage));
