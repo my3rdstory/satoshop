@@ -98,16 +98,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const clientSecretKey = tools.generateSecretKey();
         const clientPublicKey = tools.getPublicKey(clientSecretKey);
         const connectSecret = generateNostrConnectSecret(tools.BunkerSigner);
-        const connectUri = tools.createNostrConnectURI(
-            clientPublicKey,
-            relayUrls,
-            connectSecret,
-            {
-                name: "SatoShop",
-                url: window.location.origin,
-                permissions: ["sign_event:22242"],
-            },
-        );
+        const connectUri = tools.createNostrConnectURI({
+            clientPubkey: clientPublicKey,
+            relays: relayUrls,
+            secret: connectSecret,
+            name: "SatoShop",
+            url: window.location.origin,
+            perms: ["sign_event:22242"],
+        });
 
         currentNostrConnectUri = connectUri;
         renderNostrConnectUri(connectUri);
@@ -116,23 +114,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
         activePool = new tools.SimplePool();
         if (tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function") {
-            activeBunkerSigner = tools.BunkerSigner.fromURI(
-                activePool,
-                clientSecretKey,
-                connectUri,
-                {
-                    autoCloseRelays: false,
-                },
+            activeBunkerSigner = await withTimeout(
+                tools.BunkerSigner.fromURI(
+                    clientSecretKey,
+                    connectUri,
+                    {
+                        pool: activePool,
+                        autoCloseRelays: false,
+                    },
+                ),
+                180000,
+                "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
             );
         } else {
             throw new Error("NIP-46 signer 초기화 함수(fromURI)를 찾을 수 없습니다.");
         }
-
-        await withTimeout(
-            activeBunkerSigner.waitForAuth(),
-            180000,
-            "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
-        );
 
         setStatus("pending", "지갑 연결 완료. 로그인 서명을 요청합니다...");
         const pubkey = await withTimeout(

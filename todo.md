@@ -1,3 +1,5 @@
+- [x] 모바일 배포 환경 `clientPubkey is required` NIP-46 호출 시그니처 오류 수정
+
 - [x] NIP-46 `BunkerSigner.generateSecret` 미지원 버전 대응 폴백 추가
 
 - [x] Nostr 로그인 UX를 NIP-07 우선 + NIP-46 자동 전환 구조로 개선
