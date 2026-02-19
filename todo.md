@@ -1,3 +1,6 @@
+- [x] Primal 호환을 위해 NIP-46 URI 필드(pubkey/clientPubkey/perms/permissions) 다중 호환 처리
+- [x] BunkerSigner.fromURI 구/신 시그니처 자동 시도 로직 추가
+
 - [x] Nostr Connect callback 파라미터 추가 및 모바일 복귀 세션 자동 복원 구현
 - [x] 앱 전환 후 visibility/pageshow 기반 NIP-46 재연결 자동 재시도 추가
 

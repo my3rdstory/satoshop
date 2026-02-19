@@ -129,12 +129,15 @@ document.addEventListener("DOMContentLoaded", () => {
             const clientPublicKey = tools.getPublicKey(clientSecretKey);
             const connectSecret = generateNostrConnectSecret(tools.BunkerSigner);
             const baseConnectUri = tools.createNostrConnectURI({
+                pubkey: clientPublicKey,
                 clientPubkey: clientPublicKey,
                 relays: relayUrls,
+                relayUrls: relayUrls,
                 secret: connectSecret,
                 name: "SatoShop",
                 url: window.location.origin,
-                perms: ["sign_event:22242"],
+                perms: ["sign_event", "get_public_key"],
+                permissions: ["sign_event", "get_public_key"],
             });
             connectUri = appendNostrConnectCallback(baseConnectUri, buildNostrConnectCallbackUrl());
             savePendingNip46Session({
@@ -164,22 +167,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         activeNip46Task = (async () => {
             activePool = new tools.SimplePool();
-            if (tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function") {
-                activeBunkerSigner = await withTimeout(
-                    tools.BunkerSigner.fromURI(
-                        clientSecretKey,
-                        connectUri,
-                        {
-                            pool: activePool,
-                            autoCloseRelays: false,
-                        },
-                    ),
-                    300000,
-                    "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
-                );
-            } else {
+            if (!(tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function")) {
                 throw new Error("NIP-46 signer 초기화 함수(fromURI)를 찾을 수 없습니다.");
             }
+            activeBunkerSigner = await withTimeout(
+                createBunkerSignerFromURI({
+                    BunkerSigner: tools.BunkerSigner,
+                    pool: activePool,
+                    clientSecretKey,
+                    connectUri,
+                }),
+                300000,
+                "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
+            );
 
             if (activeBunkerSigner && typeof activeBunkerSigner.waitForAuth === "function") {
                 await withTimeout(
@@ -342,6 +342,44 @@ document.addEventListener("DOMContentLoaded", () => {
             }));
         }
         return nip46ToolsPromise;
+    }
+
+    async function createBunkerSignerFromURI({ BunkerSigner, pool, clientSecretKey, connectUri }) {
+        const errors = [];
+        const attempts = [
+            () => BunkerSigner.fromURI(
+                clientSecretKey,
+                connectUri,
+                {
+                    pool,
+                    autoCloseRelays: false,
+                },
+            ),
+            () => BunkerSigner.fromURI(
+                pool,
+                clientSecretKey,
+                connectUri,
+                {
+                    autoCloseRelays: false,
+                },
+            ),
+        ];
+
+        for (const attempt of attempts) {
+            try {
+                const signer = await Promise.resolve(attempt());
+                if (signer && typeof signer.getPublicKey === "function") {
+                    return signer;
+                }
+            } catch (error) {
+                errors.push(error);
+            }
+        }
+
+        const reason = errors.length
+            ? (errors[errors.length - 1]?.message || "알 수 없는 초기화 오류")
+            : "fromURI 반환값이 유효하지 않습니다.";
+        throw new Error(`Nostr Connect signer 초기화에 실패했습니다: ${reason}`);
     }
 
     function generateNostrConnectSecret(BunkerSigner) {
