@@ -6,6 +6,7 @@ app_name = 'accounts'
 urlpatterns = [
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('lightning-login/', views.lightning_login_view, name='lightning_login'),
+    path('nostr-login/', views.nostr_login_view, name='nostr_login'),
     path('logout/', views.CustomLogoutView.as_view(), name='logout'),
     path('signup/', views.SignUpView.as_view(), name='signup'),
     path('mypage/', views.MyPageView.as_view(), name='mypage'),
@@ -35,6 +36,14 @@ urlpatterns = [
     path('ln-auth-get-url/', views.create_lnurl_auth, name='ln_auth_url_provider'),
     path('ln-auth/', views.lnurl_auth_callback, name='lnurl_auth_callback'),
     path('check-lightning-auth/', views.check_lightning_auth_status, name='check_lightning_auth'),
+
+    # Nostr 로그인 (NIP-07)
+    path('nostr-auth-challenge/', views.create_nostr_login_challenge_view, name='nostr_auth_challenge'),
+    path('nostr-auth-verify/', views.verify_nostr_login_view, name='nostr_auth_verify'),
+    path('check-nostr-auth/', views.check_nostr_login_status_view, name='check_nostr_auth'),
+    path('nostr-auth-pending/create/', views.create_nostr_pending_session_view, name='nostr_pending_create'),
+    path('nostr-auth-pending/fetch/', views.fetch_nostr_pending_session_view, name='nostr_pending_fetch'),
+    path('nostr-auth-pending/clear/', views.clear_nostr_pending_session_view, name='nostr_pending_clear'),
     
     # 라이트닝 지갑 연동
     path('link-lightning/', views.link_lightning_view, name='link_lightning'),

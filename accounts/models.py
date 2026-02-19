@@ -97,6 +97,29 @@ class LightningUser(models.Model):
             return user, True  # 새 사용자
 
 
+class NostrUser(models.Model):
+    """Nostr 사용자 - 공개키와 Django User 연결"""
+
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='nostr_profile')
+    public_key = models.CharField(max_length=64, unique=True, help_text="Nostr 공개키 (32바이트 hex)")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_login_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'accounts_nostr_user'
+        indexes = [
+            models.Index(fields=['public_key']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} ({self.public_key[:16]}...)"
+
+    def update_last_login(self):
+        self.last_login_at = timezone.now()
+        self.save(update_fields=['last_login_at'])
+
+
 from django.contrib.auth.models import User as DjangoUser
 
 

@@ -1,3 +1,40 @@
+- [x] Nostr Connect 복귀 컨텍스트를 서버 pending 세션(token)으로 저장/조회/정리하는 엔드포인트 추가
+- [x] callback URL에 `nostr_connect_resume` 토큰을 포함해 브라우저 컨텍스트가 바뀌어도 복구 가능하도록 개선
+- [x] 로그인 페이지 진입 시 URL 토큰 기반 pending 세션 복원 로직 추가
+
+- [x] 노스터 로그인 서버 로그에 챌린지/검증/상태 폴링 진단 힌트 추가
+
+- [x] 모바일 앱 전환 후 Nostr Connect pending 세션을 localStorage로 영속 복구하도록 변경
+- [x] 로그인 페이지 재진입 시 NIP-46 자동 재연결/자동 폴링 재개 로직 강화
+
+- [x] 노스터 로그인 챌린지를 공개키 없이도 생성 가능하도록 백엔드 검증 로직 확장
+- [x] 노스터 로그인 상태 폴링 엔드포인트(`check-nostr-auth`) 추가
+- [x] 모바일 NIP-46 흐름에서 `getPublicKey` 의존 제거 및 서명 이벤트 pubkey 기반 검증으로 전환
+- [x] 프론트에서 챌린지 상태 폴링/복구를 통한 로그인 완료 처리 추가
+
+- [x] Primal 호환을 위해 NIP-46 URI 필드(pubkey/clientPubkey/perms/permissions) 다중 호환 처리
+- [x] BunkerSigner.fromURI 구/신 시그니처 자동 시도 로직 추가
+
+- [x] Nostr Connect callback 파라미터 추가 및 모바일 복귀 세션 자동 복원 구현
+- [x] 앱 전환 후 visibility/pageshow 기반 NIP-46 재연결 자동 재시도 추가
+
+- [x] 데스크톱 NIP-07 실패 시 NIP-46 자동 폴백 처리 추가
+- [x] withTimeout 동기 반환값 호환(then is not a function 방지) 적용
+
+- [x] 모바일 배포 환경 `clientPubkey is required` NIP-46 호출 시그니처 오류 수정
+
+- [x] NIP-46 `BunkerSigner.generateSecret` 미지원 버전 대응 폴백 추가
+
+- [x] Nostr 로그인 UX를 NIP-07 우선 + NIP-46 자동 전환 구조로 개선
+- [x] Nostr Connect QR/딥링크 패널 및 URI 복사/앱 열기 동작 추가
+- [x] 모바일/데스크톱 공통 로그인 안내 및 README 반영
+
+- [x] 로그인 페이지에 Nostr 로그인 버튼 추가
+- [x] NIP-07 기반 Nostr 로그인 챌린지/서명 검증 엔드포인트 추가
+- [x] Nostr 공개키-계정 매핑 모델(accounts.NostrUser) 및 마이그레이션 추가
+- [x] Nostr 로그인 전용 템플릿/정적파일 추가
+- [x] README/변경 이력 문서 업데이트
+
 - [x] API 키에 인증 모드(기존/Nostr) 필드 및 Nostr 공개키 필드 추가
 - [x] Nostr 인증 검증 모듈 분리 구현(api/nostr_auth.py)
 - [x] API 키 Admin 추가 폼에 Nostr 체크/공개키 검증 흐름 추가

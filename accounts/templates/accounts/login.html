@@ -37,6 +37,19 @@ body.auth-page[data-theme="dark"] {
     box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }
 
+/* Nostr 버튼 스타일 */
+.nostr-btn {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.nostr-btn:hover {
+    background: linear-gradient(135deg, #111827 0%, #000000 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(17, 24, 39, 0.45);
+}
+
 /* QR 코드 스타일 */
 .qr-container {
     background: white;
@@ -101,13 +114,20 @@ body.auth-page[data-theme="dark"] {
       </div>
 
       <!-- 라이트닝 로그인 버튼 -->
-      <div class="mb-6">
+      <div class="mb-6 space-y-3">
         <a 
           href="{% url 'accounts:lightning_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
           class="lightning-btn w-full flex justify-center items-center py-3 px-4 rounded-lg text-white font-medium text-sm transition-all shadow-lg"
         >
           <i class="fas fa-bolt mr-2"></i>
           라이트닝으로 로그인
+        </a>
+        <a
+          href="{% url 'accounts:nostr_login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+          class="nostr-btn w-full flex justify-center items-center py-3 px-4 rounded-lg text-white font-medium text-sm transition-all shadow-lg"
+        >
+          <i class="fas fa-key mr-2"></i>
+          Nostr로 로그인
         </a>
       </div>
 

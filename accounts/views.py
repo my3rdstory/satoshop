@@ -16,7 +16,9 @@ from django.contrib.auth.models import User
 from django.conf import settings
 import json
 import logging
+import secrets
 from django.core.cache import cache
+from api.nostr_auth import NostrAuthError
 
 # orders 앱에서 필요한 모델들 import
 from orders.models import PurchaseHistory, Order
@@ -24,8 +26,47 @@ from orders.services import CartService
 from .models import LightningUser
 from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm, CustomPasswordChangeForm
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
+from .nostr_service import (
+    authenticate_or_create_nostr_user,
+    clear_nostr_pending_session,
+    create_nostr_login_challenge,
+    get_nostr_pending_session,
+    pop_nostr_login_result,
+    save_nostr_pending_session,
+    store_nostr_login_result,
+    verify_nostr_login_event,
+)
 
 logger = logging.getLogger(__name__)
+
+
+def _mask_value(value: str, head: int = 10, tail: int = 6) -> str:
+    if not value:
+        return "-"
+    text = str(value)
+    if len(text) <= (head + tail):
+        return text
+    return f"{text[:head]}...{text[-tail:]}"
+
+
+def _event_debug_info(event_payload) -> dict:
+    if not isinstance(event_payload, dict):
+        return {
+            'kind': '-',
+            'id': '-',
+            'pubkey': '-',
+            'sig_len': 0,
+            'tag_count': 0,
+        }
+    tags = event_payload.get('tags')
+    return {
+        'kind': event_payload.get('kind', '-'),
+        'id': _mask_value(event_payload.get('id', ''), 10, 8),
+        'pubkey': _mask_value(event_payload.get('pubkey', ''), 10, 8),
+        'sig_len': len((event_payload.get('sig', '') or '').strip()),
+        'tag_count': len(tags) if isinstance(tags, list) else 0,
+    }
+
 
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
@@ -675,6 +716,297 @@ def lightning_login_view(request):
         return redirect('accounts:mypage')
     
     return render(request, 'accounts/lightning_login.html')
+
+
+def nostr_login_view(request):
+    """Nostr 로그인 페이지"""
+    if request.user.is_authenticated:
+        next_url = request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('accounts:mypage')
+    return render(request, 'accounts/nostr_login.html')
+
+
+@require_GET
+def create_nostr_login_challenge_view(request):
+    """NIP-07 Nostr 로그인용 챌린지 생성"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': '이미 로그인된 사용자입니다.',
+        }, status=400)
+
+    try:
+        challenge = create_nostr_login_challenge(
+            request=request,
+            raw_pubkey=request.GET.get('pubkey', ''),
+            next_url=request.GET.get('next'),
+        )
+        logger.info(
+            "Nostr 챌린지 발급 성공 challenge_id=%s pubkey_supplied=%s next_supplied=%s ua=%s",
+            _mask_value(challenge.challenge_id, 10, 6),
+            bool((request.GET.get('pubkey') or '').strip()),
+            bool((request.GET.get('next') or '').strip()),
+            (request.META.get('HTTP_USER_AGENT', '') or '')[:120],
+        )
+    except NostrAuthError as exc:
+        logger.warning(
+            "Nostr 챌린지 발급 실패 reason=%s pubkey_supplied=%s ua=%s",
+            str(exc),
+            bool((request.GET.get('pubkey') or '').strip()),
+            (request.META.get('HTTP_USER_AGENT', '') or '')[:120],
+        )
+        return JsonResponse({
+            'success': False,
+            'error': str(exc),
+        }, status=400)
+    except Exception as exc:
+        logger.error("Nostr 로그인 챌린지 생성 오류: %s", str(exc), exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Nostr 로그인 챌린지 생성 중 오류가 발생했습니다.',
+        }, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'challenge_id': challenge.challenge_id,
+        'challenge': challenge.challenge,
+        'domain': challenge.domain,
+        'kind': challenge.kind,
+        'expires_in_seconds': challenge.expires_in_seconds,
+    })
+
+
+@require_POST
+def verify_nostr_login_view(request):
+    """NIP-07 서명 이벤트 검증 후 로그인 처리"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': '이미 로그인된 사용자입니다.',
+        }, status=400)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '요청 본문이 JSON 형식이 아닙니다.',
+        }, status=400)
+
+    challenge_id = payload.get('challenge_id', '')
+    event_payload = payload.get('event')
+    raw_pubkey = payload.get('pubkey', '')
+    event_info = _event_debug_info(event_payload)
+
+    if not challenge_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'challenge_id가 필요합니다.',
+        }, status=400)
+    if not isinstance(event_payload, dict):
+        return JsonResponse({
+            'success': False,
+            'error': 'event payload가 필요합니다.',
+        }, status=400)
+
+    try:
+        verified_payload = verify_nostr_login_event(
+            challenge_id=challenge_id,
+            event_payload=event_payload,
+            raw_pubkey=raw_pubkey,
+            request_host=request.get_host(),
+        )
+        user, is_new = authenticate_or_create_nostr_user(verified_payload['pubkey'])
+        store_nostr_login_result(
+            challenge_id=challenge_id,
+            user_id=user.id,
+            username=user.username,
+            is_new=is_new,
+            next_url=verified_payload.get('next_url'),
+        )
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        try:
+            cart_service = CartService(request)
+            cart_service.migrate_session_to_db()
+        except Exception as exc:
+            logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+        logger.info(
+            "Nostr 로그인 검증 성공 challenge_id=%s user_id=%s username=%s is_new=%s event_kind=%s event_id=%s event_pubkey=%s sig_len=%s tag_count=%s",
+            _mask_value(challenge_id, 10, 6),
+            user.id,
+            user.username,
+            is_new,
+            event_info['kind'],
+            event_info['id'],
+            event_info['pubkey'],
+            event_info['sig_len'],
+            event_info['tag_count'],
+        )
+    except NostrAuthError as exc:
+        logger.warning(
+            "Nostr 로그인 검증 실패 challenge_id=%s reason=%s raw_pubkey=%s event_kind=%s event_id=%s event_pubkey=%s sig_len=%s tag_count=%s",
+            _mask_value(challenge_id, 10, 6),
+            str(exc),
+            _mask_value(raw_pubkey, 10, 8),
+            event_info['kind'],
+            event_info['id'],
+            event_info['pubkey'],
+            event_info['sig_len'],
+            event_info['tag_count'],
+        )
+        return JsonResponse({
+            'success': False,
+            'error': str(exc),
+        }, status=400)
+    except Exception as exc:
+        logger.error("Nostr 로그인 검증 오류: %s", str(exc), exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Nostr 로그인 처리 중 오류가 발생했습니다.',
+        }, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'username': user.username,
+        'is_new': is_new,
+        'next_url': verified_payload.get('next_url'),
+    })
+
+
+@require_GET
+def check_nostr_login_status_view(request):
+    """Nostr 로그인 완료 상태 확인 및 세션 로그인 처리"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'authenticated': True,
+            'username': request.user.username,
+        })
+
+    challenge_id = (request.GET.get('challenge_id') or '').strip()
+    if not challenge_id:
+        return JsonResponse({
+            'authenticated': False,
+            'pending': True,
+        })
+
+    auth_result = pop_nostr_login_result(challenge_id)
+    if not auth_result:
+        logger.debug(
+            "Nostr 로그인 상태 대기 challenge_id=%s",
+            _mask_value(challenge_id, 10, 6),
+        )
+        return JsonResponse({
+            'authenticated': False,
+            'pending': True,
+        })
+
+    try:
+        user = User.objects.get(id=auth_result['user_id'])
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        try:
+            cart_service = CartService(request)
+            cart_service.migrate_session_to_db()
+        except Exception as exc:
+            logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+        logger.info(
+            "Nostr 상태 폴링 로그인 성공 challenge_id=%s user_id=%s username=%s is_new=%s",
+            _mask_value(challenge_id, 10, 6),
+            user.id,
+            user.username,
+            auth_result.get('is_new', False),
+        )
+    except User.DoesNotExist:
+        logger.warning(
+            "Nostr 상태 폴링 로그인 실패 challenge_id=%s reason=user_not_found user_id=%s",
+            _mask_value(challenge_id, 10, 6),
+            auth_result.get('user_id'),
+        )
+        return JsonResponse({
+            'authenticated': False,
+            'pending': False,
+            'error': '사용자를 찾을 수 없습니다.',
+        }, status=400)
+
+    return JsonResponse({
+        'authenticated': True,
+        'username': user.username,
+        'is_new': auth_result.get('is_new', False),
+        'next_url': auth_result.get('next_url') or '',
+    })
+
+
+@require_POST
+def create_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 저장"""
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '요청 본문이 JSON 형식이 아닙니다.'}, status=400)
+
+    token = (payload.get('token') or '').strip()
+    if not token:
+        token = secrets.token_urlsafe(24)
+    if len(token) < 16:
+        return JsonResponse({'success': False, 'error': 'token 형식이 올바르지 않습니다.'}, status=400)
+
+    pending = payload.get('pending')
+    if not isinstance(pending, dict):
+        return JsonResponse({'success': False, 'error': 'pending payload가 필요합니다.'}, status=400)
+
+    required_fields = ['clientSecretKeyHex', 'connectUri', 'challenge', 'createdAt']
+    for field_name in required_fields:
+        if field_name not in pending:
+            return JsonResponse({'success': False, 'error': f'pending.{field_name}가 필요합니다.'}, status=400)
+
+    if not isinstance(pending.get('challenge'), dict):
+        return JsonResponse({'success': False, 'error': 'pending.challenge 형식이 올바르지 않습니다.'}, status=400)
+
+    save_nostr_pending_session(token=token, payload=pending)
+    logger.info(
+        "Nostr pending 세션 저장 token=%s challenge_id=%s",
+        _mask_value(token, 8, 6),
+        _mask_value(str(pending.get('challenge', {}).get('challenge_id', '')), 10, 6),
+    )
+    return JsonResponse({'success': True, 'token': token})
+
+
+@require_GET
+def fetch_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 조회"""
+    token = (request.GET.get('token') or '').strip()
+    if not token:
+        return JsonResponse({'success': False, 'error': 'token이 필요합니다.'}, status=400)
+
+    pending = get_nostr_pending_session(token)
+    if not pending:
+        logger.warning("Nostr pending 세션 조회 실패 token=%s reason=not_found", _mask_value(token, 8, 6))
+        return JsonResponse({'success': False, 'error': 'pending 세션이 없거나 만료되었습니다.'}, status=404)
+
+    logger.info(
+        "Nostr pending 세션 조회 성공 token=%s challenge_id=%s",
+        _mask_value(token, 8, 6),
+        _mask_value(str(pending.get('challenge', {}).get('challenge_id', '')), 10, 6),
+    )
+    return JsonResponse({'success': True, 'pending': pending})
+
+
+@require_POST
+def clear_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 정리"""
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '요청 본문이 JSON 형식이 아닙니다.'}, status=400)
+
+    token = (payload.get('token') or '').strip()
+    if not token:
+        return JsonResponse({'success': False, 'error': 'token이 필요합니다.'}, status=400)
+
+    clear_nostr_pending_session(token)
+    logger.info("Nostr pending 세션 정리 token=%s", _mask_value(token, 8, 6))
+    return JsonResponse({'success': True})
 
 
 @login_required
