@@ -35,6 +35,35 @@ from .nostr_service import (
 
 logger = logging.getLogger(__name__)
 
+
+def _mask_value(value: str, head: int = 10, tail: int = 6) -> str:
+    if not value:
+        return "-"
+    text = str(value)
+    if len(text) <= (head + tail):
+        return text
+    return f"{text[:head]}...{text[-tail:]}"
+
+
+def _event_debug_info(event_payload) -> dict:
+    if not isinstance(event_payload, dict):
+        return {
+            'kind': '-',
+            'id': '-',
+            'pubkey': '-',
+            'sig_len': 0,
+            'tag_count': 0,
+        }
+    tags = event_payload.get('tags')
+    return {
+        'kind': event_payload.get('kind', '-'),
+        'id': _mask_value(event_payload.get('id', ''), 10, 8),
+        'pubkey': _mask_value(event_payload.get('pubkey', ''), 10, 8),
+        'sig_len': len((event_payload.get('sig', '') or '').strip()),
+        'tag_count': len(tags) if isinstance(tags, list) else 0,
+    }
+
+
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
     redirect_authenticated_user = True
@@ -710,7 +739,20 @@ def create_nostr_login_challenge_view(request):
             raw_pubkey=request.GET.get('pubkey', ''),
             next_url=request.GET.get('next'),
         )
+        logger.info(
+            "Nostr 챌린지 발급 성공 challenge_id=%s pubkey_supplied=%s next_supplied=%s ua=%s",
+            _mask_value(challenge.challenge_id, 10, 6),
+            bool((request.GET.get('pubkey') or '').strip()),
+            bool((request.GET.get('next') or '').strip()),
+            (request.META.get('HTTP_USER_AGENT', '') or '')[:120],
+        )
     except NostrAuthError as exc:
+        logger.warning(
+            "Nostr 챌린지 발급 실패 reason=%s pubkey_supplied=%s ua=%s",
+            str(exc),
+            bool((request.GET.get('pubkey') or '').strip()),
+            (request.META.get('HTTP_USER_AGENT', '') or '')[:120],
+        )
         return JsonResponse({
             'success': False,
             'error': str(exc),
@@ -752,6 +794,7 @@ def verify_nostr_login_view(request):
     challenge_id = payload.get('challenge_id', '')
     event_payload = payload.get('event')
     raw_pubkey = payload.get('pubkey', '')
+    event_info = _event_debug_info(event_payload)
 
     if not challenge_id:
         return JsonResponse({
@@ -785,7 +828,30 @@ def verify_nostr_login_view(request):
             cart_service.migrate_session_to_db()
         except Exception as exc:
             logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+        logger.info(
+            "Nostr 로그인 검증 성공 challenge_id=%s user_id=%s username=%s is_new=%s event_kind=%s event_id=%s event_pubkey=%s sig_len=%s tag_count=%s",
+            _mask_value(challenge_id, 10, 6),
+            user.id,
+            user.username,
+            is_new,
+            event_info['kind'],
+            event_info['id'],
+            event_info['pubkey'],
+            event_info['sig_len'],
+            event_info['tag_count'],
+        )
     except NostrAuthError as exc:
+        logger.warning(
+            "Nostr 로그인 검증 실패 challenge_id=%s reason=%s raw_pubkey=%s event_kind=%s event_id=%s event_pubkey=%s sig_len=%s tag_count=%s",
+            _mask_value(challenge_id, 10, 6),
+            str(exc),
+            _mask_value(raw_pubkey, 10, 8),
+            event_info['kind'],
+            event_info['id'],
+            event_info['pubkey'],
+            event_info['sig_len'],
+            event_info['tag_count'],
+        )
         return JsonResponse({
             'success': False,
             'error': str(exc),
@@ -823,6 +889,10 @@ def check_nostr_login_status_view(request):
 
     auth_result = pop_nostr_login_result(challenge_id)
     if not auth_result:
+        logger.debug(
+            "Nostr 로그인 상태 대기 challenge_id=%s",
+            _mask_value(challenge_id, 10, 6),
+        )
         return JsonResponse({
             'authenticated': False,
             'pending': True,
@@ -836,7 +906,19 @@ def check_nostr_login_status_view(request):
             cart_service.migrate_session_to_db()
         except Exception as exc:
             logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+        logger.info(
+            "Nostr 상태 폴링 로그인 성공 challenge_id=%s user_id=%s username=%s is_new=%s",
+            _mask_value(challenge_id, 10, 6),
+            user.id,
+            user.username,
+            auth_result.get('is_new', False),
+        )
     except User.DoesNotExist:
+        logger.warning(
+            "Nostr 상태 폴링 로그인 실패 challenge_id=%s reason=user_not_found user_id=%s",
+            _mask_value(challenge_id, 10, 6),
+            auth_result.get('user_id'),
+        )
         return JsonResponse({
             'authenticated': False,
             'pending': False,
