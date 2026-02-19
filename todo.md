@@ -1,3 +1,7 @@
+- [x] Nostr 로그인 UX를 NIP-07 우선 + NIP-46 자동 전환 구조로 개선
+- [x] Nostr Connect QR/딥링크 패널 및 URI 복사/앱 열기 동작 추가
+- [x] 모바일/데스크톱 공통 로그인 안내 및 README 반영
+
 - [x] 로그인 페이지에 Nostr 로그인 버튼 추가
 - [x] NIP-07 기반 Nostr 로그인 챌린지/서명 검증 엔드포인트 추가
 - [x] Nostr 공개키-계정 매핑 모델(accounts.NostrUser) 및 마이그레이션 추가

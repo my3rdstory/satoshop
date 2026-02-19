@@ -95,3 +95,70 @@
 [data-theme="dark"] .nostr-help {
     border-top-color: #4b5563;
 }
+
+.nostr-connect-panel {
+    border: 1px solid #d1d5db;
+    border-radius: 0.85rem;
+    background: #f9fafb;
+    padding: 1rem;
+}
+
+.dark .nostr-connect-panel,
+[data-theme="dark"] .nostr-connect-panel {
+    border-color: #4b5563;
+    background: #111827;
+}
+
+.nostr-qr-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.nostr-qr-image {
+    width: 224px;
+    height: 224px;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 0.5rem;
+}
+
+.nostr-connect-input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 0.6rem;
+    background: #ffffff;
+    color: #111827;
+    font-size: 0.72rem;
+    padding: 0.6rem 0.7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dark .nostr-connect-input,
+[data-theme="dark"] .nostr-connect-input {
+    border-color: #4b5563;
+    background: #1f2937;
+    color: #f9fafb;
+}
+
+.nostr-connect-btn,
+.nostr-connect-btn-wide {
+    border: 1px solid #1f2937;
+    border-radius: 0.6rem;
+    background: #111827;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.55rem 0.85rem;
+}
+
+.nostr-connect-btn-wide {
+    width: 100%;
+}
+
+.nostr-connect-btn:hover,
+.nostr-connect-btn-wide:hover {
+    background: #030712;
+}
