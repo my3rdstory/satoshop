@@ -36,6 +36,9 @@
       data-challenge-url="{% url 'accounts:nostr_auth_challenge' %}"
       data-verify-url="{% url 'accounts:nostr_auth_verify' %}"
       data-status-url="{% url 'accounts:check_nostr_auth' %}"
+      data-pending-create-url="{% url 'accounts:nostr_pending_create' %}"
+      data-pending-fetch-url="{% url 'accounts:nostr_pending_fetch' %}"
+      data-pending-clear-url="{% url 'accounts:nostr_pending_clear' %}"
       data-default-next="{% url 'accounts:mypage' %}"
       data-nip46-relays="wss://relay.nsec.app,wss://relay.damus.io"
     >

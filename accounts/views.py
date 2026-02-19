@@ -16,6 +16,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 import json
 import logging
+import secrets
 from django.core.cache import cache
 from api.nostr_auth import NostrAuthError
 
@@ -27,8 +28,11 @@ from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm, Cust
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
 from .nostr_service import (
     authenticate_or_create_nostr_user,
+    clear_nostr_pending_session,
     create_nostr_login_challenge,
+    get_nostr_pending_session,
     pop_nostr_login_result,
+    save_nostr_pending_session,
     store_nostr_login_result,
     verify_nostr_login_event,
 )
@@ -931,6 +935,78 @@ def check_nostr_login_status_view(request):
         'is_new': auth_result.get('is_new', False),
         'next_url': auth_result.get('next_url') or '',
     })
+
+
+@require_POST
+def create_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 저장"""
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '요청 본문이 JSON 형식이 아닙니다.'}, status=400)
+
+    token = (payload.get('token') or '').strip()
+    if not token:
+        token = secrets.token_urlsafe(24)
+    if len(token) < 16:
+        return JsonResponse({'success': False, 'error': 'token 형식이 올바르지 않습니다.'}, status=400)
+
+    pending = payload.get('pending')
+    if not isinstance(pending, dict):
+        return JsonResponse({'success': False, 'error': 'pending payload가 필요합니다.'}, status=400)
+
+    required_fields = ['clientSecretKeyHex', 'connectUri', 'challenge', 'createdAt']
+    for field_name in required_fields:
+        if field_name not in pending:
+            return JsonResponse({'success': False, 'error': f'pending.{field_name}가 필요합니다.'}, status=400)
+
+    if not isinstance(pending.get('challenge'), dict):
+        return JsonResponse({'success': False, 'error': 'pending.challenge 형식이 올바르지 않습니다.'}, status=400)
+
+    save_nostr_pending_session(token=token, payload=pending)
+    logger.info(
+        "Nostr pending 세션 저장 token=%s challenge_id=%s",
+        _mask_value(token, 8, 6),
+        _mask_value(str(pending.get('challenge', {}).get('challenge_id', '')), 10, 6),
+    )
+    return JsonResponse({'success': True, 'token': token})
+
+
+@require_GET
+def fetch_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 조회"""
+    token = (request.GET.get('token') or '').strip()
+    if not token:
+        return JsonResponse({'success': False, 'error': 'token이 필요합니다.'}, status=400)
+
+    pending = get_nostr_pending_session(token)
+    if not pending:
+        logger.warning("Nostr pending 세션 조회 실패 token=%s reason=not_found", _mask_value(token, 8, 6))
+        return JsonResponse({'success': False, 'error': 'pending 세션이 없거나 만료되었습니다.'}, status=404)
+
+    logger.info(
+        "Nostr pending 세션 조회 성공 token=%s challenge_id=%s",
+        _mask_value(token, 8, 6),
+        _mask_value(str(pending.get('challenge', {}).get('challenge_id', '')), 10, 6),
+    )
+    return JsonResponse({'success': True, 'pending': pending})
+
+
+@require_POST
+def clear_nostr_pending_session_view(request):
+    """Nostr Connect 복귀용 pending 세션 정리"""
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': '요청 본문이 JSON 형식이 아닙니다.'}, status=400)
+
+    token = (payload.get('token') or '').strip()
+    if not token:
+        return JsonResponse({'success': False, 'error': 'token이 필요합니다.'}, status=400)
+
+    clear_nostr_pending_session(token)
+    logger.info("Nostr pending 세션 정리 token=%s", _mask_value(token, 8, 6))
+    return JsonResponse({'success': True})
 
 
 @login_required

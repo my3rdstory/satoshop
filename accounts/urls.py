@@ -41,6 +41,9 @@ urlpatterns = [
     path('nostr-auth-challenge/', views.create_nostr_login_challenge_view, name='nostr_auth_challenge'),
     path('nostr-auth-verify/', views.verify_nostr_login_view, name='nostr_auth_verify'),
     path('check-nostr-auth/', views.check_nostr_login_status_view, name='check_nostr_auth'),
+    path('nostr-auth-pending/create/', views.create_nostr_pending_session_view, name='nostr_pending_create'),
+    path('nostr-auth-pending/fetch/', views.fetch_nostr_pending_session_view, name='nostr_pending_fetch'),
+    path('nostr-auth-pending/clear/', views.clear_nostr_pending_session_view, name='nostr_pending_clear'),
     
     # 라이트닝 지갑 연동
     path('link-lightning/', views.link_lightning_view, name='link_lightning'),

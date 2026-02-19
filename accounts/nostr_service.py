@@ -16,6 +16,7 @@ from .models import NostrUser
 
 WEB_LOGIN_CACHE_KEY_PREFIX = "accounts:nostr:web-login"
 WEB_LOGIN_RESULT_CACHE_KEY_PREFIX = "accounts:nostr:web-login:result"
+WEB_LOGIN_PENDING_CACHE_KEY_PREFIX = "accounts:nostr:web-login:pending"
 WEB_LOGIN_TTL_SECONDS = 300
 WEB_LOGIN_EVENT_KIND = 22242
 
@@ -177,6 +178,22 @@ def pop_nostr_login_result(challenge_id: str) -> dict | None:
     return payload
 
 
+def save_nostr_pending_session(*, token: str, payload: dict):
+    cache.set(
+        _pending_cache_key(token),
+        payload,
+        timeout=WEB_LOGIN_TTL_SECONDS,
+    )
+
+
+def get_nostr_pending_session(token: str) -> dict | None:
+    return cache.get(_pending_cache_key(token))
+
+
+def clear_nostr_pending_session(token: str):
+    cache.delete(_pending_cache_key(token))
+
+
 def authenticate_or_create_nostr_user(pubkey_hex: str) -> tuple[User, bool]:
     try:
         nostr_user = NostrUser.objects.get(public_key=pubkey_hex)
@@ -234,3 +251,7 @@ def _cache_key(challenge_id: str) -> str:
 
 def _result_cache_key(challenge_id: str) -> str:
     return f"{WEB_LOGIN_RESULT_CACHE_KEY_PREFIX}:{challenge_id}"
+
+
+def _pending_cache_key(token: str) -> str:
+    return f"{WEB_LOGIN_PENDING_CACHE_KEY_PREFIX}:{token}"

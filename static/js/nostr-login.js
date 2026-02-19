@@ -18,6 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const challengeUrl = root.dataset.challengeUrl || "/accounts/nostr-auth-challenge/";
     const verifyUrl = root.dataset.verifyUrl || "/accounts/nostr-auth-verify/";
     const statusUrl = root.dataset.statusUrl || "/accounts/check-nostr-auth/";
+    const pendingCreateUrl = root.dataset.pendingCreateUrl || "/accounts/nostr-auth-pending/create/";
+    const pendingFetchUrl = root.dataset.pendingFetchUrl || "/accounts/nostr-auth-pending/fetch/";
+    const pendingClearUrl = root.dataset.pendingClearUrl || "/accounts/nostr-auth-pending/clear/";
     const defaultNextUrl = root.dataset.defaultNext || "/accounts/mypage/";
     const nip46Relays = (root.dataset.nip46Relays || "wss://relay.nsec.app,wss://relay.damus.io")
         .split(",")
@@ -145,23 +148,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 perms: ["sign_event:22242", "sign_event", "get_public_key"],
                 permissions: ["sign_event:22242", "sign_event", "get_public_key"],
             });
-            connectUri = appendNostrConnectCallback(baseConnectUri, buildNostrConnectCallbackUrl());
-            savePendingNip46Session({
+            const challenge = await fetchLoginChallenge("");
+            activeChallengeId = challenge.challenge_id;
+            startStatusPolling(activeChallengeId);
+
+            const pendingPayload = {
                 clientSecretKeyHex: secretKeyToHex(clientSecretKey),
-                connectUri,
+                connectUri: baseConnectUri,
+                challenge,
                 createdAt: Date.now(),
-            });
+            };
+            const resumeToken = await createPendingSessionOnServer(pendingPayload);
+            connectUri = appendNostrConnectCallback(baseConnectUri, buildNostrConnectCallbackUrl(resumeToken));
+            pendingPayload.connectUri = connectUri;
+            pendingPayload.resumeToken = resumeToken;
+            savePendingNip46Session(pendingPayload);
         }
 
-        const challenge = pendingSession?.challenge || await fetchLoginChallenge("");
+        const challenge = pendingSession?.challenge || getPendingNip46Session()?.challenge;
+        if (!challenge || !challenge.challenge_id) {
+            throw new Error("Nostr 로그인 챌린지를 복구하지 못했습니다. 다시 시도해 주세요.");
+        }
         activeChallengeId = challenge.challenge_id;
         startStatusPolling(activeChallengeId);
-        savePendingNip46Session({
-            clientSecretKeyHex: secretKeyToHex(clientSecretKey),
-            connectUri,
-            challenge,
-            createdAt: Date.now(),
-        });
+        if (pendingSession && !pendingSession.resumeToken) {
+            const resumeToken = getResumeTokenFromUrl();
+            if (resumeToken) {
+                savePendingNip46Session({
+                    ...pendingSession,
+                    resumeToken,
+                });
+            }
+        }
 
         currentNostrConnectUri = connectUri;
         renderNostrConnectUri(connectUri);
@@ -528,20 +546,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function restorePendingNip46Session() {
         const pending = getPendingNip46Session();
-        if (!pending) {
+        if (pending) {
+            currentNostrConnectUri = pending.connectUri;
+            activeChallengeId = pending.challenge?.challenge_id || "";
+            renderNostrConnectUri(pending.connectUri);
+            showNostrConnectPanel();
+            if (activeChallengeId) {
+                startStatusPolling(activeChallengeId);
+            }
+            setStatus("pending", "이전 Nostr Connect 연결을 복구 중입니다. 잠시만 기다려 주세요.");
+            resumePendingNip46Session();
+            return;
+        }
+
+        const resumeToken = getResumeTokenFromUrl();
+        if (!resumeToken) {
             clearNostrConnectReturnMarker();
             return;
         }
 
-        currentNostrConnectUri = pending.connectUri;
-        activeChallengeId = pending.challenge?.challenge_id || "";
-        renderNostrConnectUri(pending.connectUri);
-        showNostrConnectPanel();
-        if (activeChallengeId) {
-            startStatusPolling(activeChallengeId);
-        }
-        setStatus("pending", "이전 Nostr Connect 연결을 복구 중입니다. 잠시만 기다려 주세요.");
-        resumePendingNip46Session();
+        setStatus("pending", "복귀 토큰으로 로그인 세션을 복구 중입니다...");
+        fetchPendingSessionFromServer(resumeToken)
+            .then((serverPending) => {
+                if (!serverPending) {
+                    setStatus("error", "복귀 세션이 만료되었습니다. 다시 로그인해 주세요.");
+                    clearNostrConnectReturnMarker();
+                    return;
+                }
+                const connectUriWithCallback = appendNostrConnectCallback(
+                    serverPending.connectUri,
+                    buildNostrConnectCallbackUrl(resumeToken),
+                );
+                savePendingNip46Session({
+                    ...serverPending,
+                    connectUri: connectUriWithCallback,
+                    resumeToken,
+                });
+                restorePendingNip46Session();
+            })
+            .catch((error) => {
+                setStatus("error", error.message || "복귀 세션 복구에 실패했습니다. 다시 시도해 주세요.");
+                clearNostrConnectReturnMarker();
+            });
     }
 
     function resumePendingNip46Session() {
@@ -600,6 +646,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function clearPendingNip46Session() {
+        const pending = getPendingNip46Session();
+        const resumeToken = pending?.resumeToken || getResumeTokenFromUrl();
+        if (resumeToken) {
+            clearPendingSessionOnServer(resumeToken);
+        }
         try {
             if (window.localStorage) {
                 window.localStorage.removeItem(NIP46_PENDING_STORAGE_KEY);
@@ -613,9 +664,12 @@ document.addEventListener("DOMContentLoaded", () => {
         clearNostrConnectReturnMarker();
     }
 
-    function buildNostrConnectCallbackUrl() {
+    function buildNostrConnectCallbackUrl(resumeToken) {
         const url = new URL(window.location.href);
         url.searchParams.set("nostr_connect_return", "1");
+        if (resumeToken) {
+            url.searchParams.set("nostr_connect_resume", resumeToken);
+        }
         return url.toString();
     }
 
@@ -629,9 +683,82 @@ document.addEventListener("DOMContentLoaded", () => {
             : `${connectUri}?callback=${encodedCallback}`;
     }
 
+    async function createPendingSessionOnServer(pendingPayload) {
+        const resumeToken = generateResumeToken();
+        const response = await fetch(pendingCreateUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest",
+            },
+            body: JSON.stringify({
+                token: resumeToken,
+                pending: pendingPayload,
+            }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+            throw new Error(payload.error || "Nostr 복귀 세션 저장에 실패했습니다.");
+        }
+        return payload.token || resumeToken;
+    }
+
+    async function fetchPendingSessionFromServer(token) {
+        const url = new URL(pendingFetchUrl, window.location.origin);
+        url.searchParams.set("token", token);
+        const response = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+            },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) {
+            return null;
+        }
+        return payload.pending || null;
+    }
+
+    async function clearPendingSessionOnServer(token) {
+        try {
+            await fetch(pendingClearUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                    "X-Requested-With": "XMLHttpRequest",
+                },
+                body: JSON.stringify({ token }),
+            });
+        } catch (error) {
+            console.warn("Nostr pending 세션 서버 정리 실패", error);
+        }
+    }
+
+    function generateResumeToken() {
+        const bytes = new Uint8Array(24);
+        if (window.crypto && typeof window.crypto.getRandomValues === "function") {
+            window.crypto.getRandomValues(bytes);
+        } else {
+            for (let i = 0; i < bytes.length; i += 1) {
+                bytes[i] = Math.floor(Math.random() * 256);
+            }
+        }
+        return Array.from(bytes)
+            .map((value) => value.toString(16).padStart(2, "0"))
+            .join("");
+    }
+
     function isNostrConnectReturnIntent() {
         const params = new URLSearchParams(window.location.search);
         return params.get("nostr_connect_return") === "1";
+    }
+
+    function getResumeTokenFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("nostr_connect_resume");
+        return token ? token.trim() : "";
     }
 
     function getPersistentStorage() {
@@ -654,10 +781,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function clearNostrConnectReturnMarker() {
         const params = new URLSearchParams(window.location.search);
-        if (!params.has("nostr_connect_return")) {
+        if (!params.has("nostr_connect_return") && !params.has("nostr_connect_resume")) {
             return;
         }
         params.delete("nostr_connect_return");
+        params.delete("nostr_connect_resume");
         const nextQuery = params.toString();
         const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
         window.history.replaceState({}, "", nextUrl);

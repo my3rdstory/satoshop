@@ -1,3 +1,7 @@
+- [x] Nostr Connect 복귀 컨텍스트를 서버 pending 세션(token)으로 저장/조회/정리하는 엔드포인트 추가
+- [x] callback URL에 `nostr_connect_resume` 토큰을 포함해 브라우저 컨텍스트가 바뀌어도 복구 가능하도록 개선
+- [x] 로그인 페이지 진입 시 URL 토큰 기반 pending 세션 복원 로직 추가
+
 - [x] 노스터 로그인 서버 로그에 챌린지/검증/상태 폴링 진단 힌트 추가
 
 - [x] 모바일 앱 전환 후 Nostr Connect pending 세션을 localStorage로 영속 복구하도록 변경
