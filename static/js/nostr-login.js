@@ -1,4 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const NIP46_PENDING_STORAGE_KEY = "satoshop:nostr:nip46:pending";
+    const NIP46_PENDING_MAX_AGE_MS = 10 * 60 * 1000;
+
     const root = document.getElementById("nostrLoginRoot");
     const startBtn = document.getElementById("startNostrLoginBtn");
     const statusEl = document.getElementById("nostrStatus");
@@ -24,6 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
     let activePool = null;
     let currentNostrConnectUri = "";
     let nip46ToolsPromise = null;
+    let activeNip46Task = null;
+
+    restorePendingNip46Session();
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            resumePendingNip46Session();
+        }
+    });
+    window.addEventListener("pageshow", () => {
+        resumePendingNip46Session();
+    });
 
     startBtn.addEventListener("click", async () => {
         startBtn.disabled = true;
@@ -38,12 +53,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 } catch (nip07Error) {
                     console.warn("NIP-07 로그인 실패, NIP-46로 폴백합니다.", nip07Error);
                     setStatus("pending", "NIP-07 로그인에 실패해 Nostr Connect로 전환합니다...");
-                    await loginWithNip46();
+                    await beginNip46Login();
                     return;
                 }
             } else {
                 setStatus("pending", "NIP-07 확장이 없어 Nostr Connect로 전환합니다...");
-                await loginWithNip46();
+                await beginNip46Login();
             }
         } catch (error) {
             setStatus("error", error.message || "Nostr 로그인 중 오류가 발생했습니다.");
@@ -99,67 +114,111 @@ document.addEventListener("DOMContentLoaded", () => {
         completeLogin(verified);
     }
 
-    async function loginWithNip46() {
+    async function beginNip46Login({ usePending = false } = {}) {
         const tools = await loadNip46Tools();
         const relayUrls = nip46Relays.length ? nip46Relays : ["wss://relay.nsec.app"];
+        let clientSecretKey = null;
+        let connectUri = "";
 
-        const clientSecretKey = tools.generateSecretKey();
-        const clientPublicKey = tools.getPublicKey(clientSecretKey);
-        const connectSecret = generateNostrConnectSecret(tools.BunkerSigner);
-        const connectUri = tools.createNostrConnectURI({
-            clientPubkey: clientPublicKey,
-            relays: relayUrls,
-            secret: connectSecret,
-            name: "SatoShop",
-            url: window.location.origin,
-            perms: ["sign_event:22242"],
-        });
+        const pendingSession = usePending ? getPendingNip46Session() : null;
+        if (pendingSession) {
+            clientSecretKey = secretKeyFromHex(pendingSession.clientSecretKeyHex);
+            connectUri = pendingSession.connectUri;
+        } else {
+            clientSecretKey = tools.generateSecretKey();
+            const clientPublicKey = tools.getPublicKey(clientSecretKey);
+            const connectSecret = generateNostrConnectSecret(tools.BunkerSigner);
+            const baseConnectUri = tools.createNostrConnectURI({
+                clientPubkey: clientPublicKey,
+                relays: relayUrls,
+                secret: connectSecret,
+                name: "SatoShop",
+                url: window.location.origin,
+                perms: ["sign_event:22242"],
+            });
+            connectUri = appendNostrConnectCallback(baseConnectUri, buildNostrConnectCallbackUrl());
+            savePendingNip46Session({
+                clientSecretKeyHex: secretKeyToHex(clientSecretKey),
+                connectUri,
+                createdAt: Date.now(),
+            });
+        }
 
         currentNostrConnectUri = connectUri;
         renderNostrConnectUri(connectUri);
         showNostrConnectPanel();
         setStatus("pending", "지갑 앱에서 Nostr Connect를 승인해 주세요. (QR 스캔 또는 앱 열기)");
 
-        activePool = new tools.SimplePool();
-        if (tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function") {
-            activeBunkerSigner = await withTimeout(
-                tools.BunkerSigner.fromURI(
-                    clientSecretKey,
-                    connectUri,
-                    {
-                        pool: activePool,
-                        autoCloseRelays: false,
-                    },
-                ),
-                180000,
-                "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
-            );
-        } else {
-            throw new Error("NIP-46 signer 초기화 함수(fromURI)를 찾을 수 없습니다.");
+        await runNip46Handshake({
+            tools,
+            clientSecretKey,
+            connectUri,
+            relayUrls,
+        });
+    }
+
+    async function runNip46Handshake({ tools, clientSecretKey, connectUri, relayUrls }) {
+        if (activeNip46Task) {
+            return activeNip46Task;
         }
 
-        setStatus("pending", "지갑 연결 완료. 로그인 서명을 요청합니다...");
-        const pubkey = await withTimeout(
-            activeBunkerSigner.getPublicKey(),
-            20000,
-            "지갑 공개키를 가져오지 못했습니다. 다시 시도해 주세요.",
-        );
+        activeNip46Task = (async () => {
+            activePool = new tools.SimplePool();
+            if (tools.BunkerSigner && typeof tools.BunkerSigner.fromURI === "function") {
+                activeBunkerSigner = await withTimeout(
+                    tools.BunkerSigner.fromURI(
+                        clientSecretKey,
+                        connectUri,
+                        {
+                            pool: activePool,
+                            autoCloseRelays: false,
+                        },
+                    ),
+                    300000,
+                    "Nostr Connect 연결 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
+                );
+            } else {
+                throw new Error("NIP-46 signer 초기화 함수(fromURI)를 찾을 수 없습니다.");
+            }
 
-        const challenge = await fetchLoginChallenge(pubkey);
-        const loginEvent = buildLoginEvent(challenge);
-        const signedEvent = await withTimeout(
-            activeBunkerSigner.signEvent(loginEvent),
-            120000,
-            "서명 대기 시간이 만료되었습니다. 지갑 앱에서 다시 승인해 주세요.",
-        );
+            if (activeBunkerSigner && typeof activeBunkerSigner.waitForAuth === "function") {
+                await withTimeout(
+                    activeBunkerSigner.waitForAuth(),
+                    300000,
+                    "지갑 승인 대기 시간이 만료되었습니다. 다시 시도해 주세요.",
+                );
+            }
 
-        const verified = await verifyLoginSignature({
-            challengeId: challenge.challenge_id,
-            pubkey,
-            event: signedEvent,
-        });
-        cleanupNip46();
-        completeLogin(verified);
+            setStatus("pending", "지갑 연결 완료. 로그인 서명을 요청합니다...");
+            const pubkey = await withTimeout(
+                activeBunkerSigner.getPublicKey(),
+                20000,
+                "지갑 공개키를 가져오지 못했습니다. 다시 시도해 주세요.",
+            );
+
+            const challenge = await fetchLoginChallenge(pubkey);
+            const loginEvent = buildLoginEvent(challenge);
+            const signedEvent = await withTimeout(
+                activeBunkerSigner.signEvent(loginEvent),
+                120000,
+                "서명 대기 시간이 만료되었습니다. 지갑 앱에서 다시 승인해 주세요.",
+            );
+
+            const verified = await verifyLoginSignature({
+                challengeId: challenge.challenge_id,
+                pubkey,
+                event: signedEvent,
+            });
+            clearPendingNip46Session();
+            cleanupNip46(relayUrls);
+            completeLogin(verified);
+        })();
+
+        try {
+            await activeNip46Task;
+        } finally {
+            activeNip46Task = null;
+        }
     }
 
     async function fetchLoginChallenge(pubkey) {
@@ -324,7 +383,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    function cleanupNip46() {
+    function cleanupNip46(relayUrls = nip46Relays) {
         try {
             if (activeBunkerSigner && typeof activeBunkerSigner.close === "function") {
                 activeBunkerSigner.close();
@@ -334,13 +393,136 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             if (activePool && typeof activePool.close === "function") {
-                activePool.close(nip46Relays);
+                activePool.close(relayUrls);
             }
         } catch (error) {
             console.warn("NIP-46 relay close 실패", error);
         }
         activeBunkerSigner = null;
         activePool = null;
+    }
+
+    function restorePendingNip46Session() {
+        const pending = getPendingNip46Session();
+        if (!pending) {
+            clearNostrConnectReturnMarker();
+            return;
+        }
+
+        currentNostrConnectUri = pending.connectUri;
+        renderNostrConnectUri(pending.connectUri);
+        showNostrConnectPanel();
+        setStatus("pending", "이전 Nostr Connect 연결이 남아 있습니다. 지갑 승인 후 이 화면으로 돌아오면 자동 재시도합니다.");
+
+        if (isNostrConnectReturnIntent()) {
+            resumePendingNip46Session();
+        }
+    }
+
+    function resumePendingNip46Session() {
+        const pending = getPendingNip46Session();
+        if (!pending || activeNip46Task) {
+            return;
+        }
+
+        beginNip46Login({ usePending: true }).catch((error) => {
+            setStatus("error", error.message || "Nostr Connect 재연결에 실패했습니다. 다시 시도해 주세요.");
+            startBtn.disabled = false;
+            cleanupNip46();
+        });
+    }
+
+    function savePendingNip46Session(payload) {
+        try {
+            sessionStorage.setItem(NIP46_PENDING_STORAGE_KEY, JSON.stringify(payload));
+        } catch (error) {
+            console.warn("NIP-46 pending 세션 저장 실패", error);
+        }
+    }
+
+    function getPendingNip46Session() {
+        try {
+            const raw = sessionStorage.getItem(NIP46_PENDING_STORAGE_KEY);
+            if (!raw) {
+                return null;
+            }
+            const parsed = JSON.parse(raw);
+            if (!parsed || !parsed.clientSecretKeyHex || !parsed.connectUri || !parsed.createdAt) {
+                clearPendingNip46Session();
+                return null;
+            }
+            if ((Date.now() - Number(parsed.createdAt)) > NIP46_PENDING_MAX_AGE_MS) {
+                clearPendingNip46Session();
+                return null;
+            }
+            return parsed;
+        } catch (error) {
+            clearPendingNip46Session();
+            return null;
+        }
+    }
+
+    function clearPendingNip46Session() {
+        try {
+            sessionStorage.removeItem(NIP46_PENDING_STORAGE_KEY);
+        } catch (error) {
+            console.warn("NIP-46 pending 세션 삭제 실패", error);
+        }
+        clearNostrConnectReturnMarker();
+    }
+
+    function buildNostrConnectCallbackUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set("nostr_connect_return", "1");
+        return url.toString();
+    }
+
+    function appendNostrConnectCallback(connectUri, callbackUrl) {
+        if (!connectUri || !callbackUrl || connectUri.includes("callback=")) {
+            return connectUri;
+        }
+        const encodedCallback = encodeURIComponent(callbackUrl);
+        return connectUri.includes("?")
+            ? `${connectUri}&callback=${encodedCallback}`
+            : `${connectUri}?callback=${encodedCallback}`;
+    }
+
+    function isNostrConnectReturnIntent() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get("nostr_connect_return") === "1";
+    }
+
+    function clearNostrConnectReturnMarker() {
+        const params = new URLSearchParams(window.location.search);
+        if (!params.has("nostr_connect_return")) {
+            return;
+        }
+        params.delete("nostr_connect_return");
+        const nextQuery = params.toString();
+        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash || ""}`;
+        window.history.replaceState({}, "", nextUrl);
+    }
+
+    function secretKeyToHex(secretKey) {
+        if (typeof secretKey === "string") {
+            return secretKey.startsWith("0x") ? secretKey.slice(2) : secretKey;
+        }
+        const bytes = secretKey instanceof Uint8Array ? secretKey : new Uint8Array(secretKey);
+        return Array.from(bytes)
+            .map((value) => value.toString(16).padStart(2, "0"))
+            .join("");
+    }
+
+    function secretKeyFromHex(hexValue) {
+        const normalized = (hexValue || "").replace(/^0x/, "");
+        if (normalized.length % 2 !== 0) {
+            throw new Error("Nostr Connect secret key 형식이 올바르지 않습니다.");
+        }
+        const bytes = new Uint8Array(normalized.length / 2);
+        for (let i = 0; i < bytes.length; i += 1) {
+            bytes[i] = parseInt(normalized.substr(i * 2, 2), 16);
+        }
+        return bytes;
     }
 
     function getCookie(name) {

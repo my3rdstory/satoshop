@@ -1,3 +1,6 @@
+- [x] Nostr Connect callback 파라미터 추가 및 모바일 복귀 세션 자동 복원 구현
+- [x] 앱 전환 후 visibility/pageshow 기반 NIP-46 재연결 자동 재시도 추가
+
 - [x] 데스크톱 NIP-07 실패 시 NIP-46 자동 폴백 처리 추가
 - [x] withTimeout 동기 반환값 호환(then is not a function 방지) 적용
 
