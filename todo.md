@@ -1,3 +1,6 @@
+- [x] 모바일 앱 전환 후 Nostr Connect pending 세션을 localStorage로 영속 복구하도록 변경
+- [x] 로그인 페이지 재진입 시 NIP-46 자동 재연결/자동 폴링 재개 로직 강화
+
 - [x] 노스터 로그인 챌린지를 공개키 없이도 생성 가능하도록 백엔드 검증 로직 확장
 - [x] 노스터 로그인 상태 폴링 엔드포인트(`check-nostr-auth`) 추가
 - [x] 모바일 NIP-46 흐름에서 `getPublicKey` 의존 제거 및 서명 이벤트 pubkey 기반 검증으로 전환

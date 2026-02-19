@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const NIP46_PENDING_STORAGE_KEY = "satoshop:nostr:nip46:pending";
-    const NIP46_PENDING_MAX_AGE_MS = 10 * 60 * 1000;
+    const NIP46_PENDING_MAX_AGE_MS = 4 * 60 * 1000;
 
     const root = document.getElementById("nostrLoginRoot");
     const startBtn = document.getElementById("startNostrLoginBtn");
@@ -540,11 +540,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (activeChallengeId) {
             startStatusPolling(activeChallengeId);
         }
-        setStatus("pending", "이전 Nostr Connect 연결이 남아 있습니다. 지갑 승인 후 이 화면으로 돌아오면 자동 재시도합니다.");
-
-        if (isNostrConnectReturnIntent()) {
-            resumePendingNip46Session();
-        }
+        setStatus("pending", "이전 Nostr Connect 연결을 복구 중입니다. 잠시만 기다려 주세요.");
+        resumePendingNip46Session();
     }
 
     function resumePendingNip46Session() {
@@ -552,6 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!pending || activeNip46Task) {
             return;
         }
+        setStatus("pending", "Nostr Connect 재연결을 시도합니다...");
 
         beginNip46Login({ usePending: true }).catch((error) => {
             setStatus("error", error.message || "Nostr Connect 재연결에 실패했습니다. 다시 시도해 주세요.");
@@ -564,16 +562,24 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function savePendingNip46Session(payload) {
+        const storage = getPersistentStorage();
+        if (!storage) {
+            return;
+        }
         try {
-            sessionStorage.setItem(NIP46_PENDING_STORAGE_KEY, JSON.stringify(payload));
+            storage.setItem(NIP46_PENDING_STORAGE_KEY, JSON.stringify(payload));
         } catch (error) {
             console.warn("NIP-46 pending 세션 저장 실패", error);
         }
     }
 
     function getPendingNip46Session() {
+        const storage = getPersistentStorage();
+        if (!storage) {
+            return null;
+        }
         try {
-            const raw = sessionStorage.getItem(NIP46_PENDING_STORAGE_KEY);
+            const raw = storage.getItem(NIP46_PENDING_STORAGE_KEY);
             if (!raw) {
                 return null;
             }
@@ -595,7 +601,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function clearPendingNip46Session() {
         try {
-            sessionStorage.removeItem(NIP46_PENDING_STORAGE_KEY);
+            if (window.localStorage) {
+                window.localStorage.removeItem(NIP46_PENDING_STORAGE_KEY);
+            }
+            if (window.sessionStorage) {
+                window.sessionStorage.removeItem(NIP46_PENDING_STORAGE_KEY);
+            }
         } catch (error) {
             console.warn("NIP-46 pending 세션 삭제 실패", error);
         }
@@ -621,6 +632,24 @@ document.addEventListener("DOMContentLoaded", () => {
     function isNostrConnectReturnIntent() {
         const params = new URLSearchParams(window.location.search);
         return params.get("nostr_connect_return") === "1";
+    }
+
+    function getPersistentStorage() {
+        try {
+            if (window.localStorage) {
+                return window.localStorage;
+            }
+        } catch (error) {
+            console.warn("localStorage 접근 실패", error);
+        }
+        try {
+            if (window.sessionStorage) {
+                return window.sessionStorage;
+            }
+        } catch (error) {
+            console.warn("sessionStorage 접근 실패", error);
+        }
+        return null;
     }
 
     function clearNostrConnectReturnMarker() {
