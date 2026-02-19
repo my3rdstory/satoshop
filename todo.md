@@ -1,3 +1,9 @@
+- [x] 로그인 페이지에 Nostr 로그인 버튼 추가
+- [x] NIP-07 기반 Nostr 로그인 챌린지/서명 검증 엔드포인트 추가
+- [x] Nostr 공개키-계정 매핑 모델(accounts.NostrUser) 및 마이그레이션 추가
+- [x] Nostr 로그인 전용 템플릿/정적파일 추가
+- [x] README/변경 이력 문서 업데이트
+
 - [x] API 키에 인증 모드(기존/Nostr) 필드 및 Nostr 공개키 필드 추가
 - [x] Nostr 인증 검증 모듈 분리 구현(api/nostr_auth.py)
 - [x] API 키 Admin 추가 폼에 Nostr 체크/공개키 검증 흐름 추가

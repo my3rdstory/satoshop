@@ -1,0 +1,68 @@
+{% extends 'myshop/base.html' %}
+{% load static %}
+
+{% block title %}Nostr 로그인 - SatoShop{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/nostr-login.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="nostr-login-page py-8">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-8">
+      <div class="nostr-title-icon mx-auto mb-4">
+        <i class="fas fa-key text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Nostr 로그인</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+        Nostr 확장 지갑의 서명으로 안전하게 로그인합니다.
+      </p>
+    </div>
+
+    <div class="mb-6">
+      <a
+        href="{% url 'accounts:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+      >
+        <i class="fas fa-arrow-left text-sm"></i>
+        <span>일반 로그인으로 돌아가기</span>
+      </a>
+    </div>
+
+    <div
+      id="nostrLoginRoot"
+      class="nostr-card"
+      data-challenge-url="{% url 'accounts:nostr_auth_challenge' %}"
+      data-verify-url="{% url 'accounts:nostr_auth_verify' %}"
+      data-default-next="{% url 'accounts:mypage' %}"
+    >
+      <div class="text-center">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+          버튼을 누르면 NIP-07 지원 Nostr 확장에서 서명 요청이 열립니다.
+        </p>
+        <button id="startNostrLoginBtn" class="nostr-start-btn">
+          <i class="fas fa-key mr-2"></i>
+          Nostr 로그인 시작
+        </button>
+      </div>
+      <div id="nostrStatus" class="nostr-status nostr-status-pending mt-6">
+        <i class="fas fa-circle-notch mr-2"></i>
+        준비됨: 버튼을 눌러 Nostr 로그인을 시작하세요.
+      </div>
+      <div class="nostr-help mt-6">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">확인 사항</h3>
+        <ul class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+          <li>• 브라우저에 NIP-07 지원 Nostr 확장이 설치되어 있어야 합니다.</li>
+          <li>• 로그인은 공개키 입력이 아니라 개인키 서명으로 검증합니다.</li>
+          <li>• 최초 로그인 시 해당 공개키 계정이 자동 생성됩니다.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/nostr-login.js' %}"></script>
+{% endblock %}

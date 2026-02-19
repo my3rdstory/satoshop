@@ -17,6 +17,7 @@ from django.conf import settings
 import json
 import logging
 from django.core.cache import cache
+from api.nostr_auth import NostrAuthError
 
 # orders 앱에서 필요한 모델들 import
 from orders.models import PurchaseHistory, Order
@@ -24,6 +25,11 @@ from orders.services import CartService
 from .models import LightningUser
 from .forms import LightningAccountLinkForm, LocalAccountUsernameCheckForm, CustomPasswordChangeForm
 from .lnurl_service import LNURLAuthService, LNURLAuthException, InvalidSigException
+from .nostr_service import (
+    authenticate_or_create_nostr_user,
+    create_nostr_login_challenge,
+    verify_nostr_login_event,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -675,6 +681,119 @@ def lightning_login_view(request):
         return redirect('accounts:mypage')
     
     return render(request, 'accounts/lightning_login.html')
+
+
+def nostr_login_view(request):
+    """Nostr 로그인 페이지"""
+    if request.user.is_authenticated:
+        next_url = request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('accounts:mypage')
+    return render(request, 'accounts/nostr_login.html')
+
+
+@require_GET
+def create_nostr_login_challenge_view(request):
+    """NIP-07 Nostr 로그인용 챌린지 생성"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': '이미 로그인된 사용자입니다.',
+        }, status=400)
+
+    try:
+        challenge = create_nostr_login_challenge(
+            request=request,
+            raw_pubkey=request.GET.get('pubkey', ''),
+            next_url=request.GET.get('next'),
+        )
+    except NostrAuthError as exc:
+        return JsonResponse({
+            'success': False,
+            'error': str(exc),
+        }, status=400)
+    except Exception as exc:
+        logger.error("Nostr 로그인 챌린지 생성 오류: %s", str(exc), exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Nostr 로그인 챌린지 생성 중 오류가 발생했습니다.',
+        }, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'challenge_id': challenge.challenge_id,
+        'challenge': challenge.challenge,
+        'domain': challenge.domain,
+        'kind': challenge.kind,
+        'expires_in_seconds': challenge.expires_in_seconds,
+    })
+
+
+@require_POST
+def verify_nostr_login_view(request):
+    """NIP-07 서명 이벤트 검증 후 로그인 처리"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': '이미 로그인된 사용자입니다.',
+        }, status=400)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': '요청 본문이 JSON 형식이 아닙니다.',
+        }, status=400)
+
+    challenge_id = payload.get('challenge_id', '')
+    event_payload = payload.get('event')
+    raw_pubkey = payload.get('pubkey', '')
+
+    if not challenge_id:
+        return JsonResponse({
+            'success': False,
+            'error': 'challenge_id가 필요합니다.',
+        }, status=400)
+    if not isinstance(event_payload, dict):
+        return JsonResponse({
+            'success': False,
+            'error': 'event payload가 필요합니다.',
+        }, status=400)
+
+    try:
+        verified_payload = verify_nostr_login_event(
+            challenge_id=challenge_id,
+            event_payload=event_payload,
+            raw_pubkey=raw_pubkey,
+            request_host=request.get_host(),
+        )
+        user, is_new = authenticate_or_create_nostr_user(verified_payload['pubkey'])
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+        try:
+            cart_service = CartService(request)
+            cart_service.migrate_session_to_db()
+        except Exception as exc:
+            logger.warning("장바구니 마이그레이션 실패: %s", str(exc))
+    except NostrAuthError as exc:
+        return JsonResponse({
+            'success': False,
+            'error': str(exc),
+        }, status=400)
+    except Exception as exc:
+        logger.error("Nostr 로그인 검증 오류: %s", str(exc), exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Nostr 로그인 처리 중 오류가 발생했습니다.',
+        }, status=500)
+
+    return JsonResponse({
+        'success': True,
+        'username': user.username,
+        'is_new': is_new,
+        'next_url': verified_payload.get('next_url'),
+    })
 
 
 @login_required
