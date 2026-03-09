@@ -73,16 +73,14 @@ CSRF_TRUSTED_ORIGINS = [
 
 # 개발 환경에서 로컬 네트워크 접근 허용
 if DEBUG:
-    ALLOWED_HOSTS.extend([
-        'localhost',
-        '127.0.0.1',
-        '0.0.0.0',
-    ])
-    
+    ALLOWED_HOSTS = ['*']
+
     # ngrok 도메인이 환경변수에 설정된 경우 추가
     ngrok_domain = os.getenv('NGROK_DOMAIN')
     if ngrok_domain:
         ALLOWED_HOSTS.append(ngrok_domain)
+
+ALLOWED_HOSTS = [host for host in dict.fromkeys(host.strip() for host in ALLOWED_HOSTS) if host]
 
 
 # Application definition

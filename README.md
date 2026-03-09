@@ -327,6 +327,8 @@ uv run python manage.py runserver
 
 서버가 실행되면 `http://localhost:8011`에서 애플리케이션에 접근할 수 있습니다. (기본 실행 포트는 8011로 자동 설정됩니다.)
 
+같은 네트워크의 다른 기기에서 접속해야 하면 `uv run python manage.py runserver 0.0.0.0:8011`로 실행한 뒤 `http://현재장비의로컬IP:8011`로 접속하면 됩니다. 개발 환경(`DEBUG=True`)에서는 로컬 디버깅 편의를 위해 `ALLOWED_HOSTS`를 넓게 허용하므로, SSH로 접속한 뒤 Windows 브라우저에서 로컬 IP로 확인할 수 있습니다.
+
 ## 🔐 환경 변수 설정
 
 `.env` 파일에 다음 환경 변수들을 설정해야 합니다:
