@@ -104,3 +104,29 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         help_texts = password_validation.password_validators_help_texts()
         if help_texts:
             self.fields['new_password1'].help_text = ' · '.join(help_texts)
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data['old_password']
+
+        if self.user.check_password(old_password):
+            return old_password
+
+        temp_password = getattr(self.user, 'temporary_password_credential', None)
+        if temp_password and temp_password.check_password(old_password):
+            return old_password
+
+        raise ValidationError(
+            self.error_messages['password_incorrect'],
+            code='password_incorrect',
+        )
+
+    def save(self, commit=True):
+        user = super().save(commit=commit)
+        temp_password = getattr(user, 'temporary_password_credential', None)
+
+        if temp_password and temp_password.password:
+            temp_password.clear()
+            if commit:
+                temp_password.save(update_fields=['password', 'updated_at'])
+
+        return user
