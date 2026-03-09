@@ -104,7 +104,7 @@ class TemporaryPasswordInlineForm(forms.ModelForm):
         label='임시 비밀번호',
         required=False,
         widget=forms.PasswordInput(render_value=True),
-        help_text='입력 시 해시로 저장됩니다. 비워두면 기존 임시 비밀번호를 유지합니다.'
+        help_text='입력 시 해시로 저장됩니다. 사용자는 이 값으로 로그인하고 비밀번호 변경 화면의 현재 비밀번호로도 사용할 수 있습니다.'
     )
     clear_password = forms.BooleanField(
         label='임시 비밀번호 삭제',
