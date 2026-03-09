@@ -329,18 +329,48 @@ class Store(models.Model):
 
     def shipping_is_free(self):
         """현재 설정 기준으로 배송비가 무료인지 여부"""
-        return self.shipping_fee_mode != 'flat' or (self.shipping_fee_sats or 0) == 0
+        return self.shipping_fee_mode != 'flat' or self._get_effective_shipping_fee_sats() == 0
+
+    def _convert_krw_to_sats_with_fallback(self, krw_amount, fallback_sats=0):
+        """원화 기준 배송비/조건을 최신 환율로 변환하고 실패 시 기존 값을 사용한다."""
+        if krw_amount is None:
+            return fallback_sats or 0
+        if krw_amount <= 0:
+            if fallback_sats:
+                return fallback_sats
+            return 0
+
+        from myshop.services import UpbitExchangeService
+
+        converted = UpbitExchangeService.convert_krw_to_sats(krw_amount)
+        if converted > 0:
+            return converted
+        return fallback_sats or 0
+
+    def _get_effective_shipping_fee_sats(self):
+        """현재 환율 기준의 유효 배송비(사토시)를 반환한다."""
+        return self._convert_krw_to_sats_with_fallback(
+            self.shipping_fee_krw,
+            fallback_sats=self.shipping_fee_sats,
+        )
+
+    def _get_effective_free_shipping_threshold_sats(self):
+        """현재 환율 기준의 유효 무료 배송 기준(사토시)을 반환한다."""
+        return self._convert_krw_to_sats_with_fallback(
+            self.free_shipping_threshold_krw,
+            fallback_sats=self.free_shipping_threshold_sats,
+        )
 
     def get_shipping_fee_sats(self, subtotal_sats=None):
         """주문 합계(사토시)를 기준으로 배송비 계산"""
         if self.shipping_is_free():
             return 0
 
-        threshold_sats = self.free_shipping_threshold_sats or 0
+        threshold_sats = self._get_effective_free_shipping_threshold_sats()
         if subtotal_sats is not None and threshold_sats and subtotal_sats >= threshold_sats:
             return 0
 
-        return self.shipping_fee_sats or 0
+        return self._get_effective_shipping_fee_sats()
 
     def get_shipping_fee_krw(self, subtotal_krw=None):
         """주문 합계(원화)를 기준으로 배송비 계산"""
@@ -357,9 +387,9 @@ class Store(models.Model):
         """템플릿용 배송비 정보 반환"""
         return {
             'mode': self.shipping_fee_mode,
-            'sats': 0 if self.shipping_is_free() else (self.shipping_fee_sats or 0),
+            'sats': 0 if self.shipping_is_free() else self._get_effective_shipping_fee_sats(),
             'krw': 0 if self.shipping_is_free() else (self.shipping_fee_krw or 0),
-            'threshold_sats': self.free_shipping_threshold_sats,
+            'threshold_sats': self._get_effective_free_shipping_threshold_sats(),
             'threshold_krw': self.free_shipping_threshold_krw,
         }
     
