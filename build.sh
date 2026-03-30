@@ -24,14 +24,10 @@ echo "📦 의존성 설치 중..."
 # 일반 의존성 먼저 설치
 pip install -r requirements.txt
 
-echo "🔧 라이트닝 의존성 추가 확인..."
-# secp256k1이 설치되지 않은 경우 재시도
-python -c "import secp256k1" 2>/dev/null || {
-    echo "⚠️ secp256k1 설치 재시도 중..."
-    pip install --no-cache-dir secp256k1 || {
-        echo "❌ secp256k1 설치 실패 - 대안 라이브러리 사용"
-        # 필요시 대안 라이브러리나 순수 Python 구현 사용 가능
-    }
+echo "🔧 라이트닝/Nostr 암호화 의존성 확인..."
+python -c "import ecdsa" 2>/dev/null || {
+    echo "⚠️ ecdsa 설치 재시도 중..."
+    pip install --no-cache-dir ecdsa
 }
 
 # bech32 확인
@@ -158,9 +154,9 @@ python manage.py debug_admin
 echo "⚡ 라이트닝 연동 기능 테스트..."
 python manage.py shell -c "
 try:
-    import secp256k1
+    import ecdsa
     import bech32
-    print('✅ secp256k1 라이브러리 로드 성공')
+    print('✅ ecdsa 라이브러리 로드 성공')
     print('✅ bech32 라이브러리 로드 성공')
     
     try:

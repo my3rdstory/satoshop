@@ -1,3 +1,7 @@
+- [x] secp256k1 네이티브 의존성을 순수 파이썬 검증 유틸로 대체
+- [x] Nostr/LNURL 서명 검증 코드와 빌드 스크립트 정리
+- [x] README/변경이력/의존성 락파일 갱신 및 설치 확인
+
 - [x] Nostr Connect 복귀 컨텍스트를 서버 pending 세션(token)으로 저장/조회/정리하는 엔드포인트 추가
 - [x] callback URL에 `nostr_connect_resume` 토큰을 포함해 브라우저 컨텍스트가 바뀌어도 복구 가능하도록 개선
 - [x] 로그인 페이지 진입 시 URL 토큰 기반 pending 세션 복원 로직 추가

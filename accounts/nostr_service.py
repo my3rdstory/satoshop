@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.utils.http import url_has_allowed_host_and_scheme
-from secp256k1 import PublicKey
 
 from api.nostr_auth import NostrAuthError, normalize_nostr_pubkey
+from myshop.crypto import verify_bip340_signature
 from .models import NostrUser
 
 
@@ -134,18 +134,13 @@ def verify_nostr_login_event(
     if len(signature_bytes) != 64:
         raise NostrAuthError("Nostr 서명 길이는 64바이트여야 합니다.")
 
-    try:
-        pubkey_bytes = binascii.unhexlify(event_pubkey)
-        event_id_bytes = binascii.unhexlify(event_id)
-        pubkey = PublicKey(b"\x02" + pubkey_bytes, raw=True)
-        is_valid_signature = pubkey.schnorr_verify(
-            event_id_bytes,
-            signature_bytes,
-            None,
-            raw=True,
-        )
-    except Exception as exc:
-        raise NostrAuthError("Nostr 이벤트 서명 검증 중 오류가 발생했습니다.") from exc
+    pubkey_bytes = binascii.unhexlify(event_pubkey)
+    event_id_bytes = binascii.unhexlify(event_id)
+    is_valid_signature = verify_bip340_signature(
+        pubkey_bytes=pubkey_bytes,
+        signature_bytes=signature_bytes,
+        message=event_id_bytes,
+    )
 
     if not is_valid_signature:
         raise NostrAuthError("Nostr 이벤트 서명 검증에 실패했습니다.")

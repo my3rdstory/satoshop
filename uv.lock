@@ -331,6 +331,18 @@ boto3 = [
 ]
 
 [[package]]
+name = "ecdsa"
+version = "0.19.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/ca/8de7744cb3bc966c85430ca2d0fcaeea872507c6a4cf6e007f7fe269ed9d/ecdsa-0.19.2.tar.gz", hash = "sha256:62635b0ac1ca2e027f82122b5b81cb706edc38cd91c63dda28e4f3455a2bf930", size = 202432, upload-time = "2026-03-26T09:58:17.675Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/79/119091c98e2bf49e24ed9f3ae69f816d715d2904aefa6a2baa039a2ba0b0/ecdsa-0.19.2-py2.py3-none-any.whl", hash = "sha256:840f5dc5e375c68f36c1a7a5b9caad28f95daa65185c9253c0c08dd952bb7399", size = 150818, upload-time = "2026-03-26T09:58:15.808Z" },
+]
+
+[[package]]
 name = "faker"
 version = "37.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1076,6 +1088,7 @@ dependencies = [
     { name = "dj-database-url" },
     { name = "django" },
     { name = "django-storages", extra = ["boto3"] },
+    { name = "ecdsa" },
     { name = "faker" },
     { name = "fpdf2" },
     { name = "gunicorn" },
@@ -1087,7 +1100,6 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "qrcode", extra = ["pil"] },
     { name = "requests" },
-    { name = "secp256k1" },
     { name = "supabase" },
     { name = "whitenoise" },
 ]
@@ -1101,6 +1113,7 @@ requires-dist = [
     { name = "dj-database-url", specifier = ">=3.0.0" },
     { name = "django", specifier = ">=5.2.2" },
     { name = "django-storages", extras = ["boto3"], specifier = ">=1.14.4" },
+    { name = "ecdsa", specifier = ">=0.19.1" },
     { name = "faker", specifier = ">=37.4.0" },
     { name = "fpdf2", specifier = ">=2.8.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
@@ -1112,19 +1125,9 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "qrcode", extras = ["pil"], specifier = ">=7.3.1" },
     { name = "requests", specifier = ">=2.32.3" },
-    { name = "secp256k1", specifier = ">=0.14.0" },
     { name = "supabase", specifier = ">=2.9.1" },
     { name = "whitenoise", specifier = ">=6.9.0" },
 ]
-
-[[package]]
-name = "secp256k1"
-version = "0.14.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cffi" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/41/bb668a6e4192303542d2d90c3b38d564af3c17c61bd7d4039af4f29405fe/secp256k1-0.14.0.tar.gz", hash = "sha256:82c06712d69ef945220c8b53c1a0d424c2ff6a1f64aee609030df79ad8383397", size = 2420607, upload-time = "2021-11-06T01:36:10.707Z" }
 
 [[package]]
 name = "six"
