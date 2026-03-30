@@ -137,7 +137,11 @@
                 
                 <!-- 통계 -->
                 {% if product.total_orders > 0 %}
-                <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="grid grid-cols-4 gap-2 text-center">
+                  <div>
+                    <div class="text-lg font-bold text-rose-600 dark:text-rose-400">{{ product.pending_shipment_orders }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">미발송 주문</div>
+                  </div>
                   <div>
                     <div class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ product.total_orders }}</div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">주문 건수</div>
