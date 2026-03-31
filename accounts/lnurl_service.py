@@ -5,15 +5,13 @@ LNURL-auth 서비스 모듈
 
 import os
 import binascii
-import hashlib
-import hmac
-from urllib.parse import urlencode
 from django.conf import settings
 from django.urls import reverse
 from django.core.cache import cache
 from django.contrib.auth.models import User
 import bech32
-from secp256k1 import PublicKey
+
+from myshop.crypto import verify_secp256k1_ecdsa_digest
 
 from .models import LightningUser
 
@@ -118,28 +116,15 @@ class LNURLAuthService:
         
         logger.info("캐시에서 k1 삭제 성공")
         
-        # secp256k1으로 서명 검증
-        try:
-            # 공개키 객체 생성
-            linking_key_pubkey = PublicKey(linking_key_bytes, raw=True)
-            logger.info("공개키 객체 생성 성공")
-            
-            # 서명 디시리얼라이즈
-            sig_raw = linking_key_pubkey.ecdsa_deserialize(sig_bytes)
-            logger.info("서명 디시리얼라이즈 성공")
-            
-            # 서명 검증
-            if not linking_key_pubkey.ecdsa_verify(k1_bytes, sig_raw, raw=True):
-                logger.error("서명 검증 실패")
-                raise InvalidSigException("서명 검증 실패")
-            
-            logger.info("서명 검증 성공")
-                
-        except Exception as e:
-            if isinstance(e, InvalidSigException):
-                raise
-            logger.error(f"서명 검증 중 예외: {e}")
-            raise LNURLAuthException(f"서명 검증 중 오류: {str(e)}")
+        if not verify_secp256k1_ecdsa_digest(
+            public_key_bytes=linking_key_bytes,
+            signature_bytes=sig_bytes,
+            digest=k1_bytes,
+        ):
+            logger.error("서명 검증 실패")
+            raise InvalidSigException("서명 검증 실패")
+
+        logger.info("서명 검증 성공")
     
     def create_lnurl_response(self, k1_hex):
         """LNURL-auth 1단계 응답 생성"""

@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 import bech32
 from django.core.cache import cache
-from secp256k1 import PublicKey
+
+from myshop.crypto import validate_bip340_pubkey, verify_bip340_signature
 
 
 CHALLENGE_CACHE_KEY_PREFIX = "api:nostr:challenge"
@@ -48,8 +49,7 @@ def normalize_nostr_pubkey(value: str) -> str:
         raise NostrAuthError("Nostr 공개키 길이는 32바이트여야 합니다.")
 
     try:
-        # BIP340 x-only 공개키를 압축 공개키(짝수 y)로 가정해 검증에 사용
-        PublicKey(b"\x02" + pubkey_bytes, raw=True)
+        validate_bip340_pubkey(pubkey_bytes)
     except Exception as exc:
         raise NostrAuthError("유효하지 않은 Nostr 공개키입니다.") from exc
 
@@ -105,17 +105,12 @@ def verify_nostr_challenge_signature(
     if len(sig_bytes) != 64:
         raise NostrAuthError("Nostr 서명 길이는 64바이트여야 합니다.")
 
-    try:
-        pubkey_bytes = binascii.unhexlify(pubkey_hex)
-        pubkey = PublicKey(b"\x02" + pubkey_bytes, raw=True)
-        is_valid = pubkey.schnorr_verify(
-            binascii.unhexlify(challenge),
-            sig_bytes,
-            None,
-            raw=True,
-        )
-    except Exception as exc:
-        raise NostrAuthError("Nostr 서명 검증 중 오류가 발생했습니다.") from exc
+    pubkey_bytes = binascii.unhexlify(pubkey_hex)
+    is_valid = verify_bip340_signature(
+        pubkey_bytes=pubkey_bytes,
+        signature_bytes=sig_bytes,
+        message=binascii.unhexlify(challenge),
+    )
 
     if not is_valid:
         raise NostrAuthError("Nostr 서명 검증에 실패했습니다.")

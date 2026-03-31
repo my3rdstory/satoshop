@@ -538,6 +538,12 @@ def order_management(request, store_id):
     products_with_orders = Product.objects.filter(
         store=store
     ).annotate(
+        pending_shipment_orders=Count('orderitem__order', distinct=True, filter=Q(
+            orderitem__order__created_at__gte=month_start,
+            orderitem__order__created_at__lt=month_end,
+            orderitem__order__courier_company='',
+            orderitem__order__tracking_number='',
+        )),
         total_orders=Count('orderitem__order', distinct=True, filter=Q(
             orderitem__order__created_at__gte=month_start,
             orderitem__order__created_at__lt=month_end
