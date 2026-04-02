@@ -366,6 +366,8 @@ uv run python manage.py runserver
 | `NGROK_DOMAIN` | 개발 시 외부 접속 호스트 허용 |
 | `CSRF_TRUSTED_ORIGINS` | 신뢰할 Origin 목록 |
 
+운영 기본 캐시는 Gunicorn 워커 간 LNURL/Nostr 인증 상태를 공유하기 위해 파일 기반(`.django_cache`)으로 동작합니다. 여러 인스턴스로 확장할 경우에는 Redis 같은 외부 공유 캐시로 전환해야 합니다.
+
 ### 운영 알림/메일
 
 | 변수 | 설명 |

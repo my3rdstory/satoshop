@@ -501,7 +501,6 @@ def lnurl_auth_callback(request):
                             'is_new': is_new,
                             'next_url': request.GET.get('next')
                         }
-                        from django.core.cache import cache
                         cache.set(auth_cache_key, auth_data, timeout=300)  # 5분
                         print(f"💾 GET 인증 정보 캐시 저장: {auth_cache_key}, data={auth_data}")
                         logger.info(f"인증 정보 캐시 저장: {auth_cache_key}")
@@ -566,7 +565,6 @@ def lnurl_auth_callback(request):
                 logger.info(f"연동 요청: user={request.user.username}")
                 
                 # 연동 세션을 위해 사용자 ID를 캐시에 저장
-                from django.core.cache import cache
                 timeout = getattr(settings, 'LNURL_AUTH_K1_TIMEOUT', 60 * 60)  # 1시간
                 cache.set(f"lnauth-link-user-{k1_hex}", request.user.id, timeout=timeout)
                 logger.info(f"사용자 ID 캐시 저장: lnauth-link-user-{k1_hex[:16]}... = {request.user.id}")

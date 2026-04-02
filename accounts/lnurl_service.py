@@ -102,6 +102,11 @@ class LNURLAuthService:
             sig_bytes = binascii.unhexlify(sig_hex)
             linking_key_bytes = binascii.unhexlify(linking_key_hex)
             logger.info("hex 문자열 변환 성공")
+            logger.info(
+                "LNURL 서명 형식 감지: sig_len=%s, format=%s",
+                len(sig_bytes),
+                "der" if sig_bytes[:1] == b"\x30" else "raw",
+            )
         except binascii.Error as e:
             logger.error(f"hex 변환 실패: {e}")
             raise LNURLAuthException("잘못된 hex 형식")
