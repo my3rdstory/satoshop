@@ -302,11 +302,20 @@ else:
 LNURL_AUTH_ROOT_DOMAIN = os.getenv('LNURL_AUTH_ROOT_DOMAIN') or os.getenv('LNURL_DOMAIN') or default_domain
 LNURL_AUTH_K1_TIMEOUT = int(os.getenv('LNURL_AUTH_K1_TIMEOUT', str(60 * 60)))  # 1시간
 
-# 캐시 설정 (LNURL k1 저장용)
+# 캐시 설정
+# 운영에서는 Gunicorn 워커 간 LNURL/Nostr 인증 상태를 공유할 수 있도록 파일 캐시를 기본 사용한다.
+default_cache_backend = 'django.core.cache.backends.locmem.LocMemCache'
+default_cache_location = 'lnurl-auth-cache'
+
+if cloud_env and not DEBUG:
+    default_cache_backend = 'django.core.cache.backends.filebased.FileBasedCache'
+    default_cache_location = str(BASE_DIR / '.django_cache')
+    os.makedirs(default_cache_location, exist_ok=True)
+
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'lnurl-auth-cache',
+        'BACKEND': default_cache_backend,
+        'LOCATION': default_cache_location,
     }
 }
 

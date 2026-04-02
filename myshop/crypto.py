@@ -50,14 +50,21 @@ def verify_secp256k1_ecdsa_digest(*, public_key_bytes: bytes, signature_bytes: b
             curve=SECP256k1,
             valid_encodings=("compressed", "uncompressed"),
         )
-        return verifying_key.verify_digest(
-            signature_bytes,
-            digest,
-            sigdecode=util.sigdecode_string,
-            allow_truncate=False,
-        )
     except (BadSignatureError, MalformedPointError, ValueError):
         return False
+
+    for sigdecode in (util.sigdecode_string, util.sigdecode_der):
+        try:
+            return verifying_key.verify_digest(
+                signature_bytes,
+                digest,
+                sigdecode=sigdecode,
+                allow_truncate=False,
+            )
+        except (BadSignatureError, ValueError):
+            continue
+
+    return False
 
 
 def _lift_x_even_y(pubkey_bytes: bytes) -> ellipticcurve.Point:
